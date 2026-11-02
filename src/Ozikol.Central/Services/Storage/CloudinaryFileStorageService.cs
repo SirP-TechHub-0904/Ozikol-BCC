@@ -1,79 +1,34 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Ozikol_BCC.Application.Services.Cloudinary;
 
 namespace Ozikol.Central.Services.Storage;
 
 /// <summary>
-/// Cloudinary-backed implementation of <see cref="IFileStorageService"/> providing cloud asset
-/// uploads for resumes and identification documents with safe local directory fallback.
+/// Implementation of <see cref="IFileStorageService"/> delegating to the dedicated <see cref="ICloudinaryService"/>
+/// with local safe fallback storage for offline development.
 /// </summary>
 public class CloudinaryFileStorageService : IFileStorageService
 {
-    private readonly Cloudinary? _cloudinary;
+    private readonly ICloudinaryService _cloudinaryService;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<CloudinaryFileStorageService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CloudinaryFileStorageService"/> class.
-    /// Resolves Cloudinary credentials from configuration or environment variables.
     /// </summary>
-    /// <param name="configuration">Application configuration.</param>
-    /// <param name="environment">Hosting environment.</param>
-    /// <param name="logger">Logger provider.</param>
     public CloudinaryFileStorageService(
-        IConfiguration configuration,
+        ICloudinaryService cloudinaryService,
         IWebHostEnvironment environment,
         ILogger<CloudinaryFileStorageService> logger)
     {
+        _cloudinaryService = cloudinaryService ?? throw new ArgumentNullException(nameof(cloudinaryService));
         _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        // 1. Check for CLOUDINARY_URL format (e.g. cloudinary://apiKey:apiSecret@cloudName)
-        var cloudinaryUrl = configuration["CLOUDINARY_URL"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_URL");
-        if (!string.IsNullOrWhiteSpace(cloudinaryUrl))
-        {
-            try
-            {
-                _cloudinary = new Cloudinary(cloudinaryUrl);
-                _cloudinary.Api.Secure = true;
-                _logger.LogInformation("Cloudinary initialized via CLOUDINARY_URL.");
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to initialize Cloudinary from CLOUDINARY_URL.");
-            }
-        }
-
-        // 2. Check for explicit CloudinarySettings credentials
-        var cloudName = configuration["CloudinarySettings:CloudName"] 
-                     ?? configuration["CLOUDINARY_CLOUD_NAME"] 
-                     ?? Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME");
-        var apiKey = configuration["CloudinarySettings:ApiKey"] 
-                  ?? configuration["CLOUDINARY_API_KEY"] 
-                  ?? Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY");
-        var apiSecret = configuration["CloudinarySettings:ApiSecret"] 
-                     ?? configuration["CLOUDINARY_API_SECRET"] 
-                     ?? Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET");
-
-        if (!string.IsNullOrWhiteSpace(cloudName) && !string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(apiSecret))
-        {
-            var account = new Account(cloudName, apiKey, apiSecret);
-            _cloudinary = new Cloudinary(account);
-            _cloudinary.Api.Secure = true;
-            _logger.LogInformation("Cloudinary initialized successfully for cloud storage.");
-        }
-        else
-        {
-            _logger.LogWarning("Cloudinary credentials not configured. Local fallback storage will be utilized for uploaded attachments.");
-        }
     }
 
     /// <inheritdoc />
@@ -84,48 +39,28 @@ public class CloudinaryFileStorageService : IFileStorageService
             throw new ArgumentException("The specified file is null or empty.", nameof(file));
         }
 
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
         var safeOriginalName = Path.GetFileName(file.FileName);
 
-        // If Cloudinary is configured, upload as a raw asset
-        if (_cloudinary != null)
+        try
         {
-            try
+            var (url, publicId) = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, category);
+            if (!string.IsNullOrEmpty(url))
             {
-                using var stream = file.OpenReadStream();
-                var uploadParams = new RawUploadParams
+                return new FileUploadResult
                 {
-                    File = new FileDescription(safeOriginalName, stream),
-                    Folder = $"ozikol/{category}",
-                    UseFilename = true,
-                    UniqueFilename = true,
-                    Overwrite = false
+                    OriginalFileName = safeOriginalName,
+                    SecureUrl = url,
+                    FileSizeBytes = file.Length,
+                    ContentType = file.ContentType,
+                    PublicId = publicId
                 };
-
-                var result = await _cloudinary.UploadAsync(uploadParams);
-                if (result.Error != null)
-                {
-                    _logger.LogWarning("Cloudinary raw upload error: {Message}. Falling back to local storage.", result.Error.Message);
-                }
-                else
-                {
-                    return new FileUploadResult
-                    {
-                        OriginalFileName = safeOriginalName,
-                        SecureUrl = result.SecureUrl.ToString(),
-                        FileSizeBytes = file.Length,
-                        ContentType = file.ContentType,
-                        PublicId = result.PublicId
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Cloudinary document upload failed. Resorting to local secure storage fallback.");
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cloudinary document upload failed. Falling back to local secure storage.");
+        }
 
-        // Local fallback storage
         return await SaveToLocalStorageAsync(file, category, safeOriginalName);
     }
 
@@ -141,78 +76,36 @@ public class CloudinaryFileStorageService : IFileStorageService
         var safeOriginalName = Path.GetFileName(file.FileName);
         var isImage = ext is ".jpg" or ".jpeg" or ".png" or ".webp";
 
-        // If Cloudinary is configured, upload accordingly
-        if (_cloudinary != null)
+        try
         {
-            try
-            {
-                using var stream = file.OpenReadStream();
-                if (isImage)
-                {
-                    var uploadParams = new ImageUploadParams
-                    {
-                        File = new FileDescription(safeOriginalName, stream),
-                        Folder = $"ozikol/{category}",
-                        UseFilename = true,
-                        UniqueFilename = true,
-                        Overwrite = false
-                    };
+            var (url, publicId) = isImage
+                ? await _cloudinaryService.UploadImageWithPublicIdAsync(file, category)
+                : await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, category);
 
-                    var result = await _cloudinary.UploadAsync(uploadParams);
-                    if (result.Error == null)
-                    {
-                        return new FileUploadResult
-                        {
-                            OriginalFileName = safeOriginalName,
-                            SecureUrl = result.SecureUrl.ToString(),
-                            FileSizeBytes = file.Length,
-                            ContentType = file.ContentType,
-                            PublicId = result.PublicId
-                        };
-                    }
-                }
-                else
-                {
-                    var uploadParams = new RawUploadParams
-                    {
-                        File = new FileDescription(safeOriginalName, stream),
-                        Folder = $"ozikol/{category}",
-                        UseFilename = true,
-                        UniqueFilename = true,
-                        Overwrite = false
-                    };
-
-                    var result = await _cloudinary.UploadAsync(uploadParams);
-                    if (result.Error == null)
-                    {
-                        return new FileUploadResult
-                        {
-                            OriginalFileName = safeOriginalName,
-                            SecureUrl = result.SecureUrl.ToString(),
-                            FileSizeBytes = file.Length,
-                            ContentType = file.ContentType,
-                            PublicId = result.PublicId
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
+            if (!string.IsNullOrEmpty(url))
             {
-                _logger.LogWarning(ex, "Cloudinary identification upload failed. Resorting to local fallback.");
+                return new FileUploadResult
+                {
+                    OriginalFileName = safeOriginalName,
+                    SecureUrl = url,
+                    FileSizeBytes = file.Length,
+                    ContentType = file.ContentType,
+                    PublicId = publicId
+                };
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cloudinary identification upload failed. Falling back to local storage.");
+        }
 
-        // Local fallback storage
         return await SaveToLocalStorageAsync(file, category, safeOriginalName);
     }
 
-    /// <summary>
-    /// Fallback storage mechanism saving uploaded files into safe local wwwroot directory.
-    /// </summary>
     private async Task<FileUploadResult> SaveToLocalStorageAsync(IFormFile file, string category, string originalName)
     {
         var relativeDir = Path.Combine("uploads", category.Replace('/', Path.DirectorySeparatorChar));
-        var absoluteDir = Path.Combine(_environment.WebRootPath, relativeDir);
+        var absoluteDir = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), relativeDir);
 
         if (!Directory.Exists(absoluteDir))
         {

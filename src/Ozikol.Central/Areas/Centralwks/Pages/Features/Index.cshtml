@@ -1,73 +1,143 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Features.IndexModel
 @{
-    ViewData["Title"] = "Modular Capabilities Catalog";
+    ViewData["Title"] = "Feature Directory & Pricing";
     ViewData["BreadcrumbSection"] = "Platform Core";
+
+    // Helper to generate sort link URL and icon
+    string GetSortUrl(string column)
+    {
+        var nextDir = (string.Equals(Model.SortBy, column, StringComparison.OrdinalIgnoreCase) && string.Equals(Model.SortDir, "asc", StringComparison.OrdinalIgnoreCase)) ? "desc" : "asc";
+        return $"/centralwks/features?search={Uri.EscapeDataString(Model.Search ?? "")}&category={Uri.EscapeDataString(Model.Category ?? "")}&status={Uri.EscapeDataString(Model.Status ?? "")}&sortBy={column}&sortDir={nextDir}";
+    }
+
+    string GetSortIcon(string column)
+    {
+        if (!string.Equals(Model.SortBy, column, StringComparison.OrdinalIgnoreCase))
+        {
+            return "unfold_more";
+        }
+        return string.Equals(Model.SortDir, "desc", StringComparison.OrdinalIgnoreCase) ? "arrow_downward" : "arrow_upward";
+    }
 }
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Modular Capability Catalog</h1>
-        <p class="admin-subtitle">Govern modular SaaS features, recurring billing tiers, metered unit rates, and compulsory platform core tools.</p>
+        <h1 class="admin-title">Feature Directory &amp; Pricing</h1>
+        <p class="admin-subtitle">Govern modular MIS capabilities, monthly/yearly subscription tiers, metered unit rates, and platform core tools.</p>
     </div>
     <div class="admin-actions">
         <a href="/centralwks/features/create" class="btn-admin btn-admin-primary">
-            <span>+</span> New Capability
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+            New Capability
         </a>
     </div>
 </div>
 
-@* ── Stat Cards ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">⚡</div>
+@* ── Metric Stat Cards: Suites, Features, Total Active, Total Inactive, Total Maintenance ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    @* Suites *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">category</span>
+        </div>
         <div class="stat-details">
-            <span class="stat-label">Total Capabilities</span>
-            <span class="stat-value" style="font-size: 20px;">@Model.TotalCount</span>
+            <span class="stat-label">Suites</span>
+            <span class="stat-value">@Model.SuitesCount.ToString("N0")</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✓</div>
+
+    @* Features *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;">
+            <span class="material-symbols-outlined">extension</span>
+        </div>
         <div class="stat-details">
-            <span class="stat-label">Active Modules</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-success);">@Model.ActiveCount</span>
+            <span class="stat-label">Features</span>
+            <span class="stat-value">@Model.TotalCount.ToString("N0")</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-indigo" style="width: 40px; height: 40px; font-size: 18px;">🛡️</div>
+
+    @* Total Active *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">check_circle</span>
+        </div>
         <div class="stat-details">
-            <span class="stat-label">Compulsory Core</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-indigo);">@Model.CompulsoryCount</span>
+            <span class="stat-label">Total Active</span>
+            <span class="stat-value" style="color: var(--admin-success);">@Model.ActiveCount.ToString("N0")</span>
+        </div>
+    </div>
+
+    @* Total Inactive *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-danger">
+            <span class="material-symbols-outlined">cancel</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Inactive</span>
+            <span class="stat-value" style="color: var(--admin-danger);">@Model.InactiveCount.ToString("N0")</span>
+        </div>
+    </div>
+
+    @* Total Maintenance *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">engineering</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Maintenance</span>
+            <span class="stat-value" style="color: var(--admin-warning);">@Model.MaintenanceCount.ToString("N0")</span>
         </div>
     </div>
 </div>
 
-@* ── Filter Toolbar ── *@
+@* ── Feature Directory Table Card ── *@
 <div class="admin-card">
-    <div class="table-toolbar">
-        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center;">
-            <div class="table-search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" name="search" value="@Model.Search" placeholder="Search by name, code, or description..." />
+    <div class="table-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 14px 20px;">
+        <form method="get" class="table-filters" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;">
+            <input type="hidden" name="sortBy" value="@Model.SortBy" />
+            <input type="hidden" name="sortDir" value="@Model.SortDir" />
+
+            <div class="table-search-box" style="width: 260px; max-width: 100%;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">search</span>
+                </span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search by name, code..." style="height: 38px;" />
             </div>
 
-            <select name="category" class="form-select" style="width: 180px; padding: 8px 12px; font-size: 13px;">
-                <option value="">All Categories</option>
+            <select name="category" class="form-select" style="width: auto; min-width: 220px; height: 38px; padding: 6px 12px; font-size: 13px;">
+                <option value="">All Suites (@Model.Categories.Count)</option>
                 @foreach (var cat in Model.Categories)
                 {
-                    <option value="@cat" selected="@(Model.Category == cat)">@cat</option>
+                    <option value="@cat" selected="@(string.Equals(Model.Category, cat, StringComparison.OrdinalIgnoreCase))">@cat</option>
                 }
             </select>
 
-            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">Filter</button>
-            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Category))
+            <select name="status" class="form-select" style="width: auto; min-width: 140px; height: 38px; padding: 6px 12px; font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="active" selected="@(Model.Status == "active")">Active (@Model.ActiveCount)</option>
+                <option value="inactive" selected="@(Model.Status == "inactive")">Inactive (@Model.InactiveCount)</option>
+                <option value="maintenance" selected="@(Model.Status == "maintenance")">Under Maintenance (@Model.MaintenanceCount)</option>
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 14px; font-size: 13px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
+                <span>Filter</span>
+            </button>
+
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Category) || !string.IsNullOrEmpty(Model.Status))
             {
-                <a href="/centralwks/features" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">Clear</a>
+                <a href="/centralwks/features" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 12px; font-size: 13px; color: var(--admin-danger);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    <span>Reset</span>
+                </a>
             }
         </form>
 
-        <div style="font-size: 12.5px; color: var(--admin-text-muted);">
-            Showing @Model.Features.Count capabilities
+        <div style="font-size: 12.5px; color: var(--admin-text-muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; margin-left: auto;">
+            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">format_list_bulleted</span>
+            <span>Showing <strong>@Model.Features.Count</strong> of <strong>@Model.TotalCount</strong> capabilities</span>
         </div>
     </div>
 
@@ -75,90 +145,140 @@
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th>Capability Name & Code</th>
-                    <th>Category</th>
-                    <th>Billing Model</th>
-                    <th>Pricing (M / Q / Y)</th>
-                    <th>Core Type</th>
-                    <th>Active Subscribers</th>
-                    <th>Status</th>
-                    <th style="text-align: right;">Actions</th>
+                    <th style="width: 50px; text-align: center;">S/N</th>
+                    <th>
+                        <a href="@GetSortUrl("name")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>FEATURE</span>
+                            <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("name")</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="@GetSortUrl("suite")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>SUITE</span>
+                            <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("suite")</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="@GetSortUrl("billing")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>BILLING MODEL</span>
+                            <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("billing")</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="@GetSortUrl("tier")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>TIER CLASS</span>
+                            <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("tier")</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="@GetSortUrl("status")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>STATUS</span>
+                            <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("status")</span>
+                        </a>
+                    </th>
+                    <th style="text-align: right; width: 170px;">ACTIONS</th>
                 </tr>
             </thead>
             <tbody>
                 @if (Model.Features.Any())
                 {
-                    @foreach (var item in Model.Features)
+                    @for (int i = 0; i < Model.Features.Count; i++)
                     {
-                        var feat = item.Feature;
+                        var feat = Model.Features[i];
+                        var iconName = string.IsNullOrEmpty(feat.Icon) ? "extension" : feat.Icon;
                         <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                            </td>
                             <td>
-                                <div>
-                                    <strong style="color: var(--admin-text); font-size: 14px;">@feat.Name</strong>
-                                    <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px;">
-                                        <code>@feat.FeatureCode</code>
-                                        @if (!string.IsNullOrEmpty(feat.RoutePrefix))
-                                        {
-                                            <span> • Route: @feat.RoutePrefix</span>
-                                        }
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-primary);">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">@iconName</span>
+                                    </div>
+                                    <div>
+                                        <a href="/centralwks/features/details?id=@feat.Id" style="font-weight: 600; color: var(--admin-text); text-decoration: none; font-size: 13.5px;" class="feature-name-link">
+                                            @feat.Name
+                                        </a>
+                                        <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                            <code>@feat.FeatureCode</code>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-neutral">@feat.Category</span>
+                                <span class="badge badge-neutral" style="font-size: 11.5px; font-weight: 500;">@feat.Category</span>
                             </td>
-                            <td style="font-size: 12.5px;">
-                                @feat.BillingType
-                                @if (feat.IsMetered)
+                            <td>
+                                @switch (feat.BillingType)
                                 {
-                                    <div style="font-size: 11px; color: var(--admin-warning);">
-                                        + $@feat.MeterUnitPrice.ToString("0.0000") / @feat.MeterUnitName
-                                    </div>
+                                    case Ozikol.MasterDomain.Models.FeatureBillingType.FlatSubscription:
+                                        <span class="badge badge-primary" style="font-size: 11px;">Flat Subscription</span>
+                                        break;
+                                    case Ozikol.MasterDomain.Models.FeatureBillingType.PayAsYouGo:
+                                        <span class="badge badge-warning" style="font-size: 11px;">Pay As You Go</span>
+                                        break;
+                                    case Ozikol.MasterDomain.Models.FeatureBillingType.Hybrid:
+                                        <span class="badge badge-info" style="font-size: 11px;">Hybrid + Metered</span>
+                                        break;
+                                    case Ozikol.MasterDomain.Models.FeatureBillingType.CustomEnterprise:
+                                        <span class="badge badge-secondary" style="font-size: 11px;">Custom Enterprise</span>
+                                        break;
+                                    default:
+                                        <span class="badge badge-neutral" style="font-size: 11px;">@feat.BillingType</span>
+                                        break;
                                 }
-                            </td>
-                            <td>
-                                <div style="font-size: 13px; font-weight: 600;">
-                                    $@feat.MonthlyPrice.ToString("N2") <small style="font-weight: normal; color: var(--admin-text-dim);">/mo</small>
-                                </div>
-                                <div style="font-size: 11px; color: var(--admin-text-dim);">
-                                    $@feat.QuarterlyPrice.ToString("N2") qtr • $@feat.YearlyPrice.ToString("N2") yr
-                                </div>
                             </td>
                             <td>
                                 @if (feat.IsCompulsory)
                                 {
-                                    <span class="badge badge-indigo">Compulsory Core</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-neutral">Optional Addon</span>
-                                }
-                            </td>
-                            <td>
-                                <a href="/centralwks/subscriptions?featureId=@feat.Id" style="text-decoration: none;">
-                                    <span class="badge badge-success">
-                                        @item.SubscriberCount Active Tenants
+                                    <span class="badge badge-info" style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span class="material-symbols-outlined" style="font-size: 12px;">lock</span>
+                                        Compulsory Core
                                     </span>
-                                </a>
-                            </td>
-                            <td>
-                                @if (feat.IsActive)
-                                {
-                                    <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-danger"><span class="badge-dot"></span> Inactive</span>
+                                    <span class="badge badge-neutral" style="font-size: 11px;">Optional Addon</span>
+                                }
+                            </td>
+                            <td>
+                                @if (feat.IsInBeta)
+                                {
+                                    <span class="badge badge-warning" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                                        Under Maintenance
+                                    </span>
+                                }
+                                else if (feat.IsActive)
+                                {
+                                    <span class="badge badge-success" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                        Inactive
+                                    </span>
                                 }
                             </td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                    <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Details</a>
-                                    <a href="/centralwks/features/edit?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Edit</a>
+                                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Feature Details" aria-label="Details">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                                        <span>Details</span>
+                                    </a>
+                                    <a href="/centralwks/features/edit?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Feature & Pricing in USD" aria-label="Edit">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
+                                        <span>Edit</span>
+                                    </a>
                                     <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin @(feat.IsActive ? "btn-admin-danger" : "btn-admin-primary") btn-admin-sm" onclick="return confirm('Toggle status for @feat.Name?');">
-                                            @(feat.IsActive ? "Deactivate" : "Activate")
+                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: @(feat.IsActive ? "var(--admin-danger)" : "var(--admin-success)");" title="@(feat.IsActive ? "Deactivate Capability" : "Activate Capability")" onclick="return confirm('Toggle status for @feat.Name?');">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">@(feat.IsActive ? "block" : "check_circle")</span>
+                                            <span>@(feat.IsActive ? "Deactivate" : "Activate")</span>
                                         </button>
                                     </form>
                                 </div>
@@ -169,11 +289,13 @@
                 else
                 {
                     <tr>
-                        <td colspan="8">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">⚡</div>
+                        <td colspan="7">
+                            <div class="empty-state" style="padding: 40px; text-align: center;">
+                                <div class="empty-state-icon" style="margin-bottom: 12px;">
+                                    <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim);">extension</span>
+                                </div>
                                 <h3 class="empty-state-title">No Capabilities Match Filter</h3>
-                                <p class="empty-state-desc">Try clearing the search query or selecting a different category.</p>
+                                <p class="empty-state-desc" style="color: var(--admin-text-muted);">Try clearing the search query or selecting a different category/status filter.</p>
                             </div>
                         </td>
                     </tr>
@@ -182,3 +304,4 @@
         </table>
     </div>
 </div>
+

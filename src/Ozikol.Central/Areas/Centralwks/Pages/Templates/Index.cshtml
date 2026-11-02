@@ -1,214 +1,199 @@
-@page
+@page "/centralwks/templates"
 @model Ozikol.Central.Areas.Centralwks.Pages.Templates.IndexModel
 @{
-    ViewData["Title"] = "Marketplace Templates";
+    ViewData["Title"] = "Marketplace Templates & Sections";
     ViewData["BreadcrumbSection"] = "Marketplace";
 }
 
-<div class="admin-page-header">
-    <div class="admin-title-group">
-        <h1 class="admin-title">Marketplace Templates & Blocks</h1>
-        <p class="admin-subtitle">Curate UI sections, hero banners, navigation bars, pricing tables, and modular blocks available for tenant site builders.</p>
-    </div>
-    <div class="admin-actions">
-        <a href="/centralwks/templates/create" class="btn-admin btn-admin-primary">
-            <span>+</span> Create Template
-        </a>
-    </div>
-</div>
-
-@if (!string.IsNullOrEmpty(Model.StatusMessage))
-{
-    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
-        @Model.StatusMessage
-    </div>
+@section Styles {
+<style>
+    .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+    .template-card {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: var(--transition);
+    }
+    .template-card:hover {
+        border-color: rgba(255, 255, 255, 0.18);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .template-card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--admin-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--admin-bg-surface-elevated);
+    }
+    .template-card-body {
+        padding: 18px;
+        flex: 1;
+    }
+    .template-card-footer {
+        padding: 12px 18px;
+        border-top: 1px solid var(--admin-border);
+        background: var(--admin-bg-surface-elevated);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .badge-pill-primary { background: var(--admin-primary-light); color: var(--admin-primary); }
+    .badge-pill-success { background: var(--admin-success-light); color: var(--admin-success); }
+    .badge-pill-secondary { background: var(--admin-bg-hover); color: var(--admin-text-muted); }
+</style>
 }
 
-@* ── Template Metrics ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🎨</div>
-        <div class="stat-details">
-            <span class="stat-label">Total Templates</span>
-            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+<!-- Header -->
+<div class="admin-page-header">
+        <div class="admin-title-group">
+            <h1 class="admin-title">Marketplace Templates &amp; Sections</h1>
+            <p class="admin-subtitle">Manage reusable, zero-collision modular sections for tenant website generation.</p>
+        </div>
+        <div class="admin-actions">
+            <a href="/centralwks/templates/create" class="btn-admin btn-admin-secondary">
+                <span class="material-symbols-outlined">add</span>
+                Create Manual Section
+            </a>
+            <a href="/centralwks/templates/import" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined">magic_button</span>
+                Multi-Channel Ingestion Studio
+            </a>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
-        <div class="stat-details">
-            <span class="stat-label">Active & Public</span>
-            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ActiveCount</span>
-        </div>
-    </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px; font-size: 18px;">📁</div>
-        <div class="stat-details">
-            <span class="stat-label">Categories</span>
-            <span class="stat-value" style="font-size: 22px;">@Model.TotalCategoriesCount</span>
-        </div>
-    </div>
-</div>
 
-@* ── Filters ── *@
-<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
-    <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 220px;">
-            <input type="text" name="Search" value="@Model.Search" placeholder="Search templates by name, variant code, tag..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
-        </div>
-        <div style="min-width: 160px;">
-            <select name="CategoryKey" asp-items="Model.CategoryOptions" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
-                <option value="">All Categories</option>
-            </select>
-        </div>
-        <div style="min-width: 140px;">
-            <select name="Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
-                <option value="">All Statuses</option>
-                <option value="active" selected="@(Model.Status == "active")">Active Only</option>
-                <option value="inactive" selected="@(Model.Status == "inactive")">Hidden Only</option>
-            </select>
-        </div>
-        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">
-            <span>🔍</span> Filter
-        </button>
-        @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.CategoryKey) || !string.IsNullOrWhiteSpace(Model.Status))
-        {
-            <a href="/centralwks/templates" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Clear</a>
-        }
-    </form>
-</div>
-
-@* ── Templates Table ── *@
-<div class="admin-card">
-    <div class="admin-table-wrapper">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th style="width: 50px;">Preview</th>
-                    <th>Template & Variant</th>
-                    <th>Category</th>
-                    <th>Tag & Badge</th>
-                    <th>Version</th>
-                    <th style="text-align: center;">Order</th>
-                    <th>Status</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.Templates.Any())
+    <!-- Filters & Search Toolbar -->
+    <div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="/centralwks/templates" class="btn-admin @(string.IsNullOrEmpty(Model.Category) ? "btn-admin-primary" : "btn-admin-secondary") btn-admin-sm">
+                    All Categories (@Model.TotalTemplatesCount)
+                </a>
+                @foreach (var cat in Model.Categories)
                 {
-                    @foreach (var t in Model.Templates)
-                    {
-                        <tr>
-                            <td>
-                                <div style="width: 44px; height: 44px; border-radius: 8px; background: @t.ThumbnailGradient; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);">
-                                    <span>◈</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div style="font-weight: 600; color: #fff; font-size: 14px;">@t.Name</div>
-                                <div style="font-family: monospace; font-size: 12px; color: #38bdf8; margin-top: 2px;">@t.VariantCode</div>
-                                @if (!string.IsNullOrWhiteSpace(t.Description))
-                                {
-                                    <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px; max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                        @t.Description
-                                    </div>
-                                }
-                            </td>
-                            <td>
-                                <span class="badge badge-secondary" style="font-size: 11px; text-transform: uppercase;">
-                                    @(t.Category?.Name ?? t.CategoryKey)
-                                </span>
-                            </td>
-                            <td>
-                                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                                    <span style="font-size: 11px; background: rgba(255, 255, 255, 0.08); padding: 2px 8px; border-radius: 4px; color: #e2e8f0;">
-                                        #@t.Tag
-                                    </span>
-                                    @if (!string.IsNullOrWhiteSpace(t.Badge))
-                                    {
-                                        <span class="badge badge-warning" style="font-size: 10px; padding: 2px 6px;">
-                                            @t.Badge
-                                        </span>
-                                    }
-                                </div>
-                            </td>
-                            <td>
-                                <span style="font-family: monospace; font-size: 12px; color: var(--admin-text-muted);">
-                                    v@t.Version
-                                </span>
-                            </td>
-                            <td style="text-align: center; font-family: monospace; color: var(--admin-text-muted);">
-                                @t.SortOrder
-                            </td>
-                            <td>
-                                @if (t.IsActive)
-                                {
-                                    <span class="badge badge-success">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-secondary">Hidden</span>
-                                }
-                            </td>
-                            <td style="text-align: right;">
-                                <div style="display: inline-flex; gap: 6px;">
-                                    <a href="/centralwks/templates/details/@t.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="View Details & Code">
-                                        👁️
-                                    </a>
-                                    <a href="/centralwks/templates/edit/@t.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Edit Template">
-                                        ✏️
-                                    </a>
-                                    <form method="post" asp-page-handler="ToggleActive" asp-route-id="@t.Id" style="display: inline;">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="@(t.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")">
-                                            @(t.IsActive ? "⏸️" : "▶️")
-                                        </button>
-                                    </form>
-                                    <form method="post" asp-page-handler="Delete" asp-route-id="@t.Id" style="display: inline;" onsubmit="return confirm('Permanently delete template @t.Name?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-danger" style="padding: 4px 8px; font-size: 12px;" title="Delete Template">
-                                            🗑️
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    }
+                    <a href="/centralwks/templates?category=@cat.CategoryKey" class="btn-admin @(string.Equals(Model.Category, cat.CategoryKey, StringComparison.OrdinalIgnoreCase) ? "btn-admin-primary" : "btn-admin-secondary") btn-admin-sm">
+                        @cat.Name
+                    </a>
                 }
-                else
-                {
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                            <div style="font-size: 32px; margin-bottom: 8px;">🎨</div>
-                            <div style="font-size: 16px; font-weight: 500; color: #fff;">No Templates Found</div>
-                            <div style="font-size: 13px; margin-top: 4px;">No marketplace templates match your active filters.</div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+            </div>
+
+            <form method="get" class="table-search-box" style="min-width: 280px;">
+                <input type="hidden" name="category" value="@Model.Category" />
+                <span class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search templates, variants, tags..." />
+            </form>
+        </div>
     </div>
 
-    @* ── Pagination ── *@
-    @if (Model.TotalPages > 1)
+    <!-- Templates Grid -->
+    @if (Model.Templates.Count == 0)
     {
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
-            <div style="font-size: 13px; color: var(--admin-text-muted);">
-                Showing page @Model.PageNumber of @Model.TotalPages (@Model.TotalCount total templates)
-            </div>
-            <div style="display: flex; gap: 8px;">
-                @if (Model.PageNumber > 1)
-                {
-                    <a href="/centralwks/templates?PageNumber=@(Model.PageNumber - 1)&Search=@Model.Search&CategoryKey=@Model.CategoryKey&Status=@Model.Status" 
-                       class="btn-admin btn-admin-secondary" style="padding: 6px 12px; font-size: 12px;">&larr; Previous</a>
-                }
-                @if (Model.PageNumber < Model.TotalPages)
-                {
-                    <a href="/centralwks/templates?PageNumber=@(Model.PageNumber + 1)&Search=@Model.Search&CategoryKey=@Model.CategoryKey&Status=@Model.Status" 
-                       class="btn-admin btn-admin-secondary" style="padding: 6px 12px; font-size: 12px;">Next &rarr;</a>
-                }
-            </div>
+        <div class="admin-card" style="padding: 60px 24px; text-align: center;">
+            <span class="material-symbols-outlined" style="font-size: 56px; color: var(--admin-text-dim); margin-bottom: 16px; display: block;">grid_view</span>
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text); margin-bottom: 6px;">No templates found</h3>
+            <p style="font-size: 13.5px; color: var(--admin-text-muted); margin-bottom: 20px;">No sections match your search filters or the catalog is empty.</p>
+            <a href="/centralwks/templates/import" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined">magic_button</span>
+                Ingest New Template Suite
+            </a>
         </div>
     }
-</div>
+    else
+    {
+        <div class="templates-grid">
+            @foreach (var template in Model.Templates)
+            {
+                <div class="template-card">
+                    <div class="template-card-header">
+                        <div>
+                            <span class="badge-pill badge-pill-primary">@template.CategoryKey</span>
+                            @if (!string.IsNullOrEmpty(template.Badge))
+                            {
+                                <span class="badge-pill badge-pill-success" style="margin-left: 4px;">@template.Badge</span>
+                            }
+                        </div>
+                        <span style="font-family: monospace; font-size: 11px; color: var(--admin-text-muted);">@template.VariantCode</span>
+                    </div>
+
+                    <div class="template-card-body">
+                        <div style="font-weight: 700; font-size: 15px; color: var(--admin-text); margin-bottom: 4px;">@template.Name</div>
+                        <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-bottom: 16px; min-height: 36px; line-height: 1.4;">
+                            @(string.IsNullOrEmpty(template.Description) ? "Modular website marketplace section component." : template.Description)
+                        </div>
+
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <span class="badge-pill badge-pill-secondary"><span class="material-symbols-outlined" style="font-size: 13px;">html</span> HTML</span>
+                            <span class="badge-pill badge-pill-secondary"><span class="material-symbols-outlined" style="font-size: 13px;">css</span> Scoped CSS</span>
+                            @if (!string.IsNullOrEmpty(template.JsScript))
+                            {
+                                <span class="badge-pill badge-pill-success"><span class="material-symbols-outlined" style="font-size: 13px;">javascript</span> JS Active</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="template-card-footer">
+                        <div style="display: flex; gap: 6px;">
+                            <a href="/centralwks/templates/@template.Id" class="btn-admin btn-admin-secondary btn-admin-sm">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span> Inspect
+                            </a>
+                            <a href="/centralwks/templates/@template.Id/edit" class="btn-admin btn-admin-secondary btn-admin-sm">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">edit</span> Edit
+                            </a>
+                        </div>
+                        <button type="button" class="btn-admin-icon" style="color: var(--admin-danger);" title="Delete Template" onclick="deleteTemplate('@template.Id', '@template.Name')">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+@section Scripts {
+    <script>
+        async function deleteTemplate(id, name) {
+            if (!confirm('Are you sure you want to delete "' + name + '"?')) return;
+
+            var formData = new FormData();
+            formData.append('id', id);
+
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) formData.append('__RequestVerificationToken', token.value);
+
+            try {
+                var resp = await fetch('?handler=Delete', {
+                    method: 'POST',
+                    body: formData
+                });
+                var result = await resp.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to delete template.');
+                }
+            } catch (err) {
+                alert('Error connecting to server.');
+            }
+        }
+    </script>
+}

@@ -433,6 +433,25 @@ namespace Ozikol_BCC.Domain.Enum
             [Description("Footer")]
             Footer = 4,
         }
+
+        /// <summary>
+        /// Defines explicit horizontal zone or tier positioning of a page or category in website navigation menus.
+        /// Grouped first by MenuPosition, then sorted by SortOrder within that group.
+        /// </summary>
+        public enum MenuPosition
+        {
+            [Description("First / Left Zone")]
+            First = 1,
+
+            [Description("Middle / Center Zone")]
+            Middle = 2,
+
+            [Description("Last / Right Zone")]
+            Last = 3,
+
+            [Description("Top Utility Bar")]
+            Top = 4
+        }
         public enum AttendanceStatus
         {
             [Description("None")]

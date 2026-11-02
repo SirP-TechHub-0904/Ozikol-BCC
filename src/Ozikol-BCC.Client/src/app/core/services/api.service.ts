@@ -54,6 +54,12 @@ export class ApiService {
     console.groupEnd();
   }
 
+  private buildUrl(path: string): string {
+    const base = (this.baseUrl || '').replace(/\/+$/, '');
+    const cleanPath = (path || '').replace(/^\/+/, '');
+    return `${base}/${cleanPath}`;
+  }
+
   get<T>(path: string, params?: any): Observable<T> {
     let httpParams = new HttpParams();
     if (params) {
@@ -63,7 +69,7 @@ export class ApiService {
         }
       });
     }
-    const fullUrl = `${this.baseUrl}/${path}`;
+    const fullUrl = this.buildUrl(path);
     this.logRequest('GET', fullUrl, params);
     return this.http.get<T>(fullUrl, {
       headers: this.getHeaders(),
@@ -72,7 +78,7 @@ export class ApiService {
   }
 
   post<T>(path: string, body: any): Observable<T> {
-    const fullUrl = `${this.baseUrl}/${path}`;
+    const fullUrl = this.buildUrl(path);
     this.logRequest('POST', fullUrl, body);
     return this.http.post<T>(fullUrl, body, {
       headers: this.getHeaders(body)
@@ -80,18 +86,27 @@ export class ApiService {
   }
 
   put<T>(path: string, body: any): Observable<T> {
-    const fullUrl = `${this.baseUrl}/${path}`;
+    const fullUrl = this.buildUrl(path);
     this.logRequest('PUT', fullUrl, body);
     return this.http.put<T>(fullUrl, body, {
       headers: this.getHeaders(body)
     });
   }
 
-  delete<T>(path: string): Observable<T> {
-    const fullUrl = `${this.baseUrl}/${path}`;
-    this.logRequest('DELETE', fullUrl);
+  delete<T>(path: string, params?: any): Observable<T> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined) {
+          httpParams = httpParams.set(key, params[key]);
+        }
+      });
+    }
+    const fullUrl = this.buildUrl(path);
+    this.logRequest('DELETE', fullUrl, params);
     return this.http.delete<T>(fullUrl, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
+      params: httpParams
     });
   }
 }

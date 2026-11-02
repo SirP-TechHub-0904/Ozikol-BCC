@@ -5,6 +5,9 @@ import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { SignalRService } from '../../core/services/signalr.service';
+import { AiAssistantComponent } from '../../shared/components/ai-assistant/ai-assistant.component';
+import { AiAssistantContextService } from '../../core/services/ai-assistant-context.service';
+import { FirstRunSetupModalComponent } from '../../shared/components/first-run-setup-modal/first-run-setup-modal.component';
 
 interface TaskTab {
   title: string;
@@ -22,7 +25,7 @@ interface PinnedItem {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isAdmin ? 'console' : 'workspace'">
@@ -138,26 +141,7 @@ interface PinnedItem {
                   </button>
                 </div>
               </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/sliders" [class.active]="isContentSlidersActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">view_carousel</span>Hero Sliders</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/sliders')" (click)="togglePin('Hero Sliders', '/content/console/sliders', 'view_carousel')" [title]="isPinned('/content/console/sliders') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/content/console/sliders') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/faqs" [class.active]="isParentActive('/content/console/faqs')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">quiz</span>FAQs & Categories</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/faqs')" (click)="togglePin('FAQs', '/content/console/faqs', 'quiz')" [title]="isPinned('/content/console/faqs') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/content/console/faqs') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
+
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/blogs" [class.active]="isParentActive('/content/console/blogs')" class="sub-nav-item">
@@ -236,7 +220,7 @@ interface PinnedItem {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">widgets</span>
                 <span>UI Marketplace</span>
-                <span class="badge-pill badge-hot">36+</span>
+                <span class="badge-pill badge-soon">Soon</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/marketplace')" (click)="togglePin('UI Marketplace', '/content/console/marketplace', 'widgets'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/content/console/marketplace') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/content/console/marketplace') ? 'keep_off' : 'push_pin' }}</span>
@@ -382,6 +366,14 @@ interface PinnedItem {
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled" style="opacity: 0.6; cursor: not-allowed;">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">badge</span>KYC Verification</span>
+                    <span class="badge-pill badge-soon">Soon</span>
+                  </span>
                 </div>
               </li>
             </ul>
@@ -532,6 +524,28 @@ interface PinnedItem {
             </a>
           </div>
 
+          <!-- Calendar & Follow-Up Routine -->
+          <div class="nav-item">
+            <span class="nav-link disabled">
+              <span class="nav-link-content">
+                <span class="material-symbols-outlined">event_repeat</span>
+                <span>Calendar & Follow-Ups</span>
+              </span>
+              <span class="badge-pill badge-soon">Soon</span>
+            </span>
+          </div>
+
+          <!-- GoCall AI Emergency & Voice Dispatch -->
+          <div class="nav-item">
+            <span class="nav-link disabled">
+              <span class="nav-link-content">
+                <span class="material-symbols-outlined">phone_in_talk</span>
+                <span>GoCall AI Dispatch</span>
+              </span>
+              <span class="badge-pill badge-soon">Soon</span>
+            </span>
+          </div>
+
           <div class="menu-title">Configuration</div>
           <div class="nav-item">
             <a routerLink="/settings/console" [class.active]="isParentActive('/settings/console') || isParentActive('/admin/settings')" class="nav-link">
@@ -556,6 +570,10 @@ interface PinnedItem {
             <span class="badge-pill badge-soon">Soon</span>
           </span>
           <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>Reference Form System</span></span>
+            <span class="badge-pill badge-soon">Soon</span>
+          </span>
+          <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>Knowledge Base</span></span>
             <span class="badge-pill badge-soon">Soon</span>
           </span>
@@ -563,6 +581,10 @@ interface PinnedItem {
           <div class="menu-title">Finance & Revenue</div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Financials & Dues</span></span>
+            <span class="badge-pill badge-soon">Soon</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance</span><span>Embedded Banking & Rails</span></span>
             <span class="badge-pill badge-soon">Soon</span>
           </span>
           <div class="menu-divider" style="margin: 15px 0 10px; border-top: 1px solid rgba(255,255,255,0.08);"></div>
@@ -929,9 +951,14 @@ interface PinnedItem {
         </div>
       </header>
 
-      <!-- Page Content Shell -->
-      <div class="bcp-page-shell">
-        <router-outlet></router-outlet>
+      <!-- Page Content & AI Side-by-Side Split Workspace Container (70% Body / 30% AI) -->
+      <div class="bcp-workspace-container" [class.ai-docked-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'" [class.ai-docked-right-active]="isAiOpen && aiLayoutMode === 'docked-right'">
+        <div class="bcp-page-shell" [class.ai-split-70]="isAiOpen && aiLayoutMode === 'docked-right'" [class.ai-split-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'">
+          <router-outlet></router-outlet>
+        </div>
+
+        <!-- Global AI Section Studio Assistant & Co-pilot (30% Width Docked Non-overlapping) -->
+        <app-ai-assistant></app-ai-assistant>
       </div>
     </main>
 
@@ -955,6 +982,14 @@ interface PinnedItem {
           </ul>
         </div>
       </div>
+    </div>
+
+    <!-- First-Run Workspace Setup & Default Website Seeder Modal -->
+    <app-first-run-setup-modal
+      [isOpen]="showFirstRunModal"
+      [brandName]="brandName"
+      (completed)="onFirstRunCompleted($event)">
+    </app-first-run-setup-modal>
   `,
   styles: [`
     :host {
@@ -972,12 +1007,48 @@ interface PinnedItem {
       overflow: hidden;
       background-color: var(--md-sys-color-background);
     }
+    .bcp-workspace-container {
+      display: flex;
+      flex-direction: row;
+      flex: 1 1 0;
+      min-height: 0;
+      height: calc(100vh - var(--topbar-height, 70px));
+      max-height: calc(100vh - var(--topbar-height, 70px));
+      overflow: hidden;
+      position: relative;
+      width: 100%;
+      padding: 8px 14px 18px 14px;
+      gap: 14px;
+      box-sizing: border-box;
+      background-color: var(--md-sys-color-background);
+    }
+    .bcp-workspace-container.ai-docked-bottom {
+      flex-direction: column;
+    }
     .bcp-page-shell {
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
+      height: 100%;
+      max-height: 100%;
       overflow-y: auto;
       padding: 24px;
       min-width: 0;
+      box-sizing: border-box;
       background-color: var(--md-sys-color-background);
+      border-radius: 12px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+      transition: flex 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bcp-page-shell.ai-split-70 {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: none;
+    }
+    .bcp-page-shell.ai-split-bottom {
+      flex: 1 1 0;
+      min-height: 0;
+      max-height: none;
     }
     .pinned-taskbar {
       display: flex;
@@ -1416,6 +1487,7 @@ export class AdminLayoutComponent implements OnInit {
     return false;
   }
   showHelpModal = false;
+  showFirstRunModal = false;
 
   currentRoute = '/admin/dashboard';
   websiteMode: string = localStorage.getItem('tenant_website_mode') || 'standard';
@@ -1436,14 +1508,21 @@ export class AdminLayoutComponent implements OnInit {
   openMenus: { [key: string]: boolean } = {};
   activeDropdown: string | null = null;
 
+  public isAiOpen: boolean = false;
+  public aiLayoutMode: 'floating' | 'docked-right' | 'docked-bottom' | 'minimized' = 'docked-right';
+
   constructor(
     private api: ApiService, 
     private router: Router, 
     private toast: ToastService,
-    private signalR: SignalRService
+    private signalR: SignalRService,
+    private aiAssistantService: AiAssistantContextService
   ) {}
 
   ngOnInit(): void {
+    // Subscribe to global AI assistant layout and open state
+    this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);
+    this.aiAssistantService.layoutMode$.subscribe(mode => this.aiLayoutMode = mode);
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
 
@@ -1482,6 +1561,7 @@ export class AdminLayoutComponent implements OnInit {
     this.loadTenantInfo();
     this.loadNotificationFeed();
     this.loadSidebarForms();
+    this.checkFirstRunSetupStatus();
 
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
@@ -1616,13 +1696,6 @@ export class AdminLayoutComponent implements OnInit {
     return this.currentRoute.startsWith('/admin/content/sections');
   }
 
-  isContentSlidersActive(): boolean {
-    return this.currentRoute.startsWith('/admin/content/sliders');
-  }
-
-  isContentFaqsActive(): boolean {
-    return this.currentRoute.startsWith('/admin/content/faqs');
-  }
 
   computeAbbreviation(name: string): string {
     if (!name || !name.trim()) return 'ORG';
@@ -1903,5 +1976,51 @@ export class AdminLayoutComponent implements OnInit {
   onLogout(): void {
     localStorage.removeItem('access_token');
     this.router.navigate(['/auth/login']);
+  }
+
+  /**
+   * Checks if the workspace has been initialized with default or blank settings.
+   * If not, presents the first-run onboarding setup wizard modal to administrators.
+   */
+  checkFirstRunSetupStatus(): void {
+    // 1. Instant local/session guard: Avoid unnecessary network checks once verified in current browser session
+    if (sessionStorage.getItem('bcp_setup_modal_dismissed') === 'true' ||
+        localStorage.getItem('bcp_workspace_initialized') === 'true') {
+      return;
+    }
+
+    // 2. Only administrators should run or configure workspace initial seeding
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.get<any>('ContentApi/workspace/setup-status').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && res.data) {
+          if (res.data.isInitialized) {
+            // Workspace already has content or has completed initialization previously
+            localStorage.setItem('bcp_workspace_initialized', 'true');
+            this.showFirstRunModal = false;
+          } else {
+            // Pristine new workspace: present modal
+            this.showFirstRunModal = true;
+          }
+        }
+      },
+      error: (err) => {
+        console.warn('[AdminLayout] Failed to query workspace initialization status:', err);
+      }
+    });
+  }
+
+  /**
+   * Handles completion of the first-run workspace setup wizard.
+   * @param mode Selected setup mode ('default' or 'blank')
+   */
+  onFirstRunCompleted(mode: 'default' | 'blank'): void {
+    this.showFirstRunModal = false;
+    if (mode === 'default') {
+      this.loadSidebarForms();
+    }
   }
 }

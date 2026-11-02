@@ -48,7 +48,9 @@ import { SettingsComponent } from './pages/admin/settings/settings.component';
 import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.component';
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
 import { MyTemplatesComponent } from './pages/admin/content/templates/my-templates.component';
-import { CreateCustomTemplateComponent } from './pages/admin/content/templates/create-custom-template.component';
+import { TemplateVisualsComponent } from './pages/admin/content/templates/template-visuals.component';
+import { ImportWebsiteTemplateComponent } from './pages/admin/content/templates/import-website-template.component';
+import { TemplateMaintenanceComponent } from './pages/admin/content/templates/template-maintenance.component';
 import { FormsListComponent } from './pages/admin/content/forms/forms-list.component';
 import { FormBuilderComponent } from './pages/admin/content/forms/form-builder.component';
 import { FormSubmissionsComponent } from './pages/admin/content/forms/form-submissions.component';
@@ -64,11 +66,6 @@ import { PageSectionEditComponent } from './pages/admin/content/page-section-edi
 import { PageSectionDeleteComponent } from './pages/admin/content/page-section-delete.component';
 import { PageSectionListEditComponent } from './pages/admin/content/page-section-list-edit.component';
 import { PageSectionListDeleteComponent } from './pages/admin/content/page-section-list-delete.component';
-import { SlidersComponent } from './pages/admin/content/sliders.component';
-import { SliderEditComponent } from './pages/admin/content/slider-edit.component';
-import { FaqsComponent } from './pages/admin/content/faqs.component';
-import { FaqEditComponent } from './pages/admin/content/faq-edit.component';
-import { FaqDeleteComponent } from './pages/admin/content/faq-delete.component';
 import { BlogsManagementComponent } from './pages/admin/cms/blogs-management.component';
 import { BlogCategoriesManagementComponent } from './pages/admin/cms/blog-categories-management.component';
 import { BlogCategoryDeleteComponent } from './pages/admin/cms/blog-category-delete.component';
@@ -78,7 +75,6 @@ import { UserDeleteComponent } from './pages/admin/users/user-delete.component';
 import { UserCategoryDeleteComponent } from './pages/admin/users/user-category-delete.component';
 import { KpiMetricDeleteComponent } from './pages/admin/users/kpi-metric-delete.component';
 import { WebPageDeleteComponent } from './pages/admin/content/web-page-delete.component';
-import { SliderDeleteComponent } from './pages/admin/content/slider-delete.component';
 
 // Commerce Studio & Storefront Components
 import { ProductsListComponent } from './pages/admin/products/products-list.component';
@@ -106,7 +102,7 @@ import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component
 
 export const routes: Routes = [
   // Public Landing
-  { path: '', component: LandingComponent },
+  { path: '', component: LandingComponent, pathMatch: 'full' },
 
   // Unified Authentication Shell & Flows
   {
@@ -140,7 +136,6 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       // 1. Unified Dashboards
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'CmsManager'] } },
       { path: 'dashboard/workspace', component: WorkspaceDashboardComponent },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
@@ -212,7 +207,13 @@ export const routes: Routes = [
       { path: 'content/console/forms/edit/:id', component: FormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/forms/:formKey/submissions', component: FormSubmissionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
-      { path: 'content/console/templates/create', component: CreateCustomTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/import', component: ImportWebsiteTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/create', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
+      { path: 'content/console/templates/visuals', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/visuals/:id', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'templates/visuals', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
+      { path: 'templates/visuals/:id', redirectTo: 'content/console/templates/visuals/:id' },
+      { path: 'content/console/templates/maintenance', component: TemplateMaintenanceComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates', component: MyTemplatesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/templates', redirectTo: 'content/console/templates', pathMatch: 'full' },
       { path: 'content/console/marketplace', component: MarketplaceComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
@@ -231,13 +232,6 @@ export const routes: Routes = [
       { path: 'content/console/sections/delete/:id', component: PageSectionDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections/lists/edit/:id', component: PageSectionListEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections/lists/delete/:id', component: PageSectionListDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders', component: SlidersComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders/edit/:id', component: SliderEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders/delete/:id', component: SliderDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs', component: FaqsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs/edit/:id', component: FaqEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs/delete/:id', component: FaqDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faq-categories/delete/:id', component: FaqDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs', component: BlogsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/create', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/edit/:id', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },

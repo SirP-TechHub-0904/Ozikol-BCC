@@ -27,7 +27,7 @@
                     </svg>
                 </a>
                 <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
-                    <span>@SharedLocalizer["About_Hero_BtnSecondary"]</span>
+                    <span>@SharedLocalizer["About_Hero_BtnSecondary", CurrencyService.GetActiveFeaturesCount()]</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
@@ -41,11 +41,11 @@
         <div class="oz-corp-metrics-bar">
             <div class="oz-corp-metrics-grid">
                 <div>
-                    <div class="oz-corp-metric-num oz-corp-metric-num--primary">37</div>
+                    <div class="oz-corp-metric-num oz-corp-metric-num--primary">@CurrencyService.GetActiveFeaturesCount()</div>
                     <div class="oz-corp-metric-label">@SharedLocalizer["About_Metric_Capabilities"]</div>
                 </div>
                 <div>
-                    <div class="oz-corp-metric-num">9</div>
+                    <div class="oz-corp-metric-num">@CurrencyService.GetActiveSuitesCount()</div>
                     <div class="oz-corp-metric-label">@SharedLocalizer["About_Metric_Suites"]</div>
                 </div>
                 <div>
@@ -80,7 +80,7 @@
                     <ul class="oz-corp-list">
                         <li class="oz-corp-list-item">
                             <span class="oz-corp-check">&#10003;</span>
-                            <span><strong>@SharedLocalizer["About_Adv_1_Title"]:</strong> @SharedLocalizer["About_Adv_1_Desc"]</span>
+                            <span><strong>@SharedLocalizer["About_Adv_1_Title"]:</strong> @SharedLocalizer["About_Adv_1_Desc", CurrencyService.GetActiveFeaturesCount()]</span>
                         </li>
                         <li class="oz-corp-list-item">
                             <span class="oz-corp-check">&#10003;</span>
@@ -210,7 +210,7 @@
                     </svg>
                 </a>
                 <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
-                    <span>@SharedLocalizer["About_Cta_BtnSecondary"]</span>
+                    <span>@SharedLocalizer["About_Cta_BtnSecondary", CurrencyService.GetActiveFeaturesCount()]</span>
                 </a>
             </div>
         </section>

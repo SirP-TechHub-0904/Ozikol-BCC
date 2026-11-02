@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Domain.Models.Ai;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 
 
@@ -14,10 +15,10 @@ namespace Ozikol_BCC.Persistence.EF.SQL
 public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 {
     private readonly ITenantProvider _tenantProvider;
-    // Site and platform configuration tables shared by the website and BCP runtime.
-    public DbSet<ConfigSetting> ConfigSettings { get; set; } = null!;
-    public DbSet<ManagementSetting> ManagementSettings { get; set; } = null!;
-    public DbSet<BcpSetting> BcpSettings { get; set; } = null!;
+    // Tenant-level website UI/brand settings and operational configuration settings.
+    public DbSet<MisWebsiteSetting> MisWebsiteSettings { get; set; } = null!;
+    public DbSet<MisConfigurationSetting> MisConfigurationSettings { get; set; } = null!;
+    public DbSet<MisWebsiteContactChannel> MisWebsiteContactChannels { get; set; } = null!;
 
     // Console dashboard widgets and guided-tour/wizard persistence.
     public DbSet<BcpWidget> BcpWidgets { get; set; } = null!;
@@ -55,10 +56,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<TemplateCategory> TemplateCategories { get; set; } = null!;
     public DbSet<TemplateType> TemplateTypes { get; set; } = null!;
     public DbSet<MailingSystem> MailingSystems { get; set; } = null!;
-    public DbSet<Slider> Sliders { get; set; }
-    public DbSet<WebPage> WebPages { get; set; }
-    public DbSet<FAQ> FAQs { get; set; }
-    public DbSet<FAQCategory> FAQCategories { get; set; }
+    public DbSet<WebPage> WebPages { get; set; } = null!;
     public DbSet<Blog> Blogs { get; set; }
     public DbSet<BlogCategory> BlogCategories { get; set; }
     public DbSet<PageSection> PageSections { get; set; }
@@ -75,6 +73,9 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<PageForm> PageForms { get; set; } = null!;
     public DbSet<PageFormField> PageFormFields { get; set; } = null!;
     public DbSet<PageFormSubmission> PageFormSubmissions { get; set; } = null!;
+
+    // --- Ozi AI: Studio Co-pilot Chat History & Snapshot Restorations ---
+    public DbSet<BcpAiChatHistory> AiChatHistories { get; set; } = null!;
 
     // Legacy website/content tables retained by the same tenant database.
     public DbSet<PostModal> PostModal { get; set; }
@@ -271,7 +272,12 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             // The current platform model is separate databases per tenant, not tenant selection inside auth.
             optionsBuilder.UseSqlServer(
                 _tenantProvider.ConnectionString,
-                o => o.MigrationsHistoryTable(HistoryRepository.DefaultTableName, /*_tenantProvider.DbSchemaName*/null));
+                o =>
+                {
+                    o.MigrationsHistoryTable(HistoryRepository.DefaultTableName, /*_tenantProvider.DbSchemaName*/null);
+                    o.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+                    o.CommandTimeout(60);
+                });
         }
     }
 
@@ -483,6 +489,12 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             .WithMany()
             .HasForeignKey(s => s.PageFormId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // --- Website Contact Channels Indexing for Fast Querying by Type and Status ---
+        modelBuilder.Entity<MisWebsiteContactChannel>(entity =>
+        {
+            entity.HasIndex(c => new { c.ChannelType, c.IsPublished, c.SortOrder });
+        });
 
         // ConfigureCustomer(modelBuilder);
     }

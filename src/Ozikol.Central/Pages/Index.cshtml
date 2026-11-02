@@ -115,7 +115,7 @@
         <div class="container">
             <div class="oz-section-header">
                 <span class="oz-badge">@SharedLocalizer["Home_Suites_Badge"]</span>
-                <h2 class="oz-section-title">@SharedLocalizer["Home_Suites_Title"]</h2>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Suites_Title", CurrencyService.GetActiveFeaturesCount(), CurrencyService.GetActiveSuitesCount()]</h2>
                 <p class="oz-section-desc">@SharedLocalizer["Home_Suites_Desc"]</p>
             </div>
 
@@ -277,7 +277,7 @@
                                     <span class="oz-tab-check-icon">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                     </span>
-                                    <span>Single sign-on across all 37 organizational capabilities</span>
+                                    <span>Single sign-on across all @CurrencyService.GetActiveFeaturesCount() organizational capabilities</span>
                                 </li>
                                 <li class="oz-tab-bullet-item">
                                     <span class="oz-tab-check-icon">

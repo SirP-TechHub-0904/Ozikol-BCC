@@ -43,6 +43,22 @@ namespace Ozikol_BCC.Application.Services.Cloudflare
         Task<bool> DeleteAssetAsync(string key);
 
         /// <summary>
+        /// Retrieves the raw text content of an asset from Cloudflare R2 given its object key or CDN URL.
+        /// </summary>
+        /// <param name="keyOrUrl">The object key or public CDN URL of the asset.</param>
+        /// <returns>The raw text content, or <c>null</c> if not found or unreadable.</returns>
+        Task<string?> GetAssetTextAsync(string keyOrUrl);
+
+        /// <summary>
+        /// Saves updated raw text content to Cloudflare R2, overwriting or creating the object key with appropriate cache headers.
+        /// </summary>
+        /// <param name="keyOrUrl">The object key or public CDN URL of the asset to overwrite/update.</param>
+        /// <param name="textContent">The updated raw text content (CSS, JS, SVG, etc.).</param>
+        /// <param name="contentType">The MIME content type (e.g., text/css, application/javascript).</param>
+        /// <returns>A <see cref="CloudflareR2UploadResult"/> containing the updated CDN URL and metadata.</returns>
+        Task<CloudflareR2UploadResult> SaveAssetTextAsync(string keyOrUrl, string textContent, string contentType);
+
+        /// <summary>
         /// Computes the public Cloudflare CDN URL for a given object key based on configured CDN domain.
         /// </summary>
         /// <param name="key">The unique object key inside the bucket.</param>

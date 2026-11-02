@@ -12,11 +12,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 {
     /// <summary>
     /// PageModel displaying and managing the master modular capability catalog across the platform.
-    /// Supports category filtering, capability search, subscription counts, and active status toggling.
+    /// Supports canonical suite ordering, search, category & status filtering, column sorting, and status toggling.
     /// </summary>
     public class IndexModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+
+        /// <summary>
+        /// Canonical ordering of the 10 platform suites matching the public showcase (/en/features).
+        /// </summary>
+        public static readonly string[] CanonicalSuites = new[]
+        {
+            "People, Community & Collaboration",
+            "Workforce, Rota & Scheduling",
+            "Reports, Forms & Analytics",
+            "Events & Training Management",
+            "Finance & Commercial Revenue",
+            "Operations & Workflows",
+            "Communication, AI & Support",
+            "Compliance, Learning & Certification",
+            "Demographics & Civic Census",
+            "Life Events & Publications"
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
@@ -24,7 +41,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// <param name="dbContext">Master catalog database context.</param>
         public IndexModel(MasterCatalogDbContext dbContext)
         {
-            _dbContext = dbContext;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         }
 
         /// <summary>
@@ -34,10 +51,33 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public string? Search { get; set; }
 
         /// <summary>
-        /// Category filter (e.g. Operations, Governance, HR, Communications).
+        /// Category/Suite filter.
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public string? Category { get; set; }
+
+        /// <summary>
+        /// Status filter ("all", "active", "inactive", "maintenance").
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? Status { get; set; }
+
+        /// <summary>
+        /// Column to sort by ("suite", "name", "billing", "tier", "status").
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? SortBy { get; set; }
+
+        /// <summary>
+        /// Sort direction ("asc" or "desc").
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? SortDir { get; set; }
+
+        /// <summary>
+        /// Total distinct suites count.
+        /// </summary>
+        public int SuitesCount { get; set; }
 
         /// <summary>
         /// Total features count.
@@ -45,73 +85,141 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public int TotalCount { get; set; }
 
         /// <summary>
-        /// Total compulsory core modules.
-        /// </summary>
-        public int CompulsoryCount { get; set; }
-
-        /// <summary>
-        /// Total active capabilities.
+        /// Total active capabilities count.
         /// </summary>
         public int ActiveCount { get; set; }
 
         /// <summary>
-        /// Available category list for filter dropdown.
+        /// Total inactive capabilities count.
+        /// </summary>
+        public int InactiveCount { get; set; }
+
+        /// <summary>
+        /// Total capabilities currently under maintenance / beta count.
+        /// </summary>
+        public int MaintenanceCount { get; set; }
+
+        /// <summary>
+        /// Available category list arranged in canonical order.
         /// </summary>
         public List<string> Categories { get; set; } = new();
 
         /// <summary>
-        /// Item transfer model containing feature details and active subscriber count.
+        /// Filtered and sorted capability catalog list.
         /// </summary>
-        public List<FeatureCatalogItemDto> Features { get; set; } = new();
+        public List<MasterFeatureCatalog> Features { get; set; } = new();
 
         /// <summary>
-        /// Handles HTTP GET requests to load catalog features.
+        /// Handles HTTP GET requests to load catalog statistics, filters, and features.
         /// </summary>
         public async Task OnGetAsync()
         {
-            Categories = await _dbContext.MasterFeatureCatalogs
+            // Load all features for accurate stat cards calculations
+            var allFeatures = await _dbContext.MasterFeatureCatalogs.AsNoTracking().ToListAsync();
+
+            TotalCount = allFeatures.Count;
+            ActiveCount = allFeatures.Count(f => f.IsActive && !f.IsInBeta);
+            InactiveCount = allFeatures.Count(f => !f.IsActive && !f.IsInBeta);
+            MaintenanceCount = allFeatures.Count(f => f.IsInBeta);
+
+            // Populate suites in canonical sequence
+            var distinctDbCategories = allFeatures
                 .Select(f => f.Category)
-                .Distinct()
-                .OrderBy(c => c)
-                .ToListAsync();
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-            TotalCount = await _dbContext.MasterFeatureCatalogs.CountAsync();
-            ActiveCount = await _dbContext.MasterFeatureCatalogs.CountAsync(f => f.IsActive);
-            CompulsoryCount = await _dbContext.MasterFeatureCatalogs.CountAsync(f => f.IsCompulsory);
+            Categories = CanonicalSuites
+                .Where(s => distinctDbCategories.Contains(s, StringComparer.OrdinalIgnoreCase))
+                .Concat(distinctDbCategories.Where(c => !CanonicalSuites.Contains(c, StringComparer.OrdinalIgnoreCase)).OrderBy(c => c))
+                .ToList();
 
-            var query = _dbContext.MasterFeatureCatalogs.AsQueryable();
+            SuitesCount = Categories.Count;
+
+            // Apply in-memory or query filtering
+            var filtered = allFeatures.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(Search))
             {
-                var term = Search.Trim().ToLower();
-                query = query.Where(f => f.Name.ToLower().Contains(term)
-                                      || f.FeatureCode.ToLower().Contains(term)
-                                      || (f.Description != null && f.Description.ToLower().Contains(term)));
+                var term = Search.Trim().ToLowerInvariant();
+                filtered = filtered.Where(f =>
+                    (f.Name != null && f.Name.ToLowerInvariant().Contains(term)) ||
+                    (f.FeatureCode != null && f.FeatureCode.ToLowerInvariant().Contains(term)) ||
+                    (f.Category != null && f.Category.ToLowerInvariant().Contains(term)) ||
+                    (f.Description != null && f.Description.ToLowerInvariant().Contains(term)));
             }
 
             if (!string.IsNullOrWhiteSpace(Category))
             {
-                query = query.Where(f => f.Category == Category);
+                filtered = filtered.Where(f => f.Category.Equals(Category, StringComparison.OrdinalIgnoreCase));
             }
 
-            var featureEntities = await query
-                .OrderBy(f => f.Category)
-                .ThenBy(f => f.SortOrder)
-                .ThenBy(f => f.Name)
-                .ToListAsync();
-
-            // Fetch subscriber counts in a single efficient query
-            var subscriptionCounts = await _dbContext.MasterTenantFeatureSubscriptions
-                .Where(s => s.IsActive)
-                .GroupBy(s => s.MasterFeatureCatalogId)
-                .Select(g => new { FeatureId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.FeatureId, x => x.Count);
-
-            Features = featureEntities.Select(f => new FeatureCatalogItemDto
+            if (!string.IsNullOrWhiteSpace(Status))
             {
-                Feature = f,
-                SubscriberCount = subscriptionCounts.TryGetValue(f.Id, out var count) ? count : 0
-            }).ToList();
+                var statusNorm = Status.Trim().ToLowerInvariant();
+                if (statusNorm == "active")
+                {
+                    filtered = filtered.Where(f => f.IsActive && !f.IsInBeta);
+                }
+                else if (statusNorm == "inactive")
+                {
+                    filtered = filtered.Where(f => !f.IsActive && !f.IsInBeta);
+                }
+                else if (statusNorm == "maintenance" || statusNorm == "beta")
+                {
+                    filtered = filtered.Where(f => f.IsInBeta);
+                }
+            }
+
+            // Apply sorting
+            var isDesc = string.Equals(SortDir, "desc", StringComparison.OrdinalIgnoreCase);
+
+            switch (SortBy?.ToLowerInvariant())
+            {
+                case "name":
+                    filtered = isDesc ? filtered.OrderByDescending(f => f.Name) : filtered.OrderBy(f => f.Name);
+                    break;
+
+                case "suite":
+                    filtered = isDesc
+                        ? filtered.OrderByDescending(f => GetSuiteOrder(f.Category)).ThenBy(f => f.SortOrder)
+                        : filtered.OrderBy(f => GetSuiteOrder(f.Category)).ThenBy(f => f.SortOrder);
+                    break;
+
+                case "billing":
+                    filtered = isDesc ? filtered.OrderByDescending(f => f.BillingType) : filtered.OrderBy(f => f.BillingType);
+                    break;
+
+                case "tier":
+                    filtered = isDesc ? filtered.OrderByDescending(f => f.IsCompulsory) : filtered.OrderBy(f => f.IsCompulsory);
+                    break;
+
+                case "status":
+                    filtered = isDesc
+                        ? filtered.OrderByDescending(f => f.IsInBeta ? 2 : (f.IsActive ? 1 : 0))
+                        : filtered.OrderBy(f => f.IsInBeta ? 2 : (f.IsActive ? 1 : 0));
+                    break;
+
+                default:
+                    // Default canonical suite sequence
+                    filtered = filtered
+                        .OrderBy(f => GetSuiteOrder(f.Category))
+                        .ThenBy(f => f.SortOrder)
+                        .ThenBy(f => f.Name);
+                    break;
+            }
+
+            Features = filtered.ToList();
+        }
+
+        /// <summary>
+        /// Resolves the canonical sequence index for a given suite name.
+        /// </summary>
+        private static int GetSuiteOrder(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return 999;
+            var idx = Array.FindIndex(CanonicalSuites, s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? idx : 500;
         }
 
         /// <summary>
@@ -142,18 +250,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"Feature '{feature.Name}' status toggled to {(feature.IsActive ? "Active" : "Inactive")}.";
+            TempData["Success"] = $"Feature status updated to {(feature.IsActive ? "Active" : "Inactive")}.";
 
-            return RedirectToPage();
-        }
-
-        /// <summary>
-        /// Data transfer item combining catalog entity with subscriber metrics.
-        /// </summary>
-        public class FeatureCatalogItemDto
-        {
-            public MasterFeatureCatalog Feature { get; set; } = null!;
-            public int SubscriberCount { get; set; }
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir });
         }
     }
 }

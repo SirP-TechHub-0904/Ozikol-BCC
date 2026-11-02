@@ -87,6 +87,19 @@ namespace Ozikol.MasterDomain.Models
         public bool EnableTicketAutoClose { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the default number of free trial days granted to new organization workspaces (e.g. 14, 15, 30, 40, 60, 90).
+        /// Defaults to 14 days.
+        /// </summary>
+        public int DefaultTrialDays { get; set; } = 14;
+
+        /// <summary>
+        /// Gets or sets the global default fallback 3-letter currency code (e.g. "USD", "NGN", "GBP")
+        /// when country detection yields no specific regional match.
+        /// </summary>
+        [MaxLength(10)]
+        public string DefaultCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
         /// Gets or sets the comma-separated list of support inquiry categories available on the public contact form and enterprise inquiries.
         /// Defaults to "Support, Sales, Billing, Partnership, Enterprise, General".
         /// </summary>
@@ -111,6 +124,24 @@ namespace Ozikol.MasterDomain.Models
                                         .ToList();
             }
         }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary Cloud Name used as the global default for media, assets, and templates.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryCloudName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Key.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Secret.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiSecret { get; set; }
 
         /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.

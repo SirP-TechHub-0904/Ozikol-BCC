@@ -5,6 +5,21 @@
     ViewData["BreadcrumbSection"] = "Content";
 }
 
+@functions {
+    public (string Bg, string Color, string Border) GetCategoryBadgeColors(string? key)
+    {
+        var normalized = (key ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "product-releases" or "releases" => ("rgba(14, 165, 233, 0.16)", "#38bdf8", "rgba(56, 189, 248, 0.4)"),
+            "engineering-security" or "security" or "engineering" => ("rgba(16, 185, 129, 0.16)", "#34d399", "rgba(52, 211, 153, 0.4)"),
+            "marketplace-ecosystem" or "marketplace" or "creators" => ("rgba(245, 158, 11, 0.16)", "#fbbf24", "rgba(251, 191, 36, 0.4)"),
+            "corporate-press" or "press" or "corporate" => ("rgba(168, 85, 247, 0.16)", "#c084fc", "rgba(192, 132, 252, 0.4)"),
+            _ => ("rgba(148, 163, 184, 0.16)", "#e2e8f0", "rgba(148, 163, 184, 0.35)")
+        };
+    }
+}
+
 <div class="admin-page-header">
     <div class="admin-title-group">
         <h1 class="admin-title">News, Announcements & Releases</h1>
@@ -12,10 +27,12 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/news/categories" class="btn-admin btn-admin-secondary">
-            <span>🏷</span> Categories (@Model.CategoriesCount)
+            <span class="material-symbols-outlined" style="font-size: 16px;">label</span>
+            Categories (@Model.CategoriesCount)
         </a>
         <a href="/centralwks/news/articles/create" class="btn-admin btn-admin-primary">
-            <span>➕</span> Write Article
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+            Write Article
         </a>
     </div>
 </div>
@@ -28,30 +45,47 @@
 }
 
 @* ── CMS Metrics ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">📰</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">newspaper</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Articles</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🌐</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">public</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Published Online</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.PublishedCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">⭐</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.2); color: #38bdf8;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Readers</span>
+            <span class="stat-value" style="font-size: 22px; color: #38bdf8;">@Model.TotalReadCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">star</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Featured Headlines</span>
             <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.FeaturedCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(147, 51, 234, 0.2); color: #c084fc;">🏷️</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(147, 51, 234, 0.2); color: #c084fc;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">label</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Editorial Categories</span>
             <span class="stat-value" style="font-size: 22px; color: #c084fc;">@Model.CategoriesCount</span>
@@ -62,12 +96,12 @@
 @* ── Filters ── *@
 <div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
     <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <input type="hidden" name="PageSize" value="@Model.PageSize" />
         <div style="flex: 1; min-width: 240px;">
-            <input type="text" name="Search" value="@Model.Search" placeholder="Search by article title, excerpt, slug, or author..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search by article title, excerpt, slug, or author..." class="form-control" />
         </div>
         <div style="width: 180px;">
-            <select name="CategoryFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="CategoryFilter" class="form-select">
                 <option value="All" selected="@(string.IsNullOrEmpty(Model.CategoryFilter) || Model.CategoryFilter == "All")">All Categories</option>
                 @foreach (var cat in Model.Categories)
                 {
@@ -76,7 +110,7 @@
             </select>
         </div>
         <div style="width: 150px;">
-            <select name="PublishFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="PublishFilter" class="form-select">
                 <option value="All" selected="@(string.IsNullOrEmpty(Model.PublishFilter) || Model.PublishFilter == "All")">All Statuses</option>
                 <option value="Published" selected="@(Model.PublishFilter == "Published")">Published</option>
                 <option value="Draft" selected="@(Model.PublishFilter == "Draft")">Draft / Hidden</option>
@@ -84,7 +118,8 @@
         </div>
         <div>
             <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
-                <span>🔍</span> Filter
+                <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
+                Filter
             </button>
             @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.CategoryFilter) && Model.CategoryFilter != "All") || (!string.IsNullOrEmpty(Model.PublishFilter) && Model.PublishFilter != "All"))
             {
@@ -98,16 +133,19 @@
 <div class="admin-card" style="padding: 0; overflow: hidden;">
     <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
         <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text);">
-            Article Repository (@Model.Articles.Count)
+            Article Repository (@Model.TotalFilteredCount)
         </h2>
     </div>
 
     @if (!Model.Articles.Any())
     {
         <div style="padding: 48px; text-align: center; color: var(--admin-text-muted);">
-            <span style="font-size: 40px; display: block; margin-bottom: 12px;">📰</span>
+            <span class="material-symbols-outlined" style="font-size: 40px; display: block; margin-bottom: 12px; color: var(--admin-text-muted);">newspaper</span>
             <p style="font-size: 14px; margin: 0 0 16px 0;">No articles match the current filter criteria.</p>
-            <a href="/centralwks/news/articles/create" class="btn-admin btn-admin-primary">Create Your First Article</a>
+            <a href="/centralwks/news/articles/create" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+                Create Your First Article
+            </a>
         </div>
     }
     else
@@ -116,13 +154,14 @@
             <table class="table admin-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); text-align: left; color: var(--admin-text-muted);">
-                        <th style="padding: 12px 20px; width: 40%;">Article</th>
-                        <th style="padding: 12px 14px;">Category</th>
-                        <th style="padding: 12px 14px;">Author</th>
-                        <th style="padding: 12px 14px;">Published</th>
-                        <th style="padding: 12px 14px;">Featured</th>
-                        <th style="padding: 12px 14px;">Status</th>
-                        <th style="padding: 12px 20px; text-align: right;">Actions</th>
+                        <th style="padding: 12px 20px; width: 34%;">Article</th>
+                        <th style="padding: 12px 16px; white-space: nowrap; min-width: 170px;">Category</th>
+                        <th style="padding: 12px 14px; white-space: nowrap;">Author</th>
+                        <th style="padding: 12px 14px; white-space: nowrap;">Published</th>
+                        <th style="padding: 12px 14px; text-align: center; white-space: nowrap;">Reads</th>
+                        <th style="padding: 12px 14px; text-align: center; white-space: nowrap;">Featured</th>
+                        <th style="padding: 12px 14px; text-align: center; white-space: nowrap;">Status</th>
+                        <th style="padding: 12px 20px; text-align: right; white-space: nowrap;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,46 +179,57 @@
                                     /@article.Slug
                                 </div>
                             </td>
-                            <td style="padding: 14px 14px;">
-                                <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
-                                    @(article.Category?.Name ?? article.CategoryKey)
+                            <td style="padding: 14px 16px; white-space: nowrap;">
+                                @{
+                                    var catKey = article.CategoryKey ?? article.Category?.Slug ?? article.Category?.Key;
+                                    var badgeStyle = GetCategoryBadgeColors(catKey);
+                                    var catLabel = article.Category?.Name ?? (!string.IsNullOrEmpty(article.CategoryKey) ? article.CategoryKey : "Uncategorized");
+                                }
+                                <span style="background: @badgeStyle.Bg; color: @badgeStyle.Color; border: 1px solid @badgeStyle.Border; padding: 4px 10px; border-radius: 9999px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; white-space: nowrap; letter-spacing: 0.02em;">
+                                    @catLabel
                                 </span>
                             </td>
-                            <td style="padding: 14px 14px;">
+                            <td style="padding: 14px 14px; white-space: nowrap;">
                                 <div style="font-weight: 500; color: var(--admin-text);">@article.AuthorName</div>
                                 <div style="font-size: 11px; color: var(--admin-text-muted);">@article.AuthorRole</div>
                             </td>
-                            <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted);">
+                            <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted); white-space: nowrap;">
                                 <div>@article.PublishedAtUtc.ToString("yyyy-MM-dd")</div>
                                 <div style="font-size: 10px; color: #64748b;">@article.ReadTimeText</div>
                             </td>
-                            <td style="padding: 14px 14px;">
+                            <td style="padding: 14px 14px; text-align: center; white-space: nowrap;">
+                                <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 9px; border-radius: 9999px; font-size: 12px;">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">visibility</span>
+                                    @article.ReadCount.ToString("N0")
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px; text-align: center; white-space: nowrap;">
                                 <form method="post" asp-page-handler="ToggleFeatured" asp-route-id="@article.Id" style="display: inline;">
                                     @if (article.IsFeatured)
                                     {
-                                        <button type="submit" title="Click to remove from featured" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                                            ★ Featured
+                                        <button type="submit" title="Click to remove from featured" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">star</span> Featured
                                         </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" title="Click to feature" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1); padding: 3px 8px; border-radius: 9999px; font-size: 11px; cursor: pointer;">
-                                            ☆ Standard
+                                        <button type="submit" title="Click to feature" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1); padding: 3px 10px; border-radius: 9999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">star_outline</span> Standard
                                         </button>
                                     }
                                 </form>
                             </td>
-                            <td style="padding: 14px 14px;">
+                            <td style="padding: 14px 14px; text-align: center; white-space: nowrap;">
                                 <form method="post" asp-page-handler="TogglePublish" asp-route-id="@article.Id" style="display: inline;">
                                     @if (article.IsPublished)
                                     {
-                                        <button type="submit" title="Click to unpublish" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        <button type="submit" title="Click to unpublish" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;">
                                             ● Published
                                         </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" title="Click to publish" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        <button type="submit" title="Click to publish" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;">
                                             ○ Draft
                                         </button>
                                     }
@@ -203,5 +253,104 @@
                 </tbody>
             </table>
         </div>
+
+        @* ── Pagination Controls Bar ── *@
+        @if (Model.TotalFilteredCount > 0)
+        {
+            <div style="padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; background: rgba(255, 255, 255, 0.015);">
+                <div style="font-size: 13px; color: var(--admin-text-muted);">
+                    Showing <strong style="color: var(--admin-text);">@Model.StartItemIndex</strong> to <strong style="color: var(--admin-text);">@Model.EndItemIndex</strong> of <strong style="color: var(--admin-text);">@Model.TotalFilteredCount</strong> articles
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Page Size Selector -->
+                    <form method="get" style="display: inline-flex; align-items: center; gap: 6px; margin-right: 12px;">
+                        <input type="hidden" name="Search" value="@Model.Search" />
+                        <input type="hidden" name="CategoryFilter" value="@Model.CategoryFilter" />
+                        <input type="hidden" name="PublishFilter" value="@Model.PublishFilter" />
+                        <input type="hidden" name="PageNumber" value="1" />
+                        <label style="font-size: 12px; color: var(--admin-text-muted);">Per page:</label>
+                        <select name="PageSize" onchange="this.form.submit()" class="form-select" style="padding: 4px 8px; font-size: 12px; width: 75px; height: 32px;">
+                            <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                            <option value="25" selected="@(Model.PageSize == 25)">25</option>
+                            <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                            <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                        </select>
+                    </form>
+
+                    @if (Model.TotalPages > 1)
+                    {
+                        <nav aria-label="Article Pagination" style="display: inline-flex; align-items: center; gap: 4px;">
+                            @if (Model.HasPreviousPage)
+                            {
+                                <a href="?PageNumber=1&PageSize=@Model.PageSize&Search=@Model.Search&CategoryFilter=@Model.CategoryFilter&PublishFilter=@Model.PublishFilter" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="First Page">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">first_page</span>
+                                </a>
+                                <a href="?PageNumber=@(Model.PageNumber - 1)&PageSize=@Model.PageSize&Search=@Model.Search&CategoryFilter=@Model.CategoryFilter&PublishFilter=@Model.PublishFilter" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;" title="Previous Page">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">chevron_left</span> Prev
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="btn-admin" style="padding: 4px 8px; font-size: 12px; opacity: 0.4; cursor: not-allowed; border: 1px solid rgba(255,255,255,0.06);">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">first_page</span>
+                                </span>
+                                <span class="btn-admin" style="padding: 4px 10px; font-size: 12px; opacity: 0.4; cursor: not-allowed; border: 1px solid rgba(255,255,255,0.06);">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">chevron_left</span> Prev
+                                </span>
+                            }
+
+                            @* Page number buttons *@
+                            @{
+                                int startPage = Math.Max(1, Model.PageNumber - 2);
+                                int endPage = Math.Min(Model.TotalPages, Model.PageNumber + 2);
+                                if (startPage > 1)
+                                {
+                                    <span style="padding: 0 4px; color: var(--admin-text-muted); font-size: 12px;">...</span>
+                                }
+                            }
+
+                            @for (int p = startPage; p <= endPage; p++)
+                            {
+                                if (p == Model.PageNumber)
+                                {
+                                    <span class="btn-admin btn-admin-primary" style="padding: 4px 11px; font-size: 12px; font-weight: 700; pointer-events: none;">@p</span>
+                                }
+                                else
+                                {
+                                    <a href="?PageNumber=@p&PageSize=@Model.PageSize&Search=@Model.Search&CategoryFilter=@Model.CategoryFilter&PublishFilter=@Model.PublishFilter" class="btn-admin btn-admin-secondary" style="padding: 4px 11px; font-size: 12px;">@p</a>
+                                }
+                            }
+
+                            @{
+                                if (endPage < Model.TotalPages)
+                                {
+                                    <span style="padding: 0 4px; color: var(--admin-text-muted); font-size: 12px;">...</span>
+                                }
+                            }
+
+                            @if (Model.HasNextPage)
+                            {
+                                <a href="?PageNumber=@(Model.PageNumber + 1)&PageSize=@Model.PageSize&Search=@Model.Search&CategoryFilter=@Model.CategoryFilter&PublishFilter=@Model.PublishFilter" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;" title="Next Page">
+                                    Next <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+                                </a>
+                                <a href="?PageNumber=@Model.TotalPages&PageSize=@Model.PageSize&Search=@Model.Search&CategoryFilter=@Model.CategoryFilter&PublishFilter=@Model.PublishFilter" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Last Page">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">last_page</span>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="btn-admin" style="padding: 4px 10px; font-size: 12px; opacity: 0.4; cursor: not-allowed; border: 1px solid rgba(255,255,255,0.06);">
+                                    Next <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+                                </span>
+                                <span class="btn-admin" style="padding: 4px 8px; font-size: 12px; opacity: 0.4; cursor: not-allowed; border: 1px solid rgba(255,255,255,0.06);">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">last_page</span>
+                                </span>
+                            }
+                        </nav>
+                    }
+                </div>
+            </div>
+        }
     }
 </div>

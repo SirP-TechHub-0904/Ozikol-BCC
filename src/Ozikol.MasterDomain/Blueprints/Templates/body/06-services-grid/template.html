@@ -1,0 +1,23 @@
+<section class="oz-services-grid-section {{ CustomClass }}">
+  <div class="oz-container">
+    <div class="oz-section-header">
+      {{#if MiniTitle}}<span class="oz-badge">{{ MiniTitle }}</span>{{/if}}
+      <h2 class="oz-title">{{ Title }}</h2>
+      <p class="oz-subtitle">{{ Description }}</p>
+    </div>
+    <div class="oz-services-grid">
+      {{#each PageSectionLists}}
+      <div class="oz-service-item">
+        <div class="oz-service-icon-wrap">
+          <span class="material-symbols-outlined">{{ Icon }}</span>
+        </div>
+        <h3 class="oz-service-title">{{ Title }}</h3>
+        <p class="oz-service-desc">{{ Description }}</p>
+        {{#if ButtonText}}
+        <a href="{{ ButtonLink }}" class="oz-service-link">{{ ButtonText }} →</a>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>

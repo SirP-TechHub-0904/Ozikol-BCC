@@ -58,6 +58,18 @@ namespace Ozikol_BCC.Domain.Models
         public bool IsActive { get; set; } = true;
 
         /// <summary>
+        /// Indicates whether this code injection tag is an out-of-the-box system factory default tag.
+        /// </summary>
+        public bool IsDefault { get; set; } = false;
+
+        /// <summary>
+        /// The associated Theme Suite code (e.g., "suite_corporate", "suite_pincretthe", or "global").
+        /// Allows code injections to activate and deactivate atomically with their respective Theme Suite.
+        /// </summary>
+        [MaxLength(50)]
+        public string? SuiteCode { get; set; } = "suite_corporate";
+
+        /// <summary>
         /// Creation timestamp in UTC.
         /// </summary>
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

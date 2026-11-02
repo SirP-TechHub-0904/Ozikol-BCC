@@ -1,0 +1,1171 @@
+@page "/centralwks/templates/import"
+@model Ozikol.Central.Areas.Centralwks.Pages.Templates.ImportModel
+@{
+    ViewData["Title"] = "Modular Section Studio";
+    ViewData["BreadcrumbSection"] = "Marketplace";
+}
+
+@section Styles {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css" />
+<style>
+    /* ── CodeMirror Full-Height Editor & Code Folding ── */
+    .CodeMirror {
+        height: 100% !important;
+        font-family: 'JetBrains Mono', Consolas, 'Fira Code', monospace;
+        font-size: 13px;
+        line-height: 1.55;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--admin-border);
+        background: #181a20 !important;
+        color: #e2e8f0 !important;
+    }
+    .CodeMirror-gutters {
+        background: #131418 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding-right: 4px;
+    }
+    .CodeMirror-linenumber {
+        color: #64748b !important;
+        font-size: 11.5px;
+    }
+    .CodeMirror-foldmarker {
+        color: #60a5fa !important;
+        text-shadow: none;
+        font-family: monospace;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 4px;
+        background: rgba(59, 130, 246, 0.2);
+        border-radius: 3px;
+    }
+    .CodeMirror-foldgutter {
+        width: 14px;
+    }
+    .CodeMirror-foldgutter-open:after {
+        content: "▾";
+        color: #94a3b8;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .CodeMirror-foldgutter-folded:after {
+        content: "▸";
+        color: #f59e0b;
+        font-size: 13px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .code-editor-container {
+        flex: 1;
+        width: 100%;
+        height: calc(100% - 30px);
+        min-height: 300px;
+        overflow: hidden;
+        border-radius: var(--radius-md);
+    }
+
+    /* ── Modal Inspector Tab Buttons (Distinct Button Styling) ── */
+    .preview-modal-tabs {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--admin-bg-surface-elevated);
+        border-bottom: 1px solid var(--admin-border);
+        padding: 8px 16px;
+        flex-shrink: 0;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .modal-tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--admin-text-muted);
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+    }
+    .modal-tab-btn:hover {
+        color: var(--admin-text);
+        background: var(--admin-bg-hover);
+        border-color: var(--admin-border-focus);
+    }
+    .modal-tab-btn.active {
+        color: #ffffff !important;
+        background: var(--admin-primary) !important;
+        border-color: var(--admin-primary) !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px var(--admin-primary-glow);
+    }
+    .modal-tab-btn.active .material-symbols-outlined {
+        color: #ffffff !important;
+    }
+    .studio-step-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--admin-text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .studio-step-btn:hover {
+        color: var(--admin-text);
+        background: var(--admin-bg-hover);
+    }
+    .studio-step-btn.active {
+        background: var(--admin-primary);
+        color: #ffffff;
+        box-shadow: 0 2px 8px var(--admin-primary-glow);
+    }
+    .studio-step-btn .step-number {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    /* ── Tab Bar Navigation ── */
+    .studio-nav-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--admin-border);
+        background: var(--admin-bg-surface);
+    }
+    .studio-tab-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--admin-text-muted);
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .studio-tab-btn:hover {
+        color: var(--admin-text);
+        background: var(--admin-bg-hover);
+    }
+    .studio-tab-btn.active {
+        color: var(--admin-primary);
+        border-bottom-color: var(--admin-primary);
+        background: var(--admin-primary-light);
+    }
+
+    /* ── Dropzone Area ── */
+    .studio-dropzone {
+        display: block;
+        border: 2px dashed var(--admin-border);
+        border-radius: var(--radius-lg);
+        padding: 36px 24px;
+        text-align: center;
+        background: var(--admin-bg-surface-elevated);
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        transition: var(--transition);
+    }
+    .studio-dropzone.dragover,
+    .studio-dropzone:hover {
+        border-color: var(--admin-primary);
+        background: var(--admin-primary-light);
+    }
+    .studio-dropzone input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 5;
+    }
+    .studio-dropzone * {
+        pointer-events: none;
+    }
+
+    /* ── Prominent Attached File Box ── */
+    .attached-file-box {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        background: var(--admin-bg-surface-elevated);
+        border: 2px solid var(--admin-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 4px 16px var(--admin-primary-glow);
+        gap: 16px;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+    .attached-file-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+    }
+    .attached-file-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        background: var(--admin-primary-light);
+        color: var(--admin-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .attached-file-icon .material-symbols-outlined {
+        font-size: 28px;
+    }
+    .attached-file-thumb {
+        width: 54px;
+        height: 54px;
+        border-radius: var(--radius-md);
+        object-fit: cover;
+        border: 1px solid var(--admin-border);
+        flex-shrink: 0;
+    }
+    .attached-file-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+    .attached-file-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--admin-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .attached-file-sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+    }
+
+    /* ── Form Layout Utilities ── */
+    .form-row-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    @@media (max-width: 768px) {
+        .form-row-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .form-group-block {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 20px;
+    }
+    .form-label-bold {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--admin-text);
+    }
+    .form-input-styled {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 13.5px;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-md);
+        background: var(--admin-bg-surface);
+        color: var(--admin-text);
+        outline: none;
+        transition: var(--transition);
+    }
+    .form-input-styled:focus {
+        border-color: var(--admin-border-focus);
+        box-shadow: 0 0 0 3px var(--admin-primary-light);
+    }
+    .form-textarea-styled {
+        width: 100%;
+        padding: 12px 14px;
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        font-size: 13px;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-md);
+        background: var(--admin-bg-surface);
+        color: var(--admin-text);
+        outline: none;
+        resize: vertical;
+        transition: var(--transition);
+    }
+    .form-textarea-styled:focus {
+        border-color: var(--admin-border-focus);
+        box-shadow: 0 0 0 3px var(--admin-primary-light);
+    }
+
+    /* ── Workbench Layout: Grid & Table Views ── */
+    .section-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 20px;
+    }
+    .section-card-item {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: var(--transition);
+    }
+    .section-card-item:hover {
+        border-color: rgba(255, 255, 255, 0.18);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .section-card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--admin-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--admin-bg-surface-elevated);
+    }
+    .section-card-body {
+        padding: 18px;
+        flex: 1;
+    }
+    .section-card-footer {
+        padding: 12px 18px;
+        border-top: 1px solid var(--admin-border);
+        background: var(--admin-bg-surface-elevated);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    /* ── Workbench Table Matrix View ── */
+    .workbench-table-wrap {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .workbench-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 13.5px;
+    }
+    .workbench-table th {
+        background: var(--admin-bg-surface-elevated);
+        padding: 14px 16px;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--admin-text-muted);
+        border-bottom: 1px solid var(--admin-border);
+    }
+    .workbench-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--admin-border);
+        color: var(--admin-text);
+        vertical-align: middle;
+    }
+    .workbench-table tr:hover td {
+        background: var(--admin-bg-hover);
+    }
+
+    /* ── Badge Pill ── */
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .badge-pill-primary { background: var(--admin-primary-light); color: var(--admin-primary); }
+    .badge-pill-success { background: var(--admin-success-light); color: var(--admin-success); }
+    .badge-pill-info { background: var(--admin-info-light); color: var(--admin-info); }
+    /* ── Floating Preview Modal Dialog ── */
+    .preview-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+    }
+    .preview-modal-overlay.is-active {
+        display: flex;
+        animation: modalBackdropFadeIn 0.2s ease-out;
+    }
+    @@keyframes modalBackdropFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .preview-modal-dialog {
+        width: 95vw;
+        max-width: 1540px;
+        height: 90vh;
+        max-height: 920px;
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: 16px;
+        box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: modalCardSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @@keyframes modalCardSlideUp {
+        from { opacity: 0; transform: translateY(16px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .preview-modal-bar {
+        height: 56px;
+        background: var(--admin-bg-surface);
+        border-bottom: 1px solid var(--admin-border);
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        gap: 16px;
+    }
+    .preview-modal-tabs {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        background: var(--admin-bg-surface-elevated);
+        border-bottom: 1px solid var(--admin-border);
+        padding: 0 20px;
+        flex-shrink: 0;
+    }
+    .preview-modal-content {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        background: var(--admin-bg);
+    }
+    .preview-viewport-wrap {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        overflow: auto;
+        background: var(--admin-bg);
+    }
+    .preview-viewport-frame {
+        background: #0b0f19;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--admin-border);
+        transition: width 0.3s ease, background 0.2s ease;
+        height: 100%;
+        max-width: 100%;
+    }
+    .preview-viewport-frame.canvas-bright {
+        background: #ffffff !important;
+    }
+    .preview-viewport-frame.canvas-dark {
+        background: #0b0f19 !important;
+    }
+    .preview-tab-pane {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        animation: tabPaneFadeIn 0.15s ease-out;
+    }
+    @@keyframes tabPaneFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Interactive Tokens Matrix Table in Inspector ── */
+    .tokens-editor-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+    .tokens-editor-table th {
+        padding: 10px 12px;
+        background: var(--admin-bg-surface-elevated);
+        border-bottom: 1px solid var(--admin-border);
+        color: var(--admin-text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+    .tokens-editor-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--admin-border);
+    }
+
+    /* ── High-Visibility Studio Loading Overlay ── */
+    .studio-loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(11, 15, 25, 0.88);
+        backdrop-filter: blur(12px);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+    .studio-loading-card {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        padding: 36px 40px;
+        max-width: 520px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+        position: relative;
+        overflow: hidden;
+    }
+    .loading-pulse-ring {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid var(--admin-primary-light);
+        border-top-color: var(--admin-primary);
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .loading-step-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 24px;
+        text-align: left;
+        background: var(--admin-bg-surface-elevated);
+        padding: 16px 20px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--admin-border);
+    }
+    .loading-step-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--admin-text-muted);
+        transition: var(--transition);
+    }
+    .loading-step-item .material-symbols-outlined {
+        font-size: 18px;
+        color: var(--admin-text-dim);
+    }
+    .loading-step-item.step-active {
+        color: var(--admin-primary);
+        font-weight: 600;
+    }
+    .loading-step-item.step-active .material-symbols-outlined {
+        color: var(--admin-primary);
+        animation: spin 1s linear infinite;
+    }
+    .loading-step-item.step-done {
+        color: var(--admin-success);
+    }
+    .loading-step-item.step-done .material-symbols-outlined {
+        color: var(--admin-success);
+    }
+
+    @@keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+}
+
+<!-- Header -->
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/templates" class="btn-admin btn-admin-secondary btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                Templates
+            </a>
+            <span class="badge-pill badge-pill-primary">
+                <span class="material-symbols-outlined" style="font-size: 14px;">magic_button</span>
+                Multi-Channel Ingestion Studio
+            </span>
+        </div>
+        <h1 class="admin-title">Modular Section Studio</h1>
+        <p class="admin-subtitle">Decompose templates, live demo URLs, or UI screenshots into zero-collision modular marketplace sections.</p>
+    </div>
+
+    <!-- Studio Step Selector -->
+    <div class="studio-stepper">
+        <button type="button" class="studio-step-btn active" id="pillStep1" onclick="jumpToStep(1)">
+            <span class="step-number">1</span> Ingest
+        </button>
+        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">chevron_right</span>
+        <button type="button" class="studio-step-btn" id="pillStep2" onclick="jumpToStep(2)">
+            <span class="step-number">2</span> Workbench
+        </button>
+        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">chevron_right</span>
+        <button type="button" class="studio-step-btn" id="pillStep3" onclick="jumpToStep(3)">
+            <span class="step-number">3</span> Preview &amp; Publish
+        </button>
+    </div>
+</div>
+
+<!-- Hidden State Holder -->
+<div id="rawExtractionJsonData" style="display:none;">@Model.ExtractionResultJson</div>
+
+<!-- ========================================================================= -->
+<!-- STEP 1: INPUT CHANNELS -->
+<!-- ========================================================================= -->
+<div id="stepPanel1" class="studio-step-panel">
+    <div class="admin-card" style="width: 100%; overflow: hidden;">
+        <!-- Tabs Header -->
+        <div class="studio-nav-tabs">
+            <button type="button" class="studio-tab-btn active" id="tabBtnSource" onclick="switchImportTab('source')">
+                <span class="material-symbols-outlined">html</span>
+                1. HTML File / Paste Source
+            </button>
+            <button type="button" class="studio-tab-btn" id="tabBtnUrl" onclick="switchImportTab('url')">
+                <span class="material-symbols-outlined">language</span>
+                2. Live Website URL
+            </button>
+            <button type="button" class="studio-tab-btn" id="tabBtnImage" onclick="switchImportTab('image')">
+                <span class="material-symbols-outlined">image</span>
+                3. UI Screenshot Mockup
+            </button>
+        </div>
+
+        <div style="padding: 28px;">
+            <!-- TAB 1: HTML FILE / PASTE -->
+            <div id="panelSourceExtractor">
+                <form id="formSourceIngest" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row-grid">
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Theme Suite / Family Name</label>
+                            <input type="text" class="form-input-styled" id="sourceSuiteName" name="suiteName" value="@Model.SuiteName" placeholder="e.g. Creative Agency Suite" required />
+                        </div>
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Brand Name to Debrand</label>
+                            <input type="text" class="form-input-styled" id="sourceBrandName" name="brandName" value="@Model.BrandName" placeholder="e.g. Enterprise Workspace" />
+                        </div>
+                    </div>
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Base URL / Demo Asset Origin <span style="font-weight: 400; color: var(--admin-text-muted); font-size: 12px;">(Optional — for resolving relative CSS, JS, and images)</span></label>
+                        <input type="url" class="form-input-styled" id="sourceBaseUrl" name="baseUrl" placeholder="e.g. https://demo.example.com" />
+                        <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">info</span>
+                            Used to download relative assets (e.g. <code>assets/css/style.css</code>, <code>assets/img/hero.jpg</code>) and upload them to your CDN.
+                        </div>
+                    </div>
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Upload Template .html File</label>
+                        
+                        <!-- Initial Dropzone -->
+                        <label for="sourceHtmlFileInput" class="studio-dropzone" id="htmlDropzoneArea">
+                            <input type="file" id="sourceHtmlFileInput" name="htmlFile" accept=".html,.htm" onchange="handleHtmlFileSelect(this)" />
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-primary); margin-bottom: 8px; display: block;">cloud_upload</span>
+                            <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;">Drag &amp; drop your template .html file here, or click to browse</div>
+                            <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-top: 4px;">Supports full landing pages with embedded or external stylesheet links</div>
+                        </label>
+
+                        <!-- Prominent Attached File Card -->
+                        <div class="attached-file-box" id="attachedHtmlFileBox">
+                            <div class="attached-file-info">
+                                <div class="attached-file-icon">
+                                    <span class="material-symbols-outlined">html</span>
+                                </div>
+                                <div class="attached-file-meta">
+                                    <div class="attached-file-name" id="attachedHtmlFileName">template.html</div>
+                                    <div class="attached-file-sub">
+                                        <span class="badge-pill badge-pill-secondary" id="attachedHtmlFileSize">0 KB</span>
+                                        <span class="badge-pill badge-pill-success">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> Ready to Ingest
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <label for="sourceHtmlFileInput" class="btn-admin btn-admin-secondary btn-admin-sm" style="cursor: pointer;">
+                                    <span class="material-symbols-outlined">sync</span> Change File
+                                </label>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="clearHtmlFile()">
+                                    <span class="material-symbols-outlined">close</span> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-block">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label class="form-label-bold">Or Paste HTML Page Source Markup</label>
+                            <span class="badge-pill badge-pill-secondary" id="htmlCharCounter">0 characters</span>
+                        </div>
+                        <textarea class="form-textarea-styled" id="sourcePastedHtml" name="pastedHtml" rows="6" placeholder="Paste your HTML markup here..." oninput="updateHtmlCharCount()"></textarea>
+                    </div>
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Optional Custom Author CSS (if not embedded in HTML)</label>
+                        <textarea class="form-textarea-styled" id="sourceCustomCss" name="customCss" rows="3" placeholder="/* Paste custom author stylesheet rules here */"></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn-admin btn-admin-primary btn-admin-lg" id="btnRunSourceIngest" onclick="executeSourceIngest()">
+                            <span class="material-symbols-outlined">memory</span>
+                            Ingest &amp; Decompose Sections
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 2: LIVE WEBSITE URL -->
+            <div id="panelUrlExtractor" style="display:none;">
+                <form id="formUrlIngest">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row-grid">
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Theme Suite / Family Name</label>
+                            <input type="text" class="form-input-styled" id="urlSuiteName" name="suiteName" value="@Model.SuiteName" placeholder="e.g. Modern SaaS Suite" required />
+                        </div>
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Brand Name to Debrand</label>
+                            <input type="text" class="form-input-styled" id="urlBrandName" name="brandName" value="@Model.BrandName" placeholder="e.g. Enterprise Workspace" />
+                        </div>
+                    </div>
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Live Website or Landing Page URL</label>
+                        <input type="url" class="form-input-styled" id="targetWebsiteUrl" name="targetUrl" placeholder="https://example.com" style="font-size: 15px; padding: 12px 16px;" required />
+                        <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">info</span>
+                            Our asset pipeline crawls the page, bundles custom CSS/JS to Cloudinary, and optimizes images to WebP.
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn-admin btn-admin-primary btn-admin-lg" id="btnRunUrlIngest" onclick="executeUrlIngest()">
+                            <span class="material-symbols-outlined">download</span>
+                            Crawl &amp; Bundle Assets
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 3: UI SCREENSHOT MOCKUP (VISION AI) -->
+            <div id="panelImageExtractor" style="display:none;">
+                <form id="formImageIngest" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row-grid">
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Theme Suite / Family Name</label>
+                            <input type="text" class="form-input-styled" id="imgSuiteName" name="suiteName" value="@Model.SuiteName" placeholder="e.g. Portfolio Mockup Suite" required />
+                        </div>
+                        <div class="form-group-block">
+                            <label class="form-label-bold">AI Model Engine</label>
+                            <select class="form-input-styled" id="visionAiProvider" name="provider">
+                                <option value="Gemini" selected>Gemini 2.5 Flash (Multimodal Vision)</option>
+                                <option value="DeepSeek">DeepSeek Failover</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Upload UI Screenshot or Figma Export (PNG, JPG, WebP)</label>
+                        
+                        <!-- Initial Image Dropzone -->
+                        <label for="visionScreenshotInput" class="studio-dropzone" id="imageDropzoneArea">
+                            <input type="file" id="visionScreenshotInput" name="screenshotFile" accept="image/png,image/jpeg,image/webp" onchange="handleImageFileSelect(this)" />
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-indigo); margin-bottom: 8px; display: block;">add_photo_alternate</span>
+                            <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;">Select or drop a UI mockup screenshot here</div>
+                            <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-top: 4px;">Multimodal AI decomposes screenshot into semantic HTML, scoped CSS, and Mustache tokens</div>
+                        </label>
+
+                        <!-- Prominent Attached Image Card -->
+                        <div class="attached-file-box" id="attachedImageFileBox">
+                            <div class="attached-file-info">
+                                <img id="attachedImageThumb" class="attached-file-thumb" src="" alt="Thumbnail" />
+                                <div class="attached-file-meta">
+                                    <div class="attached-file-name" id="attachedImageFileName">screenshot.png</div>
+                                    <div class="attached-file-sub">
+                                        <span class="badge-pill badge-pill-secondary" id="attachedImageFileSize">0 KB</span>
+                                        <span class="badge-pill badge-pill-success">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> Image Ready
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <label for="visionScreenshotInput" class="btn-admin btn-admin-secondary btn-admin-sm" style="cursor: pointer;">
+                                    <span class="material-symbols-outlined">sync</span> Change Image
+                                </label>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="clearImageFile()">
+                                    <span class="material-symbols-outlined">close</span> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn-admin btn-admin-primary btn-admin-lg" id="btnRunImageIngest" onclick="executeImageIngest()">
+                            <span class="material-symbols-outlined">auto_awesome</span>
+                            Synthesize Sections via Vision AI
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STEP 2: SECTION WORKBENCH (GRID & TABLE MATRIX) -->
+<!-- ========================================================================= -->
+<div id="stepPanel2" class="studio-step-panel" style="display:none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h2 class="admin-title" style="font-size: 20px;">
+                <span id="workbenchSuiteTitle">Extracted Sections</span>
+                <span class="badge-pill badge-pill-primary ms-2" id="workbenchCountBadge">0 sections</span>
+            </h2>
+            <p class="admin-subtitle">Review staged components in the database, adjust categories, and inspect tokenized Mustache placeholders.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- View Mode Switcher -->
+            <div class="studio-stepper" style="background: var(--admin-bg-surface-elevated);">
+                <button type="button" class="studio-step-btn active" id="btnViewGrid" onclick="setWorkbenchView('grid')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">grid_view</span> Grid
+                </button>
+                <button type="button" class="studio-step-btn" id="btnViewTable" onclick="setWorkbenchView('table')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">table_rows</span> Table Matrix
+                </button>
+            </div>
+
+            <button type="button" class="btn-admin btn-admin-secondary" onclick="jumpToStep(1)">
+                <span class="material-symbols-outlined">restart_alt</span> Re-ingest
+            </button>
+            <button type="button" class="btn-admin btn-admin-primary" onclick="publishAllSectionsToMarketplace()">
+                <span class="material-symbols-outlined">cloud_upload</span> Batch Publish Suite
+            </button>
+        </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;" id="categoryFilterContainer">
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="filterSectionsByCategory('all', this)">All Sections</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('menu', this)">Menus &amp; Nav</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('hero', this)">Heros</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('bodysections', this)">Body &amp; Features</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('blog', this)">Blog &amp; Cards</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('contact', this)">Contact</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('footer', this)">Footers</button>
+    </div>
+
+    <!-- VIEW 1: Sliced Sections Grid -->
+    <div class="section-cards-grid" id="extractedSectionsGrid">
+        <!-- Dynamically populated via JavaScript -->
+    </div>
+
+    <!-- VIEW 2: Sliced Sections Table Matrix -->
+    <div class="workbench-table-wrap" id="extractedSectionsTableWrap" style="display:none;">
+        <table class="workbench-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Variant</th>
+                    <th>Section Title &amp; Description</th>
+                    <th style="width: 130px;">Category</th>
+                    <th style="width: 150px;">Code Metrics</th>
+                    <th style="width: 140px;">CSS Libraries</th>
+                    <th style="width: 140px;">JS Libraries</th>
+                    <th style="width: 180px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="extractedSectionsTableBody">
+                <!-- Dynamically populated via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STEP 3 / MODAL: LIVE PREVIEW & CODE INSPECTOR -->
+<!-- ========================================================================= -->
+<div class="preview-modal-overlay" id="sectionPreviewModal">
+    <div class="preview-modal-dialog" onclick="event.stopPropagation()">
+        <!-- ROW 1: TOP CONTROL BAR -->
+        <div class="preview-modal-bar">
+            <!-- Title & Status -->
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 220px;">
+                <div>
+                    <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;" id="previewModalSectionTitle">Section Preview</div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                        <span class="badge-pill badge-pill-secondary" id="previewModalVariantCode">sec_variant_01</span>
+                        <span class="badge-pill badge-pill-info" id="previewModalStatusBadge">Staged in DB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Viewport & Canvas Theme Controls -->
+            <div style="display: flex; align-items: center; gap: 12px;" id="previewModalCenterControls">
+                <!-- Device Viewport Switcher -->
+                <div class="studio-stepper" style="background: var(--admin-bg-surface-elevated); padding: 3px;">
+                    <button type="button" class="studio-step-btn active" id="vpBtnDesktop" onclick="setPreviewViewport('100%', this)" title="Desktop Full Viewport">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop
+                    </button>
+                    <button type="button" class="studio-step-btn" id="vpBtnTablet" onclick="setPreviewViewport('768px', this)" title="Tablet (768px)">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">tablet_mac</span> Tablet
+                    </button>
+                    <button type="button" class="studio-step-btn" id="vpBtnMobile" onclick="setPreviewViewport('375px', this)" title="Mobile (375px)">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile
+                    </button>
+                </div>
+
+                <!-- Canvas Background Theme Switcher -->
+                <div class="studio-stepper" style="background: var(--admin-bg-surface-elevated); padding: 3px;">
+                    <button type="button" class="studio-step-btn active" id="themeBtnDark" onclick="setPreviewCanvasTheme('dark', this)" title="Dark Canvas">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">dark_mode</span> Dark
+                    </button>
+                    <button type="button" class="studio-step-btn" id="themeBtnBright" onclick="setPreviewCanvasTheme('bright', this)" title="Bright Canvas">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">light_mode</span> Bright
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Changes, Save, Close -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div id="previewUnsavedChangesIndicator" style="display: none; align-items: center; gap: 6px; font-size: 12px; color: #f59e0b; font-weight: 600; padding: 4px 8px; background: rgba(245, 158, 11, 0.12); border-radius: var(--radius-sm);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">pending</span> Unsaved Changes
+                </div>
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSaveDraftModal" onclick="saveDraftEditsToDatabase()">
+                    <span class="material-symbols-outlined">save</span> Save Draft
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeSectionPreviewModal()" title="Close Modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ROW 2: CENTERED TABS BAR (Single Line, Interactive Button Look) -->
+        <div class="preview-modal-tabs">
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+                <button type="button" class="modal-tab-btn active" id="inspTabPreview" onclick="switchInspectorTab('preview')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span> Preview
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabHtml" onclick="switchInspectorTab('html')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">code</span> HTML
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabCss" onclick="switchInspectorTab('css')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">css</span> Scoped CSS
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabJs" onclick="switchInspectorTab('js')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">javascript</span> JS
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabMock" onclick="switchInspectorTab('mock')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">data_object</span> Mock Data
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabCssLibs" onclick="switchInspectorTab('csslibs')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">palette</span> CSS Libraries <span class="badge-pill badge-pill-secondary" style="font-size: 10px; padding: 2px 6px;" id="cssLibsCountBadge">0</span>
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabJsLibs" onclick="switchInspectorTab('jslibs')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">integration_instructions</span> JS Libraries <span class="badge-pill badge-pill-secondary" style="font-size: 10px; padding: 2px 6px;" id="jsLibsCountBadge">0</span>
+                </button>
+                <button type="button" class="modal-tab-btn" style="color: var(--admin-primary);" id="inspTabAi" onclick="switchInspectorTab('ai')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">auto_awesome</span> AI Studio
+                </button>
+            </div>
+        </div>
+
+        <!-- ROW 3: FULL-WIDTH TAB CONTENT PANES -->
+        <div class="preview-modal-content" style="flex: 1; display: flex; overflow: hidden; background: var(--admin-bg); position: relative;">
+            
+            <!-- TAB 1: LIVE PREVIEW -->
+            <div id="inspectorPanelPreview" style="flex: 1; display: flex; flex-direction: column; width: 100%; height: 100%; background: var(--admin-bg);">
+                <div class="preview-viewport-wrap" id="previewViewportContainer" style="flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; overflow: auto; background: var(--admin-bg);">
+                    <iframe id="previewSandboxFrame" class="preview-viewport-frame" style="width: 100%; height: 100%; border: none;" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
+            </div>
+
+            <!-- TAB 2: HTML -->
+            <div id="inspectorPanelHtml" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">code</span> Mustache Parameterized Template Editor (Tags, Classes, IDs &amp; Code Folding)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorHtmlCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 3: SCOPED CSS -->
+            <div id="inspectorPanelCss" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">css</span> Scoped Author Stylesheet Editor (CSS Selectors, Properties &amp; Code Folding)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorCssCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 4: JS -->
+            <div id="inspectorPanelJs" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">javascript</span> Component JavaScript Interaction Editor (Functions, Objects &amp; Code Folding)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorJsCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 5: MOCK DATA -->
+            <div id="inspectorPanelMock" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">data_object</span> Sample Content JSON (Hydration Data Schema)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorMockJsonCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 6: CSS LIBRARIES (BADGES ONLY - NO CHECKBOXES) -->
+            <div id="inspectorPanelCsslibs" style="flex: 1; display: none; padding: 24px 32px; background: var(--admin-bg); overflow-y: auto; width: 100%; height: 100%; box-sizing: border-box;">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--admin-text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #60a5fa;">palette</span> CSS Stylesheet Dependencies
+                    </div>
+                    <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-bottom: 16px;">External stylesheet assets loaded into the document &lt;head&gt; for this section.</div>
+                    <div id="inspectorCssLibsBadgeList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Dynamically populated via JS with badges only -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: JS LIBRARIES (BADGES ONLY - NO CHECKBOXES) -->
+            <div id="inspectorPanelJslibs" style="flex: 1; display: none; padding: 24px 32px; background: var(--admin-bg); overflow-y: auto; width: 100%; height: 100%; box-sizing: border-box;">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--admin-text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #34d399;">integration_instructions</span> JavaScript Script Dependencies
+                    </div>
+                    <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-bottom: 16px;">External script engines loaded at the bottom of &lt;body&gt; for this section.</div>
+                    <div id="inspectorJsLibsBadgeList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Dynamically populated via JS with badges only -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: AI STUDIO -->
+            <div id="inspectorPanelAi" style="flex: 1; display: none; padding: 24px 32px; background: var(--admin-bg); flex-direction: column; gap: 16px; overflow-y: auto; width: 100%; height: 100%; box-sizing: border-box;">
+                <div style="max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 14px;">
+                    <div style="font-weight: 700; font-size: 15px; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">auto_awesome</span> Conversational AI Section Refiner
+                    </div>
+                    <div style="font-size: 13px; color: var(--admin-text-muted); line-height: 1.5;">Provide plain-English instructions. AI will rewrite the HTML, scoped CSS, and token schema, and update the staging database row.</div>
+                    
+                    <textarea class="form-textarea-styled" id="aiRefineInputPrompt" rows="6" placeholder="e.g. Make this section dark mode, add a secondary outline button, and improve mobile padding..."></textarea>
+                    
+                    <button type="button" class="btn-admin btn-admin-primary" style="align-self: flex-start;" id="btnExecuteAiRefine" onclick="executeAiRefineOnCurrentSection()">
+                        <span class="material-symbols-outlined">auto_fix_high</span> Execute AI Refinement
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- HIGH-VISIBILITY PROCESSING LOADER MODAL -->
+<!-- ========================================================================= -->
+<div class="studio-loading-overlay" id="studioLoadingOverlay">
+    <div class="studio-loading-card">
+        <div class="loading-pulse-ring">
+            <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-primary);">auto_awesome</span>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text); margin: 0 0 6px 0;" id="loadingOverlayTitle">Preparing Your Sections...</h3>
+        <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0 0 16px 0;" id="loadingOverlaySubtitle">Reading your design, organizing sections, styling components, and preparing your live preview.</p>
+        <span class="badge-pill badge-pill-secondary" id="loadingOverlayTimer">0s elapsed</span>
+
+        <div class="loading-step-list">
+            <div class="loading-step-item step-active" id="loadStep1">
+                <span class="material-symbols-outlined">sync</span>
+                <span>1. Reading page layout and stylesheets</span>
+            </div>
+            <div class="loading-step-item" id="loadStep2">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>2. Creating customizable text and image tags</span>
+            </div>
+            <div class="loading-step-item" id="loadStep3">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>3. Cleaning and scoping component styles</span>
+            </div>
+            <div class="loading-step-item" id="loadStep4">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>4. Saving modular sections ready for preview</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- CodeMirror 5 Core & Modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    
+    <!-- CodeMirror Code Folding Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+
+    <script src="~/js/section-library-resolver.js" asp-append-version="true"></script>
+    <script src="~/js/section-compiler-renderer.js" asp-append-version="true"></script>
+    <script src="~/js/section-builder-import.js" asp-append-version="true"></script>
+}

@@ -39,7 +39,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ozikol" />
     <meta property="og:title" content="@(ViewData["Title"] ?? "Ozikol") | Unified Business Cloud Platform" />
-    <meta property="og:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with 37 modular cloud tools across 9 enterprise suites." />
+    <meta property="og:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with @CurrencyService.GetActiveFeaturesCount() modular cloud tools across @CurrencyService.GetActiveSuitesCount() enterprise suites." />
     <meta property="og:image" content="https://ozikol.cloud/images/ozikol-red.png" />
     <meta property="og:url" content="https://ozikol.cloud@(Context.Request.Path)" />
 
@@ -47,7 +47,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@@ozikol" />
     <meta name="twitter:title" content="@(ViewData["Title"] ?? "Ozikol") | Unified Business Cloud Platform" />
-    <meta name="twitter:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with 37 modular cloud tools across 9 enterprise suites." />
+    <meta name="twitter:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with @CurrencyService.GetActiveFeaturesCount() modular cloud tools across @CurrencyService.GetActiveSuitesCount() enterprise suites." />
     <meta name="twitter:image" content="https://ozikol.cloud/images/ozikol-red.png" />
 
     <!-- Favicon & Brand Icons -->
@@ -193,6 +193,12 @@
                                                     <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Appointments_Desc"]</div>
                                                 </a>
                                             </article>
+                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
+                                                <a href="/features/calendar-followups">
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_CalendarFollowups_Title"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_CalendarFollowups_Desc"]</div>
+                                                </a>
+                                            </article>
                                         </div>
                                     </div>
                                 </div>
@@ -233,6 +239,12 @@
                                                 <a href="/features/survey-analytics">
                                                     <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_SurveyAnalytics_Title"]</div>
                                                     <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_SurveyAnalytics_Desc"]</div>
+                                                </a>
+                                            </article>
+                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
+                                                <a href="/features/reference-forms">
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_ReferenceForms_Title"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_ReferenceForms_Desc"]</div>
                                                 </a>
                                             </article>
                                         </div>
@@ -323,6 +335,12 @@
                                                 <a href="/features/grant-ledger">
                                                     <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_GrantLedger_Title"]</div>
                                                     <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_GrantLedger_Desc"]</div>
+                                                </a>
+                                            </article>
+                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
+                                                <a href="/features/embedded-banking">
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_EmbeddedBanking_Title"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_EmbeddedBanking_Desc"]</div>
                                                 </a>
                                             </article>
                                         </div>
@@ -439,6 +457,12 @@
                                                     <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_BioLinkHub_Desc"]</div>
                                                 </a>
                                             </article>
+                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
+                                                <a href="/features/gocall-ai">
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_GoCallAi_Title"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_GoCallAi_Desc"]</div>
+                                                </a>
+                                            </article>
                                         </div>
                                     </div>
                                 </div>
@@ -485,6 +509,12 @@
                                                 <a href="/features/visitor-gate-management">
                                                     <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_VisitorGate_Title"]</div>
                                                     <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_VisitorGate_Desc"]</div>
+                                                </a>
+                                            </article>
+                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
+                                                <a href="/features/kyc-verification">
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_KycVerification_Title"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_KycVerification_Desc"]</div>
                                                 </a>
                                             </article>
                                         </div>
@@ -587,7 +617,7 @@
                 <div class="mega-menu__mid-items-group">
                     <div class="mega-menu__nav-title">@SharedLocalizer["Catalog_Title"]</div>
                         <div class="mega-menu__link-wrap">
-                            <a href='/features' class='mega-menu__link mega-menu__link--highlight'>@SharedLocalizer["Catalog_ExploreAll"]</a>
+                            <a href='/features' class='mega-menu__link mega-menu__link--highlight'>@SharedLocalizer["Catalog_ExploreAll", CurrencyService.GetActiveFeaturesCount()]</a>
                         </div>
                 </div>
         </div>
@@ -800,6 +830,17 @@
                     <div class="oz-nav-dropdown-card__desc">@SharedLocalizer["Support_Certifications_Sub"]</div>
                 </div>
             </a>
+
+            <!-- 5. Promotional Voucher Program -->
+            <a href="/@currentCulture/vouchers/apply" class="oz-nav-dropdown-card" role="menuitem">
+                <div class="oz-nav-dropdown-card__icon oz-icon-violet" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"></rect><path d="M12 8v13"></path><path d="M19 12v7"></path><path d="M5 12v7"></path><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path></svg>
+                </div>
+                <div class="oz-nav-dropdown-card__body">
+                    <div class="oz-nav-dropdown-card__title">@SharedLocalizer["Support_Tab_Vouchers"]</div>
+                    <div class="oz-nav-dropdown-card__desc">@SharedLocalizer["Support_Vouchers_Sub"]</div>
+                </div>
+            </a>
         </div>
     </div>
 </li></ul>
@@ -839,9 +880,6 @@
                         </div>
                     </div>
 
-                    <a href="/Centralwks/Login" class="nav-login-link">
-                        @SharedLocalizer["Nav_SignIn"]
-                    </a>
                     <a href="/@currentCulture/auth/get-started" class="btn-get-started">
                         @SharedLocalizer["Nav_GetStarted"]
                     </a>
@@ -891,7 +929,7 @@
                         <li><a href="/features/community-messenger">@SharedLocalizer["Footer_CommunityMessenger"]</a></li>
                         <li><a href="/features/equipment-fleet">@SharedLocalizer["Footer_EquipmentFleet"]</a></li>
                         <li><a href="/features/visitor-gate-management">@SharedLocalizer["Footer_VisitorSecurity"]</a></li>
-                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub"]</a></li>
+                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub", CurrencyService.GetActiveFeaturesCount()]</a></li>
                     </ul>
                 </div>
 
@@ -925,6 +963,7 @@
                         <li><a href="/@currentCulture/support/knowledge-base">@SharedLocalizer["Support_Tab_Articles"]</a></li>
                         <li><a href="/@currentCulture/support/contact">@SharedLocalizer["Support_Tab_Contact"]</a></li>
                         <li><a href="/@currentCulture/support/certifications">@SharedLocalizer["Support_Tab_Certifications"]</a></li>
+                        <li><a href="/@currentCulture/vouchers/apply">@SharedLocalizer["Support_Tab_Vouchers"]</a></li>
                     </ul>
                 </div>
 
@@ -936,6 +975,7 @@
                         <li><a href="/about-us/leadership">@SharedLocalizer["Footer_Leadership"]</a></li>
                         <li><a href="/about-us/culture">@SharedLocalizer["Footer_Culture"]</a></li>
                         <li><a href="/careers">@SharedLocalizer["Footer_Careers"]</a></li>
+                        <li><a href="/@currentCulture/news">News &amp; Press</a></li>
                     </ul>
                 </div>
             </div>

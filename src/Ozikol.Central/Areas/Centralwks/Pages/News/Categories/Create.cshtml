@@ -21,8 +21,7 @@
             <label asp-for="Input.Name" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                 Category Display Name <span style="color: #f87171;">*</span>
             </label>
-            <input asp-for="Input.Name" id="catNameInput" placeholder="e.g. Architecture & Infrastructure" 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+            <input asp-for="Input.Name" id="catNameInput" placeholder="e.g. Architecture & Infrastructure" class="form-control" />
             <span asp-validation-for="Input.Name" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -31,8 +30,7 @@
                 <label asp-for="Input.Key" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Programmatic Key <span style="color: #f87171;">*</span>
                 </label>
-                <input asp-for="Input.Key" id="catKeyInput" placeholder="engineering-infra" 
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                <input asp-for="Input.Key" id="catKeyInput" placeholder="e.g. engineering-infra" class="form-control" style="color: #93c5fd; font-family: monospace;" />
                 <span asp-validation-for="Input.Key" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
 
@@ -40,8 +38,7 @@
                 <label asp-for="Input.Slug" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Permalink Slug <span style="color: #f87171;">*</span>
                 </label>
-                <input asp-for="Input.Slug" id="catSlugInput" placeholder="architecture-infrastructure" 
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #94a3b8; font-family: monospace; font-size: 13px;" />
+                <input asp-for="Input.Slug" id="catSlugInput" placeholder="e.g. architecture-infrastructure" class="form-control" style="font-family: monospace;" />
                 <span asp-validation-for="Input.Slug" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
         </div>
@@ -50,8 +47,7 @@
             <label asp-for="Input.Description" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                 Description
             </label>
-            <textarea asp-for="Input.Description" rows="3" placeholder="Brief explanation of the topics covered in this category..." 
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            <textarea asp-for="Input.Description" rows="3" placeholder="Brief explanation of the topics covered in this category..." class="form-control"></textarea>
             <span asp-validation-for="Input.Description" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -60,7 +56,7 @@
                 <label asp-for="Input.BadgeClass" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Badge CSS Class
                 </label>
-                <select asp-for="Input.BadgeClass" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.BadgeClass" class="form-select">
                     <option value="oz-badge-blue">Blue Badge</option>
                     <option value="oz-badge-emerald">Emerald Badge</option>
                     <option value="oz-badge-amber">Amber Badge</option>
@@ -73,8 +69,7 @@
                 <label asp-for="Input.SortOrder" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Sort Order
                 </label>
-                <input asp-for="Input.SortOrder" type="number" min="1" 
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+                <input asp-for="Input.SortOrder" type="number" min="1" class="form-control" />
             </div>
         </div>
 
@@ -87,7 +82,10 @@
 
         <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <a href="/centralwks/news/categories" class="btn-admin btn-admin-secondary">Cancel</a>
-            <button type="submit" class="btn-admin btn-admin-primary">Create Category</button>
+            <button type="submit" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                Create Category
+            </button>
         </div>
     </form>
 </div>

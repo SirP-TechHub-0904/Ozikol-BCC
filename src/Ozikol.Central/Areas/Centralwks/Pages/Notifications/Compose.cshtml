@@ -1,0 +1,400 @@
+@page "/centralwks/notifications/compose"
+@model Ozikol.Central.Areas.Centralwks.Pages.Notifications.ComposeModel
+@{
+    ViewData["Title"] = "Compose & Broadcast Alert";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 28px; color: var(--admin-primary);">campaign</span>
+            Compose &amp; Broadcast Alert
+        </h1>
+        <p class="admin-subtitle">Draft and dispatch targeted notifications across In-App, OneSignal Web/Device Push, and Postmark Email channels.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/notifications" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            Back to Notifications
+        </a>
+    </div>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="admin-alert admin-alert-danger" style="margin-bottom: 24px; background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.25); color: #dc2626; border-radius: var(--radius-md); padding: 14px 18px;">
+        <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">error</span>
+            Please correct the validation errors below:
+        </div>
+        <div asp-validation-summary="All" style="font-size: 13px; margin-left: 28px;"></div>
+    </div>
+}
+
+<form method="post" id="composeForm">
+    @Html.AntiForgeryToken()
+    <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 24px; align-items: start;">
+        
+        @* ── Left Column: Broadcast Composer Form ── *@
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            
+            @* 1. Target Audience Card *@
+            <div class="admin-card" style="padding: 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+                <h2 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">group</span>
+                    1. Target Audience &amp; Recipients
+                </h2>
+
+                <div style="margin-bottom: 16px;">
+                    <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">Select Target Group</label>
+                    <select asp-for="TargetAudience" id="targetAudienceSelect" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;">
+                        <option value="All">All Operators &amp; Administrators</option>
+                        <option value="Role">Specific Security Role</option>
+                        <option value="Individual">Specific Operator (Individual)</option>
+                        <option value="Creators">Template Creators Network</option>
+                        <option value="Affiliates">Affiliate Partners Network</option>
+                        <option value="TenantAdmins">Tenant Workspace Administrators</option>
+                    </select>
+                </div>
+
+                <div id="roleTargetRow" style="display: none; margin-bottom: 16px;">
+                    <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">Target Security Role</label>
+                    <select asp-for="TargetRole" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;">
+                        <option value="">-- Choose Target Role --</option>
+                        <option value="SuperAdmin">SuperAdmin</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Operator">Operator</option>
+                        <option value="BillingAdmin">BillingAdmin</option>
+                        <option value="SupportAgent">SupportAgent</option>
+                        <option value="TemplateManager">TemplateManager</option>
+                        <option value="ReferralManager">ReferralManager</option>
+                    </select>
+                </div>
+
+                <div id="individualTargetRow" style="display: none; margin-bottom: 16px;">
+                    <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">Select Specific Operator</label>
+                    <select asp-for="RecipientUserId" asp-items="Model.OperatorList" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;">
+                        <option value="">-- Choose Individual Operator --</option>
+                    </select>
+                </div>
+            </div>
+
+            @* 2. Message Content & Spam Shield Card *@
+            <div class="admin-card" style="padding: 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                    <h2 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">edit_note</span>
+                        2. Content &amp; Deliverability Shield
+                    </h2>
+                    <div id="deliverabilityBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 9999px; background: rgba(16, 185, 129, 0.12); color: #059669;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">verified_user</span>
+                        <span>Deliverability Optimal</span>
+                    </div>
+                </div>
+
+                @* Live Spam Warning Alert Box *@
+                <div id="spamAlertBox" style="display: none; margin-bottom: 16px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); padding: 12px 16px; font-size: 12.5px; color: #b45309;">
+                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+                        Deliverability Notice
+                    </div>
+                    <ul id="spamWarningList" style="margin: 0; padding-left: 20px; line-height: 1.5;"></ul>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">
+                        Notification Headline / Title <span style="color: var(--admin-danger);">*</span>
+                    </label>
+                    <input type="text" asp-for="Title" id="notificationTitleInput" class="form-control" placeholder="e.g. Scheduled System Maintenance Window" required style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 14px;" />
+                    <span asp-validation-for="Title" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">
+                        Message Body <span style="color: var(--admin-danger);">*</span>
+                    </label>
+                    <textarea asp-for="Message" id="notificationMessageInput" rows="5" class="form-control" placeholder="e.g. We will be performing mandatory security upgrades on Master persistence clusters on Sunday between 02:00 and 04:00 UTC." required style="width: 100%; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px; line-height: 1.5; resize: vertical;"></textarea>
+                    <span asp-validation-for="Message" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+
+                <div>
+                    <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">
+                        Deep-Link Action URL (Optional)
+                    </label>
+                    <input type="text" asp-for="ActionUrl" id="notificationActionUrlInput" class="form-control" placeholder="e.g. /centralwks/tenants or /centralwks/jobs" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;" />
+                    <span style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px; display: block;">When clicked, operators will automatically mark this item as read and jump directly to this destination.</span>
+                </div>
+            </div>
+
+            @* 3. Metadata & Severity Card *@
+            <div class="admin-card" style="padding: 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+                <h2 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">tune</span>
+                    3. Category, Severity &amp; Icon
+                </h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">Category</label>
+                        <select asp-for="Category" id="categorySelect" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;">
+                            <option value="System">System</option>
+                            <option value="Tenants">Tenants</option>
+                            <option value="Billing">Billing</option>
+                            <option value="Security">Security</option>
+                            <option value="BackgroundJobs">Background Jobs</option>
+                            <option value="Creators">Creators</option>
+                            <option value="Affiliates">Affiliates</option>
+                            <option value="Support">Support</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">Severity Tier</label>
+                        <select asp-for="Severity" id="severitySelect" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;">
+                            <option value="Info">Info (Blue)</option>
+                            <option value="Success">Success (Green)</option>
+                            <option value="Warning">Warning (Amber)</option>
+                            <option value="Danger">Danger (Red)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px; display: block;">Material Icon</label>
+                        <select asp-for="Icon" id="iconSelect" class="form-control" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 13.5px;">
+                            <option value="campaign">campaign</option>
+                            <option value="notifications">notifications</option>
+                            <option value="apartment">apartment</option>
+                            <option value="payments">payments</option>
+                            <option value="bolt">bolt</option>
+                            <option value="security">security</option>
+                            <option value="shield">shield</option>
+                            <option value="warning">warning</option>
+                            <option value="verified">verified</option>
+                            <option value="mail">mail</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            @* 4. Multi-Channel Dispatch Options Card *@
+            <div class="admin-card" style="padding: 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+                <h2 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">send</span>
+                    4. Dispatch Delivery Channels
+                </h2>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--admin-border); border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); cursor: pointer;">
+                        <input type="checkbox" asp-for="SendInApp" checked style="width: 18px; height: 18px; accent-color: var(--admin-primary);" />
+                        <div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text);">In-App Notification Feed</div>
+                            <div style="font-size: 12px; color: var(--admin-text-muted);">Displays on the topbar bell flyout and Central Notification Center.</div>
+                        </div>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--admin-border); border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); cursor: pointer;">
+                        <input type="checkbox" asp-for="SendPush" checked style="width: 18px; height: 18px; accent-color: var(--admin-primary);" />
+                        <div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                                OneSignal Web &amp; Mobile Push
+                                <span style="font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: rgba(37, 99, 235, 0.12); color: #2563eb; font-weight: 700;">Live</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--admin-text-muted);">Dispatches instant browser desktop notifications and mobile OS alerts.</div>
+                        </div>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--admin-border); border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); cursor: pointer;">
+                        <input type="checkbox" asp-for="SendEmail" style="width: 18px; height: 18px; accent-color: var(--admin-primary);" />
+                        <div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text);">Postmark Email Dispatch</div>
+                            <div style="font-size: 12px; color: var(--admin-text-muted);">Dispatches a formatted transactional email notice directly to the operator's mailbox.</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            @* Dispatch Action Buttons *@
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="btn-admin btn-admin-primary" style="padding: 12px 28px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">send</span>
+                    Dispatch Broadcast Alert Now
+                </button>
+                <a href="/centralwks/notifications" class="btn-admin btn-admin-secondary" style="padding: 12px 20px; font-size: 14px; text-decoration: none;">
+                    Cancel
+                </a>
+            </div>
+        </div>
+
+        @* ── Right Column: Live Interactive Card Preview ── *@
+        <div>
+            <div style="position: sticky; top: 88px; display: flex; flex-direction: column; gap: 16px;">
+                <div class="admin-card" style="padding: 20px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                        Live Notification Preview
+                    </div>
+
+                    <div id="previewCard" style="padding: 16px; border: 2px solid var(--admin-primary); border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); display: flex; gap: 14px;">
+                        <div id="previewIconWrapper" style="width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <span id="previewIcon" class="material-symbols-outlined" style="font-size: 20px;">campaign</span>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <span id="previewCategory" style="font-size: 11px; font-weight: 700; color: var(--admin-primary); text-transform: uppercase;">SYSTEM</span>
+                                <span style="color: var(--admin-text-dim); font-size: 11px;">•</span>
+                                <span style="font-size: 11px; color: var(--admin-text-muted);">Just Now</span>
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--admin-primary); display: inline-block;"></span>
+                            </div>
+                            <h4 id="previewTitle" style="font-size: 13.5px; font-weight: 700; color: var(--admin-text); margin: 0 0 4px 0; word-break: break-word;">Scheduled System Maintenance Window</h4>
+                            <p id="previewMessage" style="font-size: 12.5px; color: var(--admin-text-muted); margin: 0 0 10px 0; line-height: 1.45; word-break: break-word;">We will be performing mandatory security upgrades on Master persistence clusters on Sunday.</p>
+                            <div id="previewActionBtn" style="display: inline-block;">
+                                <span style="font-size: 11.5px; font-weight: 600; color: var(--admin-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    View Details &rarr;
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Quick Guide Card *@
+                <div class="admin-card" style="padding: 18px 20px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); font-size: 12.5px; color: var(--admin-text-muted); line-height: 1.5;">
+                    <div style="font-weight: 700; color: var(--admin-text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">help</span>
+                        Broadcast Tips &amp; Rules
+                    </div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li style="margin-bottom: 6px;">Always ensure notification titles are concise and informative.</li>
+                        <li style="margin-bottom: 6px;">Never use ALL CAPS in titles or spam trigger phrases.</li>
+                        <li style="margin-bottom: 6px;">OneSignal Web Push delivers instantly to active subscribed browser sessions.</li>
+                        <li>Postmark transactional emails are sent to verified operator mailboxes.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const audienceSelect = document.getElementById('targetAudienceSelect');
+            const roleRow = document.getElementById('roleTargetRow');
+            const individualRow = document.getElementById('individualTargetRow');
+
+            const titleInput = document.getElementById('notificationTitleInput');
+            const msgInput = document.getElementById('notificationMessageInput');
+            const actionUrlInput = document.getElementById('notificationActionUrlInput');
+            const categorySelect = document.getElementById('categorySelect');
+            const severitySelect = document.getElementById('severitySelect');
+            const iconSelect = document.getElementById('iconSelect');
+
+            const previewCategory = document.getElementById('previewCategory');
+            const previewTitle = document.getElementById('previewTitle');
+            const previewMessage = document.getElementById('previewMessage');
+            const previewIcon = document.getElementById('previewIcon');
+            const previewIconWrapper = document.getElementById('previewIconWrapper');
+            const previewActionBtn = document.getElementById('previewActionBtn');
+
+            const spamAlertBox = document.getElementById('spamAlertBox');
+            const spamWarningList = document.getElementById('spamWarningList');
+            const deliverabilityBadge = document.getElementById('deliverabilityBadge');
+
+            const spamKeywords = [
+                "100% free", "earn money fast", "no risk", "act now", "guaranteed return",
+                "click here now", "winner", "risk free", "double your cash", "million dollars",
+                "instant cash", "make money now", "free gift"
+            ];
+            const urlShorteners = ["bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "is.gd", "buff.ly"];
+
+            function updateAudienceUI() {
+                const val = audienceSelect.value;
+                roleRow.style.display = (val === 'Role') ? 'block' : 'none';
+                individualRow.style.display = (val === 'Individual') ? 'block' : 'none';
+            }
+
+            function updatePreview() {
+                const titleVal = titleInput.value.trim() || "Notification Title Preview";
+                const msgVal = msgInput.value.trim() || "Detailed notification body content preview will appear here...";
+                const catVal = categorySelect.value || "SYSTEM";
+                const iconVal = iconSelect.value || "campaign";
+                const sevVal = severitySelect.value || "Info";
+
+                previewTitle.textContent = titleVal;
+                previewMessage.textContent = msgVal;
+                previewCategory.textContent = catVal.toUpperCase();
+                previewIcon.textContent = iconVal;
+
+                if (actionUrlInput.value.trim().length > 0) {
+                    previewActionBtn.style.display = 'inline-block';
+                } else {
+                    previewActionBtn.style.display = 'none';
+                }
+
+                // Severity colors
+                let color = "#2563eb";
+                let bg = "rgba(37, 99, 235, 0.12)";
+                if (sevVal === 'Success') { color = "#059669"; bg = "rgba(5, 150, 105, 0.12)"; }
+                else if (sevVal === 'Warning') { color = "#d97706"; bg = "rgba(217, 119, 6, 0.12)"; }
+                else if (sevVal === 'Danger') { color = "#dc2626"; bg = "rgba(220, 38, 38, 0.12)"; }
+
+                previewIconWrapper.style.color = color;
+                previewIconWrapper.style.background = bg;
+            }
+
+            function scanAntiSpam() {
+                const t = titleInput.value;
+                const m = msgInput.value;
+                const url = actionUrlInput.value;
+                const combined = (t + " " + m).toLowerCase();
+
+                const warnings = [];
+
+                // 1. ALL CAPS check
+                if (t.length > 5 && t === t.toUpperCase() && /[A-Z]/.test(t)) {
+                    warnings.push("Title is in ALL CAPS. Mailbox filters heavily penalize all-capitalized subject lines.");
+                }
+
+                // 2. High-risk spam keywords
+                spamKeywords.forEach(kw => {
+                    if (combined.includes(kw)) {
+                        warnings.push(`Contains spam filter blacklist keyword: '<strong>${kw}</strong>'.`);
+                    }
+                });
+
+                // 3. Shortened URL check
+                urlShorteners.forEach(sh => {
+                    if (combined.includes(sh) || url.toLowerCase().includes(sh)) {
+                        warnings.push(`Contains URL shortener '<strong>${sh}</strong>'. Use explicit HTTPS domains.`);
+                    }
+                });
+
+                if (warnings.length > 0) {
+                    spamWarningList.innerHTML = warnings.map(w => `<li>${w}</li>`).join('');
+                    spamAlertBox.style.display = 'block';
+                    deliverabilityBadge.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">warning</span><span>Spam Risk Detected</span>';
+                    deliverabilityBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                    deliverabilityBadge.style.color = '#b45309';
+                } else {
+                    spamAlertBox.style.display = 'none';
+                    deliverabilityBadge.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">verified_user</span><span>Deliverability Optimal</span>';
+                    deliverabilityBadge.style.background = 'rgba(16, 185, 129, 0.12)';
+                    deliverabilityBadge.style.color = '#059669';
+                }
+            }
+
+            audienceSelect.addEventListener('change', updateAudienceUI);
+            titleInput.addEventListener('input', () => { updatePreview(); scanAntiSpam(); });
+            msgInput.addEventListener('input', () => { updatePreview(); scanAntiSpam(); });
+            actionUrlInput.addEventListener('input', updatePreview);
+            categorySelect.addEventListener('change', updatePreview);
+            severitySelect.addEventListener('change', updatePreview);
+            iconSelect.addEventListener('change', updatePreview);
+
+            updateAudienceUI();
+            updatePreview();
+            scanAntiSpam();
+        });
+    </script>
+}

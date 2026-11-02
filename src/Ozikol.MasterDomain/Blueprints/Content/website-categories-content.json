@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Service",
+    "footerDisplayTitle": "Our Services",
+    "menuSortOrder": 2,
+    "menuPosition": "First",
+    "showInMenu": true,
+    "showInFooter": true,
+    "footerSortOrder": 1,
+    "publish": true
+  },
+  {
+    "title": "Product",
+    "footerDisplayTitle": "Products",
+    "menuSortOrder": 1,
+    "menuPosition": "Middle",
+    "showInMenu": true,
+    "showInFooter": false,
+    "footerSortOrder": 2,
+    "publish": true
+  }
+]

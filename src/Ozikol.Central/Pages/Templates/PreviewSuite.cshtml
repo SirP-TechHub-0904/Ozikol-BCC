@@ -1,0 +1,505 @@
+@page "{suiteCode?}"
+@model Ozikol.Central.Pages.Templates.PreviewSuiteModel
+@{
+    Layout = null;
+    ViewData["Title"] = $"{Model.SuiteTitle} — Live Website Demo";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Google Fonts & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <!-- Suite Combined Head Assets & CDNs -->
+    @Html.Raw(Model.HeadInjections)
+
+    <style>
+        :root {
+            --bar-bg: #0f172a;
+            --bar-border: rgba(255, 255, 255, 0.1);
+            --bar-text: #f8fafc;
+            --bar-muted: #94a3b8;
+            --primary-accent: #2563eb;
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #090d16;
+            color: #1e293b;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* ── Top Suite Navigation Bar ── */
+        .suite-topbar {
+            height: 60px;
+            background: var(--bar-bg);
+            border-bottom: 1px solid var(--bar-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .suite-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .suite-badge-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+        }
+
+        .suite-title-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .suite-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .suite-subtitle {
+            font-size: 11px;
+            color: var(--bar-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .suite-viewport-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--bar-border);
+        }
+
+        .viewport-device-btn {
+            background: transparent;
+            border: none;
+            color: var(--bar-muted);
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.18s ease;
+        }
+
+        .viewport-device-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .viewport-device-btn.active {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .suite-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-jump-select {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--bar-border);
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .section-jump-select option {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        .btn-topbar-action {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--bar-border);
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.18s ease;
+        }
+
+        .btn-topbar-action:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        /* ── Workspace & Viewport Canvas ── */
+        .workspace-canvas {
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            background: #090d16;
+            padding: 24px 16px;
+            scroll-behavior: smooth;
+        }
+
+        .website-frame-container {
+            width: 100%;
+            max-width: 100%;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow: visible;
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
+            position: relative;
+        }
+
+        .website-frame-container.viewport-tablet {
+            max-width: 768px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .website-frame-container.viewport-mobile {
+            max-width: 375px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* ── Section Slice Presentation ── */
+        .theme-section-wrapper {
+            position: relative;
+            transition: outline 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .theme-section-wrapper:hover .section-hover-badge {
+            opacity: 1;
+        }
+
+        .section-hover-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 50;
+        }
+
+        /* Focused Section Highlighting */
+        .theme-section-wrapper.is-focused {
+            outline: 3px solid #3b82f6;
+            outline-offset: -3px;
+            position: relative;
+            z-index: 10;
+            animation: focusPulse 2.5s ease-out 1;
+        }
+
+        .focused-indicator-tag {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: #2563eb;
+            color: #ffffff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
+            z-index: 60;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @@keyframes focusPulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            50% { box-shadow: 0 0 0 16px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Empty state */
+        .empty-suite-card {
+            padding: 60px 30px;
+            text-align: center;
+            color: #ffffff;
+            max-width: 500px;
+            margin: 60px auto;
+        }
+
+        /* Floating Nav Dots */
+        .floating-nav-dots {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--bar-border);
+            border-radius: 30px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+
+        .nav-dot:hover, .nav-dot.active {
+            background: #3b82f6;
+            transform: scale(1.3);
+        }
+    </style>
+
+    <!-- Individual Scoped Styles for All Sections -->
+    <style>
+        @foreach (var t in Model.TemplatesInSuite)
+        {
+            @if (!string.IsNullOrWhiteSpace(t.CssStyles))
+            {
+                <text>
+                /* Scoped CSS for @t.VariantCode */
+                @Html.Raw(t.CssStyles)
+                </text>
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Top Suite Navigation Bar ── -->
+    <header class="suite-topbar">
+        <div class="suite-brand">
+            <div class="suite-badge-icon">
+                <span class="material-symbols-outlined" style="font-size: 20px;">web</span>
+            </div>
+            <div class="suite-title-box">
+                <h1 class="suite-title">
+                    @Model.SuiteTitle
+                    <span style="background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                        @Model.TemplatesInSuite.Count Sections
+                    </span>
+                </h1>
+                <span class="suite-subtitle">Suite Code: #@Model.SuiteCode</span>
+            </div>
+        </div>
+
+        <!-- Viewport Switcher Controls -->
+        <div class="suite-viewport-controls">
+            <button type="button" class="viewport-device-btn active" onclick="setDeviceViewport('desktop', this)">
+                <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop
+            </button>
+            <button type="button" class="viewport-device-btn" onclick="setDeviceViewport('tablet', this)">
+                <span class="material-symbols-outlined" style="font-size: 16px;">tablet_mac</span> Tablet (768px)
+            </button>
+            <button type="button" class="viewport-device-btn" onclick="setDeviceViewport('mobile', this)">
+                <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile (375px)
+            </button>
+        </div>
+
+        <!-- Quick Jump & Actions -->
+        <div class="suite-actions">
+            @if (Model.TemplatesInSuite.Any())
+            {
+                <select class="section-jump-select" onchange="jumpToSection(this.value)">
+                    <option value="">Jump to Section...</option>
+                    @foreach (var t in Model.TemplatesInSuite)
+                    {
+                        var isSelected = !string.IsNullOrWhiteSpace(Model.FocusedSectionKey) && 
+                            (string.Equals(t.VariantCode, Model.FocusedSectionKey, StringComparison.OrdinalIgnoreCase) || 
+                             string.Equals(t.CategoryKey, Model.FocusedSectionKey, StringComparison.OrdinalIgnoreCase));
+
+                        <option value="sec-@t.VariantCode" selected="@isSelected">
+                            [@(t.CategoryKey?.ToUpperInvariant() ?? "SECTION")] @t.Name
+                        </option>
+                    }
+                </select>
+            }
+
+            <a href="javascript:window.close()" class="btn-topbar-action">
+                <span class="material-symbols-outlined" style="font-size: 16px;">close</span> Close Demo
+            </a>
+        </div>
+    </header>
+
+    <!-- ── Workspace Canvas with Stacked Theme Sections ── -->
+    <main class="workspace-canvas" id="workspaceCanvas">
+        <div class="website-frame-container" id="websiteContainer">
+            @if (Model.TemplatesInSuite.Any())
+            {
+                @foreach (var t in Model.TemplatesInSuite)
+                {
+                    var isFocused = !string.IsNullOrWhiteSpace(Model.FocusedSectionKey) && 
+                        (string.Equals(t.VariantCode, Model.FocusedSectionKey, StringComparison.OrdinalIgnoreCase) || 
+                         string.Equals(t.CategoryKey, Model.FocusedSectionKey, StringComparison.OrdinalIgnoreCase));
+
+                    <section id="sec-@t.VariantCode" class="theme-section-wrapper @(isFocused ? "is-focused" : "")" data-section-key="@t.VariantCode">
+                        @if (isFocused)
+                        {
+                            <div class="focused-indicator-tag">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Active Section Preview: @t.Name
+                            </div>
+                        }
+
+                        <div class="section-hover-badge">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">layers</span>
+                            @(t.CategoryKey?.ToUpperInvariant() ?? "SECTION") • @t.VariantCode
+                        </div>
+
+                        <!-- Render Section HTML Markup with Sample Data tokens filled -->
+                        @Html.Raw(t.HtmlTemplate)
+                    </section>
+                }
+            }
+            else
+            {
+                <div class="empty-suite-card">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #64748b; margin-bottom: 12px; display: block;">layers_clear</span>
+                    <h3 style="font-size: 18px; margin: 0 0 8px 0;">No Sections Found</h3>
+                    <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">No marketplace blocks match suite tag <code>@Model.SuiteCode</code>.</p>
+                </div>
+            }
+        </div>
+    </main>
+
+    <!-- Floating Navigation Dots -->
+    @if (Model.TemplatesInSuite.Count > 1)
+    {
+        <div class="floating-nav-dots" title="Jump to section">
+            @foreach (var t in Model.TemplatesInSuite)
+            {
+                <button type="button" class="nav-dot" onclick="jumpToSection('sec-@t.VariantCode')" title="@t.Name (@t.CategoryKey)"></button>
+            }
+        </div>
+    }
+
+    <!-- Combined Vendor CDN JavaScript & Footer Injections -->
+    @Html.Raw(Model.FooterInjections)
+
+    <!-- Section Inline Interactive JavaScript Execution -->
+    <script>
+        @foreach (var t in Model.TemplatesInSuite)
+        {
+            @if (!string.IsNullOrWhiteSpace(t.JsScript))
+            {
+                <text>
+                try {
+                    // Script for @t.VariantCode
+                    @Html.Raw(t.JsScript)
+                } catch (e) {
+                    console.warn("Section script execution error for @t.VariantCode:", e);
+                }
+                </text>
+            }
+        }
+    </script>
+
+    <!-- Auto-Scroll & Viewport Interactivity Script -->
+    <script>
+        function setDeviceViewport(device, btn) {
+            document.querySelectorAll('.viewport-device-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const container = document.getElementById('websiteContainer');
+            container.classList.remove('viewport-tablet', 'viewport-mobile');
+
+            if (device === 'tablet') {
+                container.classList.add('viewport-tablet');
+            } else if (device === 'mobile') {
+                container.classList.add('viewport-mobile');
+            }
+        }
+
+        function jumpToSection(sectionId) {
+            if (!sectionId) return;
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Auto-scroll to focused section on initial load
+        document.addEventListener('DOMContentLoaded', function () {
+            const focusedEl = document.querySelector('.theme-section-wrapper.is-focused');
+            if (focusedEl) {
+                setTimeout(() => {
+                    focusedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 400);
+            }
+        });
+    </script>
+</body>
+</html>

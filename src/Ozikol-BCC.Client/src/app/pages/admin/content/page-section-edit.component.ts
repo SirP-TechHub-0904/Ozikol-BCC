@@ -22,7 +22,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="current">Edit Section</span>
           </div>
           <h1>Edit Section: {{ section?.title }}</h1>
-          <p class="subtitle">Complete configuration of template layout key, rich descriptions, Cloudinary media assets, and ribbon settings.</p>
+          <p class="subtitle">Complete configuration of template layout key, rich descriptions, media assets, and ribbon settings.</p>
         </div>
         <div class="header-actions">
           <a [routerLink]="['/admin/content/sections/details', sectionId]" class="btn btn-outline">
@@ -84,28 +84,43 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Card 2: Action Buttons & Direct Links -->
+          <!-- Card 2: Action Buttons, Root Icon & Direct Links -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Call-to-Action Buttons & Links</h3>
+              <h3>Action Buttons, Root Icon & Links</h3>
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label>BUTTON TEXT</label>
-                <input type="text" [(ngModel)]="section.buttonText" class="form-control" placeholder="e.g. Discover More, Join Now">
-              </div>
-
-              <div class="form-group">
-                <label>BUTTON TARGET LINK</label>
-                <input type="text" [(ngModel)]="section.buttonLink" class="form-control" placeholder="/programs or https://...">
+                <label>ROOT ICON CLASS (OPTIONAL)</label>
+                <input type="text" [(ngModel)]="section.iconText" class="form-control" placeholder="e.g. tji-phone or fa-solid fa-rocket">
               </div>
 
               <div class="form-group">
                 <label>DIRECT SECTION URL ROUTE</label>
-                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="core-programs">
+                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="e.g. core-programs">
               </div>
 
               <div class="form-group">
+                <label>PRIMARY BUTTON TEXT</label>
+                <input type="text" [(ngModel)]="section.buttonText" class="form-control" placeholder="e.g. Discover More, Join Now">
+              </div>
+
+              <div class="form-group">
+                <label>PRIMARY BUTTON TARGET LINK</label>
+                <input type="text" [(ngModel)]="section.buttonLink" class="form-control" placeholder="e.g. /programs or https://...">
+              </div>
+
+              <div class="form-group">
+                <label>SECONDARY BUTTON TEXT (DUAL CTA)</label>
+                <input type="text" [(ngModel)]="section.secondButtonText" class="form-control" placeholder="e.g. Watch Demo, Learn More">
+              </div>
+
+              <div class="form-group">
+                <label>SECONDARY BUTTON TARGET LINK</label>
+                <input type="text" [(ngModel)]="section.secondButtonLink" class="form-control" placeholder="e.g. /about or https://...">
+              </div>
+
+              <div class="form-group full-width">
                 <label>BUTTON TOGGLE</label>
                 <div class="checkbox-card">
                   <input type="checkbox" [(ngModel)]="section.disableButton" id="disBtn">
@@ -115,12 +130,12 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Card 3: Media & Video Assets (Cloudinary) -->
+          <!-- Card 3: Media & Video Assets -->
           <div class="cms-card">
             <div class="card-header-bar">
               <div>
-                <h3>Media Assets & Cloudinary Uploads</h3>
-                <p class="card-sub">Upload high-resolution images or videos directly to Cloudinary.</p>
+                <h3>Media Assets & Image Uploads</h3>
+                <p class="card-sub">Upload high-resolution images, videos, or media assets.</p>
               </div>
             </div>
 
@@ -135,7 +150,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </span>
                 </div>
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="section.imageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="section.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/feature-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingPrimary">
                     <input type="file" (change)="uploadMedia($event, 'primary')" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>
@@ -160,7 +175,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </span>
                 </div>
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="section.secondImageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="section.secondImageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/secondary-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingSecondary">
                     <input type="file" (change)="uploadMedia($event, 'secondary')" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>

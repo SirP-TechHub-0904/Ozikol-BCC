@@ -12,10 +12,12 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/currencies/details/@Model.Id" class="btn-admin btn-admin-secondary">
-            <span>👁️</span> View Details
+            <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+            View Details
         </a>
         <a href="/centralwks/currencies" class="btn-admin btn-admin-secondary">
-            <span>&larr;</span> Back to Currencies
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            Back to Currencies
         </a>
     </div>
 </div>
@@ -25,14 +27,16 @@
 
     @if (!ModelState.IsValid)
     {
-        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px;">
+        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--admin-danger); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 24px;">
             <div asp-validation-summary="All" style="margin: 0; padding-left: 20px;"></div>
         </div>
     }
 
     <div class="admin-card" style="margin-bottom: 24px;">
         <div class="card-header-styled">
-            <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">💱</div>
+            <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.12); color: var(--admin-indigo);">
+                <span class="material-symbols-outlined" style="font-size: 20px;">currency_exchange</span>
+            </div>
             <div>
                 <h3 class="card-header-title">Identity & Formatting</h3>
                 <p class="card-header-subtitle">Standard currency attributes and regional display formats.</p>
@@ -42,52 +46,54 @@
         <div style="padding: 24px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div class="form-group">
-                    <label asp-for="Input.CurrencyCode" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                    <label asp-for="Input.CurrencyCode" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                         Currency ISO Code <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.CurrencyCode" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px; text-transform: uppercase;" />
+                    <input asp-for="Input.CurrencyCode" class="form-control" style="text-transform: uppercase;" />
                     <span asp-validation-for="Input.CurrencyCode" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="Input.CurrencySymbol" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                    <label asp-for="Input.CurrencySymbol" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                         Symbol <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.CurrencySymbol" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <input asp-for="Input.CurrencySymbol" class="form-control" />
                     <span asp-validation-for="Input.CurrencySymbol" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                 </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div class="form-group">
-                    <label asp-for="Input.DisplayName" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                    <label asp-for="Input.DisplayName" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                         Display Name <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.DisplayName" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <input asp-for="Input.DisplayName" class="form-control" />
                     <span asp-validation-for="Input.DisplayName" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="Input.CultureName" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                    <label asp-for="Input.CultureName" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                         .NET Culture Name <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.CultureName" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <input asp-for="Input.CultureName" class="form-control" />
                     <span asp-validation-for="Input.CultureName" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 8px;">
-                <label asp-for="Input.PillLabel" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                <label asp-for="Input.PillLabel" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                     Selector Pill Label
                 </label>
-                <input asp-for="Input.PillLabel" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <input asp-for="Input.PillLabel" class="form-control" />
             </div>
         </div>
     </div>
 
     <div class="admin-card" style="margin-bottom: 24px;">
         <div class="card-header-styled">
-            <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">📈</div>
+            <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-success);">
+                <span class="material-symbols-outlined" style="font-size: 20px;">trending_up</span>
+            </div>
             <div>
                 <h3 class="card-header-title">Exchange Multiplier & Country Mappings</h3>
                 <p class="card-header-subtitle">FX multiplier against 1.0 USD base and auto-detection routing rules.</p>
@@ -97,41 +103,41 @@
         <div style="padding: 24px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div class="form-group">
-                    <label asp-for="Input.RateFromUsd" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                    <label asp-for="Input.RateFromUsd" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                         Multiplier Rate from 1.0 USD <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.RateFromUsd" type="number" step="0.0001" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <input asp-for="Input.RateFromUsd" type="number" step="0.0001" class="form-control" />
                     <span asp-validation-for="Input.RateFromUsd" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                     @if (Model.IsCurrentBaseCurrency)
                     {
-                        <span style="font-size: 12px; color: #f59e0b; margin-top: 4px; display: block;">This is the active global base currency. Multiplier is locked to 1.0000.</span>
+                        <span style="font-size: 12px; color: #d97706; margin-top: 4px; display: block; font-weight: 600;">This is the active global base currency. Multiplier is locked to 1.0000.</span>
                     }
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="Input.SortOrder" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                    <label asp-for="Input.SortOrder" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                         Display Sort Order
                     </label>
-                    <input asp-for="Input.SortOrder" type="number" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <input asp-for="Input.SortOrder" type="number" class="form-control" />
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 20px;">
-                <label asp-for="Input.AssociatedCountryCodes" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
+                <label asp-for="Input.AssociatedCountryCodes" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
                     Mapped Country Codes (Comma-separated ISO 3166-1 alpha-2)
                 </label>
-                <input asp-for="Input.AssociatedCountryCodes" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px; font-family: monospace;" />
+                <input asp-for="Input.AssociatedCountryCodes" class="form-control" style="font-family: monospace;" />
             </div>
 
             <div style="display: flex; gap: 24px; padding-top: 8px;">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                     <input asp-for="Input.IsActive" type="checkbox" style="width: 18px; height: 18px; accent-color: var(--admin-primary);" />
-                    <span style="font-size: 14px; color: #fff;">Active for Public Checkout</span>
+                    <span style="font-size: 14px; font-weight: 500; color: var(--admin-text);">Active for Public Checkout</span>
                 </label>
 
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                     <input asp-for="Input.IsBaseCurrency" type="checkbox" style="width: 18px; height: 18px; accent-color: #f59e0b;" />
-                    <span style="font-size: 14px; color: #f59e0b;">Set as Global Base Currency (USD)</span>
+                    <span style="font-size: 14px; font-weight: 600; color: #d97706;">Set as Global Base Currency (USD)</span>
                 </label>
             </div>
         </div>
@@ -139,8 +145,10 @@
 
     <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
         <a href="/centralwks/currencies" class="btn-admin btn-admin-secondary">Cancel</a>
-        <button type="submit" class="btn-admin btn-admin-primary">
-            <span>💾</span> Save Changes
+        <button type="submit" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+            Save Changes
         </button>
     </div>
 </form>
+

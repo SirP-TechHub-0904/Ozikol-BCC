@@ -16,7 +16,7 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/creators/edit/@Model.Application.Id" class="btn-admin btn-admin-secondary">
-            <span>✏️</span> Edit Profile
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Profile
         </a>
         <a href="/centralwks/creators/applications" class="btn-admin btn-admin-secondary">
             <span>&larr;</span> Back to Queue
@@ -53,15 +53,21 @@
                 <div>
                     @if (isApproved)
                     {
-                        <span class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">✅ Approved Creator</span>
+                        <span class="badge badge-success" style="font-size: 13px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Approved Creator
+                        </span>
                     }
                     else if (isRejected)
                     {
-                        <span class="badge badge-danger" style="font-size: 13px; padding: 6px 14px;">❌ Rejected</span>
+                        <span class="badge badge-danger" style="font-size: 13px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Rejected
+                        </span>
                     }
                     else
                     {
-                        <span class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">⏳ Under Review</span>
+                        <span class="badge badge-warning" style="font-size: 13px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">hourglass_top</span> Under Review
+                        </span>
                     }
                 </div>
             </div>
@@ -74,8 +80,8 @@
                         @Model.Application.PortfolioUrl
                     </div>
                 </div>
-                <a href="@Model.Application.PortfolioUrl" target="_blank" rel="noopener noreferrer" class="btn-admin btn-admin-primary" style="white-space: nowrap;">
-                    <span>🔗</span> Open Portfolio &rarr;
+                <a href="@Model.Application.PortfolioUrl" target="_blank" rel="noopener noreferrer" class="btn-admin btn-admin-primary" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">link</span> Open Portfolio &rarr;
                 </a>
             </div>
 
@@ -84,7 +90,7 @@
                 <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted); letter-spacing: 0.5px; margin-bottom: 10px;">
                     Template Proposal Pitch & Vision
                 </h3>
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 20px; font-size: 14px; color: #e2e8f0; line-height: 1.7; white-space: pre-wrap;">@Model.Application.ProposalPitch</div>
+                <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 20px; font-size: 14px; color: #e2e8f0; line-height: 1.7; white-space: pre-wrap;">@Model.Application.ProposalPitch</div>
             </div>
 
             @* Internal Review Notes Editor *@
@@ -93,7 +99,7 @@
                 <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted); letter-spacing: 0.5px; margin-bottom: 10px;">
                     Internal Admin Review Notes
                 </h3>
-                <textarea asp-for="ReviewNotes" rows="3" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 14px; color: var(--admin-text); font-size: 14px; margin-bottom: 10px;" placeholder="Add internal evaluations, design quality notes, or feedback..."></textarea>
+                <textarea asp-for="ReviewNotes" rows="3" class="form-control" style="margin-bottom: 10px;" placeholder="Add internal evaluations, design quality notes, or feedback..."></textarea>
                 <button type="submit" class="btn-admin btn-admin-secondary" style="font-size: 12px;">
                     Save Review Notes
                 </button>
@@ -105,7 +111,9 @@
     <div>
         <div class="admin-card" style="margin-bottom: 24px;">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">⚖️</div>
+                <div class="card-header-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">gavel</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Application Decision</h3>
                     <p class="card-header-subtitle">Certify or reject this designer.</p>
@@ -117,15 +125,15 @@
                 {
                     <form method="post" asp-page-handler="Approve" asp-route-id="@Model.Application.Id" style="margin-bottom: 12px;">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center;" onclick="return confirm('Officially certify and approve creator @Model.Application.FullName?');">
-                            <span>✅</span> Approve Creator & Grant Access
+                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Officially certify and approve creator @Model.Application.FullName?');">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">check</span> Approve Creator & Grant Access
                         </button>
                     </form>
 
                     <form method="post" asp-page-handler="Reject" asp-route-id="@Model.Application.Id">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%; justify-content: center;" onclick="return confirm('Reject this creator application?');">
-                            <span>❌</span> Reject Application
+                        <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Reject this creator application?');">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">close</span> Reject Application
                         </button>
                     </form>
                 }
@@ -137,8 +145,8 @@
 
                     <form method="post" asp-page-handler="Reject" asp-route-id="@Model.Application.Id">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%; justify-content: center;" onclick="return confirm('Revoke certification and reject this creator?');">
-                            <span>❌</span> Revoke Certification (Reject)
+                        <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Revoke certification and reject this creator?');">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">close</span> Revoke Certification (Reject)
                         </button>
                     </form>
                 }
@@ -146,8 +154,8 @@
                 {
                     <form method="post" asp-page-handler="Approve" asp-route-id="@Model.Application.Id">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center;">
-                            <span>✅</span> Re-Open & Approve Creator
+                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">check</span> Re-Open & Approve Creator
                         </button>
                     </form>
                 }
@@ -156,7 +164,9 @@
 
         <div class="admin-card">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">📋</div>
+                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Application Metadata</h3>
                     <p class="card-header-subtitle">Timestamp & terms agreement.</p>

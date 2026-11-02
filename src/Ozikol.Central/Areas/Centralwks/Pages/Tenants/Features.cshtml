@@ -10,9 +10,14 @@
         <h1 class="admin-title">Modular Feature Activations</h1>
         <p class="admin-subtitle">Activate, configure pricing, or suspend modular capabilities for <strong>@Model.Tenant.OrganizationName</strong> (<code>@Model.Tenant.TenantKey</code>).</p>
     </div>
-    <div class="admin-actions">
-        <a href="/centralwks/tenants/details?id=@Model.Id" class="btn-admin btn-admin-secondary">
-            ← Back to Details
+    <div class="admin-actions" style="display: flex; gap: 8px;">
+        <a href="/centralwks/features/analytics" class="btn-admin btn-admin-primary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
+            Back to Feature Adoption
+        </a>
+        <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
+            Back to Tenants
         </a>
     </div>
 </div>

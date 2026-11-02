@@ -1,12 +1,14 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Application.Services.Cloudinary;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Videos
 {
@@ -16,16 +18,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Videos
     public class CreateModel : PageModel
     {
         private readonly MasterCatalogDbContext _context;
+        private readonly ICloudinaryService _cloudinaryService;
         private readonly ILogger<CreateModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateModel"/> class.
         /// </summary>
         /// <param name="context">Master catalog database context.</param>
+        /// <param name="cloudinaryService">Dedicated Cloudinary media storage service.</param>
         /// <param name="logger">Structured logging service.</param>
-        public CreateModel(MasterCatalogDbContext context, ILogger<CreateModel> logger)
+        public CreateModel(
+            MasterCatalogDbContext context,
+            ICloudinaryService cloudinaryService,
+            ILogger<CreateModel> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _cloudinaryService = cloudinaryService ?? throw new ArgumentNullException(nameof(cloudinaryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -34,6 +42,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Videos
         /// </summary>
         [BindProperty]
         public VideoInputModel Input { get; set; } = new VideoInputModel();
+
+        /// <summary>
+        /// Gets or sets an optional image file for uploading a custom thumbnail directly to Cloudinary.
+        /// </summary>
+        [BindProperty]
+        public IFormFile? ThumbnailFile { get; set; }
 
         /// <summary>
         /// Form input model for authoring a new video walkthrough guide.
@@ -99,6 +113,23 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Videos
             if (!ModelState.IsValid)
             {
                 return Page();
+            }
+
+            // If a custom thumbnail file was uploaded, upload it to Cloudinary
+            if (ThumbnailFile != null && ThumbnailFile.Length > 0)
+            {
+                try
+                {
+                    var uploadedUrl = await _cloudinaryService.UploadImageAsync(ThumbnailFile, folderName: "videos");
+                    if (!string.IsNullOrEmpty(uploadedUrl))
+                    {
+                        Input.ThumbnailUrl = uploadedUrl;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to upload custom video thumbnail to Cloudinary. Proceeding with fallback URL.");
+                }
             }
 
             var videoId = ExtractYouTubeId(Input.YouTubeVideoId);

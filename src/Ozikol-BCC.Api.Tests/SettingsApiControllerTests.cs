@@ -4,7 +4,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Queries.SettingsQueries;
-using Ozikol_BCC.Domain.Models.Settings;
+using Ozikol_BCC.Api.Controllers;
+using Ozikol_BCC.Domain.Models;
 using Xunit;
 
 namespace Ozikol_BCC.Api.Tests
@@ -41,7 +42,7 @@ namespace Ozikol_BCC.Api.Tests
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<BcpTenantBrandSetting>>();
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<BrandSettingsResponseDto>>();
             result.Should().NotBeNull();
             result!.IsSuccess.Should().BeTrue();
             result.Message.Should().Be("Brand identity settings retrieved.");

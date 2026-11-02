@@ -34,11 +34,13 @@
     <div class="admin-actions">
         <form method="post" asp-page-handler="TogglePublish" asp-route-id="@Model.Article.Id" style="display: inline;">
             <button type="submit" class="btn-admin btn-admin-secondary">
+                <span class="material-symbols-outlined" style="font-size: 16px;">@(Model.Article.IsPublished ? "visibility_off" : "public")</span>
                 @(Model.Article.IsPublished ? "Unpublish" : "Publish Live")
             </button>
         </form>
         <a href="/centralwks/helpdesk/articles/edit/@Model.Article.Id" class="btn-admin btn-admin-primary">
-            <span>✏️</span> Edit Article
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+            Edit Article
         </a>
     </div>
 </div>
@@ -60,7 +62,7 @@
             </div>
 
             <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-top: 24px; margin-bottom: 12px;">Guide Content</h2>
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 24px; line-height: 1.7; color: #e2e8f0; font-size: 14px;">
+            <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 24px; line-height: 1.7; color: var(--admin-text); font-size: 14px;">
                 @Html.Raw(Model.Article.ContentHtml)
             </div>
         </div>

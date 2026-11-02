@@ -67,38 +67,65 @@ public class GeoLocationService : IGeoLocationService, IDisposable
     /// <inheritdoc />
     public string? ResolveCountryCode(IPAddress? clientIp)
     {
-        if (clientIp == null || _reader == null)
+        if (clientIp == null)
         {
             return null;
         }
 
-        // Ignore private / loopback IP addresses (127.0.0.1, ::1, 10.x, 192.168.x)
+        // 1. In local development (127.0.0.1, ::1) or private intranet IPs, detect host machine timezone
         if (IPAddress.IsLoopback(clientIp) || IsPrivateIp(clientIp))
         {
+            try
+            {
+                var tz = TimeZoneInfo.Local.Id;
+                if (tz.Contains("W. Central Africa", StringComparison.OrdinalIgnoreCase) ||
+                    tz.Contains("Lagos", StringComparison.OrdinalIgnoreCase) ||
+                    tz.Contains("West Africa", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "NG";
+                }
+                if (tz.Contains("GMT", StringComparison.OrdinalIgnoreCase) || tz.Contains("London", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "GB";
+                }
+                if (tz.Contains("Eastern", StringComparison.OrdinalIgnoreCase) || tz.Contains("Pacific", StringComparison.OrdinalIgnoreCase) || tz.Contains("Central Standard", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "US";
+                }
+            }
+            catch
+            {
+                // Ignore timezone lookup failures
+            }
+
             return null;
         }
 
-        try
+        // 2. Query offline MaxMind GeoLite2 reader if loaded
+        if (_reader != null)
         {
-            var response = _reader.Country(clientIp);
-            var isoCode = response.Country.IsoCode;
-
-            if (!string.IsNullOrWhiteSpace(isoCode))
+            try
             {
-                return isoCode.ToUpperInvariant();
+                var response = _reader.Country(clientIp);
+                var isoCode = response.Country.IsoCode;
+
+                if (!string.IsNullOrWhiteSpace(isoCode))
+                {
+                    return isoCode.ToUpperInvariant();
+                }
             }
-        }
-        catch (AddressNotFoundException)
-        {
-            // Normal when IP is not in public database
-        }
-        catch (GeoIP2Exception ex)
-        {
-            _logger.LogDebug(ex, "MaxMind GeoIP lookup error for {Ip}", clientIp);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during GeoIP lookup for {Ip}", clientIp);
+            catch (AddressNotFoundException)
+            {
+                // Normal when IP is not in public database
+            }
+            catch (GeoIP2Exception ex)
+            {
+                _logger.LogDebug(ex, "MaxMind GeoIP lookup error for {Ip}", clientIp);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during GeoIP lookup for {Ip}", clientIp);
+            }
         }
 
         return null;

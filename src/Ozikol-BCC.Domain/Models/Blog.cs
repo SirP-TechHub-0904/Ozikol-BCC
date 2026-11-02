@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ozikol_BCC.Domain.Models
 {
@@ -103,6 +104,15 @@ namespace Ozikol_BCC.Domain.Models
         /// Indicates if this article is scheduled for future release.
         /// </summary>
         public bool IsScheduled { get; set; } = false;
+
+        /// <summary>
+        /// Optional custom CSS class string applied to this blog card/article container (e.g. "featured-post", "border-glow").
+        /// Injected into templates via {{ CustomClass }}.
+        /// </summary>
+        [NotMapped]
+        [MaxLength(200)]
+        [Display(Name = "Custom CSS Class")]
+        public string? CustomClass { get; set; }
     }
 }
 

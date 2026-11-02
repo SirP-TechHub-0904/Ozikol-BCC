@@ -36,25 +36,51 @@ import { ApiService } from '../../../core/services/api.service';
         </div>
       </div>
 
-      <!-- 1. Clickable Metric Cards Grid -->
+      <!-- 1. Clickable 5 Comprehensive Smart Cards Grid -->
       <div class="metrics-grid">
-        <!-- Card 1: Web Pages -->
+        <!-- Card 1: Web Pages Lifecycle -->
         <div class="metric-card clickable" (click)="navigateTo('/admin/content/pages')">
           <div class="card-top">
             <div class="card-icon bg-blue">
               <span class="material-symbols-outlined">description</span>
             </div>
-            <span class="card-chip chip-blue">Live Pages</span>
+            <span class="card-chip chip-blue">Page Lifecycle</span>
           </div>
           <div class="card-value">{{ metrics?.totalPages || 0 }}</div>
           <div class="card-label">Total Web Pages</div>
           <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedPages || 0 }} Published</span>
-            <span class="text-amber"><span class="dot bg-amber"></span> {{ metrics?.unpublishedPages || 0 }} Drafts</span>
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.publishedPages || 0 }}</strong> Published</span>
+              <span class="text-amber"><span class="dot bg-amber"></span> <strong>{{ metrics?.draftPages || 0 }}</strong> Drafts</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">gavel</span> {{ metrics?.legalAndSecurityPages || 0 }} Legal & Security (Terms, Policy)</span>
+            </div>
           </div>
         </div>
 
-        <!-- Card 2: Categories -->
+        <!-- Card 2: Page Sections -->
+        <div class="metric-card clickable" (click)="navigateTo('/admin/content/pages')">
+          <div class="card-top">
+            <div class="card-icon bg-teal">
+              <span class="material-symbols-outlined">view_quilt</span>
+            </div>
+            <span class="card-chip chip-teal">Section Engine</span>
+          </div>
+          <div class="card-value">{{ metrics?.totalSections || 0 }}</div>
+          <div class="card-label">Total Page Sections</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.activeSections || 0 }}</strong> Active</span>
+              <span class="text-muted"><span class="dot bg-muted"></span> <strong>{{ metrics?.disabledSections || 0 }}</strong> Unused</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">home</span> <strong>{{ metrics?.homeSections || 0 }}</strong> Show in Home</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Menu Categories & Navigation -->
         <div class="metric-card clickable" (click)="navigateTo('/admin/content/categories')">
           <div class="card-top">
             <div class="card-icon bg-purple">
@@ -65,54 +91,60 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="card-value">{{ metrics?.totalCategories || 0 }}</div>
           <div class="card-label">Menu Categories</div>
           <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedCategories || 0 }} Published</span>
-            <span class="text-muted"><span class="dot bg-muted"></span> {{ metrics?.unpublishedCategories || 0 }} Hidden</span>
-          </div>
-        </div>
-
-        <!-- Card 3: Hero Sliders -->
-        <div class="metric-card clickable" (click)="navigateTo('/admin/content/sliders')">
-          <div class="card-top">
-            <div class="card-icon bg-amber">
-              <span class="material-symbols-outlined">view_carousel</span>
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.publishedCategories || 0 }}</strong> Published</span>
+              <span class="text-muted"><span class="dot bg-muted"></span> <strong>{{ metrics?.unpublishedCategories || 0 }}</strong> Hidden</span>
             </div>
-            <span class="card-chip chip-amber">Carousels</span>
-          </div>
-          <div class="card-value">{{ metrics?.totalSliders || 0 }}</div>
-          <div class="card-label">Hero Sliders</div>
-          <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedSliders || 0 }} Active</span>
-          </div>
-        </div>
-
-        <!-- Card 4: FAQs -->
-        <div class="metric-card clickable" (click)="navigateTo('/admin/content/faqs')">
-          <div class="card-top">
-            <div class="card-icon bg-teal">
-              <span class="material-symbols-outlined">quiz</span>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">menu</span> {{ metrics?.topMenuItems || 0 }} Top • {{ metrics?.dropdownItems || 0 }} Dropdown • {{ metrics?.footerLinks || 0 }} Footer</span>
             </div>
-            <span class="card-chip chip-teal">Knowledge</span>
-          </div>
-          <div class="card-value">{{ metrics?.totalFaqs || 0 }}</div>
-          <div class="card-label">FAQs & Answers</div>
-          <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedFaqs || 0 }} Active</span>
-            <span class="text-blue">{{ metrics?.totalFaqCategories || 0 }} Categories</span>
           </div>
         </div>
 
-        <!-- Card 5: Template Engine -->
-        <div class="metric-card">
+        <!-- Card 4: Active Theme Suite -->
+        <div class="metric-card clickable" (click)="navigateTo('/admin/content/templates/my-templates')">
           <div class="card-top">
             <div class="card-icon bg-rose">
               <span class="material-symbols-outlined">palette</span>
             </div>
             <span class="card-chip chip-rose">Theme Engine</span>
           </div>
-          <div class="card-value" style="font-size: 18px; margin-top: 6px;">{{ metrics?.templateName || 'Enterprise Pro' }}</div>
+          <div class="card-value theme-name-value" [title]="metrics?.templateName">{{ metrics?.templateName || 'Corporate Suite' }}</div>
           <div class="card-label">Active Website Theme</div>
           <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> CSS Tokens Loaded</span>
+            <div class="breakdown-row">
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ metrics?.blueprintCount || 0 }}</strong> Blueprints</span>
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.activeInjections || 0 }}</strong> Tags</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">cloud_done</span> Global Assets Synced</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: Content Health & Alerts -->
+        <div class="metric-card clickable" (click)="navigateTo('/admin/content/pages')">
+          <div class="card-top">
+            <div class="card-icon" [class.bg-amber]="(metrics?.emptyPagesCount || 0) > 0" [class.bg-green]="(metrics?.emptyPagesCount || 0) === 0">
+              <span class="material-symbols-outlined">{{ (metrics?.emptyPagesCount || 0) > 0 ? 'warning' : 'verified' }}</span>
+            </div>
+            <span class="card-chip" [class.chip-amber]="(metrics?.emptyPagesCount || 0) > 0" [class.chip-teal]="(metrics?.emptyPagesCount || 0) === 0">
+              {{ (metrics?.emptyPagesCount || 0) > 0 ? 'Alert' : 'Optimal' }}
+            </span>
+          </div>
+          <div class="card-value">{{ (metrics?.emptyPagesCount || 0) > 0 ? metrics?.emptyPagesCount + ' Issues' : 'All Clear' }}</div>
+          <div class="card-label">Content Health & Alerts</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span [class.text-rose]="(metrics?.emptyPagesCount || 0) > 0" [class.text-green]="(metrics?.emptyPagesCount || 0) === 0">
+                <span class="dot" [class.bg-rose]="(metrics?.emptyPagesCount || 0) > 0" [class.bg-green]="(metrics?.emptyPagesCount || 0) === 0"></span>
+                <strong>{{ metrics?.emptyPagesCount || 0 }}</strong> Empty Pages
+              </span>
+              <span class="text-amber"><span class="dot bg-amber"></span> <strong>{{ metrics?.draftPages || 0 }}</strong> Drafts</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">link</span> 100% Slugs Valid</span>
+            </div>
           </div>
         </div>
       </div>
@@ -397,22 +429,62 @@ import { ApiService } from '../../../core/services/api.service';
     .chip-teal { background: #f0fdf4; color: #15803d; }
     .chip-rose { background: #fff1f2; color: #be123c; }
 
-    .card-value { font-size: 30px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); }
+    .card-value { font-size: 28px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); line-height: 1.2; }
+    .theme-name-value {
+      font-size: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 4px;
+    }
     .card-label { font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 12px; }
     .card-breakdown {
       display: flex;
-      gap: 12px;
+      flex-direction: column;
+      gap: 6px;
       font-size: 12px;
       font-weight: 600;
       border-top: 1px solid #f1f5f9;
       padding-top: 10px;
     }
+    .breakdown-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .breakdown-sub {
+      display: flex;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .sub-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sub-badge .material-symbols-outlined { font-size: 14px; color: #0050e5; }
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
     .bg-green { background: #22c55e; }
     .bg-amber { background: #f59e0b; }
+    .bg-rose { background: #e11d48; }
     .bg-muted { background: #94a3b8; }
+    .bg-blue { background: #0050e5; }
     .text-green { color: #16a34a; }
     .text-amber { color: #d97706; }
+    .text-rose { color: #e11d48; }
     .text-blue { color: #0050e5; }
     .text-muted { color: #64748b; }
 

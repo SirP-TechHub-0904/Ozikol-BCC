@@ -84,6 +84,21 @@ import { ToastService } from '../../../core/services/toast.service';
                 <input type="number" [(ngModel)]="page.sortOrder" class="form-control">
               </div>
 
+              <div class="form-group">
+                <label>MENU ZONE POSITION *</label>
+                <select [(ngModel)]="page.menuPosition" class="form-control">
+                  <option [ngValue]="1">First Zone (NavItems="first")</option>
+                  <option [ngValue]="2">Middle Zone (NavItems="middle")</option>
+                  <option [ngValue]="3">Last Zone (NavItems="last")</option>
+                  <option [ngValue]="4">Top Utility Bar (MainMenuItems="top")</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>CUSTOM CSS CLASS</label>
+                <input type="text" [(ngModel)]="page.customClass" class="form-control" placeholder="e.g. nav-highlight">
+              </div>
+
               <div class="form-group full-width">
                 <label>PARENT PAGE (SUB-PAGE HIERARCHY)</label>
                 <select [(ngModel)]="page.mainPageId" class="form-control">
@@ -126,14 +141,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-header-bar">
               <div>
                 <h3>Banner & Media Image</h3>
-                <p class="card-sub">Upload high-resolution header images via Cloudinary.</p>
+                <p class="card-sub">Upload high-resolution header image or enter media URL.</p>
               </div>
             </div>
 
             <div class="form-grid">
               <div class="form-group full-width">
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="page.imageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="page.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/banner.jpg">
                   <label class="btn-upload" [class.uploading]="uploading">
                     <input type="file" (change)="uploadImage($event)" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>
@@ -193,54 +208,100 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Navigation Placement Rules -->
+          <!-- Independent Navigation Placement Rules -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Navigation Placements</h3>
+              <h3>Independent Navigation Placements</h3>
             </div>
-            <div class="toggles-list">
-              <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="page.showInMainMenu">
-                <div class="toggle-info">
-                  <strong>Show in Main Menu</strong>
-                  <p>Displays on primary top navigation bar.</p>
+            <p class="card-hint">Each placement operates independently. A page can appear in multiple areas simultaneously, each with its own dedicated sort order.</p>
+
+            <div class="toggles-list" style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- 1. Top Utility Bar -->
+              <div class="placement-card" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
+                <label class="toggle-card" style="border: none; padding: 0; margin-bottom: 8px;">
+                  <input type="checkbox" [(ngModel)]="page.showInTopBar">
+                  <div class="toggle-info">
+                    <strong>1. Top Utility Bar</strong>
+                    <p>Displays in the upper utility header (beside contact info & socials).</p>
+                  </div>
+                </label>
+                <div class="sort-field" *ngIf="page.showInTopBar" style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #64748b;">Top Bar Sort Order:</label>
+                  <input type="number" [(ngModel)]="page.topBarSortOrder" class="form-control" style="width: 100px; padding: 4px 8px; font-size: 13px;" placeholder="0">
                 </div>
-              </label>
-              <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="page.showInMainTop">
-                <div class="toggle-info">
-                  <strong>Show in Main Top Bar</strong>
-                  <p>Displays in secondary top utility bar.</p>
+              </div>
+
+              <!-- 2. Main Menu Navbar -->
+              <div class="placement-card" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
+                <label class="toggle-card" style="border: none; padding: 0; margin-bottom: 8px;">
+                  <input type="checkbox" [(ngModel)]="page.showInMainMenu">
+                  <div class="toggle-info">
+                    <strong>2. Main Header Navbar (Standalone)</strong>
+                    <p>Displays on the primary navigation bar as a standalone page link.</p>
+                  </div>
+                </label>
+                <div class="sort-field" *ngIf="page.showInMainMenu" style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #64748b;">Main Menu Sort Order:</label>
+                  <input type="number" [(ngModel)]="page.mainMenuSortOrder" class="form-control" style="width: 100px; padding: 4px 8px; font-size: 13px;" placeholder="0">
                 </div>
-              </label>
-              <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="page.showInMenuDropDown">
-                <div class="toggle-info">
-                  <strong>Show in Menu DropDown</strong>
-                  <p>Displays inside category dropdowns.</p>
+              </div>
+
+              <!-- 3. Category Dropdown -->
+              <div class="placement-card" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;" [style.opacity]="page.pageCategoryId ? '1' : '0.6'">
+                <label class="toggle-card" style="border: none; padding: 0; margin-bottom: 8px;">
+                  <input type="checkbox" [(ngModel)]="page.showInMenuDropDown" [disabled]="!page.pageCategoryId">
+                  <div class="toggle-info">
+                    <strong>3. Category Dropdown Menu</strong>
+                    <p *ngIf="page.pageCategoryId">Displays inside its assigned parent Category dropdown.</p>
+                    <p *ngIf="!page.pageCategoryId" style="color: #e11d48;">Select a Menu Category on the left to activate dropdown visibility.</p>
+                  </div>
+                </label>
+                <div class="sort-field" *ngIf="page.showInMenuDropDown && page.pageCategoryId" style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #64748b;">Dropdown Sort Order:</label>
+                  <input type="number" [(ngModel)]="page.dropdownSortOrder" class="form-control" style="width: 100px; padding: 4px 8px; font-size: 13px;" placeholder="0">
                 </div>
-              </label>
-              <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="page.showInFooter">
-                <div class="toggle-info">
-                  <strong>Show in Footer</strong>
-                  <p>Displays in site footer links section.</p>
+              </div>
+
+              <!-- 4. Footer Column -->
+              <div class="placement-card" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
+                <label class="toggle-card" style="border: none; padding: 0; margin-bottom: 8px;">
+                  <input type="checkbox" [(ngModel)]="page.showInFooter">
+                  <div class="toggle-info">
+                    <strong>4. Website Footer Column</strong>
+                    <p>Displays in footer navigation (either under its Category or via Tagged group like Quick Links).</p>
+                  </div>
+                </label>
+                <div class="sort-field" *ngIf="page.showInFooter" style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #64748b;">Footer Sort Order:</label>
+                  <input type="number" [(ngModel)]="page.footerSortOrder" class="form-control" style="width: 100px; padding: 4px 8px; font-size: 13px;" placeholder="0">
                 </div>
-              </label>
-              <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="page.isLegal">
-                <div class="toggle-info">
-                  <strong>Is Legal Document</strong>
-                  <p [innerText]="'Surfaced to {{#each LegalPages}} and footer legal compliance tokens.'"></p>
+              </div>
+
+              <!-- 5. Footer Bottom Bar -->
+              <div class="placement-card" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
+                <label class="toggle-card" style="border: none; padding: 0; margin-bottom: 8px;">
+                  <input type="checkbox" [(ngModel)]="page.showInFooterBottom">
+                  <div class="toggle-info">
+                    <strong>5. Footer Bottom Bar (Compliance & Utility)</strong>
+                    <p>Displays beside the copyright notice on the bottom row (Terms, Privacy, Console, etc.).</p>
+                  </div>
+                </label>
+                <div class="sort-field" *ngIf="page.showInFooterBottom" style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #64748b;">Bottom Bar Sort Order:</label>
+                  <input type="number" [(ngModel)]="page.footerBottomSortOrder" class="form-control" style="width: 100px; padding: 4px 8px; font-size: 13px;" placeholder="0">
                 </div>
-              </label>
-              <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="page.isMenuCTA">
-                <div class="toggle-info">
-                  <strong>Is Menu CTA Button</strong>
-                  <p>Highlighted as an action button in header navbars.</p>
-                </div>
-              </label>
+              </div>
+
+              <!-- Action CTA Button -->
+              <div class="placement-card" style="border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 16px;">
+                <label class="toggle-card" style="border: none; padding: 0;">
+                  <input type="checkbox" [(ngModel)]="page.isMenuCTA">
+                  <div class="toggle-info">
+                    <strong>Header Action Button (CTA)</strong>
+                    <p>Renders as a prominent action button in the navbar (e.g. "Get Started").</p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -485,9 +546,14 @@ export class WebPageEditComponent implements OnInit {
   }
 
   loadAvailableTags(): void {
+    const defaultPresets = ['quicklinks', 'resources', 'support', 'popular'];
     this.api.get<any>('ContentApi/page-tags').subscribe({
       next: (res) => {
-        this.availableTags = res?.data || [];
+        const fetched = res?.data || [];
+        this.availableTags = Array.from(new Set([...defaultPresets, ...fetched]));
+      },
+      error: () => {
+        this.availableTags = defaultPresets;
       }
     });
   }

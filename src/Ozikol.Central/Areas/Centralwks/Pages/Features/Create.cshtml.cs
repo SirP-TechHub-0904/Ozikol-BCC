@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -11,25 +13,58 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 {
     /// <summary>
     /// PageModel creating new modular capability definitions in the central master catalog.
+    /// Supports USD default base pricing, multi-duration discounts, and suite classification.
     /// </summary>
     public class CreateModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly ICurrencyService _currencyService;
+
+        /// <summary>
+        /// The 10 canonical official Feature Suites of the Ozikol platform.
+        /// </summary>
+        public static readonly string[] CanonicalSuites = new[]
+        {
+            "People, Community & Collaboration",
+            "Workforce, Rota & Scheduling",
+            "Reports, Forms & Analytics",
+            "Events & Training Management",
+            "Finance & Commercial Revenue",
+            "Operations & Workflows",
+            "Communication, AI & Support",
+            "Compliance, Learning & Certification",
+            "Demographics & Civic Census",
+            "Life Events & Publications"
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateModel"/> class.
         /// </summary>
         /// <param name="dbContext">Master catalog database context.</param>
-        public CreateModel(MasterCatalogDbContext dbContext)
+        /// <param name="currencyService">Central platform currency engine service.</param>
+        public CreateModel(MasterCatalogDbContext dbContext, ICurrencyService currencyService)
         {
-            _dbContext = dbContext;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
         }
+
+        /// <summary>
+        /// Exchange rate multipliers for live client-side currency conversion.
+        /// </summary>
+        public decimal NgnRate => _currencyService.GetExchangeRate("NGN");
+        public decimal GbpRate => _currencyService.GetExchangeRate("GBP");
+        public decimal EurRate => _currencyService.GetExchangeRate("EUR");
 
         /// <summary>
         /// Input model binding user parameters for the new feature.
         /// </summary>
         [BindProperty]
         public FeatureInputModel Input { get; set; } = new();
+
+        /// <summary>
+        /// Converts a USD amount to formatted regional currency for preview.
+        /// </summary>
+        public string FormatPreview(decimal usdAmount, string currencyCode) => _currencyService.FormatUsdConverted(usdAmount, currencyCode);
 
         /// <summary>
         /// Handles HTTP GET requests to display the capability creation form.
@@ -56,6 +91,26 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 return Page();
             }
 
+            decimal monthly = 0m;
+            decimal quarterly = 0m;
+            decimal yearly = 0m;
+
+            if (string.Equals(Input.BillingCadence, "Yearly", StringComparison.OrdinalIgnoreCase))
+            {
+                monthly = 0m;
+                quarterly = 0m;
+                yearly = Math.Max(0m, Input.YearlyPrice);
+            }
+            else
+            {
+                monthly = Math.Max(0m, Input.MonthlyPrice);
+                var qDisc = Math.Clamp(Input.QuarterlyDiscountPercent, 0, 100);
+                var yDisc = Math.Clamp(Input.YearlyDiscountPercent, 0, 100);
+
+                quarterly = Math.Round((monthly * 3m) * (1.0m - (qDisc / 100m)), 2);
+                yearly = Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
+            }
+
             var feature = new MasterFeatureCatalog
             {
                 Id = Guid.NewGuid(),
@@ -64,11 +119,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 Category = Input.Category.Trim(),
                 Description = Input.Description?.Trim(),
                 Icon = Input.Icon?.Trim(),
-                RoutePrefix = Input.RoutePrefix?.Trim(),
                 BillingType = (FeatureBillingType)Input.BillingType,
-                MonthlyPrice = Input.MonthlyPrice,
-                QuarterlyPrice = Input.QuarterlyPrice > 0 ? Input.QuarterlyPrice : Math.Round(Input.MonthlyPrice * 3 * 0.9m, 2),
-                YearlyPrice = Input.YearlyPrice > 0 ? Input.YearlyPrice : Math.Round(Input.MonthlyPrice * 12 * 0.8m, 2),
+                MonthlyPrice = monthly,
+                QuarterlyPrice = quarterly,
+                YearlyPrice = yearly,
                 IsCompulsory = Input.IsCompulsory,
                 IsMetered = Input.IsMetered,
                 MeterUnitName = Input.IsMetered ? Input.MeterUnitName?.Trim() : null,
@@ -80,7 +134,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             };
 
             _dbContext.MasterFeatureCatalogs.Add(feature);
-
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
                 UserId = User.Identity?.Name,
@@ -95,6 +148,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             });
 
             await _dbContext.SaveChangesAsync();
+            _currencyService.InvalidatePricingCache();
 
             TempData["Success"] = $"Capability '{feature.Name}' created successfully.";
             return RedirectToPage("/Features/Details", new { id = feature.Id });
@@ -119,7 +173,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             [Required(ErrorMessage = "Category is required.")]
             [StringLength(60)]
             [Display(Name = "Category")]
-            public string Category { get; set; } = "Operations";
+            public string Category { get; set; } = "People, Community & Collaboration";
 
             [StringLength(500)]
             [Display(Name = "Description")]
@@ -129,27 +183,36 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             [Display(Name = "Icon Identifier")]
             public string? Icon { get; set; }
 
-            [StringLength(100)]
-            [Display(Name = "Route Prefix")]
-            public string? RoutePrefix { get; set; }
-
             [Display(Name = "Billing Model")]
             public int BillingType { get; set; } = 1;
 
+            /// <summary>
+            /// Billing cadence: "Yearly" (Annual fixed subscription) or "Monthly".
+            /// </summary>
+            public string BillingCadence { get; set; } = "Yearly";
+
             [Range(0, 100000)]
             [Display(Name = "Monthly Price ($)")]
-            public decimal MonthlyPrice { get; set; } = 20.00m;
+            public decimal MonthlyPrice { get; set; } = 0.00m;
+
+            [Range(0, 100)]
+            [Display(Name = "Quarterly Discount (%)")]
+            public int QuarterlyDiscountPercent { get; set; } = 10;
+
+            [Range(0, 100)]
+            [Display(Name = "Yearly Discount (%)")]
+            public int YearlyDiscountPercent { get; set; } = 20;
 
             [Range(0, 300000)]
             [Display(Name = "Quarterly Price ($)")]
-            public decimal QuarterlyPrice { get; set; } = 54.00m;
+            public decimal QuarterlyPrice { get; set; }
 
             [Range(0, 1000000)]
             [Display(Name = "Yearly Price ($)")]
-            public decimal YearlyPrice { get; set; } = 192.00m;
+            public decimal YearlyPrice { get; set; } = 0.74m;
 
             [Display(Name = "Compulsory Core Feature")]
-            public bool IsCompulsory { get; set; } = false;
+            public bool IsCompulsory { get; set; } = true;
 
             [Display(Name = "Metered Usage Billing")]
             public bool IsMetered { get; set; } = false;

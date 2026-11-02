@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +8,8 @@ import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
+import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
+import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
 
 /**
  * Public dynamic website orchestration component.
@@ -28,7 +30,6 @@ import { TemplateHydrationService } from '../admin/content/templates/services/te
     <div *ngIf="loading" class="public-site-loader">
       <div class="loader-inner">
         <div class="spinner-ring"></div>
-        <p class="loader-text">Loading {{ brandName || 'Website' }}...</p>
       </div>
     </div>
 
@@ -81,13 +82,6 @@ import { TemplateHydrationService } from '../admin/content/templates/services/te
       border-top-color: #0050e5;
       border-radius: 50%;
       animation: spin 0.85s linear infinite;
-      margin-bottom: 16px;
-    }
-    .loader-text {
-      color: #64748b;
-      font-size: 14.5px;
-      font-weight: 500;
-      letter-spacing: -0.01em;
       margin: 0;
     }
     @keyframes spin {
@@ -171,49 +165,6 @@ import { TemplateHydrationService } from '../admin/content/templates/services/te
       min-height: 100vh;
     }
 
-    /* Navbar Dropdowns */
-    .dropdown {
-      position: relative !important;
-    }
-    .dropdown-menu {
-      display: none;
-    }
-    .dropdown-menu.show {
-      display: block !important;
-      position: absolute !important;
-      top: 100% !important;
-      left: 0 !important;
-      z-index: 99999 !important;
-      min-width: 15rem !important;
-      margin-top: 8px !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      background-color: #ffffff !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 10px !important;
-      box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
-      padding: 8px 0 !important;
-      animation: fadeInDropdown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes fadeInDropdown {
-      from { opacity: 0; transform: translateY(-6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .dropdown-item {
-      cursor: pointer;
-      display: block !important;
-      padding: 9px 18px !important;
-      font-size: 14px !important;
-      font-weight: 500 !important;
-      color: #334155 !important;
-      text-decoration: none !important;
-      transition: background 0.15s ease, color 0.15s ease !important;
-    }
-    .dropdown-item:hover {
-      background-color: #f1f5f9 !important;
-      color: #0050e5 !important;
-    }
-
     /* Dynamic Form Input Focus & Styling */
     .dynamic-rendered-content form .form-control:focus,
     .dynamic-rendered-content form .form-select:focus {
@@ -223,6 +174,13 @@ import { TemplateHydrationService } from '../admin/content/templates/services/te
     .dynamic-rendered-content form button[type="submit"]:disabled {
       opacity: 0.65;
       cursor: not-allowed;
+    }
+    .oz-recaptcha-wrap {
+      display: flex;
+      margin: 12px 0;
+    }
+    .oz-recaptcha-wrap .g-recaptcha {
+      transform-origin: 0 0;
     }
   `]
 })
@@ -238,14 +196,14 @@ export class LandingComponent implements OnInit, OnDestroy {
   activeBlogId: string | null = null;
 
   // Tenant Live Content & Theme Architecture
-  brandName: string = 'Organization';
+  brandName: string = '';
   brandLogoUrl: string = '';
   brandInfo: any = {};
+  recaptchaSiteKey: string = '6LdBsb8tAAAAAPuXWg5SLjjbPVZd0_-v1w4WbK6H';
   activeTemplates: any[] = [];
   categories: any[] = [];
   publishedPages: any[] = [];
   sections: any[] = [];
-  sliders: any[] = [];
   blogs: any[] = [];
   codeInjections: { head: any[]; bodyOpen: any[]; footer: any[] } = { head: [], bodyOpen: [], footer: [] };
 
@@ -266,11 +224,25 @@ export class LandingComponent implements OnInit, OnDestroy {
     public cartService: CartService,
     private toastService: ToastService,
     private templateHydration: TemplateHydrationService,
+    private contentHydration: ContentHydrationService,
+    private htmlAssembler: HtmlAssemblerService,
     private sanitizer: DomSanitizer,
     private titleService: Title,
     private metaService: Meta,
-    private elementRef: ElementRef
+    private elementRef: ElementRef,
+    private cdr: ChangeDetectorRef
   ) {}
+
+  /**
+   * Aggregates live database code injections for HtmlAssemblerService zones.
+   */
+  private get allCodeInjectionsList(): CodeInjectionTag[] {
+    const list: CodeInjectionTag[] = [];
+    (this.codeInjections.head || []).forEach(t => list.push({ ...t, zone: 'head', isActive: t.isActive !== false }));
+    (this.codeInjections.bodyOpen || []).forEach(t => list.push({ ...t, zone: 'body_open', isActive: t.isActive !== false }));
+    (this.codeInjections.footer || []).forEach(t => list.push({ ...t, zone: 'footer', isActive: t.isActive !== false }));
+    return list;
+  }
 
   ngOnInit(): void {
     // Unlock native document scrolling for public website mode
@@ -334,10 +306,13 @@ export class LandingComponent implements OnInit, OnDestroy {
         // 1. Homepage Rendering
         await Promise.all([
           this.fetchHomeSections(),
-          this.fetchSliders(),
           this.fetchRecentBlogs()
         ]);
-        this.composeHomepage();
+        if (this.activeTemplates.length === 0 && this.sections.length === 0) {
+          this.composeBlankCanvasWelcome();
+        } else {
+          this.composeHomepage();
+        }
       } else if (this.currentSlug === 'blog') {
         // 2. Blog Archive or Single Article
         if (this.activeBlogId) {
@@ -354,6 +329,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
 
       this.loading = false;
+      this.cdr.detectChanges();
       this.recordTelemetry();
     })
     .catch((err) => {
@@ -370,32 +346,80 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchBrandSettings(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('SettingsApi/brand').subscribe({
-        next: (res: any) => {
-          if (res?.data) {
-            this.brandInfo = res.data;
-            this.brandName = res.data.companyName || res.data.websiteTitle || 'Acme Global';
-            this.brandLogoUrl = res.data.companyLogoUrl || '';
-
-            // Apply tenant browser tab favicon to live storefront (leave blank if not uploaded)
-            const rawIcon = res.data.companyIconUrl;
-            const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
-            const favicons = document.querySelectorAll("link[rel*='icon']");
-            if (favicons.length > 0) {
-              favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
-            } else if (activeIcon) {
-              const link = document.createElement('link');
-              link.rel = 'shortcut icon';
-              link.type = 'image/x-icon';
-              link.href = activeIcon;
-              document.head.appendChild(link);
+      // 1. Fetch public UI settings (always accessible anonymously)
+      this.apiService.get('WebsiteContentApi/ui-settings').subscribe({
+        next: (uiRes: any) => {
+          if (uiRes?.data) {
+            const data = uiRes.data;
+            const email = data.contactEmail || data.supportEmail || data.email || data.companyEmail || '';
+            const phone = data.primaryPhone || data.phoneOne || data.phone || data.companyPhone || '';
+            const address = data.address || data.addressOne || data.companyAddress || '';
+            const workingHours = data.workingHours || '';
+            this.brandInfo = {
+              ...this.brandInfo,
+              ...data,
+              email,
+              Email: email,
+              phone,
+              Phone: phone,
+              address,
+              Address: address,
+              workingHours,
+              WorkingHours: workingHours
+            };
+            this.brandName = data.brandName || data.companyName || data.siteTitle || this.brandName;
+            this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || this.brandLogoUrl;
+            if (data.recaptchaSiteKey) {
+              this.recaptchaSiteKey = data.recaptchaSiteKey;
             }
+            this.applyFavicon(data.faviconUrl || data.companyIconUrl);
           }
-          resolve();
+          // 2. Also attempt to fetch full SettingsApi/brand if available
+          this.apiService.get('SettingsApi/brand').subscribe({
+            next: (brandRes: any) => {
+              if (brandRes?.data) {
+                const bData = brandRes.data;
+                this.brandInfo = { ...this.brandInfo, ...bData };
+                if (bData.companyName) this.brandName = bData.companyName;
+                if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+                this.applyFavicon(bData.companyIconUrl);
+              }
+              resolve();
+            },
+            error: () => resolve()
+          });
         },
-        error: () => resolve()
+        error: () => {
+          this.apiService.get('SettingsApi/brand').subscribe({
+            next: (brandRes: any) => {
+              if (brandRes?.data) {
+                const bData = brandRes.data;
+                this.brandInfo = { ...this.brandInfo, ...bData };
+                if (bData.companyName) this.brandName = bData.companyName;
+                if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+                this.applyFavicon(bData.companyIconUrl);
+              }
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
+  }
+
+  private applyFavicon(rawIcon?: string): void {
+    const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+    const favicons = document.querySelectorAll("link[rel*='icon']");
+    if (favicons.length > 0) {
+      favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
+    } else if (activeIcon) {
+      const link = document.createElement('link');
+      link.rel = 'shortcut icon';
+      link.type = 'image/x-icon';
+      link.href = activeIcon;
+      document.head.appendChild(link);
+    }
   }
 
   private fetchActiveTemplates(): Promise<void> {
@@ -427,7 +451,15 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.categories = res?.data || [];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.apiService.get('ContentApi/categories').subscribe({
+            next: (cRes: any) => {
+              this.categories = cRes?.data || [];
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
   }
@@ -439,7 +471,15 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.publishedPages = res?.data || [];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.apiService.get('ContentApi/pages').subscribe({
+            next: (pRes: any) => {
+              this.publishedPages = pRes?.data || [];
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
   }
@@ -473,18 +513,6 @@ export class LandingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private fetchSliders(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/sliders').subscribe({
-        next: (res: any) => {
-          this.sliders = res?.data || [];
-          resolve();
-        },
-        error: () => resolve()
-      });
-    });
-  }
-
   private fetchRecentBlogs(): Promise<void> {
     return new Promise((resolve) => {
       this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
@@ -511,12 +539,33 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchSingleBlog(id: string): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get(`WebsiteContentApi/blogs/${id}`).subscribe({
+      const cleanId = (id || '').trim();
+      this.apiService.get(`WebsiteContentApi/blogs/${cleanId}`).subscribe({
         next: (res: any) => {
           this.currentArticle = res?.data || null;
-          resolve();
+          if (this.blogs.length === 0) {
+            this.fetchRecentBlogs().then(() => resolve());
+          } else {
+            resolve();
+          }
         },
-        error: () => resolve()
+        error: () => {
+          // Graceful fallback: match by ID or slug within the full published blog list
+          this.apiService.get('WebsiteContentApi/blogs').subscribe({
+            next: (allRes: any) => {
+              const allBlogs: any[] = allRes?.data || [];
+              this.blogs = allBlogs;
+              const found = allBlogs.find(b => 
+                (b.id && b.id.toLowerCase() === cleanId.toLowerCase()) ||
+                (b.title && b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === cleanId.toLowerCase()) ||
+                (b.slug && b.slug.toLowerCase() === cleanId.toLowerCase())
+              );
+              this.currentArticle = found || null;
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
   }
@@ -526,13 +575,21 @@ export class LandingComponent implements OnInit, OnDestroy {
       const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
       this.apiService.get(`WebsiteContentApi/pages/slug/${clean}`).subscribe({
         next: (res: any) => {
-          this.currentPage = res?.data || null;
-          // In-memory fallback if not found via API
+          const loadedPage = res?.data || null;
+          // Strictly reject unpublished pages
+          if (loadedPage && (loadedPage.publish === false || loadedPage.Publish === false)) {
+            this.currentPage = null;
+          } else {
+            this.currentPage = loadedPage;
+          }
+
+          // In-memory fallback if not found via API, strictly enforcing publish === true
           if (!this.currentPage) {
             this.currentPage = this.publishedPages.find(p =>
-              (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+              p.publish !== false && p.Publish !== false &&
+              ((p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
               (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
-              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
             ) || null;
           }
           resolve();
@@ -540,9 +597,10 @@ export class LandingComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.warn(`Could not load page with slug '${slug}':`, err);
           this.currentPage = this.publishedPages.find(p =>
-            (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+            p.publish !== false && p.Publish !== false &&
+            ((p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
             (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
-            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
           ) || null;
           resolve();
         }
@@ -559,93 +617,93 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Hero + Home Body Sections in Order (without duplicate Hero) + Footer.
    */
   private composeHomepage(): void {
+    if (this.activeTemplates.length === 0 && this.sections.length === 0) {
+      this.composeBlankCanvasWelcome();
+      return;
+    }
+
     this.titleService.setTitle(`${this.brandName} | Official Website`);
 
+    // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'home'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    // 2. Hero Section Unit
     const heroTemplate = this.findActiveTemplate('hero');
-    const footerTemplate = this.findActiveTemplate('footer');
+    const dbHeroSection = this.sections.find(s => 
+      s.directUrl === 'home-hero' || 
+      (s.templateKey || '').toUpperCase().includes('HERO') || 
+      s.homePageSortOrder === 1 || 
+      s.pageSortOrder === 1
+    );
+    const heroSection: SectionTemplateUnit | undefined = heroTemplate ? {
+      id: heroTemplate.id,
+      name: heroTemplate.name,
+      category: 'hero',
+      html: this.contentHydration.hydrate(heroTemplate.htmlTemplate, this.buildHeroContext(dbHeroSection), 'hero'),
+      css: heroTemplate.cssStyles,
+      js: heroTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
+    // 3. Modular Body Section Units from database
+    const bodySectionsList: SectionTemplateUnit[] = [];
+    const bodySections = this.sections.filter(s => 
+      s !== dbHeroSection && 
+      s.directUrl !== 'home-hero' && 
+      !(s.templateKey || '').toUpperCase().includes('HERO')
+    );
 
-    // 1. Menu Section
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, 'home');
-      combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
-    // 2. Hero Section
-    // Locate if a hero section was seeded in DB (directUrl == 'home-hero' or homePageSortOrder == 1)
-    const dbHeroSection = this.sections.find(s => s.directUrl === 'home-hero' || s.homePageSortOrder === 1);
-    if (heroTemplate) {
-      combinedStyles += `\n${heroTemplate.cssStyles || ''}\n`;
-      const heroData = this.buildHeroContext(dbHeroSection);
-      const heroHtml = this.templateHydration.hydrateTemplate(heroTemplate.htmlTemplate, heroData, this.getHydrationOptions());
-      combinedHtml += `<!-- Hero -->\n${heroHtml}\n`;
-      if (heroTemplate.jsScript) combinedJs += `\n${heroTemplate.jsScript}\n`;
-    }
-
-    // 3. Modular Body Sections (exclude section consumed as Hero to prevent duplicate display)
-    const bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
-        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
-        if (activeCss && !combinedStyles.includes(activeCss)) {
-          combinedStyles += `\n${activeCss}\n`;
-        }
         const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
+        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
         const sectionData = this.buildSectionContext(sec);
-        const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
-        combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
-        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
-        if (activeJs && !combinedJs.includes(activeJs)) {
-          combinedJs += `\n${activeJs}\n`;
-        }
+        bodySectionsList.push({
+          id: sec.id || secTemplate.id,
+          name: sec.title || secTemplate.name,
+          category: 'body',
+          html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
+          css: activeCss,
+          js: activeJs,
+          sortOrder: sec.homePageSortOrder ?? sec.pageSortOrder ?? 0
+        });
       }
     }
 
-    // 3b. Recent Blog Articles Showcase (matching Demo Preview sequence)
-    const blogTemplate = this.findActiveTemplate('blog');
-    const hasBlogSectionAlready = bodySections.some(s => s.templateKey?.toLowerCase()?.includes('blog'));
-    if (blogTemplate && !hasBlogSectionAlready && this.blogs && this.blogs.length > 0) {
-      if (blogTemplate.cssStyles && !combinedStyles.includes(blogTemplate.cssStyles)) {
-        combinedStyles += `\n${blogTemplate.cssStyles}\n`;
-      }
-      const blogData = {
-        title: 'Platform Insights & Case Studies',
-        miniTitle: 'LATEST KNOWLEDGE',
-        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
-        articles: this.blogs.slice(0, 3).map(b => ({
-          id: b.id,
-          title: b.title,
-          excerpt: b.description || 'Comprehensive strategic analysis and insights.',
-          category: b.blogCategory?.categoryName || 'Strategy & Advisory',
-          date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          author: 'Executive Advisory Desk',
-          imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
-          directUrl: `/blog/${b.id}`
-        }))
-      };
-      const blogHtml = this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogData, this.getHydrationOptions());
-      combinedHtml += `<!-- Section: Recent Blog Articles -->\n${blogHtml}\n`;
-      if (blogTemplate.jsScript && !combinedJs.includes(blogTemplate.jsScript)) {
-        combinedJs += `\n${blogTemplate.jsScript}\n`;
-      }
-    }
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    // 4. Footer Section
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
-      combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
-    }
+    // 5. Delegate full page synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.brandName} | Official Website`,
+      pageSlug: 'home',
+      metaDescription: this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      heroSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -653,195 +711,131 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Breadcrumb Header + Page Sections (or Body Content) + Footer.
    */
   private composeContentPage(): void {
-    if (!this.currentPage) {
+    if (this.activeTemplates.length === 0 && this.sections.length === 0 && !this.currentPage) {
+      this.composeBlankCanvasWelcome();
+      return;
+    }
+
+    if (!this.currentPage || this.currentPage.publish === false || this.currentPage.Publish === false) {
       this.composeNotFoundPage();
       return;
     }
 
     this.titleService.setTitle(`${this.currentPage.title || 'Page'} | ${this.brandName}`);
 
+    // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    const footerTemplate = this.findActiveTemplate('footer');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, this.currentSlug),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    // 1. Menu
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, this.currentSlug);
-      combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
-    // 2. Breadcrumb Header
+    // 2. Breadcrumb Header Section Unit
     const rawSections: any[] = this.currentPage.pageSections || [];
     const heroSection = rawSections.find(
       (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' || sec.pageSortOrder === 1
     );
 
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: heroSection?.title || this.currentPage.title,
-        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || 'Organization Overview',
+        title: heroSection?.title || this.currentPage.title || '',
+        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || this.currentPage.miniTitle || '',
         description: heroSection?.description || this.currentPage.description || '',
-        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: this.currentPage.title, url: '#', isActive: true }
+          { label: this.currentPage.title || '', url: '#', isActive: true }
         ]
       };
-      const breadcrumbHtml = this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
-      combinedHtml += `<!-- Breadcrumb Header -->\n${breadcrumbHtml}\n`;
-      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
+      };
     }
 
-    // 3. Page Layout Sections (excluding hero consumed as breadcrumb header banner)
+    // 3. Page Layout Sections from database
+    const bodySectionsList: SectionTemplateUnit[] = [];
     const pageSections = rawSections.filter(
       (sec: any) => sec !== heroSection && (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit'
     );
+
     if (pageSections.length > 0) {
       for (const sec of pageSections) {
         const secTemplate = this.findTemplateForSection(sec);
         if (secTemplate) {
-          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
-          if (activeCss && !combinedStyles.includes(activeCss)) {
-            combinedStyles += `\n${activeCss}\n`;
-          }
           const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
+          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
           const sectionData = this.buildSectionContext(sec);
-          const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
-          combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
-          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
-          if (activeJs && !combinedJs.includes(activeJs)) {
-            combinedJs += `\n${activeJs}\n`;
-          }
+          bodySectionsList.push({
+            id: sec.id || secTemplate.id,
+            name: sec.title || secTemplate.name,
+            category: 'body',
+            html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
+            css: activeCss,
+            js: activeJs,
+            sortOrder: sec.pageSortOrder ?? 0
+          });
         }
       }
     } else {
-      // Fallback clean article content wrapper (including turnkey legal compliance content for legal pages)
-      const bodyContent = this.currentPage.fullDescription ||
-                          this.currentPage.description ||
-                          this.getTurnkeyLegalContent(this.currentSlug, this.currentPage.title);
-
-      combinedHtml += `
-        <section class="py-5 bg-white border-bottom">
-          <div class="container py-4">
-            <div class="row justify-content-center">
-              <div class="col-lg-9">
-                <article class="prose-content fs-5 leading-relaxed text-secondary">
-                  ${bodyContent}
-                </article>
+      const bodyContent = this.currentPage.fullDescription || this.currentPage.description || '';
+      if (bodyContent) {
+        bodySectionsList.push({
+          name: 'Page Content',
+          category: 'body',
+          html: `
+            <section class="py-5 bg-white border-bottom">
+              <div class="container py-4">
+                <div class="row justify-content-center">
+                  <div class="col-lg-9">
+                    <article class="prose-content fs-5 leading-relaxed text-secondary">
+                      ${bodyContent}
+                    </article>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-      `;
+            </section>
+          `
+        });
+      }
     }
 
-    // 4. Footer
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
-      combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
-    }
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
-  }
+    // 5. Delegate full page synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.currentPage.title || 'Page'} | ${this.brandName}`,
+      pageSlug: this.currentSlug,
+      metaDescription: this.currentPage.description || this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
 
-  /**
-   * Generates turnkey corporate compliance text for legal pages when no custom CMS sections exist.
-   */
-  private getTurnkeyLegalContent(slug: string, pageTitle?: string): string {
-    const norm = (slug || '').toLowerCase().trim();
-
-    if (norm.includes('privacy')) {
-      return `
-        <div class="legal-document">
-          <div class="mb-4 pb-3 border-bottom">
-            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Compliance</span>
-            <h2 class="fw-bold text-dark mt-2 mb-1">Privacy & Data Governance Policy</h2>
-            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
-          </div>
-          <p class="lead text-secondary mb-4">
-            This Privacy Policy explains how <strong>${this.brandName}</strong> collects, processes, stores, and safeguards personal data and institutional information when accessing our platform, services, and client portals.
-          </p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">1. Information We Collect</h4>
-          <p>We collect information necessary to deliver enterprise services, authenticate authorized personnel, and maintain platform security:</p>
-          <ul class="mb-4">
-            <li><strong>Account Identification:</strong> Full name, professional work email, corporate phone number, job title, and organization affiliation.</li>
-            <li><strong>Technical Telemetry:</strong> IP address, device telemetry, browser specifications, operating system parameters, and session access timestamps.</li>
-            <li><strong>Transactional & Service Inquiries:</strong> Engagement records, support ticket correspondence, service requests, and authorized billing profiles.</li>
-          </ul>
-          <h4 class="fw-bold text-dark mt-4 mb-3">2. How We Use Information</h4>
-          <p>We process collected data exclusively under legitimate business interests, contractual commitments, and legal obligations:</p>
-          <ul class="mb-4">
-            <li>To initialize, configure, and maintain sovereign tenant environments and user permissions.</li>
-            <li>To provide responsive technical support, incident escalation, and operational communications.</li>
-            <li>To monitor system resilience, prevent fraudulent access, and enforce SOC2/ISO 27001 compliance standards.</li>
-          </ul>
-          <h4 class="fw-bold text-dark mt-4 mb-3">3. Data Retention & Sovereign Storage</h4>
-          <p class="mb-4">Personal and institutional data is encrypted in transit via TLS 1.3 and at rest via AES-256 standards. Records are retained strictly for the duration of the commercial agreement plus standard statutory compliance periods.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">4. Individual Rights & Inquiries</h4>
-          <p class="mb-4">Depending on applicable jurisdictions (including GDPR and CCPA), individuals hold rights to request access, rectification, portability, or erasure of their personal data. Inquiries may be directed to our Privacy Officer at <code>${this.brandInfo?.companyEmail || 'privacy@organization.com'}</code>.</p>
-        </div>
-      `;
-    }
-
-    if (norm.includes('terms') || norm.includes('condition')) {
-      return `
-        <div class="legal-document">
-          <div class="mb-4 pb-3 border-bottom">
-            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Governance</span>
-            <h2 class="fw-bold text-dark mt-2 mb-1">Terms & Conditions of Service</h2>
-            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
-          </div>
-          <p class="lead text-secondary mb-4">
-            These Terms & Conditions govern access to and use of digital products, enterprise services, and web portals operated by <strong>${this.brandName}</strong>.
-          </p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">1. Acceptance of Terms</h4>
-          <p class="mb-4">By accessing our website or subscribing to our services, you confirm that you have read, understood, and agreed to be legally bound by these terms.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">2. Authorized Use & Account Governance</h4>
-          <p class="mb-4">Users are responsible for maintaining the confidentiality of their credentials and all activities executed under their authorized profiles. Unauthorized access, system reverse-engineering, or automated scraping is strictly prohibited.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">3. Intellectual Property Rights</h4>
-          <p class="mb-4">All trademarks, service designs, proprietary codebases, templates, and multimedia content hosted across this portal remain the exclusive intellectual property of <strong>${this.brandName}</strong> or its licensed ecosystem partners.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">4. Limitation of Liability</h4>
-          <p class="mb-4">To the maximum extent permitted by applicable law, <strong>${this.brandName}</strong> and its affiliates shall not be liable for indirect, incidental, or consequential damages arising from service disruption or data loss.</p>
-        </div>
-      `;
-    }
-
-    if (norm.includes('cookie')) {
-      return `
-        <div class="legal-document">
-          <div class="mb-4 pb-3 border-bottom">
-            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Cookies & Tracking</span>
-            <h2 class="fw-bold text-dark mt-2 mb-1">Cookie & Tracking Technologies Policy</h2>
-            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
-          </div>
-          <p class="lead text-secondary mb-4">
-            This policy outlines how <strong>${this.brandName}</strong> utilizes cookies and analogous tracking technologies to provide seamless, secure website navigation.
-          </p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">1. Essential Operational Cookies</h4>
-          <p class="mb-4">These cookies are strictly required to ensure core portal security, tenant subdomain routing, authentication state management, and shopping cart persistence.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">2. Analytics & Performance Cookies</h4>
-          <p class="mb-4">We aggregate anonymized navigation metrics to understand visitor engagement, optimize page load speed, and improve overall content quality.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">3. Managing Your Cookie Preferences</h4>
-          <p class="mb-4">You can modify or disable browser cookies at any time via your browser settings. Note that disabling essential cookies may impact system functionality.</p>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="general-page-content">
-        <p class="lead text-secondary mb-4">Welcome to <strong>${pageTitle || 'Page'}</strong> at <strong>${this.brandName}</strong>.</p>
-        <p class="text-muted">Content for this page is managed directly through the CMS Studio. Please check back shortly for upcoming publications, modules, and announcements.</p>
-      </div>
-    `;
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -849,88 +843,145 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Breadcrumb Header + Blog Grid + Footer.
    */
   private composeBlogArchive(): void {
-    this.titleService.setTitle(`Blog & Enterprise Insights | ${this.brandName}`);
+    this.titleService.setTitle(`Blog | ${this.brandName}`);
 
+    // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'blog'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    // 2. Breadcrumb Header Section Unit
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    const blogTemplate = this.findActiveTemplate('blog') || this.findActiveTemplate('body');
-    const footerTemplate = this.findActiveTemplate('footer');
-
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: 'Newsroom & Insights',
-        miniTitle: 'DISPATCHES',
-        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
-        backgroundImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+        title: 'Blog',
+        miniTitle: 'PUBLICATIONS',
+        description: '',
+        backgroundImageUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: 'Newsroom & Insights', url: '#', isActive: true }
+          { label: 'Blog', url: '#', isActive: true }
         ]
       };
-      combinedHtml += `<!-- Breadcrumb Header -->\n` + this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()) + `\n`;
-      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
-    }
-
-    // Render Blog Grid
-    const blogContext = {
-      title: 'Platform Insights & Case Studies',
-      miniTitle: 'LATEST KNOWLEDGE',
-      description: 'Explore our latest releases and corporate updates directly from our research desks.',
-      articles: this.blogs.map(b => ({
-        id: b.id,
-        title: b.title,
-        excerpt: b.description || 'Comprehensive strategic analysis and insights.',
-        category: b.blogCategory?.categoryName || 'Strategy & Advisory',
-        date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        author: 'Executive Advisory Desk',
-        imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
-        directUrl: `/blog/${b.id}`
-      }))
-    };
-
-    if (blogTemplate) {
-      if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
-      combinedHtml += `<!-- Blog Grid -->\n` + this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()) + `\n`;
-      if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
-    }
-
-    // Newsletter Section (matching Demo Preview sequence)
-    const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
-                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
-    if (newsletterTemplate) {
-      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
-      const newsContext = {
-        title: 'Subscribe to Executive Insights',
-        miniTitle: 'NEWSLETTER',
-        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
       };
-      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
-      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
     }
 
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
+    // 3. Blog Grid Body Section Unit
+    const bodySectionsList: SectionTemplateUnit[] = [];
+    const blogTemplate = this.findActiveTemplate('blog') || this.findActiveTemplate('body');
+    if (blogTemplate) {
+      const articlesList = this.mapBlogArticles(this.blogs);
+
+      const blogContext = {
+        title: 'Blog Articles',
+        Title: 'Blog Articles',
+        miniTitle: '',
+        MiniTitle: '',
+        description: '',
+        Description: '',
+        articles: articlesList,
+        Articles: articlesList
+      };
+
+      bodySectionsList.push({
+        id: blogTemplate.id,
+        name: blogTemplate.name || 'Blog Grid',
+        category: 'body',
+        html: this.contentHydration.hydrate(blogTemplate.htmlTemplate, blogContext, 'blog'),
+        css: blogTemplate.cssStyles,
+        js: blogTemplate.jsScript,
+        sortOrder: 1
+      });
     }
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
+
+    // 5. Delegate full page synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `Blog | ${this.brandName}`,
+      pageSlug: 'blog',
+      metaDescription: this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
+  }
+
+  /**
+   * Helper to map raw blog entities into robust Handlebars tokens, ensuring
+   * every article has a valid cover image, direct URL, author, and formatted date.
+   */
+  private mapBlogArticles(blogs: any[]): any[] {
+    return (blogs || []).map((b) => {
+      const cover = b.imageUrl || b.coverImageUrl || '';
+      const pubDate = b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      const categoryName = b.blogCategory?.categoryName || b.blogCategory?.title || b.categoryName || '';
+      const summaryText = b.description || b.summary || b.excerpt || '';
+      const articleUrl = `/blog/${b.id}`;
+
+      return {
+        id: b.id,
+        title: b.title || '',
+        Title: b.title || '',
+        excerpt: summaryText,
+        Excerpt: summaryText,
+        summary: summaryText,
+        Summary: summaryText,
+        description: summaryText,
+        Description: summaryText,
+        category: categoryName,
+        Category: categoryName,
+        date: pubDate,
+        Date: pubDate,
+        publishedDate: pubDate,
+        PublishedDate: pubDate,
+        author: b.author || b.authorName || '',
+        Author: b.author || b.authorName || '',
+        authorName: b.author || b.authorName || '',
+        AuthorName: b.author || b.authorName || '',
+        imageUrl: cover,
+        ImageUrl: cover,
+        coverImageUrl: cover,
+        CoverImageUrl: cover,
+        directUrl: articleUrl,
+        DirectUrl: articleUrl,
+        url: articleUrl,
+        Url: articleUrl
+      };
+    });
   }
 
   /**
    * Assembles a single Blog Article Reader view:
-   * Menu + Breadcrumb Header + Article Details + Footer.
+   * Menu + Breadcrumb Header + Article Details + Newsletter + Footer.
    */
   private composeBlogDetail(): void {
     if (!this.currentArticle) {
@@ -938,89 +989,193 @@ export class LandingComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.titleService.setTitle(`${this.currentArticle.title} | ${this.brandName}`);
+    this.titleService.setTitle(`${this.currentArticle.title || 'Blog'} | ${this.brandName}`);
 
+    // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'blog'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    // 2. Breadcrumb Header Section Unit
+    const defaultCover = 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80';
+    const resolvedCover = this.currentArticle.imageUrl || this.currentArticle.coverImageUrl || defaultCover;
+    const categoryTitle = this.currentArticle.blogCategory?.categoryName || this.currentArticle.blogCategory?.title || this.currentArticle.categoryName || 'Platform Insights';
+    const pubDate = this.currentArticle.date
+      ? new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : 'Recently Published';
+
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    const footerTemplate = this.findActiveTemplate('footer');
-
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: this.currentArticle.title,
-        miniTitle: this.currentArticle.blogCategory?.categoryName || 'Strategic Advisory',
-        description: `Published on ${new Date(this.currentArticle.date || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
-        backgroundImageUrl: this.currentArticle.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1600&q=80',
+        title: this.currentArticle.title || '',
+        miniTitle: categoryTitle,
+        description: this.currentArticle.date ? `Published on ${pubDate}` : '',
+        backgroundImageUrl: resolvedCover,
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '/blog', isActive: false },
-          { label: this.currentArticle.title, url: '#', isActive: true }
+          { label: this.currentArticle.title || '', url: '#', isActive: true }
         ]
       };
-      combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
-      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
+      };
     }
 
-    // Article Reader Layout
-    combinedHtml += `
-      <section class="py-5 bg-white">
-        <div class="container py-4">
-          <div class="row justify-content-center">
-            <div class="col-lg-8">
-              ${this.currentArticle.imageUrl ? `
-                <div class="mb-5 rounded-4 overflow-hidden shadow-sm">
-                  <img src="${this.currentArticle.imageUrl}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
-                </div>
-              ` : ''}
+    // 3. Article Reader Body Section Units (Checking installed blog-detail blueprint)
+    const bodySectionsList: SectionTemplateUnit[] = [];
+    const blogDetailTemplate = this.findActiveTemplate('blog-detail') ||
+                               this.findActiveTemplate('blog_detail') ||
+                               this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'blog_detail');
 
-              <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
-                ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
-              </div>
+    const blogDetailContext: any = {
+      title: this.currentArticle.title || 'Untitled Article',
+      Title: this.currentArticle.title || 'Untitled Article',
+      articleHeadline: this.currentArticle.title || 'Untitled Article',
+      summary: this.currentArticle.description || '',
+      articleLead: this.currentArticle.description || '',
+      description: this.currentArticle.description || '',
+      body: this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>',
+      fullDescription: this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>',
+      content: this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>',
+      category: categoryTitle,
+      publishedDate: pubDate,
+      readingTime: '5 min read',
+      coverImageUrl: resolvedCover,
+      imageUrl: resolvedCover,
+      CoverImageUrl: resolvedCover,
+      ImageUrl: resolvedCover,
+      authorName: this.currentArticle.author || 'Ozikol Editorial Team',
+      authorRole: 'Product Architecture',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      authorBio: 'Technology writer and systems architect contributing to sovereign multi-tenant cloud infrastructure and high-performance digital workspaces.',
+      tags: [
+        { name: categoryTitle, url: '/blog' },
+        { name: 'Update', url: '/blog' },
+        { name: 'Engineering', url: '/blog' }
+      ],
+      recentArticles: (this.blogs || []).filter(b => b.id !== this.currentArticle.id).slice(0, 3).map((b, idx) => {
+        const otherDefaults = [
+          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80'
+        ];
+        return {
+          title: b.title || '',
+          url: `/blog/${b.id}`,
+          coverImageUrl: b.imageUrl || otherDefaults[idx % otherDefaults.length],
+          imageUrl: b.imageUrl || otherDefaults[idx % otherDefaults.length],
+          publishedDate: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'
+        };
+      }),
+      blogCategories: (this.categories || []).map(c => ({
+        name: c.title || c.categoryName || '',
+        url: '/blog',
+        count: ''
+      }))
+    };
 
-              <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
-                <div>
-                  <span class="text-muted small d-block">Published under</span>
-                  <span class="badge bg-primary fs-6 mt-1">${this.currentArticle.blogCategory?.categoryName || 'General Insights'}</span>
+    if (blogDetailTemplate) {
+      bodySectionsList.push({
+        id: blogDetailTemplate.id,
+        name: blogDetailTemplate.name || 'Article Detail',
+        category: 'blog_detail',
+        html: this.contentHydration.hydrate(blogDetailTemplate.htmlTemplate, blogDetailContext, 'blog_detail'),
+        css: blogDetailTemplate.cssStyles,
+        js: blogDetailTemplate.jsScript,
+        sortOrder: 1
+      });
+    } else {
+      // Clean fallback reader layout if dedicated blog-detail template is uninstalled
+      bodySectionsList.push({
+        name: 'Article Detail',
+        category: 'body',
+        html: `
+          <section class="py-5 bg-white">
+            <div class="container py-4">
+              <div class="row justify-content-center">
+                <div class="col-lg-8">
+                  <div class="mb-5 rounded-4 overflow-hidden shadow-sm">
+                    <img src="${resolvedCover}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
+                  </div>
+
+                  <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
+                    ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
+                  </div>
+
+                  <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                    <div>
+                      <span class="text-muted small d-block">Published under</span>
+                      <span class="badge bg-primary fs-6 mt-1">${categoryTitle}</span>
+                    </div>
+                    <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
+                  </div>
                 </div>
-                <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-    `;
+          </section>
+        `,
+        sortOrder: 1
+      });
+    }
 
-    // Newsletter Section (matching Demo Preview sequence)
+    // 4. Newsletter Section (matching Demo Preview sequence)
     const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
                                this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
     if (newsletterTemplate) {
-      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
       const newsContext = {
         title: 'Subscribe to Executive Insights',
         miniTitle: 'NEWSLETTER',
         description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
       };
-      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
-      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
+      bodySectionsList.push({
+        id: newsletterTemplate.id,
+        name: newsletterTemplate.name || 'Newsletter',
+        category: 'body',
+        html: this.contentHydration.hydrate(newsletterTemplate.htmlTemplate, newsContext, 'body'),
+        css: newsletterTemplate.cssStyles,
+        js: newsletterTemplate.jsScript,
+        sortOrder: 2
+      });
     }
 
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
-    }
+    // 5. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    // 6. Synthesize Unified Page Bundle via HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.currentArticle.title || 'Blog'} | ${this.brandName}`,
+      pageSlug: 'blog',
+      metaDescription: this.currentArticle.description || this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -1029,33 +1184,651 @@ export class LandingComponent implements OnInit, OnDestroy {
   private composeNotFoundPage(): void {
     this.titleService.setTitle(`Page Not Found | ${this.brandName}`);
     const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, ''),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    const bodySectionsList: SectionTemplateUnit[] = [{
+      name: '404 Not Found',
+      category: 'body',
+      html: `
+        <section class="oz-404-section">
+          <div class="oz-404-wrapper">
+            <!-- Status Badge -->
+            <div class="oz-404-badge">
+              <span class="oz-404-badge-dot"></span>
+              <span class="oz-404-badge-text">ERROR 404 &bull; SIGNAL LOST</span>
+            </div>
+
+            <!-- Animated SVG Illustration: Floating Explorer & Planetary Beacon -->
+            <div class="oz-404-graphic">
+              <svg viewBox="0 0 500 340" fill="none" xmlns="http://www.w3.org/2000/svg" class="oz-404-svg" aria-label="Page Not Found Illustration">
+                <defs>
+                  <linearGradient id="ozGlobeGrad" x1="130" y1="100" x2="290" y2="260" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="50%" stop-color="#2563eb"/>
+                    <stop offset="100%" stop-color="#1e40af"/>
+                  </linearGradient>
+                  <radialGradient id="ozGlobeHalo" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+                  </radialGradient>
+                  <linearGradient id="ozVisorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#0284c7"/>
+                  </linearGradient>
+                  <linearGradient id="ozSuitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff"/>
+                    <stop offset="100%" stop-color="#e2e8f0"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- Distant Twinkling Stars -->
+                <g class="oz-stars-group">
+                  <polygon points="70,60 72,66 78,68 72,70 70,76 68,70 62,68 68,66" fill="#38bdf8" class="oz-star oz-anim-star-1"/>
+                  <polygon points="430,75 432,79 436,80 432,81 430,85 428,81 424,80 428,79" fill="#818cf8" class="oz-star oz-anim-star-2"/>
+                  <polygon points="100,240 101,244 105,245 101,246 100,250 99,246 95,245 99,244" fill="#60a5fa" class="oz-star oz-anim-star-3"/>
+                  <circle cx="55" cy="160" r="2.5" fill="#cbd5e1" class="oz-star oz-anim-star-2"/>
+                  <circle cx="445" cy="190" r="3" fill="#38bdf8" class="oz-star oz-anim-star-1"/>
+                  <circle cx="150" cy="50" r="2" fill="#94a3b8" class="oz-star oz-anim-star-3"/>
+                  <circle cx="365" cy="270" r="2.5" fill="#60a5fa" class="oz-star oz-anim-star-2"/>
+                  <circle cx="270" cy="45" r="2" fill="#38bdf8" class="oz-star oz-anim-star-1"/>
+                </g>
+
+                <!-- Globe Ambient Glow -->
+                <circle cx="210" cy="175" r="115" fill="url(#ozGlobeHalo)" class="oz-anim-pulse"/>
+
+                <!-- Pulsing Radar Signal Waves -->
+                <circle cx="210" cy="175" r="110" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5 7" opacity="0.4" class="oz-anim-radar-1" fill="none"/>
+                <circle cx="210" cy="175" r="135" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3 5" opacity="0.25" class="oz-anim-radar-2" fill="none"/>
+
+                <!-- Central Global Sphere -->
+                <circle cx="210" cy="175" r="82" fill="url(#ozGlobeGrad)"/>
+
+                <!-- Latitude Grid Lines -->
+                <ellipse cx="210" cy="175" rx="82" ry="28" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55" fill="none"/>
+                <ellipse cx="210" cy="175" rx="82" ry="58" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55" fill="none"/>
+
+                <!-- Longitude Grid Lines -->
+                <ellipse cx="210" cy="175" rx="40" ry="82" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55" fill="none"/>
+                <line x1="210" y1="93" x2="210" y2="257" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55"/>
+
+                <!-- Angled Planetary Orbital Track & Satellite -->
+                <g transform="rotate(-18 210 175)">
+                  <ellipse cx="210" cy="175" rx="120" ry="42" stroke="#38bdf8" stroke-width="1.75" stroke-dasharray="6 6" fill="none" opacity="0.6"/>
+                  <!-- Orbiting Beacon / Satellite -->
+                  <g transform="translate(328, 175)">
+                    <circle cx="0" cy="0" r="5" fill="#38bdf8"/>
+                    <circle cx="0" cy="0" r="8" stroke="#38bdf8" stroke-width="1.5" opacity="0.5" class="oz-anim-pulse"/>
+                  </g>
+                </g>
+
+                <!-- Floating Astronaut / Navigator -->
+                <g class="oz-anim-man">
+                  <!-- Life Support Backpack -->
+                  <rect x="300" y="112" width="28" height="64" rx="8" fill="#64748b"/>
+                  <rect x="302" y="118" width="10" height="18" rx="3" fill="#94a3b8"/>
+                  <path d="M312 128 C298 138 298 162 312 172" stroke="#38bdf8" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+                  <!-- Suit Torso -->
+                  <rect x="318" y="122" width="48" height="62" rx="16" fill="url(#ozSuitGrad)" stroke="#cbd5e1" stroke-width="2"/>
+                  <!-- Mission Control Chest Badge -->
+                  <rect x="330" y="136" width="24" height="18" rx="4" fill="#0f172a"/>
+                  <circle cx="336" cy="145" r="2" fill="#ef4444"/>
+                  <circle cx="342" cy="145" r="2" fill="#10b981"/>
+                  <circle cx="348" cy="145" r="2" fill="#38bdf8"/>
+
+                  <!-- Left Arm with Navigation Scanner -->
+                  <path d="M318 135 L288 146 L274 140" stroke="#f1f5f9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+                  <!-- Scanner Device -->
+                  <rect x="260" y="130" width="16" height="22" rx="4" fill="#1e293b" transform="rotate(-12 260 130)"/>
+                  <rect x="263" y="133" width="11" height="13" rx="2" fill="#38bdf8" transform="rotate(-12 260 130)"/>
+                  <!-- Radar Wave emitted from scanner -->
+                  <path d="M251 134 C247 137 247 143 251 146" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" fill="none" class="oz-anim-pulse"/>
+
+                  <!-- Right Arm floating gently upward -->
+                  <path d="M366 135 L390 120 L402 108" stroke="#e2e8f0" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="405" cy="106" r="6" fill="#94a3b8"/>
+
+                  <!-- Left Leg & Boot -->
+                  <path d="M328 184 L320 220 L310 226" stroke="#e2e8f0" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M305 226 L320 226" stroke="#475569" stroke-width="10" stroke-linecap="round"/>
+
+                  <!-- Right Leg & Boot -->
+                  <path d="M352 184 L360 216 L372 222" stroke="#cbd5e1" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M366 222 L382 222" stroke="#334155" stroke-width="10" stroke-linecap="round"/>
+
+                  <!-- Astronaut Helmet -->
+                  <circle cx="342" cy="100" r="26" fill="url(#ozSuitGrad)" stroke="#cbd5e1" stroke-width="2"/>
+                  <!-- Visor Screen -->
+                  <path d="M328 97 C328 85 356 85 356 97 C356 110 328 110 328 97 Z" fill="url(#ozVisorGrad)"/>
+                  <!-- Visor Glint -->
+                  <ellipse cx="336" cy="94" rx="5" ry="2.5" fill="#ffffff" opacity="0.85" transform="rotate(-20 336 94)"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- Content Headings -->
+            <h1 class="oz-404-title">Lost in Digital Space</h1>
+            <p class="oz-404-description">
+              The page you are looking for does not exist, has been relocated, or has drifted out of orbit.
+            </p>
+
+            <!-- Navigation Recovery Actions -->
+            <div class="oz-404-actions">
+              <a href="/" class="oz-404-btn oz-404-btn-primary">
+                <svg class="oz-404-btn-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span>Return to Homepage</span>
+              </a>
+              <a href="javascript:history.back()" class="oz-404-btn oz-404-btn-secondary">
+                <svg class="oz-404-btn-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                  <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                </svg>
+                <span>Go Back</span>
+              </a>
+            </div>
+
+            <!-- Quick Help Link -->
+            <div class="oz-404-footer-hint">
+              <span>Need navigation assistance?</span>
+              <a href="/contact" class="oz-404-link">Contact Support &rarr;</a>
+            </div>
+          </div>
+        </section>
+      `,
+      css: `
+        .oz-404-section {
+          min-height: calc(80vh - 120px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 60px 24px;
+          background: radial-gradient(circle at 50% 25%, rgba(56, 189, 248, 0.08) 0%, rgba(255, 255, 255, 0) 70%), #ffffff;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          color: #0f172a;
+          box-sizing: border-box;
+          width: 100%;
+        }
+
+        .oz-404-wrapper {
+          max-width: 600px;
+          width: 100%;
+          margin: 0 auto;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .oz-404-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 16px;
+          border-radius: 9999px;
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.22);
+          margin-bottom: 20px;
+        }
+
+        .oz-404-badge-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #ef4444;
+          box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+          animation: ozDotPulse 1.8s infinite ease-in-out;
+        }
+
+        .oz-404-badge-text {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          color: #dc2626;
+          text-transform: uppercase;
+        }
+
+        .oz-404-graphic {
+          width: 100%;
+          max-width: 440px;
+          margin: 0 auto 24px auto;
+          position: relative;
+        }
+
+        .oz-404-svg {
+          width: 100%;
+          height: auto;
+          display: block;
+          overflow: visible;
+        }
+
+        .oz-404-title {
+          font-size: 32px;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0 0 12px 0;
+          line-height: 1.25;
+          letter-spacing: -0.02em;
+        }
+
+        @media (min-width: 640px) {
+          .oz-404-title {
+            font-size: 40px;
+          }
+        }
+
+        .oz-404-description {
+          font-size: 16px;
+          color: #64748b;
+          margin: 0 0 32px 0;
+          line-height: 1.6;
+          max-width: 480px;
+        }
+
+        .oz-404-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          margin-bottom: 28px;
+        }
+
+        .oz-404-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 26px;
+          font-size: 15px;
+          font-weight: 600;
+          border-radius: 10px;
+          text-decoration: none;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          cursor: pointer;
+          box-sizing: border-box;
+        }
+
+        .oz-404-btn-primary {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          color: #ffffff !important;
+          border: 1px solid transparent;
+          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        }
+
+        .oz-404-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 22px rgba(37, 99, 235, 0.42);
+          background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+          color: #ffffff !important;
+        }
+
+        .oz-404-btn-secondary {
+          background: #ffffff;
+          color: #334155 !important;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .oz-404-btn-secondary:hover {
+          transform: translateY(-2px);
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .oz-404-footer-hint {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-size: 14px;
+          color: #94a3b8;
+        }
+
+        .oz-404-link {
+          color: #2563eb;
+          font-weight: 600;
+          text-decoration: none;
+          transition: color 0.15s ease;
+        }
+
+        .oz-404-link:hover {
+          color: #1d4ed8;
+          text-decoration: underline;
+        }
+
+        /* Animations */
+        .oz-anim-man {
+          animation: ozFloat 5s ease-in-out infinite;
+          transform-origin: 340px 170px;
+        }
+
+        .oz-anim-pulse {
+          animation: ozPulse 3s ease-in-out infinite;
+          transform-origin: 210px 175px;
+        }
+
+        .oz-anim-radar-1 {
+          animation: ozRadar 3.5s ease-out infinite;
+          transform-origin: 210px 175px;
+        }
+
+        .oz-anim-radar-2 {
+          animation: ozRadar 3.5s ease-out infinite 1.2s;
+          transform-origin: 210px 175px;
+        }
+
+        .oz-anim-star-1 {
+          animation: ozTwinkle 2.5s ease-in-out infinite;
+        }
+
+        .oz-anim-star-2 {
+          animation: ozTwinkle 3.2s ease-in-out infinite 0.8s;
+        }
+
+        .oz-anim-star-3 {
+          animation: ozTwinkle 2.8s ease-in-out infinite 1.5s;
+        }
+
+        @keyframes ozFloat {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-12px) rotate(2deg);
+          }
+        }
+
+        @keyframes ozPulse {
+          0%, 100% {
+            transform: scale(0.96);
+            opacity: 0.25;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.55;
+          }
+        }
+
+        @keyframes ozRadar {
+          0% {
+            transform: scale(0.85);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1.25);
+            opacity: 0;
+          }
+        }
+
+        @keyframes ozTwinkle {
+          0%, 100% {
+            opacity: 0.25;
+            transform: scale(0.8);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+        }
+
+        @keyframes ozDotPulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.3);
+            opacity: 0.6;
+          }
+        }
+      `,
+      sortOrder: 1
+    }];
+
     const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `Page Not Found | ${this.brandName}`,
+      pageSlug: '404',
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
 
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, '');
-    }
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
+  }
 
-    combinedHtml += `
-      <section class="py-5 text-center bg-white my-5">
-        <div class="container py-5">
-          <span class="material-symbols-outlined display-1 text-primary opacity-50 mb-3">error_outline</span>
-          <h1 class="display-5 fw-bold text-dark mb-3">Page Not Found</h1>
-          <p class="lead text-muted mb-4">The page you requested does not exist or may have been relocated.</p>
-          <a href="/" class="btn btn-primary px-4 py-2 fw-semibold">Return to Homepage</a>
+  /**
+   * Assembles the "Start Building Now" onboarding view when the tenant workspace
+   * has zero installed templates and zero published content/sections (pure blank canvas).
+   * Displays clear call-to-action to sign in and begin configuring the site.
+   */
+  private composeBlankCanvasWelcome(): void {
+    const brand = this.brandName || this.brandInfo?.brandName || 'Digital Workspace';
+    const logoUrl = this.brandLogoUrl || this.brandInfo?.logoUrl || '';
+    const currentYear = new Date().getFullYear().toString();
+    const authed = this.isUserAuthenticated();
+    const isAdmin = authed && this.isUserAdmin();
+    const loginUrl = authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login';
+    const loginText = authed ? (isAdmin ? 'Go to Admin Console' : 'Go to Workspace') : 'Login to Continue';
+
+    this.titleService.setTitle(`Start Building Now | ${brand}`);
+
+    const welcomeHtml = `
+      <div id="oz-blank-canvas-root" class="oz-blank-canvas-wrap">
+        <div class="oz-blank-canvas-card">
+          <div class="oz-blank-brand mb-4">
+            ${logoUrl ? `<img src="${logoUrl}" alt="${brand}" class="oz-blank-logo" />` : `<div class="oz-blank-brand-badge">${brand.substring(0, 2).toUpperCase()}</div>`}
+            <h2 class="oz-blank-brand-name">${brand}</h2>
+          </div>
+
+          <div class="oz-blank-status-pill">
+            <span class="oz-blank-status-dot"></span>
+            <span>Workspace Initialized & Ready</span>
+          </div>
+
+          <h1 class="oz-blank-title">Start Building Now</h1>
+          <p class="oz-blank-subtitle">
+            Your workspace is ready. Sign in to your admin console to choose a template, design custom pages, and launch your site.
+          </p>
+
+          <div class="oz-blank-actions">
+            <a id="btn-blank-login-continue" href="${loginUrl}" class="oz-blank-btn-primary">
+              <span>${loginText}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+          </div>
+
+          <div class="oz-blank-footer">
+            <span>© ${currentYear} ${brand}. Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; font-weight: 600;">Ozikol</a>.</span>
+          </div>
         </div>
-      </section>
+      </div>
     `;
 
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
-    }
+    const welcomeCss = `
+      .oz-blank-canvas-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        background: radial-gradient(circle at 50% 20%, #f8fafc 0%, #e2e8f0 100%);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        box-sizing: border-box;
+      }
 
-    this.finalizeRender(combinedStyles, combinedHtml);
+      .oz-blank-canvas-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 48px 40px;
+        max-width: 560px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(15, 23, 42, 0.04);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .oz-blank-canvas-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+      }
+
+      .oz-blank-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .oz-blank-logo {
+        max-height: 48px;
+        max-width: 180px;
+        object-fit: contain;
+      }
+
+      .oz-blank-brand-badge {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: -0.02em;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+      }
+
+      .oz-blank-brand-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #334155;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+
+      .oz-blank-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #166534;
+        margin-bottom: 24px;
+      }
+
+      .oz-blank-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        display: inline-block;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        animation: ozBlankPulse 2s infinite ease-in-out;
+      }
+
+      @keyframes ozBlankPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.3); opacity: 0.6; }
+      }
+
+      .oz-blank-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+      }
+
+      .oz-blank-subtitle {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #64748b;
+        margin: 0 0 32px 0;
+      }
+
+      .oz-blank-actions {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 32px;
+      }
+
+      .oz-blank-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 32px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+      }
+
+      .oz-blank-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      }
+
+      .oz-blank-footer {
+        font-size: 12px;
+        color: #94a3b8;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 20px;
+      }
+
+      @media (max-width: 640px) {
+        .oz-blank-canvas-card {
+          padding: 36px 24px;
+        }
+        .oz-blank-title {
+          font-size: 26px;
+        }
+      }
+    `;
+
+    this.finalizeRender(welcomeCss, welcomeHtml, '');
   }
 
   // ========================================================
@@ -1064,115 +1837,202 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   /**
    * Hydrates the active Navbar template with live navigation categories, child links,
-   * top menu pages, CTA buttons, and active link highlights.
+   * top menu pages, CTA buttons, and active link highlights via ContentHydrationService.
    */
   private hydrateMenu(rawHtml: string, activeSlug: string): string {
-    // 1. Top menu items (strictly pages configured for main menu, published, not legal, not category child, not CTA, and not home)
-    const topMenuItems = this.publishedPages
-      .filter(p => p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
-      .map(p => ({
-        title: p.title,
-        url: `/${p.directUrl || p.slug}`
-      }));
-
-    // Ensure Home, Blog, and Contact exist if not already present
-    if (!topMenuItems.some(m => m.url === '/')) {
-      topMenuItems.unshift({ title: 'Home', url: '/' });
-    }
-    if (!topMenuItems.some(m => m.url === '/blog') && this.blogs.length > 0) {
-      topMenuItems.push({ title: 'Blog', url: '/blog' });
-    }
-
-    // 2. Navigation Dropdowns (PageCategories with their published child WebPages)
-    const dropdowns = this.categories
-      .filter(c => c.publish)
-      .map(c => {
-        const catTitle = c.title || c.categoryName || c.name || 'Menu';
-        const childPages = (c.webPages && c.webPages.length > 0)
-          ? c.webPages.filter((p: any) => p.publish)
-          : this.publishedPages.filter(p => p.publish && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
-
-        return {
-          title: catTitle,
-          categoryName: catTitle,
-          pages: childPages.map((p: any) => ({
-            title: p.title,
-            url: `/${p.directUrl || p.slug}`
-          }))
-        };
-      });
-
-    // 3. CTA Buttons (pages with isMenuCTA = true)
-    const menuCtaButtons: Array<{ title: string; url: string; isLoginBtn?: boolean }> = this.publishedPages
-      .filter(p => p.isMenuCTA)
-      .map(p => ({
-        title: p.title,
-        url: `/${p.directUrl || p.slug}`
-      }));
-
-    if (menuCtaButtons.length === 0) {
-      menuCtaButtons.push({ title: 'Request a Service', url: '/request-service' });
-    }
-
-    // Dynamic Live Sign-In Button in Navigation Menu
     const isLoginActive = this.brandInfo?.activateLogin !== false;
     const isLoginInMenu = this.brandInfo?.activateLoginInMenu !== false;
     const authed = this.isUserAuthenticated();
     const isAdmin = authed && this.isUserAdmin();
     const isMember = authed && !isAdmin;
 
-    // Determine login label, URL, and icon based on auth & role
-    // Admin / SuperAdmin / Privileged -> Console (/dashboard/console)
-    // Normal User / Member -> My Workspace (/dashboard/workspace)
-    // Guest / Not logged in -> Custom label or "Sign In" (/auth/login)
     const loginText = !authed 
       ? (this.brandInfo?.loginButtonText || 'Sign In') 
       : (isAdmin ? 'Console' : 'My Workspace');
     const loginUrl = !authed 
       ? '/auth/login' 
       : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
-    const loginIcon = !authed 
-      ? 'fa-solid fa-arrow-right-to-bracket' 
-      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
 
-    const loginButtonHtml = (isLoginActive && isLoginInMenu)
-      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
-      : '';
+    // Helper to normalize zone ('first' | 'middle' | 'last' | 'top')
+    const normalizeZone = (val: any): string => {
+      if (!val) return 'first';
+      const s = String(val).toLowerCase();
+      if (s.includes('mid') || s === '2') return 'middle';
+      if (s.includes('last') || s === '3' || s.includes('right')) return 'last';
+      if (s.includes('top') || s === '4') return 'top';
+      return 'first';
+    };
 
-    if (isLoginActive && isLoginInMenu) {
-      menuCtaButtons.push({
-        title: loginText,
-        url: loginUrl,
-        isLoginBtn: true
+    // 1. Build distinct dropdown categories (only those with active child pages)
+    const dropdownItems: any[] = [];
+    const usedUrls = new Set<string>();
+
+    (this.categories || [])
+      .filter(c => c.publish !== false && c.Publish !== false && c.showInMenu !== false && c.ShowInMenu !== false)
+      .forEach(c => {
+        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
+        const rawWebPages = c.webPages || c.WebPages || [];
+        const childPages = (rawWebPages && rawWebPages.length > 0)
+          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false && p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false)
+          : (this.publishedPages || []).filter(p => (p.publish !== false && p.Publish !== false) && 
+              (p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false) && 
+              (p.pageCategoryId === c.id || p.pageCategoryId === c.Id));
+
+        if (!childPages || childPages.length === 0) return;
+
+        const pagesList = childPages.map((p: any) => {
+          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          usedUrls.add(pUrl.toLowerCase());
+          return {
+            title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
+            url: pUrl,
+            customClass: p.customClass || p.CustomClass || '',
+            sortOrder: p.dropdownSortOrder || p.DropdownSortOrder || p.sortOrder || p.SortOrder || 0
+          };
+        });
+
+        dropdownItems.push({
+          title: catTitle,
+          url: '#',
+          isDropdown: true,
+          publish: true,
+          showInMainMenu: true,
+          pages: pagesList,
+          zone: normalizeZone(c.menuPosition ?? c.MenuPosition ?? 1),
+          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : (c.sortOrder || 0)),
+          customClass: c.customClass || c.CustomClass || ''
+        });
       });
-    }
 
-    const menuContext = {
-      topMenuItems,
-      dropdowns,
+    // 2. Build standalone menu items (excluding URLs already contained in dropdowns)
+    const standaloneItems: any[] = [];
+    (this.publishedPages || [])
+      .filter(p => (p.publish !== false && p.Publish !== false) && 
+                   (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
+                   !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
+      .forEach(p => {
+        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '');
+        const pUrl = (rawUrl === '' || rawUrl.toLowerCase() === 'home') ? '/' : `/${rawUrl}`;
+        const pLower = pUrl.toLowerCase();
+
+        // Avoid duplicating if URL is already in a dropdown or already added
+        if (pLower !== '/' && usedUrls.has(pLower)) return;
+        if (usedUrls.has(pLower)) return;
+        usedUrls.add(pLower);
+
+        const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+        standaloneItems.push({
+          title: pTitle,
+          url: pUrl,
+          isDropdown: false,
+          publish: true,
+          showInMainMenu: true,
+          pages: [],
+          zone: normalizeZone(p.menuPosition ?? p.MenuPosition ?? 1),
+          sortOrder: (p.mainMenuSortOrder !== undefined && p.mainMenuSortOrder !== 0) ? p.mainMenuSortOrder : ((p.MainMenuSortOrder !== undefined && p.MainMenuSortOrder !== 0) ? p.MainMenuSortOrder : (p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0))),
+          customClass: p.customClass || p.CustomClass || ''
+        });
+      });
+
+    // Combine into navigationMenu list
+    const navigationMenu = [...standaloneItems, ...dropdownItems].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+    // 3. TopBar Utility Pages
+    const topBarPages = (this.publishedPages || [])
+      .filter(p => (p.publish !== false && p.Publish !== false) && (normalizeZone(p.menuPosition) === 'top' || p.showInMenuTopBar === true || p.showInTopBar === true))
+      .sort((a, b) => (a.topBarSortOrder || a.TopBarSortOrder || a.sortOrder || 0) - (b.topBarSortOrder || b.TopBarSortOrder || b.sortOrder || 0))
+      .map(p => ({
+        title: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
+        customClass: p.customClass || ''
+      }));
+
+    // 4. CTA Buttons: Driven purely from publishedPages where isMenuCTA is true
+    const menuCtaButtons = (this.publishedPages || [])
+      .filter(p => (p.isMenuCTA || p.IsMenuCTA) && p.publish !== false && p.Publish !== false)
+      .sort((a, b) => (a.sortOrder || a.SortOrder || 0) - (b.sortOrder || b.SortOrder || 0))
+      .map(p => {
+        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const ctaTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.menuCtaText || p.MenuCtaText || p.title || p.Title || '');
+        const ctaUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : (p.menuCtaUrl || p.MenuCtaUrl || `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`);
+        const ctaStyle = p.menuCtaStyle || p.MenuCtaStyle || p.buttonClass || (isAuthDirect ? 'oz-btn-ghost' : 'oz-btn-primary');
+        return {
+          title: ctaTitle,
+          url: ctaUrl,
+          buttonClass: ctaStyle.startsWith('oz-btn-') ? ctaStyle : `oz-btn-${ctaStyle}`,
+          customClass: p.customClass || p.CustomClass || (isAuthDirect ? 'oz-login-cta' : '')
+        };
+      });
+
+    const channels: any[] = this.brandInfo?.contactChannels || [];
+    const defaultEmailChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'email');
+    const defaultPhoneChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'phone' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'phone');
+    const defaultAddressChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'address' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'address');
+    const defaultHoursChannel = channels.find((c: any) => (c.channelType?.toLowerCase() === 'hours' || c.channelType?.toLowerCase() === 'workinghours') && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'hours' || c.channelType?.toLowerCase() === 'workinghours');
+    const socialLinks = channels.filter((c: any) => c.channelType?.toLowerCase() === 'socialmedia');
+
+    const contactEmail = defaultEmailChannel?.value || this.brandInfo?.contactEmail || '';
+    const contactPhone = defaultPhoneChannel?.value || this.brandInfo?.primaryPhone || '';
+    const contactAddress = defaultAddressChannel?.value || this.brandInfo?.address || '';
+    const workingHours = defaultHoursChannel?.value || this.brandInfo?.workingHours || '';
+    const hasContactInfo = Boolean(contactEmail || contactPhone || contactAddress || channels.length > 0);
+    const hasBrandLogo = Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0);
+
+    const menuContext: any = {
+      navigationMenu,
+      NavigationMenu: navigationMenu,
+      PageCategories: navigationMenu,
+      categories: navigationMenu,
+      topBarPages,
+      TopBarPages: topBarPages,
       menuCtaButtons,
+      MenuCtaButtons: menuCtaButtons,
       cartCount: this.cartService.getItemCount(),
       BrandName: this.brandName,
+      brandName: this.brandName,
+      CompanyName: this.brandName,
       LogoUrl: this.brandLogoUrl,
-      // Authentication & Role Tokens for Menu templates
+      logoUrl: this.brandLogoUrl,
+      BrandLogo: this.brandLogoUrl,
+      brandLogo: this.brandLogoUrl,
+      WhiteLogoUrl: this.brandLogoUrl,
+      HasBrandLogo: hasBrandLogo,
+      hasBrandLogo: hasBrandLogo,
+      HomeUrl: '/',
+      WebsiteUrl: '/',
+      email: contactEmail,
+      Email: contactEmail,
+      phone: contactPhone,
+      Phone: contactPhone,
+      address: contactAddress,
+      Address: contactAddress,
+      workingHours: workingHours,
+      WorkingHours: workingHours,
+      hasContactInfo,
+      HasContactInfo: hasContactInfo,
+      hasTopBar: topBarPages.length > 0 || hasContactInfo || socialLinks.length > 0,
+      HasTopBar: topBarPages.length > 0 || hasContactInfo || socialLinks.length > 0,
+      socialLinks,
+      SocialLinks: socialLinks,
+      hasSocialLinks: socialLinks.length > 0,
+      HasSocialLinks: socialLinks.length > 0,
+      contactItems: channels,
+      ContactItems: channels,
+      contactChannels: channels,
+      ContactChannels: channels,
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
       ActivateLoginInMenu: isLoginActive && isLoginInMenu,
       LoginText: loginText,
-      LoginTitle: loginText,
-      LoginUrl: loginUrl,
-      LoginButtonHtml: loginButtonHtml,
-      LoginButton: loginButtonHtml,
-      LoginLink: loginButtonHtml
+      LoginUrl: loginUrl
     };
 
-    let html = this.templateHydration.hydrateTemplate(rawHtml, menuContext, this.getHydrationOptions());
+    let html = this.contentHydration.hydrate(rawHtml, menuContext, 'menu');
 
     // Highlight active link matching activeSlug
     if (activeSlug) {
       const activeNormalized = activeSlug === 'home' ? '/' : `/${activeSlug}`;
-      // Highlight exact match href
       const regex = new RegExp(`(<a\\s+[^>]*href=["']${activeNormalized}["'][^>]*class=["'][^"']*)(["'])`, 'gi');
       html = html.replace(regex, '$1 active fw-bold$2');
     }
@@ -1217,38 +2077,9 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   /**
    * Hydrates the active Footer template with legal pages, categorized links, brand details,
-   * and enforces the official Ozikol credit bar.
+   * and enforces the official Ozikol credit bar via ContentHydrationService.
    */
   private hydrateFooter(rawHtml: string): string {
-    // Prepare categorized links for footer columns
-    const footerCategories = this.categories
-      .filter(c => c.publish && c.showInFooter !== false)
-      .map(c => {
-        const catTitle = c.title || c.categoryName || c.name || 'Category';
-        const displayTitle = c.footerDisplayTitle || catTitle;
-        const childPages = (c.webPages && c.webPages.length > 0)
-          ? c.webPages.filter((p: any) => p.publish && p.showInFooter !== false)
-          : this.publishedPages.filter(p => p.publish && p.showInFooter !== false && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
-
-        return {
-          name: catTitle,
-          title: catTitle,
-          displayTitle: displayTitle,
-          pages: childPages.map((p: any) => ({
-            title: p.title,
-            url: `/${p.directUrl || p.slug || ''}`
-          }))
-        };
-      });
-
-    const legalPages = this.publishedPages
-      .filter(p => p.isLegal)
-      .map(p => ({
-        title: p.title,
-        url: `/${p.directUrl || p.slug}`
-      }));
-
-    // Dynamic Live Sign-In Button in Website Footer
     const isLoginActive = this.brandInfo?.activateLogin !== false;
     const isLoginInFooter = this.brandInfo?.activateLoginInFooter !== false;
     const authed = this.isUserAuthenticated();
@@ -1261,95 +2092,225 @@ export class LandingComponent implements OnInit, OnDestroy {
     const loginUrl = !authed 
       ? '/auth/login' 
       : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
-    const loginIcon = !authed 
-      ? 'fa-solid fa-arrow-right-to-bracket' 
-      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
 
-    const loginButtonHtml = (isLoginActive && isLoginInFooter)
-      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
-      : '';
+    // Prepare categorized links for footer columns
+    const footerCategories = (this.categories || [])
+      .filter(c => c.publish !== false && c.showInFooter !== false)
+      .map(c => {
+        const catTitle = c.title || c.categoryName || c.name || 'Category';
+        const displayTitle = c.footerDisplayTitle || catTitle;
+        const childPages = (c.webPages && c.webPages.length > 0)
+          ? c.webPages.filter((p: any) => p.publish !== false && p.showInFooter !== false)
+          : (this.publishedPages || []).filter(p => (p.publish !== false && p.showInFooter !== false) && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
 
-    if (isLoginActive && isLoginInFooter) {
-      legalPages.push({
-        title: loginText,
-        url: loginUrl
+        return {
+          name: catTitle,
+          title: catTitle,
+          displayTitle: displayTitle,
+          pages: childPages.map((p: any) => ({
+            title: p.title || p.Title || '',
+            url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
+          }))
+        };
       });
-      if (footerCategories.length > 0) {
-        footerCategories[footerCategories.length - 1].pages.push({
-          title: loginText,
-          url: loginUrl
-        });
-      }
+
+    const footerBottomPages = (this.publishedPages || [])
+      .filter(p => (p.showInFooterBottom || p.ShowInFooterBottom || p.isLegal || p.IsLegal) && p.publish !== false && p.Publish !== false)
+      .sort((a, b) => (a.footerBottomSortOrder || a.FooterBottomSortOrder || a.sortOrder || a.SortOrder || 0) - (b.footerBottomSortOrder || b.FooterBottomSortOrder || b.sortOrder || b.SortOrder || 0))
+      .map(p => {
+        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const itemTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.title || p.Title || '');
+        const itemUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`;
+        return {
+          title: itemTitle,
+          url: itemUrl,
+          customClass: p.customClass || p.CustomClass || ''
+        };
+      });
+
+    const legalPages = footerBottomPages;
+
+    const currentYear = new Date().getFullYear().toString();
+    const footerChannels: any[] = this.brandInfo?.contactChannels || [];
+    const footerEmailChannel = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'email');
+    const footerPhoneChannel = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'phone' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'phone');
+    const footerAddressChannel = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'address' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'address');
+    const footerSocialLinks = footerChannels.filter((c: any) => c.channelType?.toLowerCase() === 'socialmedia');
+
+    const contactEmail = footerEmailChannel?.value || this.brandInfo?.contactEmail || '';
+    const contactPhone = footerPhoneChannel?.value || this.brandInfo?.primaryPhone || '';
+    const contactAddress = footerAddressChannel?.value || this.brandInfo?.address || '';
+
+    // Get in Touch column strictly contains Address, Phone, Email
+    const contactItems: any[] = [];
+    if (contactAddress) {
+      contactItems.push({
+        title: 'Address',
+        content: contactAddress,
+        value: contactAddress,
+        type: 'address',
+        iconClass: 'fa-solid fa-location-dot',
+        url: '#'
+      });
+    }
+    if (contactPhone) {
+      contactItems.push({
+        title: 'Phone',
+        content: contactPhone,
+        value: contactPhone,
+        type: 'phone',
+        iconClass: 'fa-solid fa-phone',
+        url: `tel:${contactPhone.replace(/[^0-9+]/g, '')}`
+      });
+    }
+    if (contactEmail) {
+      contactItems.push({
+        title: 'Email',
+        content: contactEmail,
+        value: contactEmail,
+        type: 'email',
+        iconClass: 'fa-solid fa-envelope',
+        url: `mailto:${contactEmail}`
+      });
     }
 
-    const footerContext = {
+    // Real published pages tagged with quicklinks for the Quick Links column
+    const quickLinkPages = (this.publishedPages || [])
+      .filter((p: any) => p.publish !== false && (
+        (p.tags && p.tags.toLowerCase().includes('quicklink')) ||
+        ['ai-agent', 'machinery', 'machineries', 'career', 'faq', 'contact', 'contact-us'].includes((p.directUrl || p.slug || '').toLowerCase().replace(/^\/+/, ''))
+      ))
+      .map((p: any) => ({
+        title: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
+      }));
+
+    const footerContext: any = {
       BrandName: this.brandName,
+      brandName: this.brandName,
       LogoUrl: this.brandLogoUrl,
-      Year: new Date().getFullYear().toString(),
-      Description: this.brandInfo?.companyDescription || 'Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.',
-      Email: this.brandInfo?.companyEmail || 'contact@organization.com',
-      Phone: this.brandInfo?.companyPhone || '+1 (555) 019-2834',
-      Address: this.brandInfo?.companyAddress || 'Corporate Headquarters',
-      Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`,
+      logoUrl: this.brandLogoUrl,
+      BrandLogo: this.brandLogoUrl,
+      Year: currentYear,
+      year: currentYear,
+      Description: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '',
+      description: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '',
+      FooterDescription: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || '',
+      footerDescription: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || '',
+      Tagline: this.brandInfo?.tagline || '',
+      tagline: this.brandInfo?.tagline || '',
+      Email: contactEmail,
+      email: contactEmail,
+      Phone: contactPhone,
+      phone: contactPhone,
+      Address: contactAddress,
+      address: contactAddress,
+      Copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
+      copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
+      footerCategories: footerCategories,
       categories: footerCategories,
       legalPages: legalPages,
-      // Authentication & Role Tokens for Footer templates
+      LegalPages: legalPages,
+      footerBottomPages: footerBottomPages,
+      FooterBottomPages: footerBottomPages,
+      socialLinks: footerSocialLinks,
+      SocialLinks: footerSocialLinks,
+      hasSocialLinks: footerSocialLinks.length > 0,
+      HasSocialLinks: footerSocialLinks.length > 0,
+      hasContactInfo: contactItems.length > 0,
+      HasContactInfo: contactItems.length > 0,
+      contactItems: contactItems,
+      ContactItems: contactItems,
+      contactChannels: contactItems,
+      ContactChannels: contactItems,
+      taggedPages: {
+        quicklinks: quickLinkPages
+      },
+      TaggedPages: {
+        quicklinks: quickLinkPages
+      },
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
       ActivateLoginInFooter: isLoginActive && isLoginInFooter,
       LoginText: loginText,
-      LoginTitle: loginText,
-      LoginUrl: loginUrl,
-      LoginButtonHtml: loginButtonHtml,
-      LoginButton: loginButtonHtml,
-      LoginLink: loginButtonHtml
+      LoginUrl: loginUrl
     };
 
-    let html = this.templateHydration.hydrateTemplate(rawHtml, footerContext, this.getHydrationOptions());
+    let html = this.contentHydration.hydrate(rawHtml, footerContext, 'footer');
     return this.templateHydration.enforceOzikolCredit(html);
   }
 
   /**
-   * Builds Hero hydration data from active DB section or sliders or defaults.
+   * Builds Hero hydration data strictly from active database PageSection entity and its child lists.
    */
   private buildHeroContext(dbHeroSection?: any): any {
-    if (dbHeroSection) {
-      return {
-        title: dbHeroSection.title || 'Driving Next-Generation Enterprise Growth',
-        miniTitle: dbHeroSection.miniTitle || 'Strategic Modernization',
-        description: dbHeroSection.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
-        imageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-        buttonText: dbHeroSection.buttonText || 'Explore Services',
-        buttonLink: dbHeroSection.buttonLink || '/services',
-        secondaryButtonText: 'Schedule Consultation',
-        secondaryButtonLink: '/contact-us'
-      };
-    }
+    const listItems = (dbHeroSection?.pageSectionLists || dbHeroSection?.items || []).map((item: any, idx: number) => ({
+      id: item.id,
+      title: item.title || '',
+      Title: item.title || '',
+      miniTitle: item.miniTitle || '',
+      MiniTitle: item.miniTitle || '',
+      description: item.description || '',
+      Description: item.description || '',
+      moreDescription: item.moreDescription || '',
+      MoreDescription: item.moreDescription || '',
+      icon: item.iconText || item.icon || '',
+      imageUrl: item.imageUrl || dbHeroSection?.imageUrl || '',
+      ImageUrl: item.imageUrl || dbHeroSection?.imageUrl || '',
+      buttonText: item.buttonText || '',
+      ButtonText: item.buttonText || '',
+      buttonLink: item.buttonLink || '#',
+      ButtonLink: item.buttonLink || '#',
+      secondaryButtonText: item.secondaryButtonText || item.secondButtonText || '',
+      SecondaryButtonText: item.secondaryButtonText || item.secondButtonText || '',
+      secondaryButtonLink: item.secondaryButtonLink || item.secondButtonLink || '#',
+      SecondaryButtonLink: item.secondaryButtonLink || item.secondButtonLink || '#',
+      sortOrder: item.sortOrder || idx + 1
+    }));
 
-    if (this.sliders && this.sliders.length > 0) {
-      const activeSlider = this.sliders[0];
-      return {
-        title: activeSlider.title || 'Driving Next-Generation Enterprise Growth',
-        miniTitle: activeSlider.miniTitle || 'Strategic Modernization',
-        description: activeSlider.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
-        imageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-        buttonText: activeSlider.buttonText || 'Explore Services',
-        buttonLink: activeSlider.buttonLink || '/services',
-        secondaryButtonText: activeSlider.secondaryButtonText || 'Schedule Consultation',
-        secondaryButtonLink: activeSlider.secondaryButtonLink || '/contact-us'
-      };
-    }
+    // If section has no child list items, construct single slide from the parent section
+    const childSlides = listItems.length > 0 ? listItems : (dbHeroSection ? [{
+      title: dbHeroSection.title || this.brandName,
+      Title: dbHeroSection.title || this.brandName,
+      miniTitle: dbHeroSection.miniTitle || '',
+      MiniTitle: dbHeroSection.miniTitle || '',
+      description: dbHeroSection.description || '',
+      Description: dbHeroSection.description || '',
+      imageUrl: dbHeroSection.imageUrl || '',
+      ImageUrl: dbHeroSection.imageUrl || '',
+      buttonText: dbHeroSection.buttonText || '',
+      ButtonText: dbHeroSection.buttonText || '',
+      buttonLink: dbHeroSection.buttonLink || '#',
+      ButtonLink: dbHeroSection.buttonLink || '#',
+      secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+      SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+      secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '#',
+      SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '#'
+    }] : []);
 
+    const firstSlide = childSlides[0] || {};
     return {
-      title: 'Pioneering Scalable Enterprise Infrastructure & Solutions',
-      miniTitle: 'Next-Generation Technology & Consulting',
-      description: 'We orchestrate robust operational frameworks, modern digital architecture, and resilient systems for global industry leaders.',
-      imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-      buttonText: 'Explore Services',
-      buttonLink: '/services',
-      secondaryButtonText: 'Schedule Consultation',
-      secondaryButtonLink: '/contact-us'
+      title: dbHeroSection?.title || firstSlide.title || '',
+      Title: dbHeroSection?.title || firstSlide.title || '',
+      miniTitle: dbHeroSection?.miniTitle || firstSlide.miniTitle || '',
+      MiniTitle: dbHeroSection?.miniTitle || firstSlide.miniTitle || '',
+      description: dbHeroSection?.description || firstSlide.description || '',
+      Description: dbHeroSection?.description || firstSlide.description || '',
+      imageUrl: dbHeroSection?.imageUrl || firstSlide.imageUrl || '',
+      ImageUrl: dbHeroSection?.imageUrl || firstSlide.imageUrl || '',
+      buttonText: dbHeroSection?.buttonText || firstSlide.buttonText || '',
+      ButtonText: dbHeroSection?.buttonText || firstSlide.buttonText || '',
+      buttonLink: dbHeroSection?.buttonLink || firstSlide.buttonLink || '',
+      ButtonLink: dbHeroSection?.buttonLink || firstSlide.buttonLink || '',
+      secondaryButtonText: dbHeroSection?.secondaryButtonText || dbHeroSection?.secondButtonText || firstSlide.secondaryButtonText || '',
+      SecondaryButtonText: dbHeroSection?.secondaryButtonText || dbHeroSection?.secondButtonText || firstSlide.secondaryButtonText || '',
+      secondaryButtonLink: dbHeroSection?.secondaryButtonLink || dbHeroSection?.secondButtonLink || firstSlide.secondaryButtonLink || '',
+      SecondaryButtonLink: dbHeroSection?.secondaryButtonLink || dbHeroSection?.secondButtonLink || firstSlide.secondaryButtonLink || '',
+      items: childSlides,
+      pageSectionLists: childSlides,
+      slides: childSlides,
+      PageSectionLists: childSlides
     };
   }
 
@@ -1357,25 +2318,29 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Formats a PageSection database entity into the token context expected by TemplateHydrationService.
    */
   private buildSectionContext(sec: any): any {
-    const listItems = (sec.pageSectionLists || []).map((item: any, idx: number) => ({
+    const listItems = (sec.pageSectionLists || sec.items || []).map((item: any, idx: number) => ({
       id: item.id,
-      title: item.title || `Capability ${idx + 1}`,
-      Title: item.title || `Capability ${idx + 1}`,
+      title: item.title || '',
+      Title: item.title || '',
       miniTitle: item.miniTitle || '',
       MiniTitle: item.miniTitle || '',
       description: item.description || '',
       Description: item.description || '',
       moreDescription: item.moreDescription || '',
       MoreDescription: item.moreDescription || '',
-      iconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
-      IconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
-      icon: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      iconText: item.iconText || item.icon || '',
+      IconText: item.iconText || item.icon || '',
+      icon: item.iconText || item.icon || '',
       imageUrl: item.imageUrl || '',
       ImageUrl: item.imageUrl || '',
+      secondImageUrl: item.secondImageUrl || '',
+      SecondImageUrl: item.secondImageUrl || '',
       buttonText: item.buttonText || '',
       ButtonText: item.buttonText || '',
-      buttonLink: item.buttonLink || '#',
-      ButtonLink: item.buttonLink || '#',
+      buttonLink: item.buttonLink || '',
+      ButtonLink: item.buttonLink || '',
+      directUrl: item.directUrl || '',
+      DirectUrl: item.directUrl || '',
       sortOrder: item.sortOrder || idx + 1
     }));
 
@@ -1384,58 +2349,103 @@ export class LandingComponent implements OnInit, OnDestroy {
       Title: sec.title || '',
       miniTitle: sec.miniTitle || '',
       MiniTitle: sec.miniTitle || '',
+      qoute: sec.qoute || sec.quote || '',
+      Qoute: sec.qoute || sec.quote || '',
+      quote: sec.quote || sec.qoute || '',
+      Quote: sec.quote || sec.qoute || '',
       description: sec.description || '',
       Description: sec.description || '',
-      moreDescription: sec.moreDescription || '',
-      MoreDescription: sec.moreDescription || '',
-      imageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
-      ImageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
-      buttonText: sec.buttonText || 'Explore Details',
-      ButtonText: sec.buttonText || 'Explore Details',
+      fullDescription: sec.fullDescription || sec.description || '',
+      FullDescription: sec.fullDescription || sec.description || '',
+      imageUrl: sec.imageUrl || '',
+      ImageUrl: sec.imageUrl || '',
+      secondImageUrl: sec.secondImageUrl || '',
+      SecondImageUrl: sec.secondImageUrl || '',
+      videoUrl: sec.videoUrl || '',
+      VideoUrl: sec.videoUrl || '',
+      youtubeUrlLink: sec.youtubeUrlLink || sec.videoUrl || '',
+      YoutubeUrlLink: sec.youtubeUrlLink || sec.videoUrl || '',
+      iconText: sec.iconText || '',
+      IconText: sec.iconText || '',
+      buttonText: sec.buttonText || '',
+      ButtonText: sec.buttonText || '',
       buttonLink: sec.buttonLink || '#',
       ButtonLink: sec.buttonLink || '#',
-      secondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
-      SecondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
-      secondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
-      SecondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
-      videoUrl: sec.videoUrl || '',
+      secondButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      SecondButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      secondaryButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      SecondaryButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      secondButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      SecondButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      secondaryButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      SecondaryButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      directUrl: sec.directUrl || '',
+      DirectUrl: sec.directUrl || '',
+      customClass: sec.customClass || '',
+      CustomClass: sec.customClass || '',
+      backgroundColor: sec.backgroundColor || '',
+      BackgroundColor: sec.backgroundColor || '',
+      formKey: sec.formKey || (sec.pageForm ? sec.pageForm.formKey : ''),
+      FormKey: sec.formKey || (sec.pageForm ? sec.pageForm.formKey : ''),
       pageSectionLists: listItems,
       PageSectionLists: listItems,
-      items: listItems
+      items: listItems,
+      articles: this.blogs && this.blogs.length > 0 ? this.mapBlogArticles(this.blogs) : [],
+      Articles: this.blogs && this.blogs.length > 0 ? this.mapBlogArticles(this.blogs) : []
     };
   }
 
   private findActiveTemplate(category: string): any {
-    return this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
+    const target = (category || '').toLowerCase().replace(/[-_]/g, '');
+    return this.activeTemplates.find(t => {
+      const cat = (t.categoryKey || t.category || '').toLowerCase().replace(/[-_]/g, '');
+      const key = (t.templateKey || t.variantCode || '').toLowerCase().replace(/[-_]/g, '');
+      return cat === target || key === target;
+    });
   }
 
   private findTemplateForSection(sec: any): any {
-    if (sec.templateKey) {
-      // 1. Exact match by TemplateKey or VariantCode
+    const rawKey = sec.templateKey || sec.variantCode || sec.directUrl || '';
+    if (rawKey) {
+      const normalizedKey = rawKey.toLowerCase();
+      // 1. Exact match in activeTemplates
       const exactMatch = this.activeTemplates.find(t => 
-        (t.templateKey || '').toLowerCase() === sec.templateKey.toLowerCase() ||
-        (t.variantCode || '').toLowerCase() === sec.templateKey.toLowerCase()
+        (t.templateKey || '').toLowerCase() === normalizedKey ||
+        (t.variantCode || '').toLowerCase() === normalizedKey
       );
       if (exactMatch) return exactMatch;
 
       // 2. Smart alias mapping between seeded template keys and installed theme keys
       const keyAliases: { [key: string]: string[] } = {
         'body_splitshowcase': ['body_missionsplit', 'body_featuregrid3'],
-        'body_statscounters': ['body_metricscounter', 'body_statscounter4'],
-        'body_metricscounter': ['body_metricscounter'],
-        'body_processsteps': ['body_missionsplit', 'body_featuregrid3'],
+        'split-media-showcase': ['body_missionsplit', 'body_featuregrid3'],
+        'body_statscounters': ['body_statscounters', 'body_metricscounter', 'body_statscounter4'],
+        'stats-counter': ['body_statscounters', 'body_metricscounter'],
+        'body_metricscounter': ['body_statscounters', 'body_metricscounter'],
+        'body_processsteps': ['body_processsteps', 'body_missionsplit', 'body_featuregrid3'],
+        'process-steps': ['body_processsteps', 'body_missionsplit'],
         'body_missionsplit': ['body_missionsplit'],
-        'body_ctasplit': ['body_ctabanner', 'body_ctabannerfull'],
-        'body_ctabanner': ['body_ctabanner'],
+        'body_ctasplit': ['body_ctasplit', 'body_ctabanner', 'body_ctabannerfull'],
+        'cta-banner': ['body_ctasplit', 'body_ctabanner'],
+        'body_ctabanner': ['body_ctasplit', 'body_ctabanner'],
         'news_minimalbar': ['news_minimalbar'],
+        'newsletter-bar': ['news_minimalbar'],
         'contact_splitdetails': ['contact_splitdetails'],
+        'contact-split': ['contact_splitdetails'],
         'body_requestservice': ['body_requestservice'],
+        'request-service': ['body_requestservice'],
         'body_featuregrid3': ['body_featuregrid3'],
+        'features-3col': ['body_featuregrid3'],
+        'feature-cards-grid': ['body_featuregrid3'],
         'body_testimonials': ['body_testimonials'],
-        'body_faqaccordion': ['body_faqaccordion']
+        'testimonials': ['body_testimonials'],
+        'testimonials-grid': ['body_testimonials'],
+        'body_faqaccordion': ['body_faqaccordion'],
+        'faq': ['body_faqaccordion'],
+        'faq-accordion': ['body_faqaccordion'],
+        'team-grid': ['body_featuregrid3']
       };
 
-      const normalizedKey = sec.templateKey.toLowerCase();
       const aliases = keyAliases[normalizedKey];
       if (aliases) {
         for (const alias of aliases) {
@@ -1475,70 +2485,34 @@ export class LandingComponent implements OnInit, OnDestroy {
     // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
     const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
 
-    // Base framework CSS (Bootstrap 5.3.3, FontAwesome 6, Inter Font) ensuring 100% parity with Demo Preview
-    const baseFrameworkStyles = `
-      @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
-      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-      body.public-website-mode {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        background: #ffffff;
-      }
-      body.public-website-mode a {
-        text-decoration: none;
-        cursor: pointer;
-      }
-      body.public-website-mode button {
-        cursor: pointer;
-      }
-      .dropdown {
-        position: relative !important;
-      }
-      .dropdown-menu {
-        display: none;
-      }
-      .dropdown:hover .dropdown-menu {
-        display: block;
-      }
-      /* Active Navigation Link Highlighting */
-      .oz-nav-header .nav-link.active {
-        color: #0050e5 !important;
-        font-weight: 700 !important;
-      }
-      .oz-nav-header .nav-link:not(.active) {
-        color: #64748b !important;
-        font-weight: 500 !important;
-      }
-      .oz-nav-header .btn.active {
-        box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.4) !important;
-        transform: translateY(-1px);
-      }
-    `;
-
-    styleTag.textContent = `${baseFrameworkStyles}\n${cleanStyles}`;
+    styleTag.textContent = cleanStyles;
 
     // 2. Set Safe HTML for main page layout
     this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
 
-    // 3. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
-    this.injectCodeTags(combinedJs);
+    // 3. Complete loading and trigger Change Detection so Angular renders [innerHTML] into the DOM
+    this.loading = false;
+    this.cdr.detectChanges();
+
+    // 4. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
+    // after Angular has mounted the elements into the DOM tree
+    setTimeout(() => {
+      this.injectCodeTags(combinedJs);
+      this.initRecaptchas();
+    }, 50);
   }
 
   /**
-   * Injects code tags into all 3 document zones according to CMS architecture:
+   * Injects code tags strictly from the database according to CMS architecture:
    * - Zone 1: <head> -> external CSS stylesheets, meta tags, Google Fonts, OpenGraph, JSON-LD, Favicons
    * - Zone 2: <body> -> immediately after opening body tag
-   * - Zone 3: </body> -> immediately before closing body tag (Bootstrap JS bundle, section scripts)
+   * - Zone 3: </body> -> immediately before closing body tag (vendor JavaScript, section scripts)
    */
   private injectCodeTags(combinedJs?: string): void {
     // Clean up previously injected dynamic tags
     document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
 
-    // 1. Guaranteed Baseline Head Assets (Bootstrap 5.3 CSS, FA 6, Google Fonts)
-    this.ensureBaselineHeadTags();
-
-    // 2. Inject CMS Header Tags (<head>)
+    // 1. Inject CMS Header Tags (<head>) strictly from DB in sort order
     if (this.codeInjections.head && this.codeInjections.head.length > 0) {
       for (const tag of this.codeInjections.head) {
         if (!tag.content) continue;
@@ -1546,7 +2520,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 3. Inject CMS Body Open Tags (immediately after <body>)
+    // 2. Inject CMS Body Open Tags (immediately after <body>) strictly from DB
     if (this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
       for (const tag of this.codeInjections.bodyOpen) {
         if (!tag.content) continue;
@@ -1554,7 +2528,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 4. Inject CMS Footer Scripts (right before </body>)
+    // 3. Inject CMS Footer Scripts (right before </body>) strictly from DB in sort order
     if (this.codeInjections.footer && this.codeInjections.footer.length > 0) {
       for (const tag of this.codeInjections.footer) {
         if (!tag.content) continue;
@@ -1562,43 +2536,19 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 5. Guaranteed Baseline Footer Scripts (Bootstrap 5.3 JS Bundle)
-    this.ensureBootstrapJsScript();
-
-    // 6. Section JavaScript Execution
+    // 4. Section JavaScript Execution
     if (combinedJs && combinedJs.trim()) {
       const script = document.createElement('script');
       script.className = 'ozikol-injected-tag ozikol-section-scripts';
-      // Defensively strip any accidental <script> or </script> tags to ensure valid pure JS execution
       const cleanJs = combinedJs.replace(/<\/?script[^>]*>/gi, '').trim();
-      script.textContent = cleanJs;
+      script.textContent = `
+        try {
+          ${cleanJs}
+        } catch (e) {
+          console.error('[Ozikol Theme Script Error]:', e);
+        }
+      `;
       document.body.appendChild(script);
-    }
-  }
-
-  private ensureBaselineHeadTags(): void {
-    if (!document.querySelector('link[href*="bootstrap"]')) {
-      const bsCss = document.createElement('link');
-      bsCss.rel = 'stylesheet';
-      bsCss.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
-      bsCss.className = 'ozikol-injected-tag';
-      document.head.appendChild(bsCss);
-    }
-    if (!document.querySelector('link[href*="font-awesome"]')) {
-      const faCss = document.createElement('link');
-      faCss.rel = 'stylesheet';
-      faCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
-      faCss.className = 'ozikol-injected-tag';
-      document.head.appendChild(faCss);
-    }
-  }
-
-  private ensureBootstrapJsScript(): void {
-    if (!document.querySelector('script[src*="bootstrap"]')) {
-      const bsJs = document.createElement('script');
-      bsJs.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
-      bsJs.className = 'ozikol-injected-tag';
-      document.body.appendChild(bsJs);
     }
   }
 
@@ -1660,38 +2610,23 @@ export class LandingComponent implements OnInit, OnDestroy {
     const target = e.target as HTMLElement;
     if (!target) return;
 
-    // 1. Dropdown Toggle Click Handler
-    const dropdownToggle = target.closest('.dropdown-toggle, [data-bs-toggle="dropdown"]') as HTMLElement;
-    if (dropdownToggle) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const parentDropdown = dropdownToggle.closest('.dropdown');
-      const menu = parentDropdown?.querySelector('.dropdown-menu');
-
-      if (menu) {
-        const isAlreadyOpen = menu.classList.contains('show');
-        document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
-        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(t => t.setAttribute('aria-expanded', 'false'));
-
-        if (!isAlreadyOpen) {
-          menu.classList.add('show');
-          dropdownToggle.setAttribute('aria-expanded', 'true');
-        }
-      }
-      return;
-    }
-
-    // 2. Click Outside Closes All Dropdowns
-    if (!target.closest('.dropdown')) {
-      document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
-      document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(t => t.setAttribute('aria-expanded', 'false'));
-    }
-
-    // 3. Dropdown Items & Internal Navigation Links
+    // 1. Internal Navigation Link Interception (SPA client routing)
     const anchor = target.closest('a') as HTMLAnchorElement;
-    if (anchor && !anchor.classList.contains('dropdown-toggle')) {
+    if (anchor && !anchor.classList.contains('dropdown-toggle') && !anchor.classList.contains('oz-dropdown-toggle')) {
+      // Check if this anchor is a toggle button or modal/drawer trigger
+      const isThemeToggle = anchor.getAttribute('data-bs-toggle') !== null ||
+                            anchor.getAttribute('data-toggle') !== null ||
+                            anchor.hasAttribute('data-bs-target') ||
+                            anchor.hasAttribute('data-target') ||
+                            anchor.classList.contains('toggle-btn') ||
+                            anchor.classList.contains('menu-toggle');
+
       const href = (anchor.getAttribute('href') || '').trim();
+
+      if (isThemeToggle || href === '#' || href === '' || href.startsWith('javascript:')) {
+        // Allow theme's JS handler to manage offcanvas / modal / drawer toggling without Angular router hijacking
+        return;
+      }
 
       if (href && !href.startsWith('http') && !href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('javascript:')) {
         if (href.startsWith('#')) {
@@ -1723,11 +2658,58 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Dynamically loads Google reCAPTCHA script tag if not yet present in the document.
+   */
+  private loadRecaptchaScript(): void {
+    if (document.getElementById('google-recaptcha-script')) {
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'google-recaptcha-script';
+    script.src = 'https://www.google.com/recaptcha/api.js';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  /**
+   * Discovers all .g-recaptcha containers on the rendered page and renders or assigns the site key.
+   */
+  private initRecaptchas(): void {
+    this.loadRecaptchaScript();
+
+    setTimeout(() => {
+      try {
+        const root = this.elementRef.nativeElement;
+        const recaptchaContainers = root.querySelectorAll('.g-recaptcha');
+        recaptchaContainers.forEach((container: HTMLElement) => {
+          if (!container.getAttribute('data-sitekey') || container.getAttribute('data-sitekey') === '') {
+            container.setAttribute('data-sitekey', this.recaptchaSiteKey);
+          }
+          const grecaptcha = (window as any).grecaptcha;
+          if (grecaptcha && typeof grecaptcha.render === 'function' && container.children.length === 0) {
+            try {
+              grecaptcha.render(container, {
+                sitekey: this.recaptchaSiteKey
+              });
+            } catch (renderErr) {
+              // Ignore if already initialized
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('reCAPTCHA init deferred:', e);
+      }
+    }, 300);
+  }
+
+  /**
    * Submits a public interactive form (e.g., Contact Us, Newsletter, Service Request)
    * to WebsiteContentApi/forms/{formKey}/submit.
    */
   private submitDynamicForm(form: HTMLFormElement, submitBtn: HTMLElement): void {
-    const formKey = form.getAttribute('data-form-key') || form.id || 'contact-us';
+    const rawKey = form.getAttribute('data-form-key') || form.id || 'Contact_Us';
+    const formKey = rawKey.trim();
     const formData = new FormData(form);
     const dataPayload: Record<string, any> = {};
 
@@ -1735,12 +2717,33 @@ export class LandingComponent implements OnInit, OnDestroy {
       dataPayload[key] = value;
     });
 
+    // Also collect all named inputs directly to support dynamically hydrated forms without standard form submit
+    const inputs = form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select');
+    inputs.forEach(inp => {
+      const name = inp.getAttribute('name') || inp.id;
+      if (name && inp.value !== undefined && dataPayload[name] === undefined) {
+        dataPayload[name] = inp.value;
+      }
+    });
+
+    // Retrieve Google reCAPTCHA response token from form inputs or global grecaptcha
+    let recaptchaToken = (dataPayload['g-recaptcha-response'] as string) || '';
+    if (!recaptchaToken) {
+      const grecaptcha = (window as any).grecaptcha;
+      if (grecaptcha && typeof grecaptcha.getResponse === 'function') {
+        try {
+          recaptchaToken = grecaptcha.getResponse() || '';
+        } catch {}
+      }
+    }
+
     const originalText = submitBtn.innerHTML;
     submitBtn.setAttribute('disabled', 'true');
     submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Submitting...`;
 
     this.apiService.post(`WebsiteContentApi/forms/${formKey}/submit`, {
       data: dataPayload,
+      recaptchaToken: recaptchaToken,
       sourcePageUrl: window.location.pathname
     }).subscribe({
       next: (res: any) => {
@@ -1749,12 +2752,18 @@ export class LandingComponent implements OnInit, OnDestroy {
         const successMsg = res?.message || 'Thank you! Your submission has been received.';
         this.toastService.success(successMsg);
         form.reset();
+        try {
+          (window as any).grecaptcha?.reset();
+        } catch {}
       },
       error: (err: any) => {
         submitBtn.removeAttribute('disabled');
         submitBtn.innerHTML = originalText;
         const errorMsg = err?.error?.message || 'Unable to submit your request. Please check all fields.';
         this.toastService.error(errorMsg);
+        try {
+          (window as any).grecaptcha?.reset();
+        } catch {}
       }
     });
   }

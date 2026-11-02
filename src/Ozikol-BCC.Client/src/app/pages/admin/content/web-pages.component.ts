@@ -27,6 +27,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Web Page</span>
           </button>
+          <button type="button" class="btn btn-outline" (click)="reseedTurnkeyDefaults()" title="Re-seed the turnkey default website suite" [disabled]="loading">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <span>Seed Defaults</span>
+          </button>
+          <button type="button" class="btn btn-outline" (click)="resetToBlankCanvas()" title="Clear demo pages and sections to start with a blank canvas" [disabled]="loading">
+            <span class="material-symbols-outlined">draft</span>
+            <span>Blank Canvas</span>
+          </button>
           <button type="button" (click)="loadAll()" class="btn btn-outline" [disabled]="loading">
             <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
             <span>Refresh</span>
@@ -37,19 +45,25 @@ import { ToastService } from '../../../core/services/toast.service';
       <!-- Filter Controls Bar -->
       <div class="filter-bar">
         <div class="filter-group">
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'all'" (click)="filterStatus = 'all'">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'all' && !selectedTagFilter" (click)="filterStatus = 'all'; selectedTagFilter = null">
             All Pages ({{ pages.length }})
           </button>
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'published'" (click)="filterStatus = 'published'">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'published' && !selectedTagFilter" (click)="filterStatus = 'published'; selectedTagFilter = null">
             Published ({{ publishedCount }})
           </button>
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'draft'" (click)="filterStatus = 'draft'">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'draft' && !selectedTagFilter" (click)="filterStatus = 'draft'; selectedTagFilter = null">
             Drafts ({{ draftCount }})
+          </button>
+
+          <!-- Dynamic Active Tag Filters -->
+          <span style="border-left: 1px solid #cbd5e1; height: 20px; margin: 0 4px;" *ngIf="availableTags.length > 0"></span>
+          <button type="button" class="filter-btn" *ngFor="let tag of availableTags" [class.active]="selectedTagFilter === tag" (click)="toggleTagFilter(tag)">
+            🏷️ #{{ tag }} ({{ getTagCount(tag) }})
           </button>
         </div>
         <div class="search-box">
           <span class="material-symbols-outlined">search</span>
-          <input type="text" [(ngModel)]="searchTerm" placeholder="Search by title or slug...">
+          <input type="text" [(ngModel)]="searchTerm" placeholder="Search by title, slug, or tag...">
         </div>
       </div>
 
@@ -60,11 +74,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <thead>
               <tr>
                 <th>PAGE TITLE</th>
+                <th>ZONE</th>
                 <th>DIRECT URL SLUG</th>
-                <th>MENU CATEGORY</th>
-                <th>NAV BAR</th>
+                <th>CATEGORY</th>
+                <th>TOP BAR</th>
+                <th>MAIN NAV</th>
+                <th>DROPDOWN</th>
                 <th>FOOTER</th>
-                <th>VIEWS</th>
+                <th>BOTTOM</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
@@ -73,11 +90,23 @@ import { ToastService } from '../../../core/services/toast.service';
               <tr *ngFor="let page of filteredPages">
                 <td>
                   <div class="page-title-cell">
-                    <strong>{{ page.title }}</strong>
+                    <div class="d-flex align-items-center gap-2">
+                      <strong>{{ page.title }}</strong>
+                      <span class="cta-pill" *ngIf="page.isMenuCTA">CTA Button</span>
+                    </div>
+                    <div class="tags-badge-list" *ngIf="page.tags" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                      <span class="tag-pill" *ngFor="let t of getPageTags(page.tags)" style="background: #f1f5f9; color: #475569; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: 600;">#{{ t }}</span>
+                    </div>
                     <span class="security-badge" *ngIf="page.securityPage">
                       <span class="material-symbols-outlined">lock</span> Protected
                     </span>
+                    <span class="sub-text" *ngIf="page.customClass"><code>.{{ page.customClass }}</code></span>
                   </div>
+                </td>
+                <td>
+                  <span class="zone-badge" [ngClass]="getZoneClass(page.menuPosition)">
+                    {{ getZoneLabel(page.menuPosition) }}
+                  </span>
                 </td>
                 <td>
                   <a [href]="'/' + page.directUrl" target="_blank" class="slug-link" title="Open preview">
@@ -90,17 +119,29 @@ import { ToastService } from '../../../core/services/toast.service';
                   <span class="badge-none" *ngIf="!page.pageCategory">Standalone</span>
                 </td>
                 <td>
-                  <span class="indicator" [class.on]="page.showInMainMenu" [class.off]="!page.showInMainMenu">
-                    {{ page.showInMainMenu ? 'Yes' : 'No' }}
+                  <span class="indicator" [class.on]="page.showInTopBar" [class.off]="!page.showInTopBar" [title]="'Sort: #' + (page.topBarSortOrder || 0)">
+                    {{ page.showInTopBar ? ('#' + (page.topBarSortOrder || 0)) : 'No' }}
                   </span>
                 </td>
                 <td>
-                  <span class="indicator" [class.on]="page.showInFooter" [class.off]="!page.showInFooter">
-                    {{ page.showInFooter ? 'Yes' : 'No' }}
+                  <span class="indicator" [class.on]="page.showInMainMenu" [class.off]="!page.showInMainMenu" [title]="'Sort: #' + (page.mainMenuSortOrder || page.sortOrder || 0)">
+                    {{ page.showInMainMenu ? ('#' + (page.mainMenuSortOrder || page.sortOrder || 0)) : 'No' }}
                   </span>
                 </td>
                 <td>
-                  <span class="views-pill">{{ page.viewCount || 0 }} views</span>
+                  <span class="indicator" [class.on]="page.showInMenuDropDown" [class.off]="!page.showInMenuDropDown" [title]="'Sort: #' + (page.dropdownSortOrder || 0)">
+                    {{ page.showInMenuDropDown ? ('#' + (page.dropdownSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="indicator" [class.on]="page.showInFooter" [class.off]="!page.showInFooter" [title]="'Sort: #' + (page.footerSortOrder || 0)">
+                    {{ page.showInFooter ? ('#' + (page.footerSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="indicator" [class.on]="page.showInFooterBottom || page.isLegal" [class.off]="!page.showInFooterBottom && !page.isLegal" [title]="'Sort: #' + (page.footerBottomSortOrder || 0)">
+                    {{ (page.showInFooterBottom || page.isLegal) ? ('#' + (page.footerBottomSortOrder || 0)) : 'No' }}
+                  </span>
                 </td>
                 <td>
                   <span class="status-pill" [class.published]="page.publish" [class.draft]="!page.publish">
@@ -109,22 +150,25 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
                 <td>
                   <div class="action-buttons">
+                    <button type="button" (click)="openEditModal(page)" class="btn-action btn-edit" title="Quick Edit Page & Navigation">
+                      <span class="material-symbols-outlined">edit</span>
+                      <span>Edit</span>
+                    </button>
                     <a [routerLink]="['/admin/content/pages/details', page.id]" class="btn-action btn-details" title="View details & page sections">
                       <span class="material-symbols-outlined">layers</span>
                       <span>Sections</span>
                     </a>
-                    <a [routerLink]="['/admin/content/pages/edit', page.id]" class="btn-action btn-edit" title="Edit all page fields">
-                      <span class="material-symbols-outlined">edit</span>
-                      <span>Edit Page</span>
+                    <a [routerLink]="['/admin/content/pages/edit', page.id]" class="btn-action btn-tune" title="Full Page Settings & SEO">
+                      <span class="material-symbols-outlined">tune</span>
                     </a>
-                    <a [routerLink]="['/content/console/pages/delete', page.id]" class="btn-action btn-delete" title="Delete web page">
+                    <button type="button" (click)="deletePage(page)" class="btn-action btn-delete" title="Delete web page">
                       <span class="material-symbols-outlined">delete</span>
-                    </a>
+                    </button>
                   </div>
                 </td>
               </tr>
               <tr *ngIf="filteredPages.length === 0">
-                <td colspan="8" class="empty-cell">
+                <td colspan="9" class="empty-cell">
                   <div class="empty-state">
                     <span class="material-symbols-outlined">description</span>
                     <p>No web pages match your criteria. Click "New Web Page" to create one.</p>
@@ -149,13 +193,13 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="modal-body">
             <div class="form-group">
               <label>PAGE TITLE *</label>
-              <input type="text" [(ngModel)]="newPage.title" class="form-control" placeholder="e.g. About Us, Mission & Vision, Volunteer">
+              <input type="text" [(ngModel)]="newPage.title" (input)="onTitleChange()" class="form-control" placeholder="e.g. About Us, Mission & Vision, Volunteer">
             </div>
 
             <div class="form-row">
               <div class="form-group flex-1">
                 <label>CUSTOM URL SLUG (OPTIONAL - AUTO-GENERATED IF EMPTY)</label>
-                <input type="text" [(ngModel)]="newPage.slug" class="form-control" placeholder="about-us">
+                <input type="text" [(ngModel)]="newPage.slug" (input)="onSlugChange()" class="form-control" placeholder="e.g. about-us">
                 <small class="help-text">Unique URL path. Duplicate slugs will automatically append numbers (-2, -3).</small>
               </div>
               <div class="form-group flex-1">
@@ -167,10 +211,34 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
             </div>
 
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>MENU ZONE POSITION *</label>
+                <select [(ngModel)]="newPage.menuPosition" class="form-control">
+                  <option [ngValue]="1">First Zone (NavItems="first")</option>
+                  <option [ngValue]="2">Middle Zone (NavItems="middle")</option>
+                  <option [ngValue]="3">Last Zone (NavItems="last")</option>
+                  <option [ngValue]="4">Top Utility Bar (MainMenuItems="top")</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label>SORT ORDER</label>
+                <input type="number" [(ngModel)]="newPage.sortOrder" class="form-control" placeholder="0">
+              </div>
+              <div class="form-group flex-1">
+                <label>CUSTOM CSS CLASS</label>
+                <input type="text" [(ngModel)]="newPage.customClass" class="form-control" placeholder="e.g. nav-highlight">
+              </div>
+            </div>
+
             <div class="checkbox-row">
               <label class="checkbox-item">
                 <input type="checkbox" [(ngModel)]="newPage.showInMainMenu">
                 <span>Show in Top Header Menu</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="newPage.isMenuCTA">
+                <span>Highlight as Header Action Button (CTA)</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" [(ngModel)]="newPage.showInFooter">
@@ -193,6 +261,96 @@ import { ToastService } from '../../../core/services/toast.service';
             <button type="button" class="btn btn-primary" (click)="saveNewPage()" [disabled]="saving">
               <span *ngIf="!saving">Save & Create Page</span>
               <span *ngIf="saving">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Web Page Modal (Safe Backdrop: clicks outside DO NOT close) -->
+      <div class="modal-backdrop" *ngIf="showEditModal && editingPage">
+        <div class="modal-card modal-lg">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">edit_note</span>
+              <h3>Edit Web Page: {{ editingPage.title }}</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeEditModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>PAGE TITLE *</label>
+              <input type="text" [(ngModel)]="editingPage.title" class="form-control" placeholder="e.g. About Us">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>DIRECT URL SLUG *</label>
+                <input type="text" [(ngModel)]="editingPage.directUrl" class="form-control" placeholder="e.g. about-us">
+                <small class="help-text">Unique URL path for this page.</small>
+              </div>
+              <div class="form-group flex-1">
+                <label>DROPDOWN MENU CATEGORY</label>
+                <select [(ngModel)]="editingPage.pageCategoryId" class="form-control">
+                  <option [ngValue]="null">Standalone (No Category)</option>
+                  <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.title }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>MENU ZONE POSITION *</label>
+                <select [(ngModel)]="editingPage.menuPosition" class="form-control">
+                  <option [ngValue]="1">First Zone (NavItems="first")</option>
+                  <option [ngValue]="2">Middle Zone (NavItems="middle")</option>
+                  <option [ngValue]="3">Last Zone (NavItems="last")</option>
+                  <option [ngValue]="4">Top Utility Bar (MainMenuItems="top")</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label>SORT ORDER</label>
+                <input type="number" [(ngModel)]="editingPage.sortOrder" class="form-control" placeholder="0">
+              </div>
+              <div class="form-group flex-1">
+                <label>CUSTOM CSS CLASS</label>
+                <input type="text" [(ngModel)]="editingPage.customClass" class="form-control" placeholder="e.g. nav-highlight">
+              </div>
+            </div>
+
+            <div class="checkbox-row">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="editingPage.showInMainMenu">
+                <span>Show in Top Header Menu</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="editingPage.isMenuCTA">
+                <span>Highlight as Header Action Button (CTA)</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="editingPage.showInFooter">
+                <span>Show in Footer</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="editingPage.publish">
+                <span>Published</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="editingPage.securityPage">
+                <span>Require Login (Protected)</span>
+              </label>
+            </div>
+
+            <div class="error-box" *ngIf="editErrorMessage">{{ editErrorMessage }}</div>
+          </div>
+          <div class="modal-footer">
+            <a [routerLink]="['/admin/content/pages/edit', editingPage.id]" (click)="closeEditModal()" class="btn btn-outline" style="margin-right: auto;">
+              <span class="material-symbols-outlined">tune</span>
+              <span>Advanced SEO & Banners</span>
+            </a>
+            <button type="button" class="btn btn-outline" (click)="closeEditModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveEditPage()" [disabled]="editSaving">
+              <span *ngIf="!editSaving">Save Changes</span>
+              <span *ngIf="editSaving">Saving...</span>
             </button>
           </div>
         </div>
@@ -279,6 +437,8 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .btn-details { background: #f1f5f9; color: #334155; }
     .btn-details:hover { background: #e2e8f0; color: #0f172a; }
+    .btn-tune { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+    .btn-tune:hover { background: #e2e8f0; color: #0f172a; }
     .btn-edit { background: #eff6ff; color: #0050e5; }
     .btn-edit:hover { background: #0050e5; color: #fff; }
     .btn-delete { background: #fee2e2; color: #dc2626; }
@@ -310,6 +470,12 @@ import { ToastService } from '../../../core/services/toast.service';
     .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; }
     .help-text { font-size: 11px; color: #64748b; }
     .error-box { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+    .zone-badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .zone-badge.zone-first { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .zone-badge.zone-middle { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .zone-badge.zone-last { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .zone-badge.zone-top { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .cta-pill { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.4px; }
     .empty-cell { padding: 40px; text-align: center; color: #64748b; }
     .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .empty-state span { font-size: 36px; color: #cbd5e1; }
@@ -323,19 +489,29 @@ export class WebPagesComponent implements OnInit {
   searchTerm = '';
   filterStatus = 'all';
 
-  // Modal State
+  // Modal State - Create
   showCreateModal = false;
   errorMessage = '';
+  isSlugManuallyEdited = false;
   newPage = {
     title: '',
     slug: '',
     pageCategoryId: null,
+    menuPosition: 1,
+    sortOrder: 0,
+    customClass: '',
     showInMainMenu: true,
+    isMenuCTA: false,
     showInFooter: true,
     publish: true,
-    securityPage: false,
-    sortOrder: 0
+    securityPage: false
   };
+
+  // Modal State - Edit
+  showEditModal = false;
+  editSaving = false;
+  editErrorMessage = '';
+  editingPage: any = null;
 
   constructor(
     private api: ApiService,
@@ -345,6 +521,28 @@ export class WebPagesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAll();
+  }
+
+  getZoneLabel(pos: number | string): string {
+    const p = Number(pos) || 1;
+    switch (p) {
+      case 1: return '1. First Zone';
+      case 2: return '2. Middle Zone';
+      case 3: return '3. Last Zone';
+      case 4: return 'Top Utility';
+      default: return '1. First Zone';
+    }
+  }
+
+  getZoneClass(pos: number | string): string {
+    const p = Number(pos) || 1;
+    switch (p) {
+      case 1: return 'zone-first';
+      case 2: return 'zone-middle';
+      case 3: return 'zone-last';
+      case 4: return 'zone-top';
+      default: return 'zone-first';
+    }
   }
 
   loadAll(): void {
@@ -373,6 +571,38 @@ export class WebPagesComponent implements OnInit {
     });
   }
 
+  selectedTagFilter: string | null = null;
+
+  get availableTags(): string[] {
+    const set = new Set<string>();
+    for (const p of this.pages) {
+      if (p.tags) {
+        p.tags.split(/[,;]/).forEach((t: string) => {
+          const trimmed = t.trim().toLowerCase();
+          if (trimmed) set.add(trimmed);
+        });
+      }
+    }
+    return Array.from(set).sort();
+  }
+
+  getTagCount(tag: string): number {
+    return this.pages.filter(p => this.getPageTags(p.tags).includes(tag.toLowerCase())).length;
+  }
+
+  getPageTags(tagsStr: string | null | undefined): string[] {
+    if (!tagsStr) return [];
+    return tagsStr.split(/[,;]/).map(t => t.trim().toLowerCase()).filter(t => !!t);
+  }
+
+  toggleTagFilter(tag: string): void {
+    if (this.selectedTagFilter === tag) {
+      this.selectedTagFilter = null;
+    } else {
+      this.selectedTagFilter = tag;
+    }
+  }
+
   get publishedCount(): number {
     return this.pages.filter(p => p.publish).length;
   }
@@ -386,23 +616,49 @@ export class WebPagesComponent implements OnInit {
     if (this.filterStatus === 'published') list = list.filter(p => p.publish);
     else if (this.filterStatus === 'draft') list = list.filter(p => !p.publish);
 
+    if (this.selectedTagFilter) {
+      list = list.filter(p => this.getPageTags(p.tags).includes(this.selectedTagFilter!));
+    }
+
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      list = list.filter(p => p.title?.toLowerCase().includes(term) || p.directUrl?.toLowerCase().includes(term));
+      list = list.filter(p => p.title?.toLowerCase().includes(term) || p.directUrl?.toLowerCase().includes(term) || (p.tags && p.tags.toLowerCase().includes(term)));
     }
     return list;
   }
 
+  slugify(text: string): string {
+    return (text || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+  }
+
+  onTitleChange(): void {
+    if (!this.isSlugManuallyEdited) {
+      this.newPage.slug = this.slugify(this.newPage.title);
+    }
+  }
+
+  onSlugChange(): void {
+    this.isSlugManuallyEdited = true;
+  }
+
   openCreateModal(): void {
+    this.isSlugManuallyEdited = false;
     this.newPage = {
       title: '',
       slug: '',
       pageCategoryId: null,
+      menuPosition: 1,
+      sortOrder: this.pages.length + 1,
+      customClass: '',
       showInMainMenu: true,
+      isMenuCTA: false,
       showInFooter: true,
       publish: true,
-      securityPage: false,
-      sortOrder: this.pages.length + 1
+      securityPage: false
     };
     this.errorMessage = '';
     this.showCreateModal = true;
@@ -418,6 +674,10 @@ export class WebPagesComponent implements OnInit {
       return;
     }
 
+    if (!this.newPage.slug || !this.newPage.slug.trim()) {
+      this.newPage.slug = this.slugify(this.newPage.title);
+    }
+
     this.saving = true;
     this.errorMessage = '';
 
@@ -431,6 +691,68 @@ export class WebPagesComponent implements OnInit {
       error: (err) => {
         this.saving = false;
         this.errorMessage = err?.error?.message || 'Failed to create web page.';
+      }
+    });
+  }
+
+  openEditModal(page: any): void {
+    this.editingPage = {
+      id: page.id,
+      title: page.title || '',
+      directUrl: page.directUrl || '',
+      pageCategoryId: page.pageCategoryId || null,
+      menuPosition: page.menuPosition ? Number(page.menuPosition) : 1,
+      sortOrder: page.sortOrder || 0,
+      customClass: page.customClass || '',
+      showInMainMenu: page.showInMainMenu !== false,
+      isMenuCTA: page.isMenuCTA === true,
+      showInFooter: page.showInFooter !== false,
+      publish: page.publish !== false,
+      securityPage: page.securityPage === true,
+      // preserve existing properties
+      imageUrl: page.imageUrl,
+      imageKey: page.imageKey,
+      metaTitle: page.metaTitle,
+      metaDescription: page.metaDescription,
+      metaKeywords: page.metaKeywords,
+      mainPageId: page.mainPageId,
+      isLegal: page.isLegal,
+      showInMenuDropDown: page.showInMenuDropDown,
+      tags: page.tags
+    };
+    this.editErrorMessage = '';
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.editingPage = null;
+  }
+
+  saveEditPage(): void {
+    if (!this.editingPage || !this.editingPage.title.trim()) {
+      this.editErrorMessage = 'Page Title is required.';
+      return;
+    }
+
+    if (!this.editingPage.directUrl || !this.editingPage.directUrl.trim()) {
+      this.editingPage.directUrl = this.slugify(this.editingPage.title);
+    }
+
+    this.editSaving = true;
+    this.editErrorMessage = '';
+
+    this.api.put<any>(`ContentApi/pages/${this.editingPage.id}`, this.editingPage).subscribe({
+      next: () => {
+        this.editSaving = false;
+        this.showEditModal = false;
+        this.editingPage = null;
+        this.toast.success('Web page updated successfully!');
+        this.loadAll();
+      },
+      error: (err) => {
+        this.editSaving = false;
+        this.editErrorMessage = err?.error?.message || 'Failed to update web page.';
       }
     });
   }
@@ -457,6 +779,74 @@ export class WebPagesComponent implements OnInit {
         },
         error: (err) => {
           this.toast.error(err?.error?.message || 'Failed to delete web page.');
+        }
+      });
+    }
+  }
+
+  /**
+   * Clears all demo pages, editorial blogs, and layout sections, resetting the workspace to a clean blank canvas.
+   */
+  async resetToBlankCanvas(): Promise<void> {
+    const confirmed = await this.toast.confirm(
+      'Reset to Blank Canvas',
+      'Are you sure you want to clear all demo pages, editorial blogs, and layout sections?',
+      'Reset to Blank Canvas',
+      'Cancel',
+      'danger',
+      undefined,
+      [
+        'All demo pages, layout sections, and sample blog posts will be removed.',
+        'Your custom dynamic forms and global brand settings will be preserved.',
+        'You can build completely bespoke pages from scratch or re-seed turnkey defaults at any time.'
+      ]
+    );
+
+    if (confirmed) {
+      this.loading = true;
+      this.api.post<any>('ContentApi/workspace/reset-blank', {}).subscribe({
+        next: () => {
+          this.loading = false;
+          this.toast.success('Workspace successfully reset to a clean blank canvas.', 'Blank Slate Ready');
+          this.loadAll();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.toast.error(err?.error?.message || 'Failed to reset workspace to blank.');
+        }
+      });
+    }
+  }
+
+  /**
+   * Re-seeds the complete turnkey default website suite (forms, blogs, pages, sections, SEO tags).
+   */
+  async reseedTurnkeyDefaults(): Promise<void> {
+    const confirmed = await this.toast.confirm(
+      'Restore Turnkey Website Defaults',
+      'Would you like to restore the complete default website suite?',
+      'Restore Turnkey Suite',
+      'Cancel',
+      'info',
+      undefined,
+      [
+        'Restores the 9 standard pages (Home, Services, About, Team, Contact, Legal).',
+        'Restores the 10 modular body sections and 3 interactive dynamic forms.',
+        'Restores the 3 rich editorial blog posts.'
+      ]
+    );
+
+    if (confirmed) {
+      this.loading = true;
+      this.api.post<any>('ContentApi/workspace/seed-defaults', {}).subscribe({
+        next: () => {
+          this.loading = false;
+          this.toast.success('Turnkey website pages, sections, and blogs restored successfully!', 'Defaults Seeded');
+          this.loadAll();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.toast.error(err?.error?.message || 'Failed to seed default website suite.');
         }
       });
     }

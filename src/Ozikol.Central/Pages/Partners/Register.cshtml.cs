@@ -20,6 +20,7 @@ namespace Ozikol.Central.Pages.Partners;
 public class RegisterModel : FeatureDetailPageModel
 {
     private readonly MasterCatalogDbContext _dbContext;
+    private readonly Services.IRecaptchaService _recaptchaService;
     private readonly Services.ICentralEmailService _emailService;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
@@ -27,14 +28,17 @@ public class RegisterModel : FeatureDetailPageModel
     /// Initializes a new instance of the <see cref="RegisterModel"/> class.
     /// </summary>
     /// <param name="dbContext">Central Master Catalog database context.</param>
+    /// <param name="recaptchaService">Google reCAPTCHA verification service.</param>
     /// <param name="emailService">Central email service for partner confirmation and alerts.</param>
     /// <param name="localizer">Shared localization provider.</param>
     public RegisterModel(
         MasterCatalogDbContext dbContext,
+        Services.IRecaptchaService recaptchaService,
         Services.ICentralEmailService emailService,
         IStringLocalizer<SharedResource> localizer)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
@@ -59,6 +63,11 @@ public class RegisterModel : FeatureDetailPageModel
     /// Gets the assigned track name for display on the confirmation screen.
     /// </summary>
     public string ConfirmedTrackName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets the public Google reCAPTCHA site key for client widget rendering.
+    /// </summary>
+    public string RecaptchaSiteKey => _recaptchaService.SiteKey;
 
     /// <summary>
     /// Handles GET requests to render the partnership registration form.
@@ -86,6 +95,17 @@ public class RegisterModel : FeatureDetailPageModel
     public async Task<IActionResult> OnPostAsync()
     {
         base.OnGet();
+
+        // 1. Verify Google reCAPTCHA token
+        var recaptchaResponse = Request.Form["g-recaptcha-response"].ToString();
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaResponse, clientIp);
+        if (!isCaptchaValid)
+        {
+            ModelState.AddModelError(string.Empty, "Security verification failed. Please complete the reCAPTCHA challenge and try again.");
+            return Page();
+        }
 
         if (!Input.AgreeToTerms)
         {

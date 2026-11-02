@@ -35,6 +35,7 @@ namespace Ozikol_BCC.Api
             builder.Services
                 .AddApplicationExtensions(builder.Configuration)
                 .AddTenantSupport(builder.Configuration)
+                .AddRecaptchaSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
@@ -44,7 +45,11 @@ namespace Ozikol_BCC.Api
                     "Please specify 'TenantConfiguration:ConnectionString' or 'ConnectionStrings:DefaultConnection' in your .env file, appsettings.json, or environment variables.");
 
             builder.Services.AddDbContext<MasterCatalogDbContext>(options =>
-                options.UseSqlServer(masterConnectionString));
+                options.UseSqlServer(masterConnectionString, sqlOpts =>
+                {
+                    sqlOpts.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+                    sqlOpts.CommandTimeout(60);
+                }));
             builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
             builder.Services.AddMemoryCache();
 
@@ -119,15 +124,45 @@ namespace Ozikol_BCC.Api
                 };
             });
 
-            // 4. CORS Policy for Angular Spa Client
+            // 4. CORS Policy for Multi-Tenant Angular SPA Client
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAngularApp", policy =>
                 {
-                    policy.SetIsOriginAllowed(origin => new Uri(origin).Host.EndsWith("localhost") || origin.Contains("localhost"))
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin)) return false;
+                        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+                        var host = uri.Host.ToLowerInvariant();
+
+                        // 1. Localhost & loopback (e.g. localhost:4200, fixthing.localhost, niyke.localhost)
+                        if (host == "localhost" || host.EndsWith(".localhost") || host == "127.0.0.1")
+                            return true;
+
+                        // 2. Production platform domains (e.g. *.ozikol.cloud, *.ozikol.com)
+                        if (host == "ozikol.cloud" || host.EndsWith(".ozikol.cloud") ||
+                            host == "ozikol.com" || host.EndsWith(".ozikol.com"))
+                            return true;
+
+                        // 3. Custom / dynamic tenant origins from environment variable
+                        var extraOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+                        if (!string.IsNullOrWhiteSpace(extraOrigins))
+                        {
+                            var list = extraOrigins.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            if (list.Any(o => o.Equals(origin, StringComparison.OrdinalIgnoreCase) ||
+                                              o.Equals(host, StringComparison.OrdinalIgnoreCase) ||
+                                              (o.StartsWith("*.") && host.EndsWith(o.Substring(1), StringComparison.OrdinalIgnoreCase))))
+                            {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()
+                    .WithExposedHeaders("Content-Disposition", "X-Tenant-Key", "X-Tenant-Domain", "X-Pagination");
                 });
             });
 

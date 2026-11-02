@@ -1,0 +1,213 @@
+@page "/features/embedded-banking"
+@model Ozikol.Central.Pages.Features.EmbeddedBankingModel
+@{
+    ViewData["Title"] = "Embedded Banking & Transfer Rails - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#suite-finance">Finance & Commercial Revenue</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Embedded Banking & Transfer Rails</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-suite-pill">
+                    Finance & Commercial Revenue
+                </div>
+                <h1 class="oz-feat-title">
+                    Embedded Banking & Transfer Rails
+                </h1>
+                <p class="oz-feat-lead">
+                    Dedicated virtual bank accounts, instant payment transfers, automated reconciliation, and multi-currency payout rails.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                        <span>Start 14-Day Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="#capabilities" class="oz-btn-outline-hero">
+                        <span>Explore Capabilities</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Feature Overview</h2>
+            <p>
+                Incorporate native banking and payment processing directly into your operations. Generate dedicated virtual bank accounts for members, departments, and sub-groups, execute instant bank transfers, automate settlement reconciliation, and disburse payouts with zero manual intervention.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Built for Performance</div>
+                <h2>Core Capabilities</h2>
+                <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
+            </div>
+            <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    </div>
+                    <h3>Virtual Bank Account Issuance</h3>
+                    <p>Instantly generate dedicated IBANs and account numbers for members, departments, or project initiatives.</p>
+                </div>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-blue" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                    </div>
+                    <h3>Direct Bank Transfer Rails</h3>
+                    <p>Execute instant SEPA, Faster Payments, and ACH payouts directly from the platform treasury.</p>
+                </div>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-amber" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </div>
+                    <h3>Automated Real-Time Reconciliation</h3>
+                    <p>Automatically match incoming wire transfers and payments against outstanding invoices and membership dues.</p>
+                </div>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-indigo" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    </div>
+                    <h3>Multi-Currency Ledger</h3>
+                    <p>Maintain isolated multi-currency sub-ledgers with live FX conversion rates and complete transaction history.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dual View: Console vs Workspace -->
+        <section class="oz-feat-dual-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Tailored User Experiences</div>
+                <h2>Console & Workspace Views</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-dual-grid dual-view-grid">
+                <div class="oz-feat-console-card">
+                    <div class="oz-feat-suite-pill">
+                        Console View (Admins & Managers)
+                    </div>
+                    <h3 class="oz-feat-console-title">Administrative Oversight</h3>
+                    <p class="oz-feat-console-desc">Complete treasury dashboard, virtual account management, payout approvals, and regulatory compliance logs.</p>
+                    <ul class="oz-feat-list">
+                        <li class="oz-feat-list-item-dark">
+                            <span class="oz-feat-check">&#10003;</span> Organization treasury & multi-currency dashboard
+                        </li>
+                        <li class="oz-feat-list-item-dark">
+                            <span class="oz-feat-check">&#10003;</span> Batch payout approval & dual-authorization workflows
+                        </li>
+                        <li class="oz-feat-list-item-dark">
+                            <span class="oz-feat-check">&#10003;</span> Virtual account issuance & routing configuration
+                        </li>
+                        <li class="oz-feat-list-item-dark">
+                            <span class="oz-feat-check">&#10003;</span> Full financial audit log & tax export
+                        </li>
+                    </ul>
+                </div>
+                <div class="oz-feat-workspace-card">
+                    <div class="oz-feat-suite-pill">
+                        Workspace View (Employees & Members)
+                    </div>
+                    <h3 class="oz-feat-workspace-title">User Self-Service</h3>
+                    <p class="oz-feat-workspace-desc">Member digital wallet interface for viewing virtual account details, initiating transfers, and downloading statements.</p>
+                    <ul class="oz-feat-list">
+                        <li class="oz-feat-list-item-light">
+                            <span class="oz-feat-check">&#10003;</span> Dedicated virtual account details (IBAN / Account No.)
+                        </li>
+                        <li class="oz-feat-list-item-light">
+                            <span class="oz-feat-check">&#10003;</span> One-click internal & external transfer initiation
+                        </li>
+                        <li class="oz-feat-list-item-light">
+                            <span class="oz-feat-check">&#10003;</span> Real-time balance and transaction history
+                        </li>
+                        <li class="oz-feat-list-item-light">
+                            <span class="oz-feat-check">&#10003;</span> Downloadable PDF statements & payment receipts
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Step Workflow -->
+        <section class="oz-feat-steps-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Process Flow</div>
+                <h2>How It Works</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                <div class="oz-feat-step-card">
+                    <div class="oz-feat-step-num">1</div>
+                    <h3 class="oz-feat-step-title">Provision Virtual Accounts</h3>
+                    <p class="oz-feat-step-desc">Generate dedicated virtual accounts with unique routing and IBAN details.</p>
+                </div>
+                <div class="oz-feat-step-card">
+                    <div class="oz-feat-step-num">2</div>
+                    <h3 class="oz-feat-step-title">Accept & Route Funds</h3>
+                    <p class="oz-feat-step-desc">Incoming transfers are automatically identified and credited to respective ledgers.</p>
+                </div>
+                <div class="oz-feat-step-card">
+                    <div class="oz-feat-step-num">3</div>
+                    <h3 class="oz-feat-step-title">Disburse Payouts</h3>
+                    <p class="oz-feat-step-desc">Trigger batch or single bank transfers with cryptographic authorization.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <div class="oz-feat-cta-inner">
+                <div class="oz-feat-cta-badge">
+                    <span class="oz-feat-cta-badge-dot"></span>
+                    <span>All-Inclusive Enterprise Suite</span>
+                </div>
+                <h2 class="oz-feat-cta-title">Ready to Upgrade with Embedded Banking & Transfer Rails?</h2>
+                <p class="oz-feat-cta-desc">
+                    Get full access to Embedded Banking & Transfer Rails and all @CurrencyService.GetActiveFeaturesCount() integrated cloud capabilities with your single annual subscription. Start your 14-day free trial today.
+                </p>
+                <div class="oz-feat-cta-actions">
+                    <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                        <span>Start 14-Day Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
+                        <span>View All @CurrencyService.GetActiveFeaturesCount() Features</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>

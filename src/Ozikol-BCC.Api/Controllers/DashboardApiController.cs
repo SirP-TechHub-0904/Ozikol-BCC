@@ -110,14 +110,12 @@ namespace Ozikol_BCC.Api.Controllers
             var totalActiveMembers = await _context.Users.CountAsync(u => u.LockoutEnd == null || u.LockoutEnd <= DateTimeOffset.UtcNow);
             var totalGroups = await _context.BcpGroups.CountAsync();
             var totalPages = await _context.WebPages.CountAsync(p => p.Publish);
-            var totalSliders = await _context.Sliders.CountAsync(s => s.Show);
-            var totalFaqs = await _context.FAQs.CountAsync(f => f.Show);
+            var totalSliders = 0;
+            var totalFaqs = 0;
 
             // Fetch table contents for logging
             var pageTitles = await _context.WebPages.Select(p => p.Title).ToListAsync();
             var categoryTitles = await _context.PageCategories.Select(c => c.Title).ToListAsync();
-            var sliderTitles = await _context.Sliders.Select(s => s.Title).ToListAsync();
-            var faqTitles = await _context.FAQs.Select(f => f.Title).ToListAsync();
 
             // LOGGING TO CONSOLE
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -145,8 +143,6 @@ namespace Ozikol_BCC.Api.Controllers
             Console.WriteLine($"[TENANT DATABASE TABLE CONTENT RETRIEVED - {dbName}]:");
             Console.WriteLine($"  * WebPages ({pageTitles.Count}): [{string.Join(", ", pageTitles)}]");
             Console.WriteLine($"  * PageCategories ({categoryTitles.Count}): [{string.Join(", ", categoryTitles)}]");
-            Console.WriteLine($"  * Hero Sliders ({sliderTitles.Count}): [{string.Join(", ", sliderTitles)}]");
-            Console.WriteLine($"  * FAQs ({faqTitles.Count}): [{string.Join(", ", faqTitles)}]");
             Console.WriteLine($"  * Groups / Channels ({totalGroups})");
             Console.WriteLine($"  * Members ({totalMembers}) | Active: ({totalActiveMembers})");
             Console.WriteLine("========================================================================");

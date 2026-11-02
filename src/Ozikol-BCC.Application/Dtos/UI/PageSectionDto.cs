@@ -27,6 +27,9 @@ namespace Ozikol_BCC.Application.Dtos.UI
         public string? DirectUrl { get; set; }
         public bool ShowInHome { get; set; }
         public bool DisableButton { get; set; }
+        public string? IconText { get; set; }
+        public string? SecondButtonText { get; set; }
+        public string? SecondButtonLink { get; set; }
         public List<PageSectionListDto> SectionLists { get; set; } = new List<PageSectionListDto>();
     }
 }

@@ -39,11 +39,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AuditLog
         /// </summary>
         /// <param name="id">The unique identifier of the audit log record.</param>
         /// <returns>Page result or NotFound.</returns>
-        public async Task<IActionResult> OnGetAsync(Guid id)
+        public async Task<IActionResult> OnGetAsync(Guid? id)
         {
+            if (!id.HasValue || id.Value == Guid.Empty)
+            {
+                return RedirectToPage("/AuditLog/Index");
+            }
+
             var entry = await _context.MasterAuditLogs
                 .AsNoTracking()
-                .FirstOrDefaultAsync(l => l.Id == id);
+                .FirstOrDefaultAsync(l => l.Id == id.Value);
 
             if (entry == null)
             {

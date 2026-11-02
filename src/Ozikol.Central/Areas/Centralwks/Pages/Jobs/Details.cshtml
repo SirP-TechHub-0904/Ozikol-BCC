@@ -1,0 +1,288 @@
+@page "/centralwks/jobs/details"
+@model Ozikol.Central.Areas.Centralwks.Pages.Jobs.DetailsModel
+@{
+    ViewData["Title"] = $"Job Details — {Model.Job.Name}";
+    ViewData["BreadcrumbSection"] = "System / Background Jobs";
+    var isTenantScope = Model.Job.Scope == Ozikol.MasterDomain.Models.BackgroundJobScope.Tenant;
+    var isPaused = !Model.Job.IsEnabled || Model.Job.Status == Ozikol.MasterDomain.Models.BackgroundJobStatus.Paused;
+    var isRunning = Model.Job.Status == Ozikol.MasterDomain.Models.BackgroundJobStatus.Running;
+    var isFailed = Model.Job.Status == Ozikol.MasterDomain.Models.BackgroundJobStatus.Failed;
+}
+
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/jobs" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span> Back to Jobs
+            </a>
+        </div>
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 28px; color: var(--admin-primary);">terminal</span>
+            @Model.Job.Name
+        </h1>
+        <p class="admin-subtitle"><code>@Model.Job.JobKey</code> &bull; Scoped to @(isTenantScope ? (Model.Job.TargetTenantCatalog != null ? Model.Job.TargetTenantCatalog.OrganizationName : "All Active Tenants") : "Central Platform")</p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 10px;">
+        @* Run Now Form *@
+        <form method="post" asp-page-handler="RunNow" style="margin: 0;">
+            <input type="hidden" name="jobId" value="@Model.Job.Id" />
+            <button type="submit" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 13px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
+                Run Now
+            </button>
+        </form>
+
+        @* Pause / Resume Form *@
+        <form method="post" asp-page-handler="ToggleState" style="margin: 0;">
+            <input type="hidden" name="jobId" value="@Model.Job.Id" />
+            <input type="hidden" name="enable" value="@(!Model.Job.IsEnabled ? "true" : "false")" />
+            <button type="submit" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: @(Model.Job.IsEnabled ? "#d97706" : "#059669");">
+                    @(Model.Job.IsEnabled ? "pause_circle" : "play_circle")
+                </span>
+                @(Model.Job.IsEnabled ? "Pause Schedule" : "Resume Schedule")
+            </button>
+        </form>
+    </div>
+</div>
+
+@* ── Job Configuration & Telemetry Card ── *@
+<div class="admin-card" style="width: 100%; margin-bottom: 24px; padding: 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+        <div>
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase;">Current Status</div>
+            <div style="margin-top: 8px;">
+                @if (isRunning)
+                {
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.3); padding: 4px 12px; border-radius: 9999px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; animation: spin 1.5s linear infinite;">sync</span>
+                        Running Now
+                    </span>
+                }
+                else if (isFailed)
+                {
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--admin-danger); background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.3); padding: 4px 12px; border-radius: 9999px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+                        Last Run Failed
+                    </span>
+                }
+                else if (isPaused)
+                {
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #d97706; background: rgba(217, 119, 6, 0.12); border: 1px solid rgba(217, 119, 6, 0.3); padding: 4px 12px; border-radius: 9999px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">pause_circle</span>
+                        Paused
+                    </span>
+                }
+                else
+                {
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #059669; background: rgba(5, 150, 105, 0.12); border: 1px solid rgba(5, 150, 105, 0.3); padding: 4px 12px; border-radius: 9999px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                        Active &amp; Scheduled
+                    </span>
+                }
+            </div>
+        </div>
+
+        <div>
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase;">Operational Scope</div>
+            <div style="margin-top: 6px; font-weight: 700; color: var(--admin-text); font-size: 14px;">
+                @(isTenantScope ? "Tenant Project Job" : "Central Platform System Job")
+            </div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">
+                Target: @(Model.Job.TargetTenantCatalog != null ? Model.Job.TargetTenantCatalog.OrganizationName : (isTenantScope ? "All Active Tenants" : "Central Platform DB"))
+            </div>
+        </div>
+
+        <div>
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase;">Recurrence Schedule</div>
+            <div style="margin-top: 6px; font-weight: 700; color: var(--admin-text); font-size: 14px;">
+                @if (!string.IsNullOrWhiteSpace(Model.Job.ScheduleCron))
+                {
+                    <span>Cron: <code>@Model.Job.ScheduleCron</code></span>
+                }
+                else
+                {
+                    <span>Every @(Model.Job.IntervalSeconds >= 3600 ? $"{Model.Job.IntervalSeconds / 3600} Hour(s)" : $"{Model.Job.IntervalSeconds / 60} Minute(s)")</span>
+                }
+            </div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">Interval: @Model.Job.IntervalSeconds seconds</div>
+        </div>
+
+        <div>
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase;">Last Execution</div>
+            <div style="margin-top: 6px; font-weight: 700; color: var(--admin-text); font-size: 14px;">
+                @(Model.Job.LastRunUtc.HasValue ? Model.Job.LastRunUtc.Value.ToString("MMM dd, yyyy HH:mm:ss") + " UTC" : "Never")
+            </div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">Duration: @(Model.Job.LastDurationMs)ms</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Job.Description) || !string.IsNullOrWhiteSpace(Model.Job.JobParametersJson))
+    {
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--admin-border); display: flex; flex-direction: column; gap: 8px;">
+            @if (!string.IsNullOrWhiteSpace(Model.Job.Description))
+            {
+                <div style="font-size: 13px; color: var(--admin-text-muted);">
+                    <strong style="color: var(--admin-text);">Description:</strong> @Model.Job.Description
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Job.JobParametersJson))
+            {
+                <div style="font-size: 12.5px; color: var(--admin-text-muted);">
+                    <strong style="color: var(--admin-text);">Configured Parameters:</strong> <code style="background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-border);">@Model.Job.JobParametersJson</code>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@* ── Execution Audit Logs ── *@
+<div class="admin-card" style="width: 100%; padding: 0; overflow: hidden; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #2563eb;">history</span>
+            Execution Audit History (@Model.TotalLogsCount total runs)
+        </h2>
+        <span style="font-size: 12px; color: var(--admin-text-muted);">Showing latest 20 runs</span>
+    </div>
+
+    @if (Model.Logs.Count == 0)
+    {
+        <div style="text-align: center; padding: 56px 24px;">
+            <div style="width: 56px; height: 56px; margin: 0 auto 16px; border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined" style="font-size: 28px;">playlist_remove</span>
+            </div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin: 0 0 6px 0;">No Execution History Recorded Yet</h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 20px;">This job has not been executed yet. Click "Run Now" to trigger its first run.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="admin-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: var(--admin-bg-surface-elevated); border-bottom: 1px solid var(--admin-border); font-size: 12px; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 12px 18px;">Execution Time (UTC)</th>
+                        <th style="padding: 12px 18px;">Target Tenant</th>
+                        <th style="padding: 12px 18px;">Duration</th>
+                        <th style="padding: 12px 18px;">Items Processed</th>
+                        <th style="padding: 12px 18px;">Status</th>
+                        <th style="padding: 12px 18px;">Summary Message</th>
+                        <th style="padding: 12px 18px; text-align: right;">Diagnostic Logs</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: 13px; color: var(--admin-text);">
+                    @foreach (var log in Model.Logs)
+                    {
+                        var isLogSuccess = log.Status == Ozikol.MasterDomain.Models.JobExecutionStatus.Success;
+                        var isLogRunning = log.Status == Ozikol.MasterDomain.Models.JobExecutionStatus.Running;
+
+                        <tr style="border-bottom: 1px solid var(--admin-border); transition: var(--transition);">
+                            <td style="padding: 14px 18px; font-weight: 600; font-family: monospace;">
+                                @log.StartedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td style="padding: 14px 18px;">
+                                @if (log.TargetTenantCatalog != null)
+                                {
+                                    <span style="font-weight: 600; color: var(--admin-text);">@log.TargetTenantCatalog.OrganizationName</span>
+                                    <span style="font-size: 11.5px; color: var(--admin-text-muted);">(@log.TargetTenantCatalog.TenantKey)</span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--admin-text-muted);">Global / All</span>
+                                }
+                            </td>
+                            <td style="padding: 14px 18px;">
+                                <span style="font-family: monospace; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); padding: 2px 8px; border-radius: 4px;">
+                                    @(log.DurationMs)ms
+                                </span>
+                            </td>
+                            <td style="padding: 14px 18px; font-weight: 600;">
+                                @log.ItemsProcessedCount
+                            </td>
+                            <td style="padding: 14px 18px;">
+                                @if (isLogRunning)
+                                {
+                                    <span style="font-size: 11.5px; font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.3); padding: 3px 8px; border-radius: 6px;">Running</span>
+                                }
+                                else if (isLogSuccess)
+                                {
+                                    <span style="font-size: 11.5px; font-weight: 700; color: #059669; background: rgba(5, 150, 105, 0.12); border: 1px solid rgba(5, 150, 105, 0.3); padding: 3px 8px; border-radius: 6px;">Success</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 11.5px; font-weight: 700; color: var(--admin-danger); background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.3); padding: 3px 8px; border-radius: 6px;">Failed</span>
+                                }
+                            </td>
+                            <td style="padding: 14px 18px; max-width: 320px;">
+                                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@log.SummaryMessage">
+                                    @(log.SummaryMessage ?? "—")
+                                </div>
+                            </td>
+                            <td style="padding: 14px 18px; text-align: right;">
+                                @if (!string.IsNullOrWhiteSpace(log.LogOutput) || !string.IsNullOrWhiteSpace(log.ErrorDetails))
+                                {
+                                    <button type="button" class="btn-admin btn-admin-secondary" 
+                                            onclick="openLogModal('@log.Id', '@log.StartedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")', @(isLogSuccess ? "true" : "false"))"
+                                            style="font-size: 12px; padding: 4px 10px;">
+                                        View Output
+                                    </button>
+                                    <div id="rawLog_@log.Id" style="display: none;">@(log.LogOutput ?? log.ErrorDetails)</div>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--admin-text-dim);">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* ── Diagnostic Log Output Modal ── *@
+<div id="logOutputModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg);">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--admin-text); font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 20px;">code</span>
+                <span id="modalLogTitle">Execution Log</span>
+            </div>
+            <button type="button" onclick="closeLogModal()" style="background: transparent; border: none; color: var(--admin-text-muted); cursor: pointer; font-size: 20px; display: flex; align-items: center;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; flex: 1; background: #0b1120;">
+            <pre id="modalLogContent" style="margin: 0; font-family: monospace; font-size: 12px; line-height: 1.6; color: #38bdf8; white-space: pre-wrap; word-break: break-word;"></pre>
+        </div>
+        <div style="padding: 12px 20px; border-top: 1px solid var(--admin-border); text-align: right; background: var(--admin-bg-surface-elevated);">
+            <button type="button" onclick="closeLogModal()" class="btn-admin btn-admin-secondary" style="font-size: 12.5px; padding: 6px 18px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function openLogModal(logId, timestamp, isSuccess) {
+            const rawContent = document.getElementById('rawLog_' + logId)?.innerText || 'No output recorded.';
+            document.getElementById('modalLogTitle').innerText = 'Execution Log [' + timestamp + ' UTC]';
+            const logPre = document.getElementById('modalLogContent');
+            logPre.innerText = rawContent;
+            logPre.style.color = isSuccess ? '#38bdf8' : '#f87171';
+            document.getElementById('logOutputModal').style.display = 'flex';
+        }
+
+        function closeLogModal() {
+            document.getElementById('logOutputModal').style.display = 'none';
+        }
+    </script>
+}

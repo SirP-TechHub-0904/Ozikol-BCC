@@ -40,48 +40,64 @@ public class GoogleRecaptchaService : IRecaptchaService
 
     /// <summary>
     /// Gets the public Google reCAPTCHA site key for client widget rendering.
-    /// Defaults to the standard Google test key if unconfigured.
+    /// Resolves from .env, appsettings, and system environment variables, defaulting to standard test keys if not configured.
     /// </summary>
     public string SiteKey
     {
         get
         {
-            var key = _configuration["GoogleRecaptcha:SiteKey"]
-                ?? _configuration["RECAPTCHA_SITE_KEY"];
+            var key = _configuration["GoogleReCaptcha:SiteKey"]
+                ?? _configuration["GoogleRecaptcha:SiteKey"]
+                ?? _configuration["GoogleReCaptcha__SiteKey"]
+                ?? _configuration["RECAPTCHA_SITE_KEY"]
+                ?? Environment.GetEnvironmentVariable("GoogleReCaptcha__SiteKey")
+                ?? Environment.GetEnvironmentVariable("RECAPTCHA_SITE_KEY");
 
-            return !string.IsNullOrWhiteSpace(key) ? key : StandardTestSiteKey;
+            var resolved = !string.IsNullOrWhiteSpace(key) ? key.Trim() : StandardTestSiteKey;
+            _logger.LogInformation("Google reCAPTCHA resolved SiteKey: {SiteKeyPrefix}...", resolved.Length >= 8 ? resolved.Substring(0, 8) : resolved);
+            return resolved;
         }
     }
 
     /// <summary>
     /// Gets the private Google reCAPTCHA secret key for backend verification.
+    /// Resolves from .env, appsettings, and system environment variables, defaulting to standard test keys if not configured.
     /// </summary>
     private string SecretKey
     {
         get
         {
-            var secret = _configuration["GoogleRecaptcha:SecretKey"]
-                ?? _configuration["RECAPTCHA_SECRET_KEY"];
+            var secret = _configuration["GoogleReCaptcha:SecretKey"]
+                ?? _configuration["GoogleRecaptcha:SecretKey"]
+                ?? _configuration["GoogleReCaptcha__SecretKey"]
+                ?? _configuration["RECAPTCHA_SECRET_KEY"]
+                ?? Environment.GetEnvironmentVariable("GoogleReCaptcha__SecretKey")
+                ?? Environment.GetEnvironmentVariable("RECAPTCHA_SECRET_KEY");
 
-            return !string.IsNullOrWhiteSpace(secret) ? secret : StandardTestSecretKey;
+            return !string.IsNullOrWhiteSpace(secret) ? secret.Trim() : StandardTestSecretKey;
         }
     }
 
     /// <summary>
     /// Validates the token returned by the Google reCAPTCHA widget by calling the Google verification endpoint.
+    /// Logs detailed diagnostics to aid troubleshooting in development and production environments.
     /// </summary>
     /// <param name="recaptchaResponse">The response token string from the g-recaptcha-response form parameter.</param>
     /// <param name="remoteIp">Optional client remote IP address.</param>
     /// <returns>True if verification succeeds or passes development mock; otherwise false.</returns>
     public async Task<bool> ValidateTokenAsync(string? recaptchaResponse, string? remoteIp = null)
     {
+        _logger.LogInformation("reCAPTCHA validation initiated for client IP: {RemoteIp}. Token length: {TokenLength}", remoteIp ?? "unknown", recaptchaResponse?.Length ?? 0);
+
         // 1. If response is completely missing and not running with test keys, reject immediately
         if (string.IsNullOrWhiteSpace(recaptchaResponse))
         {
+            _logger.LogWarning("reCAPTCHA response token is empty or null from IP: {RemoteIp}.", remoteIp ?? "unknown");
+
             // Allow dev bypass if running purely locally with test key and response omitted
             if (SecretKey == StandardTestSecretKey)
             {
-                _logger.LogInformation("reCAPTCHA response omitted in development environment; allowing test pass.");
+                _logger.LogInformation("Running with standard test secret key; allowing bypass for empty token in development.");
                 return true;
             }
 
@@ -104,26 +120,29 @@ public class GoogleRecaptchaService : IRecaptchaService
             var requestContent = new FormUrlEncodedContent(parameters);
             var response = await _httpClient.PostAsync(GoogleVerifyEndpoint, requestContent);
 
+            var json = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Google reCAPTCHA API responded with HTTP {StatusCode}: {ResponseJson}", response.StatusCode, json);
+
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("reCAPTCHA endpoint returned non-success status: {StatusCode}", response.StatusCode);
+                _logger.LogWarning("reCAPTCHA endpoint returned non-success HTTP status {StatusCode}.", response.StatusCode);
                 return SecretKey == StandardTestSecretKey;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
 
             if (doc.RootElement.TryGetProperty("success", out var successEl) && successEl.GetBoolean())
             {
+                _logger.LogInformation("reCAPTCHA verification SUCCEEDED for client IP: {RemoteIp}.", remoteIp ?? "unknown");
                 return true;
             }
 
-            _logger.LogWarning("reCAPTCHA verification failed. Response: {ResponseJson}", json);
+            _logger.LogWarning("reCAPTCHA verification FAILED. Response: {ResponseJson}", json);
             return SecretKey == StandardTestSecretKey;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while verifying Google reCAPTCHA token.");
+            _logger.LogError(ex, "Exception encountered while verifying Google reCAPTCHA token.");
             return SecretKey == StandardTestSecretKey;
         }
     }

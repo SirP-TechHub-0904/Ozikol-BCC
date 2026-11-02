@@ -57,6 +57,13 @@ namespace Ozikol.MasterDomain.Models
         [MaxLength(500)]
         public string? SecondaryImageUrl { get; set; }
 
+        /// <summary>
+        /// Root section icon class string (e.g. 'tji-phone', 'fa-solid fa-rocket', 'bi bi-star').
+        /// Injected into templates via {{ IconText }}.
+        /// </summary>
+        [MaxLength(100)]
+        public string? IconText { get; set; }
+
         [MaxLength(50)]
         public string BackgroundType { get; set; } = "Color"; // Color, Image, Gradient, Video
 

@@ -33,6 +33,14 @@
                 <span class="oz-news-meta-date">@Model.Article.PublishedAtUtc.ToString("MMMM dd, yyyy")</span>
                 <span class="oz-news-meta-bullet">&bull;</span>
                 <span class="oz-news-meta-read">@Model.Article.ReadTimeText</span>
+                <span class="oz-news-meta-bullet">&bull;</span>
+                <span class="oz-news-meta-reads" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    @Model.Article.ReadCount.ToString("N0") @(Model.Article.ReadCount == 1 ? "read" : "reads")
+                </span>
             </div>
             <h1 class="oz-article-title">@Model.Article.Title</h1>
             <p class="oz-article-lead">@Model.Article.Excerpt</p>

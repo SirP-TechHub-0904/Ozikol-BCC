@@ -28,7 +28,9 @@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
     <a href="/centralwks/creators/applications?Status=UnderReview" style="text-decoration: none;">
         <div class="stat-card" style="padding: 16px; border: @(Model.Status == "UnderReview" ? "1px solid var(--admin-primary)" : "1px solid rgba(255, 255, 255, 0.08)");">
-            <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+            <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">hourglass_top</span>
+            </div>
             <div class="stat-details">
                 <span class="stat-label">Pending Review</span>
                 <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.PendingCount</span>
@@ -37,7 +39,9 @@
     </a>
     <a href="/centralwks/creators/applications?Status=Approved" style="text-decoration: none;">
         <div class="stat-card" style="padding: 16px; border: @(Model.Status == "Approved" ? "1px solid var(--admin-primary)" : "1px solid rgba(255, 255, 255, 0.08)");">
-            <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+            <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+            </div>
             <div class="stat-details">
                 <span class="stat-label">Approved</span>
                 <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ApprovedCount</span>
@@ -46,7 +50,9 @@
     </a>
     <a href="/centralwks/creators/applications?Status=Rejected" style="text-decoration: none;">
         <div class="stat-card" style="padding: 16px; border: @(Model.Status == "Rejected" ? "1px solid var(--admin-primary)" : "1px solid rgba(255, 255, 255, 0.08)");">
-            <div class="stat-icon-wrapper stat-icon-danger" style="width: 40px; height: 40px; font-size: 18px;">❌</div>
+            <div class="stat-icon-wrapper stat-icon-danger" style="width: 40px; height: 40px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">cancel</span>
+            </div>
             <div class="stat-details">
                 <span class="stat-label">Rejected</span>
                 <span class="stat-value" style="font-size: 22px; color: var(--admin-danger);">@Model.RejectedCount</span>
@@ -101,7 +107,7 @@
                             </td>
                             <td>
                                 <a href="@app.PortfolioUrl" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
-                                    <span>🔗</span> Portfolio
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">link</span> Portfolio
                                 </a>
                             </td>
                             <td style="max-width: 260px;">
@@ -129,7 +135,7 @@
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; gap: 6px;">
                                     <a href="/centralwks/creators/details/@app.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Inspect Full Application">
-                                        👁️
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                                     </a>
 
                                     @if (isPending)
@@ -137,14 +143,14 @@
                                         <form method="post" asp-page-handler="Approve" asp-route-id="@app.Id" style="display: inline;" onsubmit="return confirm('Approve creator @app.FullName?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn-admin btn-admin-primary" style="padding: 4px 8px; font-size: 12px;" title="Approve Creator">
-                                                ✅
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">check</span>
                                             </button>
                                         </form>
 
                                         <form method="post" asp-page-handler="Reject" asp-route-id="@app.Id" style="display: inline;" onsubmit="return confirm('Reject application from @app.FullName?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn-admin btn-admin-danger" style="padding: 4px 8px; font-size: 12px;" title="Reject Application">
-                                                ❌
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
                                             </button>
                                         </form>
                                     }
@@ -157,7 +163,9 @@
                 {
                     <tr>
                         <td colspan="8" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                            <div style="font-size: 32px; margin-bottom: 8px;">📥</div>
+                            <div style="font-size: 32px; margin-bottom: 8px;">
+                                <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-muted);">inbox</span>
+                            </div>
                             <div style="font-size: 16px; font-weight: 500; color: #fff;">No Applications in this Queue</div>
                             <div style="font-size: 13px; margin-top: 4px;">There are no creator applications matching the selected filter.</div>
                         </td>

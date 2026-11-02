@@ -25,14 +25,25 @@ export class TemplateHydrationService {
   /**
    * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
    * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
+   * Supports both exact string block names and RegExp patterns.
    * @param template The raw HTML template string.
-   * @param blockName The target block name (e.g. 'MenuDropdowns').
+   * @param blockPattern The target block name or RegExp pattern (e.g. 'MenuDropdowns' or /NavItems(?:=["']first["'])?/).
    * @param replacer Callback receiving the true balanced inner template string.
    * @returns The transformed HTML string.
    */
-  replaceBalancedBlock(template: string, blockName: string, replacer: (inner: string) => string): string {
+  replaceBalancedBlock(template: string, blockPattern: string | RegExp, replacer: (inner: string) => string): string {
     if (!template) return '';
-    const openPattern = new RegExp(`\\{\\{#each\\s+${blockName}\\}\\}`, 'i');
+    let openPattern: RegExp;
+    if (typeof blockPattern === 'string') {
+      openPattern = new RegExp(`\\{\\{#each\\s+${blockPattern}\\s*\\}\\}`, 'i');
+    } else {
+      const src = blockPattern.source;
+      if (src.startsWith('\\{\\{#each') || src.startsWith('{{#each')) {
+        openPattern = blockPattern;
+      } else {
+        openPattern = new RegExp(`\\{\\{#each\\s+(?:${src})\\s*\\}\\}`, 'i');
+      }
+    }
     let result = '';
     let remaining = template;
 
@@ -82,6 +93,147 @@ export class TemplateHydrationService {
   }
 
   /**
+   * Helper to evaluate Handlebars truthiness for a given property value.
+   * Accurately treats empty arrays ([]), empty strings, "false", null, undefined,
+   * and 0 as falsy.
+   * 
+   * @param val The value to test for truthiness.
+   * @returns true if truthy according to Handlebars standards.
+   */
+  evaluateCondition(val: any): boolean {
+    if (val === null || val === undefined) return false;
+    if (typeof val === 'boolean') return val;
+    if (Array.isArray(val)) return val.length > 0;
+    if (typeof val === 'number') return val > 0;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.length === 0) return false;
+      if (trimmed.toLowerCase() === 'false' || trimmed === '0') return false;
+      return true;
+    }
+    if (typeof val === 'object') return Object.keys(val).length > 0;
+    return Boolean(val);
+  }
+
+  /**
+   * Hydrates a navigation items block containing mixed direct pages and category dropdowns.
+   * Defensively evaluates all condition branches ({{#if IsDropdown}}...{{else}}...{{/if}}),
+   * nested {{#if Pages}} / {{#each Pages}} child loops, {{ CustomClass }}, and positional boundaries.
+   * If the items array is empty, safely returns an empty string without leaking raw tokens.
+   * 
+   * @param items The list of navigation items (direct pages and/or dropdowns).
+   * @param innerTemplate The Handlebars template inside the loop.
+   * @returns Hydrated HTML string.
+   */
+  private hydrateNavItemsBlock(items: any[], innerTemplate: string): string {
+    if (!Array.isArray(items) || items.length === 0 || !innerTemplate) {
+      return '';
+    }
+
+    return items.map((item: any, idx: number) => {
+      let rendered = innerTemplate;
+      const isFirst = idx === 0;
+      const isLast = idx === items.length - 1;
+      const isMiddle = !isFirst && !isLast;
+      const childPages = Array.isArray(item.pages) ? item.pages : (Array.isArray(item.Pages) ? item.Pages : []);
+      const hasPages = childPages.length > 0;
+      const isDropdown = Boolean(item.isDropdown || item.IsDropdown || item.hasChildren || item.HasChildren || hasPages);
+      const isDroppable = Boolean(isDropdown || hasPages);
+
+      // 1. First resolve inner child loops and inner {{#if Pages}} / {{#unless Pages}}
+      if (hasPages) {
+        const pagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        rendered = rendered.replace(pagesRegex, (_pMatch, pageTemplate) => {
+          return childPages.map((cp: any, cIdx: number) => {
+            let cpRendered = pageTemplate;
+            const cFirst = cIdx === 0;
+            const cLast = cIdx === childPages.length - 1;
+
+            cpRendered = cpRendered.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => cFirst ? c : '');
+            cpRendered = cpRendered.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => cLast ? c : '');
+            cpRendered = cpRendered.replace(/\{\{\s*(?:PageTitle|Title|Name)\s*\}\}/gi, cp.title || cp.pageTitle || cp.name || '');
+            const targetUrl = cp.url || cp.pageUrl || (cp.directUrl ? `/${cp.directUrl.replace(/^\/+/, '')}` : '') || (cp.slug ? `/${cp.slug.replace(/^\/+/, '')}` : '#');
+            cpRendered = cpRendered.replace(/\{\{\s*(?:PageUrl|Url|DirectUrl|Link)\s*\}\}/gi, targetUrl);
+            cpRendered = cpRendered.replace(/\{\{\s*(?:PageImage|ImageUrl|Image)\s*\}\}/gi, cp.pageImage || cp.imageUrl || '');
+            cpRendered = cpRendered.replace(/\{\{\s*(?:PageDescription|Description)\s*\}\}/gi, cp.pageDescription || cp.description || '');
+            cpRendered = cpRendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cp.customClass || '');
+            return cpRendered;
+          }).join('\n');
+        });
+
+        // Resolve {{#if Pages}} blocks
+        rendered = rendered.replace(/\{\{#if\s+(?:Pages|pages)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, ifBlock) => ifBlock);
+        rendered = rendered.replace(/\{\{#if\s+(?:Pages|pages)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, ifBlock) => ifBlock);
+        rendered = rendered.replace(/\{\{#unless\s+(?:Pages|pages)\}\}([\s\S]*?)\{\{\/unless\}\}/gi, '');
+      } else {
+        // Clean out any leftover child pages loops and if-Pages blocks
+        rendered = rendered.replace(/\{\{#each\s+Pages\}\}[\s\S]*?\{\{\/each\}\}/gi, '');
+        rendered = rendered.replace(/\{\{#if\s+(?:Pages|pages)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, _ifBlock, elseBlock) => elseBlock);
+        rendered = rendered.replace(/\{\{#if\s+(?:Pages|pages)\}\}([\s\S]*?)\{\{\/if\}\}/gi, '');
+        rendered = rendered.replace(/\{\{#unless\s+(?:Pages|pages)\}\}([\s\S]*?)\{\{\/unless\}\}/gi, (_m, unlessBlock) => unlessBlock);
+      }
+
+      // 2. Resolve outer IsDropdown / HasChildren branching (now safely free of inner {{/if}} tags)
+      rendered = rendered.replace(/\{\{#if\s+(?:IsDropdown|isDropdown|HasChildren|hasChildren)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, ifBlock, elseBlock) => {
+        return isDroppable ? ifBlock : elseBlock;
+      });
+
+      rendered = rendered.replace(/\{\{#if\s+(?:IsDropdown|isDropdown|HasChildren|hasChildren)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, ifBlock) => {
+        return isDroppable ? ifBlock : '';
+      });
+
+      rendered = rendered.replace(/\{\{#unless\s+(?:IsDropdown|isDropdown|HasChildren|hasChildren)\}\}([\s\S]*?)\{\{\/unless\}\}/gi, (_m, unlessBlock) => {
+        return !isDroppable ? unlessBlock : '';
+      });
+
+      // 2b. Resolve cascading children sub-categories
+      const childrenList = Array.isArray(item.children) ? item.children : (Array.isArray(item.Children) ? item.Children : []);
+      if (childrenList.length > 0) {
+        rendered = rendered.replace(/\{\{#each\s+(?:Children|children)\}\}([\s\S]*?)\{\{\/each\}\}/gi, (_cMatch, childTemplate) => {
+          return childrenList.map((ch: any) => {
+            let chRendered = childTemplate;
+            chRendered = chRendered.replace(/\{\{\s*Title\s*\}\}/gi, ch.title || '');
+            const chUrl = ch.url || (ch.directUrl ? `/${ch.directUrl.replace(/^\/+/, '')}` : '#');
+            chRendered = chRendered.replace(/\{\{\s*(?:Url|DirectUrl)\s*\}\}/gi, chUrl);
+            const subPages = Array.isArray(ch.pages) ? ch.pages : [];
+            chRendered = chRendered.replace(/\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi, (_pM: string, pT: string) => {
+              return subPages.map((sp: any) => {
+                let spR = pT;
+                spR = spR.replace(/\{\{\s*(?:PageTitle|Title)\s*\}\}/gi, sp.title || sp.pageTitle || '');
+                const spUrl = sp.url || sp.pageUrl || (sp.directUrl ? `/${sp.directUrl.replace(/^\/+/, '')}` : '#');
+                spR = spR.replace(/\{\{\s*(?:PageUrl|Url|DirectUrl)\s*\}\}/gi, spUrl);
+                return spR;
+              }).join('\n');
+            });
+            return chRendered;
+          }).join('\n');
+        });
+      }
+
+      // 3. Positional conditionals on outer item
+      rendered = rendered.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isFirst ? c : '');
+      rendered = rendered.replace(/\{\{#unless\s+@first\}\}([\s\S]*?)\{\{\/unless\}\}/gi, (_m: string, c: string) => !isFirst ? c : '');
+      rendered = rendered.replace(/\{\{#if\s+@middle\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isMiddle ? c : '');
+      rendered = rendered.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isLast ? c : '');
+      rendered = rendered.replace(/\{\{#unless\s+@last\}\}([\s\S]*?)\{\{\/unless\}\}/gi, (_m: string, c: string) => !isLast ? c : '');
+
+      // 4. CustomClass conditional checks on item
+      const hasCustom = Boolean(item.customClass && item.customClass.trim().length > 0);
+      rendered = rendered.replace(/\{\{#if\s+CustomClass\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, ifB: string, elseB: string) => hasCustom ? ifB : elseB);
+      rendered = rendered.replace(/\{\{#if\s+CustomClass\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, ifB: string) => hasCustom ? ifB : '');
+
+      // 5. Item-level scalar tokens
+      rendered = rendered.replace(/\{\{\s*(?:CategoryName|Title|Name)\s*\}\}/gi, item.title || item.name || item.categoryName || '');
+      const itemUrl = item.url || (item.directUrl ? `/${item.directUrl.replace(/^\/+/, '')}` : '') || (item.slug ? `/${item.slug.replace(/^\/+/, '')}` : '#');
+      rendered = rendered.replace(/\{\{\s*(?:DirectUrl|Url|Link)\s*\}\}/gi, itemUrl);
+      rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, item.customClass || '');
+      rendered = rendered.replace(/\{\{\s*Index\s*\}\}/gi, (idx + 1).toString());
+
+      return rendered;
+    }).join('\n');
+  }
+
+  /**
    * Hydrates raw Handlebars template HTML with contextual content, looping tokens, and brand metadata.
    * Strictly enforces visibility rules: unpublished pages (Publish=false) and hidden footer pages
    * (ShowInFooter=false) are never rendered into footer loops.
@@ -98,55 +250,171 @@ export class TemplateHydrationService {
 
     let output = rawHtml;
 
-    // 0a. Loop over {{#each MainMenuItems}}...{{/each}}
+    // 0a. Primary Navigation / PageCategories Loops with balanced block replacement:
+    output = this.replaceBalancedBlock(output, /PageCategories|NavigationMenu/i, (innerTemplate) => {
+      const catItems = ctx.PageCategories || ctx.pageCategories || ctx.NavigationMenu || ctx.navigationMenu || ctx.navItems || ctx.categories || opts.previewMenuContent?.pageCategories || [
+        { title: 'Home', url: '/', directUrl: '/', isDropdown: false, hasChildren: false, customClass: '', pages: [] },
+        { 
+          title: 'Services', 
+          isDropdown: true,
+          hasChildren: true, 
+          customClass: '',
+          pages: [
+            { title: 'Strategic Advisory', url: '/services/advisory', customClass: '' },
+            { title: 'Cloud Modernization', url: '/services/cloud', customClass: '' }
+          ]
+        },
+        { title: 'Contact Us', url: '/contact', directUrl: '/contact', isDropdown: false, hasChildren: false, customClass: '', pages: [] }
+      ];
+      return this.hydrateNavItemsBlock(catItems, innerTemplate);
+    });
+
+    // 0a-2. Multi-Zone NavItems Loops with balanced block replacement:
+    // Zone 1: {{#each NavItems="first"}} (or NavItems="1" / NavItems 'first')
+    output = this.replaceBalancedBlock(output, /NavItems\s*=\s*["'](?:first|1)["']|NavItems\s+["'](?:first|1)["']/i, (innerTemplate) => {
+      const firstItems = ctx.navItemsFirst || ctx.navItems_first || (opts.previewMenuContent?.navItemsFirst) || [
+        { title: 'About Us', url: '/about', isDropdown: false, customClass: '' },
+        { 
+          title: 'Services', 
+          isDropdown: true, 
+          customClass: '',
+          pages: [
+            { title: 'Strategic Advisory', url: '/services/advisory', customClass: '' },
+            { title: 'Cloud Modernization', url: '/services/cloud', customClass: '' }
+          ]
+        }
+      ];
+      return this.hydrateNavItemsBlock(firstItems, innerTemplate);
+    });
+
+    // Zone 2: {{#each NavItems="middle"}} (or NavItems="second" / NavItems="2")
+    output = this.replaceBalancedBlock(output, /NavItems\s*=\s*["'](?:middle|second|center|2)["']|NavItems\s+["'](?:middle|second|center|2)["']/i, (innerTemplate) => {
+      const middleItems = ctx.navItemsMiddle || ctx.navItems_middle || (opts.previewMenuContent?.navItemsMiddle) || [
+        { title: 'Leadership Team', url: '/team', isDropdown: false, customClass: '' },
+        { 
+          title: 'Products', 
+          isDropdown: true, 
+          customClass: '',
+          pages: [
+            { title: 'Enterprise Core', url: '/products/core', customClass: '' },
+            { title: 'Security Shield', url: '/products/security', customClass: '' }
+          ]
+        }
+      ];
+      return this.hydrateNavItemsBlock(middleItems, innerTemplate);
+    });
+
+    // Zone 3: {{#each NavItems="last"}} (or NavItems="third" / NavItems="3")
+    output = this.replaceBalancedBlock(output, /NavItems\s*=\s*["'](?:last|third|right|3)["']|NavItems\s+["'](?:last|third|right|3)["']/i, (innerTemplate) => {
+      const lastItems = ctx.navItemsLast || ctx.navItems_last || (opts.previewMenuContent?.navItemsLast) || [
+        { title: 'Careers', url: '/careers', isDropdown: false, customClass: '' },
+        { 
+          title: 'Insights', 
+          isDropdown: true, 
+          customClass: '',
+          pages: [
+            { title: 'Industry Reports', url: '/insights/reports', customClass: '' },
+            { title: 'Case Studies', url: '/insights/case-studies', customClass: '' }
+          ]
+        },
+        { title: 'Contact Us', url: '/contact', isDropdown: false, customClass: '' }
+      ];
+      return this.hydrateNavItemsBlock(lastItems, innerTemplate);
+    });
+
+    // Full Sequential: {{#each NavItems}} (no argument)
+    output = this.replaceBalancedBlock(output, 'NavItems', (innerTemplate) => {
+      const allItems = ctx.navItems || opts.previewMenuContent?.navItems || [
+        { title: 'Home', url: '/', isDropdown: false, customClass: '' },
+        { title: 'About Us', url: '/about', isDropdown: false, customClass: '' },
+        { 
+          title: 'Services', 
+          isDropdown: true, 
+          customClass: '',
+          pages: [
+            { title: 'Strategic Advisory', url: '/services/advisory', customClass: '' },
+            { title: 'Cloud Modernization', url: '/services/cloud', customClass: '' }
+          ]
+        },
+        { title: 'Contact Us', url: '/contact', isDropdown: false, customClass: '' }
+      ];
+      return this.hydrateNavItemsBlock(allItems, innerTemplate);
+    });
+
+    // 0b. TopBar Utility Links: {{#each MainMenuItems="top"}} or {{#each TopBarPages}}
+    const topBarRegex = /\{\{#each\s+(?:MainMenuItems\s*=\s*["']top["']|MainMenuItems\s+["']top["']|TopBarPages)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(topBarRegex, (_match, innerTemplate) => {
+      const topItems = ctx.topBarPages || ctx.mainMenuItemsTop || opts.previewMenuContent?.topBarPages || [
+        { title: 'Careers', url: '/careers', customClass: '' },
+        { title: 'Help & Support', url: '/support', customClass: '' }
+      ];
+      if (!Array.isArray(topItems) || topItems.length === 0) return '';
+      return topItems.map((item: any, idx: number) => {
+        let rendered = innerTemplate;
+        const isFirst = idx === 0;
+        const isLast = idx === topItems.length - 1;
+
+        rendered = rendered.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isFirst ? c : '');
+        rendered = rendered.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isLast ? c : '');
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
+        const targetUrl = item.url || (item.directUrl ? `/${item.directUrl.replace(/^\/+/, '')}` : '') || (item.slug ? `/${item.slug.replace(/^\/+/, '')}` : '#');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, targetUrl);
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, item.customClass || '');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 0c. Loop over {{#each MainMenuItems}}...{{/each}} (Legacy Support)
     const mainMenuItemsRegex = /\{\{#each\s+MainMenuItems\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(mainMenuItemsRegex, (_match, innerTemplate) => {
       const items = ctx.topMenuItems || opts.previewMenuContent?.topMenuItems || [
-        { title: 'Home', url: '/' },
-        { title: 'Blog', url: '/blog' },
-        { title: 'Contact', url: '/contact' }
+        { title: 'Home', url: '/', customClass: '' },
+        { title: 'Blog', url: '/blog', customClass: '' },
+        { title: 'Contact', url: '/contact', customClass: '' }
       ];
       return items.map((item: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, item.url || item.slug || '#');
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, item.customClass || '');
         return rendered;
       }).join('\n');
     });
 
-    // 0b. Loop over {{#each MenuCtaButtons}}...{{/each}}
+    // 0d. Loop over {{#each MenuCtaButtons}}...{{/each}}
     const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(menuCtaRegex, (_match, innerTemplate) => {
       const ctas = ctx.menuCtaButtons || opts.previewMenuContent?.menuCtaButtons || (opts.editorTokens?.menuCtaButtons?.length ? opts.editorTokens.menuCtaButtons : [
-        { title: 'Request a Service', url: '/request-service' }
+        { title: 'Request a Service', url: '/request-service', customClass: '' }
       ]);
+      if (!Array.isArray(ctas) || ctas.length === 0) return '';
       return ctas.map((cta: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*(?:ButtonText|Title)\s*\}\}/gi, cta.title || '');
         rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
-        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, '');
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || '');
         return rendered;
       }).join('\n');
     });
 
-    // 0c. Loop over {{#each MenuDropdowns}}...{{/each}} with nested {{#each Pages}} using balanced block parsing
+    // 0e. Loop over {{#each MenuDropdowns}}...{{/each}} (Legacy Support)
     output = this.replaceBalancedBlock(output, 'MenuDropdowns', (outerTemplate) => {
       const dropdowns = ctx.dropdowns || opts.previewMenuContent?.dropdowns || (opts.editorTokens?.menuDropdowns?.length ? opts.editorTokens.menuDropdowns : [
         {
           title: 'Services',
           pages: [
-            { title: 'Strategic Consulting', url: '/strategic-advisory' },
-            { title: 'Systems Modernization', url: '/systems-modernization' },
-            { title: 'Performance & Scale', url: '/performance-scale' },
-            { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+            { title: 'Strategic Consulting', url: '/strategic-advisory', customClass: '' },
+            { title: 'Systems Modernization', url: '/systems-modernization', customClass: '' },
+            { title: 'Performance & Scale', url: '/performance-scale', customClass: '' },
+            { title: 'Enterprise Advisory', url: '/enterprise-governance', customClass: '' }
           ]
         },
         {
           title: 'Company',
           pages: [
-            { title: 'About Us', url: '/about' },
-            { title: 'Our History', url: '/history' },
-            { title: 'Leadership Team', url: '/team' }
+            { title: 'About Us', url: '/about', customClass: '' },
+            { title: 'Our History', url: '/history', customClass: '' },
+            { title: 'Leadership Team', url: '/team', customClass: '' }
           ]
         }
       ]);
@@ -165,6 +433,7 @@ export class TemplateHydrationService {
             let renderedPage = pageTemplate;
             renderedPage = renderedPage.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
             renderedPage = renderedPage.replace(/\{\{\s*Url\s*\}\}/gi, page.url || page.slug || '#');
+            renderedPage = renderedPage.replace(/\{\{\s*CustomClass\s*\}\}/gi, page.customClass || '');
             return renderedPage;
           }).join('\n');
         });
@@ -172,6 +441,7 @@ export class TemplateHydrationService {
         // THEN resolve parent dropdown tokens on outer element
         renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || `Menu ${ddIdx + 1}`);
         renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || `Menu ${ddIdx + 1}`);
+        renderedDd = renderedDd.replace(/\{\{\s*CustomClass\s*\}\}/gi, dd.customClass || '');
         renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
 
         return renderedDd;
@@ -210,8 +480,8 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
         renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
         renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || '');
-        renderedItem = renderedItem.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
-        renderedItem = renderedItem.replace(/\{\{\s*MoreDescription\s*\}\}/gi, item.moreDescription || '');
+        renderedItem = renderedItem.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
+        renderedItem = renderedItem.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
         renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');
@@ -343,21 +613,19 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // 4. Loop over {{#each LegalPages}}...{{/each}}
-    const legalRegex = /\{\{#each\s+LegalPages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    // 4. Loop over {{#each FooterBottomPages}}...{{/each}} or {{#each LegalPages}}...{{/each}}
+    const legalRegex = /\{\{#each\s+(?:FooterBottomPages|LegalPages)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(legalRegex, (_match, innerTemplate) => {
       let pages: any[] = [];
-      const legals = ctx.legalPages || opts.editorTokens?.legalPages || opts.previewFooterContent?.legalPages;
-      if (legals && Array.isArray(legals) && legals.length > 0) {
-        pages = legals.filter((lp: any) =>
-          (lp.publish === undefined || lp.publish === true) &&
-          (lp.showInFooter === undefined || lp.showInFooter === true)
+      const bottomPages = (ctx as any).footerBottomPages || ctx.legalPages || opts.editorTokens?.footerBottomPages || opts.editorTokens?.legalPages || opts.previewFooterContent?.footerBottomPages || opts.previewFooterContent?.legalPages;
+      if (bottomPages && Array.isArray(bottomPages) && bottomPages.length > 0) {
+        pages = bottomPages.filter((lp: any) =>
+          (lp.publish === undefined || lp.publish === true)
         );
       } else if (opts.availablePages && Array.isArray(opts.availablePages)) {
         pages = opts.availablePages.filter((p: any) =>
           p.publish !== false &&
-          p.showInFooter !== false &&
-          p.isLegal === true
+          (p.showInFooterBottom === true || p.isLegal === true)
         );
       }
 
@@ -365,7 +633,8 @@ export class TemplateHydrationService {
         pages = [
           { title: 'Privacy Policy', url: '/privacy-policy' },
           { title: 'Terms of Service', url: '/terms-and-conditions' },
-          { title: 'Cookie Policy', url: '/cookie-policy' }
+          { title: 'Cookie Policy', url: '/cookie-policy' },
+          { title: 'Sign In', url: '/auth/login' }
         ];
       }
 
@@ -373,6 +642,7 @@ export class TemplateHydrationService {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, lp.title || '');
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, lp.url || '#');
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, lp.customClass || '');
         return rendered;
       }).join('\n');
     });
@@ -613,107 +883,183 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, bgImage);
 
     // 6h. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
-    const ifRegex = /\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/gi;
-    output = output.replace(ifRegex, (_match, prop, ifBody, elseBody) => {
-      const p = prop.trim();
-      const searchPool = { ...artDetail, ...ctx };
-      const key = Object.keys(searchPool).find(k => k.toLowerCase() === p.toLowerCase());
-      const val = key ? (searchPool as any)[key] : undefined;
-      const isTruthy = (val !== null && val !== undefined && val !== false && val !== '' && (typeof val !== 'string' || val.trim().length > 0));
-      return isTruthy ? ifBody : (elseBody || '');
-    });
+    // Resolved iteratively up to 10 passes to ensure nested condition trees evaluate cleanly
+    const brandName = ctx.BrandName || ctx.brandName || ctx.CompanyName || ctx.companyName || ctx['Brand.Name'] || opts.currentTenantBrandName || opts.editorTokens?.brand?.name || 'Dumka Group';
+    const logoUrl = ctx.BrandLogo || ctx.brandLogo || ctx.LogoUrl || ctx.logoUrl || ctx.CompanyLogo || ctx.companyLogo || ctx['Brand.LogoUrl'] || ctx['Brand.WhiteLogoUrl'] || ctx.WhiteLogoUrl || ctx.whiteLogoUrl || opts.editorTokens?.brand?.logoUrl || '';
+    const homeUrl = ctx.HomeUrl || ctx.homeUrl || ctx.WebsiteUrl || ctx.websiteUrl || ctx['Brand.WebsiteUrl'] || '/';
+    const hasBrandLogo = Boolean(logoUrl && logoUrl.trim().length > 0);
 
-    const unlessRegex = /\{\{#unless\s+([\w\.]+)\}\}([\s\S]*?)\{\{\/unless\}\}/gi;
-    output = output.replace(unlessRegex, (_match, prop, body) => {
-      const p = prop.trim();
-      const searchPool = { ...artDetail, ...ctx };
-      const key = Object.keys(searchPool).find(k => k.toLowerCase() === p.toLowerCase());
-      const val = key ? (searchPool as any)[key] : undefined;
-      const isFalsy = (val === null || val === undefined || val === false || val === '' || (typeof val === 'string' && val.trim().length === 0));
-      return isFalsy ? body : '';
-    });
+    const conditionPool = {
+      ...artDetail,
+      ...ctx,
+      brandName,
+      BrandName: brandName,
+      companyName: brandName,
+      CompanyName: brandName,
+      'Brand.Name': brandName,
+      logoUrl,
+      LogoUrl: logoUrl,
+      brandLogo: logoUrl,
+      BrandLogo: logoUrl,
+      companyLogo: logoUrl,
+      CompanyLogo: logoUrl,
+      'Brand.LogoUrl': logoUrl,
+      'Brand.WhiteLogoUrl': logoUrl,
+      hasBrandLogo,
+      HasBrandLogo: hasBrandLogo,
+      homeUrl,
+      HomeUrl: homeUrl,
+      websiteUrl: homeUrl,
+      WebsiteUrl: homeUrl,
+      'Brand.WebsiteUrl': homeUrl
+    };
 
-    // 6i. Dynamic Form Embeds: {{ Form "Key" }} or {{ FormEmbed }}
-    const bodyFormRegex = /\{\{\s*Form\s+"([^"]+)"\s*\}\}|\{\{\s*FormEmbed\s*\}\}/gi;
-    output = output.replace(bodyFormRegex, (_match: string, formKey?: string) => {
-      const key = formKey || ctx.formKey || 'FormEmbed';
+    let prevCondOutput = '';
+    let condPass = 0;
+    while (prevCondOutput !== output && condPass < 10) {
+      prevCondOutput = output;
+      condPass++;
+
+      // 1. {{#if Prop}}...{{else}}...{{/if}}
+      output = output.replace(/\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_match, prop, ifBody, elseBody) => {
+        const p = prop.trim();
+        const key = Object.keys(conditionPool).find(k => k.toLowerCase() === p.toLowerCase());
+        const val = key ? (conditionPool as any)[key] : undefined;
+        return this.evaluateCondition(val) ? ifBody : elseBody;
+      });
+
+      // 2. {{#if Prop}}...{{/if}}
+      output = output.replace(/\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_match, prop, ifBody) => {
+        const p = prop.trim();
+        const key = Object.keys(conditionPool).find(k => k.toLowerCase() === p.toLowerCase());
+        const val = key ? (conditionPool as any)[key] : undefined;
+        return this.evaluateCondition(val) ? ifBody : '';
+      });
+
+      // 3. {{#unless Prop}}...{{/unless}}
+      output = output.replace(/\{\{#unless\s+([\w\.]+)\}\}([\s\S]*?)\{\{\/unless\}\}/gi, (_match, prop, body) => {
+        const p = prop.trim();
+        const key = Object.keys(conditionPool).find(k => k.toLowerCase() === p.toLowerCase());
+        const val = key ? (conditionPool as any)[key] : undefined;
+        return !this.evaluateCondition(val) ? body : '';
+      });
+    }
+
+    // 6i. Dynamic Form Embeds: {{ Form:Key }}, {{ Form "Key" }}, {{ Form 'Key' }}, or {{ Form }}
+    const bodyFormRegex = /\{\{\s*Form(?::|\s+["']?)([\w\-\_]+)["']?\s*\}\}|\{\{\s*Form(?:Key|Embed)?\s*\}\}/gi;
+    output = output.replace(bodyFormRegex, (_match: string, formKeyParam?: string) => {
+      const key = (formKeyParam || ctx.formKey || 'Contact_Us').trim();
       const isNewsletter = /newsletter|subscribe/i.test(key);
       const isContact = /contact|inquiry/i.test(key);
-      const isService = /service|request/i.test(key);
+      const isService = /service|request|intake/i.test(key);
 
       if (isNewsletter) {
-        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" onsubmit="event.preventDefault();">
-          <input type="email" class="form-control form-control-sm rounded-pill px-3" placeholder="Your work email..." required />
-          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
+        return `<form class="oz-dynamic-form oz-form-newsletter" data-form-key="${key}" onsubmit="event.preventDefault();">
+          <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" style="margin-top: 10px;">Subscribe</button>
         </form>`;
       }
 
       if (isContact) {
-        return `<form class="oz-dynamic-form oz-form-contact d-flex flex-column gap-3" onsubmit="event.preventDefault();">
+        return `<form class="oz-dynamic-form oz-form-contact d-flex flex-column gap-3" data-form-key="${key}" onsubmit="event.preventDefault();">
           <div class="row g-2">
-            <div class="col-md-6"><input type="text" class="form-control" placeholder="Your Full Name" required /></div>
-            <div class="col-md-6"><input type="email" class="form-control" placeholder="Your Work Email" required /></div>
+            <div class="col-md-6"><input type="text" name="full_name" class="form-control" placeholder="e.g. First Last" required /></div>
+            <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="name@company.com" required /></div>
           </div>
-          <input type="text" class="form-control" placeholder="Subject / Department" />
-          <textarea class="form-control" rows="3" placeholder="How can we assist your organization?" required></textarea>
+          <input type="text" name="subject" class="form-control" placeholder="e.g. Inquiry / Subject" />
+          <textarea name="message" class="form-control" rows="3" placeholder="e.g. How can we assist your organization?" required></textarea>
+          <div class="oz-recaptcha-wrap my-1">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
           <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Send Message →</button>
         </form>`;
       }
 
       if (isService) {
-        return `<form class="oz-dynamic-form oz-form-service d-flex flex-column gap-3" onsubmit="event.preventDefault();">
+        return `<form class="oz-dynamic-form oz-form-service d-flex flex-column gap-3" data-form-key="${key}" onsubmit="event.preventDefault();">
           <div class="row g-2">
-            <div class="col-md-6"><input type="text" class="form-control" placeholder="Organization / Company" required /></div>
-            <div class="col-md-6"><input type="text" class="form-control" placeholder="Contact Lead Name" required /></div>
+            <div class="col-md-6"><input type="text" name="organization_name" class="form-control" placeholder="e.g. Your Organization Name" required /></div>
+            <div class="col-md-6"><input type="text" name="full_name" class="form-control" placeholder="e.g. First Last" required /></div>
           </div>
           <div class="row g-2">
-            <div class="col-md-6"><input type="email" class="form-control" placeholder="Work Email Address" required /></div>
-            <div class="col-md-6"><input type="tel" class="form-control" placeholder="Phone Number" /></div>
+            <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="name@company.com" required /></div>
+            <div class="col-md-6"><input type="tel" name="phone" class="form-control" placeholder="e.g. +0 (000) 000-0000" /></div>
           </div>
-          <select class="form-select">
-            <option selected>Select Advisory / Solution Scope...</option>
-            <option>Enterprise Cloud Architecture</option>
-            <option>Systems Modernization & Scalability</option>
-            <option>Security & Compliance Frameworks</option>
-            <option>Other Strategic Consultation</option>
+          <select name="service_required" class="form-select">
+            <option selected value="">Select Advisory / Solution Scope...</option>
+            <option value="Enterprise Architecture">Enterprise Architecture & Infrastructure</option>
+            <option value="Systems Modernization">Systems Modernization & Scalability</option>
+            <option value="Security Governance">Security & Governance Frameworks</option>
+            <option value="Custom Consultation">Custom Strategic Consultation</option>
           </select>
-          <textarea class="form-control" rows="3" placeholder="Brief project scope or target timeline..."></textarea>
+          <textarea name="message" class="form-control" rows="3" placeholder="e.g. Brief project scope or target timeline..."></textarea>
+          <div class="oz-recaptcha-wrap my-1">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
           <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Submit Service Request →</button>
         </form>`;
       }
 
-      return `<div class="oz-form-embed-preview p-3 border rounded bg-light text-center small text-muted">
-        <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong> (Rendered dynamically)
-      </div>`;
+      return `<form class="oz-dynamic-form oz-form-generic d-flex flex-column gap-3" data-form-key="${key}" onsubmit="event.preventDefault();">
+        <div class="row g-2">
+          <div class="col-md-6"><input type="text" name="full_name" class="form-control" placeholder="e.g. First Last" required /></div>
+          <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="name@company.com" required /></div>
+        </div>
+        <textarea name="message" class="form-control" rows="3" placeholder="e.g. Enter your message here..." required></textarea>
+        <div class="oz-recaptcha-wrap my-1">
+          <div class="g-recaptcha" data-sitekey=""></div>
+        </div>
+        <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Submit →</button>
+      </form>`;
     });
 
-    // 7. Scalar placeholders & PageSection model tokens (leave unused fields blank)
-    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || opts.previewBlogContent?.title || '');
-    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || opts.previewBlogContent?.miniTitle || '');
-    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || opts.previewBlogContent?.description || '');
-    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.text || opts.previewBlogContent?.description || '');
-    output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.description || '');
-    output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || '');
-    output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || '');
-    output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '');
-    output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || ctx.viewAllButtonText || opts.previewBlogContent?.buttonText || opts.previewBlogContent?.viewAllButtonText || '');
-    output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || ctx.viewAllButtonLink || opts.previewBlogContent?.buttonLink || opts.previewBlogContent?.viewAllButtonLink || '#');
-    output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || ctx.videoButtonText || '');
-    output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || ctx.videoLink || '');
-    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || ctx.url || '');
-    output = output.replace(/\{\{\s*SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || ctx.secondUrl || '');
-    output = output.replace(/\{\{\s*SecondUrl\s*\}\}/gi, ctx.secondUrl || ctx.secondImageUrl || '');
-    output = output.replace(/\{\{\s*YoutubeVideo\s*\}\}/gi, ctx.youtubeVideo || ctx.youtubeUrlLink || ctx.videoUrl || '');
-    output = output.replace(/\{\{\s*YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || ctx.youtubeVideo || ctx.videoUrl || '');
-    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || ctx.youtubeVideo || '');
-    output = output.replace(/\{\{\s*VideoButtonText\s*\}\}/gi, ctx.videoButtonText || ctx.secondaryButtonText || '');
-    output = output.replace(/\{\{\s*VideoLink\s*\}\}/gi, ctx.videoLink || ctx.secondaryButtonLink || '');
+    // 7. Scalar placeholders matching C# Domain Models (PageSection, PageSectionList, BrandSettings)
+    // Rich-text triple mustache unescaped passes
+    output = output.replace(/\{\{\{\s*FullDescription\s*\}\}\}/gi, ctx.fullDescription || ctx.description || '');
+    output = output.replace(/\{\{\{\s*Description\s*\}\}\}/gi, ctx.description || ctx.fullDescription || '');
+    output = output.replace(/\{\{\{\s*Article\.Body\s*\}\}\}/gi, artBody);
+
+    // Standard PageSection model properties
+    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || ctx.Title || opts.previewBlogContent?.title || '');
+    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || ctx.MiniTitle || opts.previewBlogContent?.miniTitle || '');
+    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.Description || ctx.text || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.FullDescription || ctx.description || '');
+    output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || ctx.Qoute || ctx.Quote || '');
+    output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || ctx.Quote || ctx.Qoute || '');
+    output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || ctx.DirectUrl || '');
+    output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || ctx.ButtonText || ctx.viewAllButtonText || opts.previewBlogContent?.buttonText || '');
+    output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || ctx.ButtonLink || ctx.viewAllButtonLink || opts.previewBlogContent?.buttonLink || '#');
+    output = output.replace(/\{\{\s*(?:SecondButtonText|SecondaryButtonText|VideoButtonText)\s*\}\}/gi, ctx.secondButtonText || ctx.secondaryButtonText || ctx.videoButtonText || ctx.SecondButtonText || '');
+    output = output.replace(/\{\{\s*(?:SecondButtonLink|SecondaryButtonLink|VideoLink)\s*\}\}/gi, ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.videoLink || ctx.SecondButtonLink || '');
+    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || ctx.ImageUrl || ctx.url || '');
+    output = output.replace(/\{\{\s*(?:SecondImageUrl|SecondUrl)\s*\}\}/gi, ctx.secondImageUrl || ctx.secondUrl || ctx.SecondImageUrl || '');
+    output = output.replace(/\{\{\s*(?:YoutubeVideo|YoutubeUrlLink)\s*\}\}/gi, ctx.youtubeVideo || ctx.youtubeUrlLink || ctx.YoutubeUrlLink || ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || ctx.VideoUrl || ctx.youtubeVideo || '');
     output = output.replace(/\{\{\s*Subtitle\s*\}\}/gi, ctx.subtitle || ctx.text || ctx.description || '');
     output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.backgroundImageUrl || ctx.url || ctx.imageUrl || '');
-    output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, ctx.customClass || '');
-    output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');
+    output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, ctx.customClass || ctx.CustomClass || '');
     output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || '');
-    output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
+    output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || ctx.IconText || '');
+    output = output.replace(/\{\{\s*FormKey\s*\}\}/gi, ctx.formKey || ctx.FormKey || '');
+
+    // Direct content placement tokens (Email, Phone, Address, WorkingHours)
+    const activeEmail = ctx.email || ctx.contactEmail || ctx.Email || ctx.ContactEmail || '';
+    const activePhone = ctx.phone || ctx.contactPhone || ctx.Phone || ctx.ContactPhone || '';
+    const activeAddress = ctx.address || ctx.location || ctx.Address || ctx.CompanyAddress || '';
+    const activeHours = ctx.workingHours || ctx.WorkingHours || '';
+
+    output = output.replace(/\{\{\s*(?:Email|ContactEmail)\s*\}\}/gi, activeEmail);
+    output = output.replace(/\{\{\s*(?:Phone|ContactPhone)\s*\}\}/gi, activePhone);
+    output = output.replace(/\{\{\s*(?:Address|Location|CompanyAddress)\s*\}\}/gi, activeAddress);
+    output = output.replace(/\{\{\s*WorkingHours\s*\}\}/gi, activeHours);
+
+    // Fallback template placeholders if tenant populated real contact info
+    if (activeEmail) output = output.replace(/abc@domain\.com/gi, activeEmail);
+    if (activePhone) output = output.replace(/0000000000/gi, activePhone);
+    if (activeAddress) output = output.replace(/No 1 ABC Street, World/gi, activeAddress);
+
+    // Favicon
     const rawFav = ctx.FaviconUrl || ctx.faviconUrl;
     const faviconUrl = (rawFav && rawFav !== '/favicon.ico') ? rawFav : '';
     output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
@@ -723,26 +1069,33 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*TermsUrl\s*\}\}/gi, '/terms-and-conditions');
     output = output.replace(/\{\{\s*CookiesUrl\s*\}\}/gi, '/cookie-policy');
 
-    // Corporate Identity Fields (Logo-First with Business Name fallback)
-    const brandName = ctx.BrandName || ctx.brandName || opts.currentTenantBrandName || opts.editorTokens?.brand?.name || 'Organization Portal';
-    const logoUrl = ctx.LogoUrl || ctx.logoUrl || opts.editorTokens?.brand?.logoUrl || '';
-    const brandIdentityHtml = (logoUrl && logoUrl.trim().length > 0)
-      ? `<img src="${logoUrl}" alt="${brandName}" class="navbar-brand-logo" style="max-height: 40px; width: auto; object-fit: contain;" />`
-      : `<span class="fw-bolder text-dark fs-4 tracking-tight">${brandName}</span>`;
+    // Corporate Identity Fields (Logo-First with Business Name fallback from BrandSettings)
+    const brandIdentityHtml = hasBrandLogo
+      ? `<img src="${logoUrl}" alt="${brandName}" class="navbar-brand-logo" style="max-height: 48px; width: auto; object-fit: contain;" />`
+      : `<span class="navbar-brand-text fw-bolder text-dark fs-4 tracking-tight" style="font-weight: 800; font-size: 1.5rem; text-decoration: none; color: inherit; display: inline-block;">${brandName}</span>`;
 
     output = output.replace(/\{\{\s*(?:BrandIdentity|BrandLogoOrName)\s*\}\}/gi, brandIdentityHtml);
-    output = output.replace(/\{\{\s*LogoUrl\s*\}\}/gi, logoUrl);
+
+    // Handle Brand Logo tokens & raw <img> tags
+    if (hasBrandLogo) {
+      output = output.replace(/\{\{\s*(?:Brand\.LogoUrl|Brand\.WhiteLogoUrl|BrandLogo|CompanyLogo|LogoUrl|WhiteLogoUrl)\s*\}\}/gi, logoUrl);
+    } else {
+      // If no logo is uploaded, replace any <img> tag with empty or logo token src with a crisp brand name text span
+      const imgWithLogoTokenRegex = /<img[^>]*src=["']\s*(?:\{\{\s*(?:Brand\.LogoUrl|Brand\.WhiteLogoUrl|BrandLogo|CompanyLogo|LogoUrl|WhiteLogoUrl)\s*\}\})?\s*["'][^>]*\/?>(?:\s*<\/img>)?/gi;
+      output = output.replace(imgWithLogoTokenRegex, `<span class="navbar-brand-text fw-bolder text-dark fs-4 tracking-tight" style="font-weight: 800; font-size: 1.5rem; text-decoration: none; color: inherit; display: inline-block;">${brandName}</span>`);
+      output = output.replace(/\{\{\s*(?:Brand\.LogoUrl|Brand\.WhiteLogoUrl|BrandLogo|CompanyLogo|LogoUrl|WhiteLogoUrl)\s*\}\}/gi, '');
+    }
+
+    output = output.replace(/\{\{\s*(?:Brand\.Name|CompanyName|BrandName)\s*\}\}/gi, brandName);
+    output = output.replace(/\{\{\s*(?:Brand\.WebsiteUrl|WebsiteUrl|HomeUrl|RootUrl)\s*\}\}/gi, homeUrl);
+    output = output.replace(/\{\{\s*(?:Brand\.LoginButtonText|LoginText|LoginTitle|AuthText|PortalText)\s*\}\}/gi, ctx.LoginText || ctx.loginText || ctx['Brand.LoginButtonText'] || 'Sign In');
     const currentYear = ctx.Year || new Date().getFullYear().toString();
-    output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
     output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
-    output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@organization.com');
-    output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (555) 019-2834');
     output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `&copy; ${currentYear} ${brandName}. All rights reserved.`);
-    output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || 'Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>');
 
     // Authentication, Portal & Role-Aware Placeholders (Console vs. My Workspace vs. Sign In)
-    const loginUrl = ctx.LoginUrl || ctx.loginUrl || '/auth/login';
-    const loginText = ctx.LoginText || ctx.loginText || ctx.LoginTitle || 'Sign In';
+    const loginUrl = ctx.LoginUrl || ctx.loginUrl || opts.previewMenuContent?.loginUrl || '/auth/login';
+    const loginText = ctx.LoginText || ctx.loginText || ctx.LoginTitle || opts.previewMenuContent?.loginText || 'Sign In';
     const loginBtnHtml = ctx.LoginButtonHtml || ctx.loginButtonHtml || 
       `<a href="${loginUrl}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><span>${loginText}</span></a>`;
 
@@ -752,7 +1105,11 @@ export class TemplateHydrationService {
 
     // Clean up any remaining unhandled {{#each ...}} loops and leftover {{ Token }} placeholders to prevent visual leakage
     output = output.replace(/\{\{#each[\s\S]*?\{\{\/each\}\}/gi, '');
-    output = output.replace(/\{\{[#\/]?[\w\s\.\,\-\_]+\}\}/g, '');
+    output = output.replace(/\{\{\s*#each[^\}]*\}\}/gi, '');
+    output = output.replace(/\{\{\s*\/each\s*\}\}/gi, '');
+    output = output.replace(/\{\{#each\b[^\n<>]*/gi, '');
+    output = output.replace(/\{\{\{[#\/]?[\w\s\.\,\-\_:"'=]+\}\}\}/g, '');
+    output = output.replace(/\{\{[#\/]?[\w\s\.\,\-\_:"'=]+\}\}/g, '');
 
     return output;
   }

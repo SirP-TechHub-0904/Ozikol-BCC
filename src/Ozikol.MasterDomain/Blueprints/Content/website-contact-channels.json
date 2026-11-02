@@ -1,0 +1,90 @@
+[
+  {
+    "channelType": "Email",
+    "platform": "Support",
+    "title": "Official Support Email",
+    "description": "Under 2h average response time",
+    "value": "support@{safeHandle}.com",
+    "iconClass": "fa-solid fa-envelope",
+    "isDefault": true,
+    "isPublished": true,
+    "sortOrder": 1
+  },
+  {
+    "channelType": "Phone",
+    "platform": "Office",
+    "title": "Customer Support Hotline",
+    "description": "Mon - Fri: 8:00 AM - 6:00 PM",
+    "value": "+1 (800) 555-0199",
+    "iconClass": "fa-solid fa-phone",
+    "isDefault": true,
+    "isPublished": true,
+    "sortOrder": 2
+  },
+  {
+    "channelType": "Address",
+    "platform": "Headquarters",
+    "title": "Global Technology Headquarters",
+    "description": "Primary Corporate Campus",
+    "value": "Headquarters: 100 Innovation Boulevard, Suite 500",
+    "iconClass": "fa-solid fa-location-dot",
+    "isDefault": true,
+    "isPublished": true,
+    "sortOrder": 3
+  },
+  {
+    "channelType": "Hours",
+    "platform": "Operations",
+    "title": "Business Hours",
+    "description": "Standard operational schedule",
+    "value": "Mon - Fri: 8:00 AM - 6:00 PM",
+    "iconClass": "fa-regular fa-clock",
+    "isDefault": true,
+    "isPublished": true,
+    "sortOrder": 4
+  },
+  {
+    "channelType": "SocialMedia",
+    "platform": "Twitter",
+    "title": "Twitter / X",
+    "description": "Official announcements",
+    "value": "https://x.com/{safeHandle}",
+    "iconClass": "fa-brands fa-x-twitter",
+    "isDefault": false,
+    "isPublished": true,
+    "sortOrder": 5
+  },
+  {
+    "channelType": "SocialMedia",
+    "platform": "LinkedIn",
+    "title": "LinkedIn",
+    "description": "Corporate network",
+    "value": "https://linkedin.com/company/{safeHandle}",
+    "iconClass": "fa-brands fa-linkedin",
+    "isDefault": false,
+    "isPublished": true,
+    "sortOrder": 6
+  },
+  {
+    "channelType": "SocialMedia",
+    "platform": "Facebook",
+    "title": "Facebook",
+    "description": "Community page",
+    "value": "https://facebook.com/{safeHandle}",
+    "iconClass": "fa-brands fa-facebook",
+    "isDefault": false,
+    "isPublished": true,
+    "sortOrder": 7
+  },
+  {
+    "channelType": "SocialMedia",
+    "platform": "Instagram",
+    "title": "Instagram",
+    "description": "Behind the scenes",
+    "value": "https://instagram.com/{safeHandle}",
+    "iconClass": "fa-brands fa-instagram",
+    "isDefault": false,
+    "isPublished": true,
+    "sortOrder": 8
+  }
+]

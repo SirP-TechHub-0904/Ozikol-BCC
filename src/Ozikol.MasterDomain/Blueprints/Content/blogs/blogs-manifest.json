@@ -1,0 +1,44 @@
+[
+  {
+    "sortOrder": 1,
+    "title": "Introducing Ozikol: The Intelligent Multi-Tenant Cloud Platform Built for Global Scale",
+    "slug": "introducing-ozikol-cloud-platform",
+    "summary": "How Ozikol empowers modern organizations to launch isolated, sovereign digital workspaces and high-performance websites in seconds without developer bottlenecks.",
+    "category": "Platform News",
+    "authorName": "Ozikol Product Team",
+    "authorRole": "Product Architecture",
+    "authorAvatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+    "coverImageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80",
+    "readTime": "5 min read",
+    "htmlFile": "01-introducing-ozikol.html",
+    "tags": ["Ozikol", "CloudPlatform", "MultiTenant", "DigitalWorkspace", "Enterprise"]
+  },
+  {
+    "sortOrder": 2,
+    "title": "Behind the Magic: How Ozikol Automates Digital Workspaces and Web Experiences",
+    "slug": "how-ozikol-automates-workspaces",
+    "summary": "A deep look into Ozikol's automated orchestration: from 1-click turnkey workspace provisioning to modular Handlebars template hydration with zero overhead.",
+    "category": "Cloud Architecture",
+    "authorName": "Alex Vance",
+    "authorRole": "Chief Cloud Architect",
+    "authorAvatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+    "coverImageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+    "readTime": "7 min read",
+    "htmlFile": "02-automating-workspaces.html",
+    "tags": ["Architecture", "Automation", "Templates", "CMS", "Hydration"]
+  },
+  {
+    "sortOrder": 3,
+    "title": "Sub-Millisecond Execution and Cryptographic Privacy: The Ozikol Security Standard",
+    "slug": "ozikol-speed-and-security",
+    "summary": "How Ozikol combines sovereign database isolation, global edge caching, and real-time telemetry to deliver uncompromised speed and enterprise security.",
+    "category": "Engineering & Security",
+    "authorName": "Sarah Jenkins",
+    "authorRole": "Head of Platform Security",
+    "authorAvatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
+    "coverImageUrl": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80",
+    "readTime": "6 min read",
+    "htmlFile": "03-speed-and-security.html",
+    "tags": ["Security", "DataSovereignty", "Performance", "ZeroTrust", "Telemetry"]
+  }
+]

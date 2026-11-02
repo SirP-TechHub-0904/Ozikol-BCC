@@ -41,6 +41,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ozikol.MasterPersistence.EF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozikol.MasterPersistence.EF.DbMigrator", "src\Ozikol.MasterPersistence.EF.DbMigrator\Ozikol.MasterPersistence.EF.DbMigrator.csproj", "{99F4E250-4098-4D09-A255-9D03B8B53288}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozikol-BCC.Telemetry.Sentry", "src\Ozikol-BCC.Telemetry.Sentry\Ozikol-BCC.Telemetry.Sentry.csproj", "{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -267,6 +269,18 @@ Global
 		{99F4E250-4098-4D09-A255-9D03B8B53288}.Release|x64.Build.0 = Release|Any CPU
 		{99F4E250-4098-4D09-A255-9D03B8B53288}.Release|x86.ActiveCfg = Release|Any CPU
 		{99F4E250-4098-4D09-A255-9D03B8B53288}.Release|x86.Build.0 = Release|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Debug|x64.Build.0 = Debug|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Debug|x86.Build.0 = Debug|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Release|x64.ActiveCfg = Release|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Release|x64.Build.0 = Release|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Release|x86.ActiveCfg = Release|Any CPU
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -290,6 +304,7 @@ Global
 		{A1C8E390-4B1F-4375-9C08-62E8D7F91201} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
 		{B2D9F401-5C2E-4486-AD19-73F9E8A02312} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
 		{99F4E250-4098-4D09-A255-9D03B8B53288} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
+		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2A392E8F-3C35-419D-B17B-94DC9921BB90}

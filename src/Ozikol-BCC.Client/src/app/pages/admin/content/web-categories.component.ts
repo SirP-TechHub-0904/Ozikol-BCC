@@ -48,8 +48,11 @@ import { ApiService } from '../../../core/services/api.service';
             <thead>
               <tr>
                 <th>TITLE</th>
+                <th>MENU ZONE</th>
                 <th>ICON</th>
-                <th>MENU ORDER</th>
+                <th>ORDER</th>
+                <th>MAIN NAV</th>
+                <th>FOOTER</th>
                 <th>ATTACHED PAGES</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
@@ -60,11 +63,27 @@ import { ApiService } from '../../../core/services/api.service';
                 <td>
                   <strong>{{ cat.title }}</strong>
                   <div class="sub-text" *ngIf="cat.parent">Parent: {{ cat.parent.title }}</div>
+                  <div class="sub-text" *ngIf="cat.customClass"><code>.{{ cat.customClass }}</code></div>
+                </td>
+                <td>
+                  <span class="zone-badge" [ngClass]="getZoneClass(cat.menuPosition)">
+                    {{ getZoneLabel(cat.menuPosition) }}
+                  </span>
                 </td>
                 <td>
                   <span class="icon-chip"><i [class]="cat.icon || 'fa fa-folder'"></i> {{ cat.icon || '(None)' }}</span>
                 </td>
-                <td>{{ cat.menuSortOrder }}</td>
+                <td><strong>#{{ cat.menuSortOrder }}</strong></td>
+                <td>
+                  <span class="indicator" [class.on]="cat.showInMenu" [class.off]="!cat.showInMenu" [title]="'Menu Order: #' + (cat.menuSortOrder || 0)">
+                    {{ cat.showInMenu ? ('#' + (cat.menuSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="indicator" [class.on]="cat.showInFooter" [class.off]="!cat.showInFooter" [title]="'Footer Order: #' + (cat.footerSortOrder || 0)">
+                    {{ cat.showInFooter ? ('#' + (cat.footerSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
                 <td>
                   <span class="pages-badge" [class.has-pages]="cat.webPages && cat.webPages.length > 0">
                     {{ cat.webPages?.length || 0 }} WebPages
@@ -77,18 +96,18 @@ import { ApiService } from '../../../core/services/api.service';
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <a [routerLink]="['/admin/content/categories/edit', cat.id]" class="btn-edit">
+                    <button type="button" (click)="openEditModal(cat)" class="btn-edit" title="Edit Category">
                       <span class="material-symbols-outlined">edit</span>
-                      <span>Edit Page</span>
-                    </a>
-                    <a [routerLink]="['/content/console/categories/delete', cat.id]" class="btn-delete" title="Delete Category">
+                      <span>Edit</span>
+                    </button>
+                    <button type="button" (click)="openDeleteModal(cat)" class="btn-delete" title="Delete Category">
                       <span class="material-symbols-outlined">delete</span>
-                    </a>
+                    </button>
                   </div>
                 </td>
               </tr>
               <tr *ngIf="filteredCategories.length === 0">
-                <td colspan="6" class="empty-cell">No categories found. Click "New Category" to create one.</td>
+                <td colspan="9" class="empty-cell">No categories found. Click "New Category" to create one.</td>
               </tr>
             </tbody>
           </table>
@@ -112,12 +131,27 @@ import { ApiService } from '../../../core/services/api.service';
             </div>
             <div class="form-row">
               <div class="form-group flex-1">
+                <label>MENU ZONE POSITION *</label>
+                <select [(ngModel)]="newCategory.menuPosition" class="form-control">
+                  <option [ngValue]="1">First Zone (NavItems="first")</option>
+                  <option [ngValue]="2">Middle Zone (NavItems="middle")</option>
+                  <option [ngValue]="3">Last Zone (NavItems="last")</option>
+                  <option [ngValue]="4">Top Utility Bar (MainMenuItems="top")</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
                 <label>MENU SORT ORDER</label>
                 <input type="number" [(ngModel)]="newCategory.menuSortOrder" class="form-control">
               </div>
+            </div>
+            <div class="form-row">
               <div class="form-group flex-1">
                 <label>ICON CLASS</label>
                 <input type="text" [(ngModel)]="newCategory.icon" class="form-control" placeholder="fa-solid fa-folder">
+              </div>
+              <div class="form-group flex-1">
+                <label>CUSTOM CSS CLASS</label>
+                <input type="text" [(ngModel)]="newCategory.customClass" class="form-control" placeholder="e.g. mega-dropdown">
               </div>
             </div>
             <div class="form-group">
@@ -127,9 +161,29 @@ import { ApiService } from '../../../core/services/api.service';
                 <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.title }}</option>
               </select>
             </div>
-            <div class="form-check">
-              <input type="checkbox" [(ngModel)]="newCategory.publish" id="catPublish">
-              <label for="catPublish">Publish in Navigation Bar</label>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>FOOTER DISPLAY TITLE</label>
+                <input type="text" [(ngModel)]="newCategory.footerDisplayTitle" class="form-control" placeholder="e.g. Our Services">
+              </div>
+              <div class="form-group flex-1">
+                <label>FOOTER COLUMN SORT ORDER</label>
+                <input type="number" [(ngModel)]="newCategory.footerSortOrder" class="form-control" placeholder="0">
+              </div>
+            </div>
+            <div class="checkbox-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 12px;">
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="newCategory.showInMenu">
+                <span>Show in Main Nav</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="newCategory.showInFooter">
+                <span>Show in Footer</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="newCategory.publish">
+                <span>Published</span>
+              </label>
             </div>
             <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
           </div>
@@ -138,6 +192,89 @@ import { ApiService } from '../../../core/services/api.service';
             <button type="button" class="btn btn-primary" (click)="saveNewCategory()" [disabled]="saving">
               <span *ngIf="!saving">Save & Create</span>
               <span *ngIf="saving">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Category Modal -->
+      <div class="modal-backdrop" *ngIf="showEditModal && editingCategory">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">edit_note</span>
+              <h3>Edit Web Category</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeEditModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>CATEGORY TITLE *</label>
+              <input type="text" [(ngModel)]="editingCategory.title" class="form-control" placeholder="e.g., About Us Menu, Services">
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>MENU ZONE POSITION *</label>
+                <select [(ngModel)]="editingCategory.menuPosition" class="form-control">
+                  <option [ngValue]="1">First Zone (NavItems="first")</option>
+                  <option [ngValue]="2">Middle Zone (NavItems="middle")</option>
+                  <option [ngValue]="3">Last Zone (NavItems="last")</option>
+                  <option [ngValue]="4">Top Utility Bar (MainMenuItems="top")</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label>MENU SORT ORDER</label>
+                <input type="number" [(ngModel)]="editingCategory.menuSortOrder" class="form-control">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>ICON CLASS</label>
+                <input type="text" [(ngModel)]="editingCategory.icon" class="form-control" placeholder="fa-solid fa-folder">
+              </div>
+              <div class="form-group flex-1">
+                <label>CUSTOM CSS CLASS</label>
+                <input type="text" [(ngModel)]="editingCategory.customClass" class="form-control" placeholder="e.g. mega-dropdown">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>PARENT CATEGORY (OPTIONAL)</label>
+              <select [(ngModel)]="editingCategory.parentId" class="form-control">
+                <option [ngValue]="null">Top-Level (No Parent)</option>
+                <option *ngFor="let c of categories" [ngValue]="c.id" [disabled]="c.id === editingCategory.id">{{ c.title }}</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>FOOTER DISPLAY TITLE</label>
+                <input type="text" [(ngModel)]="editingCategory.footerDisplayTitle" class="form-control" placeholder="e.g. Our Services">
+              </div>
+              <div class="form-group flex-1">
+                <label>FOOTER COLUMN SORT ORDER</label>
+                <input type="number" [(ngModel)]="editingCategory.footerSortOrder" class="form-control" placeholder="0">
+              </div>
+            </div>
+            <div class="checkbox-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 12px;">
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="editingCategory.showInMenu">
+                <span>Show in Main Nav</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="editingCategory.showInFooter">
+                <span>Show in Footer</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="editingCategory.publish">
+                <span>Published</span>
+              </label>
+            </div>
+            <div class="error-box" *ngIf="editErrorMessage">{{ editErrorMessage }}</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeEditModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveEditCategory()" [disabled]="editSaving">
+              <span *ngIf="!editSaving">Save Changes</span>
+              <span *ngIf="editSaving">Saving...</span>
             </button>
           </div>
         </div>
@@ -203,6 +340,9 @@ import { ApiService } from '../../../core/services/api.service';
     .status-pill { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
     .status-pill.published { background: #dcfce7; color: #15803d; }
     .status-pill.draft { background: #f1f5f9; color: #64748b; }
+    .indicator { font-size: 12px; font-weight: 700; }
+    .indicator.on { color: #16a34a; }
+    .indicator.off { color: #94a3b8; }
 
     .action-buttons { display: flex; gap: 8px; align-items: center; }
     .btn-edit {
@@ -240,6 +380,12 @@ import { ApiService } from '../../../core/services/api.service';
     .form-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
     .error-box { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
     
+    .zone-badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .zone-badge.zone-first { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .zone-badge.zone-middle { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .zone-badge.zone-last { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .zone-badge.zone-top { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
     .warning-banner { display: flex; align-items: center; gap: 8px; background: #fee2e2; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
     .attached-pages-list { list-style: none; padding: 0; margin: 10px 0; max-height: 140px; overflow-y: auto; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
     .attached-pages-list li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #334155; }
@@ -259,14 +405,26 @@ export class WebCategoriesComponent implements OnInit {
 
   // Create Modal
   showCreateModal = false;
-  newCategory = {
+  newCategory: any = {
     title: '',
+    menuPosition: 2,
     menuSortOrder: 0,
+    customClass: '',
     publish: true,
+    showInMenu: true,
+    showInFooter: true,
+    footerSortOrder: 0,
+    footerDisplayTitle: '',
     parentId: null,
     icon: 'fa-solid fa-folder',
     homeSortFrom: 0
   };
+
+  // Edit Modal
+  showEditModal = false;
+  editSaving = false;
+  editErrorMessage = '';
+  editingCategory: any = null;
 
   // Delete Modal
   showDeleteModal = false;
@@ -299,11 +457,39 @@ export class WebCategoriesComponent implements OnInit {
     return this.categories.filter(c => c.title?.toLowerCase().includes(term));
   }
 
+  getZoneLabel(pos: number | string): string {
+    const p = Number(pos) || 2;
+    switch (p) {
+      case 1: return '1. First Zone';
+      case 2: return '2. Middle Zone';
+      case 3: return '3. Last Zone';
+      case 4: return 'Top Utility';
+      default: return '2. Middle Zone';
+    }
+  }
+
+  getZoneClass(pos: number | string): string {
+    const p = Number(pos) || 2;
+    switch (p) {
+      case 1: return 'zone-first';
+      case 2: return 'zone-middle';
+      case 3: return 'zone-last';
+      case 4: return 'zone-top';
+      default: return 'zone-middle';
+    }
+  }
+
   openCreateModal(): void {
     this.newCategory = {
       title: '',
+      menuPosition: 2,
       menuSortOrder: this.categories.length + 1,
+      customClass: '',
       publish: true,
+      showInMenu: true,
+      showInFooter: true,
+      footerSortOrder: 0,
+      footerDisplayTitle: '',
       parentId: null,
       icon: 'fa-solid fa-folder',
       homeSortFrom: 0
@@ -333,6 +519,52 @@ export class WebCategoriesComponent implements OnInit {
       error: (err) => {
         this.saving = false;
         this.errorMessage = err?.error?.message || 'Failed to create category.';
+      }
+    });
+  }
+
+  openEditModal(cat: any): void {
+    this.editingCategory = {
+      id: cat.id,
+      title: cat.title || '',
+      menuPosition: cat.menuPosition ? Number(cat.menuPosition) : 2,
+      menuSortOrder: cat.menuSortOrder || 0,
+      customClass: cat.customClass || '',
+      publish: cat.publish !== false,
+      showInMenu: cat.showInMenu !== false,
+      showInFooter: cat.showInFooter !== false,
+      footerSortOrder: cat.footerSortOrder || 0,
+      footerDisplayTitle: cat.footerDisplayTitle || '',
+      parentId: cat.parentId || null,
+      icon: cat.icon || 'fa-solid fa-folder'
+    };
+    this.editErrorMessage = '';
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.editingCategory = null;
+  }
+
+  saveEditCategory(): void {
+    if (!this.editingCategory || !this.editingCategory.title.trim()) {
+      this.editErrorMessage = 'Category Title is required.';
+      return;
+    }
+
+    this.editSaving = true;
+    this.editErrorMessage = '';
+    this.api.put<any>(`ContentApi/categories/${this.editingCategory.id}`, this.editingCategory).subscribe({
+      next: () => {
+        this.editSaving = false;
+        this.showEditModal = false;
+        this.editingCategory = null;
+        this.loadCategories();
+      },
+      error: (err) => {
+        this.editSaving = false;
+        this.editErrorMessage = err?.error?.message || 'Failed to update category.';
       }
     });
   }

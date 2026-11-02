@@ -168,6 +168,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <textarea [(ngModel)]="brand.companyDescription" rows="2" class="form-control" placeholder="Brief statement displayed in metadata and portal footers..."></textarea>
             </div>
 
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="form-label">
+                <span>Website Footer Note / Brand Bio</span>
+                <span class="field-hint" style="font-weight: normal; margin-left: 8px;">(Displayed prominently in the public website footer under the brand logo)</span>
+              </label>
+              <textarea [(ngModel)]="brand.footerDescription" rows="3" class="form-control" placeholder="Detailed brand story or institutional mission statement displayed in your live website footer..."></textarea>
+            </div>
+
             <div class="form-row-2">
               <div class="form-group">
                 <label class="form-label">Website Browser Title</label>
@@ -463,46 +471,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </div>
             </div>
 
-            <!-- Website Sign-In Button Placement & Custom Label -->
-            <div class="form-divider" style="margin: 24px 0 16px;"><span>LIVE WEBSITE SIGN-IN BUTTON & GATEWAY SETTINGS</span></div>
-
-            <div class="form-grid-2" style="margin-bottom: 16px;">
-              <div class="form-group">
-                <label class="form-label">Sign-In Button Custom Label</label>
-                <input type="text" [(ngModel)]="brand.loginButtonText" class="form-control" placeholder="e.g. Sign In, Member Portal, Console" />
-                <span class="field-hint">Button text displayed on the public website (displays 'Console' when authenticated)</span>
-              </div>
-
-              <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
-                <label class="form-label">Sign-In Gateway Status</label>
-                <label class="custom-toggle-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding-top: 6px;">
-                  <input type="checkbox" [(ngModel)]="brand.activateLogin" style="width: 18px; height: 18px; accent-color: #0050e5; cursor: pointer;" />
-                  <div>
-                    <strong style="font-size: 13px; color: #0f172a;">Enable Public Sign-In Buttons</strong>
-                    <span style="display: block; font-size: 11.5px; color: #64748b;">Master switch to display sign-in entry points across the live website</span>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Placement Checkboxes (Menu, Footer, Both) -->
-            <div class="form-grid-2" style="margin-bottom: 10px;">
-              <div class="toggle-card" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; background: #ffffff;">
-                <input type="checkbox" [(ngModel)]="brand.activateLoginInMenu" style="width: 18px; height: 18px; accent-color: #0050e5; margin-top: 2px; cursor: pointer;" />
-                <div>
-                  <strong style="font-size: 13px; display: block; color: #0f172a;">Navigation Menu Header</strong>
-                  <span style="font-size: 11.5px; color: #64748b;">Display sign-in button in top navigation bar alongside primary menu links & CTA</span>
-                </div>
-              </div>
-
-              <div class="toggle-card" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; background: #ffffff;">
-                <input type="checkbox" [(ngModel)]="brand.activateLoginInFooter" style="width: 18px; height: 18px; accent-color: #0050e5; margin-top: 2px; cursor: pointer;" />
-                <div>
-                  <strong style="font-size: 13px; display: block; color: #0f172a;">Website Footer Links</strong>
-                  <span style="font-size: 11.5px; color: #64748b;">Display member portal / sign-in link in website footer columns and legal bar</span>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
       </div>
@@ -2593,6 +2561,7 @@ export class SettingsComponent implements OnInit {
     companyName: '',
     companyNameAbbreviation: '',
     companyDescription: '',
+    footerDescription: '',
     companyWebsiteLink: '',
     websiteTitle: '',
     dashboardTitle: '',

@@ -129,8 +129,8 @@ namespace Ozikol_BCC.Api.Controllers
                 growthCounts.Add(count);
             }
 
-            // Tenant Subscription Plan & Seat Capacity from ManagementSettings
-            var mgmtSetting = await _dbContext.ManagementSettings.FirstOrDefaultAsync();
+            // Tenant Subscription Plan & Seat Capacity from MisConfigurationSettings
+            var mgmtSetting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             var maximumUsers = mgmtSetting?.MaximumUsers ?? 0;
             var isUnlimited = maximumUsers <= 0;
             var planType = isUnlimited ? "Enterprise" : (maximumUsers <= 50 ? "Starter" : (maximumUsers <= 250 ? "Professional" : "Corporate"));
@@ -451,7 +451,7 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings != null && !settings.EnableUserDeletion)
             {
                 return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
@@ -1407,10 +1407,10 @@ namespace Ozikol_BCC.Api.Controllers
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> GetMemberIdConfig()
         {
-            var setting = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (setting == null)
             {
-                setting = new BcpSetting
+                setting = new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
                     MemberIdFormat = "PrefixYearMonthRandom",
@@ -1419,7 +1419,7 @@ namespace Ozikol_BCC.Api.Controllers
                     MemberIdPadding = 4,
                     MemberIdDelimiter = "-"
                 };
-                _dbContext.BcpSettings.Add(setting);
+                _dbContext.MisConfigurationSettings.Add(setting);
                 await _dbContext.SaveChangesAsync();
             }
 
@@ -1445,11 +1445,11 @@ namespace Ozikol_BCC.Api.Controllers
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> UpdateMemberIdConfig([FromBody] UpdateMemberIdConfigRequest request)
         {
-            var setting = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (setting == null)
             {
-                setting = new BcpSetting { Id = Guid.NewGuid() };
-                _dbContext.BcpSettings.Add(setting);
+                setting = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _dbContext.MisConfigurationSettings.Add(setting);
             }
 
             if (!string.IsNullOrWhiteSpace(request.ActiveFormat))

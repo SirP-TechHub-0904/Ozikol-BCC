@@ -1,20 +1,24 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Identity;
-using Ozikol.Central;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.Central;
+using Ozikol.Central.Configuration;
+using Ozikol.Central.Middleware;
 using Ozikol.Central.Services;
 using Ozikol.Central.Services.Legal;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.EmailServices.Postmark;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
+using Ozikol_BCC.Telemetry.Sentry.Extensions;
 
 // 1. Load project-local .env environment variables
 var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
@@ -30,6 +34,9 @@ if (File.Exists(envPath))
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
+// Configure Sentry Cloud Telemetry (gracefully active when SENTRY_DSN is configured in .env or appsettings)
+builder.WebHost.UseOzikolSentry("Ozikol.Central");
+
 // 2. Configure Native ASP.NET Core Multi-Language Localization Engine
 builder.Services.AddLocalization();
 builder.Services.AddHttpClient();
@@ -38,19 +45,44 @@ builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Storage.IFileStorageService, Ozikol.Central.Services.Storage.CloudinaryFileStorageService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Careers.ICareersService, Ozikol.Central.Services.Careers.CareersService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Support.ISupportService, Ozikol.Central.Services.Support.SupportService>();
+builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderClientService>(client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(10);
+});
+builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
+
+// Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
+builder.Services.AddPostmarkEmailServices(builder.Configuration);
+builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(ErrorAlertSettings.SectionName));
+
+// Register Dedicated Cloudinary Media Services
+Ozikol_BCC.CloudinaryServices.DependencyInjection.AddCloudinaryServices(builder.Services, builder.Configuration);
 
 builder.Services.AddRazorPages(options =>
 {
     // Register clean top-level and hyphenated route aliases for Auth pages
     options.Conventions.AddPageRoute("/Auth/GetStarted", "get-started");
     options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/get-started");
-    options.Conventions.AddPageRoute("/Auth/Login", "login");
+    options.Conventions.AddPageRoute("/Auth/GetStarted", "register");
+    options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/register");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "workspace-setup-details");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "auth/workspace-setup-details");
+
+    // Clean hyphenated route aliases for Centralwks operator authentication (Login and Logout are already handled case-insensitively by default area routing)
+    options.Conventions.AddAreaPageRoute("Centralwks", "/ForgotPassword", "centralwks/forgot-password");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/ResetPassword", "centralwks/reset-password");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/SetupPassword", "centralwks/setup-password");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/Login2fa", "centralwks/login-2fa");
 
     // Enable optional /{culture} route prefix constrained strictly to supported language codes
     options.Conventions.AddFolderRouteModelConvention("/", model =>
     {
+        // Administrative console areas (Centralwks, Affiliate, Creator) are culture-neutral; skip adding /{culture} routes
+        if (!string.IsNullOrEmpty(model.AreaName))
+        {
+            return;
+        }
+
         var selectors = model.Selectors.ToList();
         // Track unique route templates case-insensitively to prevent duplicate selectors / AmbiguousMatchException
         var seenTemplates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -79,6 +111,10 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaFolder("Centralwks", "/", "CentralAdminPolicy");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Login");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Logout");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/ForgotPassword");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/ResetPassword");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/SetupPassword");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Login2fa");
 
     options.Conventions.AuthorizeAreaFolder("Affiliate", "/", "AffiliatePartnerPolicy");
     options.Conventions.AllowAnonymousToAreaPage("Affiliate", "/Login");
@@ -142,9 +178,11 @@ builder.Services.AddIdentity<CentralUser, CentralRole>(options =>
 // 6b. Configure Multi-Portal Dynamic Application Cookie Authentication
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Auth/Login";
-    options.AccessDeniedPath = "/Auth/Login";
-    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.LoginPath = "/Centralwks/Login";
+    options.AccessDeniedPath = "/Centralwks/Login";
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+    options.Cookie.IsEssential = true;
 
     // Dynamically route unauthenticated challenges to the appropriate portal login
     options.Events.OnRedirectToLogin = context =>
@@ -208,6 +246,33 @@ builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>(
 builder.Services.AddScoped<ILegalService, LegalService>();
 builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
+builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidationService, Ozikol.Central.Services.Validation.EmailValidationService>();
+builder.Services.AddScoped<IAiKeyPoolManagerService, AiKeyPoolManagerService>();
+builder.Services.AddScoped<ISectionAiStudioService, SectionAiStudioService>();
+builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderClientService>();
+builder.Services.AddHttpClient<Ozikol.Central.Services.Extraction.INativeSectionExtractorService, Ozikol.Central.Services.Extraction.NativeSectionExtractorService>();
+
+// 7a. Register Central Notification & OneSignal Push Engine
+builder.Services.AddHttpClient<Ozikol.Central.Services.Notifications.IOneSignalPushService, Ozikol.Central.Services.Notifications.OneSignalPushService>();
+builder.Services.AddScoped<Ozikol.Central.Services.Notifications.ICentralNotificationService, Ozikol.Central.Services.Notifications.CentralNotificationService>();
+
+// 7b. Register Background Job Handlers & Central Orchestrator
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.SubscriptionExpirationJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.RenewalWarningJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDbHealthJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDailyDigestJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantEmailQueueJobHandler>();
+builder.Services.AddSingleton<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>());
+
+// 7c. Register Section Asset Pipeline, Image Optimizer & AI Custom Code Extractor Services
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionLibraryResolverService, Ozikol.Central.Services.SectionLibraryResolverService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionCustomCodeExtractorService, Ozikol.Central.Services.SectionCustomCodeExtractorService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateAssetBundlePipelineService, Ozikol.Central.Services.TemplateAssetBundlePipelineService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService, Ozikol_BCC.Application.Services.Sections.TemplateImageOptimizationService>();
+builder.Services.AddScoped<Ozikol.Central.Services.ISectionCompilerRendererService, Ozikol.Central.Services.SectionCompilerRendererService>();
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -220,6 +285,9 @@ catch (Exception ex)
 {
     Console.WriteLine($"[Central Startup Notice]: Seeder deferred (DB may be initializing): {ex.Message}");
 }
+
+// Global Exception Interception & Automated Cloud Email Alerting
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -271,7 +339,8 @@ app.Use(async (context, next) =>
         path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/centralwks", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/affiliate", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/creator", StringComparison.OrdinalIgnoreCase))
+        path.StartsWith("/creator", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/error", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;
@@ -285,6 +354,25 @@ app.Use(async (context, next) =>
 
     if (isCulturePrefixed)
     {
+        // If an administrative area URL was accessed with a culture prefix (e.g. /en/centralwks/login),
+        // redirect directly to the culture-neutral console route (/centralwks/login)
+        if (path.Length > 3)
+        {
+            var rawSubPath = path.Substring(3);
+            if (rawSubPath.StartsWith("/centralwks", StringComparison.OrdinalIgnoreCase) ||
+                rawSubPath.StartsWith("/affiliate", StringComparison.OrdinalIgnoreCase) ||
+                rawSubPath.StartsWith("/creator", StringComparison.OrdinalIgnoreCase))
+            {
+                var targetUrl = rawSubPath;
+                if (context.Request.QueryString.HasValue)
+                {
+                    targetUrl += context.Request.QueryString.Value;
+                }
+                context.Response.Redirect(targetUrl, permanent: false);
+                return;
+            }
+        }
+
         // Keep culture cookie synchronized with the active URL prefix
         var cultureSegment = path.Substring(1, 2).ToLowerInvariant();
         context.Response.Cookies.Append(
@@ -328,12 +416,19 @@ app.Use(async (context, next) =>
         context.Response.Redirect($"{culturePrefix}/policies-and-reports", permanent: true);
         return;
     }
+    if (subPath.Equals("/login", StringComparison.OrdinalIgnoreCase) ||
+        subPath.Equals("/auth/login", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/centralwks/login", permanent: false);
+        return;
+    }
 
     await next();
 });
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllers();
 app.MapRazorPages();
 
 app.Run();

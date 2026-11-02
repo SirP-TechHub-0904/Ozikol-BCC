@@ -1,0 +1,28 @@
+{
+  "title": "Engineered For Enterprise Scale And Sub-Millisecond Speed",
+  "miniTitle": "CORE CAPABILITIES",
+  "description": "Unified cloud infrastructure designed to eliminate latency, automate compliance, and safeguard mission-critical data.",
+  "pageSectionLists": [
+    {
+      "title": "Edge Cloud Replication",
+      "description": "Continuous multi-region synchronization keeps endpoints resilient against unexpected node outages.",
+      "icon": "hub",
+      "buttonText": "Learn More",
+      "buttonLink": "#edge"
+    },
+    {
+      "title": "Zero-Trust Encryption",
+      "description": "Granular policy enforcement, automatic device trust tokens, and cryptographic verification on every microservice call.",
+      "icon": "verified_user",
+      "buttonText": "Explore Security",
+      "buttonLink": "#security"
+    },
+    {
+      "title": "Automated CI/CD Pipelines",
+      "description": "Push code to git and deploy production containers in seconds with built-in canary deployments and health probes.",
+      "icon": "rocket_launch",
+      "buttonText": "View Deployments",
+      "buttonLink": "#pipelines"
+    }
+  ]
+}
