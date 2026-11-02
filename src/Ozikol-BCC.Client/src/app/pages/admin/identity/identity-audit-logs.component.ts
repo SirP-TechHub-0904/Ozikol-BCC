@@ -147,6 +147,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 export class IdentityAuditLogsComponent implements OnInit {
   isLoading = false;
   logs: any[] = [];
+  isSuperAdmin = false;
 
   headerButtons: PageHeaderButton[] = [
     {
@@ -159,7 +160,22 @@ export class IdentityAuditLogsComponent implements OnInit {
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
+    this.checkCurrentUserRole();
     this.loadLogs();
+  }
+
+  /**
+   * Evaluates the authenticated user identity to determine if SuperAdmin access is permitted.
+   */
+  private checkCurrentUserRole(): void {
+    const userStr = localStorage.getItem('auth_user') || localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        const roles: string[] = Array.isArray(u.roles) ? u.roles : (u.role ? [u.role] : []);
+        this.isSuperAdmin = roles.some(r => typeof r === 'string' && r.toLowerCase() === 'superadmin');
+      } catch {}
+    }
   }
 
   loadLogs(): void {
@@ -167,7 +183,16 @@ export class IdentityAuditLogsComponent implements OnInit {
     this.api.get<any>('IdentityApi/login-audit').subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.logs = res?.data || [];
+        const allLogs = res?.data || [];
+        // Defense-in-depth: If logged in user is not a SuperAdmin, strictly filter out SuperAdmin audit logs
+        if (!this.isSuperAdmin) {
+          this.logs = allLogs.filter((log: any) => {
+            const email = (log.email || '').toLowerCase();
+            return !email.includes('superadmin');
+          });
+        } else {
+          this.logs = allLogs;
+        }
       },
       error: () => {
         this.isLoading = false;

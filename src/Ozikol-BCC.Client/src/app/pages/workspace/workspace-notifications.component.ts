@@ -34,11 +34,23 @@ import { ApiService } from '../../core/services/api.service';
         <button class="tab-btn" [class.active]="activeFilter === 'unread'" (click)="setFilter('unread')">
           Unread ({{ getUnreadCount() }})
         </button>
-        <button class="tab-btn" [class.active]="activeFilter === 'security'" (click)="setFilter('security')">
-          Security Alerts
+        <button class="tab-btn" [class.active]="activeFilter === 'Error'" (click)="setFilter('Error')">
+          Errors
         </button>
-        <button class="tab-btn" [class.active]="activeFilter === 'broadcast'" (click)="setFilter('broadcast')">
-          Broadcast Announcements
+        <button class="tab-btn" [class.active]="activeFilter === 'Failed'" (click)="setFilter('Failed')">
+          Failed
+        </button>
+        <button class="tab-btn" [class.active]="activeFilter === 'Success'" (click)="setFilter('Success')">
+          Success
+        </button>
+        <button class="tab-btn" [class.active]="activeFilter === 'NewFeature'" (click)="setFilter('NewFeature')">
+          New Features
+        </button>
+        <button class="tab-btn" [class.active]="activeFilter === 'Update'" (click)="setFilter('Update')">
+          Updates
+        </button>
+        <button class="tab-btn" [class.active]="activeFilter === 'Maintenance'" (click)="setFilter('Maintenance')">
+          Maintenance
         </button>
       </div>
 
@@ -46,11 +58,14 @@ import { ApiService } from '../../core/services/api.service';
       <div class="notif-list-card">
         <div class="notif-card-item" *ngFor="let notif of getFilteredNotifications()" [class.unread]="!notif.isRead">
           <div class="notif-icon-box" [ngClass]="getColorClass(notif.module, notif.category)">
-            <span class="material-symbols-outlined">{{ notif.icon || 'notifications' }}</span>
+            <span class="material-symbols-outlined">{{ notif.icon || notif.severityIcon || 'notifications' }}</span>
           </div>
           <div class="notif-details">
             <div class="notif-head-row">
               <span class="notif-tag" *ngIf="notif.isBroadcast">Broadcast</span>
+              <span class="notif-tag" *ngIf="notif.severity" [style.background-color]="(notif.severityColor || '#1F6BFF') + '22'" [style.color]="notif.severityColor || '#1F6BFF'" [style.border]="'1px solid ' + (notif.severityColor || '#1F6BFF')" [style.font-weight]="'700'">
+                {{ notif.severity }}
+              </span>
               <span class="notif-tag category">{{ notif.category }}</span>
               <span class="notif-tag priority" *ngIf="notif.priority === 'High' || notif.priority === 'Urgent'">Urgent</span>
               <span class="notif-date">{{ notif.createdAt | date:'medium' }}</span>
@@ -303,6 +318,8 @@ export class WorkspaceNotificationsComponent implements OnInit {
       return this.notifications.filter(n => (n.module || '').toLowerCase().includes('security') || (n.category || '').toLowerCase().includes('security'));
     } else if (this.activeFilter === 'broadcast') {
       return this.notifications.filter(n => n.isBroadcast);
+    } else if (this.activeFilter !== 'all') {
+      return this.notifications.filter(n => (n.severity || '').toLowerCase() === this.activeFilter.toLowerCase());
     }
     return this.notifications;
   }

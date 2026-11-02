@@ -24,7 +24,9 @@ public class TenantScopeMiddleware
             path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase))
+            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/tenants", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/setup", StringComparison.OrdinalIgnoreCase))
         {
             await _next(httpContext);
             return;
@@ -65,11 +67,11 @@ public class TenantScopeMiddleware
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("========================================================================");
-            Console.WriteLine($"[MASTER ROUTING ERROR] {method} {path}");
+            Console.WriteLine($"[ROUTING ERROR] {method} {path}");
             Console.WriteLine($"  * Incoming Host URL : {host}");
             Console.WriteLine($"  * Origin / Referer  : {(string.IsNullOrEmpty(origin) ? "(Direct)" : origin)}");
             Console.WriteLine($"  * Requested Target  : {targetLookup}");
-            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active tenant matching this domain/subdomain)");
+            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active workspace matching this domain/subdomain)");
             Console.WriteLine("========================================================================");
             Console.ResetColor();
 
@@ -78,8 +80,8 @@ public class TenantScopeMiddleware
             await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
             {
                 statusCode = 404,
-                error = "TenantNotFound",
-                message = "Workspace not found.",
+                error = "WorkspaceNotFound",
+                message = "Workspace could not be found. Please check your access code or web address.",
                 timestamp = DateTime.UtcNow
             }));
             return;
@@ -163,7 +165,26 @@ public class TenantScopeMiddleware
 
     private static string? ExtractTenantIdentifier(HttpContext httpContext)
     {
-        // 1. Priority 1: Check explicit HTTP headers sent by Angular SPA (X-Tenant-Key or X-Tenant-Domain)
+        // 1. Priority 1: Check CORS Origin or Referer header (the browser's active URL/domain)
+        // If the browser is actively on a tenant subdomain/domain (e.g. cocacolanm.localhost), it MUST take precedence
+        // over any potentially stale localStorage headers sent by the client SPA.
+        string? originHeader = httpContext.Request.Headers["Origin"].ToString();
+        if (string.IsNullOrEmpty(originHeader))
+        {
+            originHeader = httpContext.Request.Headers["Referer"].ToString();
+        }
+
+        if (!string.IsNullOrEmpty(originHeader) && Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri))
+        {
+            string originHost = originUri.Authority; // e.g. "cocacolanm.localhost:4200" or "company.org"
+            var cleanOrigin = CleanIdentifier(originHost);
+            if (!string.IsNullOrEmpty(cleanOrigin))
+            {
+                return cleanOrigin;
+            }
+        }
+
+        // 2. Priority 2: Check explicit HTTP headers sent by Angular SPA (X-Tenant-Key or X-Tenant-Domain)
         if (httpContext.Request.Headers.TryGetValue("X-Tenant-Key", out var headerTenantKey) && !string.IsNullOrWhiteSpace(headerTenantKey))
         {
             return CleanIdentifier(headerTenantKey.ToString());
@@ -174,7 +195,7 @@ public class TenantScopeMiddleware
             return CleanIdentifier(headerTenantDomain.ToString());
         }
 
-        // 2. Priority 2: Check Authorization Bearer header or User claims for tenant_key
+        // 3. Priority 3: Check Authorization Bearer header or User claims for tenant_key
         string? authHeader = httpContext.Request.Headers["Authorization"].ToString();
         if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
@@ -217,23 +238,6 @@ public class TenantScopeMiddleware
             if (!string.IsNullOrEmpty(cleanClaim))
             {
                 return cleanClaim;
-            }
-        }
-
-        // 3. Priority 3: Check CORS Origin or Referer header (Angular client domain)
-        string? originHeader = httpContext.Request.Headers["Origin"].ToString();
-        if (string.IsNullOrEmpty(originHeader))
-        {
-            originHeader = httpContext.Request.Headers["Referer"].ToString();
-        }
-
-        if (!string.IsNullOrEmpty(originHeader) && Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri))
-        {
-            string host = originUri.Authority; // e.g. "cocacola.localhost" or "localhost:4200"
-            var cleanOrigin = CleanIdentifier(host);
-            if (!string.IsNullOrEmpty(cleanOrigin))
-            {
-                return cleanOrigin;
             }
         }
 

@@ -80,10 +80,49 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Join Date")]
         public DateTime? JoinDate { get; set; }
 
-        // Let the UI, DTOs, or Extension methods handle string formatting. 
-        // Just keep one clean property.
+        /// <summary>
+        /// Extracted honorary or professional post-nominal suffix (e.g. "mni", "PhD", "Esq") stored within CustomAttributesJson.
+        /// </summary>
+        [Display(Name = "Suffix")]
+        public string? Suffix
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(CustomAttributesJson)) return null;
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(CustomAttributesJson);
+                    if (doc.RootElement.TryGetProperty("suffix", out var sProp))
+                    {
+                        var s = sProp.GetString();
+                        return string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+                    }
+                }
+                catch
+                {
+                    // Fallback if JSON is malformed
+                }
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Formatted full name incorporating title, first, middle, last name, and post-nominal suffix (e.g. "Dr. First Last, mni").
+        /// </summary>
         [Display(Name = "Full Name")]
-        public string FullName => $"{Title} {FirstName} {MiddleName} {LastName}".Trim();
+        public string FullName
+        {
+            get
+            {
+                var baseName = $"{Title} {FirstName} {MiddleName} {LastName}".Trim();
+                var s = Suffix;
+                if (!string.IsNullOrWhiteSpace(s) && !baseName.EndsWith(s, StringComparison.OrdinalIgnoreCase))
+                {
+                    return $"{baseName}, {s}".Trim();
+                }
+                return baseName;
+            }
+        }
 
         /// <summary>
         /// Distinguishes internal platform users from external guest users.
@@ -122,6 +161,13 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Registration Source")]
         [StringLength(50)]
         public string RegistrationSource { get; set; } = "Admin";
+
+        /// <summary>
+        /// Dynamic business-specific registration and onboarding attribute responses stored as serialized JSON key-value pairs.
+        /// Corresponds to the field definitions configured in BcpRegistrationFormFields.
+        /// </summary>
+        [Display(Name = "Custom Attributes (JSON)")]
+        public string? CustomAttributesJson { get; set; }
     }
 }
 

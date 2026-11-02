@@ -88,6 +88,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
     // --- BCP: User Management Feature ---
     public DbSet<BcpUserCategory> BcpUserCategories { get; set; }
+    public DbSet<BcpRegistrationFormField> BcpRegistrationFormFields { get; set; }
     public DbSet<BcpKpiIndicator> BcpKpiIndicators { get; set; }
     public DbSet<BcpKpiUserScore> BcpKpiUserScores { get; set; }
     public DbSet<BcpKpiPeriod> BcpKpiPeriods { get; set; } = null!;
@@ -208,7 +209,31 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
         if (entries.Any())
         {
-            var user = _httpContextAccessor?.HttpContext?.User;
+            var httpContext = _httpContextAccessor?.HttpContext;
+            var user = httpContext?.User;
+            var userEmail = user?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                ?? user?.FindFirst("email")?.Value
+                ?? (user?.Identity?.Name?.Contains('@') == true ? user.Identity.Name : null);
+            string? ipAddress = httpContext?.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                var forwarded = httpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(forwarded))
+                {
+                    ipAddress = forwarded.Split(',')[0].Trim();
+                }
+            }
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                ipAddress = httpContext?.Request.Headers["X-Real-IP"].FirstOrDefault();
+            }
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
+            }
+            string? systemId = httpContext?.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext?.Request.Headers["X-Device-Id"].FirstOrDefault();
+            string? userAgent = httpContext?.Request.Headers["User-Agent"].FirstOrDefault();
             var userId = user?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var userName = user?.Identity?.Name ?? "System";
 
@@ -225,7 +250,11 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                     PerformedByProfileId = userId,
                     PerformedByFullName = userName,
                     Module = "User Management",
-                    Date = DateTime.UtcNow
+                    Date = DateTime.UtcNow,
+                    PerformedByUserEmail = userEmail,
+                    IpAddress = ipAddress,
+                    SystemId = systemId,
+                    UserAgent = userAgent
                 };
 
                 if (entry.Entity is BcpUserFeatureRole role)
@@ -290,6 +319,26 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // --- Audit & Operational Log Indexes for Fast Telemetry Queries ---
+        modelBuilder.Entity<BcpActivityLog>(entity =>
+        {
+            entity.HasIndex(e => e.Date);
+            entity.HasIndex(e => e.PerformedByProfileId);
+            entity.HasIndex(e => e.PerformedByUserEmail);
+            entity.HasIndex(e => e.SystemId);
+            entity.HasIndex(e => e.IpAddress);
+            entity.HasIndex(e => e.ActionType);
+        });
+
+        modelBuilder.Entity<BcpLoginAuditLog>(entity =>
+        {
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.SystemId);
+            entity.HasIndex(e => e.IpAddress);
+        });
 
         // Identity-related feature records should not cascade-delete user-owned communication records.
         modelBuilder.Entity<BcpNewsletterRecipient>()

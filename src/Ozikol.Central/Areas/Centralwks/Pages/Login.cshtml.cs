@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
@@ -15,6 +16,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
     /// PageModel authenticating Platform SuperAdmins and administrative operators into the Central Administration Console.
     /// Validates administrator role credentials, enforces 2FA verification when enabled, and records sign-in audit trail events.
     /// </summary>
+    [EnableRateLimiting("central-auth-limit")]
     public class LoginModel : PageModel
     {
         private readonly SignInManager<CentralUser> _signInManager;

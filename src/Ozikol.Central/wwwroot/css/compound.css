@@ -419,8 +419,8 @@ summary::-webkit-details-marker {
     --colour-base-transparent: transparent;
     --colour-base-white: #fff;
     --colour-base-black: #000;
-    --colour-brand-tag-red: #e5173f;
-    --colour-brand-tag-red-rgb: 229,23,63;
+    --colour-brand-tag-red: #0050e5;
+    --colour-brand-tag-red-rgb: 0,80,229;
     --colour-brand-tag-red-dark: #c91538;
     --colour-brand-tag-red-dark-rgb: 201,21,56;
     --colour-brand-tag-teal: #54b9b3;
@@ -12071,7 +12071,7 @@ body.hide-shards .bundles-suites-banner {
 }
 
 .mktoForm.mktoForm .mktoHtmlText a {
-    color: #e5173f;
+    color: #0050e5;
     width: auto !important;
 }
 
@@ -21057,7 +21057,7 @@ h3#cookie-policy-title {
 .calconic-calculator {
     max-width: 1130px !important;
     margin: 0 auto !important;
-    border-top: 12px solid #e5173f;
+    border-top: 12px solid #0050e5;
     border-radius: 12px;
     box-shadow: 0px 4px 42px rgba(0,0,0,0.12);
     padding: 2rem 0;
@@ -21149,7 +21149,7 @@ h3#cookie-policy-title {
     }
 
 .pt-start-button {
-    background: #E5173F;
+    background: #0050E5;
     color: #ffffff;
     border: none;
     padding: 16px 32px;
@@ -21172,7 +21172,7 @@ h3#cookie-policy-title {
     height: 24px;
     margin-left: -12px;
     margin-top: -12px;
-    background: #E5173F;
+    background: #0050E5;
     border: 2px solid white;
     border-radius: 50%;
     display: flex;
@@ -21244,7 +21244,7 @@ h3#cookie-policy-title {
 .pt-modal-badge {
     width: 48px;
     height: 48px;
-    background: #E5173F;
+    background: #0050E5;
     color: white;
     border-radius: 8px;
     display: flex;
@@ -21291,7 +21291,7 @@ h3#cookie-policy-title {
 }
 
 .pt-btn-next {
-    background: #E5173F;
+    background: #0050E5;
     color: #ffffff;
 }
 
@@ -21357,7 +21357,7 @@ h3#cookie-policy-title {
 .pt-completion-button {
     width: 100%;
     padding: 12px;
-    background: #E5173F;
+    background: #0050E5;
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -21574,7 +21574,7 @@ h3#cookie-policy-title {
 }
 
 .pt-start-button {
-    background: #E5173F;
+    background: #0050E5;
     color: #ffffff;
     border: none;
     padding: 14px 32px;
@@ -21599,7 +21599,7 @@ h3#cookie-policy-title {
     height: 26px;
     margin-left: -13px;
     margin-top: -13px;
-    background: #E5173F;
+    background: #0050E5;
     border: 2px solid white;
     border-radius: 50%;
     display: flex;
@@ -21647,11 +21647,11 @@ h3#cookie-policy-title {
 
 @keyframes pt-pulse-inactive {
     0%, 100% {
-        box-shadow: 0 0 0 0 #E5173Fcc;
+        box-shadow: 0 0 0 0 #0050E5cc;
     }
 
     50% {
-        box-shadow: 0 0 0 10px #E5173F00;
+        box-shadow: 0 0 0 10px #0050E500;
     }
 }
 
@@ -21711,11 +21711,11 @@ h3#cookie-policy-title {
 
     @keyframes pt-pulse-inactive-mobile {
         0%, 100% {
-            box-shadow: 0 0 0 0 #E5173Fcc;
+            box-shadow: 0 0 0 0 #0050E5cc;
         }
 
         50% {
-            box-shadow: 0 0 0 12px #E5173F00;
+            box-shadow: 0 0 0 12px #0050E500;
         }
     }
 

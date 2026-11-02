@@ -9,7 +9,11 @@ using Ozikol_BCC.Application.Queries.UserQueries;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Services;
+using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Application.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
+using System.Text.Json;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -26,6 +30,8 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly RoleManager<AppRole> _roleManager;
         private readonly IMemberIdGeneratorService _memberIdGenerator;
         private readonly IOtpVerificationService _otpService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
+        private readonly IHubContext<NotificationHub>? _hubContext;
 
         public UsersApiController(
             IMediator mediator,
@@ -33,7 +39,9 @@ namespace Ozikol_BCC.Api.Controllers
             UserManager<Profile> userManager,
             RoleManager<AppRole> roleManager,
             IMemberIdGeneratorService memberIdGenerator,
-            IOtpVerificationService otpService)
+            IOtpVerificationService otpService,
+            ICentralNotificationDispatcher? notificationDispatcher = null,
+            IHubContext<NotificationHub>? hubContext = null)
         {
             _mediator = mediator;
             _dbContext = dbContext;
@@ -41,6 +49,8 @@ namespace Ozikol_BCC.Api.Controllers
             _roleManager = roleManager;
             _memberIdGenerator = memberIdGenerator;
             _otpService = otpService;
+            _notificationDispatcher = notificationDispatcher;
+            _hubContext = hubContext;
         }
 
         // =========================================================================
@@ -339,6 +349,43 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
+            // Custom Dynamic Onboarding Attributes (excluding internal suffix which is incorporated directly into FullName)
+            var customAttributes = new List<object>();
+            if (!string.IsNullOrWhiteSpace(user.CustomAttributesJson))
+            {
+                try
+                {
+                    var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(user.CustomAttributesJson);
+                    if (rawDict != null && rawDict.Count > 0)
+                    {
+                        var fieldDefs = await _dbContext.BcpRegistrationFormFields.AsNoTracking().ToListAsync();
+                        foreach (var kvp in rawDict)
+                        {
+                            // Suffix is attached directly to FullName and should not be displayed as an arbitrary dynamic attribute
+                            if (string.Equals(kvp.Key, "suffix", StringComparison.OrdinalIgnoreCase)) continue;
+
+                            var def = fieldDefs.FirstOrDefault(f => f.FieldKey.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
+                            customAttributes.Add(new
+                            {
+                                fieldKey = kvp.Key,
+                                label = def?.Label ?? kvp.Key,
+                                fieldType = def?.FieldType ?? "text",
+                                value = kvp.Value?.ToString() ?? string.Empty
+                            });
+                        }
+                    }
+                }
+                catch
+                {
+                    // Graceful fallback if JSON fails
+                }
+            }
+
+            var assignedFeature = await _dbContext.BcpUserFeatureRoles
+                .Where(f => f.ProfileId == id && f.IsActive)
+                .Select(f => f.FeatureAreaKey)
+                .FirstOrDefaultAsync();
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 id = user.Id,
@@ -350,7 +397,8 @@ namespace Ozikol_BCC.Api.Controllers
                 firstName = user.FirstName,
                 lastName = user.LastName,
                 title = user.Title,
-                memberId = user.MemberId,
+                suffix = user.Suffix,
+                memberId = MemberIdGeneratorService.SanitizeMemberId(user.MemberId, "-"),
                 gender = user.Gender.ToString(),
                 designation = user.Designation ?? "Member",
                 avatarUrl = user.AvatarUrl,
@@ -364,9 +412,11 @@ namespace Ozikol_BCC.Api.Controllers
                 categoryColor = user.BcpUserCategory?.ColorCode,
                 categoryIcon = user.BcpUserCategory?.Icon,
                 roles,
+                assignedFeatureArea = assignedFeature ?? "UserManager",
                 kpiScores,
                 notes,
-                logs
+                logs,
+                customAttributes
             }, "Member 360° dossier retrieved."));
         }
 
@@ -385,16 +435,22 @@ namespace Ozikol_BCC.Api.Controllers
             await _userManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", $"{otp}:{expiryTicks}");
             await _userManager.SetAuthenticationTokenAsync(user, "OzikolResetOtp", "ResetOtp", $"{otp}:{expiryTicks}");
 
+            // Resolve tenant brand identity dynamically from MisWebsiteSettings
+            var tenantSite = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(tenantSite?.BrandName)
+                ? tenantSite.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(tenantSite?.CompanyName) ? tenantSite.CompanyName.Trim() : "Workspace");
+
             // Queue in BcpEmailQueue
             if (!string.IsNullOrWhiteSpace(user.Email))
             {
                 _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
                 {
                     RelatedUserId = user.Id,
-                    RecipientEmail = user.Email,
-                    RecipientName = user.FullName,
+                    RecipientEmail = user.Email.Trim(),
+                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                     Subject = "Your Account Activation & Password Reset OTP",
-                    HtmlBody = $"<div style='font-family:sans-serif; padding:20px;'><h2>Account Activation Code</h2><p>Hello <strong>{user.FullName}</strong>,</p><p>Your 6-digit one-time passcode (OTP) for password setup is:</p><div style='font-size:32px; font-weight:800; letter-spacing:6px; color:#0050e5; padding:16px 0;'>{otp}</div><p>This code is valid for 15 minutes. Enter this code at the reset password screen to activate your account.</p></div>",
+                    HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your 6-digit one-time passcode (OTP) for account activation and password setup is:</p><div style='font-size:32px; font-weight:800; letter-spacing:6px; color:#0050e5; padding:16px 0; text-align:center;'>{otp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 15 minutes. Enter this code at the reset password screen to activate your account.</p>",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
                     EventType = BcpEventType.PasswordReset,
@@ -410,7 +466,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     RelatedUserId = user.Id,
                     RecipientPhone = user.PhoneNumber,
-                    Message = $"Your Ozikol activation OTP code is {otp}. Valid for 15 minutes.",
+                    Message = $"Your {tenantBrand} activation OTP code is {otp}. Valid for 15 minutes.",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
                     EventType = BcpEventType.PasswordReset,
@@ -485,6 +541,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await LogActivityAsync("Delete User", $"Permanently deleted member account for '{userName}' ({user.Email})", id, userName);
+            await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was permanently deleted by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Member account for '{userName}' has been deleted."));
         }
 
@@ -538,8 +595,18 @@ namespace Ozikol_BCC.Api.Controllers
                 EmailConfirmed = false, // Email confirmation required according to policy
                 PhoneNumberConfirmed = false,
                 MustChangePassword = mustChangePassword,
-                RegistrationSource = "Admin"
+                RegistrationSource = "Admin",
+                CustomAttributesJson = !string.IsNullOrWhiteSpace(request.Suffix)
+                    ? JsonSerializer.Serialize(new { suffix = request.Suffix.Trim() })
+                    : null
             };
+
+            // Prevent assigning SuperAdmin to any user account
+            var roleToAssign = !string.IsNullOrWhiteSpace(request.Role) ? request.Role : "Member";
+            if (string.Equals(roleToAssign, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be assigned to members."));
+            }
 
             var password = string.IsNullOrWhiteSpace(request.Password) ? "Member@2026" : request.Password;
             var result = await _userManager.CreateAsync(newUser, password);
@@ -547,7 +614,6 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", result.Errors.Select(e => e.Description))));
 
             // Assign role
-            var roleToAssign = !string.IsNullOrWhiteSpace(request.Role) ? request.Role : "Member";
             if (await _roleManager.RoleExistsAsync(roleToAssign))
             {
                 await _userManager.AddToRoleAsync(newUser, roleToAssign);
@@ -564,27 +630,24 @@ namespace Ozikol_BCC.Api.Controllers
                     Id = Guid.NewGuid(),
                     RelatedUserId = newUser.Id,
                     RecipientEmail = newUser.Email,
-                    RecipientName = newUser.FullName,
+                    RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
                     Subject = "Welcome to Your Portal - Account Credentials",
                     HtmlBody = $@"
-                        <div style='font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width:560px; margin:0 auto; padding:32px 24px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px;'>
-                            <h2 style='color:#0f172a; margin:0 0 12px; font-size:20px; font-weight:800;'>Welcome, {newUser.FullName}!</h2>
-                            <p style='color:#334155; font-size:14px; line-height:1.5;'>Your member account has been registered on the portal. Below are your login details:</p>
-                            
-                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
-                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
-                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
-                                <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
-                            </div>
+                        <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal. Below are your login credentials:</p>
+                        
+                        <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
+                            <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
+                            <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
+                            <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
+                        </div>
 
-                            {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
-                                <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
-                                <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
-                            </div>" : "")}
+                        {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
+                            <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
+                            <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
+                        </div>" : "")}
 
-                            <div style='text-align:center; margin:24px 0 16px;'>
-                                <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
-                            </div>
+                        <div style='text-align:center; margin:24px 0 8px;'>
+                            <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
                         </div>",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
@@ -601,6 +664,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Log activity
             await LogActivityAsync("Create User", $"Created member account for '{newUser.FullName}' ({newUser.Email}) with Member ID '{newUser.MemberId}' and role '{roleToAssign}'", newUser.Id, newUser.FullName);
+            await NotifyAdministratorsAsync("New Member Registered", $"A new member account has been registered for '{newUser.FullName}' ({newUser.Email}) with Member ID '{newUser.MemberId}'.", $"/users/console/detail/{newUser.Id}", NotificationSeverity.Success, "person_add");
 
             return Ok(ApiResponse<object>.SuccessResponse(new { newUser.Id, newUser.MemberId, newUser.MustChangePassword }, "User account created successfully. Welcome email with credentials dispatched."));
         }
@@ -652,29 +716,23 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.NewGuid(),
                         RelatedUserId = user.Id,
                         RecipientEmail = user.Email.Trim(),
-                        RecipientName = user.FullName,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                         Subject = "Your Temporary Login Credentials & Password Setup",
                         HtmlBody = $@"
-                            <div style='font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width:560px; margin:0 auto; padding:32px 24px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px;'>
-                                <h2 style='color:#0f172a; margin:0 0 12px; font-size:20px; font-weight:800;'>Temporary Login Password Set</h2>
-                                <p style='color:#334155; font-size:14px; line-height:1.5;'>Hello <strong>{user.FullName}</strong>,</p>
-                                <p style='color:#334155; font-size:14px; line-height:1.5;'>An administrator has assigned a new temporary password for your account:</p>
-                                
-                                <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0; text-align:center;'>
-                                    <span style='font-size:12px; color:#64748b; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;'>Temporary Password</span>
-                                    <span style='font-family:monospace; font-size:22px; font-weight:800; color:#0050e5; letter-spacing:2px;'>{request.NewPassword}</span>
-                                </div>
+                            <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>An administrator has assigned a new temporary password for your account:</p>
+                            
+                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0; text-align:center;'>
+                                <span style='font-size:12px; color:#64748b; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;'>Temporary Password</span>
+                                <span style='font-family:monospace; font-size:22px; font-weight:800; color:#0050e5; letter-spacing:2px;'>{request.NewPassword}</span>
+                            </div>
 
-                                <div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
-                                    <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Important Note:</strong>
-                                    <span style='font-size:12.5px; color:#1e40af;'>This is a temporary password. When you sign in, you will be prompted to set your new permanent password immediately.</span>
-                                </div>
+                            <div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
+                                <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Important Note:</strong>
+                                <span style='font-size:12.5px; color:#1e40af;'>This is a temporary password. When you sign in, you will be prompted to set your new permanent password immediately.</span>
+                            </div>
 
-                                <div style='text-align:center; margin:24px 0 16px;'>
-                                    <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
-                                </div>
-
-                                <p style='color:#94a3b8; font-size:12px; margin:0; text-align:center;'>Portal Link: <a href='{loginUrl}' style='color:#0050e5;'>{loginUrl}</a></p>
+                            <div style='text-align:center; margin:24px 0 8px;'>
+                                <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
                             </div>",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
@@ -690,28 +748,8 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // Also queue In-App Notification
-            try
-            {
-                _dbContext.BcpNotifications.Add(new BcpNotification
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id,
-                    Title = "Temporary Password Assigned",
-                    Message = "An administrator assigned a temporary password to your account. You will be prompted to update it upon sign in.",
-                    Category = BcpMessageCategory.Security,
-                    Priority = BcpMessagePriority.Urgent,
-                    EventType = BcpEventType.PasswordReset,
-                    Icon = "lock_reset",
-                    Module = "Security",
-                    IsRead = false
-                });
-                await _dbContext.SaveChangesAsync();
-            }
-            catch
-            {
-                // Non-fatal notification creation
-            }
+            // Dispatch in-app notification & SignalR real-time broadcast
+            await NotifyUserAsync(user.Id, "Temporary Password Assigned", "An administrator assigned a temporary password to your account. You will be prompted to update it upon sign in.", "/users/workspace/overview", NotificationSeverity.Update, "lock_reset");
 
             await LogActivityAsync("Reset Password", $"Admin reset password for '{user.FullName}' (MustChangePassword={user.MustChangePassword}, EmailNotified={request.SendEmailNotification ?? true})", user.Id, user.FullName);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Temporary password applied. Email notification dispatched to member."));
@@ -785,11 +823,23 @@ namespace Ozikol_BCC.Api.Controllers
             if (request.BcpUserCategoryId.HasValue) user.BcpUserCategoryId = request.BcpUserCategoryId;
             // NOTE: MemberId is permanently immutable and cannot be updated once created.
 
+            if (request.Suffix != null)
+            {
+                user.CustomAttributesJson = !string.IsNullOrWhiteSpace(request.Suffix)
+                    ? JsonSerializer.Serialize(new { suffix = request.Suffix.Trim() })
+                    : null;
+            }
+
             await _dbContext.SaveChangesAsync();
 
             // Update role if provided
             if (!string.IsNullOrWhiteSpace(request.Role))
             {
+                if (string.Equals(request.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be assigned."));
+                }
+
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (await _roleManager.RoleExistsAsync(request.Role))
@@ -817,6 +867,13 @@ namespace Ozikol_BCC.Api.Controllers
             await _dbContext.SaveChangesAsync();
 
             await LogActivityAsync("Status Change", $"Changed account status of '{user.FullName}' from {oldStatus} to {user.UserStatus}", user.Id, user.FullName);
+            await NotifyUserAsync(user.Id, "Account Status Updated",
+                request.IsActive
+                    ? "Your account has been reactivated by administration."
+                    : "Your account has been temporarily suspended by administration.",
+                "/users/workspace/overview",
+                request.IsActive ? NotificationSeverity.Success : NotificationSeverity.Failed,
+                request.IsActive ? "check_circle" : "block");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Account status updated to {user.UserStatus}."));
         }
 
@@ -835,6 +892,11 @@ namespace Ozikol_BCC.Api.Controllers
             await _dbContext.SaveChangesAsync();
 
             await LogActivityAsync("Category Change", $"Assigned '{user.FullName}' to category '{category?.Name ?? "None"}'", user.Id, user.FullName);
+            await NotifyUserAsync(user.Id, "Category Updated",
+                $"Your membership tier/category has been updated to '{category?.Name ?? "Standard"}'.",
+                "/users/workspace/overview",
+                NotificationSeverity.Update,
+                "badge");
             return Ok(ApiResponse<object>.SuccessResponse(null, "Category assigned successfully."));
         }
 
@@ -982,6 +1044,65 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderBy(k => k.SortOrder)
                 .ThenBy(k => k.Title)
                 .ToListAsync();
+
+            if (indicators.Count == 0)
+            {
+                var defaultRubrics = new List<BcpKpiIndicator>
+                {
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Task Completion & Delivery",
+                        Description = "Evaluation of on-time task delivery, responsiveness to deadlines, and accountability.",
+                        Category = "Operational",
+                        MaxScore = 100,
+                        Weight = 1.2m,
+                        SortOrder = 1,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    },
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Work Quality & Accuracy",
+                        Description = "Assess precision, error-free outputs, technical competence, and attention to detail.",
+                        Category = "Quality",
+                        MaxScore = 100,
+                        Weight = 1.0m,
+                        SortOrder = 2,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    },
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Team Collaboration & Communication",
+                        Description = "Constructive engagement with team members, prompt communication, and collective problem-solving.",
+                        Category = "Leadership",
+                        MaxScore = 100,
+                        Weight = 1.0m,
+                        SortOrder = 3,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    },
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Punctuality & Meeting Attendance",
+                        Description = "Consistent presence at scheduled team scrums, workspace standups, and community sessions.",
+                        Category = "Attendance",
+                        MaxScore = 100,
+                        Weight = 0.8m,
+                        SortOrder = 4,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    }
+                };
+
+                _dbContext.BcpKpiIndicators.AddRange(defaultRubrics);
+                await _dbContext.SaveChangesAsync();
+                indicators = defaultRubrics;
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(indicators, "KPI indicators retrieved successfully."));
         }
@@ -1221,6 +1342,11 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _dbContext.SaveChangesAsync();
             await LogActivityAsync("Submit KPI Score", $"Evaluated KPI performance for '{user.FullName}' in period '{request.Period}'", user.Id, user.FullName);
+            await NotifyUserAsync(user.Id, "KPI Evaluation Recorded",
+                $"Your performance evaluation scores for period '{request.Period}' have been recorded.",
+                "/users/workspace/kpis",
+                NotificationSeverity.Update,
+                "insights");
 
             return Ok(ApiResponse<object>.SuccessResponse(null, "KPI evaluation scores saved successfully."));
         }
@@ -1272,13 +1398,15 @@ namespace Ozikol_BCC.Api.Controllers
             var scores = await query.ToListAsync();
 
             var leaderboard = scores
-                .GroupBy(s => new { s.ProfileId, Name = s.Profile != null ? s.Profile.FullName : "Unknown", Avatar = s.Profile?.AvatarUrl, Cat = s.Profile?.BcpUserCategory?.Name })
+                .GroupBy(s => new { s.ProfileId, Name = s.Profile != null ? s.Profile.FullName : "Unknown", Email = s.Profile != null ? s.Profile.Email : "", Avatar = s.Profile?.AvatarUrl, Cat = s.Profile?.BcpUserCategory?.Name })
                 .Select(g => new
                 {
+                    UserId = g.Key.ProfileId,
                     ProfileId = g.Key.ProfileId,
                     FullName = g.Key.Name,
+                    Email = g.Key.Email,
                     AvatarUrl = g.Key.Avatar,
-                    CategoryName = g.Key.Cat ?? "Unassigned",
+                    CategoryName = g.Key.Cat ?? "General",
                     TotalIndicators = g.Count(),
                     AverageScore = Math.Round(g.Average(x => (x.Score / (x.BcpKpiIndicator?.MaxScore > 0 ? x.BcpKpiIndicator.MaxScore : 100)) * 100), 1),
                     Scores = g.Select(x => new { Indicator = x.BcpKpiIndicator?.Title, Score = x.Score, Max = x.BcpKpiIndicator?.MaxScore ?? 100 })
@@ -1423,7 +1551,21 @@ namespace Ozikol_BCC.Api.Controllers
                 await _dbContext.SaveChangesAsync();
             }
 
+            if (!string.IsNullOrWhiteSpace(setting.MemberIdPrefix))
+            {
+                var cleanPrefix = setting.MemberIdPrefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
+                if (setting.MemberIdPrefix != cleanPrefix)
+                {
+                    setting.MemberIdPrefix = cleanPrefix;
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
             var previews = await _memberIdGenerator.GetFormatPreviewsAsync(setting.MemberIdPrefix, setting.MemberIdNextNumber, setting.MemberIdPadding, setting.MemberIdDelimiter);
+            foreach (var p in previews)
+            {
+                p.PreviewExample = MemberIdGeneratorService.SanitizeMemberId(p.PreviewExample, setting.MemberIdDelimiter ?? "-");
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -1456,7 +1598,7 @@ namespace Ozikol_BCC.Api.Controllers
                 setting.MemberIdFormat = request.ActiveFormat.Trim();
 
             if (!string.IsNullOrWhiteSpace(request.Prefix))
-                setting.MemberIdPrefix = request.Prefix.Trim().ToUpperInvariant();
+                setting.MemberIdPrefix = request.Prefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
 
             if (request.NextNumber.HasValue && request.NextNumber.Value > 0)
                 setting.MemberIdNextNumber = request.NextNumber.Value;
@@ -1490,6 +1632,236 @@ namespace Ozikol_BCC.Api.Controllers
                 enableUserDeletion = setting.EnableUserDeletion,
                 previews
             }, "Member ID format and verification policies saved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves the comprehensive User Manager settings (Title, Suffix, Member ID rules, and Account Policies).
+        /// Marked AllowAnonymous so public registration and admin configuration pages can read title/suffix visibility.
+        /// </summary>
+        [HttpGet("settings")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUserSettings()
+        {
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (setting == null)
+            {
+                setting = new MisConfigurationSetting
+                {
+                    Id = Guid.NewGuid(),
+                    MemberIdFormat = "PrefixYearMonthRandom",
+                    MemberIdPrefix = "CC",
+                    MemberIdNextNumber = 1,
+                    MemberIdPadding = 4,
+                    MemberIdDelimiter = "-"
+                };
+                _dbContext.MisConfigurationSettings.Add(setting);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Defaults
+            bool enableTitle = true;
+            string preFilledTitles = "Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor";
+            bool enableSuffix = true;
+            bool enableKpiEvaluations = true;
+            bool enablePublicLeaderboard = true;
+            string defaultKpiPeriodCycle = "Quarterly";
+            int kpiPassingScore = 70;
+
+            // Read from durable system config in BcpRegistrationFormFields
+            var durableConfig = await _dbContext.BcpRegistrationFormFields
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.FieldKey == "__user_settings__");
+
+            if (durableConfig != null && !string.IsNullOrWhiteSpace(durableConfig.OptionsJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(durableConfig.OptionsJson);
+                    if (doc.RootElement.TryGetProperty("enableTitle", out var et))
+                        enableTitle = et.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("preFilledTitles", out var pt))
+                        preFilledTitles = pt.GetString() ?? preFilledTitles;
+                    if (doc.RootElement.TryGetProperty("enableSuffix", out var es))
+                        enableSuffix = es.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enableKpiEvaluations", out var ek))
+                        enableKpiEvaluations = ek.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enablePublicLeaderboard", out var el))
+                        enablePublicLeaderboard = el.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("defaultKpiPeriodCycle", out var dc))
+                        defaultKpiPeriodCycle = dc.GetString() ?? defaultKpiPeriodCycle;
+                    if (doc.RootElement.TryGetProperty("kpiPassingScore", out var kp))
+                        kpiPassingScore = kp.GetInt32();
+                }
+                catch { }
+            }
+
+            if (!string.IsNullOrWhiteSpace(setting.MemberIdPrefix))
+            {
+                var cleanPrefix = setting.MemberIdPrefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
+                if (setting.MemberIdPrefix != cleanPrefix)
+                {
+                    setting.MemberIdPrefix = cleanPrefix;
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
+            var previews = await _memberIdGenerator.GetFormatPreviewsAsync(
+                setting.MemberIdPrefix,
+                setting.MemberIdNextNumber,
+                setting.MemberIdPadding,
+                setting.MemberIdDelimiter);
+            foreach (var p in previews)
+            {
+                p.PreviewExample = MemberIdGeneratorService.SanitizeMemberId(p.PreviewExample, setting.MemberIdDelimiter ?? "-");
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                enableTitle,
+                preFilledTitles,
+                enableSuffix,
+                enableKpiEvaluations,
+                enablePublicLeaderboard,
+                defaultKpiPeriodCycle,
+                kpiPassingScore,
+                memberIdFormat = setting.MemberIdFormat ?? "PrefixYearMonthRandom",
+                memberIdPrefix = setting.MemberIdPrefix ?? "CC",
+                nextNumber = setting.MemberIdNextNumber > 0 ? setting.MemberIdNextNumber : 1,
+                padding = setting.MemberIdPadding > 0 ? setting.MemberIdPadding : 4,
+                delimiter = setting.MemberIdDelimiter ?? "-",
+                requireConfirmedEmailToLogin = setting.RequireConfirmedEmailToLogin,
+                enableUserDeletion = setting.EnableUserDeletion,
+                previews
+            }, "User management settings retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Updates the tenant's User Manager preferences (Titles, Suffix, Member ID rules, and Policies).
+        /// </summary>
+        [HttpPut("settings")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        public async Task<IActionResult> UpdateUserSettings([FromBody] UpdateUserSettingsRequest request)
+        {
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (setting == null)
+            {
+                setting = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _dbContext.MisConfigurationSettings.Add(setting);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.MemberIdFormat))
+                setting.MemberIdFormat = request.MemberIdFormat.Trim();
+
+            if (!string.IsNullOrWhiteSpace(request.MemberIdPrefix))
+                setting.MemberIdPrefix = request.MemberIdPrefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
+
+            if (request.MemberIdNextNumber.HasValue && request.MemberIdNextNumber.Value > 0)
+                setting.MemberIdNextNumber = request.MemberIdNextNumber.Value;
+
+            if (request.MemberIdPadding.HasValue && request.MemberIdPadding.Value > 0)
+                setting.MemberIdPadding = request.MemberIdPadding.Value;
+
+            if (!string.IsNullOrWhiteSpace(request.MemberIdDelimiter))
+                setting.MemberIdDelimiter = request.MemberIdDelimiter.Trim();
+
+            if (request.RequireConfirmedEmailToLogin.HasValue)
+                setting.RequireConfirmedEmailToLogin = request.RequireConfirmedEmailToLogin.Value;
+
+            if (request.EnableUserDeletion.HasValue)
+                setting.EnableUserDeletion = request.EnableUserDeletion.Value;
+
+            // Persist title and suffix preferences to durable system config
+            var durableConfig = await _dbContext.BcpRegistrationFormFields
+                .FirstOrDefaultAsync(f => f.FieldKey == "__user_settings__");
+
+            bool curEnableTitle = true;
+            string curTitles = "Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor";
+            bool curEnableSuffix = true;
+            bool curEnableKpiEvaluations = true;
+            bool curEnablePublicLeaderboard = true;
+            string curDefaultKpiPeriodCycle = "Quarterly";
+            int curKpiPassingScore = 70;
+
+            if (durableConfig != null && !string.IsNullOrWhiteSpace(durableConfig.OptionsJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(durableConfig.OptionsJson);
+                    if (doc.RootElement.TryGetProperty("enableTitle", out var et)) curEnableTitle = et.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("preFilledTitles", out var pt)) curTitles = pt.GetString() ?? curTitles;
+                    if (doc.RootElement.TryGetProperty("enableSuffix", out var es)) curEnableSuffix = es.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enableKpiEvaluations", out var ek)) curEnableKpiEvaluations = ek.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enablePublicLeaderboard", out var el)) curEnablePublicLeaderboard = el.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("defaultKpiPeriodCycle", out var dc)) curDefaultKpiPeriodCycle = dc.GetString() ?? curDefaultKpiPeriodCycle;
+                    if (doc.RootElement.TryGetProperty("kpiPassingScore", out var kp)) curKpiPassingScore = kp.GetInt32();
+                }
+                catch { }
+            }
+
+            if (request.EnableTitle.HasValue) curEnableTitle = request.EnableTitle.Value;
+            if (!string.IsNullOrWhiteSpace(request.PreFilledTitles)) curTitles = request.PreFilledTitles.Trim();
+            if (request.EnableSuffix.HasValue) curEnableSuffix = request.EnableSuffix.Value;
+            if (request.EnableKpiEvaluations.HasValue) curEnableKpiEvaluations = request.EnableKpiEvaluations.Value;
+            if (request.EnablePublicLeaderboard.HasValue) curEnablePublicLeaderboard = request.EnablePublicLeaderboard.Value;
+            if (!string.IsNullOrWhiteSpace(request.DefaultKpiPeriodCycle)) curDefaultKpiPeriodCycle = request.DefaultKpiPeriodCycle.Trim();
+            if (request.KpiPassingScore.HasValue && request.KpiPassingScore.Value > 0) curKpiPassingScore = request.KpiPassingScore.Value;
+
+            var optionsJson = JsonSerializer.Serialize(new
+            {
+                enableTitle = curEnableTitle,
+                preFilledTitles = curTitles,
+                enableSuffix = curEnableSuffix,
+                enableKpiEvaluations = curEnableKpiEvaluations,
+                enablePublicLeaderboard = curEnablePublicLeaderboard,
+                defaultKpiPeriodCycle = curDefaultKpiPeriodCycle,
+                kpiPassingScore = curKpiPassingScore
+            });
+
+            if (durableConfig == null)
+            {
+                durableConfig = new BcpRegistrationFormField
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "__user_settings__",
+                    Label = "User Management Settings Configuration",
+                    FieldType = "system_config",
+                    IsActive = false,
+                    SortOrder = -998,
+                    OptionsJson = optionsJson,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                _dbContext.BcpRegistrationFormFields.Add(durableConfig);
+            }
+            else
+            {
+                durableConfig.OptionsJson = optionsJson;
+                durableConfig.UpdatedAtUtc = DateTime.UtcNow;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            await LogActivityAsync("Configure User Settings", $"Updated user settings (EnableTitle={curEnableTitle}, EnableSuffix={curEnableSuffix}, Format='{setting.MemberIdFormat}')", null, null);
+
+            var previews = await _memberIdGenerator.GetFormatPreviewsAsync(
+                setting.MemberIdPrefix,
+                setting.MemberIdNextNumber,
+                setting.MemberIdPadding,
+                setting.MemberIdDelimiter);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                enableTitle = curEnableTitle,
+                preFilledTitles = curTitles,
+                enableSuffix = curEnableSuffix,
+                memberIdFormat = setting.MemberIdFormat,
+                memberIdPrefix = setting.MemberIdPrefix,
+                nextNumber = setting.MemberIdNextNumber,
+                padding = setting.MemberIdPadding,
+                delimiter = setting.MemberIdDelimiter,
+                requireConfirmedEmailToLogin = setting.RequireConfirmedEmailToLogin,
+                enableUserDeletion = setting.EnableUserDeletion,
+                previews
+            }, "User management settings saved successfully."));
         }
 
         /// <summary>
@@ -1614,7 +1986,163 @@ namespace Ozikol_BCC.Api.Controllers
                 await LogActivityAsync("Toggle Verification", $"Admin set email verified to {request.IsVerified} for '{user.FullName}'", user.Id, user.FullName);
             }
 
+            // In-app notification to member
+            await NotifyUserAsync(user.Id, "Verification Status Updated",
+                request.IsPhone
+                    ? $"Your phone number verification status has been marked as {(request.IsVerified ? "Verified" : "Unverified")} by administration."
+                    : $"Your email address verification status has been marked as {(request.IsVerified ? "Verified" : "Unverified")} by administration.",
+                "/users/workspace/security",
+                request.IsVerified ? NotificationSeverity.Success : NotificationSeverity.Failed,
+                "verified");
+
             return Ok(ApiResponse<object>.SuccessResponse(new { user.EmailConfirmed, user.PhoneNumberConfirmed }, "Verification status updated."));
+        }
+
+        private async Task NotifyUserAsync(string userId, string title, string message, string actionUrl = "/users/workspace/overview", NotificationSeverity severity = NotificationSeverity.Update, string icon = "info")
+        {
+            try
+            {
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = userId,
+                        Title = title,
+                        Message = message,
+                        ActionUrl = actionUrl,
+                        Module = "User Management",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Account,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = severity,
+                        Channels = NotificationChannels.InApp
+                    });
+                }
+                else
+                {
+                    var notif = new BcpNotification
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Title = title,
+                        Message = message,
+                        ActionUrl = actionUrl,
+                        Module = "User Management",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Account,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = severity,
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    };
+                    _dbContext.BcpNotifications.Add(notif);
+                    await _dbContext.SaveChangesAsync();
+
+                    if (_hubContext != null)
+                    {
+                        await _hubContext.Clients.Group($"user_{userId}").SendAsync("ReceiveNotification", notif);
+                    }
+                }
+            }
+            catch
+            {
+                // Non-fatal notification failure
+            }
+        }
+
+        private async Task NotifyAdministratorsAsync(string title, string message, string actionUrl = "/users/console/list", NotificationSeverity severity = NotificationSeverity.Update, string icon = "person")
+        {
+            try
+            {
+                var adminUserIds = await (from ur in _dbContext.UserRoles
+                                          join r in _dbContext.Roles on ur.RoleId equals r.Id
+                                          where r.Name == "Admin" || r.Name == "SuperAdmin" || r.Name == "IdentityManager" || r.Name == "UserManager"
+                                          select ur.UserId).Distinct().ToListAsync();
+
+                var notifications = adminUserIds.Select(adminId => new BcpNotification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = adminId,
+                    Title = title,
+                    Message = message,
+                    ActionUrl = actionUrl,
+                    Module = "User Management",
+                    Icon = icon,
+                    Category = BcpMessageCategory.Account,
+                    Priority = BcpMessagePriority.Normal,
+                    Severity = severity,
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false
+                }).ToList();
+
+                if (notifications.Count > 0)
+                {
+                    _dbContext.BcpNotifications.AddRange(notifications);
+                    await _dbContext.SaveChangesAsync();
+
+                    if (_hubContext != null)
+                    {
+                        foreach (var notif in notifications)
+                        {
+                            await _hubContext.Clients.Group($"user_{notif.UserId}").SendAsync("ReceiveNotification", notif);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Non-fatal notification failure
+            }
+        }
+
+        private async Task QueueEmailAsync(string recipientEmail, string recipientName, string subject, string htmlBody, BcpMessageCategory category = BcpMessageCategory.General, BcpMessagePriority priority = BcpMessagePriority.Normal, string? relatedUserId = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(recipientEmail)) return;
+
+                if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(relatedUserId))
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = relatedUserId,
+                        RecipientEmail = recipientEmail,
+                        RecipientName = recipientName,
+                        Title = subject,
+                        Message = subject,
+                        EmailSubject = subject,
+                        EmailHtmlBody = htmlBody,
+                        Category = category,
+                        Priority = priority,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true
+                    });
+                }
+                else
+                {
+                    var emailItem = new BcpEmailQueue
+                    {
+                        Id = Guid.NewGuid(),
+                        RelatedUserId = relatedUserId,
+                        RecipientEmail = recipientEmail.Trim(),
+                        RecipientName = recipientName?.Trim() ?? string.Empty,
+                        Subject = subject,
+                        HtmlBody = htmlBody,
+                        Category = category,
+                        Priority = priority,
+                        Status = BcpQueueStatus.Queued,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _dbContext.BcpEmailQueue.Add(emailItem);
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Non-fatal email queueing
+            }
         }
 
         private async Task LogActivityAsync(string actionType, string description, string? targetProfileId, string? targetFullName)
@@ -1671,6 +2199,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string Target { get; set; } = "email"; // "email" or "phone"
         public bool IsVerified { get; set; }
+        public bool IsPhone => string.Equals(Target, "phone", StringComparison.OrdinalIgnoreCase);
     }
 
     public class CreateUserRequest
@@ -1680,6 +2209,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Title { get; set; }
+        public string? Suffix { get; set; }
         public GenderStatus? Gender { get; set; }
         public string? PhoneNumber { get; set; }
         public string? MemberId { get; set; }
@@ -1702,6 +2232,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Title { get; set; }
+        public string? Suffix { get; set; }
         public GenderStatus? Gender { get; set; }
         public string? PhoneNumber { get; set; }
         public string? MemberId { get; set; }
@@ -1709,6 +2240,24 @@ namespace Ozikol_BCC.Api.Controllers
         public string? AvatarUrl { get; set; }
         public string? Role { get; set; }
         public Guid? BcpUserCategoryId { get; set; }
+    }
+
+    public class UpdateUserSettingsRequest
+    {
+        public bool? EnableTitle { get; set; }
+        public string? PreFilledTitles { get; set; }
+        public bool? EnableSuffix { get; set; }
+        public bool? EnableKpiEvaluations { get; set; }
+        public bool? EnablePublicLeaderboard { get; set; }
+        public string? DefaultKpiPeriodCycle { get; set; }
+        public int? KpiPassingScore { get; set; }
+        public string? MemberIdFormat { get; set; }
+        public string? MemberIdPrefix { get; set; }
+        public int? MemberIdNextNumber { get; set; }
+        public int? MemberIdPadding { get; set; }
+        public string? MemberIdDelimiter { get; set; }
+        public bool? RequireConfirmedEmailToLogin { get; set; }
+        public bool? EnableUserDeletion { get; set; }
     }
 
     public class UpdateUserStatusRequest

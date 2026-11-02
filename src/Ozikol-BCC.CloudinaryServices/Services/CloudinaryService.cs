@@ -29,7 +29,11 @@ namespace Ozikol_BCC.CloudinaryServices.Services
         public CloudinaryService(IOptions<CloudinarySettings> settings, IConfiguration? configuration = null)
         {
             // 1. Check for CLOUDINARY_URL format (e.g. cloudinary://apiKey:apiSecret@cloudName)
-            var cloudinaryUrl = configuration?["CLOUDINARY_URL"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_URL");
+            var cloudinaryUrl = FirstNonEmpty(
+                configuration?["CLOUDINARY_URL"],
+                Environment.GetEnvironmentVariable("CLOUDINARY_URL")
+            );
+
             if (!string.IsNullOrWhiteSpace(cloudinaryUrl))
             {
                 try
@@ -43,33 +47,54 @@ namespace Ozikol_BCC.CloudinaryServices.Services
                 }
             }
 
-            // 2. Resolve credentials from settings, configuration, or environment variables
-            var cloudName = !string.IsNullOrWhiteSpace(settings.Value.CloudName) 
-                ? settings.Value.CloudName 
-                : (configuration?["CloudinarySettings:CloudName"] 
-                   ?? configuration?["CLOUDINARY_CLOUD_NAME"] 
-                   ?? Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME")
-                   ?? "pcbhnjad");
+            // 2. Resolve credentials from settings, configuration, environment variables, or platform defaults
+            var cloudName = FirstNonEmpty(
+                settings?.Value?.CloudName,
+                configuration?["CloudinarySettings:CloudName"],
+                configuration?["CloudinarySettings__CloudName"],
+                configuration?["CLOUDINARY_CLOUD_NAME"],
+                Environment.GetEnvironmentVariable("CloudinarySettings__CloudName"),
+                Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"),
+                "pcbhnjad"
+            );
 
-            var apiKey = !string.IsNullOrWhiteSpace(settings.Value.ApiKey) 
-                ? settings.Value.ApiKey 
-                : (configuration?["CloudinarySettings:ApiKey"] 
-                   ?? configuration?["CLOUDINARY_API_KEY"] 
-                   ?? Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY")
-                   ?? "159842435718116");
+            var apiKey = FirstNonEmpty(
+                settings?.Value?.ApiKey,
+                configuration?["CloudinarySettings:ApiKey"],
+                configuration?["CloudinarySettings__ApiKey"],
+                configuration?["CLOUDINARY_API_KEY"],
+                Environment.GetEnvironmentVariable("CloudinarySettings__ApiKey"),
+                Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY"),
+                "159842435718116"
+            );
 
-            var apiSecret = !string.IsNullOrWhiteSpace(settings.Value.ApiSecret) 
-                ? settings.Value.ApiSecret 
-                : (configuration?["CloudinarySettings:ApiSecret"] 
-                   ?? configuration?["CLOUDINARY_API_SECRET"] 
-                   ?? Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET")
-                   ?? "[REDACTED_CLOUDINARY_SECRET]");
+            var apiSecret = FirstNonEmpty(
+                settings?.Value?.ApiSecret,
+                configuration?["CloudinarySettings:ApiSecret"],
+                configuration?["CloudinarySettings__ApiSecret"],
+                configuration?["CLOUDINARY_API_SECRET"],
+                Environment.GetEnvironmentVariable("CloudinarySettings__ApiSecret"),
+                Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"),
+                "[REDACTED_CLOUDINARY_SECRET]"
+            );
 
             if (!string.IsNullOrWhiteSpace(cloudName) && !string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(apiSecret))
             {
-                var account = new Account(cloudName.Trim(), apiKey.Trim(), apiSecret.Trim());
+                var account = new Account(cloudName, apiKey, apiSecret);
                 _masterCloudinary = new Cloudinary(account) { Api = { Secure = true } };
             }
+        }
+
+        private static string FirstNonEmpty(params string?[] candidates)
+        {
+            foreach (var c in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(c))
+                {
+                    return c.Trim();
+                }
+            }
+            return string.Empty;
         }
 
         /// <summary>

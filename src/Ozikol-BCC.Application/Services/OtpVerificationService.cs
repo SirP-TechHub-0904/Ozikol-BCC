@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Domain.Models;
@@ -78,6 +79,12 @@ namespace Ozikol_BCC.Application.Services
                 Size = 1
             });
 
+            // Resolve tenant brand name dynamically from MisWebsiteSettings
+            var tenantSite = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var orgName = !string.IsNullOrWhiteSpace(tenantSite?.BrandName) 
+                ? tenantSite.BrandName.Trim() 
+                : (!string.IsNullOrWhiteSpace(tenantSite?.CompanyName) ? tenantSite.CompanyName.Trim() : "Workspace");
+
             // Render message from Template Service
             var placeholders = new System.Collections.Generic.Dictionary<string, string>
             {
@@ -86,7 +93,7 @@ namespace Ozikol_BCC.Application.Services
                 { "LastName", user.LastName ?? "" },
                 { "Email", email.Trim() },
                 { "OtpCode", otp },
-                { "OrganizationName", "Ozikol Workspace" }
+                { "OrganizationName", orgName }
             };
 
             var (subject, body) = await _templateService.RenderMessageAsync(
@@ -199,6 +206,12 @@ namespace Ozikol_BCC.Application.Services
                 Size = 1
             });
 
+            // Resolve tenant brand name dynamically from MisWebsiteSettings
+            var tenantSiteSms = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var orgNameSms = !string.IsNullOrWhiteSpace(tenantSiteSms?.BrandName) 
+                ? tenantSiteSms.BrandName.Trim() 
+                : (!string.IsNullOrWhiteSpace(tenantSiteSms?.CompanyName) ? tenantSiteSms.CompanyName.Trim() : "Workspace");
+
             // Render SMS message from Template Service
             var placeholders = new System.Collections.Generic.Dictionary<string, string>
             {
@@ -206,7 +219,7 @@ namespace Ozikol_BCC.Application.Services
                 { "FirstName", user.FirstName ?? "Member" },
                 { "PhoneNumber", phoneNumber.Trim() },
                 { "OtpCode", otp },
-                { "OrganizationName", "Ozikol Workspace" }
+                { "OrganizationName", orgNameSms }
             };
 
             var (_, smsBody) = await _templateService.RenderMessageAsync(

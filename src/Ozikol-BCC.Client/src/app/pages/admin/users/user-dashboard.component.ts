@@ -28,7 +28,7 @@ Chart.register(...registerables);
       <!-- =================================================================== -->
       <div class="row-1-metrics-grid">
         <!-- 1. Total Members -->
-        <a routerLink="/admin/users/list" class="stat-card clickable" title="View All Members in Directory">
+        <a routerLink="/users/console/list" class="stat-card clickable" title="View All Members in Directory">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-blue">
               <span class="material-symbols-outlined">groups</span>
@@ -42,7 +42,7 @@ Chart.register(...registerables);
         </a>
 
         <!-- 2. Active Accounts -->
-        <a routerLink="/admin/users/list" [queryParams]="{ status: 'Active' }" class="stat-card clickable" title="Filter Active Members">
+        <a routerLink="/users/console/list" [queryParams]="{ status: 'Active' }" class="stat-card clickable" title="Filter Active Members">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-green">
               <span class="material-symbols-outlined">verified_user</span>
@@ -56,7 +56,7 @@ Chart.register(...registerables);
         </a>
 
         <!-- 3. Suspicious / Flagged Accounts -->
-        <a routerLink="/admin/users/list" [queryParams]="{ status: 'Suspicious' }" class="stat-card clickable" [class.card-alert]="(stats?.suspiciousAccounts || 0) > 0" title="Inspect Suspicious Accounts">
+        <a routerLink="/users/console/list" [queryParams]="{ status: 'Suspicious' }" class="stat-card clickable" [class.card-alert]="(stats?.suspiciousAccounts || 0) > 0" title="Inspect Suspicious Accounts">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-rose">
               <span class="material-symbols-outlined">gpp_maybe</span>
@@ -70,7 +70,7 @@ Chart.register(...registerables);
         </a>
 
         <!-- 4. Suspended Accounts -->
-        <a routerLink="/admin/users/list" [queryParams]="{ status: 'Suspended' }" class="stat-card clickable" title="Filter Suspended Members">
+        <a routerLink="/users/console/list" [queryParams]="{ status: 'Suspended' }" class="stat-card clickable" title="Filter Suspended Members">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-amber">
               <span class="material-symbols-outlined">block</span>
@@ -203,7 +203,7 @@ Chart.register(...registerables);
               <h3>Best Performing Members (KPI Scorecards)</h3>
               <p class="panel-subtitle">Performance evaluation comparison across top member profiles</p>
             </div>
-            <a routerLink="/admin/users/kpi" class="header-link">KPI Hub</a>
+            <a routerLink="/users/console/kpi" class="header-link">KPI Hub</a>
           </div>
           <div class="chart-canvas-container">
             <canvas #kpiBarCanvas></canvas>
@@ -222,7 +222,7 @@ Chart.register(...registerables);
               <h3>Top Performing Members (Leaderboard)</h3>
               <p class="panel-subtitle">Highest average composite scores recorded in evaluations</p>
             </div>
-            <a routerLink="/admin/users/kpi" class="header-link">Full Leaderboard</a>
+            <a routerLink="/users/console/kpi" class="header-link">Full Leaderboard</a>
           </div>
 
           <div class="leaderboard-list">
@@ -238,7 +238,7 @@ Chart.register(...registerables);
                 <div class="score-number">{{ item.avgScore }}%</div>
                 <span class="period-tag">{{ item.latestPeriod || 'Current' }}</span>
               </div>
-              <a [routerLink]="['/admin/users/kpi/grade', item.profileId]" class="btn-grade-sm" title="Grade Member">
+              <a [routerLink]="['/users/console/kpi/grade', item.profileId]" class="btn-grade-sm" title="Grade Member">
                 <span class="material-symbols-outlined">assignment_turned_in</span>
               </a>
             </div>
@@ -247,7 +247,7 @@ Chart.register(...registerables);
               <span class="material-symbols-outlined" style="font-size: 32px; color: #cbd5e1; display:block; margin-bottom:6px;">military_tech</span>
               No KPI evaluation scorecards submitted yet.
               <div style="margin-top: 8px;">
-                <a routerLink="/admin/users/kpi" class="btn-sm-details">Open KPI Hub</a>
+                <a routerLink="/users/console/kpi" class="btn-sm-details">Open KPI Hub</a>
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ Chart.register(...registerables);
               <h3>KPI Organizational Performance Health</h3>
               <p class="panel-subtitle">Summary of active metric indicators and evaluation coverage</p>
             </div>
-            <a routerLink="/admin/users/kpi/metrics/create" class="header-link">+ Add Metric</a>
+            <a routerLink="/users/console/kpi/metrics/create" class="header-link">+ Add Metric</a>
           </div>
 
           <div class="kpi-health-grid">
@@ -304,7 +304,7 @@ Chart.register(...registerables);
             </div>
           </div>
           <div class="quick-actions-grid">
-            <a routerLink="/admin/users/create" class="action-tile">
+            <a routerLink="/users/console/create" class="action-tile">
               <div class="tile-icon bg-blue"><span class="material-symbols-outlined">person_add</span></div>
               <div class="tile-content">
                 <strong>Add New Member</strong>
@@ -313,7 +313,7 @@ Chart.register(...registerables);
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
 
-            <a routerLink="/admin/users/categories/create" class="action-tile">
+            <a routerLink="/users/console/categories/create" class="action-tile">
               <div class="tile-icon bg-purple"><span class="material-symbols-outlined">add_circle</span></div>
               <div class="tile-content">
                 <strong>Create Category Tier</strong>
@@ -322,7 +322,7 @@ Chart.register(...registerables);
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
 
-            <a routerLink="/admin/users/list" class="action-tile">
+            <a routerLink="/users/console/list" class="action-tile">
               <div class="tile-icon bg-green"><span class="material-symbols-outlined">table_view</span></div>
               <div class="tile-content">
                 <strong>Export Member Directory</strong>
@@ -331,7 +331,7 @@ Chart.register(...registerables);
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
 
-            <a routerLink="/admin/users/kpi" class="action-tile">
+            <a routerLink="/users/console/kpi" class="action-tile">
               <div class="tile-icon bg-indigo"><span class="material-symbols-outlined">monitoring</span></div>
               <div class="tile-content">
                 <strong>Evaluate KPI Scores</strong>
@@ -349,7 +349,7 @@ Chart.register(...registerables);
               <h3>Recently Onboarded Members</h3>
               <p class="panel-subtitle">Latest organizational accounts registered in tenant</p>
             </div>
-            <a routerLink="/admin/users/list" class="header-link">View All</a>
+            <a routerLink="/users/console/list" class="header-link">View All</a>
           </div>
 
           <div class="table-responsive">
@@ -381,7 +381,7 @@ Chart.register(...registerables);
                     </span>
                   </td>
                   <td style="text-align:right;">
-                    <a [routerLink]="['/admin/users/details', m.id]" class="btn-sm-details">Details</a>
+                    <a [routerLink]="['/users/console/details', m.id]" class="btn-sm-details">Details</a>
                   </td>
                 </tr>
                 <tr *ngIf="!stats?.recentRegistrations?.length">
@@ -402,7 +402,7 @@ Chart.register(...registerables);
             <h3>Recent Security & Forensic Audit Trail</h3>
             <p class="panel-subtitle">Real-time authentication, password lifecycle, and permission logs</p>
           </div>
-          <a routerLink="/admin/users/activity" class="header-link">Full Audit Logs</a>
+          <a routerLink="/users/console/activity" class="header-link">Full Audit Logs</a>
         </div>
 
         <div class="logs-stream-grid">
@@ -580,13 +580,13 @@ export class UserDashboardComponent implements OnInit, AfterViewInit {
       text: 'Add Member',
       icon: 'person_add',
       isPrimary: true,
-      routerLink: '/admin/users/create'
+      routerLink: '/users/console/create'
     },
     {
       text: 'Directory Register',
       icon: 'table_view',
       isPrimary: false,
-      routerLink: '/admin/users/list'
+      routerLink: '/users/console/list'
     }
   ];
 

@@ -36,27 +36,25 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
 
             <div class="card-body">
-              <div class="form-grid-3">
-                <div class="form-group">
-                  <label>Title / Salutation</label>
+              <div class="name-row-flex">
+                <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                  <label>Title</label>
                   <select [(ngModel)]="model.title" name="title">
                     <option value="">None</option>
-                    <option value="Mr.">Mr.</option>
-                    <option value="Mrs.">Mrs.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Dr.">Dr.</option>
-                    <option value="Prof.">Prof.</option>
-                    <option value="Engr.">Engr.</option>
-                    <option value="Chief">Chief</option>
+                    <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
                   </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group first-name-col">
                   <label>First Name *</label>
-                  <input type="text" [(ngModel)]="model.firstName" name="firstName" required />
+                  <input type="text" [(ngModel)]="model.firstName" name="firstName" placeholder="e.g. First Name" required />
                 </div>
-                <div class="form-group">
+                <div class="form-group last-name-col">
                   <label>Last Name *</label>
-                  <input type="text" [(ngModel)]="model.lastName" name="lastName" required />
+                  <input type="text" [(ngModel)]="model.lastName" name="lastName" placeholder="e.g. Last Name" required />
+                </div>
+                <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                  <label>Suffix</label>
+                  <input type="text" [(ngModel)]="model.suffix" name="suffix" placeholder="e.g. mni, PhD, Esq" />
                 </div>
               </div>
 
@@ -77,7 +75,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="form-group">
                 <label>Phone Number</label>
-                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +1 555-0199" />
+                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
               </div>
             </div>
           </div>
@@ -111,9 +109,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <select [(ngModel)]="model.role" name="role">
                     <option value="Member">Member</option>
                     <option value="Admin">Admin</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Moderator">Moderator</option>
-                    <option value="SuperAdmin">SuperAdmin</option>
+                    <option value="Global Editor">Global Editor</option>
+                    <option value="Feature Editor">Feature Editor</option>
+                    <option value="Read Only">Read Only</option>
                   </select>
                 </div>
               </div>
@@ -137,7 +135,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         </div>
 
         <div class="card-footer" style="margin-top: 16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
-          <a [routerLink]="['/admin/users/details', userId]" class="btn btn-outline">Cancel</a>
+          <a [routerLink]="['/users/console/details', userId]" class="btn btn-outline">Cancel</a>
           <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.firstName || !model.lastName">
             <span *ngIf="!isSaving" class="material-symbols-outlined">save</span>
             <span>{{ isSaving ? 'Saving Changes...' : 'Save Profile Changes' }}</span>
@@ -160,6 +158,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .card-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
     .form-grid-3 { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 12px; }
+    .name-row-flex { display: flex; gap: 12px; flex-wrap: wrap; }
+    .name-row-flex .title-col { flex: 0 0 110px; }
+    .name-row-flex .first-name-col { flex: 1 1 160px; }
+    .name-row-flex .last-name-col { flex: 1 1 160px; }
+    .name-row-flex .suffix-col { flex: 0 0 130px; }
+    @media (max-width: 600px) {
+      .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
+    }
     .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 600px) { .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; } }
 
@@ -179,9 +185,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn { height: 40px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class UserEditComponent implements OnInit {
@@ -190,10 +199,18 @@ export class UserEditComponent implements OnInit {
   isSaving = false;
   categories: any[] = [];
 
+  userSettings: any = {
+    enableTitle: true,
+    preFilledTitles: 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor',
+    enableSuffix: false
+  };
+  titleOptions: string[] = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
+
   model: any = {
     firstName: '',
     lastName: '',
     title: '',
+    suffix: '',
     gender: 0,
     email: '',
     phoneNumber: '',
@@ -215,7 +232,7 @@ export class UserEditComponent implements OnInit {
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.userId) {
-      this.router.navigate(['/admin/users/list']);
+      this.router.navigate(['/users/console/list']);
       return;
     }
 
@@ -224,18 +241,39 @@ export class UserEditComponent implements OnInit {
         text: 'View Details',
         icon: 'visibility',
         isPrimary: false,
-        routerLink: `/admin/users/details/${this.userId}`
+        routerLink: `/users/console/details/${this.userId}`
       },
       {
         text: 'Back to List',
         icon: 'arrow_back',
         isPrimary: false,
-        routerLink: '/admin/users/list'
+        routerLink: '/users/console/list'
       }
     ];
 
+    this.loadUserSettings();
     this.loadCategories();
     this.loadUserData();
+  }
+
+  loadUserSettings(): void {
+    this.api.get<any>('UsersApi/settings').subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.userSettings.enableTitle = res.data.enableTitle ?? true;
+          this.userSettings.enableSuffix = res.data.enableSuffix ?? false;
+          if (res.data.preFilledTitles) {
+            const raw = res.data.preFilledTitles;
+            if (Array.isArray(raw)) {
+              this.titleOptions = raw;
+            } else if (typeof raw === 'string') {
+              this.titleOptions = raw.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+            }
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadCategories(): void {
@@ -258,6 +296,7 @@ export class UserEditComponent implements OnInit {
             firstName: u.firstName,
             lastName: u.lastName,
             title: u.title,
+            suffix: u.suffix || '',
             fullName: u.fullName,
             gender: u.gender === 'Female' || u.gender === 1 ? 1 : 0,
             email: u.email,
@@ -272,7 +311,7 @@ export class UserEditComponent implements OnInit {
       error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load member profile.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       }
     });
   }
@@ -288,7 +327,7 @@ export class UserEditComponent implements OnInit {
       next: () => {
         this.isSaving = false;
         this.toast.success('Member profile updated successfully!');
-        this.router.navigate(['/admin/users/details', this.userId]);
+        this.router.navigate(['/users/console/details', this.userId]);
       },
       error: (err) => {
         this.isSaving = false;

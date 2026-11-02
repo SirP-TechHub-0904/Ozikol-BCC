@@ -44,7 +44,7 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let cat of filteredCategories">
+              <tr *ngFor="let cat of paginatedCategories">
                 <td>
                   <div class="cat-name-cell">
                     <span class="material-symbols-outlined text-purple">folder</span>
@@ -79,6 +79,52 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Built-In Pagination Toolbar -->
+        <div class="pagination-footer" *ngIf="filteredCategories.length > 0">
+          <div class="page-size-selector">
+            <span>Show</span>
+            <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+              <option [value]="10">10</option>
+              <option [value]="25">25</option>
+              <option [value]="50">50</option>
+              <option [value]="100">100</option>
+            </select>
+            <span>entries per page</span>
+            <span class="entries-info">
+              (Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ getEndIndex() }} of {{ filteredCategories.length }} categories)
+            </span>
+          </div>
+
+          <div class="pagination-controls" *ngIf="totalPages > 1">
+            <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="setPage(1)" title="First Page">
+              <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
+            </button>
+            <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)" title="Previous Page">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+
+            <ng-container *ngFor="let p of visiblePages">
+              <span class="page-ellipsis" *ngIf="p === '...'">...</span>
+              <button
+                *ngIf="p !== '...'"
+                type="button"
+                class="page-btn"
+                [class.active]="p === currentPage"
+                (click)="setPage(p)"
+              >
+                {{ p }}
+              </button>
+            </ng-container>
+
+            <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="setPage(currentPage + 1)" title="Next Page">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="setPage(totalPages)" title="Last Page">
+              <span class="material-symbols-outlined">keyboard_double_arrow_right</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -304,6 +350,87 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-secondary:hover { background: #f8fafc; }
     .modal-error { color: #ef4444; font-size: 12.5px; font-weight: 700; }
     .text-purple { color: #9333ea; }
+
+    /* Built-In Pagination Toolbar */
+    .pagination-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+    .page-size-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+    }
+    .page-size-selector select {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      outline: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    .entries-info {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-left: 6px;
+    }
+    .pagination-controls {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .page-btn {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .page-btn:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .page-btn.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .page-btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .page-ellipsis {
+      padding: 0 4px;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 12px;
+    }
   `]
 })
 export class BlogCategoriesManagementComponent implements OnInit {
@@ -315,6 +442,8 @@ export class BlogCategoriesManagementComponent implements OnInit {
   isEditing = false;
   modalError = '';
   canEdit = false;
+  pageSize = 10;
+  currentPage = 1;
 
   currentCat: any = {
     id: null,
@@ -382,6 +511,51 @@ export class BlogCategoriesManagementComponent implements OnInit {
     if (!this.searchQuery) return this.categories;
     const q = this.searchQuery.toLowerCase();
     return this.categories.filter(c => c.title?.toLowerCase().includes(q));
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredCategories.length / this.pageSize) || 1;
+  }
+
+  get paginatedCategories(): any[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredCategories.slice(start, start + this.pageSize);
+  }
+
+  get visiblePages(): (number | string)[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+  }
+
+  setPage(page: number | string): void {
+    if (typeof page !== 'number') return;
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredCategories.length);
   }
 
   get parentOptions(): any[] {

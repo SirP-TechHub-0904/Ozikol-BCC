@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter Mobile (Android Emulator)",
+      "cwd": "FutterMobDeskApp",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "emulator-5554"
+    },
+    {
+      "name": "Flutter Desktop (Windows)",
+      "cwd": "FutterMobDeskApp",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows"
+    },
+    {
+      "name": "Flutter (Selected Device in Status Bar)",
+      "cwd": "FutterMobDeskApp",
+      "request": "launch",
+      "type": "dart"
+    }
+  ]
+}

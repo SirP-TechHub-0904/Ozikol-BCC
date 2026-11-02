@@ -8,13 +8,19 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Dtos.NotifyDtos;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
 {
+    /// <summary>
+    /// Multi-channel notifications API controller. Manages real-time feeds, badge counts,
+    /// read/unread states, and multi-channel administrative dispatches across in-app, push,
+    /// email, SMS, and WhatsApp channels with canonical 6-tier severities.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -23,16 +29,22 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _dbContext;
         private readonly UserManager<Profile> _userManager;
-        private readonly IPostmarkEmailService? _emailService;
+        private readonly ICentralNotificationDispatcher _notificationDispatcher;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NotificationsApiController"/> class.
+        /// </summary>
+        /// <param name="dbContext">Database context for the tenant.</param>
+        /// <param name="userManager">Identity user manager.</param>
+        /// <param name="notificationDispatcher">Central multi-channel notification dispatcher.</param>
         public NotificationsApiController(
             DashboardDbContext dbContext,
             UserManager<Profile> userManager,
-            IPostmarkEmailService? emailService = null)
+            ICentralNotificationDispatcher notificationDispatcher)
         {
-            _dbContext = dbContext;
-            _userManager = userManager;
-            _emailService = emailService;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _notificationDispatcher = notificationDispatcher ?? throw new ArgumentNullException(nameof(notificationDispatcher));
         }
 
         private string? GetCurrentUserId()
@@ -40,45 +52,163 @@ namespace Ozikol_BCC.Api.Controllers
             return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
 
+        /// <summary>
+        /// Data transfer model representing a notification item returned to client apps.
+        /// </summary>
         public class NotificationDto
         {
+            /// <summary>Unique notification identifier.</summary>
             public Guid Id { get; set; }
+
+            /// <summary>Title or headline.</summary>
             public string? Title { get; set; }
+
+            /// <summary>Detailed message content.</summary>
             public string? Message { get; set; }
+
+            /// <summary>Action redirection route.</summary>
             public string? ActionUrl { get; set; }
+
+            /// <summary>Read state indicator.</summary>
             public bool IsRead { get; set; }
+
+            /// <summary>Originating module or feature.</summary>
             public string? Module { get; set; }
+
+            /// <summary>Icon identifier.</summary>
             public string? Icon { get; set; }
+
+            /// <summary>Message category name.</summary>
             public string Category { get; set; } = "General";
+
+            /// <summary>Message priority level name.</summary>
             public string Priority { get; set; } = "Normal";
+
+            /// <summary>Canonical 6-tier severity name (Error, Failed, Success, NewFeature, Update, Maintenance).</summary>
+            public string Severity { get; set; } = "Update";
+
+            /// <summary>Numeric severity code (1 to 6).</summary>
+            public int SeverityCode { get; set; } = 5;
+
+            /// <summary>Hex color token matching the severity tier for consistent UI styling.</summary>
+            public string SeverityColor { get; set; } = "#1F6BFF";
+
+            /// <summary>Icon identifier matching the severity tier.</summary>
+            public string SeverityIcon { get; set; } = "info_outline";
+
+            /// <summary>Optional structured JSON metadata.</summary>
+            public string? MetadataJson { get; set; }
+
+            /// <summary>Whether this is a system-wide broadcast announcement.</summary>
             public bool IsBroadcast { get; set; }
+
+            /// <summary>Creation timestamp (UTC).</summary>
             public DateTime CreatedAt { get; set; }
         }
 
+        /// <summary>
+        /// Real-time topbar feed response containing unread counter and latest items.
+        /// </summary>
         public class NotificationFeedResponse
         {
+            /// <summary>Count of unread notifications for the active user.</summary>
             public int UnreadCount { get; set; }
+
+            /// <summary>List of the latest notifications.</summary>
             public List<NotificationDto> Items { get; set; } = new();
         }
 
+        /// <summary>
+        /// Request model for dispatching notifications across one or more delivery channels.
+        /// </summary>
         public class DispatchNotificationRequest
         {
-            public string TargetType { get; set; } = "SingleUser"; // "SingleUser" | "Category" | "BroadcastAll"
+            /// <summary>Audience target: "SingleUser", "Category", or "BroadcastAll".</summary>
+            public string TargetType { get; set; } = "SingleUser";
+
+            /// <summary>Recipient user profile ID (required for SingleUser).</summary>
             public string? TargetUserId { get; set; }
+
+            /// <summary>Target category GUID (required for Category).</summary>
             public string? TargetCategoryId { get; set; }
+
+            /// <summary>Title or headline of the alert.</summary>
             public string Title { get; set; } = string.Empty;
+
+            /// <summary>Message body of the alert.</summary>
             public string Message { get; set; } = string.Empty;
+
+            /// <summary>Optional action redirection route.</summary>
             public string? ActionUrl { get; set; }
+
+            /// <summary>Originating module or capability.</summary>
             public string? Module { get; set; } = "General";
-            public string? Icon { get; set; } = "notifications";
-            public string Priority { get; set; } = "Normal"; // Low, Normal, High, Urgent
-            public string Category { get; set; } = "General"; // General, Security, Membership, Performance, System
+
+            /// <summary>Material Symbols icon identifier.</summary>
+            public string? Icon { get; set; }
+
+            /// <summary>Priority level: Low, Normal, High, Urgent.</summary>
+            public string Priority { get; set; } = "Normal";
+
+            /// <summary>Category name: General, Security, Account, etc.</summary>
+            public string Category { get; set; } = "General";
+
+            /// <summary>Canonical 6-tier severity: Error, Failed, Success, NewFeature, Update, Maintenance.</summary>
+            public string Severity { get; set; } = "Update";
+
+            /// <summary>Dispatch in-app notification feed item (default true).</summary>
+            public bool SendInApp { get; set; } = true;
+
+            /// <summary>Dispatch native push notification to mobile and desktop apps.</summary>
+            public bool SendPush { get; set; } = false;
+
+            /// <summary>Dispatch transactional email via Postmark.</summary>
             public bool SendEmailCopy { get; set; } = false;
+
+            /// <summary>Dispatch direct SMS text alert via carrier gateway.</summary>
+            public bool SendSms { get; set; } = false;
+
+            /// <summary>Dispatch transactional WhatsApp alert.</summary>
+            public bool SendWhatsApp { get; set; } = false;
+
+            /// <summary>Optional structured JSON metadata.</summary>
+            public string? MetadataJson { get; set; }
+
+            /// <summary>Optional in-app title override.</summary>
+            public string? InAppTitle { get; set; }
+
+            /// <summary>Optional in-app message body override.</summary>
+            public string? InAppBody { get; set; }
+
+            /// <summary>Optional push lock-screen title override (max 50 chars).</summary>
+            public string? PushTitle { get; set; }
+
+            /// <summary>Optional push lock-screen body override (max 140 chars).</summary>
+            public string? PushBody { get; set; }
+
+            /// <summary>Optional email subject line override.</summary>
+            public string? EmailSubject { get; set; }
+
+            /// <summary>Optional custom rich HTML email body.</summary>
+            public string? EmailHtmlBody { get; set; }
+
+            /// <summary>Optional plain-text SMS message (strictly 160 GSM chars).</summary>
+            public string? SmsMessage { get; set; }
+
+            /// <summary>Optional WhatsApp markdown message (*bold*, _italic_).</summary>
+            public string? WhatsAppMessage { get; set; }
+
+            /// <summary>Optional system event type name (e.g. "LoginOtp", "SystemAnnouncement") to auto-render channel templates.</summary>
+            public string? EventType { get; set; }
+
+            /// <summary>Optional dynamic token placeholders dictionary for template rendering.</summary>
+            public Dictionary<string, string>? Placeholders { get; set; }
         }
 
         /// <summary>
-        /// Retrieves the real-time notification feed and unread count for the topbar bell dropdown.
+        /// Retrieves the real-time notification feed and unread count for topbar bell dropdowns across Web and Mobile.
         /// </summary>
+        /// <returns>Feed response containing unread count and latest 10 items.</returns>
         [HttpGet("feed")]
         [ProducesResponseType(typeof(ApiResponse<NotificationFeedResponse>), 200)]
         public async Task<IActionResult> GetFeed()
@@ -108,6 +238,11 @@ namespace Ozikol_BCC.Api.Controllers
                     Icon = n.Icon ?? "notifications",
                     Category = n.Category.ToString(),
                     Priority = n.Priority.ToString(),
+                    Severity = n.Severity.ToString(),
+                    SeverityCode = (int)n.Severity,
+                    SeverityColor = BcpNotificationDto.GetColorForSeverity(n.Severity),
+                    SeverityIcon = BcpNotificationDto.GetDefaultIconForSeverity(n.Severity),
+                    MetadataJson = n.MetadataJson,
                     IsBroadcast = n.IsBroadcast,
                     CreatedAt = n.CreatedAt
                 })
@@ -123,8 +258,10 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves paginated notification list for the dedicated Notification Center.
+        /// Retrieves a paginated or filtered list of notifications for the dedicated Notification Center.
         /// </summary>
+        /// <param name="filter">Optional filter ("unread", "security", "broadcast", "severity:Error", etc.).</param>
+        /// <returns>List of matching notification items.</returns>
         [HttpGet("all")]
         [ProducesResponseType(typeof(ApiResponse<List<NotificationDto>>), 200)]
         public async Task<IActionResult> GetAll([FromQuery] string? filter = null)
@@ -138,17 +275,29 @@ namespace Ozikol_BCC.Api.Controllers
             var query = _dbContext.BcpNotifications
                 .Where(n => n.UserId == userId || n.IsBroadcast);
 
-            if (filter == "unread")
+            if (!string.IsNullOrWhiteSpace(filter))
             {
-                query = query.Where(n => !n.IsRead);
-            }
-            else if (filter == "security")
-            {
-                query = query.Where(n => n.Module == "Security" || n.Category == BcpMessageCategory.Security);
-            }
-            else if (filter == "broadcast")
-            {
-                query = query.Where(n => n.IsBroadcast);
+                var lower = filter.Trim().ToLowerInvariant();
+                if (lower == "unread")
+                {
+                    query = query.Where(n => !n.IsRead);
+                }
+                else if (lower == "broadcast")
+                {
+                    query = query.Where(n => n.IsBroadcast);
+                }
+                else if (lower == "security")
+                {
+                    query = query.Where(n => (n.Module != null && n.Module.ToLower().Contains("security")) || n.Category == BcpMessageCategory.Security);
+                }
+                else if (lower.StartsWith("severity:"))
+                {
+                    var sevStr = lower.Substring("severity:".Length);
+                    if (Enum.TryParse<NotificationSeverity>(sevStr, true, out var sev))
+                    {
+                        query = query.Where(n => n.Severity == sev);
+                    }
+                }
             }
 
             var items = await query
@@ -165,17 +314,24 @@ namespace Ozikol_BCC.Api.Controllers
                     Icon = n.Icon ?? "notifications",
                     Category = n.Category.ToString(),
                     Priority = n.Priority.ToString(),
+                    Severity = n.Severity.ToString(),
+                    SeverityCode = (int)n.Severity,
+                    SeverityColor = BcpNotificationDto.GetColorForSeverity(n.Severity),
+                    SeverityIcon = BcpNotificationDto.GetDefaultIconForSeverity(n.Severity),
+                    MetadataJson = n.MetadataJson,
                     IsBroadcast = n.IsBroadcast,
                     CreatedAt = n.CreatedAt
                 })
                 .ToListAsync();
 
-            return Ok(ApiResponse<List<NotificationDto>>.SuccessResponse(items, "Notifications retrieved."));
+            return Ok(ApiResponse<List<NotificationDto>>.SuccessResponse(items, "List retrieved."));
         }
 
         /// <summary>
         /// Marks a specific notification as read.
         /// </summary>
+        /// <param name="id">Notification GUID.</param>
+        /// <returns>Success response.</returns>
         [HttpPut("{id:guid}/read")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> MarkAsRead(Guid id)
@@ -196,6 +352,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Marks all notifications for the current user as read.
         /// </summary>
+        /// <returns>Success response.</returns>
         [HttpPut("mark-all-read")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> MarkAllAsRead()
@@ -221,6 +378,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Deletes a specific notification.
         /// </summary>
+        /// <param name="id">Notification GUID.</param>
+        /// <returns>Success response.</returns>
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> DeleteNotification(Guid id)
@@ -241,6 +400,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Clears all notifications for the current user.
         /// </summary>
+        /// <returns>Success response.</returns>
         [HttpDelete("clear-all")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> ClearAll()
@@ -260,8 +420,11 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Admin Dispatch Studio: Sends a targeted notification to a single user, category, or all members.
+        /// Admin Dispatch Studio: Sends a targeted notification to a single user, category, or all members
+        /// through the central multi-channel notification engine (In-App, Push, Email, SMS, WhatsApp).
         /// </summary>
+        /// <param name="request">Dispatch request containing audience, content, severity, and selected channels.</param>
+        /// <returns>Multi-channel delivery metrics and diagnostic status.</returns>
         [HttpPost("dispatch")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
@@ -274,113 +437,102 @@ namespace Ozikol_BCC.Api.Controllers
 
             Enum.TryParse<BcpMessagePriority>(request.Priority, true, out var priority);
             Enum.TryParse<BcpMessageCategory>(request.Category, true, out var category);
-
-            var createdCount = 0;
-
-            if (request.TargetType == "BroadcastAll")
+            if (!Enum.TryParse<NotificationSeverity>(request.Severity, true, out var severity))
             {
-                // Create single broadcast notification entity
-                var broadcastNotif = new BcpNotification
-                {
-                    UserId = null,
-                    IsBroadcast = true,
-                    Title = request.Title.Trim(),
-                    Message = request.Message.Trim(),
-                    ActionUrl = request.ActionUrl,
-                    Module = request.Module ?? "Announcement",
-                    Icon = request.Icon ?? "campaign",
-                    Priority = priority,
-                    Category = category,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _dbContext.BcpNotifications.Add(broadcastNotif);
-                await _dbContext.SaveChangesAsync();
-                createdCount = 1;
+                severity = NotificationSeverity.Update;
             }
-            else if (request.TargetType == "Category")
+
+            var channels = NotificationChannels.None;
+            if (request.SendInApp) channels |= NotificationChannels.InApp;
+            if (request.SendPush) channels |= NotificationChannels.Push;
+            if (request.SendEmailCopy) channels |= NotificationChannels.Email;
+            if (request.SendSms) channels |= NotificationChannels.Sms;
+            if (request.SendWhatsApp) channels |= NotificationChannels.WhatsApp;
+
+            // Default to InApp if no specific channel was activated
+            if (channels == NotificationChannels.None)
             {
-                if (!Guid.TryParse(request.TargetCategoryId, out var categoryGuid))
-                {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Valid target category is required."));
-                }
-
-                var targetUsers = await _dbContext.Users
-                    .Where(u => u.BcpUserCategoryId == categoryGuid)
-                    .ToListAsync();
-
-                foreach (var u in targetUsers)
-                {
-                    _dbContext.BcpNotifications.Add(new BcpNotification
-                    {
-                        UserId = u.Id,
-                        IsBroadcast = false,
-                        Title = request.Title.Trim(),
-                        Message = request.Message.Trim(),
-                        ActionUrl = request.ActionUrl,
-                        Module = request.Module ?? "General",
-                        Icon = request.Icon ?? "notifications",
-                        Priority = priority,
-                        Category = category,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    createdCount++;
-                }
-
-                await _dbContext.SaveChangesAsync();
+                channels = NotificationChannels.InApp;
             }
-            else // SingleUser
+
+            NotificationDispatchTarget targetType;
+            Guid? categoryGuid = null;
+
+            if (request.TargetType.Equals("BroadcastAll", StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrEmpty(request.TargetUserId))
+                targetType = NotificationDispatchTarget.BroadcastAll;
+            }
+            else if (request.TargetType.Equals("Category", StringComparison.OrdinalIgnoreCase))
+            {
+                targetType = NotificationDispatchTarget.Category;
+                if (!Guid.TryParse(request.TargetCategoryId, out var parsedCategoryGuid))
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Target user is required."));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Valid target category ID is required."));
                 }
-
-                var targetUser = await _dbContext.Users.FindAsync(request.TargetUserId);
-                if (targetUser == null)
+                categoryGuid = parsedCategoryGuid;
+            }
+            else
+            {
+                targetType = NotificationDispatchTarget.SingleUser;
+                if (string.IsNullOrWhiteSpace(request.TargetUserId))
                 {
-                    return NotFound(ApiResponse<object>.FailureResponse("Target user not found."));
-                }
-
-                var notif = new BcpNotification
-                {
-                    UserId = targetUser.Id,
-                    IsBroadcast = false,
-                    Title = request.Title.Trim(),
-                    Message = request.Message.Trim(),
-                    ActionUrl = request.ActionUrl,
-                    Module = request.Module ?? "General",
-                    Icon = request.Icon ?? "notifications",
-                    Priority = priority,
-                    Category = category,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _dbContext.BcpNotifications.Add(notif);
-                await _dbContext.SaveChangesAsync();
-                createdCount = 1;
-
-                // Optional email dispatch
-                if (request.SendEmailCopy && !string.IsNullOrWhiteSpace(targetUser.Email) && _emailService != null)
-                {
-                    try
-                    {
-                        await _emailService.SendSingleEmailAsync(new Ozikol_BCC.EmailServices.Postmark.Models.EmailRequest
-                        {
-                            To = targetUser.Email,
-                            Subject = request.Title,
-                            HtmlBody = $"<div style='font-family:sans-serif; padding:20px; line-height:1.6;'>" +
-                                       $"<h2 style='color:#0050e5;'>{request.Title}</h2>" +
-                                       $"<p>{request.Message}</p>" +
-                                       $"<p style='color:#64748b; font-size:12px; margin-top:24px;'>This is an official administrative notice.</p>" +
-                                       $"</div>"
-                        });
-                    }
-                    catch { /* non-fatal email log */ }
+                    return BadRequest(ApiResponse<object>.FailureResponse("Target user ID is required for SingleUser dispatch."));
                 }
             }
 
-            return Ok(ApiResponse<object>.SuccessResponse(new { dispatchedCount = createdCount }, "Notification dispatched successfully."));
+            var tenantKey = Request.Headers["X-Tenant-Key"].ToString();
+
+            BcpEventType? eventType = null;
+            if (!string.IsNullOrWhiteSpace(request.EventType) && Enum.TryParse<BcpEventType>(request.EventType, true, out var parsedEvt))
+            {
+                eventType = parsedEvt;
+            }
+
+            var payload = new NotificationDispatchPayload
+            {
+                TargetType = targetType,
+                TargetUserId = request.TargetUserId,
+                TargetCategoryId = categoryGuid,
+                TenantKey = tenantKey,
+                Title = request.Title.Trim(),
+                Message = request.Message.Trim(),
+                Severity = severity,
+                Channels = channels,
+                ActionUrl = request.ActionUrl,
+                Module = request.Module ?? "General",
+                Icon = request.Icon,
+                Category = category,
+                Priority = priority,
+                MetadataJson = request.MetadataJson,
+                SendEmailCopy = request.SendEmailCopy,
+                EventType = eventType,
+                Placeholders = request.Placeholders,
+                InAppTitle = request.InAppTitle,
+                InAppBody = request.InAppBody,
+                PushTitle = request.PushTitle,
+                PushBody = request.PushBody,
+                EmailSubject = request.EmailSubject,
+                EmailHtmlBody = request.EmailHtmlBody,
+                SmsMessage = request.SmsMessage,
+                WhatsAppMessage = request.WhatsAppMessage
+            };
+
+            var dispatchResult = await _notificationDispatcher.DispatchAsync(payload);
+
+            if (!dispatchResult.Success && dispatchResult.Errors.Count > 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(string.Join("; ", dispatchResult.Errors)));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                inAppDispatched = dispatchResult.DispatchedInAppCount,
+                pushDispatched = dispatchResult.DispatchedPushCount,
+                emailDispatched = dispatchResult.DispatchedEmailCount,
+                smsDispatched = dispatchResult.DispatchedSmsCount,
+                whatsAppDispatched = dispatchResult.DispatchedWhatsAppCount,
+                warnings = dispatchResult.Errors
+            }, "Notification dispatched successfully across requested delivery channels."));
         }
     }
 }

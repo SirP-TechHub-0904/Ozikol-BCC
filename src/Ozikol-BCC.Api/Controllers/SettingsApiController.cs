@@ -7,10 +7,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Queries.SettingsQueries;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Microsoft.AspNetCore.SignalR;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -26,12 +29,44 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IMediator _mediator;
         private readonly DashboardDbContext _db;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? _activityLogger;
+        private readonly IHubContext<NotificationHub>? _notificationHub;
+        private readonly ITenantFeatureGateService? _featureGateService;
+        private readonly ITenantProvider? _tenantProvider;
 
-        public SettingsApiController(IMediator mediator, DashboardDbContext db, ICloudinaryService cloudinaryService)
+        public SettingsApiController(
+            IMediator mediator,
+            DashboardDbContext db,
+            ICloudinaryService cloudinaryService,
+            Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null,
+            IHubContext<NotificationHub>? notificationHub = null,
+            ITenantFeatureGateService? featureGateService = null,
+            ITenantProvider? tenantProvider = null)
         {
             _mediator = mediator;
             _db = db;
             _cloudinaryService = cloudinaryService;
+            _activityLogger = activityLogger;
+            _notificationHub = notificationHub;
+            _featureGateService = featureGateService;
+            _tenantProvider = tenantProvider;
+        }
+
+        private string? ResolveCurrentTenantKey()
+        {
+            var candidate = _tenantProvider?.CurrentTenant;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+
+            var headerKey = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(headerKey)) return headerKey;
+
+            var host = HttpContext.Request.Host.Host.ToLowerInvariant();
+            var parts = host.Split('.');
+            if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
+            {
+                return parts[0];
+            }
+            return null;
         }
 
         /// <summary>
@@ -228,6 +263,15 @@ namespace Ozikol_BCC.Api.Controllers
             config.AlumniAlias = !string.IsNullOrWhiteSpace(dto.AlumniAlias) ? dto.AlumniAlias.Trim() : "Alumni";
 
             await _db.SaveChangesAsync();
+
+            // Broadcast real-time terminology aliases update to all connected clients in this tenant
+            await BroadcastToTenantAsync("TenantAliasesUpdated", dto);
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync("UPDATE_TERMINOLOGY_ALIASES", "Updated workspace custom terminology aliases.", "Settings", metadata: dto);
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Terminology aliases updated successfully."));
         }
 
@@ -266,6 +310,8 @@ namespace Ozikol_BCC.Api.Controllers
                 SecondaryColor = "#1f6bff",
                 LoginBackgroundImageUrl = site?.LoginBackgroundImageUrl ?? "",
                 LoginBackgroundImageKey = site?.LoginBackgroundImageKey ?? "",
+                LoginLayout = !string.IsNullOrWhiteSpace(site?.LoginLayout) ? site.LoginLayout : "centered",
+                AllowPublicRegistration = _db.MisConfigurationSettings.Select(c => (bool?)c.AllowPublicRegistration).FirstOrDefault() ?? true,
                 UseNormalLogoInLogin = site?.UseNormalLogoInLogin ?? true,
                 UseWhiteLogoInLogin = site?.UseWhiteLogoInLogin ?? false,
                 LoginTitle = site?.LoginTitle ?? "",
@@ -275,7 +321,21 @@ namespace Ozikol_BCC.Api.Controllers
                 ActivateLogin = site?.ActivateLogin ?? true,
                 ActivateLoginInMenu = site?.ActivateLoginInMenu ?? true,
                 ActivateLoginInFooter = site?.ActivateLoginInFooter ?? true,
-                LoginButtonText = !string.IsNullOrWhiteSpace(site?.LoginButtonText) ? site.LoginButtonText : "Sign In"
+                LoginButtonText = !string.IsNullOrWhiteSpace(site?.LoginButtonText) ? site.LoginButtonText : "Sign In",
+                EnableBreakingNewsRibon = site?.EnableBreakingNewsRibon ?? false,
+                BreakingNewsRibonTitle = !string.IsNullOrWhiteSpace(site?.BreakingNewsRibonTitle) ? site.BreakingNewsRibonTitle : "BREAKING NEWS",
+                BreakingNewsRibonPosition = !string.IsNullOrWhiteSpace(site?.BreakingNewsRibonPosition) ? site.BreakingNewsRibonPosition : "after_menu",
+                EnableCookieConsent = site?.EnableCookieConsent ?? true,
+                CookieConsentTitle = !string.IsNullOrWhiteSpace(site?.CookieConsentTitle) ? site.CookieConsentTitle : "Cookie Preferences & Privacy",
+                CookieConsentMessage = !string.IsNullOrWhiteSpace(site?.CookieConsentMessage) ? site.CookieConsentMessage : "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.",
+                CookieConsentAcceptText = !string.IsNullOrWhiteSpace(site?.CookieConsentAcceptText) ? site.CookieConsentAcceptText : "Accept All",
+                CookieConsentDeclineText = !string.IsNullOrWhiteSpace(site?.CookieConsentDeclineText) ? site.CookieConsentDeclineText : "Decline",
+                CookieConsentPolicyUrl = !string.IsNullOrWhiteSpace(site?.CookieConsentPolicyUrl) ? site.CookieConsentPolicyUrl : "/privacy-policy",
+                EnableWhatsAppChat = site?.EnableWhatsAppChat ?? false,
+                WhatsAppNumber = site?.WhatsAppNumber ?? "",
+                WhatsAppPromptMessage = !string.IsNullOrWhiteSpace(site?.WhatsAppPromptMessage) ? site.WhatsAppPromptMessage : "Hello! I have an inquiry regarding your services.",
+                WhatsAppWidgetTitle = !string.IsNullOrWhiteSpace(site?.WhatsAppWidgetTitle) ? site.WhatsAppWidgetTitle : "Chat with Us",
+                WhatsAppWidgetSubtitle = !string.IsNullOrWhiteSpace(site?.WhatsAppWidgetSubtitle) ? site.WhatsAppWidgetSubtitle : "Typically replies within minutes"
             };
 
             return Ok(ApiResponse<BrandSettingsResponseDto>.SuccessResponse(data, "Brand identity settings retrieved."));
@@ -326,6 +386,7 @@ namespace Ozikol_BCC.Api.Controllers
             site.ReloaderIconKey = dto.ReloaderIconKey;
             site.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
             site.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
+            site.LoginLayout = !string.IsNullOrWhiteSpace(dto.LoginLayout) ? dto.LoginLayout : "centered";
             site.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
             site.UseWhiteLogoInLogin = dto.UseWhiteLogoInLogin;
             site.LoginTitle = dto.LoginTitle;
@@ -336,9 +397,51 @@ namespace Ozikol_BCC.Api.Controllers
             site.ActivateLoginInMenu = dto.ActivateLoginInMenu;
             site.ActivateLoginInFooter = dto.ActivateLoginInFooter;
             site.LoginButtonText = !string.IsNullOrWhiteSpace(dto.LoginButtonText) ? dto.LoginButtonText : "Sign In";
+
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (config != null)
+            {
+                config.AllowPublicRegistration = dto.AllowPublicRegistration;
+            }
+            site.EnableBreakingNewsRibon = dto.EnableBreakingNewsRibon;
+            site.BreakingNewsRibonTitle = !string.IsNullOrWhiteSpace(dto.BreakingNewsRibonTitle) ? dto.BreakingNewsRibonTitle.Trim() : "BREAKING NEWS";
+            site.BreakingNewsRibonPosition = !string.IsNullOrWhiteSpace(dto.BreakingNewsRibonPosition) ? dto.BreakingNewsRibonPosition.Trim() : "after_menu";
+            site.EnableCookieConsent = dto.EnableCookieConsent;
+            site.CookieConsentTitle = !string.IsNullOrWhiteSpace(dto.CookieConsentTitle) ? dto.CookieConsentTitle.Trim() : "We Value Your Privacy";
+            site.CookieConsentMessage = !string.IsNullOrWhiteSpace(dto.CookieConsentMessage) ? dto.CookieConsentMessage.Trim() : "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.";
+            site.CookieConsentAcceptText = !string.IsNullOrWhiteSpace(dto.CookieConsentAcceptText) ? dto.CookieConsentAcceptText.Trim() : "Accept All";
+            site.CookieConsentDeclineText = !string.IsNullOrWhiteSpace(dto.CookieConsentDeclineText) ? dto.CookieConsentDeclineText.Trim() : "Decline";
+            site.CookieConsentPolicyUrl = !string.IsNullOrWhiteSpace(dto.CookieConsentPolicyUrl) ? dto.CookieConsentPolicyUrl.Trim() : "/privacy-policy";
+            site.EnableWhatsAppChat = dto.EnableWhatsAppChat;
+            site.WhatsAppNumber = dto.WhatsAppNumber?.Trim();
+            site.WhatsAppPromptMessage = !string.IsNullOrWhiteSpace(dto.WhatsAppPromptMessage) ? dto.WhatsAppPromptMessage.Trim() : "Hello! I have an inquiry regarding your services.";
+            site.WhatsAppWidgetTitle = !string.IsNullOrWhiteSpace(dto.WhatsAppWidgetTitle) ? dto.WhatsAppWidgetTitle.Trim() : "Chat with Us";
+            site.WhatsAppWidgetSubtitle = !string.IsNullOrWhiteSpace(dto.WhatsAppWidgetSubtitle) ? dto.WhatsAppWidgetSubtitle.Trim() : "Typically replies within minutes";
             site.UpdatedAtUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            // Broadcast real-time brand identity update to all connected clients across Web, Desktop, and Mobile
+            var brandBroadcastPayload = new
+            {
+                companyName = site.CompanyName,
+                companyNameAbbreviation = site.CompanyNameAbbreviation,
+                companyLogoUrl = site.CompanyLogoUrl,
+                companyWhiteLogoUrl = site.CompanyWhiteLogoUrl,
+                companyIconUrl = site.CompanyIconUrl,
+                loginLayout = site.LoginLayout,
+                loginBackgroundImageUrl = site.LoginBackgroundImageUrl,
+                primaryColor = "#0050e5",
+                secondaryColor = "#1f6bff",
+                updatedAtUtc = site.UpdatedAtUtc
+            };
+            await BroadcastToTenantAsync("TenantBrandUpdated", brandBroadcastPayload);
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync("UPDATE_BRAND_SETTINGS", "Updated workspace branding identity, colors, and logos.", "Settings", metadata: dto);
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Brand identity updated successfully."));
         }
 
@@ -359,9 +462,44 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPut("appearance")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public IActionResult UpdateAppearanceSettings([FromBody] AppearanceUpdateRequestDto dto)
+        public async Task<IActionResult> UpdateAppearanceSettings([FromBody] AppearanceUpdateRequestDto dto)
         {
+            // Broadcast real-time appearance update to all connected clients in this tenant
+            await BroadcastToTenantAsync("TenantAppearanceUpdated", dto);
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Appearance settings updated successfully."));
+        }
+
+        /// <summary>
+        /// Helper to broadcast a named event and payload to all sockets connected to this tenant's real-time room.
+        /// </summary>
+        private async Task BroadcastToTenantAsync(string eventName, object payload)
+        {
+            try
+            {
+                var tenantKey = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    tenantKey = HttpContext.Request.Headers["X-Tenant-Domain"].ToString()?.Trim();
+                }
+                if (string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    tenantKey = User?.FindFirst("tenant_key")?.Value ?? User?.FindFirst("TenantKey")?.Value;
+                }
+
+                if (!string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    var groupName = $"tenant_{tenantKey.ToLowerInvariant()}";
+                    if (_notificationHub != null)
+                    {
+                        await _notificationHub.Clients.Group(groupName).SendAsync(eventName, payload);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Real-time broadcast failures should never block the primary HTTP transaction
+                Console.WriteLine($"[SignalR Broadcast Warning] Failed to dispatch {eventName}: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -429,14 +567,59 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves status of platform feature flags.
+        /// Retrieves status of platform feature flags dynamically evaluated against Central Master Catalog subscriptions.
         /// </summary>
         [HttpGet("features")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public IActionResult GetFeatureFlags()
+        public async Task<IActionResult> GetFeatureFlags(CancellationToken cancellationToken)
         {
-            var data = new { enableChat = true, enableEVoting = true, enableGrants = true, enableAts = true };
-            return Ok(ApiResponse<object>.SuccessResponse(data, "Feature flags retrieved."));
+            var tenantKey = ResolveCurrentTenantKey();
+            if (!string.IsNullOrWhiteSpace(tenantKey) && _featureGateService != null)
+            {
+                var entitlements = await _featureGateService.GetTenantFeatureEntitlementsAsync(tenantKey, cancellationToken);
+                var activeCodes = entitlements.ActiveFeatureCodes;
+
+                var dynamicData = new
+                {
+                    enableChat = activeCodes.Contains("bcp-community-messenger"),
+                    enableEVoting = activeCodes.Contains("bcp-elections-evoting"),
+                    enableGrants = activeCodes.Contains("bcp-grant-ledger") || activeCodes.Contains("bcp-proposal-pipeline"),
+                    enableAts = activeCodes.Contains("bcp-recruitment-hiring"),
+                    activeFeatures = activeCodes.ToList(),
+                    features = entitlements.Features
+                };
+                return Ok(ApiResponse<object>.SuccessResponse(dynamicData, "Tenant feature entitlements retrieved."));
+            }
+
+            var fallback = new
+            {
+                enableChat = true,
+                enableEVoting = true,
+                enableGrants = true,
+                enableAts = true,
+                activeFeatures = new List<string>(),
+                features = new Dictionary<string, object>()
+            };
+            return Ok(ApiResponse<object>.SuccessResponse(fallback, "Default feature flags retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves upcoming modular capability expiration notices.
+        /// Strictly visible to tenant administrators (SuperAdmin, Admin).
+        /// </summary>
+        [HttpGet("feature-expirations")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        [ProducesResponseType(typeof(ApiResponse<List<FeatureExpirationNoticeDto>>), 200)]
+        public async Task<IActionResult> GetFeatureExpirations(CancellationToken cancellationToken)
+        {
+            var tenantKey = ResolveCurrentTenantKey();
+            if (string.IsNullOrWhiteSpace(tenantKey) || _featureGateService == null)
+            {
+                return Ok(ApiResponse<List<FeatureExpirationNoticeDto>>.SuccessResponse(new List<FeatureExpirationNoticeDto>(), "No feature expirations detected."));
+            }
+
+            var notices = await _featureGateService.GetExpiringFeaturesAsync(tenantKey, daysThreshold: 14, cancellationToken);
+            return Ok(ApiResponse<List<FeatureExpirationNoticeDto>>.SuccessResponse(notices, "Feature expirations retrieved."));
         }
 
         /// <summary>
@@ -659,6 +842,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string SecondaryColor { get; set; } = "#1f6bff";
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
+        public string LoginLayout { get; set; } = "centered";
+        public bool AllowPublicRegistration { get; set; } = true;
         public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
         public string LoginTitle { get; set; } = string.Empty;
@@ -669,6 +854,20 @@ namespace Ozikol_BCC.Api.Controllers
         public bool ActivateLoginInMenu { get; set; } = true;
         public bool ActivateLoginInFooter { get; set; } = true;
         public string LoginButtonText { get; set; } = "Sign In";
+        public bool EnableBreakingNewsRibon { get; set; } = false;
+        public string BreakingNewsRibonTitle { get; set; } = "BREAKING NEWS";
+        public string BreakingNewsRibonPosition { get; set; } = "after_menu";
+        public bool EnableCookieConsent { get; set; } = false;
+        public string CookieConsentTitle { get; set; } = "We Value Your Privacy";
+        public string CookieConsentMessage { get; set; } = "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.";
+        public string CookieConsentAcceptText { get; set; } = "Accept All";
+        public string CookieConsentDeclineText { get; set; } = "Decline";
+        public string CookieConsentPolicyUrl { get; set; } = "/privacy-policy";
+        public bool EnableWhatsAppChat { get; set; } = false;
+        public string WhatsAppNumber { get; set; } = string.Empty;
+        public string WhatsAppPromptMessage { get; set; } = "Hello! I have an inquiry regarding your services.";
+        public string WhatsAppWidgetTitle { get; set; } = "Chat with Us";
+        public string WhatsAppWidgetSubtitle { get; set; } = "Typically replies within minutes";
     }
 
     public class BrandSettingsUpdateRequestDto
@@ -690,6 +889,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string ReloaderIconKey { get; set; } = string.Empty;
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
+        public string LoginLayout { get; set; } = "centered";
+        public bool AllowPublicRegistration { get; set; } = true;
         public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
         public string LoginTitle { get; set; } = string.Empty;
@@ -700,6 +901,20 @@ namespace Ozikol_BCC.Api.Controllers
         public bool ActivateLoginInMenu { get; set; } = true;
         public bool ActivateLoginInFooter { get; set; } = true;
         public string LoginButtonText { get; set; } = "Sign In";
+        public bool EnableBreakingNewsRibon { get; set; } = false;
+        public string BreakingNewsRibonTitle { get; set; } = "BREAKING NEWS";
+        public string BreakingNewsRibonPosition { get; set; } = "after_menu";
+        public bool EnableCookieConsent { get; set; } = false;
+        public string CookieConsentTitle { get; set; } = "We Value Your Privacy";
+        public string CookieConsentMessage { get; set; } = "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.";
+        public string CookieConsentAcceptText { get; set; } = "Accept All";
+        public string CookieConsentDeclineText { get; set; } = "Decline";
+        public string CookieConsentPolicyUrl { get; set; } = "/privacy-policy";
+        public bool EnableWhatsAppChat { get; set; } = false;
+        public string? WhatsAppNumber { get; set; }
+        public string WhatsAppPromptMessage { get; set; } = "Hello! I have an inquiry regarding your services.";
+        public string WhatsAppWidgetTitle { get; set; } = "Chat with Us";
+        public string WhatsAppWidgetSubtitle { get; set; } = "Typically replies within minutes";
     }
 
     public class AppearanceUpdateRequestDto

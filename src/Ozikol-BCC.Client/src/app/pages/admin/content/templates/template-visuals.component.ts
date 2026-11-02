@@ -13,6 +13,7 @@ import { FooterVisualComponent } from './visual-categories/footer-visual/footer-
 import { BlogVisualComponent } from './visual-categories/blog-visual/blog-visual.component';
 import { BlogDetailVisualComponent } from './visual-categories/blog-detail-visual/blog-detail-visual.component';
 import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
+import { TemplateSecurityModalComponent } from './template-security-modal/template-security-modal.component';
 
 /**
  * Definition descriptor for supported template categories in CMS Template Visual Studio.
@@ -45,7 +46,8 @@ export interface CategoryPresetItem {
     FooterVisualComponent,
     BlogVisualComponent,
     BlogDetailVisualComponent,
-    UniversalPreviewModalComponent
+    UniversalPreviewModalComponent,
+    TemplateSecurityModalComponent
   ],
   template: `
     <div class="visuals-studio-page">
@@ -200,6 +202,9 @@ export interface CategoryPresetItem {
 
       <!-- Universal Centralized Template Preview Modal -->
       <app-universal-preview-modal></app-universal-preview-modal>
+
+      <!-- Pre-Flight Code Integrity & Security Scanner Modal -->
+      <app-template-security-modal></app-template-security-modal>
     </div>
   `,
   styles: [`
@@ -712,6 +717,9 @@ export class TemplateVisualsComponent implements OnInit {
   /**
    * Handles user selecting a category from the Category Selection dropdown.
    * Reveals the corresponding visual editor workspace and binds any existing installed template.
+   * Singleton categories (menu, hero, breadcrumb, footer, blog, blog_detail) automatically switch to
+   * edit mode if an installed template exists.
+   * Multi-instance categories ('body') remain in create mode to allow authoring unlimited sections.
    * @param catId Selected category key.
    */
   onCategoryChange(catId: string): void {
@@ -725,7 +733,15 @@ export class TemplateVisualsComponent implements OnInit {
     const normalized = this.normalizeCategoryKey(catId);
     this.selectedCategory = normalized;
 
-    // Check if an installed template exists for this category
+    // Body category is multi-instance: tenants can author unlimited body section templates.
+    // It must NEVER auto-bind to a singleton template on dropdown selection; it always opens in Create mode.
+    if (normalized === 'body') {
+      this.currentTemplateId = undefined;
+      this.isEditMode = false;
+      return;
+    }
+
+    // Singleton categories: check if an installed template exists for this category
     const matchingTemplate = this.installedTemplates.find(t => {
       const c = this.normalizeCategoryKey(t.category || t.categoryKey);
       return c === normalized;
@@ -742,19 +758,52 @@ export class TemplateVisualsComponent implements OnInit {
 
   /**
    * Normalizes incoming category strings to canonical taxonomy keys.
+   * Robustly handles hyphens, underscores, spaces, plurals, and aliases.
    * @param cat Raw category key or name.
-   * @returns Canonical taxonomy key.
+   * @returns Canonical taxonomy key, or empty string if unrecognized.
    */
-  normalizeCategoryKey(cat: string): 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail' {
-    const lower = (cat || '').toLowerCase().trim();
-    if (lower === 'navigation' || lower === 'nav' || lower === 'menu') return 'menu';
-    if (lower === 'hero' || lower === 'heros') return 'hero';
-    if (lower === 'breadcrumb' || lower === 'breadcrumbs') return 'breadcrumb';
-    if (lower === 'footer' || lower === 'footers') return 'footer';
-    if (lower === 'blog_detail' || lower === 'article' || lower === 'blogdetail') return 'blog_detail';
-    if (lower === 'blog' || lower === 'blogs' || lower === 'articles') return 'blog';
-    if (lower === 'body' || lower === 'bodysections' || lower === 'section' || lower === 'sections' || lower === 'cards' || lower === 'features' || lower === 'faq') return 'body';
-    return 'body';
+  normalizeCategoryKey(cat: string): 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail' | '' {
+    const raw = (cat || '').toLowerCase().trim();
+    if (!raw) return '';
+
+    // Normalize hyphens and spaces to underscores
+    const normalized = raw.replace(/[-\s]+/g, '_');
+
+    if (normalized === 'navigation' || normalized === 'nav' || normalized === 'menu') return 'menu';
+    if (normalized === 'hero' || normalized === 'heros' || normalized.startsWith('hero_')) return 'hero';
+    if (normalized === 'breadcrumb' || normalized === 'breadcrumbs' || normalized.startsWith('breadcrumb_')) return 'breadcrumb';
+    if (normalized === 'footer' || normalized === 'footers') return 'footer';
+    if (
+      normalized === 'blog_detail' ||
+      normalized === 'blog_details' ||
+      normalized === 'blogdetail' ||
+      normalized === 'blogdetails' ||
+      normalized === 'article' ||
+      normalized === 'article_detail' ||
+      normalized === 'article_details' ||
+      normalized.includes('detail')
+    ) return 'blog_detail';
+    if (
+      normalized === 'blog' ||
+      normalized === 'blogs' ||
+      normalized === 'blog_feed' ||
+      normalized === 'articles'
+    ) return 'blog';
+    if (
+      normalized === 'body' ||
+      normalized === 'body_section' ||
+      normalized === 'body_sections' ||
+      normalized === 'bodysection' ||
+      normalized === 'bodysections' ||
+      normalized === 'section' ||
+      normalized === 'sections' ||
+      normalized === 'cards' ||
+      normalized === 'features' ||
+      normalized === 'faq' ||
+      normalized.startsWith('body_')
+    ) return 'body';
+
+    return '';
   }
 
   /**

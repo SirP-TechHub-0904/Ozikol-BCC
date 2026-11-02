@@ -30,15 +30,15 @@
     --admin-bg-surface-elevated: #1e293b;
     --admin-bg-hover: #1f2d42;
     --admin-border: rgba(255, 255, 255, 0.08);
-    --admin-border-focus: rgba(229, 23, 63, 0.5);
+    --admin-border-focus: rgba(0, 80, 229, 0.5);
     --admin-text: #f9fafb;
     --admin-text-muted: #94a3b8;
     --admin-text-dim: #64748b;
     
-    --admin-primary: #e5173f;
-    --admin-primary-hover: #c90f33;
-    --admin-primary-light: rgba(229, 23, 63, 0.12);
-    --admin-primary-glow: rgba(229, 23, 63, 0.25);
+    --admin-primary: #0050e5;
+    --admin-primary-hover: #003bb5;
+    --admin-primary-light: rgba(0, 80, 229, 0.12);
+    --admin-primary-glow: rgba(0, 80, 229, 0.25);
     
     --admin-success: #10b981;
     --admin-success-light: rgba(16, 185, 129, 0.12);
@@ -71,11 +71,11 @@
     --admin-bg-surface-elevated: #f1f5f9;
     --admin-bg-hover: #e2e8f0;
     --admin-border: rgba(0, 0, 0, 0.08);
-    --admin-border-focus: rgba(229, 23, 63, 0.5);
+    --admin-border-focus: rgba(0, 80, 229, 0.5);
     --admin-text: #0f172a;
     --admin-text-muted: #64748b;
     --admin-text-dim: #94a3b8;
-    --admin-primary-light: rgba(229, 23, 63, 0.08);
+    --admin-primary-light: rgba(0, 80, 229, 0.08);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
@@ -1663,7 +1663,7 @@ textarea.form-control,
 [data-theme="dark"] .admin-textarea:focus {
     background-color: #1e293b;
     border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(229, 23, 63, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.25);
     color: #ffffff;
 }
 
@@ -1739,9 +1739,9 @@ textarea.form-control,
 }
 
 .oz-modal-icon-badge.danger {
-    background: rgba(229, 23, 63, 0.12);
-    color: #e5173f;
-    border: 1px solid rgba(229, 23, 63, 0.25);
+    background: rgba(0, 80, 229, 0.12);
+    color: #0050e5;
+    border: 1px solid rgba(0, 80, 229, 0.25);
 }
 
 .oz-modal-icon-badge.warning {
@@ -1810,13 +1810,13 @@ textarea.form-control,
 }
 
 .oz-modal-btn-danger {
-    background: #e5173f;
+    background: #0050e5;
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(229, 23, 63, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 80, 229, 0.3);
 }
 
 .oz-modal-btn-danger:hover {
-    background: #be123c;
+    background: #003db3;
 }
 
 .oz-modal-btn-primary {
@@ -1880,7 +1880,7 @@ textarea.form-control,
 }
 
 .oz-toast.success .oz-toast-icon { color: #059669; }
-.oz-toast.error .oz-toast-icon { color: #e5173f; }
+.oz-toast.error .oz-toast-icon { color: #0050e5; }
 .oz-toast.warning .oz-toast-icon { color: #d97706; }
 .oz-toast.info .oz-toast-icon { color: #2563eb; }
 

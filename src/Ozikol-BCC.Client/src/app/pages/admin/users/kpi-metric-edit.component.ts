@@ -72,7 +72,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
 
           <div class="card-footer">
-            <a routerLink="/admin/users/kpi" class="btn btn-outline">Cancel</a>
+            <a routerLink="/users/console/kpi" class="btn btn-outline">Cancel</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.title.trim()">
               <span *ngIf="!isSaving" class="material-symbols-outlined">save</span>
               <span>{{ isSaving ? 'Saving Indicator...' : (isEditMode ? 'Save Changes' : 'Create KPI Metric') }}</span>
@@ -105,9 +105,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn { height: 40px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class KpiMetricEditComponent implements OnInit {
@@ -142,7 +145,7 @@ export class KpiMetricEditComponent implements OnInit {
         text: 'Back to KPI Hub',
         icon: 'arrow_back',
         isPrimary: false,
-        routerLink: '/admin/users/kpi'
+        routerLink: '/users/console/kpi'
       }
     ];
 
@@ -163,7 +166,7 @@ export class KpiMetricEditComponent implements OnInit {
       error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load KPI metric.');
-        this.router.navigate(['/admin/users/kpi']);
+        this.router.navigate(['/users/console/kpi']);
       }
     });
   }
@@ -180,7 +183,7 @@ export class KpiMetricEditComponent implements OnInit {
         next: () => {
           this.isSaving = false;
           this.toast.success(`KPI Metric '${this.model.title}' updated successfully!`);
-          this.router.navigate(['/admin/users/kpi']);
+          this.router.navigate(['/users/console/kpi']);
         },
         error: (err) => {
           this.isSaving = false;
@@ -192,7 +195,7 @@ export class KpiMetricEditComponent implements OnInit {
         next: () => {
           this.isSaving = false;
           this.toast.success(`KPI Metric '${this.model.title}' created successfully!`);
-          this.router.navigate(['/admin/users/kpi']);
+          this.router.navigate(['/users/console/kpi']);
         },
         error: (err) => {
           this.isSaving = false;

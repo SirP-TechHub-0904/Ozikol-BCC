@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { TenantStateService } from '../../../core/services/tenant-state.service';
+import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
 
 @Component({
   selector: 'app-login',
@@ -23,12 +24,22 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
       <div class="login-card" *ngIf="!workspaceNotFound">
         <!-- Logo & Header -->
         <div class="card-header">
-          <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
-            <img *ngIf="brandIconUrl" [src]="brandIconUrl" [alt]="brandCompanyName" class="brand-logo-main" />
-            <span *ngIf="!brandIconUrl && brandInitials" class="brand-initials">{{ brandInitials }}</span>
+          <!-- Official Brand Logo if uploaded, or Brand Name if logo is null -->
+          <div class="brand-identity-row">
+            <img 
+              *ngIf="brandLogoUrl && !logoLoadFailed" 
+              [src]="brandLogoUrl" 
+              [alt]="brandCompanyName || 'Workspace'" 
+              class="brand-logo-top" 
+              (error)="logoLoadFailed = true"
+            />
+            <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+              {{ brandCompanyName || 'Workspace' }}
+            </span>
           </div>
-          <h2 class="title">Sign In to Workspace</h2>
-          <p class="subtitle">Enter your credentials to access your organization portal.</p>
+
+          <h2 class="title">{{ loginTitle || 'Sign In' }}</h2>
+          <p class="subtitle" *ngIf="loginNote">{{ loginNote }}</p>
         </div>
 
         <!-- Alert Error Banner -->
@@ -95,12 +106,12 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
           <button type="submit" [disabled]="loading" class="btn-submit">
             <span *ngIf="loading" class="spinner"></span>
             <span *ngIf="!loading" class="material-symbols-outlined">login</span>
-            <span>{{ loading ? 'Authenticating...' : 'Sign In to Dashboard' }}</span>
+            <span>{{ loading ? 'Authenticating...' : (loginButtonText || 'Sign In') }}</span>
           </button>
         </form>
 
         <div class="card-footer">
-          <p class="signup-prompt">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
+          <p class="signup-prompt" *ngIf="allowPublicRegistration">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
             Return to Home
@@ -112,9 +123,21 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
       <div class="modal-backdrop" *ngIf="showForceChangeModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar">
-              <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-img" />
-              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">lock_reset</span>
+              <span class="material-symbols-outlined">lock_reset</span>
             </div>
             <h3 class="force-modal-title">Temporary Password Detected</h3>
             <p class="force-modal-subtitle">For your security, please update your temporary credentials to a permanent password before accessing the portal.</p>
@@ -189,6 +212,19 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
       <div class="modal-backdrop" *ngIf="showOtpVerifyModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar">
               <span class="material-symbols-outlined">mark_email_unread</span>
             </div>
@@ -246,6 +282,19 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
       <div class="modal-backdrop" *ngIf="showMfaModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar" style="background:#0050e5; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
               <span class="material-symbols-outlined" style="color:#fff; font-size:28px;">security</span>
             </div>
@@ -295,8 +344,9 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
               <span>{{ mfaLoading ? 'Verifying...' : 'Verify & Sign In' }}</span>
             </button>
 
-            <!-- 60-Second Cooldown Resend for SMS / Email -->
+            <!-- 60-Second Cooldown Resend for SMS / Email Only -->
             <button 
+              *ngIf="canResendMfaCode()"
               type="button" 
               class="btn-resend-otp" 
               (click)="onResendLoginMfa()" 
@@ -308,6 +358,11 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
               <span *ngIf="mfaResendCountdown > 0">Resend Code in {{ mfaResendCountdown }}s</span>
               <span *ngIf="mfaResendCountdown === 0 && !mfaResendLoading">Didn't receive code? Resend Code</span>
             </button>
+
+            <!-- Tip for TOTP / Authenticator App Users -->
+            <p *ngIf="!canResendMfaCode()" style="margin: 4px auto 10px auto; font-size: 12px; color: #64748b; text-align: center; line-height: 1.4;">
+              Codes rotate automatically every 30 seconds in your app. You can also enter one of your single-use backup recovery keys.
+            </p>
 
             <button 
               type="button" 
@@ -349,6 +404,23 @@ import { TenantStateService } from '../../../core/services/tenant-state.service'
       text-align: center;
       margin-bottom: 24px;
       width: 100%;
+    }
+    .brand-identity-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .brand-logo-top {
+      max-height: 48px;
+      max-width: 220px;
+      object-fit: contain;
+    }
+    .brand-company-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
     }
     .brand-avatar {
       width: 58px;
@@ -813,12 +885,20 @@ export class LoginComponent implements OnInit {
   loading = false;
   errorMessage = '';
   workspaceNotFound = false;
+  allowPublicRegistration = true;
 
   // Brand Logo, Icon & Name
   brandLogoUrl = '';
   brandIconUrl = '';
   brandCompanyName = '';
   brandInitials = '';
+  logoLoadFailed = false;
+
+  // Auth Settings & Dynamic Copy
+  loginTitle = '';
+  loginNote = '';
+  loginButtonText = 'Sign In';
+  loginNoteFooter = '';
 
   // Forced Password Change State
   showForceChangeModal = false;
@@ -841,6 +921,7 @@ export class LoginComponent implements OnInit {
   showMfaModal = false;
   mfaCode = '';
   mfaUserId = '';
+  mfaProvider = '';
   mfaProviderLabel = '';
   trustThisDevice = false;
   mfaLoading = false;
@@ -882,6 +963,13 @@ export class LoginComponent implements OnInit {
           const rawIcon = res.data.companyIconUrl;
           this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : (this.brandLogoUrl || '');
           this.brandInitials = res.data.companyNameAbbreviation || (this.brandCompanyName ? this.brandCompanyName.substring(0, 2).toUpperCase() : '');
+          if (res.data.allowPublicRegistration !== undefined) {
+            this.allowPublicRegistration = res.data.allowPublicRegistration;
+          }
+          this.loginTitle = res.data.loginTitle || '';
+          this.loginNote = res.data.loginNote || '';
+          this.loginButtonText = res.data.loginButtonText || 'Sign In';
+          this.loginNoteFooter = res.data.loginNoteFooter || '';
         }
       },
       error: (err) => {
@@ -941,17 +1029,29 @@ export class LoginComponent implements OnInit {
         // Check for MFA requirement
         if (res?.data?.requiresMfa) {
           this.mfaUserId = res.data.userId;
-          this.mfaProviderLabel = this.getFriendlyMfaProvider(res.data.mfaProvider);
+          this.mfaProvider = res.data.mfaProvider || '';
+          this.mfaProviderLabel = this.getFriendlyMfaProvider(this.mfaProvider);
           this.mfaCode = '';
           this.mfaError = '';
           this.mfaSuccessMessage = '';
           this.showMfaModal = true;
-          this.startMfaCountdown();
+          if (this.canResendMfaCode()) {
+            this.startMfaCountdown();
+          }
           return;
         }
 
         if (res?.data?.token) {
           this.storeLoginSession(res.data);
+
+          // Check if user has incomplete registration onboarding stages to finish
+          if (res.data.requiresOnboarding) {
+            const resumeStep = res.data.onboardingStep || 2;
+            this.router.navigate(['/auth/register'], {
+              queryParams: { resume: 'true', step: resumeStep }
+            });
+            return;
+          }
 
           if (res.data.mustChangePassword) {
             this.showForceChangeModal = true;
@@ -991,6 +1091,11 @@ export class LoginComponent implements OnInit {
       case 'Email': return 'Email OTP';
       default: return 'Authenticator App / OTP';
     }
+  }
+
+  canResendMfaCode(): boolean {
+    const p = (this.mfaProvider || '').toLowerCase();
+    return p === 'email' || p === 'sms';
   }
 
   onVerifyLoginMfa(): void {
@@ -1039,6 +1144,7 @@ export class LoginComponent implements OnInit {
     this.mfaError = '';
     this.mfaSuccessMessage = '';
     this.mfaUserId = '';
+    this.mfaProvider = '';
     this.loading = false;
     if (this.mfaResendInterval) {
       clearInterval(this.mfaResendInterval);
@@ -1060,7 +1166,7 @@ export class LoginComponent implements OnInit {
   }
 
   onResendLoginMfa(): void {
-    if (!this.mfaUserId || this.mfaResendLoading || this.mfaResendCountdown > 0) return;
+    if (!this.canResendMfaCode() || !this.mfaUserId || this.mfaResendLoading || this.mfaResendCountdown > 0) return;
     this.mfaResendLoading = true;
     this.mfaError = '';
     this.mfaSuccessMessage = '';
@@ -1119,26 +1225,28 @@ export class LoginComponent implements OnInit {
   }
 
   private navigateAfterLogin(): void {
-    const rolesJson = localStorage.getItem('user_roles');
-    let isAdmin = false;
-    if (rolesJson) {
-      try {
-        const roles: string[] = JSON.parse(rolesJson);
-        isAdmin = roles.some(r => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'].includes(r.toLowerCase()));
-      } catch {}
-    }
-
+    const userRoles = getStoredUserRoles();
     const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-    // Only navigate to returnUrl if it's a specific deep link, not the generic workspace URL
-    if (returnUrl && typeof returnUrl === 'string' && !returnUrl.startsWith('/auth') && !returnUrl.includes('login') && !returnUrl.includes('access-denied') && returnUrl !== '/dashboard/workspace' && returnUrl !== '/') {
-      this.router.navigateByUrl(returnUrl);
-    } else {
-      if (isAdmin) {
-        this.router.navigate(['/dashboard/console']);
-      } else {
-        this.router.navigate(['/dashboard/workspace']);
+
+    // Only navigate to returnUrl if it's a specific authorized deep link
+    if (
+      returnUrl && 
+      typeof returnUrl === 'string' && 
+      !returnUrl.startsWith('/auth') && 
+      !returnUrl.includes('login') && 
+      !returnUrl.includes('access-denied') && 
+      returnUrl !== '/dashboard/workspace' && 
+      returnUrl !== '/'
+    ) {
+      if (canAccessRoute(undefined, returnUrl, userRoles)) {
+        this.router.navigateByUrl(returnUrl);
+        return;
       }
     }
+
+    // Role-tailored target dashboard
+    const targetDashboard = getReturnUrlForRole(userRoles);
+    this.router.navigate([targetDashboard]);
   }
 
   onForceChangePassword(): void {

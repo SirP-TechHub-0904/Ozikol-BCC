@@ -1,5 +1,7 @@
 using System.Text;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,12 +12,16 @@ using Microsoft.OpenApi.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Application;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
+using Ozikol_BCC.Telemetry.Sentry.Extensions;
+using Ozikol_BCC.Api.Middleware;
+using Ozikol_BCC.EmailServices.Postmark;
 
 namespace Ozikol_BCC.Api
 {
@@ -26,6 +32,7 @@ namespace Ozikol_BCC.Api
         {
             DotNetEnv.Env.TraversePath().Load();
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseOzikolSentry("Ozikol-BCC.Api");
 
             // 1. Core Services & Infrastructure
             builder.Services.AddAWSService<IAmazonS3>();
@@ -37,6 +44,8 @@ namespace Ozikol_BCC.Api
                 .AddTenantSupport(builder.Configuration)
                 .AddRecaptchaSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
+
+            builder.Services.AddPostmarkEmailServices(builder.Configuration);
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
                 ?? builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -51,6 +60,8 @@ namespace Ozikol_BCC.Api
                     sqlOpts.CommandTimeout(60);
                 }));
             builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
+            builder.Services.AddScoped<ITenantFeatureGateService, Ozikol_BCC.Api.Services.TenantFeatureGateService>();
+            builder.Services.AddSingleton<Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService, Ozikol_BCC.Api.Services.TemplateSecurityInspectorService>();
             builder.Services.AddMemoryCache();
 
             builder.Services.AddHttpClient();
@@ -166,6 +177,56 @@ namespace Ozikol_BCC.Api
                 });
             });
 
+            // 4b. Defense-in-Depth Native Rate Limiting Policies (Auth, AI, Upload Protection)
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.OnRejected = async (context, token) =>
+                {
+                    context.HttpContext.Response.ContentType = "application/json";
+                    await context.HttpContext.Response.WriteAsync(
+                        "{\"success\":false,\"message\":\"Too many requests. Please slow down and try again shortly.\",\"statusCode\":429}",
+                        token);
+                };
+
+                // Policy A: Auth limit (Login / Register / Forgot Password) - 5 requests / min per IP
+                options.AddPolicy("auth-limit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                // Policy B: AI Assist & Generation limit - 15 requests / min per client
+                options.AddPolicy("ai-limit", httpContext =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 15,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 3,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                // Policy C: File / Media Upload limit - 20 uploads / min per IP
+                options.AddPolicy("upload-limit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 20,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+            });
+
             // 5. SignalR & Form Options
             builder.Services.AddSignalR(options =>
             {
@@ -233,7 +294,11 @@ namespace Ozikol_BCC.Api
 
             var app = builder.Build();
 
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+            app.UseSecurityHeaders();
+
             app.UseCors("AllowAngularApp");
+            app.UseRateLimiter();
 
             // Only redirect to HTTPS in Production.
             // In Development, Angular calls http://localhost:51026 directly.
@@ -268,6 +333,7 @@ namespace Ozikol_BCC.Api
                 options.WithModels(false);
             });
             app.MapHub<GroupChatHub>("/hubs/group-chat");
+            app.MapHub<NotificationHub>("/hubs/notifications");
 
             await app.RunAsync();
         }

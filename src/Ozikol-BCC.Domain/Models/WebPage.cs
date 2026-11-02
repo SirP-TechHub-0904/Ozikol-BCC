@@ -209,6 +209,27 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Custom CSS Class")]
         public string? CustomClass { get; set; }
 
+        // ── Breaking News Ribbon Ticker ──
+
+        /// <summary>
+        /// Controls whether this web page is featured in the live Breaking News Ribbon Ticker.
+        /// </summary>
+        [Display(Name = "Add To Ribbon")]
+        public bool AddToRibon { get; set; } = false;
+
+        /// <summary>
+        /// Optional custom display headline overriding the standard page title in the marquee ticker.
+        /// </summary>
+        [MaxLength(250)]
+        [Display(Name = "Ribbon Custom Headline")]
+        public string? RibonCustomDisplayTitle { get; set; }
+
+        /// <summary>
+        /// Numerical sort index ordering this page within the ticker marquee stream.
+        /// </summary>
+        [Display(Name = "Ribbon Sort Order")]
+        public int RibonSortOrder { get; set; } = 0;
+
         /// <summary>
         /// Used for sub-page hierarchy; linking this page as a child of a main page.
         /// </summary>

@@ -1,0 +1,83 @@
+import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+
+/// Primary action button styled with Ozikol royal blue gradient and built-in loading spinner.
+class PrimaryButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final Widget? icon;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final double height;
+  final double borderRadius;
+  final bool isFullWidth;
+
+  const PrimaryButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.isLoading = false,
+    this.icon,
+    this.backgroundColor,
+    this.textColor,
+    this.height = 48.0,
+    this.borderRadius = 12.0,
+    this.isFullWidth = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveBg = backgroundColor ?? AppColors.primary;
+    final effectiveText = textColor ?? Colors.white;
+
+    final buttonContent = Row(
+      mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (isLoading) ...[
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              valueColor: AlwaysStoppedAnimation<Color>(effectiveText),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ] else if (icon != null) ...[
+          icon!,
+          const SizedBox(width: 8),
+        ],
+        Text(
+          text,
+          style: TextStyle(
+            color: effectiveText,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+
+    return SizedBox(
+      height: height,
+      width: isFullWidth ? double.infinity : null,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: effectiveBg,
+          foregroundColor: effectiveText,
+          disabledBackgroundColor: effectiveBg.withAlpha(140),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+        ),
+        child: buttonContent,
+      ),
+    );
+  }
+}

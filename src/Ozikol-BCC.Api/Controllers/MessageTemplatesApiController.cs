@@ -95,20 +95,24 @@ namespace Ozikol_BCC.Api.Controllers
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,SystemAdministrator")]
         public async Task<IActionResult> PreviewTemplate([FromBody] PreviewTemplateRequest request)
         {
+            var origin = Request.Headers.Origin.FirstOrDefault() 
+                ?? Request.Headers.Referer.FirstOrDefault() 
+                ?? $"{Request.Scheme}://{Request.Host}";
+
             var samplePlaceholders = request.SamplePlaceholders ?? new Dictionary<string, string>
             {
-                { "FullName", "Dr. Alexander Wright" },
-                { "FirstName", "Alexander" },
-                { "LastName", "Wright" },
-                { "Email", "alexander.wright@company.com" },
-                { "PhoneNumber", "+2348012345678" },
-                { "MemberId", "CC-2026-0042" },
+                { "FullName", "First Last" },
+                { "FirstName", "First" },
+                { "LastName", "Last" },
+                { "Email", "user@company.com" },
+                { "PhoneNumber", "+0 (000) 000-0000" },
+                { "MemberId", "MB-2026-0042" },
                 { "OtpCode", "849201" },
-                { "TemporaryPassword", "Pass@PAf6C" },
-                { "PortalUrl", "https://cocacola.localhost:4200" },
-                { "OrganizationName", "Coca Cola Workspace" },
-                { "Designation", "Principal Architect" },
-                { "CategoryName", "Senior Management" },
+                { "TemporaryPassword", "Pass@Temp99" },
+                { "PortalUrl", origin.TrimEnd('/') },
+                { "OrganizationName", "Workspace Organization" },
+                { "Designation", "Principal Lead" },
+                { "CategoryName", "General Management" },
                 { "Status", "Active" },
                 { "IndicatorTitle", "Quarterly Governance Score" },
                 { "Score", "94.5" },

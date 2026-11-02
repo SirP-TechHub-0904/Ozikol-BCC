@@ -10,6 +10,8 @@ import { ContentHydrationService } from './services/content-hydration.service';
 import { HtmlAssemblerService } from './services/html-assembler.service';
 import { UniversalPreviewModalService } from './services/universal-preview-modal.service';
 import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
+import { TemplateSecurityModalComponent } from './template-security-modal/template-security-modal.component';
+import { TemplateSecurityScannerService } from './services/template-security-scanner.service';
 
 export interface InstalledTemplateItem {
   id: string;
@@ -53,7 +55,7 @@ export interface CodeInjectionTag {
 @Component({
   selector: 'app-my-templates',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, UniversalPreviewModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, UniversalPreviewModalComponent, TemplateSecurityModalComponent],
   templateUrl: './my-templates.component.html',
   styleUrl: './my-templates.component.scss'
 })
@@ -967,7 +969,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     private hydrationService: TemplateHydrationService,
     private contentHydrator: ContentHydrationService,
     private htmlAssembler: HtmlAssemblerService,
-    private universalPreviewModal: UniversalPreviewModalService
+    private universalPreviewModal: UniversalPreviewModalService,
+    private securityScanner: TemplateSecurityScannerService
   ) {}
 
   ngOnInit(): void {
@@ -1572,12 +1575,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /**
    * Uploads the selected CSS file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
+   * Pre-scans the file locally in browser memory to guarantee zero malicious payloads reach R2.
    */
   uploadAndLinkCssFile(): void {
     if (!this.selectedCssFile) {
       this.toast.error('Please choose a .css file first.');
       return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const cssContent = reader.result as string;
+      this.securityScanner.scanAndExecute({
+        title: `Stylesheet: ${this.selectedCssFileName}`,
+        category: 'CSS File Upload',
+        html: '',
+        css: cssContent,
+        onConfirmSave: () => this.executeUploadAndLinkCss()
+      });
+    };
+    reader.onerror = () => {
+      this.toast.error('Failed to read CSS file from local disk.');
+    };
+    reader.readAsText(this.selectedCssFile);
+  }
+
+  private executeUploadAndLinkCss(): void {
+    if (!this.selectedCssFile) return;
 
     this.uploadingCss = true;
     const formData = new FormData();
@@ -1609,12 +1633,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /**
    * Uploads the selected JavaScript file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
+   * Pre-scans the script locally in browser memory to guarantee zero dangerous executions reach R2.
    */
   uploadAndLinkJsFile(): void {
     if (!this.selectedJsFile) {
       this.toast.error('Please choose a .js file first.');
       return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const jsContent = reader.result as string;
+      this.securityScanner.scanAndExecute({
+        title: `Script: ${this.selectedJsFileName}`,
+        category: 'JavaScript File Upload',
+        html: '',
+        js: jsContent,
+        onConfirmSave: () => this.executeUploadAndLinkJs()
+      });
+    };
+    reader.onerror = () => {
+      this.toast.error('Failed to read JavaScript file from local disk.');
+    };
+    reader.readAsText(this.selectedJsFile);
+  }
+
+  private executeUploadAndLinkJs(): void {
+    if (!this.selectedJsFile) return;
 
     this.uploadingJs = true;
     const formData = new FormData();
@@ -1804,6 +1849,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /**
    * Executes bulk upload of all queued files to Cloudflare R2 and injects corresponding code tags.
+   * Pre-scans all text-based assets (.css, .js) locally before sending them to the backend.
    */
   executeBulkUpload(): void {
     if (this.bulkUploadFiles.length === 0) {
@@ -1811,6 +1857,49 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const textFiles = this.bulkUploadFiles.filter(item => {
+      const lower = item.file.name.toLowerCase();
+      return lower.endsWith('.css') || lower.endsWith('.css.download') || lower.endsWith('.js') || lower.endsWith('.js.download');
+    });
+
+    if (textFiles.length === 0) {
+      this.performBulkUpload();
+      return;
+    }
+
+    let combinedCss = '';
+    let combinedJs = '';
+    const readPromises = textFiles.map(item => {
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const content = reader.result as string;
+          const lower = item.file.name.toLowerCase();
+          if (lower.includes('.js')) {
+            combinedJs += `\n/* File: ${item.file.name} */\n` + content;
+          } else {
+            combinedCss += `\n/* File: ${item.file.name} */\n` + content;
+          }
+          resolve();
+        };
+        reader.onerror = () => resolve();
+        reader.readAsText(item.file);
+      });
+    });
+
+    Promise.all(readPromises).then(() => {
+      this.securityScanner.scanAndExecute({
+        title: `Bulk Upload: ${this.bulkUploadFiles.length} Assets`,
+        category: 'Bulk Code Injections',
+        html: '',
+        css: combinedCss,
+        js: combinedJs,
+        onConfirmSave: () => this.performBulkUpload()
+      });
+    });
+  }
+
+  private performBulkUpload(): void {
     this.uploadingBulk = true;
     this.bulkUploadFiles.forEach(f => f.status = 'uploading');
 
@@ -1886,8 +1975,23 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /**
    * Saves the edited asset text back to Cloudflare R2 / tag content.
+   * Runs pre-flight security inspection before persisting changes.
    */
   saveAssetContent(): void {
+    if (!this.editingAssetTag) return;
+
+    const isJs = (this.editingAssetTag.tagType || '').includes('script') || (this.editingAssetTag.tagType || '').includes('js');
+    this.securityScanner.scanAndExecute({
+      title: `Asset: ${this.editingAssetTag.name}`,
+      category: isJs ? 'JavaScript Asset' : 'CSS Stylesheet',
+      html: '',
+      css: !isJs ? this.editingAssetContent : '',
+      js: isJs ? this.editingAssetContent : '',
+      onConfirmSave: () => this.executeSaveAssetContent()
+    });
+  }
+
+  private executeSaveAssetContent(): void {
     if (!this.editingAssetTag) return;
 
     this.savingAssetContent = true;
@@ -2020,6 +2124,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Pre-flight security scan before saving/injecting tag
+    const tagTypeLower = (this.tagForm.tagType || '').toLowerCase();
+    const isCss = tagTypeLower.includes('css') || tagTypeLower.includes('stylesheet');
+    const isJs = tagTypeLower.includes('script') || tagTypeLower.includes('js');
+
+    this.securityScanner.scanAndExecute({
+      title: `Tag: ${this.tagForm.name.trim()}`,
+      category: `${this.getZoneShortTitle(this.tagFormZone)} Injection`,
+      html: (!isCss && !isJs) ? this.tagForm.content : '',
+      css: isCss ? this.tagForm.content : '',
+      js: isJs ? this.tagForm.content : '',
+      onConfirmSave: () => this.executeSaveTag()
+    });
+  }
+
+  private executeSaveTag(): void {
     this.savingTag = true;
     this.tagForm.zone = this.tagFormZone;
 
@@ -2031,9 +2151,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.closeTagModal();
           this.loadAllCodeInjections();
         },
-        error: () => {
+        error: (err) => {
           this.savingTag = false;
-          this.toast.error('Failed to update tag. Please check your network.');
+          const msg = err?.error?.message || 'Failed to update tag.';
+          this.toast.error(msg);
         }
       });
     } else {
@@ -2044,9 +2165,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.closeTagModal();
           this.loadAllCodeInjections();
         },
-        error: () => {
+        error: (err) => {
           this.savingTag = false;
-          this.toast.error('Failed to save tag. Please check your network.');
+          const msg = err?.error?.message || 'Failed to save tag.';
+          this.toast.error(msg);
         }
       });
     }

@@ -1,9 +1,11 @@
 using System.Globalization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Ozikol.Central;
 using Ozikol.Central.Configuration;
@@ -274,6 +276,44 @@ builder.Services.AddScoped<Ozikol.Central.Services.ISectionCompilerRendererServi
 
 builder.Services.AddControllers();
 
+// 7d. Defense-in-Depth Native Rate Limiting Configuration
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "text/html; charset=utf-8";
+        await context.HttpContext.Response.WriteAsync(
+            "<!DOCTYPE html><html><head><title>Too Many Requests</title><style>body{font-family:system-ui,sans-serif;background:#0f172a;color:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}h1{color:#38bdf8;font-size:28px;}p{color:#94a3b8;font-size:16px;}</style></head><body><div><h1>429 - Too Many Requests</h1><p>You have made too many requests in a short period. Please wait a minute and try again.</p></div></body></html>",
+            token);
+    };
+
+    // Central Auth Policy: 5 attempts per minute per IP
+    options.AddPolicy("central-auth-limit", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Central Submission Policy: 30 requests per minute per IP
+    options.AddPolicy("central-general-limit", httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1),
+                SegmentsPerWindow = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+});
+
 var app = builder.Build();
 
 // 8. Seed Central Operator Roles & Default SuperAdmin
@@ -288,6 +328,7 @@ catch (Exception ex)
 
 // Global Exception Interception & Automated Cloud Email Alerting
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+app.UseSecurityHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -298,6 +339,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 
 // 9. Configure Request Localization Pipeline (Route -> Cookie -> Accept-Language -> Default en)
 var supportedCultures = new[]

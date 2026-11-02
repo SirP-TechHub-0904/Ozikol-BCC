@@ -240,11 +240,21 @@ import { ToastService } from '../../../core/services/toast.service';
               <label>DYNAMIC FORM</label>
               <select [(ngModel)]="section.pageFormId" (ngModelChange)="onFormSelected($event)" class="form-control">
                 <option [ngValue]="null">-- None (No Dynamic Form) --</option>
-                <option *ngFor="let f of availableForms" [ngValue]="f.id">
-                  {{ f.title }} ({{ f.formKey }}) [{{ f.fieldCount || f.fields?.length || 0 }} fields]
-                </option>
+                <optgroup label="System Onboarding &amp; Registration">
+                  <option [ngValue]="'__registration_form__'">Member Registration ("Get Started") — Configured in User Manager &gt; Form Builder</option>
+                </optgroup>
+                <optgroup label="Custom Inquiry &amp; Lead Forms" *ngIf="availableForms && availableForms.length > 0">
+                  <option *ngFor="let f of availableForms" [ngValue]="f.id">
+                    {{ f.title }} ({{ f.formKey }}) [{{ f.fieldCount || f.fields?.length || 0 }} fields]
+                  </option>
+                </optgroup>
               </select>
-              <small class="help-text">Responses appear under <a routerLink="/admin/content/forms" target="_blank" style="color: #0050e5; font-weight: 600;">Manage Forms</a>.</small>
+              <small class="help-text" *ngIf="section.pageFormId === '__registration_form__'">
+                Renders the live dynamic onboarding form configured in <strong>User Manager &gt; Registration Form Builder</strong>. To change questions, sector templates, or layout, adjust it in the form builder.
+              </small>
+              <small class="help-text" *ngIf="section.pageFormId !== '__registration_form__'">
+                Select the member registration onboarding form or an inquiry form to attach to this section.
+              </small>
             </div>
 
             <div class="form-group" style="margin-top:12px;">
@@ -463,6 +473,10 @@ export class PageSectionEditComponent implements OnInit {
       this.section.formKey = '';
       return;
     }
+    if (formId === '__registration_form__') {
+      this.section.formKey = 'registration';
+      return;
+    }
     const found = this.availableForms.find(f => f.id === formId);
     if (found) {
       this.section.formKey = found.formKey;
@@ -485,6 +499,11 @@ export class PageSectionEditComponent implements OnInit {
     this.api.get<any>(`ContentApi/sections/${this.sectionId}`).subscribe({
       next: (res) => {
         this.section = res?.data;
+        if (this.section) {
+          if (!this.section.pageFormId && (this.section.formKey === 'registration' || this.section.formKey === 'register')) {
+            this.section.pageFormId = '__registration_form__';
+          }
+        }
         this.loadPages();
       },
       error: (err) => {

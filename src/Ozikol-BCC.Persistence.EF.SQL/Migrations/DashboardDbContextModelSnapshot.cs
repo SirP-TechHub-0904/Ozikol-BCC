@@ -225,38 +225,69 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<string>("ActionType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("IpAddress")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("MetadataJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Module")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PerformedByFullName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("PerformedByProfileId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PerformedByUserEmail")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("SystemId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("TargetFullName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("TargetProfileId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ActionType");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("IpAddress");
+
+                    b.HasIndex("PerformedByProfileId");
+
+                    b.HasIndex("PerformedByUserEmail");
+
+                    b.HasIndex("SystemId");
 
                     b.ToTable("BcpActivityLogs");
                 });
@@ -2026,10 +2057,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("IpAddress")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("Status")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SystemId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -2037,10 +2072,24 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserAgent")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("IpAddress");
+
+                    b.HasIndex("SystemId");
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("BcpLoginAuditLogs");
                 });
@@ -2626,10 +2675,16 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Module")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Severity")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
@@ -3292,6 +3347,66 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasIndex("BcpProposalId");
 
                     b.ToTable("BcpProposalPhases");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpRegistrationFormField", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BcpUserCategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FieldKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("HelpText")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("OptionsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Placeholder")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("ShowInWorkspaceProfile")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BcpUserCategoryId");
+
+                    b.ToTable("BcpRegistrationFormFields");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpReportParticipant", b =>
@@ -4391,6 +4506,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("AllowPublicRegistration")
+                        .HasColumnType("bit");
+
                     b.Property<string>("AlumniAlias")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -4440,6 +4558,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<string>("DefaultIndustrySector")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("EmailMaxRetries")
                         .HasColumnType("int");
 
@@ -4447,6 +4569,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("EnableAffiliateReferralCode")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("EnableFlutterwave")
                         .HasColumnType("bit");
@@ -4615,6 +4740,24 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("PostmarkServerToken")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("RegistrationSuccessMessage")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RegistrationUrlSlug")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("RegistrationWelcomeMessage")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("RequireApprovalBeforeLogin")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("RequireConfirmedEmailToLogin")
                         .HasColumnType("bit");
@@ -4798,6 +4941,16 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("BreakingNewsRibonPosition")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BreakingNewsRibonTitle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("ComingSoonMessage")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -4846,6 +4999,31 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("CookieConsentAcceptText")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CookieConsentDeclineText")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CookieConsentMessage")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("CookieConsentPolicyUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CookieConsentTitle")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("CopyrightNotice")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -4857,7 +5035,16 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<bool>("EnableBreakingNewsRibon")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("EnableComingSoon")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableCookieConsent")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableWhatsAppChat")
                         .HasColumnType("bit");
 
                     b.Property<string>("FaviconKey")
@@ -4979,6 +5166,24 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("WebsiteTitle")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("WhatsAppNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("WhatsAppPromptMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("WhatsAppWidgetSubtitle")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("WhatsAppWidgetTitle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("WhiteLogoKey")
                         .HasMaxLength(250)
@@ -5524,6 +5729,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CustomAttributesJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("datetime2");
 
@@ -5864,6 +6072,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("AddToRibon")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -5942,6 +6153,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<bool>("Publish")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RibonCustomDisplayTitle")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("RibonSortOrder")
+                        .HasColumnType("int");
 
                     b.Property<bool>("SecurityPage")
                         .HasColumnType("bit");
@@ -6948,6 +7166,15 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired();
 
                     b.Navigation("BcpProposal");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpRegistrationFormField", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpUserCategory", "BcpUserCategory")
+                        .WithMany()
+                        .HasForeignKey("BcpUserCategoryId");
+
+                    b.Navigation("BcpUserCategory");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpReportParticipant", b =>

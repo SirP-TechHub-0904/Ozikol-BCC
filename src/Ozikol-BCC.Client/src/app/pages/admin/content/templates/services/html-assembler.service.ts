@@ -60,6 +60,14 @@ export interface FullPageAssemblyOptions {
   breadcrumbSection?: SectionTemplateUnit;
   bodySections?: SectionTemplateUnit[];
   footerSection?: SectionTemplateUnit;
+  /**
+   * Optional breaking news or announcements ribbon marquee section.
+   */
+  ribbonSection?: SectionTemplateUnit;
+  /**
+   * Position for the ribbon marquee: 'top', 'after_menu', 'after_hero', 'before_footer', 'after_footer'.
+   */
+  ribonPosition?: 'top' | 'after_menu' | 'after_hero' | 'before_footer' | 'after_footer' | string;
 }
 
 /**
@@ -216,6 +224,7 @@ export class HtmlAssemblerService {
     let breadcrumbSection: SectionTemplateUnit | undefined = options.breadcrumbSection;
     let bodySectionsList: SectionTemplateUnit[] = options.bodySections ? [...options.bodySections] : [];
     let footSection: SectionTemplateUnit | undefined = options.footerSection;
+    let ribbonSection: SectionTemplateUnit | undefined = options.ribbonSection;
 
     // If an aggregated sections list was passed, categorize automatically
     if (options.sections && options.sections.length > 0) {
@@ -231,6 +240,8 @@ export class HtmlAssemblerService {
           if (!breadcrumbSection) breadcrumbSection = sec;
         } else if (cat === 'footer' || cat === 'footers') {
           if (!footSection) footSection = sec;
+        } else if (cat === 'ribbon' || cat === 'ribon' || cat === 'ticker') {
+          if (!ribbonSection) ribbonSection = sec;
         } else {
           bodySectionsList.push(sec);
         }
@@ -240,14 +251,32 @@ export class HtmlAssemblerService {
     // Sort body sections strictly by ascending SortOrder
     bodySectionsList.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
+    // Normalize ribbon position ('top' | 'after_menu' | 'after_hero' | 'before_footer' | 'after_footer')
+    const rawPos = (options.ribonPosition || 'top').toLowerCase().replace(/-/g, '_').trim();
+    const ribbonPos = rawPos.includes('menu') ? 'after_menu'
+      : rawPos.includes('hero') ? 'after_hero'
+      : (rawPos.includes('before') && rawPos.includes('footer')) ? 'before_footer'
+      : (rawPos.includes('after') && rawPos.includes('footer')) ? 'after_footer'
+      : 'top';
+
     // Collect all active sections in semantic document order
     const isHomePage = !options.pageSlug || options.pageSlug.toLowerCase() === 'home' || options.pageSlug === '/';
     const orderedSections: SectionTemplateUnit[] = [];
 
-    // 1. Navigation at top
+    // 1. Ribbon at top
+    if (ribbonSection && ribbonPos === 'top') {
+      orderedSections.push(ribbonSection);
+    }
+
+    // 2. Navigation
     if (navSection) orderedSections.push(navSection);
 
-    // 2. Banner: Hero on Homepage, Breadcrumbs on Inner Pages
+    // 3. Ribbon after menu
+    if (ribbonSection && ribbonPos === 'after_menu') {
+      orderedSections.push(ribbonSection);
+    }
+
+    // 4. Banner: Hero on Homepage, Breadcrumbs on Inner Pages
     if (isHomePage) {
       if (heroSection) orderedSections.push(heroSection);
     } else {
@@ -255,13 +284,28 @@ export class HtmlAssemblerService {
       else if (heroSection) orderedSections.push(heroSection); // graceful fallback if breadcrumb not created yet
     }
 
-    // 3. Body Sections
+    // 5. Ribbon after hero/banner
+    if (ribbonSection && ribbonPos === 'after_hero') {
+      orderedSections.push(ribbonSection);
+    }
+
+    // 6. Body Sections
     for (const bodySec of bodySectionsList) {
       orderedSections.push(bodySec);
     }
 
-    // 4. Footer at bottom
+    // 7. Ribbon before footer
+    if (ribbonSection && ribbonPos === 'before_footer') {
+      orderedSections.push(ribbonSection);
+    }
+
+    // 8. Footer at bottom
     if (footSection) orderedSections.push(footSection);
+
+    // 9. Ribbon after footer
+    if (ribbonSection && ribbonPos === 'after_footer') {
+      orderedSections.push(ribbonSection);
+    }
 
     // Aggregate visual HTML markup
     const visualBodyMarkup = orderedSections

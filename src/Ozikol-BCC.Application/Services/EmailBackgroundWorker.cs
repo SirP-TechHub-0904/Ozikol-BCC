@@ -10,11 +10,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ozikol_BCC.Application.Repository.NotifyRegister;
+using Ozikol_BCC.EmailServices.Postmark.Interfaces;
+using Ozikol_BCC.EmailServices.Postmark.Models;
+using PostmarkDotNet;
 
 namespace Ozikol_BCC.Application.Services
 {
     /// <summary>
-    /// Tenant-aware hosted worker that drains queued newsletter/email logs through ZeptoMail.
+    /// Tenant-aware hosted worker that drains queued transactional and newsletter emails through ZeptoMail or Postmark.
     /// It processes each configured tenant separately so one tenant's email settings or failures
     /// do not block another tenant's queue.
     /// </summary>
@@ -73,12 +76,17 @@ namespace Ozikol_BCC.Application.Services
                             using var scope = _serviceProvider.CreateScope();
                             var context = scope.ServiceProvider.GetRequiredService<DashboardDbContext>();
                             var zeptoMailService = scope.ServiceProvider.GetRequiredService<IZeptoMailService>();
+                            var postmarkService = scope.ServiceProvider.GetService<IPostmarkEmailService>();
+                            var emailShellService = scope.ServiceProvider.GetService<Ozikol_BCC.Application.Interfaces.Services.ITenantEmailShellService>();
 
-                             var settings = await context.MisConfigurationSettings.FirstOrDefaultAsync();
-                            if (settings == null || string.IsNullOrWhiteSpace(settings.ZeptoMailApiKey))
-                                continue; // ZeptoMail not configured for this tenant
+                            var settings = await context.MisConfigurationSettings.FirstOrDefaultAsync();
+                            bool hasZepto = settings != null && !string.IsNullOrWhiteSpace(settings.ZeptoMailApiKey);
+                            bool hasPostmark = postmarkService != null;
 
-                            int maxRetries = settings.EmailMaxRetries > 0 ? settings.EmailMaxRetries : 5;
+                            if (!hasZepto && !hasPostmark)
+                                continue; // No email provider configured for this tenant
+
+                            int maxRetries = settings?.EmailMaxRetries > 0 ? settings.EmailMaxRetries : 5;
 
                             // 1) Process transactional emails from BcpEmailQueue
                             var transactionalEmails = await context.BcpEmailQueue
@@ -95,14 +103,47 @@ namespace Ozikol_BCC.Application.Services
                                 email.Status = BcpQueueStatus.Processing;
                                 await context.SaveChangesAsync();
 
-                                var result = await zeptoMailService.SendEmailAsync(
-                                    email.RecipientEmail, 
-                                    email.RecipientName ?? "Recipient", 
-                                    email.Subject, 
-                                    email.HtmlBody, 
-                                    email.Id.ToString());
+                                bool isSuccess = false;
+                                string? errorMessage = null;
 
-                                if (result.IsSuccess)
+                                // Dynamically wrap inner HTML snippets in tenant-branded shell if not already full document
+                                var outgoingHtml = email.HtmlBody;
+                                if (emailShellService != null &&
+                                    outgoingHtml.IndexOf("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                    outgoingHtml.IndexOf("<html", StringComparison.OrdinalIgnoreCase) < 0)
+                                {
+                                    outgoingHtml = await emailShellService.WrapWithTenantShellAsync(
+                                        context,
+                                        innerHtml: outgoingHtml,
+                                        title: email.Subject,
+                                        recipientFirstName: email.RecipientName);
+                                }
+
+                                if (hasZepto)
+                                {
+                                    var result = await zeptoMailService.SendEmailAsync(
+                                        email.RecipientEmail, 
+                                        email.RecipientName ?? "Recipient", 
+                                        email.Subject, 
+                                        outgoingHtml, 
+                                        email.Id.ToString());
+
+                                    isSuccess = result.IsSuccess;
+                                    errorMessage = result.ErrorMessage;
+                                }
+                                else if (hasPostmark && postmarkService != null)
+                                {
+                                    var result = await postmarkService.SendHtmlEmailAsync(
+                                        to: email.RecipientEmail,
+                                        subject: email.Subject,
+                                        htmlBody: outgoingHtml,
+                                        tag: email.EventType.ToString().ToLowerInvariant());
+
+                                    isSuccess = result.Status == PostmarkStatus.Success;
+                                    errorMessage = result.Message;
+                                }
+
+                                if (isSuccess)
                                 {
                                     email.Status = BcpQueueStatus.Sent;
                                     email.SentAt = DateTime.UtcNow;
@@ -111,7 +152,7 @@ namespace Ozikol_BCC.Application.Services
                                 else
                                 {
                                     email.Status = BcpQueueStatus.Failed;
-                                    email.LastError = result.ErrorMessage ?? "Unknown ZeptoMail error.";
+                                    email.LastError = errorMessage ?? "Unknown email dispatch error.";
                                     _logger.LogWarning($"Failed to send transactional email {email.Id} for tenant {tenantName}: {email.LastError}");
                                 }
 
@@ -134,9 +175,34 @@ namespace Ozikol_BCC.Application.Services
                                 // Increment before sending so repeated provider failures eventually stop retrying.
                                 email.RetryCount++;
                                 
-                                var result = await zeptoMailService.SendEmailAsync(email.EmailAddress, "Recipient", email.Subject, email.MailBody, Guid.NewGuid().ToString());
+                                bool isSuccess = false;
+                                string? errorMessage = null;
 
-                                if (result.IsSuccess)
+                                if (hasZepto)
+                                {
+                                    var result = await zeptoMailService.SendEmailAsync(
+                                        email.EmailAddress, 
+                                        "Recipient", 
+                                        email.Subject, 
+                                        email.MailBody, 
+                                        Guid.NewGuid().ToString());
+
+                                    isSuccess = result.IsSuccess;
+                                    errorMessage = result.ErrorMessage;
+                                }
+                                else if (hasPostmark && postmarkService != null)
+                                {
+                                    var result = await postmarkService.SendHtmlEmailAsync(
+                                        to: email.EmailAddress,
+                                        subject: email.Subject,
+                                        htmlBody: email.MailBody,
+                                        tag: "newsletter");
+
+                                    isSuccess = result.Status == PostmarkStatus.Success;
+                                    errorMessage = result.Message;
+                                }
+
+                                if (isSuccess)
                                 {
                                     email.Status = Ozikol_BCC.Domain.Enum.Enum.EmailLogStatus.Sent;
                                     email.ReceivedDatetime = DateTime.UtcNow;
@@ -145,7 +211,7 @@ namespace Ozikol_BCC.Application.Services
                                 else
                                 {
                                     email.Status = Ozikol_BCC.Domain.Enum.Enum.EmailLogStatus.Failed;
-                                    email.ErrorMessage = result.ErrorMessage ?? "Unknown ZeptoMail error.";
+                                    email.ErrorMessage = errorMessage ?? "Unknown email dispatch error.";
                                     _logger.LogWarning($"Failed to send email {email.Id} for tenant {tenantName}: {email.ErrorMessage}");
                                 }
 

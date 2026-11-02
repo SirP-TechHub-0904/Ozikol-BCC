@@ -144,6 +144,60 @@ namespace Ozikol.MasterDomain.Models
         public string? CloudinaryApiSecret { get; set; }
 
         /// <summary>
+        /// Gets or sets the OneSignal App ID used for mobile and desktop push notifications.
+        /// </summary>
+        [MaxLength(255)]
+        public string? OneSignalAppId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Sentry DSN used for client crash reporting on web, mobile, and desktop.
+        /// </summary>
+        [MaxLength(500)]
+        public string? SentryDsn { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Cloudflare Turnstile public Site Key for client-side bot verification.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareTurnstileSiteKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether global platform maintenance mode is engaged.
+        /// </summary>
+        public bool IsMaintenanceMode { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the maintenance message displayed to users when maintenance mode is active.
+        /// </summary>
+        [MaxLength(500)]
+        public string? MaintenanceMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the minimum supported mobile and desktop client application version (e.g. "1.0.0").
+        /// </summary>
+        [MaxLength(50)]
+        public string MinimumAppVersion { get; set; } = "1.0.0";
+
+        /// <summary>
+        /// Gets or sets the MongoDB connection string used strictly for central system logs and telemetry.
+        /// Resolved dynamically from the Master Catalog database so no secrets are stored on client apps.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? MongoLogsConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the MongoDB database name dedicated to central logs (e.g., "OzikolLogsDb").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsDatabaseName { get; set; } = "OzikolLogsDb";
+
+        /// <summary>
+        /// Gets or sets the primary MongoDB collection name for central system events (e.g., "central_system_logs").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsCollectionName { get; set; } = "central_system_logs";
+
+        /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
         /// </summary>
         public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;

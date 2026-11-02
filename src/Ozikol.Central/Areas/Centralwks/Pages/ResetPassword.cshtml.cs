@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
@@ -29,6 +30,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
         /// <param name="twoFactorService">Security service for validating numeric OTP codes.</param>
         /// <param name="dbContext">Master catalog database context for logging audit trail events.</param>
         /// <param name="logger">Security diagnostics logger.</param>
+        [ActivatorUtilitiesConstructor]
         public ResetPasswordModel(
             UserManager<CentralUser> userManager,
             ICentralTwoFactorService twoFactorService,
@@ -174,6 +176,59 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             _logger.LogWarning("Password reset failed for {Email}: {Errors}", cleanEmail, string.Join(", ", result.Errors.Select(e => e.Description)));
             ErrorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
             return Page();
+        }
+
+        /// <summary>
+        /// Request payload for resending a 6-digit OTP code via AJAX.
+        /// </summary>
+        public class ResendOtpRequest
+        {
+            /// <summary>
+            /// Gets or sets the operator email address to receive the verification OTP.
+            /// </summary>
+            public string? Email { get; set; }
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to resend a new 6-digit verification OTP code to the operator email.
+        /// </summary>
+        /// <param name="request">Optional JSON request body containing the email.</param>
+        /// <returns>JSON result indicating success and response message.</returns>
+        public async Task<IActionResult> OnPostResendAsync([FromBody] ResendOtpRequest? request)
+        {
+            var targetEmail = (request?.Email ?? Input.Email).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(targetEmail))
+            {
+                return new JsonResult(new { success = false, message = "Email address is required." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(targetEmail);
+            if (user == null || !user.IsActive)
+            {
+                return new JsonResult(new { success = false, message = "Administrator account not found or deactivated." });
+            }
+
+            try
+            {
+                _logger.LogInformation("Resending password reset OTP to {Email}", targetEmail);
+                var emailService = HttpContext.RequestServices.GetRequiredService<ICentralEmailService>();
+                var otp = _twoFactorService.GeneratePasswordResetOtp(targetEmail);
+                var sent = await emailService.SendPasswordResetOtpEmailAsync(targetEmail, otp);
+
+                if (sent)
+                {
+                    return new JsonResult(new { success = true, message = "A new 6-digit security code has been dispatched to your email." });
+                }
+                else
+                {
+                    return new JsonResult(new { success = false, message = "Email dispatch failed. Please verify provider configuration." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while resending password reset OTP to {Email}", targetEmail);
+                return new JsonResult(new { success = false, message = "An unexpected error occurred while dispatching the code." });
+            }
         }
     }
 }

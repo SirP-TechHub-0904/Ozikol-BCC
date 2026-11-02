@@ -53,7 +53,16 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 ---
 
 ## 4. UI Form & Placeholder Standards (Mandatory)
-* **Standard Professional Placeholders**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format (e.g., `e.g. First Last`, `name@company.com`, `e.g. Your Organization Name`, `e.g. +0 (000) 000-0000`, `e.g. @@username`, `e.g. mycompany`). **No real names or company names** may be used in placeholder text.
+* **Standard Professional Placeholders (Zero Individual or Company Names)**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format.
+  * **Strict Prohibition of Individual & Company Names**: NEVER use individual personal names (e.g. `Jane`, `Doe`, `John`, `Smith`, `Jane Doe`, `jane.doe@organization.org`) or dummy company names (e.g. `acmecorp`, `contoso`) in placeholder text or field demonstrations.
+  * **Canonical Format Placeholders**:
+    * **First Name**: `e.g. First Name` or `e.g. First`
+    * **Last Name**: `e.g. Last Name` or `e.g. Last`
+    * **Full Name**: `e.g. First Last`
+    * **Email Address**: `name@company.com` or `user@domain.com` (never personal name prefixes like `jane.doe@...`)
+    * **Organization / Workspace**: `e.g. access code or url` or `e.g. Your Organization Name`
+    * **Phone Number**: `e.g. +0 (000) 000-0000`
+    * **Username**: `e.g. @username`
 * **No Ambiguous or Cluttered Strings**: Placeholders must avoid arbitrary or overly verbose sample text and show the expected format at a glance.
 * **Razor Escaping in Placeholders**: In Razor `.cshtml` files, always properly escape `@` characters in placeholder attributes (e.g., `placeholder="e.g. @@username"` or `placeholder="name@@company.com"` where applicable) to prevent Razor compilation parsing errors.
 
@@ -79,6 +88,15 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 ---
 
 ## 7. Product Terminology & Domain Language (Mandatory)
+* **Brand & System Terminology (BCC = Business Command Center, NEVER "MIS")**:
+  * The system is officially named **Ozikol Business Command Center** (**Ozikol BCC**).
+  * **STRICT PROHIBITION**: NEVER use "MIS" or "Management Information System" in UI text, headers, titles, placeholders, banners, update notices, code comments, documentation, or implementation plans.
+  * Always use **Business Command Center** or **BCC** wherever the platform, product suite, or client applications are referenced.
+* **Universal Brand Color (Royal Blue #0050E5, Zero Red Branding)**:
+  * The single official brand primary color across ALL applications (Central Web, Angular BCC Admin, Flutter Desktop/Mobile) is **Royal Blue (`#0050E5`)**.
+  * **Strict Prohibition**: Red (`#E5173F` or any variant) is NEVER to be used for logos, primary buttons, active navigation indicators, marketing hero bars, or branding elements.
+  * Red is reserved strictly and exclusively for system errors, danger alerts, and destructive deletion actions (`#EF4444` / `#DC2626`).
+  * Canonical logo assets must always be `ozikol.png` / `oz-logo.png` (blue on light) or `ozikol-white.png` / `oz-logo-white.png` (white on dark). Never create or use `-red` asset files.
 * **Feature & Capability Terminology (No "Fleet")**: Always use **Features**, **Modular Capabilities**, **Tenants**, or **Tenant Organizations**. NEVER use the word "fleet" in UI text, headings, badges, telemetry labels, code comments, documentation, or implementation plans.
 * **MRR (Monthly Recurring Revenue)**: Clearly represent MRR as Monthly Subscription Revenue / Recurring Feature Revenue generated from paid feature add-ons and tenant plans.
 
@@ -143,3 +161,130 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Zero Hung or Zombie Background Tasks**: Never leave background tasks running indefinitely. If any background task (e.g., builds, tests, git operations, or shell commands) runs longer than required or appears idle/unresponsive, the agent MUST immediately terminate (`kill`) it via `manage_task` to keep the user's chat thread unblocked.
 * **Non-Blocking Git Operations**: Never leave git operations (`git push`, `git pull`, `git fetch`) hanging in the background where credential prompts or network latency can stall silently. If a remote git command does not complete within 15–20 seconds, terminate it immediately and report the outcome to the user.
 * **Proactive Queue Health Check**: The agent must never finish an interaction while leaving orphaned, silent background processes running that cause incoming user messages to wait in a pending queue. Always verify and terminate stale background processes before concluding.
+
+---
+
+## 12. Feature-by-Feature Cross-Platform Parity (Mandatory)
+* **Unified Cross-Platform Delivery**: Every new feature or domain capability MUST be implemented and verified cohesively across all target platforms:
+  * **Web Client**: Angular Admin Dashboard (`src/Ozikol-BCC.Client`)
+  * **Desktop**: Flutter Desktop (Windows `.exe`, macOS `.app`, Linux)
+  * **Mobile**: Flutter Mobile (Android `.apk`/App Bundle, iOS)
+  * **Backend**: ASP.NET Core Web API (`src/Ozikol-BCC.Api`) and Application layer
+* **No Platform Left Behind**: Never deliver a feature to web while leaving mobile/desktop unhandled or vice versa. Ensure business logic, data models, validation, and real-time feeds achieve 1-to-1 operational parity.
+
+---
+
+## 13. Interactive Tour Guides & Contextual Info Icons (Mandatory)
+* **Screen & Menu Tour Guides**:
+  * Every major module, menu item, and top-level screen MUST provide an interactive walkthrough / Tour Guide that introduces the screen's core capabilities, workflow steps, and action triggers.
+  * Tour completion state MUST be persisted locally per tenant/workspace (e.g. `has_completed_tour_{screenKey}`) so users are not repeatedly interrupted after finishing the walkthrough.
+  * Every screen MUST offer a clean Replay Tour / Help action (`(?)`) so users can re-trigger the walkthrough at any time.
+* **Contextual Section Info Icons (`(i)`)**:
+  * Every key section, card, KPI block, table header, or complex form group MUST include a standardized contextual Info Icon (`(i)`).
+  * Tapping or hovering the info icon displays an intuitive popover (desktop) or bottom sheet (mobile) explaining:
+    * **Purpose**: Why this section or data matters.
+    * **Expected Inputs / Formats**: Specific requirements and examples.
+    * **Impact**: How actions taken in this section affect tenant billing, notifications, or members.
+    * **Best Practices**: Actionable domain advice for administrators.
+
+---
+
+## 14. Automated Working Code Commit Standard (Mandatory)
+* **Immediate Working Commit**: As soon as code modifications for a feature, sub-task, or phase are confirmed working (builds with 0 errors across .NET, passes 100% of unit/widget tests, and reports 0 lints), the agent MUST immediately create a Conventional Commit on the dedicated task branch.
+* **No Accumulation of Working Code**: Never let working, verified changes accumulate uncommitted across multiple conversational turns. Commit proactively so the repository maintains a clean, recoverable history at every milestone.
+
+---
+
+## 15. Platform-Specific Native Code Implementation (Mandatory)
+* **Complete Native Implementations**: Whenever a feature requires native platform code, the agent MUST write the exact, production-ready code directly into the target platform directories:
+  * **Android**: `AndroidManifest.xml` (permissions, queries, services), `build.gradle` (SDK versions, dependencies), and Kotlin/Java native handlers.
+  * **iOS**: `Info.plist` (privacy keys, usage descriptions, schemes), `Podfile`, and Swift native AppDelegate plugins.
+  * **Windows Desktop**: `windows/runner/main.cpp`, `Runner.rc`, application manifest, and CMake dependencies.
+  * **macOS Desktop**: `macos/Runner/Info.plist`, `Base.lproj/MainMenu.xib`, and Swift AppDelegate configurations.
+  * **Web**: `web/index.html` (meta tags, viewport, service worker scripts), manifest, and asset linkages.
+* **Zero Native Stubs**: Never assume platform code will be added "later", and never leave empty stub methods or placeholder comments where native configuration is required.
+
+---
+
+## 16. Unified Multi-Channel Notification Pool Architecture (Mandatory)
+* **Single Notification Pool Ingestion**: All user-facing communications and alerts across all channels—**In-App Notifications**, **Email Sending**, **WhatsApp Messages**, and **SMS Alerts**—MUST be routed and dispatched through the unified notification pool architecture (`ICentralNotificationDispatcher`, `BcpNotification`, `BcpEmailQueue`, `BcpSmsQueue`).
+* **Zero Direct/Ad-Hoc Dispatches in Business Handlers**: Feature handlers, controllers, background services, and UI flows MUST NEVER directly instantiate or invoke low-level email clients (e.g. raw Postmark), SMS gateways, or WhatsApp HTTP webhooks in an ad-hoc or blocking manner. All outbound events must be enqueued into the tenant's notification and message queue pool.
+* **Multi-Channel Fallback & Routing**:
+  * **In-App Notifications**: Stored in `[dbo].[BcpNotifications]` with canonical 6-tier severity levels (`info`, `success`, `warning`, `danger`, `urgent`, `critical`), deep-link action URLs, and unread badges. Streamed to Web and Flutter clients in real-time.
+  * **Email Dispatch**: Enqueued into `[dbo].[BcpEmailQueue]` with Postmark template support, anti-spam blacklist validation, and responsive HTML layouts.
+  * **SMS Alerts**: Enqueued into `[dbo].[BcpSmsQueue]` with sender ID compliance, character count validation, and transaction tracking.
+  * **WhatsApp Alerts**: Managed through the unified notification queue with template verification and status tracking.
+* **Audit & Idempotency Protection**: Every notification pool entry MUST record the originating `TenantKey`, `UserId`, `SystemId`, `Category`, `Priority`, and timestamp to guarantee zero message loss, deduplication, and complete delivery telemetry.
+
+---
+
+## 17. Multi-Language Localization & Translation Engine Standards (Mandatory)
+* **Strict Universal Translation Adherence**:
+  * Every user-facing UI text, title, header, button, subtitle, form field label, placeholder, tooltip, table column header, filter pill, status badge, empty-state illustration note, confirmation dialog, contextual help guide, and notification in both the **Administration Console** and **Users Workspace** MUST strictly use the translation engine.
+  * **Zero Hardcoded Text (Strict Prohibition)**: NEVER write raw English string literals directly inside HTML templates, Razor views, or Flutter widget trees. Every string MUST be bound via standard translation tokens:
+    * **Web (Angular)**: Use the `| translate` pipe in templates (e.g. `{{ 'nav.console_dashboard' | translate }}` or `[placeholder]="'shell.search_placeholder' | translate"`).
+    * **Desktop & Mobile (Flutter)**: Use the reactive Riverpod translation extension (e.g. `'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard')`).
+* **Central Pattern `.oz-lang-switcher` Component Parity**:
+  * The language switcher UI across all applications MUST faithfully replicate the **Ozikol Central** design system:
+    * **Pill Trigger Button**: Features a rounded pill (`border-radius: 9999px`), frosted glass background (`rgba(255, 255, 255, 0.75)` on light, `rgba(30, 41, 59, 0.75)` on dark), subtle borders, country flag emoji, uppercase ISO code (e.g. `🇬🇧 EN`, `🇫🇷 FR`, `🇪🇸 ES`, `🇩🇪 DE`), and a 180° animated rotating chevron arrow.
+    * **Desktop Viewports**: Floating frosted glass dropdown menu with flags, native names, subtle hover transitions, and Royal Blue (`#0050E5`) active checkmark indicators.
+    * **Mobile Viewports**: Adaptive modal bottom sheet (`showModalBottomSheet`) with a grab handle bar, translated header (`Select Language`), language list with flags, native names, English subtitles, and Royal Blue active checkmarks.
+    * **Local Persistence**: Language selections MUST persist locally across restarts (`localStorage.getItem('bcp_language')` on Web, `SecureStorageService.getLanguage()` on Mobile/Desktop).
+* **Four Canonical Supported Languages**:
+  * **English (`en`)**: `🇬🇧 EN` (`English`) — Default base language.
+  * **French (`fr`)**: `🇫🇷 FR` (`Français`).
+  * **Spanish (`es`)**: `🇪🇸 ES` (`Español`).
+  * **German (`de`)**: `🇩🇪 DE` (`Deutsch`).
+* **Standard Hierarchical Token Namespaces**:
+  * `shell.*`: Shell labels, mode switcher (`shell.console`, `shell.workspace`), topbar search placeholders, user menu actions, footer credits.
+  * `nav.*`: Navigation groups, sidebar sections, menu categories, screen headers.
+  * `btn.*`: Action triggers (e.g. `btn.refresh_telemetry`, `btn.register_new_member`, `btn.save_changes`, `btn.cancel`, `btn.continue`).
+  * `billing.*`: Central subscription notices, entitlements review triggers, license status notices.
+  * `kpi.*`: Performance counters, health scores, audit trail headings, active subscriber metrics.
+  * `badge.*`: Role indicators (`badge.superadmin`, `badge.admin`, `badge.member`), service states (`badge.operational`, `badge.live`, `badge.active`).
+  * `form.*` & `modal.*`: Form labels, validation error alerts, dialog titles, prompt instructions.
+* **Fail-Safe Fallback Contract**:
+  * If a token is not defined in the active language dictionary, the engine MUST automatically fall back to the English dictionary.
+  * If absent from English as well, it MUST gracefully fall back to the provided fallback argument or token key, preventing runtime crashes or blank UI elements.
+
+---
+
+## 18. Strict Zero Dummy Data Policy (Mandatory)
+* **Strict Prohibition of Dummy / Mock / Fallback Records**:
+  * NEVER return, render, or inject fake, mock, simulated, sample, or hardcoded dummy records across ANY platform (Angular Web Client, Flutter Desktop/Mobile, ASP.NET Core API).
+  * This strictly applies to notifications, feeds, user directories, tables, KPI metrics, telemetry counters, audit logs, messages, billing transactions, cards, and dropdowns.
+  * Functions like `_getSampleNotifications()`, mock array fallbacks, or sample seed cards in production client code are strictly prohibited and must NEVER be introduced or retained.
+* **100% Tenant Database Sourcing**:
+  * ALL data displayed in the application MUST be queried live from the active Tenant Database (or Central Master Database where specifically dealing with catalog/tenant metadata).
+  * If a tenant database query returns zero records (empty table or list), the system MUST return empty collections (`[]`) without falling back to sample or mock records.
+* **High-Aesthetic Localized Empty States**:
+  * When a data query yields 0 records, the UI MUST render a clean, high-aesthetic empty state with:
+    1. A relevant contextual icon (e.g. `notifications_none_rounded`, `inbox`, `person_off`).
+    2. A clear, localized headline (e.g. `'notif.empty_title'.tr(ref)` -> `"All caught up!"` or `"No records found"`).
+    3. A helpful, localized descriptive prompt (e.g. `'notif.empty_desc'.tr(ref)` -> `"New alerts, updates, and maintenance advisories will appear right here in real time."`).
+    4. An optional contextual action button if applicable (e.g. create or refresh).
+* **Test Isolation**:
+  * Mock data or fixtures may ONLY exist inside explicit test suites (`/test/`, `*Test.cs`, `*.spec.ts`) and must NEVER bleed into production models, services, repositories, or UI widgets.
+
+---
+
+## 19. Proactive Multi-Channel Notification & Communication Dispatch (Mandatory)
+* **Active Event-Driven Notification Consideration**:
+  * Whenever designing, implementing, or updating any feature, security workflow, user management process, administrative action, or transactional state change, the agent MUST proactively identify and implement multi-channel communications.
+  * Key triggering events include:
+    * **Identity & Access**: User registration, role assignments, password reset, 2FA enable/disable, login from new device/location, account lockouts.
+    * **Administration & Governance**: Status change, user suspension, member deletion, category reassignments.
+    * **Billing & Operations**: Subscription renewals, license threshold alerts, payment gateway verifications, maintenance windows.
+    * **User Workspaces**: Mentions, group invites, direct messages, broadcast announcements.
+* **Multi-Channel Orchestration via Unified Ingestion**:
+  * All communications MUST route through `ICentralNotificationDispatcher` (`DispatchNotificationRequest` / `NotificationDispatchPayload`) to ensure tenant-partitioned execution across:
+    * **In-App Alerts**: Stored in tenant DB `[dbo].[BcpNotifications]` and broadcasted immediately via SignalR WebSocket for instant bell-badge increments and slide-over/dropdown toast notifications.
+    * **Transactional Email**: Dispatched via Postmark queue with anti-spam blacklist validation and professional HTML responsive layouts.
+    * **SMS Carrier Alerts**: Queued via `[dbo].[BcpSmsQueue]` with character count limits and carrier compliance.
+    * **WhatsApp Notifications**: Dispatched through the verified messaging pipeline.
+* **Zero Direct Third-Party Client Coupling**:
+  * Domain services and controllers must NEVER directly call external Postmark/Twilio/Meta HTTP endpoints. All events must be enqueued into the tenant database queues to ensure retry resilience, idempotency, and complete telemetry logging.
+
+
+
+
