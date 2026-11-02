@@ -1,22 +1,24 @@
-@page "/centralwks/audit-log/details/{id:guid}"
+@page "/centralwks/audit-log/details/{id:guid?}"
 @model Ozikol.Central.Areas.Centralwks.Pages.AuditLog.DetailsModel
 @{
     ViewData["Title"] = "Audit Event: " + Model.AuditEntry.Action + " " + Model.AuditEntry.EntityType;
     ViewData["BreadcrumbSection"] = "Security";
 }
 
-<div class="admin-page-header">
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
     <div class="admin-title-group">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <a href="/centralwks/audit-log" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Audit Trail</a>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+            <a href="/centralwks/audit-log" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span> Back to Audit Trail
+            </a>
             <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
-            <span style="font-family: monospace; font-size: 11px; color: #94a3b8;">
+            <span style="font-family: monospace; font-size: 12px; color: var(--admin-text-dim);">
                 #@Model.AuditEntry.Id
             </span>
-            <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+            <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
                 @Model.AuditEntry.Action
             </span>
-            <span style="background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+            <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text); border: 1px solid var(--admin-border);">
                 @Model.AuditEntry.EntityType
             </span>
         </div>
@@ -25,38 +27,40 @@
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; width: 100%;">
     @* Left Column: Event Summary & JSON Diff Viewer *@
-    <div>
+    <div style="display: flex; flex-direction: column; gap: 24px;">
         @* Event Summary Card *@
-        <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
-            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Operation Overview</h2>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Operation Overview</h2>
+            </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Operation Verb</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #93c5fd; margin-top: 2px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Operation Verb</div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--admin-primary); margin-top: 3px;">
                         @Model.AuditEntry.Action
                     </div>
                 </div>
 
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Target Entity Class</div>
-                    <div style="font-size: 14px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Target Entity Class</div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-top: 3px;">
                         @Model.AuditEntry.EntityType
                     </div>
                 </div>
 
                 <div style="grid-column: span 2;">
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Target Record Identifier (EntityId)</div>
-                    <div style="font-size: 13px; font-family: monospace; color: #cbd5e1; margin-top: 2px; word-break: break-all;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Target Record Identifier (EntityId)</div>
+                    <div style="font-size: 13px; font-family: monospace; color: var(--admin-text); margin-top: 4px; word-break: break-all; background: var(--admin-bg-surface-elevated); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">
                         @(Model.AuditEntry.EntityId ?? "N/A (Global / Aggregate)")
                     </div>
                 </div>
 
                 <div style="grid-column: span 2;">
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Human Description</div>
-                    <div style="font-size: 14px; color: var(--admin-text); margin-top: 2px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); padding: 12px; border-radius: 6px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Human Description</div>
+                    <div style="font-size: 14px; color: var(--admin-text); margin-top: 4px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); padding: 12px 14px; border-radius: var(--radius-sm); line-height: 1.5;">
                         @(Model.AuditEntry.Summary ?? "No summary provided.")
                     </div>
                 </div>
@@ -64,43 +68,45 @@
         </div>
 
         @* State Snapshot Diffs *@
-        <div class="admin-card" style="padding: 24px;">
-            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Cryptographic State Snapshots (Diff)</h2>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Cryptographic State Snapshots (Diff)</h2>
+            </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
                 @* Old State *@
                 <div>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 12px; font-weight: 600; color: #f87171;">Previous State (Before)</span>
-                        <span style="font-size: 10px; color: var(--admin-text-muted);">JSON</span>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--admin-danger);">Previous State (Before)</span>
+                        <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text-dim); font-size: 11px;">JSON</span>
                     </div>
                     @if (string.IsNullOrWhiteSpace(Model.AuditEntry.OldValues))
                     {
-                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 20px; text-align: center; color: var(--admin-text-muted); font-size: 12px;">
+                        <div style="background: var(--admin-bg-surface-elevated); border: 1px dashed var(--admin-border); border-radius: var(--radius-md); padding: 28px 16px; text-align: center; color: var(--admin-text-muted); font-size: 12.5px;">
                             (No pre-existing state recorded — newly created entity)
                         </div>
                     }
                     else
                     {
-                        <pre style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; color: #fca5a5; font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 400px; overflow: auto; margin: 0;">@Model.AuditEntry.OldValues</pre>
+                        <pre style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 14px; color: var(--admin-text); font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 400px; overflow: auto; margin: 0;">@Model.AuditEntry.OldValues</pre>
                     }
                 </div>
 
                 @* New State *@
                 <div>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 12px; font-weight: 600; color: #34d399;">Updated State (After)</span>
-                        <span style="font-size: 10px; color: var(--admin-text-muted);">JSON</span>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--admin-success);">Updated State (After)</span>
+                        <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text-dim); font-size: 11px;">JSON</span>
                     </div>
                     @if (string.IsNullOrWhiteSpace(Model.AuditEntry.NewValues))
                     {
-                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 20px; text-align: center; color: var(--admin-text-muted); font-size: 12px;">
+                        <div style="background: var(--admin-bg-surface-elevated); border: 1px dashed var(--admin-border); border-radius: var(--radius-md); padding: 28px 16px; text-align: center; color: var(--admin-text-muted); font-size: 12.5px;">
                             (No post-operation state recorded — deleted entity)
                         </div>
                     }
                     else
                     {
-                        <pre style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; color: #86efac; font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 400px; overflow: auto; margin: 0;">@Model.AuditEntry.NewValues</pre>
+                        <pre style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 14px; color: var(--admin-text); font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 400px; overflow: auto; margin: 0;">@Model.AuditEntry.NewValues</pre>
                     }
                 </div>
             </div>
@@ -109,41 +115,45 @@
 
     @* Right Column: Telemetry & Caller Identification *@
     <div style="display: flex; flex-direction: column; gap: 24px;">
-        <div class="admin-card" style="padding: 20px;">
-            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Caller Telemetry &amp; Provenance</h3>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 20px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <h3 style="font-size: 14.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Caller Telemetry &amp; Provenance</h3>
+            </div>
             
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Operator Username</div>
-                <div style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin-top: 2px;">
-                    @(string.IsNullOrEmpty(Model.AuditEntry.UserName) ? "System Automation Engine" : Model.AuditEntry.UserName)
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Operator Username</div>
+                    <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); margin-top: 2px;">
+                        @(string.IsNullOrEmpty(Model.AuditEntry.UserName) ? "System Automation Engine" : Model.AuditEntry.UserName)
+                    </div>
                 </div>
-            </div>
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Identity User ID</div>
-                <div style="font-size: 12px; font-family: monospace; color: #93c5fd; margin-top: 2px; word-break: break-all;">
-                    @(Model.AuditEntry.UserId ?? "SYSTEM_INTERNAL")
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Identity User ID</div>
+                    <div style="font-size: 12px; font-family: monospace; color: var(--admin-primary); margin-top: 2px; word-break: break-all;">
+                        @(Model.AuditEntry.UserId ?? "SYSTEM_INTERNAL")
+                    </div>
                 </div>
-            </div>
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Client IP Address</div>
-                <div style="font-size: 13px; font-family: monospace; color: var(--admin-text); margin-top: 2px;">
-                    @(string.IsNullOrEmpty(Model.AuditEntry.IpAddress) ? "127.0.0.1 / Loopback" : Model.AuditEntry.IpAddress)
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Client IP Address</div>
+                    <div style="font-size: 13px; font-family: monospace; color: var(--admin-text); margin-top: 2px;">
+                        @(string.IsNullOrEmpty(Model.AuditEntry.IpAddress) ? "127.0.0.1 / Loopback" : Model.AuditEntry.IpAddress)
+                    </div>
                 </div>
-            </div>
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">User-Agent Signature</div>
-                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px; line-height: 1.4; word-break: break-all; background: rgba(255, 255, 255, 0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--admin-card-border);">
-                    @(string.IsNullOrEmpty(Model.AuditEntry.UserAgent) ? "Internal CLR Process" : Model.AuditEntry.UserAgent)
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">User-Agent Signature</div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; line-height: 1.45; word-break: break-all; background: var(--admin-bg-surface-elevated); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">
+                        @(string.IsNullOrEmpty(Model.AuditEntry.UserAgent) ? "Internal CLR Process" : Model.AuditEntry.UserAgent)
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Audit Record Immutability</div>
-                <div style="font-size: 12px; color: #34d399; margin-top: 2px;">
-                    ✓ Signed &amp; cryptographically persisted
+                <div style="padding-top: 12px; border-top: 1px solid var(--admin-border);">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Audit Record Immutability</div>
+                    <div style="font-size: 12.5px; color: var(--admin-success); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">verified</span> Signed &amp; cryptographically persisted
+                    </div>
                 </div>
             </div>
         </div>

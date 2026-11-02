@@ -57,7 +57,7 @@ namespace Ozikol_BCC.Api.Controllers
                 bool signatureValid = false;
                 bool secretsConfigured = false;
 
-                var managementSettings = await _context.BcpSettings.FirstOrDefaultAsync();
+                var managementSettings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
                 
                 // Prefer the tenant-configured webhook secret. The appsetting secret is only a fallback
                 // for development or transitional deployments where BCP settings have not been saved yet.
@@ -151,7 +151,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
         }
 
-        private async Task<IActionResult> HandleSmsWebhook(string reference, string? status, BcpSetting? managementSettings)
+        private async Task<IActionResult> HandleSmsWebhook(string reference, string? status, MisConfigurationSetting? managementSettings)
         {
             var tx = await _context.BcpSmsTransactions.FirstOrDefaultAsync(t => t.Reference == reference);
             if (tx == null)
@@ -165,8 +165,8 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     if (managementSettings == null)
                     {
-                        managementSettings = new BcpSetting();
-                        _context.BcpSettings.Add(managementSettings);
+                        managementSettings = new MisConfigurationSetting();
+                        _context.MisConfigurationSettings.Add(managementSettings);
                     }
                     managementSettings.SmsCreditBalance += tx.Amount;
                     tx.Status = PaymentStatus.Success;
@@ -184,7 +184,7 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(new { message = "SMS Webhook processed." });
         }
 
-        private async Task<IActionResult> HandleNewsletterWebhook(string reference, string? status, BcpSetting? managementSettings)
+        private async Task<IActionResult> HandleNewsletterWebhook(string reference, string? status, MisConfigurationSetting? managementSettings)
         {
             var tx = await _context.BcpNewsletterPlanTransactions.Include(x => x.BcpNewsletterPlan).FirstOrDefaultAsync(t => t.Reference == reference);
             if (tx == null)
@@ -204,8 +204,8 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         if (managementSettings == null)
                         {
-                            managementSettings = new BcpSetting();
-                            _context.BcpSettings.Add(managementSettings);
+                            managementSettings = new MisConfigurationSetting();
+                            _context.MisConfigurationSettings.Add(managementSettings);
                         }
                         managementSettings.GlobalNewsletterQuota += tx.Quota;
                         var newExpiry = DateTime.UtcNow.AddMonths(plan.DurationInMonths);

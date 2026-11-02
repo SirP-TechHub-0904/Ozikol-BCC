@@ -56,7 +56,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <h3>Performance Evaluation Metrics</h3>
               <p>Rubrics and numerical indicators used during member evaluations</p>
             </div>
-            <a routerLink="/admin/users/kpi/metrics/create" class="btn btn-primary btn-sm">
+            <a routerLink="/users/console/kpi/metrics/create" class="btn btn-primary btn-sm">
               <span class="material-symbols-outlined">add</span>
               <span>Create Metric</span>
             </a>
@@ -91,7 +91,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="empty-state" *ngIf="metrics.length === 0">
               <span class="material-symbols-outlined">assignment</span>
               <p>No KPI indicators defined yet.</p>
-              <a routerLink="/admin/users/kpi/metrics/create" class="btn btn-outline btn-sm">Create Indicator</a>
+              <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+                <button type="button" class="btn btn-primary btn-sm" (click)="loadMetrics()">
+                  <span class="material-symbols-outlined">refresh</span>
+                  <span>Load Default Rubrics</span>
+                </button>
+                <a routerLink="/users/console/kpi/metrics/create" class="btn btn-outline btn-sm">Create Custom Indicator</a>
+              </div>
             </div>
           </div>
         </div>
@@ -148,7 +154,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     <span class="score-badge">{{ item.averageScore }}%</span>
                   </td>
                   <td style="text-align:right;">
-                    <a [routerLink]="['/admin/users/kpi/grade', item.userId]" class="btn btn-outline btn-xs">
+                    <a [routerLink]="['/users/console/kpi/grade', item.userId || item.profileId]" class="btn btn-outline btn-xs">
                       Grade
                     </a>
                   </td>
@@ -159,7 +165,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     <p>No evaluation scores recorded for <strong>{{ selectedPeriod }}</strong>.</p>
                     <p class="empty-subtext">Select a member from the directory to enter this period's performance evaluation.</p>
                     <div style="margin-top: 12px;">
-                      <a routerLink="/admin/users/list" class="btn btn-outline btn-sm">Browse Directory to Grade</a>
+                      <a routerLink="/users/console/list" class="btn btn-outline btn-sm">Browse Directory to Grade</a>
                     </div>
                   </td>
                 </tr>
@@ -232,8 +238,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn { height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; border: none; transition: all 0.15s ease; }
     .btn-sm { height: 34px; padding: 0 12px; font-size: 12px; }
     .btn-xs { height: 28px; padding: 0 10px; font-size: 11px; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover { background: #003bb5; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #003bb5 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
     .btn-outline { background: #ffffff; border: 1px solid #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
   `]
@@ -256,7 +266,7 @@ export class UserKpiComponent implements OnInit {
       text: 'Create KPI Metric',
       icon: 'add_chart',
       isPrimary: true,
-      routerLink: '/admin/users/kpi/metrics/create'
+      routerLink: '/users/console/kpi/metrics/create'
     }
   ];
 

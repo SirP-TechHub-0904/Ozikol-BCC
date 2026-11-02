@@ -69,6 +69,123 @@ public class TenantMigrationSummary
     };
 }
 
+/// <summary>
+/// Model representing single day of the week record activity.
+/// </summary>
+public class DayActivityItem
+{
+    /// <summary>
+    /// Name of the day (e.g., "Monday", "Tuesday", etc.).
+    /// </summary>
+    public string DayName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Short 3-letter abbreviation (e.g., "Mon", "Tue").
+    /// </summary>
+    public string ShortName => DayName.Length >= 3 ? DayName.Substring(0, 3) : DayName;
+
+    /// <summary>
+    /// Total records inserted on this day of the week.
+    /// </summary>
+    public long RecordCount { get; set; }
+
+    /// <summary>
+    /// Relative percentage of total weekly volume.
+    /// </summary>
+    public double Percentage { get; set; }
+
+    /// <summary>
+    /// True if this day is the peak activity day of the week.
+    /// </summary>
+    public bool IsPeak { get; set; }
+}
+
+/// <summary>
+/// Model representing single hour of the day record ingestion.
+/// </summary>
+public class HourActivityItem
+{
+    /// <summary>
+    /// 24-hour index (0 to 23).
+    /// </summary>
+    public int Hour { get; set; }
+
+    /// <summary>
+    /// Formatted time label (e.g., "00:00", "09:00", "14:00").
+    /// </summary>
+    public string Label => $"{Hour:D2}:00";
+
+    /// <summary>
+    /// Formatted display string in 12-hour clock (e.g. "9 AM", "2 PM").
+    /// </summary>
+    public string DisplayLabel
+    {
+        get
+        {
+            if (Hour == 0) return "12 AM";
+            if (Hour < 12) return $"{Hour} AM";
+            if (Hour == 12) return "12 PM";
+            return $"{Hour - 12} PM";
+        }
+    }
+
+    /// <summary>
+    /// Total records inserted during this hour window.
+    /// </summary>
+    public long RecordCount { get; set; }
+
+    /// <summary>
+    /// Relative percentage of hourly peak.
+    /// </summary>
+    public double Percentage { get; set; }
+
+    /// <summary>
+    /// True if this hour is the single peak hour.
+    /// </summary>
+    public bool IsPeak { get; set; }
+}
+
+/// <summary>
+/// Diagnostic distribution analyzing tenant record creation by day of week and hour of day.
+/// </summary>
+public class TenantActivityDistribution
+{
+    /// <summary>
+    /// 7-day breakdown (Monday to Sunday).
+    /// </summary>
+    public List<DayActivityItem> WeeklyDistribution { get; set; } = new();
+
+    /// <summary>
+    /// 24-hour curve (00:00 to 23:00).
+    /// </summary>
+    public List<HourActivityItem> HourlyDistribution { get; set; } = new();
+
+    /// <summary>
+    /// The busiest weekday name (e.g. "Wednesday").
+    /// </summary>
+    public string PeakDay { get; set; } = "N/A";
+
+    /// <summary>
+    /// The peak 2-hour window (e.g. "2:00 PM – 4:00 PM UTC").
+    /// </summary>
+    public string PeakHourWindow { get; set; } = "N/A";
+
+    /// <summary>
+    /// Total records analyzed across timestamped tables.
+    /// </summary>
+    public long TotalAnalyzedRecords { get; set; }
+
+    /// <summary>
+    /// Number of tables with timestamp telemetry detected.
+    /// </summary>
+    public int TrackedTablesCount { get; set; }
+
+    /// <summary>
+    /// Indicates whether timestamp telemetry is present.
+    /// </summary>
+    public bool HasData => TotalAnalyzedRecords > 0;
+}
+
 public class TenantDatabaseDeepDive
 {
     public TenantMigrationSummary Tenant { get; set; } = new();
@@ -81,6 +198,7 @@ public class TenantDatabaseDeepDive
     public bool HasPendingMigrations => PendingMigrations.Count > 0;
     public bool IsReachable { get; set; }
     public string? ErrorMessage { get; set; }
+    public TenantActivityDistribution ActivityDistribution { get; set; } = new();
 
     public string FormattedTotalRecords => TotalRecordsCount switch
     {
@@ -110,7 +228,10 @@ public class MasterMigrationSummary
     public int SyncedTenantsCount { get; set; }
     public int PendingTenantsCount { get; set; }
     public int ErrorTenantsCount { get; set; }
-    public long TotalFleetRecordsCount { get; set; }
+    /// <summary>
+    /// Total count of platform and tenant records monitored.
+    /// </summary>
+    public long TotalPlatformRecordsCount { get; set; }
 }
 
 public class MigrationExecutionResult
@@ -249,9 +370,7 @@ public class CentralMigrationService : ICentralMigrationService
                 CreatedUtc = tenant.CreatedUtc
             };
 
-            string tenantConnStr = !string.IsNullOrWhiteSpace(tenant.ConnectionString)
-                ? tenant.ConnectionString
-                : BuildTenantConnectionString(masterConnStr, tenant.DatabaseName);
+            string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
             var dbStatus = new DatabaseMigrationStatus
             {
@@ -320,9 +439,7 @@ public class CentralMigrationService : ICentralMigrationService
             ?? _tenantOptions.Value.ConnectionString
             ?? string.Empty;
 
-        string tenantConnStr = !string.IsNullOrWhiteSpace(tenant.ConnectionString)
-            ? tenant.ConnectionString
-            : BuildTenantConnectionString(masterConnStr, tenant.DatabaseName);
+        string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
         var deepDive = new TenantDatabaseDeepDive
         {
@@ -375,6 +492,10 @@ public class CentralMigrationService : ICentralMigrationService
 
                     deepDive.Tenant.TotalTablesCount = deepDive.TotalTablesCount;
                     deepDive.Tenant.TotalRecordsCount = deepDive.TotalRecordsCount;
+
+                    // Fetch live record creation activity & peak time telemetry
+                    var activity = await GetTenantActivityDistributionAsync(tenantConnStr, cancellationToken);
+                    deepDive.ActivityDistribution = activity;
                 }
                 else
                 {
@@ -447,9 +568,7 @@ public class CentralMigrationService : ICentralMigrationService
             ?? _tenantOptions.Value.ConnectionString
             ?? string.Empty;
 
-        string tenantConnStr = !string.IsNullOrWhiteSpace(tenant.ConnectionString)
-            ? tenant.ConnectionString
-            : BuildTenantConnectionString(masterConnStr, tenant.DatabaseName);
+        string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
         var result = new MigrationExecutionResult
         {
@@ -533,7 +652,7 @@ public class CentralMigrationService : ICentralMigrationService
             SELECT 
                 t.name AS TableName,
                 s.name AS SchemaName,
-                SUM(p.record_count) AS TotalRows,
+                SUM(p.row_count) AS TotalRows,
                 SUM(p.used_page_count) * 8 AS UsedSpaceKB
             FROM sys.tables t
             INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
@@ -563,12 +682,163 @@ public class CentralMigrationService : ICentralMigrationService
         return list;
     }
 
+    private static async Task<TenantActivityDistribution> GetTenantActivityDistributionAsync(string connectionString, CancellationToken cancellationToken)
+    {
+        var distribution = new TenantActivityDistribution();
+
+        // Initialize 7 days of the week starting from Monday
+        var days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+        var dayMap = new Dictionary<string, DayActivityItem>();
+        foreach (var d in days)
+        {
+            var item = new DayActivityItem { DayName = d };
+            distribution.WeeklyDistribution.Add(item);
+            dayMap[d] = item;
+        }
+
+        // Initialize 24 hours of the day (00:00 - 23:00)
+        var hourMap = new Dictionary<int, HourActivityItem>();
+        for (int h = 0; h < 24; h++)
+        {
+            var item = new HourActivityItem { Hour = h };
+            distribution.HourlyDistribution.Add(item);
+            hourMap[h] = item;
+        }
+
+        try
+        {
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+
+            // Step 1: Discover tables with standard created datetime columns
+            const string colDiscoverySql = @"
+                SELECT 
+                    TABLE_SCHEMA,
+                    TABLE_NAME,
+                    COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE COLUMN_NAME IN ('CreatedUtc', 'CreatedAt', 'CreatedDate', 'DateCreated', 'Timestamp', 'CreatedOn', 'Created')
+                  AND DATA_TYPE IN ('datetime', 'datetime2', 'datetimeoffset', 'smalldatetime')
+                  AND TABLE_NAME NOT LIKE '__EF%'
+                  AND TABLE_NAME NOT LIKE 'sys%'
+            ";
+
+            var targetColumns = new List<(string Schema, string Table, string Column)>();
+            using (var colCmd = new SqlCommand(colDiscoverySql, connection))
+            using (var colReader = await colCmd.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await colReader.ReadAsync(cancellationToken))
+                {
+                    targetColumns.Add((colReader.GetString(0), colReader.GetString(1), colReader.GetString(2)));
+                }
+            }
+
+            distribution.TrackedTablesCount = targetColumns.Count;
+            if (targetColumns.Count == 0)
+            {
+                return distribution;
+            }
+
+            // Step 2: Build dynamic non-blocking UNION ALL aggregation
+            var unionQueries = new List<string>();
+            foreach (var (schema, table, column) in targetColumns)
+            {
+                unionQueries.Add($@"
+                    SELECT 
+                        DATEPART(weekday, [{column}]) AS Dw,
+                        DATEPART(hour, [{column}]) AS Hr,
+                        COUNT(1) AS Cnt
+                    FROM [{schema}].[{table}] WITH (NOLOCK)
+                    WHERE [{column}] IS NOT NULL
+                    GROUP BY DATEPART(weekday, [{column}]), DATEPART(hour, [{column}])
+                ");
+            }
+
+            var aggSql = $@"
+                SELECT Dw, Hr, SUM(Cnt) AS TotalRecords
+                FROM ({string.Join(" UNION ALL ", unionQueries)}) src
+                GROUP BY Dw, Hr;
+            ";
+
+            using (var aggCmd = new SqlCommand(aggSql, connection))
+            using (var aggReader = await aggCmd.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await aggReader.ReadAsync(cancellationToken))
+                {
+                    int dw = Convert.ToInt32(aggReader.GetValue(0)); // SQL Server DATEPART(weekday): 1=Sunday, 2=Monday, ..., 7=Saturday
+                    int hr = Convert.ToInt32(aggReader.GetValue(1));
+                    long count = Convert.ToInt64(aggReader.GetValue(2));
+
+                    string dayName = dw switch
+                    {
+                        1 => "Sunday",
+                        2 => "Monday",
+                        3 => "Tuesday",
+                        4 => "Wednesday",
+                        5 => "Thursday",
+                        6 => "Friday",
+                        7 => "Saturday",
+                        _ => "Monday"
+                    };
+
+                    if (dayMap.TryGetValue(dayName, out var dayItem))
+                    {
+                        dayItem.RecordCount += count;
+                    }
+
+                    if (hourMap.TryGetValue(hr, out var hrItem))
+                    {
+                        hrItem.RecordCount += count;
+                    }
+
+                    distribution.TotalAnalyzedRecords += count;
+                }
+            }
+
+            // Step 3: Compute relative percentages and peak points
+            if (distribution.TotalAnalyzedRecords > 0)
+            {
+                long maxDayRecords = distribution.WeeklyDistribution.Max(d => d.RecordCount);
+                if (maxDayRecords > 0)
+                {
+                    foreach (var d in distribution.WeeklyDistribution)
+                    {
+                        d.Percentage = (d.RecordCount / (double)maxDayRecords) * 100.0;
+                        if (d.RecordCount == maxDayRecords && maxDayRecords > 0)
+                        {
+                            d.IsPeak = true;
+                            distribution.PeakDay = d.DayName;
+                        }
+                    }
+                }
+
+                long maxHourRecords = distribution.HourlyDistribution.Max(h => h.RecordCount);
+                if (maxHourRecords > 0)
+                {
+                    foreach (var h in distribution.HourlyDistribution)
+                    {
+                        h.Percentage = (h.RecordCount / (double)maxHourRecords) * 100.0;
+                        if (h.RecordCount == maxHourRecords && maxHourRecords > 0)
+                        {
+                            h.IsPeak = true;
+                            int nextHour = (h.Hour + 2) % 24;
+                            var nextItem = hourMap.TryGetValue(nextHour, out var nh) ? nh : h;
+                            distribution.PeakHourWindow = $"{h.DisplayLabel} – {nextItem.DisplayLabel} UTC";
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Non-blocking telemetry fallback
+        }
+
+        return distribution;
+    }
+
     private static string BuildTenantConnectionString(string masterConnStr, string targetDbName)
     {
-        var builder = new SqlConnectionStringBuilder(masterConnStr)
-        {
-            InitialCatalog = targetDbName
-        };
-        return builder.ConnectionString;
+        return TenantConnectionHarmonizer.Harmonize(masterConnStr, null, targetDbName);
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ozikol_BCC.Domain.Models
 {
@@ -42,6 +43,13 @@ namespace Ozikol_BCC.Domain.Models
         /// Navigation property for the sub-categories.
         /// </summary>
         public ICollection<BlogCategory>? Children { get; set; }
+
+        /// <summary>
+        /// Optional custom CSS class applied to this category's filter button or badge container.
+        /// Injected into templates via {{ CustomClass }}.
+        /// </summary>
+        [NotMapped]
+        public string? CustomClass { get; set; }
     }
 }
 

@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -12,13 +14,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
 {
     /// <summary>
     /// PageModel authenticating Platform SuperAdmins and administrative operators into the Central Administration Console.
-    /// Validates administrator role credentials and records sign-in audit trail events.
+    /// Validates administrator role credentials, enforces 2FA verification when enabled, and records sign-in audit trail events.
     /// </summary>
+    [EnableRateLimiting("central-auth-limit")]
     public class LoginModel : PageModel
     {
         private readonly SignInManager<CentralUser> _signInManager;
         private readonly UserManager<CentralUser> _userManager;
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly ICentralTwoFactorService _twoFactorService;
+        private readonly ICentralEmailService _emailService;
+        private readonly IRecaptchaService _recaptchaService;
         private readonly ILogger<LoginModel> _logger;
 
         /// <summary>
@@ -27,18 +33,32 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
         /// <param name="signInManager">ASP.NET Identity sign-in manager for CentralUser accounts.</param>
         /// <param name="userManager">ASP.NET Identity user manager for CentralUser accounts.</param>
         /// <param name="dbContext">Master catalog database context for audit logging.</param>
+        /// <param name="twoFactorService">Service for generating and validating OTP codes.</param>
+        /// <param name="emailService">Service for dispatching security notifications.</param>
+        /// <param name="recaptchaService">Service for verifying Google reCAPTCHA tokens.</param>
         /// <param name="logger">Logging facility for security diagnostics.</param>
         public LoginModel(
             SignInManager<CentralUser> signInManager,
             UserManager<CentralUser> userManager,
             MasterCatalogDbContext dbContext,
+            ICentralTwoFactorService twoFactorService,
+            ICentralEmailService emailService,
+            IRecaptchaService recaptchaService,
             ILogger<LoginModel> logger)
         {
-            _signInManager = signInManager;
-            _userManager = userManager;
-            _dbContext = dbContext;
-            _logger = logger;
+            _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _twoFactorService = twoFactorService ?? throw new ArgumentNullException(nameof(twoFactorService));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
+        /// <summary>
+        /// Gets the public Google reCAPTCHA site key for widget rendering in the administrative sign-in interface.
+        /// </summary>
+        public string RecaptchaSiteKey => _recaptchaService.SiteKey;
 
         /// <summary>
         /// Work email address of the platform administrator.
@@ -76,6 +96,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
         public string? ErrorMessage { get; set; }
 
         /// <summary>
+        /// Contextual success status message (e.g., following successful password reset).
+        /// </summary>
+        [TempData]
+        public string? StatusMessage { get; set; }
+
+        /// <summary>
         /// Handles HTTP GET requests to display the Admin sign-in interface.
         /// If user is already authenticated as admin, redirects directly to the dashboard.
         /// </summary>
@@ -96,9 +122,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
 
         /// <summary>
         /// Handles HTTP POST requests to authenticate administrative personnel.
+        /// If two-factor authentication is required, dispatches an OTP and redirects to the 2FA verification challenge.
         /// </summary>
         /// <param name="returnUrl">Optional destination URL.</param>
-        /// <returns>Redirect to admin dashboard on success, or redisplayed page with error messages on failure.</returns>
+        /// <returns>Redirect to admin dashboard, 2FA challenge, or redisplayed page with error messages.</returns>
         public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
             ReturnUrl = returnUrl;
@@ -109,6 +136,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             }
 
             var cleanEmail = Email.Trim().ToLowerInvariant();
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // 1. Verify Google reCAPTCHA token
+            var recaptchaResponse = Request.Form["g-recaptcha-response"].ToString();
+            _logger.LogInformation("Central Console Sign-In attempt for operator '{Email}' from IP {ClientIp}. Verifying reCAPTCHA...", cleanEmail, clientIp);
+
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaResponse, clientIp);
+            if (!isCaptchaValid)
+            {
+                _logger.LogWarning("Admin login rejected: Google reCAPTCHA verification failed for operator '{Email}' from IP {ClientIp}.", cleanEmail, clientIp);
+                ErrorMessage = "Security verification failed. Please complete the reCAPTCHA challenge.";
+                return Page();
+            }
+
             var user = await _userManager.FindByEmailAsync(cleanEmail);
 
             if (user == null || !user.IsActive)
@@ -135,6 +176,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             }
 
             var result = await _signInManager.PasswordSignInAsync(user, Password, RememberMe, lockoutOnFailure: true);
+
+            // Handle Two-Factor Authentication requirement
+            if (result.RequiresTwoFactor || (result.Succeeded && user.TwoFactorEnabled))
+            {
+                if (result.Succeeded)
+                {
+                    // Ensure operator completes 2FA verification challenge before session is issued
+                    await _signInManager.SignOutAsync();
+                }
+
+                _logger.LogInformation("Admin operator '{Email}' requires 2FA challenge. Generating security OTP.", cleanEmail);
+                var code = _twoFactorService.GenerateEmailOtp(cleanEmail);
+                await _emailService.SendTwoFactorCodeEmailAsync(cleanEmail, code);
+
+                return Redirect($"/centralwks/login-2fa?email={Uri.EscapeDataString(cleanEmail)}&rememberMe={RememberMe}&returnUrl={Uri.EscapeDataString(returnUrl ?? string.Empty)}");
+            }
 
             if (result.Succeeded)
             {

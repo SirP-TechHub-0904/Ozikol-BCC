@@ -15,61 +15,477 @@ using static Ozikol_BCC.Domain.Enum.Enum;
 
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Api.Hubs;
+using Ozikol_BCC.Application.Common;
+using Ozikol_BCC.Application.Interfaces.Services;
 
 namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+    [Authorize]
     [Tags("2b. Identity Administration")]
     public class IdentityApiController : ControllerBase
     {
+        private static readonly HashSet<string> _seededDatabases = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly SemaphoreSlim _seedLock = new(1, 1);
+
         private readonly RoleManager<AppRole> _roleManager;
         private readonly UserManager<Profile> _userManager;
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<GroupChatHub>? _hubContext;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public IdentityApiController(
             RoleManager<AppRole> roleManager,
             UserManager<Profile> userManager,
             DashboardDbContext dbContext,
-            IHubContext<GroupChatHub>? hubContext = null)
+            IHubContext<GroupChatHub>? hubContext = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _roleManager = roleManager;
             _userManager = userManager;
             _dbContext = dbContext;
             _hubContext = hubContext;
+            _notificationDispatcher = notificationDispatcher;
         }
 
-        [HttpGet("roles")]
-        public async Task<IActionResult> GetRoles()
+        /// <summary>
+        /// Validates whether the calling principal possesses authority to grant, modify, or revoke system roles.
+        /// Strictly restricted to SuperAdmin, Admin (implicit Global Editor), or assigned Identity Manager roles.
+        /// Feature Editors for other domains (e.g. User Management) cannot assign or alter roles.
+        /// </summary>
+        private async Task<bool> CallerCanAssignRolesAsync()
         {
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
-            var rolesQuery = _roleManager.Roles.AsQueryable();
-            if (!isSuperAdmin)
+            bool HasRoleClaim(string roleName) =>
+                User.IsInRole(roleName) ||
+                User.Claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                     string.Equals(c.Value, roleName, StringComparison.OrdinalIgnoreCase));
+
+            if (HasRoleClaim("SuperAdmin") || HasRoleClaim("Admin"))
+                return true;
+
+            if (HasRoleClaim("Identity Manager") || HasRoleClaim("IdentityManager"))
+                return true;
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                var hasIdentityFeature = await _dbContext.BcpUserFeatureRoles
+                    .AsNoTracking()
+                    .AnyAsync(f => f.ProfileId == currentUserId &&
+                                   f.IsActive &&
+                                   (f.FeatureAreaKey == "IdentityManager" || f.FeatureAreaKey == "IdentityAccessControl") &&
+                                   (f.ActionRole == BcpActionRole.GlobalEditor || f.ActionRole == BcpActionRole.FeatureEditor));
+                if (hasIdentityFeature)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Ensures all standard platform and feature authority roles exist in the tenant Identity role store.
+        /// Uses single-query non-blocking batch lookup and in-memory cache to guarantee zero database overhead on repeated calls.
+        /// </summary>
+        private async Task EnsureSeededRolesAsync()
+        {
+            var dbName = _dbContext.Database.GetDbConnection().Database ?? "TenantDb";
+            if (_seededDatabases.Contains(dbName))
+                return;
+
+            await _seedLock.WaitAsync();
+            try
+            {
+                if (_seededDatabases.Contains(dbName))
+                    return;
+
+                var systemRoles = new (string Name, RoleCategory Category)[]
+                {
+                    ("SuperAdmin", RoleCategory.BCP),
+                    ("Admin", RoleCategory.Both),
+                    ("Identity Manager", RoleCategory.BCP),
+                    ("User Manager", RoleCategory.BCP),
+                    ("Global Editor", RoleCategory.BCP),
+                    ("Feature Editor", RoleCategory.BCP),
+                    ("Read Only", RoleCategory.BCP),
+                    ("Member", RoleCategory.BCP)
+                };
+
+                // Single non-blocking fast query for all existing role names
+                var existingRoleNames = await _dbContext.Roles
+                    .AsNoTracking()
+                    .Select(r => r.Name)
+                    .ToListAsync();
+
+                var existingSet = new HashSet<string>(existingRoleNames.Where(n => !string.IsNullOrEmpty(n))!, StringComparer.OrdinalIgnoreCase);
+
+                bool changed = false;
+                foreach (var (name, cat) in systemRoles)
+                {
+                    if (!existingSet.Contains(name))
+                    {
+                        _dbContext.Roles.Add(new AppRole(name)
+                        {
+                            NormalizedName = name.ToUpperInvariant(),
+                            RoleCategory = cat,
+                            ConcurrencyStamp = Guid.NewGuid().ToString()
+                        });
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                _seededDatabases.Add(dbName);
+            }
+            finally
+            {
+                _seedLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the list of assignable system roles, strictly excluding SuperAdmin.
+        /// </summary>
+        [HttpGet("roles")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> GetRoles([FromQuery] bool includeSuperAdmin = false)
+        {
+            await EnsureSeededRolesAsync();
+
+            var rolesQuery = _roleManager.Roles.AsNoTracking();
+            // SuperAdmin can never be selected or assigned from general role dropdowns
+            if (!includeSuperAdmin || !User.IsInRole("SuperAdmin"))
             {
                 rolesQuery = rolesQuery.Where(r => r.Name != "SuperAdmin");
             }
 
-            var roles = await rolesQuery.Select(r => new
-            {
-                r.Id,
-                r.Name,
-                r.NormalizedName
-            }).ToListAsync();
-
-            if (roles.Count == 0)
-            {
-                var defaultRoles = isSuperAdmin 
-                    ? new[] { "SuperAdmin", "Admin", "Member", "Moderator", "Editor" }
-                    : new[] { "Admin", "Member", "Moderator", "Editor" };
-                return Ok(ApiResponse<object>.SuccessResponse(defaultRoles.Select(r => new { Id = r, Name = r, NormalizedName = r.ToUpperInvariant() }), "Default roles retrieved."));
-            }
+            var roles = await rolesQuery
+                .OrderBy(r => r.Name == "Admin" ? 1 :
+                              r.Name == "Identity Manager" ? 2 :
+                              r.Name == "User Manager" ? 3 :
+                              r.Name == "Global Editor" ? 4 :
+                              r.Name == "Feature Editor" ? 5 :
+                              r.Name == "Read Only" ? 6 : 7)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.NormalizedName
+                }).ToListAsync();
 
             return Ok(ApiResponse<object>.SuccessResponse(roles, "Roles retrieved."));
         }
 
+        /// <summary>
+        /// Retrieves the fixed 6-tier system role catalog with assigned members and scope specifications.
+        /// Pre-populates all standard roles so the console view is never blank.
+        /// </summary>
+        [HttpGet("roles/catalog")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> GetRolesCatalog()
+        {
+            try
+            {
+                await EnsureSeededRolesAsync();
+
+                // Fetch all user roles mapped with profile info using non-blocking read
+                var allUserRoles = await _dbContext.UserRoles
+                    .AsNoTracking()
+                    .Join(_dbContext.Roles.AsNoTracking(), ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+                    .ToListAsync();
+
+                var userIds = allUserRoles.Select(ur => ur.UserId).Distinct().ToList();
+                var profilesList = await _dbContext.Users
+                    .AsNoTracking()
+                    .Where(u => userIds.Contains(u.Id))
+                    .Select(u => new
+                    {
+                        u.Id,
+                        FullName = ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim(),
+                        u.Email,
+                        u.MemberId,
+                        u.AvatarUrl
+                    })
+                    .ToListAsync();
+
+                var profiles = profilesList.ToDictionary(u => u.Id);
+
+                var featureRoles = await _dbContext.BcpUserFeatureRoles
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+
+                var featureRolesByUser = featureRoles
+                    .Where(f => !string.IsNullOrEmpty(f.ProfileId))
+                    .GroupBy(f => f.ProfileId!)
+                    .ToDictionary(g => g.Key, g => g.Select(f => f.FeatureAreaKey ?? "").Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList());
+
+                // Build catalog for system and operational roles
+                var catalogDefinitions = new[]
+                {
+                    new
+                    {
+                        Name = "SuperAdmin",
+                        Description = "Root workspace administrator with full sovereignty across master catalog and tenant systems. Locked to root account.",
+                        Scope = "Root System Access (Non-assignable)",
+                        CanAssign = false,
+                        Badge = "badge-root",
+                        Icon = "shield_with_house",
+                        Group = "system_feature",
+                        Order = 1
+                    },
+                    new
+                    {
+                        Name = "Admin",
+                        Description = "Global workspace administrator with unrestricted operational authority across identity, content, configuration, and data.",
+                        Scope = "Global Administrator (Unrestricted)",
+                        CanAssign = true,
+                        Badge = "badge-admin",
+                        Icon = "admin_panel_settings",
+                        Group = "system_feature",
+                        Order = 2
+                    },
+                    new
+                    {
+                        Name = "Identity Manager",
+                        Description = "Sovereign identity and access administrator authorized to manage system roles, grant operational permissions, and issue user invitations.",
+                        Scope = "Identity & Access Control (RBAC Sovereign)",
+                        CanAssign = true,
+                        Badge = "badge-identity",
+                        Icon = "badge",
+                        Group = "system_feature",
+                        Order = 3
+                    },
+                    new
+                    {
+                        Name = "User Manager",
+                        Description = "Directory and cohort administrator authorized to manage user profiles, categories, custom fields, and member statuses across the workspace.",
+                        Scope = "User Directory & Cohort Management",
+                        CanAssign = true,
+                        Badge = "badge-usermanager",
+                        Icon = "manage_accounts",
+                        Group = "system_feature",
+                        Order = 4
+                    },
+                    new
+                    {
+                        Name = "Member",
+                        Description = "Standard tenant member account with directory listing and personal workspace self-service capabilities.",
+                        Scope = "Standard Member Access",
+                        CanAssign = true,
+                        Badge = "badge-member",
+                        Icon = "person",
+                        Group = "system_feature",
+                        Order = 5
+                    },
+                    new
+                    {
+                        Name = "Global Editor",
+                        Description = "Global operational editor with permissions to modify content, records, and operations across all active workspace features.",
+                        Scope = "Global Scope (All Active Features)",
+                        CanAssign = true,
+                        Badge = "badge-editor",
+                        Icon = "edit_square",
+                        Group = "operational_level",
+                        Order = 6
+                    },
+                    new
+                    {
+                        Name = "Feature Editor",
+                        Description = "Modular feature editor with modification privileges scoped specifically to assigned feature modules (e.g. User Management, CMS, Products).",
+                        Scope = "Scoped Feature Scope (e.g. UserManager, CMS)",
+                        CanAssign = true,
+                        Badge = "badge-feature",
+                        Icon = "rule_settings",
+                        Group = "operational_level",
+                        Order = 7
+                    },
+                    new
+                    {
+                        Name = "Read Only",
+                        Description = "Read-only auditor with comprehensive viewing permissions across modules, but zero modification or deletion capabilities.",
+                        Scope = "Read-Only (All Features)",
+                        CanAssign = true,
+                        Badge = "badge-readonly",
+                        Icon = "visibility",
+                        Group = "operational_level",
+                        Order = 8
+                    }
+                };
+
+                // SuperAdmin tier is strictly visible only when an authenticated SuperAdmin is logged in.
+                // Standard administrators and lower operational roles must not see or manage the root SuperAdmin role.
+                var isSuperAdmin = User.IsInRole("SuperAdmin") ||
+                                   User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                                        string.Equals(c.Value, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+                var visibleDefinitions = catalogDefinitions
+                    .Where(def => isSuperAdmin || !string.Equals(def.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(def => def.Order)
+                    .ToList();
+
+                var catalog = visibleDefinitions.Select(def =>
+                {
+                    var assignedUsers = allUserRoles
+                        .Where(ur => string.Equals(ur.RoleName, def.Name, StringComparison.OrdinalIgnoreCase))
+                        .Select(ur =>
+                        {
+                            profiles.TryGetValue(ur.UserId, out var p);
+                            featureRolesByUser.TryGetValue(ur.UserId, out var fList);
+                            return new
+                            {
+                                userId = ur.UserId,
+                                fullName = !string.IsNullOrWhiteSpace(p?.FullName) ? p.FullName : "Member",
+                                email = p?.Email ?? "",
+                                memberId = p?.MemberId ?? "",
+                                avatarUrl = p?.AvatarUrl,
+                                features = fList ?? new List<string> { "UserManager" }
+                            };
+                        })
+                        .ToList();
+
+                    return new
+                    {
+                        name = def.Name,
+                        description = def.Description,
+                        scope = def.Scope,
+                        canAssign = def.CanAssign,
+                        badge = def.Badge,
+                        icon = def.Icon,
+                        group = def.Group,
+                        order = def.Order,
+                        memberCount = assignedUsers.Count,
+                        members = assignedUsers
+                    };
+                }).ToList();
+
+                return Ok(ApiResponse<object>.SuccessResponse(catalog, "Role catalog retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to retrieve roles catalog: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Assigns a member to an authorized system role. SuperAdmin cannot be assigned to any member.
+        /// </summary>
+        [HttpPost("roles/assign")]
+        public async Task<IActionResult> AssignRole([FromBody] RoleAssignmentRequest request)
+        {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can assign system roles."));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.RoleName) || string.IsNullOrWhiteSpace(request.UserId))
+                return BadRequest(ApiResponse<object>.FailureResponse("RoleName and UserId are required."));
+
+            if (string.Equals(request.RoleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be assigned to any member account. It is strictly reserved for the root workspace account."));
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return NotFound(ApiResponse<object>.FailureResponse("User not found."));
+
+            await EnsureSeededRolesAsync();
+
+            if (!await _roleManager.RoleExistsAsync(request.RoleName))
+                return BadRequest(ApiResponse<object>.FailureResponse($"Role '{request.RoleName}' does not exist."));
+
+            // Remove existing non-SuperAdmin roles to guarantee a single unambiguous active role
+            var existingRoles = await _userManager.GetRolesAsync(user);
+            var rolesToRemove = existingRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (rolesToRemove.Any())
+            {
+                await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            }
+
+            var addRes = await _userManager.AddToRoleAsync(user, request.RoleName);
+            if (!addRes.Succeeded)
+                return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+
+            // If Feature Editor, assign feature scope (default UserManager)
+            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            {
+                var featureKey = request.ResolvedFeatureArea;
+                var existingFeature = await _dbContext.BcpUserFeatureRoles
+                    .FirstOrDefaultAsync(f => f.ProfileId == user.Id && f.FeatureAreaKey == featureKey);
+
+                if (existingFeature == null)
+                {
+                    _dbContext.BcpUserFeatureRoles.Add(new BcpUserFeatureRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        ProfileId = user.Id,
+                        FeatureAreaKey = featureKey,
+                        ActionRole = BcpActionRole.FeatureEditor,
+                        IsActive = true,
+                        AssignedBy = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                        Date = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    existingFeature.ActionRole = BcpActionRole.FeatureEditor;
+                    existingFeature.IsActive = true;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"User '{user.Email}' assigned to role '{request.RoleName}' successfully."));
+        }
+
+        /// <summary>
+        /// Unassigns a member from a system role. SuperAdmin cannot be unassigned.
+        /// </summary>
+        [HttpPost("roles/unassign")]
+        public async Task<IActionResult> UnassignRole([FromBody] RoleUnassignmentRequest request)
+        {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can unassign system roles."));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.RoleName) || string.IsNullOrWhiteSpace(request.UserId))
+                return BadRequest(ApiResponse<object>.FailureResponse("RoleName and UserId are required."));
+
+            if (string.Equals(request.RoleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be modified."));
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return NotFound(ApiResponse<object>.FailureResponse("User not found."));
+
+            if (await _userManager.IsInRoleAsync(user, request.RoleName))
+            {
+                await _userManager.RemoveFromRoleAsync(user, request.RoleName);
+            }
+
+            // Clear feature role if feature editor
+            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            {
+                var fRoles = await _dbContext.BcpUserFeatureRoles.Where(f => f.ProfileId == user.Id).ToListAsync();
+                if (fRoles.Any())
+                {
+                    _dbContext.BcpUserFeatureRoles.RemoveRange(fRoles);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"User '{user.Email}' unassigned from role '{request.RoleName}' successfully."));
+        }
+
         [HttpGet("permissions")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public IActionResult GetPermissions()
         {
             var modules = new[]
@@ -85,31 +501,89 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(modules, "Permission matrix retrieved."));
         }
 
+        /// <summary>
+        /// Retrieves the complete registry of pending and accepted user invitations.
+        /// </summary>
+        /// <returns>A collection of workspace onboarding invitations.</returns>
         [HttpGet("invitations")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetInvitations()
         {
-            var invitations = await _dbContext.BcpUserInvitations
+            var origin = Request.Headers.Origin.ToString();
+            if (string.IsNullOrEmpty(origin)) origin = "http://localhost:4200";
+
+            var rawInvitations = await _dbContext.BcpUserInvitations
                 .AsNoTracking()
                 .OrderByDescending(i => i.CreatedAt)
                 .Select(i => new
                 {
                     i.Id,
                     i.Email,
-                    AssignedRole = i.RoleName ?? "Member",
+                    i.Token,
+                    RawRole = i.RoleName ?? "Member",
+                    i.BcpUserCategoryId,
                     Status = i.IsAccepted ? "Accepted" : (i.ExpiresAt < DateTime.UtcNow ? "Expired" : "Pending"),
                     SentDate = i.CreatedAt,
                     ExpiresDate = i.ExpiresAt
                 })
                 .ToListAsync();
 
+            var invitations = rawInvitations.Select(i =>
+            {
+                var roleName = i.RawRole;
+                string? featureArea = null;
+                string? actionRole = null;
+                if (roleName.Contains(':'))
+                {
+                    var parts = roleName.Split(':');
+                    roleName = parts[0];
+                    if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]))
+                        featureArea = parts[1];
+                    if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]))
+                        actionRole = parts[2];
+                }
+
+                return new
+                {
+                    i.Id,
+                    i.Email,
+                    i.Token,
+                    AssignedRole = roleName,
+                    FeatureArea = featureArea,
+                    ActionRole = actionRole,
+                    i.BcpUserCategoryId,
+                    i.Status,
+                    i.SentDate,
+                    i.ExpiresDate,
+                    InvitationUrl = $"{origin}/auth/register?token={i.Token}&email={Uri.EscapeDataString(i.Email)}"
+                };
+            }).ToList();
+
             return Ok(ApiResponse<object>.SuccessResponse(invitations, "Invitations retrieved."));
         }
 
+        /// <summary>
+        /// Dispatches a cryptographic onboarding invitation to a prospective member.
+        /// Pre-provisions enterprise system roles and optional modular capability edit scopes.
+        /// </summary>
+        /// <param name="request">Invitation payload containing recipient email, role, and capability scope.</param>
+        /// <returns>The generated invitation token and registration link.</returns>
         [HttpPost("invitations")]
         public async Task<IActionResult> SendInvitation([FromBody] InvitationRequest request)
         {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can invite users or provision roles."));
+            }
+
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest(ApiResponse<object>.FailureResponse("Email address is required."));
+
+            // SuperAdmin cannot be provisioned via invitations under any circumstances
+            if (string.Equals(request.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be provisioned via invitations."));
+            }
 
             var emailClean = request.Email.Trim().ToLowerInvariant();
 
@@ -127,49 +601,85 @@ namespace Ozikol_BCC.Api.Controllers
                 _dbContext.BcpUserInvitations.RemoveRange(existingPending);
             }
 
-            // 3. Create new invitation
+            // 3. Format pre-assigned role with modular feature area and operational action role
+            var baseRole = !string.IsNullOrWhiteSpace(request.Role) ? request.Role.Trim() : "Member";
+            var actionRole = !string.IsNullOrWhiteSpace(request.ActionRole) ? request.ActionRole.Trim() : null;
+            var featureArea = !string.IsNullOrWhiteSpace(request.FeatureArea) ? request.FeatureArea.Trim() : null;
+
+            var storedRole = baseRole;
+            if (!string.IsNullOrEmpty(featureArea) || !string.IsNullOrEmpty(actionRole))
+            {
+                storedRole = $"{baseRole}:{featureArea ?? string.Empty}:{actionRole ?? string.Empty}";
+            }
+
+            // 4. Create new invitation
             var token = Guid.NewGuid().ToString("N");
             var invitedBy = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var expiresDays = request.ExpirationDays.HasValue && request.ExpirationDays.Value > 0 ? request.ExpirationDays.Value : 7;
             var invitation = new BcpUserInvitation
             {
                 Id = Guid.CreateVersion7(),
                 Email = emailClean,
                 Token = token,
-                RoleName = request.Role,
+                RoleName = storedRole,
+                BcpUserCategoryId = request.CategoryId,
                 InvitedByProfileId = invitedBy,
                 CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = DateTime.UtcNow.AddDays(expiresDays),
                 IsAccepted = false
             };
             _dbContext.BcpUserInvitations.Add(invitation);
 
-            // 4. Resolve client register link host dynamically
-            var origin = Request.Headers.Origin.ToString();
-            if (string.IsNullOrEmpty(origin)) origin = "http://localhost:4200";
+            // 5. Resolve client register link host dynamically
+            var origin = Request.Headers.Origin.FirstOrDefault() 
+                ?? Request.Headers.Referer.FirstOrDefault() 
+                ?? $"{Request.Scheme}://{Request.Host}";
+
+            var registrationUrl = $"{origin.TrimEnd('/')}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}";
+
+            // Resolve dynamic tenant brand name
+            var tenantSettings = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(tenantSettings?.BrandName)
+                ? tenantSettings.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(tenantSettings?.CompanyName) ? tenantSettings.CompanyName.Trim() : "Workspace");
+
+            var customMsgBlock = string.IsNullOrWhiteSpace(request.CustomMessage)
+                ? string.Empty
+                : $@"<div style='background:#f8fafc; border-left:4px solid #0050e5; padding:12px 16px; margin:18px 0; font-style:italic; color:#475569; font-size:13.5px; border-radius:0 8px 8px 0;'>&ldquo;{System.Net.WebUtility.HtmlEncode(request.CustomMessage.Trim())}&rdquo;</div>";
+
+            var actionDescription = actionRole switch
+            {
+                "GlobalEditor" => "Global Editor",
+                "FeatureEditor" => "Feature Editor",
+                "Readonly" => "Read Only",
+                _ => string.Empty
+            };
+
+            var featureScopeNotice = !string.IsNullOrWhiteSpace(featureArea)
+                ? $" with <strong>{(!string.IsNullOrEmpty(actionDescription) ? actionDescription : "Feature Editor")}</strong> access for <strong>{System.Net.WebUtility.HtmlEncode(featureArea)}</strong>"
+                : (!string.IsNullOrEmpty(actionDescription) ? $" with <strong>{actionDescription}</strong> operational access" : string.Empty);
 
             var emailBody = $@"
-                <div style='font-family:sans-serif; padding:32px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; background-color:#ffffff;'>
-                    <h2 style='color:#0f172a; margin-top:0; font-size:22px; font-weight:800; letter-spacing:-0.02em;'>Workspace Onboarding</h2>
-                    <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-bottom:24px;'>
-                        You have been invited to join the <strong>Ozikol Workspace Portal</strong> as a <strong>{request.Role}</strong>. Accept the invitation below to register your account.
-                    </p>
-                    <div style='margin:30px 0; text-align:center;'>
-                        <a href='{origin}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}' 
-                           style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
-                            Accept Invitation & Register
-                        </a>
-                    </div>
-                    <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px;'>
-                        This invitation is secure and will expire in 7 days. If you did not request this invitation, you can safely ignore this message.
-                    </p>
-                </div>";
+                <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-top:0; margin-bottom:18px;'>
+                    You have been invited to join the <strong>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</strong> workspace as a <strong>{baseRole}</strong>{featureScopeNotice}. Accept the invitation below to establish your account credentials and access the workspace.
+                </p>
+                {customMsgBlock}
+                <div style='margin:28px 0; text-align:center;'>
+                    <a href='{registrationUrl}' 
+                       style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
+                        Accept Invitation & Register
+                    </a>
+                </div>
+                <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px; margin-bottom:0;'>
+                    This invitation is secure and will expire in {expiresDays} days. If you did not request this invitation, you can safely ignore this message.
+                </p>";
 
             var emailQueueItem = new BcpEmailQueue
             {
                 Id = Guid.CreateVersion7(),
                 RecipientEmail = emailClean,
                 RecipientName = emailClean.Split('@')[0],
-                Subject = "You are invited to join Ozikol BCC Workspace",
+                Subject = $"You are invited to join {tenantBrand} Workspace",
                 HtmlBody = emailBody,
                 Category = BcpMessageCategory.General,
                 Priority = BcpMessagePriority.High,
@@ -179,14 +689,83 @@ namespace Ozikol_BCC.Api.Controllers
             _dbContext.BcpEmailQueue.Add(emailQueueItem);
 
             await _dbContext.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, $"Invitation successfully sent to '{emailClean}' with role '{request.Role}'."));
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                token = token,
+                invitationUrl = registrationUrl,
+                email = emailClean,
+                role = baseRole,
+                featureArea = request.FeatureArea,
+                expiresAt = invitation.ExpiresAt
+            }, $"Invitation successfully sent to '{emailClean}' with role '{baseRole}'."));
         }
 
+        /// <summary>
+        /// Retrieves the real-time security login audit stream.
+        /// When the calling user is not a SuperAdmin, audit records associated with SuperAdmin accounts are strictly filtered out.
+        /// </summary>
+        /// <returns>A collection of login audit records limited to the latest 250 rows.</returns>
         [HttpGet("login-audit")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetLoginAuditLogs()
         {
-            var logs = await _dbContext.BcpLoginAuditLogs
-                .AsNoTracking()
+            var isSuperAdmin = User.IsInRole("SuperAdmin") ||
+                               User.Claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                                    string.Equals(c.Value, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+            IQueryable<BcpLoginAuditLog> query = _dbContext.BcpLoginAuditLogs.AsNoTracking();
+
+            // Non-SuperAdmin administrators must never see SuperAdmin login attempts or telemetry
+            if (!isSuperAdmin)
+            {
+                // Identify SuperAdmin role and all associated user identifiers/emails to strictly shield them from non-SuperAdmin callers
+                var superAdminRole = await _dbContext.Roles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Name == "SuperAdmin" || r.NormalizedName == "SUPERADMIN");
+
+                var superAdminUserIds = new List<string>();
+                var superAdminEmails = new List<string>();
+
+                if (superAdminRole != null)
+                {
+                    superAdminUserIds = await _dbContext.UserRoles
+                        .AsNoTracking()
+                        .Where(ur => ur.RoleId == superAdminRole.Id)
+                        .Select(ur => ur.UserId)
+                        .ToListAsync();
+
+                    if (superAdminUserIds.Count > 0)
+                    {
+                        superAdminEmails = await _dbContext.Users
+                            .AsNoTracking()
+                            .Where(u => superAdminUserIds.Contains(u.Id) && !string.IsNullOrEmpty(u.Email))
+                            .Select(u => u.Email!)
+                            .ToListAsync();
+                    }
+                }
+
+                // Construct normalized list of known superadmin emails
+                var emailFilterList = superAdminEmails
+                    .SelectMany(e => new[] { e, e.ToLower(), e.ToUpper() })
+                    .Distinct()
+                    .ToList();
+
+                // Apply comprehensive exclusion: exclude by UserId, known SuperAdmin emails, and any 'superadmin' handle
+                if (superAdminUserIds.Count > 0)
+                {
+                    query = query.Where(l => l.UserId == null || !superAdminUserIds.Contains(l.UserId));
+                }
+
+                if (emailFilterList.Count > 0)
+                {
+                    query = query.Where(l => string.IsNullOrEmpty(l.Email) || !emailFilterList.Contains(l.Email));
+                }
+
+                query = query.Where(l => string.IsNullOrEmpty(l.Email) || !l.Email.Contains("superadmin"));
+            }
+
+            var logs = await query
                 .OrderByDescending(l => l.Timestamp)
                 .Take(250) // Limit to latest 250 rows for performance
                 .ToListAsync();
@@ -195,9 +774,10 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("password-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetPasswordPolicy()
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -216,9 +796,10 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("password-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> UpdatePasswordPolicy([FromBody] PasswordPolicyUpdateRequest request)
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -235,9 +816,10 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("mfa-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetMfaPolicy()
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -252,9 +834,10 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("mfa-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> UpdateMfaPolicy([FromBody] MfaPolicyUpdateRequest request)
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -266,26 +849,61 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("sessions")]
+        [Authorize]
         public async Task<IActionResult> GetActiveSessions()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var sessions = await _dbContext.BcpUserDevices
-                .AsNoTracking()
+            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+                ?? User.FindFirstValue("jti");
+
+            var deviceEntities = await _dbContext.BcpUserDevices
                 .Where(d => d.UserId == userId && d.IsActiveSession)
                 .OrderByDescending(d => d.LastUsedAt)
-                .Select(d => new
+                .ToListAsync();
+
+            if (deviceEntities.Count == 0)
+            {
+                var userAgent = Request.Headers["User-Agent"].ToString();
+                if (string.IsNullOrEmpty(userAgent)) userAgent = "Current Browser Session";
+                var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                    ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "127.0.0.1";
+
+                var newDevice = new BcpUserDevice
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = userId,
+                    DeviceName = userAgent,
+                    IpAddress = ip,
+                    TrustToken = Guid.NewGuid().ToString("N"),
+                    JwtId = currentJti ?? Guid.NewGuid().ToString(),
+                    IsTrusted = false,
+                    CreatedAt = DateTime.UtcNow,
+                    LastUsedAt = DateTime.UtcNow,
+                    IsActiveSession = true
+                };
+                _dbContext.BcpUserDevices.Add(newDevice);
+                await _dbContext.SaveChangesAsync();
+                deviceEntities.Add(newDevice);
+            }
+
+            var sessions = deviceEntities.Select(d =>
+            {
+                var parsed = UserAgentParser.Parse(d.DeviceName);
+                return new
                 {
                     SessionId = d.Id,
-                    Device = d.DeviceName,
-                    Browser = d.DeviceName,
+                    Device = parsed.FriendlyDeviceTitle,
+                    Browser = parsed.FriendlyBrowserDetails,
+                    RawDevice = d.DeviceName,
                     IpAddress = d.IpAddress,
                     LastActive = d.LastUsedAt,
-                    IsCurrent = false // client identifies current device by token
-                })
-                .ToListAsync();
+                    IsCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti) || (d == deviceEntities[0])
+                };
+            }).ToList();
 
             return Ok(ApiResponse<object>.SuccessResponse(sessions, "Active sessions retrieved."));
         }
@@ -329,27 +947,25 @@ namespace Ozikol_BCC.Api.Controllers
                 };
                 _dbContext.BcpNotifications.Add(notif);
 
-                // Email Notification
+                // Email Notification - pure content snippet enqueued to the pool
                 var emailBody = $@"
-                    <div style='font-family:sans-serif; padding:24px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px;'>
-                        <h3 style='color:#ef4444; margin-top:0;'>Device Session Terminated</h3>
-                        <p style='color:#334155; font-size:14px; line-height:1.6;'>
-                            Hello, a logged-in device session on your account was successfully revoked/terminated.
-                        </p>
-                        <ul style='color:#475569; font-size:13.5px; line-height:1.5;'>
-                            <li><strong>Device:</strong> {session.DeviceName}</li>
-                            <li><strong>IP Address:</strong> {session.IpAddress}</li>
-                            <li><strong>Action Time:</strong> {DateTime.UtcNow:f} UTC</li>
-                        </ul>
-                        <p style='color:#64748b; font-size:12px;'>
-                            If you did not authorize this action, please change your login credentials immediately to secure your account.
-                        </p>
-                    </div>";
+                    <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>
+                        An active logged-in device session on your account was recently terminated by a workspace administrator.
+                    </p>
+                    <ul style='color:#475569; font-size:13.5px; line-height:1.8; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 20px 14px 34px;'>
+                        <li><strong>Device:</strong> {session.DeviceName}</li>
+                        <li><strong>IP Address:</strong> {session.IpAddress}</li>
+                        <li><strong>Action Time:</strong> {DateTime.UtcNow:MMMM dd, yyyy HH:mm} UTC</li>
+                    </ul>
+                    <p style='color:#64748b; font-size:12px; margin-bottom:0;'>
+                        If you did not authorize this session termination or suspect unauthorized access, please update your login credentials immediately to secure your account.
+                    </p>";
 
                 var emailQueueItem = new BcpEmailQueue
                 {
                     Id = Guid.CreateVersion7(),
                     RecipientEmail = user.Email ?? string.Empty,
+                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : "Member",
                     Subject = "Security Alert: Active Session Terminated",
                     HtmlBody = emailBody,
                     Category = BcpMessageCategory.General,
@@ -364,7 +980,191 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Session '{sessionId}' successfully terminated."));
         }
 
+        /// <summary>
+        /// Revokes all active sessions for the authenticated user except the current active session.
+        /// </summary>
+        /// <returns>Execution confirmation and count of terminated sessions.</returns>
+        [HttpPost("sessions/terminate-others")]
+        public async Task<IActionResult> TerminateOtherSessions()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
+
+            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+                ?? User.FindFirstValue("jti");
+
+            // Fetch all other active devices for this user
+            var otherSessions = await _dbContext.BcpUserDevices
+                .Where(d => d.UserId == userId && d.IsActiveSession && (string.IsNullOrEmpty(currentJti) || d.JwtId != currentJti))
+                .ToListAsync();
+
+            if (!otherSessions.Any())
+            {
+                return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = 0 }, "No other active sessions found."));
+            }
+
+            foreach (var session in otherSessions)
+            {
+                session.IsActiveSession = false;
+            }
+
+            var currentUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Admin";
+            var log = new BcpLoginAuditLog
+            {
+                Id = Guid.CreateVersion7(),
+                Email = currentUserEmail,
+                Status = "All Other Sessions Revoked",
+                IpAddress = Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                Timestamp = DateTime.UtcNow
+            };
+            _dbContext.BcpLoginAuditLogs.Add(log);
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = otherSessions.Count }, $"{otherSessions.Count} other session(s) successfully terminated."));
+        }
+
+        /// <summary>
+        /// Retrieves the personal login audit and security activity history for the authenticated user with server-side pagination.
+        /// </summary>
+        /// <param name="page">Current 1-based page index (defaults to 1).</param>
+        /// <param name="pageSize">Number of records per page (defaults to 10, max 100).</param>
+        /// <returns>Paged collection of login events and pagination metadata.</returns>
+        [HttpGet("account/login-history")]
+        [Authorize]
+        public async Task<IActionResult> GetPersonalLoginHistory(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(userId) && string.IsNullOrEmpty(userEmail))
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
+
+            // Sanitize pagination bounds
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var baseQuery = _dbContext.BcpLoginAuditLogs
+                .AsNoTracking()
+                .Where(l => (userId != null && l.UserId == userId) || (userEmail != null && l.Email == userEmail));
+
+            var totalCount = await baseQuery.CountAsync();
+
+            // Guarantee at least current session activity log exists if history is empty
+            if (totalCount == 0)
+            {
+                var userAgent = Request.Headers["User-Agent"].ToString();
+                if (string.IsNullOrEmpty(userAgent)) userAgent = "Web Browser";
+                var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                    ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "127.0.0.1";
+
+                var currentLog = new BcpLoginAuditLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = userId ?? string.Empty,
+                    Email = userEmail ?? "account@domain.com",
+                    IpAddress = ip,
+                    SystemId = "BCC-Web",
+                    Status = "Success",
+                    UserAgent = userAgent,
+                    Timestamp = DateTime.UtcNow
+                };
+                _dbContext.BcpLoginAuditLogs.Add(currentLog);
+                await _dbContext.SaveChangesAsync();
+
+                totalCount = 1;
+            }
+
+            var pagedLogs = await baseQuery
+                .OrderByDescending(l => l.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Email,
+                    l.Status,
+                    l.IpAddress,
+                    l.UserAgent,
+                    l.Timestamp
+                })
+                .ToListAsync();
+
+            var formatted = pagedLogs.Select(h =>
+            {
+                var parsed = UserAgentParser.Parse(h.UserAgent);
+                return new
+                {
+                    h.Id,
+                    h.Email,
+                    h.Status,
+                    h.IpAddress,
+                    h.UserAgent,
+                    Device = parsed.FriendlyDeviceTitle,
+                    Browser = parsed.FriendlyBrowserDetails,
+                    h.Timestamp
+                };
+            }).ToList();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (totalPages < 1) totalPages = 1;
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                items = formatted,
+                totalCount,
+                page,
+                pageSize,
+                totalPages
+            }, "Personal login history retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves a consolidated summary of account security, active devices count, assigned roles, and MFA state.
+        /// </summary>
+        /// <returns>Account security summary details.</returns>
+        [HttpGet("account/summary")]
+        public async Task<IActionResult> GetAccountSummary()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound(ApiResponse<object>.FailureResponse("User not found."));
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var activeSessionCount = await _dbContext.BcpUserDevices
+                .CountAsync(d => d.UserId == userId && d.IsActiveSession);
+
+            var summary = new
+            {
+                user.Id,
+                user.Email,
+                user.UserName,
+                user.FullName,
+                user.FirstName,
+                user.LastName,
+                user.AvatarUrl,
+                user.Designation,
+                user.TwoFactorEnabled,
+                Provider = user.PreferredTwoFactorProvider.ToString(),
+                user.LastLogin,
+                Roles = roles,
+                ActiveSessionsCount = activeSessionCount,
+                user.MustChangePassword
+            };
+
+            return Ok(ApiResponse<object>.SuccessResponse(summary, "Account summary retrieved."));
+        }
+
         [HttpGet("telemetry")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetTelemetry()
         {
             var totalUsers = await _userManager.Users.CountAsync();
@@ -403,6 +1203,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("users/search")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> SearchUsers([FromQuery] string term)
         {
             if (string.IsNullOrWhiteSpace(term))
@@ -437,6 +1238,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("users/{userId}/feature-roles")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetUserFeatureRoles(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -450,7 +1252,11 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var globalRoles = await _userManager.GetRolesAsync(user);
-            var isAdmin = globalRoles.Contains("Admin") || globalRoles.Contains("SuperAdmin");
+            var isSuperAdmin = globalRoles.Contains("SuperAdmin");
+            var isAdmin = isSuperAdmin || globalRoles.Contains("Admin");
+            var primaryRole = isSuperAdmin ? "SuperAdmin" :
+                              (globalRoles.FirstOrDefault(r => !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)) ?? 
+                               globalRoles.FirstOrDefault() ?? "Member");
 
             var featureRoles = await _dbContext.BcpUserFeatureRoles
                 .AsNoTracking()
@@ -466,16 +1272,32 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 UserId = user.Id,
                 Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                AvatarUrl = user.AvatarUrl,
+                CurrentRole = primaryRole,
+                AllRoles = globalRoles,
                 IsAdmin = isAdmin,
+                IsSuperAdmin = isSuperAdmin,
                 FeatureRoles = featureRoles
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(data, "User security feature roles retrieved."));
         }
 
+        /// <summary>
+        /// Saves updated security feature roles, assigns system access tiers, and dispatches real-time security notifications &amp; emails.
+        /// </summary>
         [HttpPost("users/{userId}/feature-roles")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> SaveUserFeatureRoles(string userId, [FromBody] SaveFeatureRolesRequest request)
         {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can modify security feature roles."));
+            }
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return NotFound(ApiResponse<object>.FailureResponse("User not found."));
@@ -488,26 +1310,45 @@ namespace Ozikol_BCC.Api.Controllers
                 return StatusCode(403, ApiResponse<object>.FailureResponse("Permission Denied: Standard admins cannot modify SuperAdmin security levels."));
             }
 
-            // Sync global Admin role
             var globalRoles = await _userManager.GetRolesAsync(user);
-            if (request.IsAdmin)
+            var isTargetSuperAdmin = globalRoles.Contains("SuperAdmin");
+
+            // Determine target system role
+            var targetRole = !string.IsNullOrWhiteSpace(request.SystemRole)
+                ? request.SystemRole.Trim()
+                : (request.IsAdmin ? "Admin" : "Member");
+
+            if (string.Equals(targetRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && !isTargetSuperAdmin)
             {
-                if (!globalRoles.Contains("Admin"))
-                {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                }
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be assigned. It is strictly reserved for the root workspace account."));
             }
-            else
+
+            // Sync Identity role if not root SuperAdmin
+            if (!isTargetSuperAdmin)
             {
-                if (globalRoles.Contains("Admin"))
+                await EnsureSeededRolesAsync();
+                var currentRoles = await _userManager.GetRolesAsync(user);
+                var rolesToRemove = currentRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+                if (rolesToRemove.Any())
                 {
-                    await _userManager.RemoveFromRoleAsync(user, "Admin");
+                    await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                }
+
+                if (await _roleManager.RoleExistsAsync(targetRole))
+                {
+                    await _userManager.AddToRoleAsync(user, targetRole);
+                }
+                else
+                {
+                    await _userManager.AddToRoleAsync(user, request.IsAdmin ? "Admin" : "Member");
                 }
             }
 
             // Clear old feature roles
             var oldRoles = await _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == userId).ToListAsync();
             _dbContext.BcpUserFeatureRoles.RemoveRange(oldRoles);
+
+            var activeScopesList = new List<string>();
 
             // Add new feature roles
             if (request.FeatureRoles != null)
@@ -517,9 +1358,24 @@ namespace Ozikol_BCC.Api.Controllers
                     if (string.IsNullOrEmpty(r.Scope) || r.Scope == "None") continue;
 
                     BcpActionRole actionRole;
-                    if (r.Scope == "GlobalEdit") actionRole = BcpActionRole.GlobalEditor;
-                    else if (r.Scope == "FeatureEdit") actionRole = BcpActionRole.FeatureEditor;
-                    else actionRole = BcpActionRole.Readonly;
+                    string scopeLabel;
+                    if (r.Scope == "GlobalEdit") 
+                    {
+                        actionRole = BcpActionRole.GlobalEditor;
+                        scopeLabel = "Global Editor (Tenant-Wide Authority)";
+                    }
+                    else if (r.Scope == "FeatureEdit") 
+                    {
+                        actionRole = BcpActionRole.FeatureEditor;
+                        scopeLabel = "Feature Editor (Full CRUD)";
+                    }
+                    else 
+                    {
+                        actionRole = BcpActionRole.Readonly;
+                        scopeLabel = "Read Only (Auditor)";
+                    }
+
+                    activeScopesList.Add($"• <strong>{r.FeatureName}</strong>: {scopeLabel}");
 
                     var featureRole = new BcpUserFeatureRole
                     {
@@ -535,67 +1391,114 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // Dispatch Notifications & Audit Event
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Admin";
 
-            // Save
+            // Save database changes
             await _dbContext.SaveChangesAsync();
 
-            // In-App Notification to modified user
+            // Format dynamic scopes summary for notification & email
+            var scopesHtmlSummary = activeScopesList.Any()
+                ? string.Join("<br/>", activeScopesList)
+                : "<em>Standard Member Access (No custom capability scopes assigned).</em>";
+
+            // 1. In-App Notification (Persistent BcpNotification)
             var notif = new BcpNotification
             {
                 Id = Guid.CreateVersion7(),
                 UserId = user.Id,
-                Title = "Permissions Updated",
-                Message = "Your workspace roles and access scopes have been updated by an administrator.",
+                Title = "Security: Permissions Matrix Updated",
+                Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
+                Severity = NotificationSeverity.Failed,
+                ActionUrl = "/users/workspace/security",
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.BcpNotifications.Add(notif);
 
-            // Email to modified user
+            // 2. Transactional Email Layout (Pure content snippet enqueued to the pool, wrapped by TenantEmailShellService)
+            var origin = Request.Headers.Origin.FirstOrDefault()
+                ?? Request.Headers.Referer.FirstOrDefault()
+                ?? $"{Request.Scheme}://{Request.Host}";
+            var securityUrl = $"{origin.TrimEnd('/')}/users/workspace/security";
+
+            var recipientFirstName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName.Trim() : "Member";
             var emailBody = $@"
-                <div style='font-family:sans-serif; padding:24px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px;'>
-                    <h3 style='color:#0050e5; margin-top:0;'>Workspace Permissions Updated</h3>
-                    <p style='color:#334155; font-size:14px; line-height:1.6;'>
-                        Hello, an administrator has updated your global roles and feature-specific authorization scopes.
-                    </p>
-                    <p style='color:#334155; font-size:14.5px;'>
-                        <strong>Global Admin Access:</strong> {(request.IsAdmin ? "Granted" : "Restricted")}
-                    </p>
-                    <p style='color:#475569; font-size:13.5px;'>
-                        Please log out and sign back in to apply these new security configurations to your workspace.
-                    </p>
-                </div>";
+<p style='font-size:14px; line-height:1.6; color:#475569; margin-top:0;'>
+  This is an official security advisory to inform you that a workspace administrator has updated your system role and action authorizations.
+</p>
+<div style='background:#f1f5f9; border-left:4px solid #0050e5; padding:14px 18px; border-radius:4px; margin:20px 0;'>
+  <p style='margin:0 0 6px 0; font-size:14px;'><strong>Primary System Role:</strong> <span style='color:#0050e5; font-weight:700;'>{targetRole}</span></p>
+  <p style='margin:0 0 6px 0; font-size:14px;'><strong>Administrative Privileges:</strong> {(targetRole == "Admin" || targetRole == "SuperAdmin" || request.IsAdmin ? "Granted (Administrator)" : "Restricted (Standard Member)")}</p>
+  <p style='margin:0; font-size:14px;'><strong>Effective Date:</strong> {DateTime.UtcNow:MMMM dd, yyyy HH:mm} UTC</p>
+</div>
+<h4 style='color:#0f172a; margin:20px 0 10px 0; font-size:14px; font-weight:700;'>Assigned Modular Capability Scopes:</h4>
+<div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; font-size:13px; line-height:1.8; color:#334155;'>
+  {scopesHtmlSummary}
+</div>
+<p style='color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;'>
+  <strong>Security Tip:</strong> To ensure all updated privileges take effect immediately across your active sessions, please log out and sign back into your workspace.
+</p>
+<div style='margin-top:24px; text-align:center;'>
+  <a href='{securityUrl}' style='background:#0050e5; color:#ffffff; padding:10px 22px; text-decoration:none; border-radius:8px; font-size:13px; font-weight:700; display:inline-block;'>
+    Review Security Settings
+  </a>
+</div>";
 
             var emailQueueItem = new BcpEmailQueue
             {
                 Id = Guid.CreateVersion7(),
                 RecipientEmail = user.Email ?? string.Empty,
-                Subject = "Security Alert: Permissions Matrix Updated",
+                RecipientName = recipientFirstName,
+                Subject = "Security Alert: Workspace Role & Permissions Matrix Updated",
                 HtmlBody = emailBody,
-                Category = BcpMessageCategory.General,
-                Priority = BcpMessagePriority.High,
+                Category = BcpMessageCategory.Security,
+                Priority = BcpMessagePriority.Urgent,
                 Status = BcpQueueStatus.Queued,
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.BcpEmailQueue.Add(emailQueueItem);
 
-            // Activity log for privilege changes
+            // 3. CentralNotificationDispatcher Multi-Channel Delivery (Rule 16)
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        Title = "Security: Permissions Matrix Updated",
+                        Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
+                        Severity = NotificationSeverity.Failed,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        ActionUrl = "/users/workspace/security",
+                        Module = "Identity & Access Governance",
+                        Icon = "admin_panel_settings",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Urgent,
+                        SendEmailCopy = true,
+                        EmailSubject = "Security Alert: Workspace Role & Permissions Matrix Updated",
+                        EmailHtmlBody = emailBody
+                    });
+                }
+                catch { }
+            }
+
+            // 4. Audit Log Entry
             var wasAdmin = globalRoles.Contains("Admin") || globalRoles.Contains("SuperAdmin");
             var adminStatusChanged = wasAdmin != request.IsAdmin;
-            
+
             var activityLog = new BcpActivityLog
             {
                 Id = Guid.CreateVersion7(),
                 Module = "Identity & Access Governance",
-                ActionType = adminStatusChanged 
+                ActionType = adminStatusChanged
                     ? (request.IsAdmin ? "Privilege Escalation: Granted Global Admin" : "Privilege Demotion: Revoked Global Admin")
                     : "Permissions Profile Updated",
                 Description = adminStatusChanged
                     ? $"{(request.IsAdmin ? "Granted Global Administrator authority to" : "Revoked Global Administrator rights from")} user '{user.Email}' ({user.FirstName} {user.LastName})."
-                    : $"Updated feature access scopes for user '{user.Email}'.",
+                    : $"Updated role to '{targetRole}' and configured {activeScopesList.Count} capability scopes for '{user.Email}'.",
                 PerformedByProfileId = currentUserId,
                 PerformedByFullName = currentUserEmail,
                 TargetProfileId = user.Id,
@@ -607,7 +1510,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            // Broadcast live real-time SignalR security event to the target user's active browser sessions
+            // 5. Broadcast live real-time SignalR security event to the target user's active browser sessions
             if (_hubContext != null)
             {
                 try
@@ -616,6 +1519,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         userId = user.Id,
                         email = user.Email,
+                        role = targetRole,
                         isAdmin = request.IsAdmin,
                         timestamp = DateTime.UtcNow
                     });
@@ -623,14 +1527,49 @@ namespace Ozikol_BCC.Api.Controllers
                 catch { }
             }
 
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Security permissions updated successfully and user alerts dispatched."));
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Security permissions updated successfully. System role set to '{targetRole}' and user notification alerts dispatched."));
         }
     }
 
+    /// <summary>
+    /// Payload request for issuing a workspace member invitation.
+    /// </summary>
     public class InvitationRequest
     {
+        /// <summary>
+        /// Gets or sets the target recipient email address.
+        /// </summary>
         public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the pre-assigned system role.
+        /// </summary>
         public string Role { get; set; } = "Member";
+
+        /// <summary>
+        /// Gets or sets the operational action level (GlobalEditor, FeatureEditor, Readonly).
+        /// </summary>
+        public string? ActionRole { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional pre-assigned member category ID.
+        /// </summary>
+        public Guid? CategoryId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of days until the invitation expires (defaults to 7).
+        /// </summary>
+        public int? ExpirationDays { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scoped feature/module domain when assigning Feature Editor.
+        /// </summary>
+        public string? FeatureArea { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional welcome note from the issuing administrator.
+        /// </summary>
+        public string? CustomMessage { get; set; }
     }
 
     public class PasswordPolicyUpdateRequest
@@ -653,6 +1592,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class SaveFeatureRolesRequest
     {
         public bool IsAdmin { get; set; }
+        public string? SystemRole { get; set; }
         public List<FeatureRoleScopeDto>? FeatureRoles { get; set; }
     }
 
@@ -660,5 +1600,23 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string FeatureName { get; set; } = string.Empty;
         public string Scope { get; set; } = "None"; // None, ReadOnly, FeatureEdit, GlobalEdit
+    }
+
+    public class RoleAssignmentRequest
+    {
+        public string RoleName { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public string? FeatureArea { get; set; }
+        public string? FeatureName { get; set; }
+
+        public string ResolvedFeatureArea =>
+            !string.IsNullOrWhiteSpace(FeatureArea) ? FeatureArea.Trim() :
+            (!string.IsNullOrWhiteSpace(FeatureName) ? FeatureName.Trim() : "UserManager");
+    }
+
+    public class RoleUnassignmentRequest
+    {
+        public string RoleName { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
     }
 }

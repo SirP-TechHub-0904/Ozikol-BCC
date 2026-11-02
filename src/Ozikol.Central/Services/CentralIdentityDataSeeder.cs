@@ -25,11 +25,9 @@ namespace Ozikol.Central.Services
                     return;
                 }
 
-                // Seed Central Operator Roles, Default SuperAdmin, and the 10 platform currency rates
-                await MasterCatalogDataSeeder.SeedRolesAndSuperAdminAsync(dbContext, roleManager, userManager);
-                await MasterCatalogDataSeeder.SeedCurrenciesAsync(dbContext);
-                await MasterCatalogDataSeeder.SeedPlatformSettingsAsync(dbContext);
-                await MasterCatalogDataSeeder.SeedLegalDocumentsAsync(dbContext);
+                // NOTE: All platform baseline data (Roles, SuperAdmin, Currencies, PlatformSettings, LegalDocuments,
+                // Coupons, and MasterFeatureCatalogs) are strictly seeded via EF Core Migrations.
+                // Runtime startup seeding is disabled to guarantee zero database mutation or drift on application boot.
             }
             catch (Exception ex)
             {

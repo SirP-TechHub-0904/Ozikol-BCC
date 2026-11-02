@@ -1,0 +1,940 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/models/workspace.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../data/account_repository.dart';
+
+/// Screen presenting User Management Settings under User Directory.
+/// Replicates Angular Web UserSettingsComponent 1-to-1 with Name Salutation Titles,
+/// Honorary Post-nominal Suffixes, Automated Member ID Generation rules,
+/// KPI Performance benchmarks, and Directory Governance policies.
+class UserSettingsView extends ConsumerStatefulWidget {
+  /// The active workspace context.
+  final Workspace? workspace;
+
+  /// Optional navigation callback to other tabs in the shell.
+  final void Function(int tabIndex)? onNavigateToTab;
+
+  /// Creates a [UserSettingsView].
+  const UserSettingsView({
+    super.key,
+    this.workspace,
+    this.onNavigateToTab,
+  });
+
+  @override
+  ConsumerState<UserSettingsView> createState() => _UserSettingsViewState();
+}
+
+class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  Map<String, dynamic> _settings = {
+    'enableTitle': true,
+    'preFilledTitles': 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor',
+    'enableSuffix': true,
+    'memberIdFormat': 'PrefixYearMonthRandom',
+    'memberIdPrefix': 'CC',
+    'memberIdPadding': 4,
+    'memberIdDelimiter': '-',
+    'requireConfirmedEmailToLogin': false,
+    'enableUserDeletion': true,
+    'enableKpiEvaluations': true,
+    'enablePublicLeaderboard': true,
+    'defaultKpiPeriodCycle': 'Quarterly',
+    'kpiPassingScore': 70,
+  };
+
+  List<String> _titleChips = [];
+  final _newTitleCtrl = TextEditingController();
+  final _prefixCtrl = TextEditingController();
+  List<Map<String, dynamic>> _formatPreviews = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _newTitleCtrl.dispose();
+    _prefixCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(accountRepositoryProvider);
+      final res = await repo.getUserManagementSettings();
+
+      if (mounted) {
+        setState(() {
+          if (res.isNotEmpty) {
+            _settings = Map<String, dynamic>.from(res);
+          }
+          final titlesStr = _settings['preFilledTitles'] as String? ?? 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor';
+          _titleChips = titlesStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          _prefixCtrl.text = _settings['memberIdPrefix'] as String? ?? 'CC';
+
+          if (_settings['previews'] is List) {
+            _formatPreviews = List<Map<String, dynamic>>.from(_settings['previews'] as List);
+          }
+          _generateFallbackPreviews();
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        _generateFallbackPreviews();
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _generateFallbackPreviews() {
+    if (_formatPreviews.isNotEmpty) return;
+    final prefix = _prefixCtrl.text.trim().isEmpty ? 'CC' : _prefixCtrl.text.trim().toUpperCase();
+    final delim = _settings['memberIdDelimiter'] as String? ?? '-';
+    final padding = (_settings['memberIdPadding'] as num?)?.toInt() ?? 4;
+    final seqNum = '1'.padLeft(padding, '0');
+
+    _formatPreviews = [
+      {
+        'key': 'PrefixYearMonthRandom',
+        'name': 'Prefix + Year + Month + Random',
+        'description': 'Year and month coded with random alphanumeric seed.',
+        'previewExample': '$prefix${delim}2026${delim}10${delim}9X42',
+      },
+      {
+        'key': 'PrefixYearSequential',
+        'name': 'Prefix + Year + Sequential',
+        'description': 'Annual rollover numbering with zero-padded counter.',
+        'previewExample': '$prefix${delim}2026$delim$seqNum',
+      },
+      {
+        'key': 'PrefixSequential',
+        'name': 'Prefix + Sequential Number',
+        'description': 'Continuous incremental integer sequence.',
+        'previewExample': '$prefix$delim$seqNum',
+      },
+      {
+        'key': 'PrefixCategorySequential',
+        'name': 'Prefix + Category Code + Sequential',
+        'description': 'Categorized departmental sequence for organizational units.',
+        'previewExample': '$prefix${delim}ENG$delim$seqNum',
+      },
+    ];
+  }
+
+  void _updatePreviews() {
+    final prefix = _prefixCtrl.text.trim().isEmpty ? 'CC' : _prefixCtrl.text.trim().toUpperCase();
+    final delim = _settings['memberIdDelimiter'] as String? ?? '-';
+    final padding = (_settings['memberIdPadding'] as num?)?.toInt() ?? 4;
+    final seqNum = '1'.padLeft(padding, '0');
+
+    setState(() {
+      _formatPreviews = [
+        {
+          'key': 'PrefixYearMonthRandom',
+          'name': 'Prefix + Year + Month + Random',
+          'description': 'Year and month coded with random alphanumeric seed.',
+          'previewExample': '$prefix${delim}2026${delim}10${delim}9X42',
+        },
+        {
+          'key': 'PrefixYearSequential',
+          'name': 'Prefix + Year + Sequential',
+          'description': 'Annual rollover numbering with zero-padded counter.',
+          'previewExample': '$prefix${delim}2026$delim$seqNum',
+        },
+        {
+          'key': 'PrefixSequential',
+          'name': 'Prefix + Sequential Number',
+          'description': 'Continuous incremental integer sequence.',
+          'previewExample': '$prefix$delim$seqNum',
+        },
+        {
+          'key': 'PrefixCategorySequential',
+          'name': 'Prefix + Category Code + Sequential',
+          'description': 'Categorized departmental sequence for organizational units.',
+          'previewExample': '$prefix${delim}ENG$delim$seqNum',
+        },
+      ];
+    });
+  }
+
+  void _removeTitleChip(String chip) {
+    setState(() {
+      _titleChips.remove(chip);
+      _settings['preFilledTitles'] = _titleChips.join(', ');
+    });
+  }
+
+  void _addTitleChip() {
+    final text = _newTitleCtrl.text.trim();
+    if (text.isNotEmpty && !_titleChips.contains(text)) {
+      setState(() {
+        _titleChips.add(text);
+        _settings['preFilledTitles'] = _titleChips.join(', ');
+        _newTitleCtrl.clear();
+      });
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    setState(() => _isSaving = true);
+    _settings['preFilledTitles'] = _titleChips.join(', ');
+    _settings['memberIdPrefix'] = _prefixCtrl.text.trim().toUpperCase();
+
+    try {
+      final repo = ref.read(accountRepositoryProvider);
+      final ok = await repo.saveUserManagementSettings(_settings);
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ok ? 'User management settings saved successfully.' : 'Failed to save settings.'),
+            backgroundColor: ok ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    final enableTitle = _settings['enableTitle'] as bool? ?? true;
+    final enableSuffix = _settings['enableSuffix'] as bool? ?? true;
+    final enableKpi = _settings['enableKpiEvaluations'] as bool? ?? true;
+    final enablePublicLeaderboard = _settings['enablePublicLeaderboard'] as bool? ?? true;
+    final requireConfirmedEmail = _settings['requireConfirmedEmailToLogin'] as bool? ?? false;
+    final enableUserDeletion = _settings['enableUserDeletion'] as bool? ?? true;
+    final passingScore = (_settings['kpiPassingScore'] as num?)?.toInt() ?? 70;
+    final currentFormat = _settings['memberIdFormat'] as String? ?? 'PrefixYearMonthRandom';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ===================================================================
+          // STANDARDIZED PAGE HEADER (1-to-1 with Angular AppPageHeader)
+          // ===================================================================
+          _buildPageHeader(isDark),
+          const SizedBox(height: 20),
+
+          // ===================================================================
+          // SECTION 1: NAME TITLES & HONORARY SUFFIXES
+          // ===================================================================
+          _buildSection1TitlesAndSuffixes(isDark, enableTitle, enableSuffix),
+          const SizedBox(height: 20),
+
+          // ===================================================================
+          // SECTION 2: MEMBER ID GENERATION & NUMBERING RULES
+          // ===================================================================
+          _buildSection2MemberIdRules(isDark, currentFormat),
+          const SizedBox(height: 20),
+
+          // ===================================================================
+          // SECTION 3: PERFORMANCE EVALUATIONS & KPI SETTINGS
+          // ===================================================================
+          _buildSection3KpiSettings(isDark, enableKpi, enablePublicLeaderboard, passingScore),
+          const SizedBox(height: 20),
+
+          // ===================================================================
+          // SECTION 4: SECURITY & ACCOUNT LIFECYCLE GOVERNANCE
+          // ===================================================================
+          _buildSection4Governance(isDark, requireConfirmedEmail, enableUserDeletion),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageHeader(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+        ),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 16,
+        runSpacing: 12,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'USER MANAGEMENT PREFERENCES',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.06,
+                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'User Management Settings',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Configure name salutations, professional suffixes, member ID generation rules, and directory governance policies.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => widget.onNavigateToTab?.call(1),
+                icon: const Icon(Icons.groups_rounded, size: 16),
+                label: const Text('Members Directory'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                  side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton.icon(
+                onPressed: _isSaving ? null : _saveSettings,
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.save_rounded, size: 16),
+                label: Text(_isSaving ? 'Saving...' : 'Save Settings'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection1TitlesAndSuffixes(bool isDark, bool enableTitle, bool enableSuffix) {
+    return _buildSectionContainer(
+      isDark: isDark,
+      icon: Icons.badge_rounded,
+      title: 'Name Titles & Professional Suffixes',
+      subtitle: 'Control whether salutation titles and honorary suffixes appear on registration and member profiles.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Toggle 1: Enable Title
+          _buildPreferenceRow(
+            isDark: isDark,
+            title: 'Enable Name Title / Salutation',
+            desc: 'When enabled, members and staff select their formal title (e.g. Dr., Prof., Engr.) during onboarding and profile setup.',
+            value: enableTitle,
+            statusBadgeText: enableTitle ? 'ENABLED' : 'DISABLED',
+            statusBadgeActive: enableTitle,
+            onChanged: (val) => setState(() => _settings['enableTitle'] = val),
+          ),
+
+          if (enableTitle) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Configured Pre-Filled Titles', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                      const SizedBox(width: 8),
+                      Text('(${_titleChips.length} active options)', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _titleChips.map((chip) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              chip,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
+                            ),
+                            const SizedBox(width: 6),
+                            InkWell(
+                              onTap: () => _removeTitleChip(chip),
+                              child: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF0050E5)),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 220,
+                        height: 36,
+                        child: TextField(
+                          controller: _newTitleCtrl,
+                          decoration: InputDecoration(
+                            hintText: 'e.g. Barrister, Sheikh',
+                            hintStyle: const TextStyle(fontSize: 12),
+                            filled: true,
+                            fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: _addTitleChip,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add Title'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const Divider(height: 32),
+
+          // Toggle 2: Enable Suffix
+          _buildPreferenceRow(
+            isDark: isDark,
+            title: 'Enable Name Suffix (e.g. mni, PhD, Esq, OON)',
+            desc: 'When enabled, an open text space is made available on registration and profile forms for professional or honorary post-nominal suffixes. Suffix is freeform text.',
+            value: enableSuffix,
+            statusBadgeText: enableSuffix ? 'ENABLED' : 'DISABLED',
+            statusBadgeActive: enableSuffix,
+            onChanged: (val) => setState(() => _settings['enableSuffix'] = val),
+          ),
+
+          if (enableSuffix) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFF0050E5), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Suffix Input Active: ', style: TextStyle(fontWeight: FontWeight.w700)),
+                          const TextSpan(text: 'Registration page and user directory forms will render an empty text box: '),
+                          TextSpan(text: 'Suffix: [ e.g. mni, PhD, Esq ]', style: TextStyle(fontFamily: 'monospace', color: const Color(0xFF0050E5), fontWeight: FontWeight.w700)),
+                          const TextSpan(text: '. Members can enter their recognized honorific titles.'),
+                        ],
+                      ),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF1E293B)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection2MemberIdRules(bool isDark, String currentFormat) {
+    return _buildSectionContainer(
+      isDark: isDark,
+      icon: Icons.tag_rounded,
+      title: 'Member ID Generation & Numbering Rules',
+      subtitle: 'Customize the automated coding pattern, prefix, zero-padding, and delimiter for all newly created accounts.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PREFIX CODE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _prefixCtrl,
+                      onChanged: (_) => _updatePreviews(),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. CC or ID',
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('DELIMITER SEPARATOR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      initialValue: _settings['memberIdDelimiter'] as String? ?? '-',
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: '-', child: Text('Hyphen (-)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: '/', child: Text('Forward Slash (/)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: '_', child: Text('Underscore (_)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: '.', child: Text('Dot (.)', style: TextStyle(fontSize: 12.5))),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          _settings['memberIdDelimiter'] = val;
+                          _updatePreviews();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ZERO-PADDING WIDTH', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int>(
+                      initialValue: (_settings['memberIdPadding'] as num?)?.toInt() ?? 4,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 3, child: Text('3 Digits (001)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: 4, child: Text('4 Digits (0001)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: 5, child: Text('5 Digits (00001)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: 6, child: Text('6 Digits (000001)', style: TextStyle(fontSize: 12.5))),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          _settings['memberIdPadding'] = val;
+                          _updatePreviews();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          Text('ACTIVE GENERATION PATTERN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+          const SizedBox(height: 10),
+
+          GridView.count(
+            crossAxisCount: MediaQuery.of(context).size.width >= 1000 ? 4 : 2,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.6,
+            children: _formatPreviews.map((p) {
+              final isSelected = currentFormat == p['key'];
+              return InkWell(
+                onTap: () {
+                  setState(() => _settings['memberIdFormat'] = p['key']);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+                        : (isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF0050E5)
+                          : (isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            p['name'] as String? ?? 'Pattern',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                            ),
+                          ),
+                          Icon(
+                            isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            color: isSelected ? const Color(0xFF0050E5) : const Color(0xFFCBD5E1),
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : (isDark ? const Color(0xFF0F172A) : Colors.white),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                        ),
+                        child: Text(
+                          p['previewExample'] as String? ?? 'CC-0001',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: Color(0xFF0050E5)),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        p['description'] as String? ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection3KpiSettings(bool isDark, bool enableKpi, bool enablePublicLeaderboard, int passingScore) {
+    return _buildSectionContainer(
+      isDark: isDark,
+      icon: Icons.analytics_rounded,
+      title: 'Performance Evaluations & KPI Settings',
+      subtitle: 'Configure scorecard evaluation cycles, passing benchmarks, and public member leaderboard visibility.',
+      child: Column(
+        children: [
+          _buildPreferenceRow(
+            isDark: isDark,
+            title: 'Enable Member KPI Evaluations',
+            desc: 'Activate performance scorecards and multi-factor evaluation rubrics for members and staff across the tenant.',
+            value: enableKpi,
+            statusBadgeText: enableKpi ? 'ENABLED' : 'DISABLED',
+            statusBadgeActive: enableKpi,
+            onChanged: (val) => setState(() => _settings['enableKpiEvaluations'] = val),
+          ),
+          const Divider(height: 24),
+          _buildPreferenceRow(
+            isDark: isDark,
+            title: 'Public Member Leaderboard Visibility',
+            desc: 'Display top performing members on community portals and member directories.',
+            value: enablePublicLeaderboard,
+            statusBadgeText: enablePublicLeaderboard ? 'VISIBLE' : 'HIDDEN',
+            statusBadgeActive: enablePublicLeaderboard,
+            onChanged: (val) => setState(() => _settings['enablePublicLeaderboard'] = val),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('DEFAULT EVALUATION CYCLE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      initialValue: _settings['defaultKpiPeriodCycle'] as String? ?? 'Quarterly',
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Quarterly', child: Text('Quarterly (Every 3 Months)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: 'Semi-Annually', child: Text('Semi-Annually (Every 6 Months)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: 'Annually', child: Text('Annually (Year-End Review)', style: TextStyle(fontSize: 12.5))),
+                        DropdownMenuItem(value: 'Monthly', child: Text('Monthly (Sprint Review)', style: TextStyle(fontSize: 12.5))),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _settings['defaultKpiPeriodCycle'] = val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('BENCHMARK PASSING SCORE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                        Text('$passingScore%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0050E5))),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Slider(
+                      value: passingScore.toDouble(),
+                      min: 50,
+                      max: 100,
+                      divisions: 10,
+                      label: '$passingScore%',
+                      onChanged: (val) => setState(() => _settings['kpiPassingScore'] = val.toInt()),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection4Governance(bool isDark, bool requireConfirmedEmail, bool enableUserDeletion) {
+    return _buildSectionContainer(
+      isDark: isDark,
+      icon: Icons.shield_rounded,
+      title: 'Security & Account Lifecycle Governance',
+      subtitle: 'Enforce authentication security rules and profile removal permissions.',
+      child: Column(
+        children: [
+          _buildPreferenceRow(
+            isDark: isDark,
+            title: 'Require Confirmed Email to Log In',
+            desc: 'Mandate email address confirmation before allowing account sign-in access.',
+            value: requireConfirmedEmail,
+            statusBadgeText: requireConfirmedEmail ? 'ENFORCED' : 'OFF',
+            statusBadgeActive: requireConfirmedEmail,
+            onChanged: (val) => setState(() => _settings['requireConfirmedEmailToLogin'] = val),
+          ),
+          const Divider(height: 24),
+          _buildPreferenceRow(
+            isDark: isDark,
+            title: 'Allow Administrator Account Deletion',
+            desc: 'Permit workspace administrators to delete member accounts and archive historical audit logs.',
+            value: enableUserDeletion,
+            statusBadgeText: enableUserDeletion ? 'ALLOWED' : 'PROHIBITED',
+            statusBadgeActive: enableUserDeletion,
+            onChanged: (val) => setState(() => _settings['enableUserDeletion'] = val),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreferenceRow({
+    required bool isDark,
+    required String title,
+    required String desc,
+    required bool value,
+    required String statusBadgeText,
+    required bool statusBadgeActive,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: statusBadgeActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      statusBadgeText,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusBadgeActive ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                        letterSpacing: 0.04,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionContainer({
+    required bool isDark,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          child,
+        ],
+      ),
+    );
+  }
+}

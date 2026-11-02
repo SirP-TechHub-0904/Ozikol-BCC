@@ -43,9 +43,99 @@ export interface MarketComponentItem {
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="marketplace-page">
-      <!-- Top Header & AI Magic Actions -->
-      <div class="page-header-card">
-        <div class="header-main-row">
+      <!-- ========================================================================= -->
+      <!-- 1. COMING SOON VIEW (ACTIVE WHEN isComingSoon IS TRUE)                   -->
+      <!-- ========================================================================= -->
+      <ng-container *ngIf="isComingSoon">
+        <!-- Breadcrumb Strip -->
+        <div class="page-header-card">
+          <div class="breadcrumb-strip">
+            <a routerLink="/admin/dashboard">Console</a>
+            <span class="sep">/</span>
+            <a routerLink="/content/console">CMS Studio</a>
+            <span class="sep">/</span>
+            <span class="current">UI Marketplace</span>
+          </div>
+        </div>
+
+        <!-- Main Coming Soon Showcase Hero -->
+        <div class="marketplace-coming-soon-hero">
+          <div class="cs-content-wrap">
+            <!-- Pulsing Beacon Badge -->
+            <div class="cs-badge">
+              <span class="cs-beacon"></span>
+              <span class="material-symbols-outlined cs-badge-icon">widgets</span>
+              <span>Coming Soon &bull; UI Marketplace</span>
+            </div>
+
+            <!-- Main Bold Heading -->
+            <h1 class="cs-main-title">
+              COMING SOON
+            </h1>
+            <h2 class="cs-sub-title">
+              Modular Page Blueprints &amp; <span class="cs-gradient-text">Ecosystem Marketplace</span>
+            </h2>
+
+            <p class="cs-lead-text">
+              We are building a unified ecosystem of customizable page section blueprints, 1-click cloud workspace hydration, and creator monetization. The official marketplace will be launching soon.
+            </p>
+
+            <!-- 3 Feature Pillar Cards (Icons Only - No Emojis) -->
+            <div class="cs-cards-grid">
+              <div class="cs-card">
+                <div class="cs-card-icon-box cs-icon--rose">
+                  <span class="material-symbols-outlined">palette</span>
+                </div>
+                <h3 class="cs-card-title">Modular Page Blueprints</h3>
+                <p class="cs-card-desc">
+                  Pre-designed, tokenized navigation headers, responsive split heroes, pricing tables, bento grids, and multi-column footers with zero CSS collisions.
+                </p>
+              </div>
+
+              <div class="cs-card">
+                <div class="cs-card-icon-box cs-icon--amber">
+                  <span class="material-symbols-outlined">bolt</span>
+                </div>
+                <h3 class="cs-card-title">1-Click Tenant Hydration</h3>
+                <p class="cs-card-desc">
+                  Instant installation into tenant workspaces with automated brand color inheritance, typography matching, and dark mode support.
+                </p>
+              </div>
+
+              <div class="cs-card">
+                <div class="cs-card-icon-box cs-icon--emerald">
+                  <span class="material-symbols-outlined">monetization_on</span>
+                </div>
+                <h3 class="cs-card-title">Creator Revenue Share</h3>
+                <p class="cs-card-desc">
+                  Design agencies and UI engineers can publish custom sectional blueprints and earn recurring monthly revenue across cloud tenant organizations.
+                </p>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="cs-actions-row">
+              <a routerLink="/content/console/templates" class="btn btn-primary-cs" title="View your installed section templates">
+                <span class="material-symbols-outlined">layers</span>
+                <span>Browse My Templates</span>
+                <span class="material-symbols-outlined arrow">arrow_forward</span>
+              </a>
+              <a routerLink="/content/console" class="btn btn-secondary-cs" title="Return to CMS Studio Dashboard">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span>Return to CMS Studio</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- ========================================================================= -->
+      <!-- 2. FULL LIVE MARKETPLACE (ACTIVE WHEN isComingSoon IS FALSE)             -->
+      <!-- ========================================================================= -->
+      <ng-container *ngIf="!isComingSoon">
+        <!-- Top Header & AI Magic Actions -->
+        <div class="page-header-card">
+          <div class="header-main-row">
           <div class="header-left">
             <div class="breadcrumb-strip">
               <a routerLink="/admin/dashboard">Console</a>
@@ -450,7 +540,7 @@ export interface MarketComponentItem {
               <span class="material-symbols-outlined text-purple">photo_camera</span>
               <div>
                 <h3 class="modal-title">Clone Layout from Screenshot (Vision AI)</h3>
-                <p class="modal-sub">Paste or upload an image of any website section. Vision AI will generate the responsive HTML, scoped CSS, and upload assets to Cloudinary.</p>
+                <p class="modal-sub">Paste or upload an image of any website section. Vision AI will generate the responsive HTML, scoped CSS, and optimize asset media.</p>
               </div>
             </div>
             <button type="button" class="btn-close-modal" (click)="showAiVisionModal = false">✕</button>
@@ -504,7 +594,7 @@ export interface MarketComponentItem {
               <span class="material-symbols-outlined text-indigo">auto_awesome</span>
               <div>
                 <h3 class="modal-title">Generate Section with AI Prompt</h3>
-                <p class="modal-sub">Describe what section you need in plain English. The AI engine will create HTML, scoped CSS, copy, and Cloudinary graphics.</p>
+                <p class="modal-sub">Describe what section you need in plain English. The AI engine will create HTML, scoped CSS, copy, and visual media.</p>
               </div>
             </div>
             <button type="button" class="btn-close-modal" (click)="showAiPromptModal = false">✕</button>
@@ -545,9 +635,240 @@ export interface MarketComponentItem {
           </div>
         </div>
       </div>
+      </ng-container>
     </div>
   `,
   styles: [`
+    /* Coming Soon Hero Screen */
+    .marketplace-coming-soon-hero {
+      background: radial-gradient(circle at 50% 10%, rgba(0, 80, 229, 0.12) 0%, rgba(15, 23, 42, 0.98) 70%),
+                  linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 70px 24px 80px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .cs-content-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .cs-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 80, 229, 0.18);
+      border: 1px solid rgba(0, 80, 229, 0.5);
+      border-radius: 9999px;
+      padding: 8px 22px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      box-shadow: 0 0 25px rgba(0, 80, 229, 0.3);
+    }
+
+    .cs-badge-icon {
+      font-size: 18px;
+    }
+
+    .cs-beacon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3b82f6;
+      box-shadow: 0 0 12px #60a5fa;
+      animation: csPulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes csPulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+      50% {
+        transform: scale(1.6);
+        opacity: 1;
+      }
+    }
+
+    .cs-main-title {
+      font-size: 54px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin: 0 0 12px 0;
+      color: #ffffff;
+      text-shadow: 0 2px 20px rgba(0, 80, 229, 0.4);
+    }
+
+    .cs-sub-title {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 0 0 20px 0;
+      color: #94a3b8;
+    }
+
+    .cs-gradient-text {
+      background: linear-gradient(135deg, #60a5fa 0%, #a855f7 50%, #f43f5e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .cs-lead-text {
+      font-size: 16.5px;
+      line-height: 1.65;
+      color: #cbd5e1;
+      max-width: 720px;
+      margin: 0 auto 48px auto;
+    }
+
+    .cs-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      margin-bottom: 48px;
+      text-align: left;
+    }
+
+    .cs-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 14px;
+      padding: 26px 22px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .cs-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(96, 165, 250, 0.5);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .cs-card-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .cs-card-icon-box .material-symbols-outlined {
+      font-size: 26px;
+    }
+
+    .cs-icon--rose {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      color: #fb7185;
+    }
+
+    .cs-icon--amber {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .cs-icon--emerald {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .cs-card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 8px 0;
+    }
+
+    .cs-card-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    .cs-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary-cs {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #0050e5 0%, #2563eb 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 26px;
+      font-size: 14.5px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0, 80, 229, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary-cs:hover {
+      background: linear-gradient(135deg, #003bb5 0%, #1d4ed8 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.5);
+      color: #ffffff;
+    }
+
+    .btn-secondary-cs {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      padding: 13px 24px;
+      font-size: 14.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary-cs:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    .btn-primary-cs .arrow {
+      font-size: 18px;
+      transition: transform 0.15s ease;
+    }
+
+    .btn-primary-cs:hover .arrow {
+      transform: translateX(3px);
+    }
+
     .marketplace-page {
       padding: 24px 32px 64px 32px;
       max-width: 1600px;
@@ -1634,6 +1955,12 @@ export interface MarketComponentItem {
   `]
 })
 export class MarketplaceComponent implements OnInit, OnDestroy {
+  /**
+   * When true, displays the high-impact Coming Soon screen.
+   * When false, renders the full interactive component & template marketplace catalog.
+   */
+  isComingSoon: boolean = true;
+
   // Category Definitions
   categories: MarketCategory[] = [
     { id: 'menu', name: 'Navigation & Menu', icon: 'menu', description: 'Header navigation bars, responsive mobile drawers, and megamenus' },
@@ -2174,7 +2501,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
             <p>We are dedicated to building digital bridges that empower member organizations, alumni networks, and corporate governing bodies with transparent tools.</p>
             <ul class="oz-check-list">
               <li><i class="fa-solid fa-check text-success me-1"></i> Bank-grade cryptographic security and audit trails</li>
-              <li><i class="fa-solid fa-check text-success me-1"></i> Seamless Cloudinary media asset delivery and CDN speed</li>
+              <li><i class="fa-solid fa-check text-success me-1"></i> Optimized media asset delivery and global caching speed</li>
               <li><i class="fa-solid fa-check text-success me-1"></i> 24/7 dedicated support team and institutional SLAs</li>
             </ul>
           </div>
@@ -3775,7 +4102,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       this.aiGenerating = false;
       this.showAiVisionModal = false;
       this.aiScreenshotPreview = '';
-      this.toast.success('Vision AI analyzed screenshot, generated HTML/CSS & uploaded graphics to Cloudinary!');
+      this.toast.success('Vision AI analyzed screenshot, generated HTML/CSS & configured section assets!');
     }, 1500);
   }
 
@@ -3789,7 +4116,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       this.aiGenerating = false;
       this.showAiPromptModal = false;
       this.aiPromptText = '';
-      this.toast.success('AI successfully generated new section block with copy & Cloudinary images!');
+      this.toast.success('AI successfully generated new section block with responsive copy & media assets!');
     }, 1500);
   }
 }

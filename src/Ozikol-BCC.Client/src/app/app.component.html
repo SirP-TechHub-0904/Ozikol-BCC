@@ -1,2 +1,14 @@
-<router-outlet></router-outlet>
-<app-toast-container></app-toast-container>
+<!-- 1. Clean 404 Screen when subdomain is not found -->
+<div class="server-not-found-container" *ngIf="isTenantNotFound$ | async">
+  <div class="server-not-found-content">
+    <h1 class="server-404-code">404</h1>
+    <h2 class="server-404-title">Not Found</h2>
+    <p class="server-404-description">The resource requested could not be found!</p>
+  </div>
+</div>
+
+<!-- 2. Mount routes only after tenant check completes and tenant is valid -->
+<ng-container *ngIf="!(isCheckingTenant$ | async) && !(isTenantNotFound$ | async)">
+  <router-outlet></router-outlet>
+  <app-toast-container></app-toast-container>
+</ng-container>

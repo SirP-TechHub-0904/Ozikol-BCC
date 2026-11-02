@@ -42,19 +42,18 @@ namespace Ozikol_BCC.Application.Queries.SetupQueries
                     };
                 }
 
-                var hasConfig = await _context.ConfigSettings.AnyAsync(cancellationToken)
-                             || await _context.ManagementSettings.AnyAsync()
-                             || await _context.BcpSettings.AnyAsync();
+                var hasConfig = await _context.MisWebsiteSettings.AnyAsync(cancellationToken)
+                             || await _context.MisConfigurationSettings.AnyAsync(cancellationToken);
 
                 var hasUsers = await _userManager.Users.AnyAsync(cancellationToken);
 
-                var config = await _context.ConfigSettings.FirstOrDefaultAsync(cancellationToken);
+                var website = await _context.MisWebsiteSettings.FirstOrDefaultAsync(cancellationToken);
 
                 return new SetupStatusDto
                 {
                     IsSetupCompleted = hasConfig || hasUsers,
                     DatabaseCanConnect = true,
-                    TenantName = config?.WebsiteTitle ?? config?.CompanyName,
+                    TenantName = website?.SiteTitle ?? website?.BrandName,
                     StatusMessage = (hasConfig || hasUsers) ? "Setup has already been completed." : "Ready for initial setup."
                 };
             }

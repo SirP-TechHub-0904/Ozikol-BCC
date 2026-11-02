@@ -395,7 +395,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .GroupBy(s => s.Period)
                 .Select(g => new
                 {
-                    Period = g.Key,
+                    Period = g.Key ?? string.Empty,
                     Score = (int)Math.Round(g.Average(x => ((double)x.Score / (double)(x.BcpKpiIndicator != null && x.BcpKpiIndicator.MaxScore > 0 ? x.BcpKpiIndicator.MaxScore : 100)) * 100))
                 })
                 .ToList();

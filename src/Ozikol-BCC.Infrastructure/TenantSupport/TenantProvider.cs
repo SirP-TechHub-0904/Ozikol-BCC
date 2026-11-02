@@ -64,7 +64,7 @@ public class TenantProvider : ITenantProvider
 
                 if (match != null && !string.IsNullOrEmpty(match.ConnectionString))
                 {
-                    return match.ConnectionString;
+                    return ResolveActiveTenantConnectionString(match.ConnectionString);
                 }
 
                 // Fallback to static config if explicitly configured for this name
@@ -268,6 +268,96 @@ public class TenantProvider : ITenantProvider
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Intelligently harmonizes a tenant database connection string with the active master database host.
+    /// When developing locally against a remote master database (e.g. 187.7.24.129), tenant connection
+    /// strings created with '127.0.0.1' or 'localhost' on the live server are dynamically redirected
+    /// to the remote server host so local development seamlessly accesses the tenant's remote database.
+    /// </summary>
+    /// <param name="rawTenantConnectionString">The raw connection string stored in the Master Catalog.</param>
+    /// <returns>The harmonized connection string.</returns>
+    private string ResolveActiveTenantConnectionString(string rawTenantConnectionString)
+    {
+        if (string.IsNullOrWhiteSpace(rawTenantConnectionString) || string.IsNullOrWhiteSpace(_defaultConnectionString))
+        {
+            return rawTenantConnectionString;
+        }
+
+        try
+        {
+            var masterBuilder = new System.Data.Common.DbConnectionStringBuilder { ConnectionString = _defaultConnectionString };
+            var tenantBuilder = new System.Data.Common.DbConnectionStringBuilder { ConnectionString = rawTenantConnectionString };
+
+            string? masterServer = null;
+            if (masterBuilder.TryGetValue("Server", out var srv) || masterBuilder.TryGetValue("Data Source", out srv))
+            {
+                masterServer = srv?.ToString()?.Trim();
+            }
+
+            string? tenantServer = null;
+            if (tenantBuilder.TryGetValue("Server", out var tsrv) || tenantBuilder.TryGetValue("Data Source", out tsrv))
+            {
+                tenantServer = tsrv?.ToString()?.Trim();
+            }
+
+            // Check if Master connects to a remote server host
+            var isMasterRemote = !string.IsNullOrWhiteSpace(masterServer) &&
+                !masterServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) &&
+                !masterServer.Equals("localhost", StringComparison.OrdinalIgnoreCase) &&
+                !masterServer.Equals(".", StringComparison.OrdinalIgnoreCase) &&
+                !masterServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase);
+
+            var isTenantLocal = string.IsNullOrWhiteSpace(tenantServer) ||
+                tenantServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.Equals(".", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase);
+
+            if (isMasterRemote && isTenantLocal)
+            {
+                if (tenantBuilder.ContainsKey("Server"))
+                {
+                    tenantBuilder["Server"] = masterServer!;
+                }
+                else
+                {
+                    tenantBuilder["Data Source"] = masterServer!;
+                }
+
+                // If master has credentials and tenant lacks them, inherit master credentials
+                if (masterBuilder.TryGetValue("User Id", out var masterUser) && !string.IsNullOrWhiteSpace(masterUser?.ToString()))
+                {
+                    tenantBuilder["User Id"] = masterUser;
+                    if (masterBuilder.TryGetValue("Password", out var masterPass))
+                    {
+                        tenantBuilder["Password"] = masterPass;
+                    }
+                    if (tenantBuilder.ContainsKey("Integrated Security"))
+                    {
+                        tenantBuilder.Remove("Integrated Security");
+                    }
+                    if (tenantBuilder.ContainsKey("Trusted_Connection"))
+                    {
+                        tenantBuilder.Remove("Trusted_Connection");
+                    }
+                }
+
+                if (masterBuilder.TryGetValue("TrustServerCertificate", out var trustCert))
+                {
+                    tenantBuilder["TrustServerCertificate"] = trustCert;
+                }
+
+                return tenantBuilder.ConnectionString;
+            }
+        }
+        catch
+        {
+            // Fallback safely to raw tenant connection string on any parsing anomaly
+        }
+
+        return rawTenantConnectionString;
     }
 
     public IDisposable BeginScope(string tenant)

@@ -1,0 +1,24 @@
+{
+  "pageSectionLists": [
+    {
+      "title": "99.99%",
+      "description": "Historical Core Uptime SLA",
+      "icon": "verified"
+    },
+    {
+      "title": "< 2.4 ms",
+      "description": "Average Global Edge Latency",
+      "icon": "bolt"
+    },
+    {
+      "title": "400M+",
+      "description": "Daily API Invocations Handled",
+      "icon": "speed"
+    },
+    {
+      "title": "24 / 7",
+      "description": "Dedicated Global SRE Coverage",
+      "icon": "support_agent"
+    }
+  ]
+}

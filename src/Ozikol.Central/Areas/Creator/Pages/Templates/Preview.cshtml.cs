@@ -65,8 +65,8 @@ namespace Ozikol.Central.Areas.Creator.Pages.Templates
                 .Replace("{{ MiniTitle}}", template.CategoryKey.ToUpperInvariant())
                 .Replace("{{ Description }}", template.Description ?? "High-performance sovereign enterprise multi-tenant cloud architecture.")
                 .Replace("{{ Description}}", template.Description ?? "High-performance sovereign enterprise multi-tenant cloud architecture.")
-                .Replace("{{ ImageUrl }}", template.PreviewImageUrl ?? "/images/oz-logo-red.png")
-                .Replace("{{ ImageUrl}}", template.PreviewImageUrl ?? "/images/oz-logo-red.png");
+                .Replace("{{ ImageUrl }}", template.PreviewImageUrl ?? "/images/oz-logo.png")
+                .Replace("{{ ImageUrl}}", template.PreviewImageUrl ?? "/images/oz-logo.png");
 
             CompiledHtml = html;
             return Page();

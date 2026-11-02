@@ -168,7 +168,14 @@ namespace Ozikol_BCC.Application.Services
                 BcpEventType.SystemAnnouncement
             };
 
-            var channels = new[] { BcpMessageChannel.Email, BcpMessageChannel.Sms, BcpMessageChannel.InAppNotification };
+            var channels = new[]
+            {
+                BcpMessageChannel.Email,
+                BcpMessageChannel.Sms,
+                BcpMessageChannel.InAppNotification,
+                BcpMessageChannel.Push,
+                BcpMessageChannel.WhatsApp
+            };
 
             var existing = await _db.BcpMessageTemplates
                 .Select(t => new { t.EventType, t.Channel })
@@ -245,6 +252,8 @@ namespace Ozikol_BCC.Application.Services
                 BcpMessageChannel.Email => "Email",
                 BcpMessageChannel.Sms => "SMS",
                 BcpMessageChannel.InAppNotification => "In-App",
+                BcpMessageChannel.Push => "Push Notification",
+                BcpMessageChannel.WhatsApp => "WhatsApp",
                 _ => "Notification"
             };
 
@@ -264,7 +273,21 @@ namespace Ozikol_BCC.Application.Services
 
         private static string GetDefaultSubject(BcpEventType eventType, BcpMessageChannel channel)
         {
-            if (channel == BcpMessageChannel.Sms) return "";
+            if (channel == BcpMessageChannel.Sms || channel == BcpMessageChannel.WhatsApp) return "";
+
+            if (channel == BcpMessageChannel.Push)
+            {
+                return eventType switch
+                {
+                    BcpEventType.WelcomeOnboarding => "{{OrganizationName}} Account",
+                    BcpEventType.LoginOtp => "Verification Code: {{OtpCode}}",
+                    BcpEventType.PasswordReset => "Password Reset",
+                    BcpEventType.UserStatusChanged => "Account Status Updated",
+                    BcpEventType.PerformanceScoreRecorded => "Evaluation Recorded",
+                    BcpEventType.SystemAnnouncement => "New Announcement",
+                    _ => "Workspace Notice"
+                };
+            }
 
             return eventType switch
             {
@@ -303,6 +326,32 @@ namespace Ozikol_BCC.Application.Services
                     BcpEventType.UserStatusChanged => "Your account status has been updated to {{Status}}.",
                     BcpEventType.PerformanceScoreRecorded => "You have a new performance rating recorded for {{IndicatorTitle}}: {{Score}} points.",
                     _ => "You have a new notification from the workspace."
+                };
+            }
+
+            if (channel == BcpMessageChannel.Push)
+            {
+                return eventType switch
+                {
+                    BcpEventType.WelcomeOnboarding => "Welcome to {{OrganizationName}}! Member ID: {{MemberId}}. Tap to sign in.",
+                    BcpEventType.LoginOtp => "Your verification code is {{OtpCode}}. Valid for 10 minutes.",
+                    BcpEventType.PasswordReset => "A temporary password was assigned to your account. Tap to sign in.",
+                    BcpEventType.UserStatusChanged => "Your account access status has been updated to {{Status}}.",
+                    BcpEventType.PerformanceScoreRecorded => "New KPI evaluation recorded for {{IndicatorTitle}}: Score {{Score}}.",
+                    _ => "You have a new update from {{OrganizationName}}. Tap to view."
+                };
+            }
+
+            if (channel == BcpMessageChannel.WhatsApp)
+            {
+                return eventType switch
+                {
+                    BcpEventType.WelcomeOnboarding => "*Welcome to {{OrganizationName}}!*\n\nHello *{{FullName}}*,\nYour member account is active.\n*Member ID:* {{MemberId}}\n*Email:* {{Email}}\n*Temporary Password:* {{TemporaryPassword}}\n\n👉 *Sign in:* {{PortalUrl}}",
+                    BcpEventType.LoginOtp => "*{{OrganizationName}} Verification Code*\n\nYour 6-digit code is: *{{OtpCode}}*\nValid for 10 minutes. Do not disclose to anyone.",
+                    BcpEventType.PasswordReset => "*Password Reset Notice*\n\nHello {{FullName}},\nYour temporary password for {{OrganizationName}} is: *{{TemporaryPassword}}*\n\n👉 *Sign in:* {{PortalUrl}}",
+                    BcpEventType.UserStatusChanged => "*Account Status Update*\n\nYour {{OrganizationName}} account status has been changed to *{{Status}}*.",
+                    BcpEventType.PerformanceScoreRecorded => "*Performance KPI Score*\n\n{{IndicatorTitle}}: *{{Score}}* points.",
+                    _ => "*Notification from {{OrganizationName}}*\n\nYou have a new update. Check your workspace portal."
                 };
             }
 

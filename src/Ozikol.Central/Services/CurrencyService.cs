@@ -14,20 +14,20 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Services;
 
 /// <summary>
-/// Configuration options governing global base pricing and fallback currency settings.
+/// Configuration options governing global default currency and fallback trial settings.
 /// </summary>
 public class PricingSettings
 {
     /// <summary>
-    /// The global annual base subscription price in US Dollars ($).
-    /// Defaults to $25.00 USD / year.
-    /// </summary>
-    public decimal BasePriceUsd { get; set; } = 25.00m;
-
-    /// <summary>
     /// The default fallback currency code when country detection yields no specific regional match.
     /// </summary>
     public string DefaultCurrencyCode { get; set; } = "USD";
+
+    /// <summary>
+    /// The default free trial period in days for new workspaces when no promotional coupon override is provided.
+    /// Defaults to 14 days.
+    /// </summary>
+    public int DefaultTrialDays { get; set; } = 14;
 }
 
 /// <summary>
@@ -114,6 +114,60 @@ public interface ICurrencyService
     /// <param name="compact">If true, omits fractional decimals (e.g., ₦40,000 instead of ₦40,000.00).</param>
     /// <returns>The localized formatted currency string.</returns>
     string Format(decimal amount, string? currencyCode, bool compact = true);
+
+    /// <summary>
+    /// Retrieves the exchange rate multiplier relative to USD base currency.
+    /// </summary>
+    /// <param name="currencyCode">Target currency code.</param>
+    /// <returns>Decimal exchange rate multiplier.</returns>
+    decimal GetExchangeRate(string? currencyCode);
+
+    /// <summary>
+    /// Converts a USD monetary amount into the target currency using active master rates.
+    /// </summary>
+    /// <param name="usdAmount">USD base amount.</param>
+    /// <param name="currencyCode">Target currency code.</param>
+    /// <returns>Converted decimal value.</returns>
+    decimal ConvertFromUsd(decimal usdAmount, string? currencyCode);
+
+    /// <summary>
+    /// Computes the dynamic global baseline annual subscription USD price by calculating
+    /// the sum of YearlyPrice across all active compulsory core features.
+    /// </summary>
+    /// <returns>The total USD annual cost for all active compulsory features.</returns>
+    decimal GetCompulsoryFeaturesBasePriceUsd();
+
+    /// <summary>
+    /// Retrieves the total count of all active modular capabilities in the master catalog.
+    /// </summary>
+    /// <returns>The count of active features.</returns>
+    int GetActiveFeaturesCount();
+
+    /// <summary>
+    /// Retrieves the total count of distinct active capability suites/categories in the master catalog.
+    /// </summary>
+    /// <returns>The count of active suites.</returns>
+    int GetActiveSuitesCount();
+
+    /// <summary>
+    /// Retrieves the total count of active compulsory core features in the master catalog.
+    /// </summary>
+    /// <returns>The count of active compulsory features.</returns>
+    int GetCompulsoryFeaturesCount();
+
+    /// <summary>
+    /// Invalidates all cached currency rates and dynamic pricing sums so administrative changes reflect immediately.
+    /// </summary>
+    void InvalidatePricingCache();
+
+    /// <summary>
+    /// Converts and formats a USD monetary amount into the target currency with symbol and localized commas.
+    /// </summary>
+    /// <param name="usdAmount">USD base amount.</param>
+    /// <param name="currencyCode">Target currency code.</param>
+    /// <param name="compact">If true, omits fractional cents/kobo if zero.</param>
+    /// <returns>Formatted currency string.</returns>
+    string FormatUsdConverted(decimal usdAmount, string? currencyCode, bool compact = false);
 }
 
 /// <summary>
@@ -123,7 +177,9 @@ public interface ICurrencyService
 public class CurrencyService : ICurrencyService
 {
     private const string CacheKey = "Ozikol_MasterCurrencyRates_V1";
+    private const string CompulsoryPriceCacheKey = "Ozikol_CompulsoryBasePriceUsd_V1";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(1);
+    private static readonly TimeSpan CompulsoryPriceCacheDuration = TimeSpan.FromMinutes(2);
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMemoryCache _cache;
@@ -137,7 +193,7 @@ public class CurrencyService : ICurrencyService
     private static readonly List<MasterCurrencyRate> StaticFallbackRates = new()
     {
         new MasterCurrencyRate { Id = 1, CurrencyCode = "USD", CurrencySymbol = "$", DisplayName = "US Dollar", CultureName = "en-US", PillLabel = "USD ($)", RateFromUsd = 1.0m, IsBaseCurrency = true, IsActive = true, SortOrder = 1, AssociatedCountryCodes = "US" },
-        new MasterCurrencyRate { Id = 2, CurrencyCode = "NGN", CurrencySymbol = "\u20A6", DisplayName = "Nigerian Naira", CultureName = "en-NG", PillLabel = "NGN (\u20A6)", RateFromUsd = 1600.0m, IsBaseCurrency = false, IsActive = true, SortOrder = 2, AssociatedCountryCodes = "NG" },
+        new MasterCurrencyRate { Id = 2, CurrencyCode = "NGN", CurrencySymbol = "\u20A6", DisplayName = "Nigerian Naira", CultureName = "en-NG", PillLabel = "NGN (\u20A6)", RateFromUsd = 1350.0m, IsBaseCurrency = false, IsActive = true, SortOrder = 2, AssociatedCountryCodes = "NG" },
         new MasterCurrencyRate { Id = 3, CurrencyCode = "GBP", CurrencySymbol = "\u00A3", DisplayName = "British Pound", CultureName = "en-GB", PillLabel = "GBP (\u00A3)", RateFromUsd = 0.80m, IsBaseCurrency = false, IsActive = true, SortOrder = 3, AssociatedCountryCodes = "GB" },
         new MasterCurrencyRate { Id = 4, CurrencyCode = "EUR", CurrencySymbol = "\u20AC", DisplayName = "Euro", CultureName = "de-DE", PillLabel = "EUR (\u20AC)", RateFromUsd = 0.92m, IsBaseCurrency = false, IsActive = true, SortOrder = 4, AssociatedCountryCodes = "DE,FR,ES,IT,NL,BE,IE,PT,AT,FI,GR" },
         new MasterCurrencyRate { Id = 5, CurrencyCode = "GHS", CurrencySymbol = "GH\u20B5", DisplayName = "Ghanaian Cedi", CultureName = "en-GH", PillLabel = "GHS (GH\u20B5)", RateFromUsd = 14.0m, IsBaseCurrency = false, IsActive = true, SortOrder = 5, AssociatedCountryCodes = "GH" },
@@ -148,8 +204,161 @@ public class CurrencyService : ICurrencyService
         new MasterCurrencyRate { Id = 10, CurrencyCode = "INR", CurrencySymbol = "\u20B9", DisplayName = "Indian Rupee", CultureName = "en-IN", PillLabel = "INR (\u20B9)", RateFromUsd = 84.0m, IsBaseCurrency = false, IsActive = true, SortOrder = 10, AssociatedCountryCodes = "IN" }
     };
 
+    private const string DefaultCurrencyCacheKey = "Ozikol_PlatformDefaultCurrency_V1";
+
+    /// <summary>
+    /// Dynamically resolves the global fallback currency code from MasterPlatformSettings table or configuration.
+    /// </summary>
+    public string GetPlatformDefaultCurrencyCode()
+    {
+        return _cache.GetOrCreate(DefaultCurrencyCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (dbContext != null && dbContext.Database.CanConnect())
+                {
+                    var setting = dbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1);
+                    if (!string.IsNullOrWhiteSpace(setting?.DefaultCurrencyCode))
+                    {
+                        return setting.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query MasterPlatformSettings DefaultCurrencyCode from database.");
+            }
+            return _pricingSettings.DefaultCurrencyCode ?? "NGN";
+        }) ?? _pricingSettings.DefaultCurrencyCode ?? "NGN";
+    }
+
     /// <inheritdoc />
-    public decimal BasePriceUsd => _pricingSettings.BasePriceUsd;
+    public decimal BasePriceUsd => GetCompulsoryFeaturesBasePriceUsd();
+
+    /// <inheritdoc />
+    public decimal GetCompulsoryFeaturesBasePriceUsd()
+    {
+        return _cache.GetOrCreate(CompulsoryPriceCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CompulsoryPriceCacheDuration;
+
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (dbContext != null && dbContext.Database.CanConnect())
+                {
+                    var sum = dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsCompulsory && f.IsActive)
+                        .Sum(f => f.YearlyPrice);
+
+                    if (sum > 0)
+                    {
+                        return Math.Round(sum, 2);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query compulsory features sum from database. Using fallback BasePriceUsd.");
+            }
+
+            return 29.60m;
+        });
+    }
+
+    private const string ActiveFeaturesCountCacheKey = "Ozikol_ActiveFeaturesCount_V1";
+    private const string ActiveSuitesCountCacheKey = "Ozikol_ActiveSuitesCount_V1";
+    private const string CompulsoryCountCacheKey = "Ozikol_CompulsoryCount_V1";
+
+    /// <inheritdoc />
+    public int GetActiveFeaturesCount()
+    {
+        return _cache.GetOrCreate(ActiveFeaturesCountCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CompulsoryPriceCacheDuration;
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (dbContext != null && dbContext.Database.CanConnect())
+                {
+                    return dbContext.MasterFeatureCatalogs.AsNoTracking().Count(f => f.IsActive);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query active features count from database.");
+            }
+            return 40;
+        });
+    }
+
+    /// <inheritdoc />
+    public int GetActiveSuitesCount()
+    {
+        return _cache.GetOrCreate(ActiveSuitesCountCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CompulsoryPriceCacheDuration;
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (dbContext != null && dbContext.Database.CanConnect())
+                {
+                    return dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsActive && !string.IsNullOrEmpty(f.Category))
+                        .Select(f => f.Category)
+                        .Distinct()
+                        .Count();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query active suites count from database.");
+            }
+            return 10;
+        });
+    }
+
+    /// <inheritdoc />
+    public int GetCompulsoryFeaturesCount()
+    {
+        return _cache.GetOrCreate(CompulsoryCountCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CompulsoryPriceCacheDuration;
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (dbContext != null && dbContext.Database.CanConnect())
+                {
+                    return dbContext.MasterFeatureCatalogs.AsNoTracking().Count(f => f.IsCompulsory && f.IsActive);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query compulsory features count from database.");
+            }
+            return 40;
+        });
+    }
+
+    /// <inheritdoc />
+    public void InvalidatePricingCache()
+    {
+        _cache.Remove(CompulsoryPriceCacheKey);
+        _cache.Remove(ActiveFeaturesCountCacheKey);
+        _cache.Remove(ActiveSuitesCountCacheKey);
+        _cache.Remove(CompulsoryCountCacheKey);
+        _cache.Remove(CacheKey);
+        _cache.Remove(DefaultCurrencyCacheKey);
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CurrencyService"/> class.
@@ -221,16 +430,17 @@ public class CurrencyService : ICurrencyService
     public CurrencyInfo ResolveCurrency(string? code)
     {
         var supported = GetSupportedCurrencies();
+        var platformDefault = GetPlatformDefaultCurrencyCode();
 
         if (string.IsNullOrWhiteSpace(code))
         {
-            var defaultMatch = supported.FirstOrDefault(c => c.Code.Equals(_pricingSettings.DefaultCurrencyCode, StringComparison.OrdinalIgnoreCase));
+            var defaultMatch = supported.FirstOrDefault(c => c.Code.Equals(platformDefault, StringComparison.OrdinalIgnoreCase));
             return defaultMatch ?? supported[0];
         }
 
         var normalized = code.Trim().ToUpperInvariant();
         var match = supported.FirstOrDefault(c => c.Code.Equals(normalized, StringComparison.OrdinalIgnoreCase));
-        return match ?? supported.FirstOrDefault(c => c.Code.Equals(_pricingSettings.DefaultCurrencyCode, StringComparison.OrdinalIgnoreCase)) ?? supported[0];
+        return match ?? supported.FirstOrDefault(c => c.Code.Equals(platformDefault, StringComparison.OrdinalIgnoreCase)) ?? supported[0];
     }
 
     /// <inheritdoc />
@@ -277,13 +487,32 @@ public class CurrencyService : ICurrencyService
             }
         }
 
-        // 3. Cloudflare GeoIP header (CF-IPCountry)
-        string? countryIso = context.Request.Headers["CF-IPCountry"].FirstOrDefault();
+        // 3. Edge CDN & Proxy Country Headers (Cloudflare, AWS CloudFront, Fastly, Nginx)
+        string? countryIso = context.Request.Headers["CF-IPCountry"].FirstOrDefault()
+                          ?? context.Request.Headers["CloudFront-Viewer-Country"].FirstOrDefault()
+                          ?? context.Request.Headers["X-Country-Code"].FirstOrDefault()
+                          ?? context.Request.Headers["X-GeoIP-Country"].FirstOrDefault();
 
-        // 4. Offline MaxMind GeoLite2 lookup via client Remote IP address
-        if (string.IsNullOrWhiteSpace(countryIso) && context.Connection.RemoteIpAddress != null)
+        // 4. Offline MaxMind GeoLite2 lookup via client IP (supports CF-Connecting-IP and X-Forwarded-For)
+        if (string.IsNullOrWhiteSpace(countryIso))
         {
-            countryIso = _geoLocationService.ResolveCountryCode(context.Connection.RemoteIpAddress);
+            var ipHeader = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault()
+                        ?? context.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim();
+
+            System.Net.IPAddress? clientIp = null;
+            if (!string.IsNullOrWhiteSpace(ipHeader) && System.Net.IPAddress.TryParse(ipHeader, out var parsedIp))
+            {
+                clientIp = parsedIp;
+            }
+            else
+            {
+                clientIp = context.Connection.RemoteIpAddress;
+            }
+
+            if (clientIp != null)
+            {
+                countryIso = _geoLocationService.ResolveCountryCode(clientIp);
+            }
         }
 
         // 5. Match detected country ISO against configured currency associations
@@ -316,8 +545,8 @@ public class CurrencyService : ICurrencyService
             if (acceptLang.Contains("ZA", StringComparison.OrdinalIgnoreCase)) return "ZAR";
         }
 
-        // 7. Global default fallback
-        return _pricingSettings.DefaultCurrencyCode;
+        // 7. Global default fallback from platform settings
+        return GetPlatformDefaultCurrencyCode();
     }
 
     /// <inheritdoc />
@@ -335,5 +564,30 @@ public class CurrencyService : ICurrencyService
         {
             return $"{resolved.Symbol}{amount:N0}";
         }
+    }
+
+    /// <inheritdoc />
+    public decimal GetExchangeRate(string? currencyCode)
+    {
+        var resolved = ResolveCurrency(currencyCode);
+        var rates = GetCachedRates();
+        var rate = rates.FirstOrDefault(r => r.CurrencyCode.Equals(resolved.Code, StringComparison.OrdinalIgnoreCase))
+                ?? rates.FirstOrDefault(r => r.IsBaseCurrency)
+                ?? rates[0];
+        return rate.RateFromUsd;
+    }
+
+    /// <inheritdoc />
+    public decimal ConvertFromUsd(decimal usdAmount, string? currencyCode)
+    {
+        var rate = GetExchangeRate(currencyCode);
+        return Math.Round(usdAmount * rate, 2);
+    }
+
+    /// <inheritdoc />
+    public string FormatUsdConverted(decimal usdAmount, string? currencyCode, bool compact = false)
+    {
+        var converted = ConvertFromUsd(usdAmount, currencyCode);
+        return Format(converted, currencyCode, compact);
     }
 }

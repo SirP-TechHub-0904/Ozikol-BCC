@@ -16,8 +16,8 @@
         <p class="admin-subtitle">Maintain public frequently asked questions, categorized documentation answers, and self-service help content.</p>
     </div>
     <div class="admin-actions">
-        <a href="/centralwks/support/faqcreate" class="btn-admin btn-admin-primary">
-            <span>➕</span> Add New FAQ
+        <a href="/centralwks/support/faqcreate" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add New FAQ
         </a>
     </div>
 </div>
@@ -34,10 +34,10 @@
     <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 240px;">
             <input type="text" name="Search" value="@Model.Search" placeholder="Search question or answer text..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+                   class="form-control" />
         </div>
         <div style="width: 170px;">
-            <select name="CategoryFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="CategoryFilter" class="form-select">
                 <option value="All" selected="@(string.IsNullOrEmpty(Model.CategoryFilter) || Model.CategoryFilter == "All")">All Categories</option>
                 @foreach (var cat in Model.Categories)
                 {
@@ -46,15 +46,15 @@
             </select>
         </div>
         <div style="width: 150px;">
-            <select name="PublishFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="PublishFilter" class="form-select">
                 <option value="All" selected="@(string.IsNullOrEmpty(Model.PublishFilter) || Model.PublishFilter == "All")">All Statuses</option>
                 <option value="Published" selected="@(Model.PublishFilter == "Published")">Published</option>
                 <option value="Draft" selected="@(Model.PublishFilter == "Draft")">Draft / Hidden</option>
             </select>
         </div>
         <div>
-            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
-                <span>🔍</span> Filter
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">search</span> Filter
             </button>
             @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.CategoryFilter) && Model.CategoryFilter != "All") || (!string.IsNullOrEmpty(Model.PublishFilter) && Model.PublishFilter != "All"))
             {
@@ -66,16 +66,16 @@
 
 @* ── FAQs List ── *@
 <div class="admin-card" style="padding: 0; overflow: hidden;">
-    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text);">
-            Published Knowledge Base Articles (@Model.Faqs.Count)
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-card-border); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary-accent);">quiz</span> Published Knowledge Base Articles (@Model.Faqs.Count)
         </h2>
     </div>
 
     @if (!Model.Faqs.Any())
     {
         <div style="padding: 48px; text-align: center; color: var(--admin-text-muted);">
-            <span style="font-size: 40px; display: block; margin-bottom: 12px;">❓</span>
+            <span class="material-symbols-outlined" style="font-size: 40px; display: block; margin-bottom: 12px; color: var(--admin-text-dim);">help_outline</span>
             <p style="font-size: 14px; margin: 0 0 16px 0;">No FAQ entries found matching the filter criteria.</p>
             <a href="/centralwks/support/faqcreate" class="btn-admin btn-admin-primary">Add First FAQ</a>
         </div>

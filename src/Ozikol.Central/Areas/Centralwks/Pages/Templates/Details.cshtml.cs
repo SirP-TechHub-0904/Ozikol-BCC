@@ -1,96 +1,89 @@
 using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services.Extraction;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 {
     /// <summary>
-    /// PageModel displaying the deep inspection of a UI Marketplace template blueprint, its code tabs,
-    /// live markup preview simulation, and placeholder metadata.
+    /// Details page model for deep inspection of a specific Master Marketplace Section/Template.
+    /// Displays standalone sandbox preview, scoped CSS, tokenized HTML, and mock content schema.
     /// </summary>
     public class DetailsModel : PageModel
     {
-        private readonly MasterCatalogDbContext _dbContext;
+        private readonly MasterCatalogDbContext _masterDb;
+        private readonly INativeSectionExtractorService _nativeExtractor;
+        private readonly ILogger<DetailsModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetailsModel"/> class.
         /// </summary>
-        /// <param name="dbContext">Master catalog database context.</param>
-        public DetailsModel(MasterCatalogDbContext dbContext)
+        public DetailsModel(
+            MasterCatalogDbContext masterDb,
+            INativeSectionExtractorService nativeExtractor,
+            ILogger<DetailsModel> logger)
         {
-            _dbContext = dbContext;
+            _masterDb = masterDb ?? throw new ArgumentNullException(nameof(masterDb));
+            _nativeExtractor = nativeExtractor ?? throw new ArgumentNullException(nameof(nativeExtractor));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// The loaded marketplace template entity.
-        /// </summary>
-        public MasterMarketplaceTemplate Template { get; set; } = default!;
+        #region Properties
 
         /// <summary>
-        /// Simulated rendered HTML snippet with mock placeholder substitutions.
+        /// Gets or sets the target marketplace template.
         /// </summary>
-        public string RenderedPreviewHtml { get; set; } = string.Empty;
+        public MasterMarketplaceTemplate Template { get; set; } = null!;
 
         /// <summary>
-        /// Feedback status message.
+        /// Self-contained standalone HTML sandbox string for live iframe preview.
         /// </summary>
-        [TempData]
-        public string? StatusMessage { get; set; }
+        public string SandboxPreviewHtml { get; set; } = string.Empty;
+
+        #endregion
 
         /// <summary>
-        /// Handles HTTP GET requests to load the template and prepare the simulated preview.
+        /// Handles HTTP GET requests to inspect template details.
         /// </summary>
         /// <param name="id">Template unique identifier.</param>
-        public async Task<IActionResult> OnGetAsync(Guid id)
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Razor Page result.</returns>
+        public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            var template = await _dbContext.MasterMarketplaceTemplates
+            var template = await _masterDb.MasterMarketplaceTemplates
                 .Include(t => t.Category)
                 .Include(t => t.Placeholders)
-                .Include(t => t.Sections)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
             if (template == null)
             {
-                return NotFound($"Template with ID {id} was not found.");
+                return RedirectToPage("./Index");
             }
 
             Template = template;
 
-            // Generate basic simulated markup replacing mustache placeholders
-            var mockHtml = template.HtmlTemplate ?? string.Empty;
-            mockHtml = mockHtml.Replace("{{ Title }}", template.PreviewTitle ?? template.Name);
-            mockHtml = mockHtml.Replace("{{ Subtitle }}", template.PreviewSubtitle ?? template.Description ?? "Experience effortless sovereign cloud management.");
-            mockHtml = mockHtml.Replace("{{ ImageUrl }}", template.PreviewImageUrl ?? "/assets/brand/hero-preview.webp");
-            mockHtml = mockHtml.Replace("{{ ButtonText }}", "Explore Platform");
-            mockHtml = mockHtml.Replace("{{ ButtonUrl }}", "#");
+            // Generate self-contained standalone HTML sandbox
+            var secDto = new Ozikol.Central.Services.ExtractedSectionDto
+            {
+                Name = template.Name,
+                VariantCode = template.VariantCode,
+                CategoryKey = template.CategoryKey,
+                HtmlTemplate = template.HtmlTemplate,
+                ScopedCss = template.CssStyles,
+                JsScript = template.JsScript,
+                SampleContentJson = template.DefaultSectionListsJson
+            };
 
-            RenderedPreviewHtml = mockHtml;
+            SandboxPreviewHtml = _nativeExtractor.BuildStandaloneSectionPreviewHtml(secDto, template.Name);
 
             return Page();
-        }
-
-        /// <summary>
-        /// Toggles template active/hidden state.
-        /// </summary>
-        /// <param name="id">Template identifier.</param>
-        public async Task<IActionResult> OnPostToggleActiveAsync(Guid id)
-        {
-            var template = await _dbContext.MasterMarketplaceTemplates.FindAsync(id);
-            if (template == null)
-            {
-                return NotFound();
-            }
-
-            template.IsActive = !template.IsActive;
-            template.UpdatedUtc = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
-
-            StatusMessage = $"Template '{template.Name}' status updated to {(template.IsActive ? "Active" : "Hidden")}.";
-            return RedirectToPage(new { id });
         }
     }
 }

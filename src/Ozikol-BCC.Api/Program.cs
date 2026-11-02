@@ -1,5 +1,7 @@
 using System.Text;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,12 +12,16 @@ using Microsoft.OpenApi.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Application;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
+using Ozikol_BCC.Telemetry.Sentry.Extensions;
+using Ozikol_BCC.Api.Middleware;
+using Ozikol_BCC.EmailServices.Postmark;
 
 namespace Ozikol_BCC.Api
 {
@@ -26,6 +32,7 @@ namespace Ozikol_BCC.Api
         {
             DotNetEnv.Env.TraversePath().Load();
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseOzikolSentry("Ozikol-BCC.Api");
 
             // 1. Core Services & Infrastructure
             builder.Services.AddAWSService<IAmazonS3>();
@@ -35,7 +42,10 @@ namespace Ozikol_BCC.Api
             builder.Services
                 .AddApplicationExtensions(builder.Configuration)
                 .AddTenantSupport(builder.Configuration)
+                .AddRecaptchaSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
+
+            builder.Services.AddPostmarkEmailServices(builder.Configuration);
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
                 ?? builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -44,8 +54,14 @@ namespace Ozikol_BCC.Api
                     "Please specify 'TenantConfiguration:ConnectionString' or 'ConnectionStrings:DefaultConnection' in your .env file, appsettings.json, or environment variables.");
 
             builder.Services.AddDbContext<MasterCatalogDbContext>(options =>
-                options.UseSqlServer(masterConnectionString));
+                options.UseSqlServer(masterConnectionString, sqlOpts =>
+                {
+                    sqlOpts.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+                    sqlOpts.CommandTimeout(60);
+                }));
             builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
+            builder.Services.AddScoped<ITenantFeatureGateService, Ozikol_BCC.Api.Services.TenantFeatureGateService>();
+            builder.Services.AddSingleton<Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService, Ozikol_BCC.Api.Services.TemplateSecurityInspectorService>();
             builder.Services.AddMemoryCache();
 
             builder.Services.AddHttpClient();
@@ -119,16 +135,96 @@ namespace Ozikol_BCC.Api
                 };
             });
 
-            // 4. CORS Policy for Angular Spa Client
+            // 4. CORS Policy for Multi-Tenant Angular SPA Client
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAngularApp", policy =>
                 {
-                    policy.SetIsOriginAllowed(origin => new Uri(origin).Host.EndsWith("localhost") || origin.Contains("localhost"))
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin)) return false;
+                        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+                        var host = uri.Host.ToLowerInvariant();
+
+                        // 1. Localhost & loopback (e.g. localhost:4200, fixthing.localhost, niyke.localhost)
+                        if (host == "localhost" || host.EndsWith(".localhost") || host == "127.0.0.1")
+                            return true;
+
+                        // 2. Production platform domains (e.g. *.ozikol.cloud, *.ozikol.com)
+                        if (host == "ozikol.cloud" || host.EndsWith(".ozikol.cloud") ||
+                            host == "ozikol.com" || host.EndsWith(".ozikol.com"))
+                            return true;
+
+                        // 3. Custom / dynamic tenant origins from environment variable
+                        var extraOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+                        if (!string.IsNullOrWhiteSpace(extraOrigins))
+                        {
+                            var list = extraOrigins.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            if (list.Any(o => o.Equals(origin, StringComparison.OrdinalIgnoreCase) ||
+                                              o.Equals(host, StringComparison.OrdinalIgnoreCase) ||
+                                              (o.StartsWith("*.") && host.EndsWith(o.Substring(1), StringComparison.OrdinalIgnoreCase))))
+                            {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()
+                    .WithExposedHeaders("Content-Disposition", "X-Tenant-Key", "X-Tenant-Domain", "X-Pagination");
                 });
+            });
+
+            // 4b. Defense-in-Depth Native Rate Limiting Policies (Auth, AI, Upload Protection)
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.OnRejected = async (context, token) =>
+                {
+                    context.HttpContext.Response.ContentType = "application/json";
+                    await context.HttpContext.Response.WriteAsync(
+                        "{\"success\":false,\"message\":\"Too many requests. Please slow down and try again shortly.\",\"statusCode\":429}",
+                        token);
+                };
+
+                // Policy A: Auth limit (Login / Register / Forgot Password) - 5 requests / min per IP
+                options.AddPolicy("auth-limit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                // Policy B: AI Assist & Generation limit - 15 requests / min per client
+                options.AddPolicy("ai-limit", httpContext =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 15,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 3,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                // Policy C: File / Media Upload limit - 20 uploads / min per IP
+                options.AddPolicy("upload-limit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 20,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
             });
 
             // 5. SignalR & Form Options
@@ -198,7 +294,11 @@ namespace Ozikol_BCC.Api
 
             var app = builder.Build();
 
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+            app.UseSecurityHeaders();
+
             app.UseCors("AllowAngularApp");
+            app.UseRateLimiter();
 
             // Only redirect to HTTPS in Production.
             // In Development, Angular calls http://localhost:51026 directly.
@@ -233,6 +333,7 @@ namespace Ozikol_BCC.Api
                 options.WithModels(false);
             });
             app.MapHub<GroupChatHub>("/hubs/group-chat");
+            app.MapHub<NotificationHub>("/hubs/notifications");
 
             await app.RunAsync();
         }

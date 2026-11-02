@@ -5,28 +5,32 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
 {
     /// <summary>
-    /// Page model for managing global platform settings, administrative email routing pools,
-    /// and ticketing automation thresholds in Centralwks.
+    /// Page model for managing global platform settings, onboarding free trial parameters,
+    /// administrative email routing pools, and ticketing automation thresholds in Centralwks.
     /// </summary>
     public class IndexModel : PageModel
     {
         private readonly MasterCatalogDbContext _context;
+        private readonly ICurrencyService _currencyService;
         private readonly ILogger<IndexModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
         /// </summary>
         /// <param name="context">Master catalog database context.</param>
+        /// <param name="currencyService">Currency and pricing service.</param>
         /// <param name="logger">Structured logging service.</param>
-        public IndexModel(MasterCatalogDbContext context, ILogger<IndexModel> logger)
+        public IndexModel(MasterCatalogDbContext context, ICurrencyService currencyService, ILogger<IndexModel> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -92,8 +96,66 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             /// <summary>Gets or sets whether ticket auto-close is active.</summary>
             public bool EnableTicketAutoClose { get; set; } = true;
 
+            /// <summary>Gets or sets default free trial period in days for newly registered workspaces.</summary>
+            [Required(ErrorMessage = "Default trial days is required.")]
+            [Range(1, 365, ErrorMessage = "Trial period must be between 1 and 365 days.")]
+            public int DefaultTrialDays { get; set; } = 14;
+
+            /// <summary>Gets or sets the global fallback currency code.</summary>
+            [Required(ErrorMessage = "Default currency code is required.")]
+            [MaxLength(10)]
+            public string DefaultCurrencyCode { get; set; } = "USD";
+
             /// <summary>Gets or sets comma-separated support category list.</summary>
             public string SupportCategories { get; set; } = "Support, Sales, Billing, Partnership, Enterprise, General";
+
+            /// <summary>Gets or sets MongoDB connection string dedicated strictly for central system logs.</summary>
+            [MaxLength(1000)]
+            public string? MongoLogsConnectionString { get; set; }
+
+            /// <summary>Gets or sets MongoDB database name for central telemetry.</summary>
+            [MaxLength(100)]
+            public string MongoLogsDatabaseName { get; set; } = "OzikolLogsDb";
+
+            /// <summary>Gets or sets MongoDB collection name for central system logs.</summary>
+            [MaxLength(100)]
+            public string MongoLogsCollectionName { get; set; } = "central_system_logs";
+
+            /// <summary>Gets or sets Sentry DSN for client crash reporting.</summary>
+            [MaxLength(500)]
+            public string? SentryDsn { get; set; }
+
+            /// <summary>Gets or sets OneSignal App ID for mobile and desktop push notifications.</summary>
+            [MaxLength(255)]
+            public string? OneSignalAppId { get; set; }
+
+            /// <summary>Gets or sets Cloudflare Turnstile public site key for bot verification.</summary>
+            [MaxLength(255)]
+            public string? CloudflareTurnstileSiteKey { get; set; }
+
+            /// <summary>Gets or sets Master platform Cloudinary Cloud Name.</summary>
+            [MaxLength(255)]
+            public string? CloudinaryCloudName { get; set; }
+
+            /// <summary>Gets or sets Master platform Cloudinary API Key.</summary>
+            [MaxLength(255)]
+            public string? CloudinaryApiKey { get; set; }
+
+            /// <summary>Gets or sets Master platform Cloudinary API Secret.</summary>
+            [MaxLength(255)]
+            public string? CloudinaryApiSecret { get; set; }
+
+            /// <summary>Gets or sets whether platform-wide maintenance mode is engaged.</summary>
+            public bool IsMaintenanceMode { get; set; } = false;
+
+            /// <summary>Gets or sets the public maintenance notification banner message.</summary>
+            [MaxLength(500)]
+            public string? MaintenanceMessage { get; set; }
+
+            /// <summary>Gets or sets the minimum required client version (e.g. 1.0.0).</summary>
+            [Required(ErrorMessage = "Minimum app version is required.")]
+            [MaxLength(50)]
+            public string MinimumAppVersion { get; set; } = "1.0.0";
         }
 
         /// <summary>
@@ -118,7 +180,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                     CertificationAdminEmails = "certifications-admin@ozikol.com",
                     TicketAutoCloseHours = 24,
                     EnableTicketAutoClose = true,
+                    DefaultTrialDays = 14,
+                    DefaultCurrencyCode = "USD",
                     SupportCategories = "Support, Sales, Billing, Partnership, Enterprise, General",
+                    MinimumAppVersion = "1.0.0",
+                    MongoLogsDatabaseName = "OzikolLogsDb",
+                    MongoLogsCollectionName = "central_system_logs",
                     UpdatedUtc = DateTime.UtcNow
                 };
 
@@ -140,7 +207,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 CertificationAdminEmails = settings.CertificationAdminEmails,
                 TicketAutoCloseHours = settings.TicketAutoCloseHours,
                 EnableTicketAutoClose = settings.EnableTicketAutoClose,
-                SupportCategories = settings.SupportCategories
+                DefaultTrialDays = settings.DefaultTrialDays > 0 ? settings.DefaultTrialDays : 14,
+                DefaultCurrencyCode = !string.IsNullOrWhiteSpace(settings.DefaultCurrencyCode) ? settings.DefaultCurrencyCode : "USD",
+                SupportCategories = settings.SupportCategories,
+                MongoLogsConnectionString = settings.MongoLogsConnectionString,
+                MongoLogsDatabaseName = !string.IsNullOrWhiteSpace(settings.MongoLogsDatabaseName) ? settings.MongoLogsDatabaseName : "OzikolLogsDb",
+                MongoLogsCollectionName = !string.IsNullOrWhiteSpace(settings.MongoLogsCollectionName) ? settings.MongoLogsCollectionName : "central_system_logs",
+                SentryDsn = settings.SentryDsn,
+                OneSignalAppId = settings.OneSignalAppId,
+                CloudflareTurnstileSiteKey = settings.CloudflareTurnstileSiteKey,
+                CloudinaryCloudName = settings.CloudinaryCloudName,
+                CloudinaryApiKey = settings.CloudinaryApiKey,
+                CloudinaryApiSecret = settings.CloudinaryApiSecret,
+                IsMaintenanceMode = settings.IsMaintenanceMode,
+                MaintenanceMessage = settings.MaintenanceMessage,
+                MinimumAppVersion = !string.IsNullOrWhiteSpace(settings.MinimumAppVersion) ? settings.MinimumAppVersion : "1.0.0"
             };
         }
 
@@ -173,15 +254,75 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.CertificationAdminEmails = Input.CertificationAdminEmails?.Trim();
             settings.TicketAutoCloseHours = Input.TicketAutoCloseHours;
             settings.EnableTicketAutoClose = Input.EnableTicketAutoClose;
+            settings.DefaultTrialDays = Input.DefaultTrialDays;
+            settings.DefaultCurrencyCode = Input.DefaultCurrencyCode?.Trim().ToUpperInvariant() ?? "USD";
             settings.SupportCategories = Input.SupportCategories.Trim();
+
+            // Guard against accidental secret wipeouts when re-submitting settings
+            if (!string.IsNullOrWhiteSpace(Input.MongoLogsConnectionString))
+            {
+                settings.MongoLogsConnectionString = Input.MongoLogsConnectionString.Trim();
+            }
+
+            settings.MongoLogsDatabaseName = string.IsNullOrWhiteSpace(Input.MongoLogsDatabaseName) ? "OzikolLogsDb" : Input.MongoLogsDatabaseName.Trim();
+            settings.MongoLogsCollectionName = string.IsNullOrWhiteSpace(Input.MongoLogsCollectionName) ? "central_system_logs" : Input.MongoLogsCollectionName.Trim();
+            settings.SentryDsn = Input.SentryDsn?.Trim();
+            settings.OneSignalAppId = Input.OneSignalAppId?.Trim();
+            settings.CloudflareTurnstileSiteKey = Input.CloudflareTurnstileSiteKey?.Trim();
+            settings.CloudinaryCloudName = Input.CloudinaryCloudName?.Trim();
+            settings.CloudinaryApiKey = Input.CloudinaryApiKey?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(Input.CloudinaryApiSecret))
+            {
+                settings.CloudinaryApiSecret = Input.CloudinaryApiSecret.Trim();
+            }
+
+            settings.IsMaintenanceMode = Input.IsMaintenanceMode;
+            settings.MaintenanceMessage = Input.MaintenanceMessage?.Trim();
+            settings.MinimumAppVersion = string.IsNullOrWhiteSpace(Input.MinimumAppVersion) ? "1.0.0" : Input.MinimumAppVersion.Trim();
             settings.UpdatedUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Immediately flush cache so public registration and pricing pages reflect changes instantly
+            _currencyService.InvalidatePricingCache();
 
             _logger.LogInformation("Central operator updated MasterPlatformSettings at {UpdatedUtc}", settings.UpdatedUtc);
             StatusMessage = "Global platform settings saved successfully.";
 
             return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Handles AJAX POST request to test a MongoDB connection string in real-time.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestMongoConnectionAsync([FromForm] string? connectionString)
+        {
+            var targetConn = connectionString?.Trim();
+            if (string.IsNullOrWhiteSpace(targetConn))
+            {
+                var settings = await _context.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1);
+                targetConn = settings?.MongoLogsConnectionString;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetConn))
+            {
+                return new JsonResult(new { success = false, message = "No MongoDB connection string provided or configured." });
+            }
+
+            try
+            {
+                var clientSettings = MongoDB.Driver.MongoClientSettings.FromConnectionString(targetConn);
+                clientSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(6);
+                var client = new MongoDB.Driver.MongoClient(clientSettings);
+                var db = client.GetDatabase("OzikolLogsDb");
+                await db.RunCommandAsync((MongoDB.Driver.Command<MongoDB.Bson.BsonDocument>)"{ping:1}");
+                return new JsonResult(new { success = true, message = "Successfully connected to MongoDB Atlas! Cluster ping: ok." });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Connection failed: {ex.Message}" });
+            }
         }
     }
 }

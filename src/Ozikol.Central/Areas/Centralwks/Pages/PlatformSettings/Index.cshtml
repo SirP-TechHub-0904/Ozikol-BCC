@@ -5,169 +5,590 @@
     ViewData["BreadcrumbSection"] = "System";
 }
 
-<div class="admin-page-header">
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
     <div class="admin-title-group">
-        <h1 class="admin-title">Global Platform Settings & Automation</h1>
+        <h1 class="admin-title">Global Platform Settings &amp; Automation</h1>
         <p class="admin-subtitle">Configure central platform branding, departmental email notification pools, support automation rules, and ticketing SLA parameters.</p>
     </div>
     <div class="admin-actions">
-        <span style="font-size: 12px; color: var(--admin-text-muted);">
-            Last updated: @Model.LastUpdatedUtc.ToString("dd MMM yyyy, HH:mm") UTC
+        <span style="font-size: 12.5px; color: var(--admin-text-muted); display: inline-flex; align-items: center; gap: 6px; background: var(--admin-bg-surface-elevated); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border);">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-text-dim);">update</span>
+            Last updated: <strong style="color: var(--admin-text);">@Model.LastUpdatedUtc.ToString("dd MMM yyyy, HH:mm") UTC</strong>
         </span>
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
-    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
-        @Model.StatusMessage
+    <div class="admin-alert admin-alert-success" style="width: 100%; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md);">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">check_circle</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.StatusMessage</div>
     </div>
 }
 
-<form method="post">
-    <div style="display: flex; flex-direction: column; gap: 24px; max-width: 960px;">
-        @* ── Section 1: Branding & Public Contact ── *@
-        <div class="admin-card" style="padding: 24px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
-                <span style="font-size: 20px;">🌐</span>
+<form method="post" style="width: 100%;">
+    @Html.AntiForgeryToken()
+    <div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
+
+        @* ── Section 1: Onboarding, Free Trial & Currency ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.25); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">schedule</span>
+                </div>
                 <div>
-                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Platform Branding &amp; Mail Server Identities</h2>
-                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Public-facing platform identity and outbound transaction sender headers.</p>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Workspace Onboarding &amp; Free Trial Duration</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Configure the default trial length granted to new customer workspaces and fallback platform currency.</p>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;">
-                <div>
-                    <label asp-for="Input.PlatformName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Platform Brand Name <span style="color: #f87171;">*</span>
-                    </label>
-                    <input asp-for="Input.PlatformName" class="form-control" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
-                    <span asp-validation-for="Input.PlatformName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
-                </div>
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
+                    <div>
+                        <label asp-for="Input.DefaultTrialDays" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Default Free Trial (Days) <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input id="trialDaysInput" asp-for="Input.DefaultTrialDays" type="number" min="1" max="365" class="form-control" 
+                                   style="width: 140px; font-weight: 600; font-size: 14px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                            <span style="font-size: 13.5px; color: var(--admin-text-muted); font-weight: 500;">days</span>
+                        </div>
+                        <span asp-validation-for="Input.DefaultTrialDays" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
 
-                <div>
-                    <label asp-for="Input.SupportContactEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Public Support Contact Email
-                    </label>
-                    <input asp-for="Input.SupportContactEmail" class="form-control" placeholder="support@ozikol.com" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
-                </div>
+                        <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;" id="trialPresetsGroup">
+                            <button type="button" onclick="setTrialDays(14)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="14" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">14 Days</button>
+                            <button type="button" onclick="setTrialDays(30)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="30" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">30 Days</button>
+                            <button type="button" onclick="setTrialDays(40)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="40" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">40 Days</button>
+                            <button type="button" onclick="setTrialDays(60)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="60" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">60 Days</button>
+                            <button type="button" onclick="setTrialDays(90)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="90" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">90 Days</button>
+                        </div>
 
-                <div>
-                    <label asp-for="Input.DefaultFromEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Default Outbound "From" Email
-                    </label>
-                    <input asp-for="Input.DefaultFromEmail" class="form-control" placeholder="noreply@ozikol.com" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
-                </div>
-            </div>
+                        <p style="font-size: 12px; color: var(--admin-text-muted); margin: 12px 0 0 0; line-height: 1.55;">
+                            Applied automatically when a customer registers at <code>/en/auth/get-started</code> without a coupon code. Applying a promotional coupon will override this with the coupon's specific trial days.
+                        </p>
+                    </div>
 
-            <div style="margin-top: 18px; padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
-                    <input type="checkbox" asp-for="Input.EnableAdminNotifications" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
-                    Enable administrator notification emails globally across all departments
-                </label>
-            </div>
-        </div>
+                    <div>
+                        <label asp-for="Input.DefaultCurrencyCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Default Fallback Currency <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <select asp-for="Input.DefaultCurrencyCode" class="form-select" style="font-size: 14px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);">
+                            <option value="USD">USD ($) - US Dollar</option>
+                            <option value="NGN">NGN (₦) - Nigerian Naira</option>
+                            <option value="GBP">GBP (£) - British Pound</option>
+                            <option value="EUR">EUR (€) - Euro</option>
+                            <option value="GHS">GHS (GH₵) - Ghanaian Cedi</option>
+                            <option value="KES">KES (KSh) - Kenyan Shilling</option>
+                            <option value="ZAR">ZAR (R) - South African Rand</option>
+                            <option value="CAD">CAD (CA$) - Canadian Dollar</option>
+                            <option value="AED">AED - UAE Dirham</option>
+                            <option value="INR">INR (₹) - Indian Rupee</option>
+                        </select>
+                        <span asp-validation-for="Input.DefaultCurrencyCode" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
 
-        @* ── Section 2: Departmental Notification Email Pools ── *@
-        <div class="admin-card" style="padding: 24px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
-                <span style="font-size: 20px;">📧</span>
-                <div>
-                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Departmental Notification Routing Pools</h2>
-                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Enter one or more email addresses separated by commas or semicolons to receive alerts.</p>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-                <div>
-                    <label asp-for="Input.SupportAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Support &amp; Inquiry Alert Recipients
-                    </label>
-                    <textarea asp-for="Input.SupportAdminEmails" rows="2" placeholder="support-leads@ozikol.com, triage@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
-                </div>
-
-                <div>
-                    <label asp-for="Input.PartnerAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Affiliate Partner Application Alerts
-                    </label>
-                    <textarea asp-for="Input.PartnerAdminEmails" rows="2" placeholder="affiliates-team@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
-                </div>
-
-                <div>
-                    <label asp-for="Input.CreatorAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Creator Program Application Alerts
-                    </label>
-                    <textarea asp-for="Input.CreatorAdminEmails" rows="2" placeholder="creators-review@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
-                </div>
-
-                <div>
-                    <label asp-for="Input.CareersAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Candidate Job Application Alerts
-                    </label>
-                    <textarea asp-for="Input.CareersAdminEmails" rows="2" placeholder="recruitment@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
-                </div>
-
-                <div style="grid-column: span 2;">
-                    <label asp-for="Input.CertificationAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Certification Exam Registration Alerts
-                    </label>
-                    <textarea asp-for="Input.CertificationAdminEmails" rows="2" placeholder="certifications-ops@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                        <p style="font-size: 12px; color: var(--admin-text-muted); margin: 12px 0 0 0; line-height: 1.55;">
+                            Fallback regional currency when visitor geolocation is indeterminate. Pricing amounts are dynamically calculated from the sum of active modular features.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        @* ── Section 3: Support Ticketing Automation & Taxonomy ── *@
-        <div class="admin-card" style="padding: 24px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
-                <span style="font-size: 20px;">🎫</span>
+        @* ── Section 2: Branding & Public Contact ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">public</span>
+                </div>
                 <div>
-                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Support Automation &amp; SLA Rules</h2>
-                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Automatic ticket closure upon customer inactivity and available category taxonomy.</p>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Platform Branding &amp; Mail Server Identities</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Public-facing platform identity and outbound transaction sender headers.</p>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 18px; margin-bottom: 18px;">
-                <div>
-                    <label asp-for="Input.TicketAutoCloseHours" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Auto-Close Inactivity Threshold (Hours)
-                    </label>
-                    <input asp-for="Input.TicketAutoCloseHours" type="number" min="1" max="720" class="form-control" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
-                    <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Default is 24 hours.</span>
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label asp-for="Input.PlatformName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Platform Brand Name <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <input asp-for="Input.PlatformName" class="form-control" placeholder="e.g. Your Brand" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.PlatformName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.SupportContactEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Public Support Contact Email
+                        </label>
+                        <input asp-for="Input.SupportContactEmail" class="form-control" placeholder="support@@company.com" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.SupportContactEmail" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.DefaultFromEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Default Outbound "From" Email
+                        </label>
+                        <input asp-for="Input.DefaultFromEmail" class="form-control" placeholder="noreply@@company.com" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.DefaultFromEmail" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
                 </div>
 
+                <div style="padding: 16px 20px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" id="Input_EnableAdminNotifications" asp-for="Input.EnableAdminNotifications" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-primary);" />
+                        <label for="Input_EnableAdminNotifications" style="font-size: 13.5px; font-weight: 500; color: var(--admin-text); cursor: pointer; margin: 0;">
+                            Enable administrator notification emails globally across all departments
+                        </label>
+                    </div>
+                    <span style="font-size: 12px; color: var(--admin-text-muted);">Broadcast alerts to configured department routing pools below</span>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 3: Departmental Notification Email Pools ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">mail</span>
+                </div>
                 <div>
-                    <label asp-for="Input.SupportCategories" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
-                        Public Support Inquiry Categories (Comma-separated)
-                    </label>
-                    <input asp-for="Input.SupportCategories" class="form-control" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
-                    <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Populates inquiry classification dropdowns on public portals.</span>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Departmental Notification Routing Pools</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Enter one or more email addresses separated by commas or semicolons to receive automated alerts.</p>
                 </div>
             </div>
 
-            <div style="padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
-                    <input type="checkbox" asp-for="Input.EnableTicketAutoClose" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
-                    Enable automated background closure of resolved tickets after inactivity threshold
-                </label>
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.SupportAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Support &amp; Inquiry Alert Recipients
+                        </label>
+                        <textarea asp-for="Input.SupportAdminEmails" rows="2" placeholder="support-leads@@company.com, triage@@company.com" 
+                                  class="form-control" style="min-height: 72px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);"></textarea>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.PartnerAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Affiliate Partner Application Alerts
+                        </label>
+                        <textarea asp-for="Input.PartnerAdminEmails" rows="2" placeholder="affiliates-team@@company.com" 
+                                  class="form-control" style="min-height: 72px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);"></textarea>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.CreatorAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Creator Program Application Alerts
+                        </label>
+                        <textarea asp-for="Input.CreatorAdminEmails" rows="2" placeholder="creators-review@@company.com" 
+                                  class="form-control" style="min-height: 72px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);"></textarea>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.CareersAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Candidate Job Application Alerts
+                        </label>
+                        <textarea asp-for="Input.CareersAdminEmails" rows="2" placeholder="recruitment@@company.com" 
+                                  class="form-control" style="min-height: 72px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);"></textarea>
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <label asp-for="Input.CertificationAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Certification Exam Registration Alerts
+                        </label>
+                        <textarea asp-for="Input.CertificationAdminEmails" rows="2" placeholder="certifications-ops@@company.com" 
+                                  class="form-control" style="min-height: 72px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 4: Support Ticketing Automation & Taxonomy ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.25); color: #7c3aed; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">confirmation_number</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Support Automation &amp; SLA Rules</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Automatic ticket closure upon customer inactivity and available category taxonomy.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label asp-for="Input.TicketAutoCloseHours" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Auto-Close Inactivity Threshold (Hours)
+                        </label>
+                        <input asp-for="Input.TicketAutoCloseHours" type="number" min="1" max="720" class="form-control" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Default is 24 hours.</span>
+                        <span asp-validation-for="Input.TicketAutoCloseHours" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.SupportCategories" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Public Support Inquiry Categories (Comma-separated)
+                        </label>
+                        <input asp-for="Input.SupportCategories" class="form-control" placeholder="Support, Sales, Billing, Enterprise, General" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Populates inquiry classification dropdowns on public portals.</span>
+                        <span asp-validation-for="Input.SupportCategories" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+
+                <div style="padding: 16px 20px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" id="Input_EnableTicketAutoClose" asp-for="Input.EnableTicketAutoClose" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-primary);" />
+                        <label for="Input_EnableTicketAutoClose" style="font-size: 13.5px; font-weight: 500; color: var(--admin-text); cursor: pointer; margin: 0;">
+                            Enable automated background closure of resolved tickets after inactivity threshold
+                        </label>
+                    </div>
+                    <span style="font-size: 12px; color: var(--admin-text-muted);">Saves agent time by auto-resolving stale pending tickets</span>
+                </div>
+        @* ── Section 5: Central Logging Engine & Telemetry (MongoDB) ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(20, 184, 166, 0.12); border: 1px solid rgba(20, 184, 166, 0.25); color: #0d9488; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">database</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Central System Logging &amp; Telemetry (MongoDB)</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Strictly stores platform unhandled crashes, client crash reports, and security events with 30-day auto-TTL indexing.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label asp-for="Input.MongoLogsConnectionString" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                            MongoDB Connection String (Strictly for System Logs)
+                        </label>
+                        @if (!string.IsNullOrEmpty(Model.Input.MongoLogsConnectionString))
+                        {
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: #059669;"></span> Configured in Master DB
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;">
+                                Not Configured
+                            </span>
+                        }
+                    </div>
+                    <div style="position: relative;">
+                        <input asp-for="Input.MongoLogsConnectionString" value="@Model.Input.MongoLogsConnectionString" id="mongoConnInput" type="password" class="form-control" 
+                               placeholder="mongodb+srv://dbuser:password@@cluster0.mongodb.net/?retryWrites=true&amp;w=majority" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px; padding-right: 42px;" />
+                        <button type="button" onclick="togglePasswordVisibility('mongoConnInput', this)" 
+                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                        </button>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 12px; color: var(--admin-text-muted);">
+                            Persisted centrally in the Master Catalog. The string remains safely preserved upon saving. Click the eye icon to view or edit.
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button type="button" id="btnTestMongo" onclick="testMongoConnection()" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 4px 12px; border: 1px solid var(--admin-border); display: inline-flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">wifi_tethering</span>
+                                <span>Test Live Connection</span>
+                            </button>
+                            <span id="mongoTestStatus" style="font-size: 12px; font-weight: 600;"></span>
+                        </div>
+                    </div>
+                    <span asp-validation-for="Input.MongoLogsConnectionString" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label asp-for="Input.MongoLogsDatabaseName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Database Name
+                        </label>
+                        <input asp-for="Input.MongoLogsDatabaseName" class="form-control" placeholder="e.g. OzikolLogsDb" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.MongoLogsDatabaseName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.MongoLogsCollectionName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Collection Name
+                        </label>
+                        <input asp-for="Input.MongoLogsCollectionName" class="form-control" placeholder="e.g. central_system_logs" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.MongoLogsCollectionName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+
+                <div style="padding: 14px 18px; background: rgba(20, 184, 166, 0.08); border: 1px solid rgba(20, 184, 166, 0.2); border-radius: var(--radius-md); display: flex; align-items: flex-start; gap: 12px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: #0d9488; flex-shrink: 0; margin-top: 2px;">info</span>
+                    <div style="font-size: 12.5px; color: var(--admin-text); line-height: 1.55;">
+                        <strong>Tenant vs. Central Isolation:</strong> Tenant business activity (such as member changes and permissions) is kept strictly inside each tenant's relational database (<code>[dbo].[BcpActivityLogs]</code>). MongoDB is reserved strictly for technical crashes, unhandled 500 exceptions, and client telemetry.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 6: Client Telemetry & Security Protection Keys ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); color: #4f46e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">security</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Client Telemetry &amp; Bot Protection Keys</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Dynamic keys passed securely to Flutter and web clients on startup for telemetry and spam prevention.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.SentryDsn" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Sentry Client DSN
+                        </label>
+                        <input asp-for="Input.SentryDsn" class="form-control" placeholder="https://publicKey@@ingest.sentry.io/0" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Used for client-side crash interceptors in Flutter and Web.</span>
+                        <span asp-validation-for="Input.SentryDsn" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.OneSignalAppId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            OneSignal App ID
+                        </label>
+                        <input asp-for="Input.OneSignalAppId" class="form-control" placeholder="e.g. 00000000-0000-0000-0000-000000000000" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Power push notifications across iOS, Android, and Desktop.</span>
+                        <span asp-validation-for="Input.OneSignalAppId" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <label asp-for="Input.CloudflareTurnstileSiteKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Cloudflare Turnstile Site Key (Public)
+                        </label>
+                        <input asp-for="Input.CloudflareTurnstileSiteKey" class="form-control" placeholder="e.g. 0x4AAAAAA..." 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Invisible CAPTCHA/bot protection applied on registration and login.</span>
+                        <span asp-validation-for="Input.CloudflareTurnstileSiteKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 7: Master Cloudinary Media Storage ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.25); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">cloud_upload</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Central Cloudinary CDN &amp; Asset Bucket</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Global media storage for master template previews, platform badges, and shared assets.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.CloudinaryCloudName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Cloud Name
+                        </label>
+                        <input asp-for="Input.CloudinaryCloudName" class="form-control" placeholder="e.g. my-organization-cloud" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudinaryCloudName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.CloudinaryApiKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            API Key
+                        </label>
+                        <input asp-for="Input.CloudinaryApiKey" class="form-control" placeholder="e.g. 123456789012345" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudinaryApiKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.CloudinaryApiSecret" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                API Secret
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.CloudinaryApiSecret))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Configured
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.CloudinaryApiSecret" value="@Model.Input.CloudinaryApiSecret" id="cloudSecretInput" type="password" class="form-control" 
+                                   placeholder="e.g. secret_token_value" 
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('cloudSecretInput', this)" 
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.CloudinaryApiSecret" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 8: Maintenance Mode & Version Governance ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25); color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">build_circle</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Maintenance Mode &amp; Client Version Enforcement</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Engage emergency maintenance windows and enforce minimum supported client versions.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label asp-for="Input.MinimumAppVersion" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Minimum Client Application Version <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <input asp-for="Input.MinimumAppVersion" class="form-control" placeholder="e.g. 1.0.0" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Clients with versions strictly lower than this are blocked until they update.</span>
+                        <span asp-validation-for="Input.MinimumAppVersion" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.MaintenanceMessage" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Public Maintenance Message
+                        </label>
+                        <input asp-for="Input.MaintenanceMessage" class="form-control" placeholder="e.g. Scheduled platform maintenance is currently in progress." 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Displayed to visitors when maintenance mode is active.</span>
+                        <span asp-validation-for="Input.MaintenanceMessage" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+
+                <div style="padding: 16px 20px; background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" id="Input_IsMaintenanceMode" asp-for="Input.IsMaintenanceMode" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-danger);" />
+                        <label for="Input_IsMaintenanceMode" style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">
+                            Engage Global Platform Maintenance Mode
+                        </label>
+                    </div>
+                    <span style="font-size: 12px; color: var(--admin-danger); font-weight: 500;">When active, public and tenant apps display the maintenance screen.</span>
+                </div>
             </div>
         </div>
 
         @* ── Submit Actions ── *@
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-            <a href="/centralwks/dashboard" class="btn-admin btn-admin-secondary">Cancel</a>
-            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 10px 24px; font-size: 14px;">
-                Save Platform Settings
-            </button>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-text-dim);">info</span>
+                <span>Changes take effect immediately across all tenant portals and registration workflows.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <a href="/centralwks/dashboard" class="btn-admin btn-admin-secondary" style="padding: 10px 22px; font-size: 13.5px; border: 1px solid var(--admin-border);">Cancel</a>
+                <button type="submit" class="btn-admin btn-admin-primary" style="padding: 10px 28px; font-size: 13.5px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                    Save Platform Settings
+                </button>
+            </div>
         </div>
     </div>
 </form>
+
+<script>
+    function setTrialDays(days) {
+        var input = document.getElementById('trialDaysInput');
+        if (input) {
+            input.value = days;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            updateActivePreset(days);
+        }
+    }
+
+    function updateActivePreset(activeDays) {
+        var buttons = document.querySelectorAll('.trial-preset-btn');
+        buttons.forEach(function(btn) {
+            var days = parseInt(btn.getAttribute('data-days'), 10);
+            if (days === parseInt(activeDays, 10)) {
+                btn.style.background = 'var(--admin-primary)';
+                btn.style.color = '#ffffff';
+                btn.style.borderColor = 'var(--admin-primary)';
+            } else {
+                btn.style.background = 'var(--admin-bg-surface-elevated)';
+                btn.style.color = 'var(--admin-text)';
+                btn.style.borderColor = 'var(--admin-border)';
+            }
+        });
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var icon = btn.querySelector('.material-symbols-outlined');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) icon.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            if (icon) icon.textContent = 'visibility';
+        }
+    }
+
+    async function testMongoConnection() {
+        var input = document.getElementById('mongoConnInput');
+        var btn = document.getElementById('btnTestMongo');
+        var status = document.getElementById('mongoTestStatus');
+        if (!input || !status) return;
+
+        var connStr = input.value.trim();
+        status.style.color = 'var(--admin-text-muted)';
+        status.textContent = 'Connecting to MongoDB Atlas...';
+        btn.disabled = true;
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        var formData = new FormData();
+        formData.append('connectionString', connStr);
+
+        try {
+            var response = await fetch('/centralwks/platform-settings?handler=TestMongoConnection', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            var result = await response.json();
+            if (result.success) {
+                status.style.color = '#059669';
+                status.textContent = '✓ ' + result.message;
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = '✗ ' + result.message;
+            }
+        } catch (err) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Network error testing connection.';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var input = document.getElementById('trialDaysInput');
+        if (input) {
+            updateActivePreset(input.value);
+            input.addEventListener('input', function() {
+                updateActivePreset(input.value);
+            });
+        }
+    });
+</script>

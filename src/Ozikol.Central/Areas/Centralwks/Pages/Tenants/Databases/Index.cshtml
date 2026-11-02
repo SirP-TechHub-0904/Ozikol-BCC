@@ -1,0 +1,345 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases.IndexModel
+@{
+    ViewData["Title"] = "Database Suite";
+    ViewData["BreadcrumbSection"] = "Tenants";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Database Suite</h1>
+        <p class="admin-subtitle">Monitor dedicated tenant SQL instances, inspect schema versions, and govern multi-database migrations.</p>
+    </div>
+    <div class="admin-actions">
+        @if (Model.PendingMigrationsCount > 0)
+        {
+            <form method="post" asp-page-handler="MigrateAllBatch" style="display: inline; margin: 0;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-primary" onclick="return confirm('Execute batch migrations on all @Model.PendingMigrationsCount pending tenant databases?');">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">sync</span>
+                    Migrate All Pending (@Model.PendingMigrationsCount)
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@* ── Database Suite Mini-Dashboard ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">database</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Databases</span>
+            <span class="stat-value">@Model.TotalDatabasesCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">health_and_safety</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Healthy &amp; Synced</span>
+            <span class="stat-value" style="color: var(--admin-success);">@Model.HealthyDatabasesCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">sync_problem</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Pending Migrations</span>
+            <span class="stat-value" style="color: var(--admin-warning);">@Model.PendingMigrationsCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-danger">
+            <span class="material-symbols-outlined">cloud_off</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Unreachable</span>
+            <span class="stat-value" style="color: var(--admin-danger);">@Model.UnreachableDatabasesCount.ToString("N0")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Master Catalog Database Status Banner ── *@
+@if (Model.MasterSummary != null)
+{
+    <div class="admin-card" style="margin-bottom: 20px; border-left: 4px solid var(--admin-primary); background: var(--admin-bg-surface);">
+        <div style="padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-outlined" style="font-size: 24px; color: var(--admin-primary);">dns</span>
+                <div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--admin-text);">
+                        Master Catalog Database: <code>@Model.MasterSummary.DatabaseName</code>
+                    </div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">
+                        Central platform registry governing tenant registrations, identity, features, and subscriptions.
+                    </div>
+                </div>
+            </div>
+            <div>
+                @if (Model.MasterSummary.Status.IsReachable && !Model.MasterSummary.Status.HasPendingMigrations)
+                {
+                    <span class="badge badge-success">
+                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                        Master DB Synced (@Model.MasterSummary.Status.AppliedMigrations.Count migrations)
+                    </span>
+                }
+                else if (Model.MasterSummary.Status.HasPendingMigrations)
+                {
+                    <span class="badge badge-warning">
+                        <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                        @Model.MasterSummary.Status.PendingMigrations.Count Pending Migrations
+                    </span>
+                }
+                else
+                {
+                    <span class="badge badge-danger">
+                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                        Unreachable
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Database Fleet Table Card ── *@
+<div class="admin-card">
+    <div class="table-toolbar" style="flex-wrap: wrap; gap: 14px;">
+        <form method="get" class="table-filters" style="flex: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div class="table-search-box" style="min-width: 260px; flex: 1;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search database name or organization... (Press /)" />
+            </div>
+
+            <select name="status" class="form-select" style="width: 170px; padding: 8px 12px; font-size: 13px;">
+                <option value="all" selected="@(Model.Status == "all" || string.IsNullOrEmpty(Model.Status))">All Health States</option>
+                <option value="healthy" selected="@(Model.Status == "healthy")">Healthy &amp; Synced</option>
+                <option value="pending" selected="@(Model.Status == "pending")">Pending Migrations</option>
+                <option value="unreachable" selected="@(Model.Status == "unreachable")">Unreachable</option>
+            </select>
+
+            <select name="pageSize" class="form-select" style="width: 130px; padding: 8px 12px; font-size: 13px;">
+                <option value="10" selected="@(Model.PageSize == 10)">10 per page</option>
+                <option value="25" selected="@(Model.PageSize == 25)">25 per page</option>
+                <option value="50" selected="@(Model.PageSize == 50)">50 per page</option>
+                <option value="100" selected="@(Model.PageSize == 100)">100 per page</option>
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
+                Filter
+            </button>
+
+            @if (!string.IsNullOrEmpty(Model.Search) || (Model.Status != "all" && !string.IsNullOrEmpty(Model.Status)) || Model.PageSize != 10)
+            {
+                <a href="/centralwks/tenants/databases" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    Clear
+                </a>
+            }
+        </form>
+
+        <div style="font-size: 12.5px; color: var(--admin-text-muted); display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">format_list_bulleted</span>
+            Showing @Model.Databases.Count of @Model.TotalFilteredCount.ToString("N0") databases
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">S/N</th>
+                    <th>Database Instance</th>
+                    <th>Tenant Organization</th>
+                    <th>Connectivity</th>
+                    <th>Schema Version</th>
+                    <th>Tables &amp; Records</th>
+                    <th>Provisioned (UTC)</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Databases.Any())
+                {
+                    @for (int i = 0; i < Model.Databases.Count; i++)
+                    {
+                        var db = Model.Databases[i];
+                        var sn = (Model.PageNumber - 1) * Model.PageSize + (i + 1);
+                        <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@sn</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-primary);">database</span>
+                                    <div>
+                                        <a href="/centralwks/tenants/databases/details?tenantKey=@db.TenantKey" style="font-weight: 600; color: var(--admin-text); text-decoration: none; font-size: 13.5px;" class="tenant-name-link">
+                                            @db.DatabaseName
+                                        </a>
+                                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                            <code style="font-size: 11px; color: var(--admin-text-muted); background: var(--admin-bg-surface-elevated); padding: 1px 6px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border); letter-spacing: 0.05em;">
+                                                @(db.DatabaseName.Length > 4 ? "••••••••" + db.DatabaseName.Substring(db.DatabaseName.Length - 4) : db.DatabaseName)
+                                            </code>
+                                            <button type="button" data-copy-text="@db.DatabaseName" class="btn-admin-icon" title="Copy full database name" aria-label="Copy database name">
+                                                <span class="material-symbols-outlined">content_copy</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <a href="/centralwks/tenants/details?id=@db.Id" style="font-weight: 600; color: var(--admin-text); text-decoration: none; font-size: 13.5px;">
+                                        @db.OrganizationName
+                                    </a>
+                                    <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px;">
+                                        <code>@db.TenantKey</code> • @db.PrimaryDomain
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (db.Status.IsReachable)
+                                {
+                                    <span class="badge badge-success">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Online
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger" title="@db.Status.ErrorMessage">
+                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                        Unreachable
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (!db.Status.IsReachable)
+                                {
+                                    <span class="badge badge-secondary">Unknown</span>
+                                }
+                                else if (db.Status.HasPendingMigrations)
+                                {
+                                    <span class="badge badge-warning">
+                                        <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                                        @db.Status.PendingMigrations.Count Pending
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Synced (@db.Status.AppliedMigrations.Count)
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">
+                                    @db.TotalTablesCount tables
+                                </div>
+                                <div style="font-size: 11.5px; color: var(--admin-text-dim);">
+                                    @db.FormattedTotalRecords
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-size: 12.5px; color: var(--admin-text);">
+                                    @db.CreatedUtc.ToString("yyyy-MM-dd")
+                                </div>
+                                <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                    @db.CreatedUtc.ToString("HH:mm:ss") UTC
+                                </div>
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <a href="/centralwks/tenants/databases/details?tenantKey=@db.TenantKey" class="btn-admin btn-admin-secondary btn-admin-sm" title="Inspect Database Deep Dive">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
+                                    </a>
+
+                                    @if (db.Status.HasPendingMigrations)
+                                    {
+                                        <form method="post" asp-page-handler="MigrateTenant" asp-route-tenantKey="@db.TenantKey" style="display: inline; margin: 0;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="search" value="@Model.Search" />
+                                            <input type="hidden" name="status" value="@Model.Status" />
+                                            <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+                                            <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" title="Apply Pending Migrations" onclick="return confirm('Run pending migrations on @db.DatabaseName?');">
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">sync</span>
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <a href="/centralwks/tenants/details?id=@db.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Tenant Center">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-text-dim); display: block; margin-bottom: 8px;">database</span>
+                            <div style="font-weight: 600; font-size: 15px; color: var(--admin-text);">No databases found</div>
+                            <div style="font-size: 13px; margin-top: 4px;">Try adjusting your search criteria or health filters.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ── Pagination Controls ── *@
+    @if (Model.TotalPages > 1)
+    {
+        <div class="table-pagination" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--admin-border); flex-wrap: wrap; gap: 12px;">
+            <div style="font-size: 12.5px; color: var(--admin-text-muted);">
+                Page <strong>@Model.PageNumber</strong> of <strong>@Model.TotalPages</strong>
+            </div>
+
+            <nav class="pagination-nav" aria-label="Databases Pagination" style="display: flex; align-items: center; gap: 6px;">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="?pageNumber=1&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="First Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">first_page</span>
+                    </a>
+                    <a href="?pageNumber=@(Model.PageNumber - 1)&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="Previous Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">chevron_left</span>
+                    </a>
+                }
+
+                @for (int p = Math.Max(1, Model.PageNumber - 2); p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+                {
+                    if (p == Model.PageNumber)
+                    {
+                        <span class="btn-admin btn-admin-primary btn-admin-sm" style="min-width: 32px; justify-content: center; font-weight: 700;">@p</span>
+                    }
+                    else
+                    {
+                        <a href="?pageNumber=@p&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" style="min-width: 32px; justify-content: center;">@p</a>
+                    }
+                }
+
+                @if (Model.PageNumber < Model.TotalPages)
+                {
+                    <a href="?pageNumber=@(Model.PageNumber + 1)&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="Next Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+                    </a>
+                    <a href="?pageNumber=@Model.TotalPages&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="Last Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">last_page</span>
+                    </a>
+                }
+            </nav>
+        </div>
+    }
+</div>

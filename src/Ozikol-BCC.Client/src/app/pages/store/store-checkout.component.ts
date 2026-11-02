@@ -61,7 +61,7 @@ import { ToastService } from '../../core/services/toast.service';
                   [(ngModel)]="form.customerName"
                   name="customerName"
                   required
-                  placeholder="e.g. Jane Doe"
+                  placeholder="e.g. First Last"
                   class="form-control"
                 />
               </div>

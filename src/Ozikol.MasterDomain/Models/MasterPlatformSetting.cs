@@ -87,6 +87,19 @@ namespace Ozikol.MasterDomain.Models
         public bool EnableTicketAutoClose { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the default number of free trial days granted to new organization workspaces (e.g. 14, 15, 30, 40, 60, 90).
+        /// Defaults to 14 days.
+        /// </summary>
+        public int DefaultTrialDays { get; set; } = 14;
+
+        /// <summary>
+        /// Gets or sets the global default fallback 3-letter currency code (e.g. "USD", "NGN", "GBP")
+        /// when country detection yields no specific regional match.
+        /// </summary>
+        [MaxLength(10)]
+        public string DefaultCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
         /// Gets or sets the comma-separated list of support inquiry categories available on the public contact form and enterprise inquiries.
         /// Defaults to "Support, Sales, Billing, Partnership, Enterprise, General".
         /// </summary>
@@ -111,6 +124,78 @@ namespace Ozikol.MasterDomain.Models
                                         .ToList();
             }
         }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary Cloud Name used as the global default for media, assets, and templates.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryCloudName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Key.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Secret.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets the OneSignal App ID used for mobile and desktop push notifications.
+        /// </summary>
+        [MaxLength(255)]
+        public string? OneSignalAppId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Sentry DSN used for client crash reporting on web, mobile, and desktop.
+        /// </summary>
+        [MaxLength(500)]
+        public string? SentryDsn { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Cloudflare Turnstile public Site Key for client-side bot verification.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareTurnstileSiteKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether global platform maintenance mode is engaged.
+        /// </summary>
+        public bool IsMaintenanceMode { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the maintenance message displayed to users when maintenance mode is active.
+        /// </summary>
+        [MaxLength(500)]
+        public string? MaintenanceMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the minimum supported mobile and desktop client application version (e.g. "1.0.0").
+        /// </summary>
+        [MaxLength(50)]
+        public string MinimumAppVersion { get; set; } = "1.0.0";
+
+        /// <summary>
+        /// Gets or sets the MongoDB connection string used strictly for central system logs and telemetry.
+        /// Resolved dynamically from the Master Catalog database so no secrets are stored on client apps.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? MongoLogsConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the MongoDB database name dedicated to central logs (e.g., "OzikolLogsDb").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsDatabaseName { get; set; } = "OzikolLogsDb";
+
+        /// <summary>
+        /// Gets or sets the primary MongoDB collection name for central system events (e.g., "central_system_logs").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsCollectionName { get; set; } = "central_system_logs";
 
         /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.

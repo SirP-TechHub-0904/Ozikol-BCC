@@ -14,9 +14,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
 {
     /// <summary>
     /// Page model for managing central platform operators, system administrators, and staff identities in Centralwks.
+    /// Excludes root seed system accounts from day-to-day staff listings.
     /// </summary>
     public class IndexModel : PageModel
     {
+        private const string RootAdminEmail = "superadmin@ozikol.cloud";
         private readonly UserManager<CentralUser> _userManager;
         private readonly RoleManager<CentralRole> _roleManager;
         private readonly MasterCatalogDbContext _context;
@@ -91,12 +93,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         public IList<string> AvailableRoles { get; set; } = new List<string>();
 
         /// <summary>
-        /// Gets or sets total operator count.
+        /// Gets or sets total operator count (excluding root account).
         /// </summary>
         public int TotalCount { get; set; }
 
         /// <summary>
-        /// Gets or sets active operator count.
+        /// Gets or sets active operator count (excluding root account).
         /// </summary>
         public int ActiveCount { get; set; }
 
@@ -125,12 +127,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         public string? StatusMessage { get; set; }
 
         /// <summary>
-        /// Handles HTTP GET request to query and display platform operators.
+        /// Handles HTTP GET request to query and display platform operators, excluding the hidden root system account.
         /// </summary>
         public async Task OnGetAsync()
         {
-            TotalCount = await _userManager.Users.CountAsync();
-            ActiveCount = await _userManager.Users.CountAsync(u => u.IsActive);
+            // Base query excludes root seed system account
+            var baseQuery = _userManager.Users
+                .Where(u => u.Email != RootAdminEmail && u.UserName != RootAdminEmail && u.UserName != "superadmin");
+
+            TotalCount = await baseQuery.CountAsync();
+            ActiveCount = await baseQuery.CountAsync(u => u.IsActive);
 
             AvailableRoles = await _roleManager.Roles
                 .Select(r => r.Name!)
@@ -138,7 +144,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
                 .OrderBy(r => r)
                 .ToListAsync();
 
-            var query = _userManager.Users.AsQueryable();
+            var query = baseQuery;
 
             if (!string.IsNullOrWhiteSpace(Search))
             {
@@ -213,7 +219,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         public async Task<IActionResult> OnPostToggleActiveAsync(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
+            if (user == null || user.Email == RootAdminEmail || user.UserName == RootAdminEmail)
             {
                 return NotFound();
             }
@@ -237,7 +243,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         public async Task<IActionResult> OnPostUnlockAsync(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
+            if (user == null || user.Email == RootAdminEmail || user.UserName == RootAdminEmail)
             {
                 return NotFound();
             }
@@ -261,6 +267,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             var user = await _userManager.FindByIdAsync(id);
             if (user != null)
             {
+                if (user.Email == RootAdminEmail || user.UserName == RootAdminEmail)
+                {
+                    StatusMessage = "Root system account cannot be deleted.";
+                    return RedirectToPage();
+                }
+
                 var result = await _userManager.DeleteAsync(user);
                 if (result.Succeeded)
                 {

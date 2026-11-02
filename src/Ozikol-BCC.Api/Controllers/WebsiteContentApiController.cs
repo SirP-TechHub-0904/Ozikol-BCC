@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -11,7 +12,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// <summary>
     /// Public content delivery API for the client website, landing pages, and UI.
     /// Fully anonymous, delivering published pages (including legal/terms SecurityPages),
-    /// navigation categories, layout sections, sliders, FAQs, and visitor telemetry.
+    /// navigation categories, layout sections, FAQs, and visitor telemetry.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -20,10 +21,12 @@ namespace Ozikol_BCC.Api.Controllers
     public class WebsiteContentApiController : ControllerBase
     {
         private readonly DashboardDbContext _context;
+        private readonly IRecaptchaService _recaptchaService;
 
-        public WebsiteContentApiController(DashboardDbContext context)
+        public WebsiteContentApiController(DashboardDbContext context, IRecaptchaService recaptchaService)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
         }
 
         // ==========================================
@@ -56,27 +59,28 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Retrieves full published page details and layout sections by unique slug.
         /// </summary>
+        /// <param name="slug">The direct URL slug of the page.</param>
+        /// <returns>Published page entity with ordered sections, lists, and forms.</returns>
         [HttpGet("pages/slug/{slug}")]
         public async Task<IActionResult> GetPublishedPageBySlug(string slug)
         {
-            var cleanSlug = slug.Trim().ToLowerInvariant();
+            var cleanSlug = (slug ?? string.Empty).Trim().ToLowerInvariant().Trim('/');
+            var slashSlug = "/" + cleanSlug;
+
             var page = await _context.WebPages
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
-                .Include(p => p.PageSections!.Where(s => !s.Disable))
+                .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageForm)
                         .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
-                .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null && p.DirectUrl.ToLower() == cleanSlug);
+                .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null &&
+                    (p.DirectUrl.ToLower() == cleanSlug || p.DirectUrl.ToLower() == slashSlug));
 
             if (page == null)
             {
                 return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' was not found or is unpublished."));
             }
-
-            // Increment public page view counter
-            page.ViewCount++;
-            await _context.SaveChangesAsync();
 
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
@@ -84,6 +88,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Retrieves full published page details and layout sections by ID.
         /// </summary>
+        /// <param name="id">The unique GUID identifier of the web page.</param>
+        /// <returns>Published page entity with ordered sections, lists, and forms.</returns>
         [HttpGet("pages/{id:guid}")]
         public async Task<IActionResult> GetPublishedPageById(Guid id)
         {
@@ -91,7 +97,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
-                .Include(p => p.PageSections!.Where(s => !s.Disable))
+                .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageForm)
                         .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .FirstOrDefaultAsync(p => p.Publish && p.Id == id);
@@ -110,13 +116,14 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Retrieves published menu categories and their published pages for navbar dropdowns.
+        /// Filters out categories with zero published child pages to avoid empty dropdown placeholders.
         /// </summary>
         [HttpGet("categories")]
         public async Task<IActionResult> GetPublishedCategories()
         {
             var categories = await _context.PageCategories
-                .Where(c => c.Publish)
-                .Include(c => c.WebPages!.Where(p => p.Publish).OrderBy(p => p.SortOrder))
+                .Where(c => c.Publish && c.ShowInMenu && c.WebPages.Any(p => p.Publish && p.ShowInMenuDropDown))
+                .Include(c => c.WebPages!.Where(p => p.Publish && p.ShowInMenuDropDown).OrderBy(p => p.DropdownSortOrder != 0 ? p.DropdownSortOrder : p.SortOrder))
                 .OrderBy(c => c.MenuSortOrder)
                 .ToListAsync();
 
@@ -146,72 +153,24 @@ namespace Ozikol_BCC.Api.Controllers
             }
             else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
             {
-                query = query.Where(s => s.ShowInHome).OrderBy(s => s.HomePageSortOrder);
+                var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                if (homePage != null)
+                {
+                    query = query.Where(s => s.WebPageId == homePage.Id).OrderBy(s => s.PageSortOrder);
+                }
+                else
+                {
+                    query = query.OrderBy(s => s.PageSortOrder);
+                }
             }
 
             var sections = await query.ToListAsync();
             return Ok(ApiResponse<object>.SuccessResponse(sections, "Page layout sections retrieved."));
         }
 
-        // ==========================================
-        // 4. PUBLIC HERO SLIDERS
-        // ==========================================
-
-        /// <summary>
-        /// Retrieves all active hero carousels/sliders for the website.
-        /// </summary>
-        [HttpGet("sliders")]
-        public async Task<IActionResult> GetPublishedSliders()
-        {
-            var sliders = await _context.Sliders
-                .Where(s => s.Show)
-                .OrderBy(s => s.SortOrder)
-                .ToListAsync();
-
-            return Ok(ApiResponse<object>.SuccessResponse(sliders, "Hero sliders retrieved."));
-        }
 
         // ==========================================
-        // 5. PUBLIC FAQs
-        // ==========================================
-
-        /// <summary>
-        /// Retrieves published FAQ categories with active FAQs.
-        /// </summary>
-        [HttpGet("faq-categories")]
-        public async Task<IActionResult> GetPublishedFaqCategories()
-        {
-            var categories = await _context.FAQCategories
-                .Where(c => c.Publish)
-                .Include(c => c.FAQs!.Where(f => f.Show).OrderBy(f => f.SortOrder))
-                .OrderBy(c => c.SortOrder)
-                .ToListAsync();
-
-            return Ok(ApiResponse<object>.SuccessResponse(categories, "FAQ categories retrieved."));
-        }
-
-        /// <summary>
-        /// Retrieves active FAQs, optionally filtered by FAQ category.
-        /// </summary>
-        [HttpGet("faqs")]
-        public async Task<IActionResult> GetPublishedFaqs([FromQuery] int? categoryId = null)
-        {
-            var query = _context.FAQs
-                .Include(f => f.FAQCategory)
-                .Where(f => f.Show)
-                .AsQueryable();
-
-            if (categoryId.HasValue)
-            {
-                query = query.Where(f => f.FAQCategoryId == categoryId.Value);
-            }
-
-            var faqs = await query.OrderBy(f => f.SortOrder).ToListAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(faqs, "FAQs retrieved."));
-        }
-
-        // ==========================================
-        // 6. PUBLIC VISITOR TELEMETRY
+        // 4. PUBLIC VISITOR TELEMETRY
         // ==========================================
 
         public class TrackViewRequest
@@ -240,11 +199,42 @@ namespace Ozikol_BCC.Api.Controllers
 
             var (deviceType, browser) = ParseClientDeviceAndBrowser(userAgent);
 
+            // Resolve page entity: first by PageId, and if not provided or Guid.Empty, by PageUrl/DirectUrl
+            WebPage? page = null;
+            if (request.PageId.HasValue && request.PageId.Value != Guid.Empty)
+            {
+                page = await _context.WebPages.FindAsync(request.PageId.Value);
+            }
+
+            if (page == null && !string.IsNullOrWhiteSpace(request.PageUrl))
+            {
+                var clean = request.PageUrl.Trim().ToLowerInvariant().Trim('/');
+                if (clean.StartsWith("page/"))
+                {
+                    clean = clean.Substring(5).Trim('/');
+                }
+
+                var slashClean = "/" + clean;
+
+                if (string.IsNullOrWhiteSpace(clean) || clean == "home" || clean == "index")
+                {
+                    page = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                }
+                else
+                {
+                    page = await _context.WebPages.FirstOrDefaultAsync(p => p.DirectUrl != null && 
+                        (p.DirectUrl.ToLower() == clean || 
+                         p.DirectUrl.ToLower() == slashClean || 
+                         p.DirectUrl.ToLower().Trim('/') == clean ||
+                         p.Title.ToLower() == clean));
+                }
+            }
+
             var log = new WebPageViewLog
             {
-                WebPageId = request.PageId,
+                WebPageId = page?.Id ?? request.PageId,
                 PageUrl = request.PageUrl,
-                PageTitle = request.PageTitle,
+                PageTitle = request.PageTitle ?? page?.Title,
                 DeviceType = deviceType,
                 Browser = browser,
                 UserAgent = userAgent,
@@ -257,13 +247,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             _context.WebPageViewLogs.Add(log);
 
-            if (request.PageId.HasValue && request.PageId.Value != Guid.Empty)
+            if (page != null)
             {
-                var page = await _context.WebPages.FindAsync(request.PageId.Value);
-                if (page != null)
-                {
-                    page.ViewCount += 1;
-                }
+                page.ViewCount += 1;
             }
 
             await _context.SaveChangesAsync();
@@ -323,27 +309,47 @@ namespace Ozikol_BCC.Api.Controllers
         /// with guaranteed fallbacks to prevent empty attribute references.
         /// </summary>
         /// <returns>Grouped active code injection tags.</returns>
+        /// <summary>
+        /// Retrieves public active code injections (Head, Body Open, Footer) for the storefront and preview.
+        /// </summary>
+        /// <param name="suiteCode">Optional theme suite code filter for preview simulation.</param>
+        /// <returns>Grouped active code injection tags.</returns>
         [HttpGet("code-injections")]
-        public async Task<IActionResult> GetPublicCodeInjections()
+        public async Task<IActionResult> GetPublicCodeInjections([FromQuery] string? suiteCode = null)
         {
-            var activeTags = await _context.SiteCodeInjectionTags
-                .Where(t => t.IsActive)
+            var query = _context.SiteCodeInjectionTags.Where(t => t.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(suiteCode) && suiteCode.ToLowerInvariant() != "all")
+            {
+                var cleanSuite = suiteCode.Trim().ToLowerInvariant();
+                query = query.Where(t => t.SuiteCode == null || t.SuiteCode == "global" || t.SuiteCode.ToLower() == cleanSuite);
+            }
+
+            var activeTags = await query
                 .OrderBy(t => t.SortOrder)
                 .ThenBy(t => t.CreatedAtUtc)
                 .ToListAsync();
 
-            // Resolve tenant brand settings to hydrate placeholders dynamically
-            var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
-            var brandName = !string.IsNullOrWhiteSpace(config?.CompanyName)
-                ? config.CompanyName
-                : (!string.IsNullOrWhiteSpace(config?.WebsiteTitle) ? config.WebsiteTitle : "Ozikol");
-            var faviconUrl = !string.IsNullOrWhiteSpace(config?.CompanyIconUrl)
-                ? config.CompanyIconUrl
-                : (!string.IsNullOrWhiteSpace(config?.CompanyLogoUrl) ? config.CompanyLogoUrl : "/favicon.ico");
-            var logoUrl = !string.IsNullOrWhiteSpace(config?.CompanyLogoUrl)
-                ? config.CompanyLogoUrl
-                : faviconUrl;
-            var description = config?.CompanyDescription ?? string.Empty;
+            // Resolve tenant brand settings to hydrate placeholders dynamically from MisWebsiteSettings
+            var siteSetting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+
+            var brandName = !string.IsNullOrWhiteSpace(siteSetting?.BrandName)
+                ? siteSetting.BrandName
+                : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyName)
+                    ? siteSetting.CompanyName
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.WebsiteTitle) ? siteSetting.WebsiteTitle : "Workspace"));
+
+            var faviconUrl = !string.IsNullOrWhiteSpace(siteSetting?.FaviconUrl)
+                ? siteSetting.FaviconUrl
+                : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyIconUrl) && siteSetting.CompanyIconUrl != "/favicon.ico"
+                    ? siteSetting.CompanyIconUrl
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : string.Empty));
+
+            var logoUrl = !string.IsNullOrWhiteSpace(siteSetting?.LogoUrl)
+                ? siteSetting.LogoUrl
+                : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : faviconUrl);
+
+            var description = siteSetting?.CompanyDescription ?? siteSetting?.Tagline ?? string.Empty;
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
             // Hydrate dynamic tokens so client receives valid URLs with zero empty hrefs
@@ -388,11 +394,24 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
 
         /// <summary>
-        /// Retrieves the public schema and field definitions of an active website form by its key.
-        /// Used by public website sections (Contact Us, Newsletter, Service Request, etc.).
+        /// Retrieves the public Google reCAPTCHA site key for client form rendering.
         /// </summary>
-        /// <param name="formKey">The programmatic key of the form (e.g. "contact-us", "newsletter", "service-request").</param>
-        /// <returns>Form schema and ordered interactive fields.</returns>
+        [HttpGet("recaptcha-config")]
+        public IActionResult GetRecaptchaConfig()
+        {
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                siteKey = _recaptchaService.SiteKey
+            }, "Google reCAPTCHA configuration retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves public schema and field definitions for an active website form.
+        /// Used by public website sections (Contact Us, Newsletter, Service Request, etc.).
+        /// Normalizes hyphens, underscores, and canonical form keys.
+        /// </summary>
+        /// <param name="formKey">The programmatic key of the form (e.g. "contact-us", "Contact_Us", "newsletter", "service-request").</param>
+        /// <returns>Form schema, ordered interactive fields, and reCAPTCHA site key.</returns>
         [HttpGet("forms/{formKey}")]
         public async Task<IActionResult> GetPublicFormByKey(string formKey)
         {
@@ -401,15 +420,10 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse.FailureResponse("Form key is required."));
             }
 
-            var cleanKey = formKey.Trim().ToLowerInvariant();
-            var form = await _context.PageForms
-                .Include(f => f.Fields.OrderBy(fl => fl.SortOrder))
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.FormKey == cleanKey && f.IsActive);
-
+            var form = await FindMatchingFormAsync(formKey);
             if (form == null)
             {
-                return NotFound(ApiResponse.FailureResponse($"Active form '{cleanKey}' was not found."));
+                return NotFound(ApiResponse.FailureResponse($"Active form '{formKey.Trim()}' was not found."));
             }
 
             var publicForm = new
@@ -420,6 +434,7 @@ namespace Ozikol_BCC.Api.Controllers
                 form.Description,
                 form.SubmitButtonText,
                 form.SuccessMessage,
+                recaptchaSiteKey = _recaptchaService.SiteKey,
                 Fields = form.Fields.OrderBy(fl => fl.SortOrder).Select(fl => new
                 {
                     fl.Id,
@@ -440,10 +455,10 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Submits visitor input to an active dynamic website form.
-        /// Validates required fields, stores the payload, captures visitor telemetry, and returns the custom success message.
+        /// Validates Google reCAPTCHA challenge, required fields, maps synonyms, captures visitor telemetry, and returns success message.
         /// </summary>
         /// <param name="formKey">The programmatic key of the form to submit to.</param>
-        /// <param name="payload">Visitor submitted key-value data and optional referral/source URL.</param>
+        /// <param name="payload">Visitor submitted key-value data, reCAPTCHA token, and source URL.</param>
         /// <returns>Confirmation and custom form success message.</returns>
         [HttpPost("forms/{formKey}/submit")]
         public async Task<IActionResult> SubmitPublicForm(string formKey, [FromBody] PublicFormSubmissionPayload payload)
@@ -453,25 +468,55 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse.FailureResponse("Form key is required."));
             }
 
-            var cleanKey = formKey.Trim().ToLowerInvariant();
-            var form = await _context.PageForms
-                .Include(f => f.Fields)
-                .FirstOrDefaultAsync(f => f.FormKey == cleanKey && f.IsActive);
-
+            var form = await FindMatchingFormAsync(formKey);
             if (form == null)
             {
-                return NotFound(ApiResponse.FailureResponse($"Active form '{cleanKey}' was not found."));
+                return NotFound(ApiResponse.FailureResponse($"Active form '{formKey.Trim()}' was not found."));
             }
 
             var data = payload?.Data ?? new Dictionary<string, object>();
 
-            // Validate all required fields
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // 1. Dynamic Google reCAPTCHA Verification
+            // Single-field email forms (e.g. newsletter subscriptions, waitlists, alert captures) are compact inline inputs designed for narrow footers/sidebars where reCAPTCHA boxes do not fit.
+            // Multi-field forms (2+ fields: contact inquiries, service requests, quote requests) enforce reCAPTCHA challenge verification to eliminate bot spam.
+            var isSingleFieldEmailCapture = form.Fields.Count <= 1 &&
+                form.Fields.All(f => f.FieldType.Equals("email", StringComparison.OrdinalIgnoreCase) ||
+                                     f.FieldKey.Contains("email", StringComparison.OrdinalIgnoreCase));
+
+            if (!isSingleFieldEmailCapture)
+            {
+                var recaptchaToken = payload?.RecaptchaToken;
+                if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
+                {
+                    recaptchaToken = gToken.ToString();
+                }
+                if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("recaptchaToken", out var rToken) && rToken != null)
+                {
+                    recaptchaToken = rToken.ToString();
+                }
+
+                var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaToken, clientIp);
+                if (!isCaptchaValid)
+                {
+                    return BadRequest(ApiResponse.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
+                }
+            }
+
+            // 2. Validate all required fields with synonym support
             var missingRequiredFields = new List<string>();
             foreach (var field in form.Fields.Where(f => f.IsRequired))
             {
-                if (!data.TryGetValue(field.FieldKey, out var val) || val == null || string.IsNullOrWhiteSpace(val.ToString()))
+                var val = ResolveFieldValue(field.FieldKey, data);
+                if (val == null || string.IsNullOrWhiteSpace(val.ToString()))
                 {
                     missingRequiredFields.Add(field.Label);
+                }
+                else
+                {
+                    // Ensure canonical key is populated in data payload
+                    data[field.FieldKey] = val;
                 }
             }
 
@@ -481,6 +526,10 @@ namespace Ozikol_BCC.Api.Controllers
                     $"Please fill in all required fields: {string.Join(", ", missingRequiredFields)}"));
             }
 
+            // Remove reCAPTCHA token from persistent submission data if present to keep records clean
+            data.Remove("g-recaptcha-response");
+            data.Remove("recaptchaToken");
+
             var submission = new PageFormSubmission
             {
                 Id = Guid.NewGuid(),
@@ -489,7 +538,7 @@ namespace Ozikol_BCC.Api.Controllers
                 SourcePageUrl = payload?.SourcePageUrl?.Trim(),
                 Status = "New",
                 SubmittedAtUtc = DateTime.UtcNow,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                IpAddress = clientIp,
                 UserAgent = Request.Headers.UserAgent.ToString()
             };
 
@@ -501,6 +550,425 @@ namespace Ozikol_BCC.Api.Controllers
                 submissionId = submission.Id,
                 message = form.SuccessMessage
             }, form.SuccessMessage));
+        }
+
+        /// <summary>
+        /// Locates an active PageForm by key, handling hyphen/underscore variations and canonical prefixes.
+        /// </summary>
+        private async Task<PageForm?> FindMatchingFormAsync(string formKey)
+        {
+            if (string.IsNullOrWhiteSpace(formKey)) return null;
+
+            var raw = formKey.Trim();
+            var lower = raw.ToLowerInvariant();
+            var withUnderscore = lower.Replace("-", "_");
+            var withHyphen = lower.Replace("_", "-");
+            var alphanumericOnly = new string(lower.Where(char.IsLetterOrDigit).ToArray());
+
+            var forms = await _context.PageForms
+                .Include(f => f.Fields.OrderBy(fl => fl.SortOrder))
+                .Where(f => f.IsActive)
+                .ToListAsync();
+
+            return forms.FirstOrDefault(f =>
+            {
+                var fkLower = f.FormKey.ToLowerInvariant();
+                var fkUnderscore = fkLower.Replace("-", "_");
+                var fkHyphen = fkLower.Replace("_", "-");
+                var fkAlpha = new string(fkLower.Where(char.IsLetterOrDigit).ToArray());
+
+                return fkLower == lower
+                    || fkUnderscore == withUnderscore
+                    || fkHyphen == withHyphen
+                    || fkAlpha == alphanumericOnly
+                    || (lower.Contains("contact") && fkLower.Contains("contact"))
+                    || (lower.Contains("newsletter") && fkLower.Contains("newsletter"))
+                    || (lower.Contains("service") && fkLower.Contains("service"));
+            });
+        }
+
+        /// <summary>
+        /// Resolves field values from visitor submission payload supporting common HTML input name synonyms.
+        /// </summary>
+        private static object? ResolveFieldValue(string fieldKey, Dictionary<string, object> dict)
+        {
+            if (dict.TryGetValue(fieldKey, out var direct) && direct != null && !string.IsNullOrWhiteSpace(direct.ToString()))
+                return direct;
+
+            var entry = dict.FirstOrDefault(kvp => string.Equals(kvp.Key, fieldKey, StringComparison.OrdinalIgnoreCase));
+            if (entry.Value != null && !string.IsNullOrWhiteSpace(entry.Value.ToString()))
+                return entry.Value;
+
+            var keyLower = fieldKey.ToLowerInvariant().Replace("-", "_");
+            if (keyLower is "full_name" or "name")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "name" or "fullname" or "full_name" or "contact_name" or "client_name" or "user_name" or "your_name");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "email")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "email" or "work_email" or "workemail" or "contact_email" or "email_address");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "phone" or "phone_number")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "phone" or "phone_number" or "phonenumber" or "tel" or "telephone" or "mobile");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "subject")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "subject" or "title" or "topic" or "inquiry");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "message")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "message" or "comments" or "comment" or "notes" or "details" or "description" or "body" or "your_message");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "organization_name" or "company")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "company" or "organization" or "organization_name" or "org_name" or "firm");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "service_required" or "service")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "service_required" or "service" or "scope" or "service_type");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+
+            return null;
+        }
+
+        // ==========================================
+        // 10. PUBLIC THEME & ACTIVE TEMPLATES
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all currently active UI templates installed for this tenant.
+        /// Delivers layout templates (menu, hero, body, footer, breadcrumb) to public visitors
+        /// without requiring administrative authentication.
+        /// </summary>
+        /// <returns>A collection of active UI templates ordered by category.</returns>
+        [HttpGet("theme/active-templates")]
+        public async Task<IActionResult> GetActiveThemeTemplates()
+        {
+            // Query active installed templates from the tenant database
+            var activeTemplates = await _context.TenantInstalledTemplates
+                .AsNoTracking()
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.CategoryKey)
+                .ThenBy(t => t.InstalledUtc)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TemplateKey,
+                    t.CategoryKey,
+                    t.Name,
+                    t.VariantCode,
+                    t.HtmlTemplate,
+                    t.CssStyles,
+                    t.JsScript,
+                    t.DefaultContentJson,
+                    t.InstalledVersion
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(activeTemplates, "Active website theme templates retrieved successfully."));
+        }
+
+        // ==========================================
+        // 11. PUBLIC BLOG ARTICLES & ARCHIVE
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves published blog articles for the public website blog archive or homepage widget.
+        /// </summary>
+        /// <param name="categoryId">Optional blog category ID to filter by.</param>
+        /// <param name="limit">Optional maximum number of articles to return.</param>
+        /// <returns>List of published blog articles with category metadata.</returns>
+        [HttpGet("blogs")]
+        public async Task<IActionResult> GetPublishedBlogs([FromQuery] Guid? categoryId = null, [FromQuery] int? limit = null)
+        {
+            // Fetch published articles ordered chronologically descending
+            var query = _context.Blogs
+                .Include(b => b.BlogCategory)
+                .AsNoTracking()
+                .Where(b => b.Publish);
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(b => b.BlogCategoryId == categoryId.Value);
+            }
+
+            query = query.OrderByDescending(b => b.Date).ThenBy(b => b.SortOrder);
+
+            if (limit.HasValue && limit.Value > 0)
+            {
+                query = query.Take(limit.Value);
+            }
+
+            var blogs = await query.ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(blogs, "Published blog articles retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves a single published blog article by its ID for reader view.
+        /// </summary>
+        /// <param name="id">Unique identifier of the blog article.</param>
+        /// <returns>Full blog article details if published; otherwise 404 NotFound.</returns>
+        [HttpGet("blogs/{id:guid}")]
+        public async Task<IActionResult> GetPublishedBlogById(Guid id)
+        {
+            var blog = await _context.Blogs
+                .Include(b => b.BlogCategory)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == id && b.Publish);
+
+            if (blog == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse($"Published article with ID '{id}' was not found."));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(blog, "Blog article retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves the public brand identity, contact channels, and UI configuration settings for visitor UI rendering.
+        /// </summary>
+        /// <returns>Public-safe UI settings record.</returns>
+        [HttpGet("ui-settings")]
+        public async Task<IActionResult> GetPublicUiSettings()
+        {
+            var setting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var channels = await _context.MisWebsiteContactChannels
+                .AsNoTracking()
+                .Where(c => c.IsPublished)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            // Contact details are strictly derived from the dedicated MisWebsiteContactChannels table
+            var primaryEmail = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email)?.Value
+                ?? string.Empty;
+
+            var primaryPhone = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone)?.Value
+                ?? string.Empty;
+
+            var primaryAddress = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address)?.Value
+                ?? string.Empty;
+
+            var primaryHours = channels.FirstOrDefault(c => (c.ChannelType == "Hours" || c.ChannelType == "WorkingHours") && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == "Hours" || c.ChannelType == "WorkingHours")?.Value
+                ?? string.Empty;
+
+            if (setting != null)
+            {
+                var payload = new
+                {
+                    setting.Id,
+                    setting.BrandName,
+                    setting.CompanyName,
+                    setting.CompanyNameAbbreviation,
+                    setting.SiteTitle,
+                    setting.WebsiteTitle,
+                    setting.DashboardTitle,
+                    setting.Tagline,
+                    setting.CompanyDescription,
+                    setting.FooterDescription,
+                    setting.CompanyWebsiteLink,
+                    setting.LogoUrl,
+                    setting.CompanyLogoUrl,
+                    setting.WhiteLogoUrl,
+                    setting.CompanyWhiteLogoUrl,
+                    setting.FaviconUrl,
+                    setting.CompanyIconUrl,
+                    setting.LoginTitle,
+                    setting.LoginButtonText,
+                    setting.ActivateLogin,
+                    setting.ActivateLoginInMenu,
+                    setting.ActivateLoginInFooter,
+                    contactEmail = primaryEmail,
+                    supportEmail = primaryEmail,
+                    primaryPhone = primaryPhone,
+                    address = primaryAddress,
+                    workingHours = primaryHours,
+                    setting.CopyrightNotice,
+                    setting.EnableComingSoon,
+                    setting.RemovePlatformWatermark,
+                    recaptchaSiteKey = _recaptchaService.SiteKey,
+                    contactChannels = channels,
+                    ribbonTicker = new
+                    {
+                        enabled = setting.EnableBreakingNewsRibon,
+                        title = !string.IsNullOrWhiteSpace(setting.BreakingNewsRibonTitle) ? setting.BreakingNewsRibonTitle : "BREAKING NEWS",
+                        position = !string.IsNullOrWhiteSpace(setting.BreakingNewsRibonPosition) ? setting.BreakingNewsRibonPosition : "after_menu"
+                    },
+                    cookieConsent = new
+                    {
+                        enabled = setting.EnableCookieConsent,
+                        title = !string.IsNullOrWhiteSpace(setting.CookieConsentTitle) ? setting.CookieConsentTitle : "Cookie Preferences & Privacy",
+                        message = !string.IsNullOrWhiteSpace(setting.CookieConsentMessage) ? setting.CookieConsentMessage : "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.",
+                        acceptText = !string.IsNullOrWhiteSpace(setting.CookieConsentAcceptText) ? setting.CookieConsentAcceptText : "Accept All",
+                        declineText = !string.IsNullOrWhiteSpace(setting.CookieConsentDeclineText) ? setting.CookieConsentDeclineText : "Decline",
+                        policyUrl = !string.IsNullOrWhiteSpace(setting.CookieConsentPolicyUrl) ? setting.CookieConsentPolicyUrl : "/privacy-policy"
+                    },
+                    whatsAppChat = new
+                    {
+                        enabled = setting.EnableWhatsAppChat,
+                        number = setting.WhatsAppNumber ?? string.Empty,
+                        promptMessage = !string.IsNullOrWhiteSpace(setting.WhatsAppPromptMessage) ? setting.WhatsAppPromptMessage : "Hello! I have an inquiry regarding your services.",
+                        widgetTitle = !string.IsNullOrWhiteSpace(setting.WhatsAppWidgetTitle) ? setting.WhatsAppWidgetTitle : "Chat with Us",
+                        widgetSubtitle = !string.IsNullOrWhiteSpace(setting.WhatsAppWidgetSubtitle) ? setting.WhatsAppWidgetSubtitle : "Typically replies within minutes"
+                    }
+                };
+
+                return Ok(ApiResponse<object>.SuccessResponse(payload, "Public UI settings retrieved."));
+            }
+
+            var defaultSetting = new
+            {
+                BrandName = string.Empty,
+                SiteTitle = string.Empty,
+                Tagline = string.Empty,
+                contactEmail = primaryEmail,
+                supportEmail = primaryEmail,
+                primaryPhone = primaryPhone,
+                address = primaryAddress,
+                workingHours = primaryHours,
+                EnableComingSoon = false,
+                RemovePlatformWatermark = false,
+                recaptchaSiteKey = _recaptchaService.SiteKey,
+                contactChannels = channels,
+                ribbonTicker = new
+                {
+                    enabled = false,
+                    title = "BREAKING NEWS",
+                    position = "after_menu"
+                },
+                cookieConsent = new
+                {
+                    enabled = true,
+                    title = "Cookie Preferences & Privacy",
+                    message = "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.",
+                    acceptText = "Accept All",
+                    declineText = "Decline",
+                    policyUrl = "/privacy-policy"
+                },
+                whatsAppChat = new
+                {
+                    enabled = false,
+                    number = string.Empty,
+                    promptMessage = "Hello! I have an inquiry regarding your services.",
+                    widgetTitle = "Chat with Us",
+                    widgetSubtitle = "Typically replies within minutes"
+                }
+            };
+
+            return Ok(ApiResponse<object>.SuccessResponse(defaultSetting, "Default public UI settings retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves active ticker items from published blog articles and web pages flagged with AddToRibon.
+        /// Ordered by RibonSortOrder ascending.
+        /// </summary>
+        /// <returns>Collection of marquee ticker items.</returns>
+        [HttpGet("ticker")]
+        public async Task<IActionResult> GetPublicTicker()
+        {
+            var blogItems = await _context.Blogs
+                .AsNoTracking()
+                .Where(b => b.Publish && b.AddToRibon)
+                .Select(b => new
+                {
+                    id = b.Id,
+                    type = "blog",
+                    title = !string.IsNullOrWhiteSpace(b.RibonCustomDisplayTitle) ? b.RibonCustomDisplayTitle : (b.Title ?? string.Empty),
+                    url = $"/blog/{b.Id}",
+                    sortOrder = b.RibonSortOrder,
+                    createdAtUtc = b.Date
+                })
+                .ToListAsync();
+
+            var pageItems = await _context.WebPages
+                .AsNoTracking()
+                .Where(p => p.Publish && p.AddToRibon)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    type = "page",
+                    title = !string.IsNullOrWhiteSpace(p.RibonCustomDisplayTitle) ? p.RibonCustomDisplayTitle : p.Title,
+                    url = !string.IsNullOrWhiteSpace(p.DirectUrl) ? (p.DirectUrl.StartsWith("/") ? p.DirectUrl : $"/{p.DirectUrl}") : $"/page/{p.Id}",
+                    sortOrder = p.RibonSortOrder,
+                    createdAtUtc = p.CreatedAtUtc
+                })
+                .ToListAsync();
+
+            var combined = blogItems
+                .Concat(pageItems)
+                .OrderBy(item => item.sortOrder)
+                .ThenByDescending(item => item.createdAtUtc)
+                .ToList();
+
+            // Fallback: If tenant has not yet explicitly flagged any blog or page with AddToRibon,
+            // stream the latest published blogs and published pages so the marquee ticker displays immediately.
+            if (combined.Count == 0)
+            {
+                var fallbackBlogs = await _context.Blogs
+                    .AsNoTracking()
+                    .Where(b => b.Publish)
+                    .OrderByDescending(b => b.Date)
+                    .Take(5)
+                    .Select(b => new
+                    {
+                        id = b.Id,
+                        type = "blog",
+                        title = b.Title ?? string.Empty,
+                        url = $"/blog/{b.Id}",
+                        sortOrder = 0,
+                        createdAtUtc = b.Date
+                    })
+                    .ToListAsync();
+
+                var fallbackPages = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.Publish && !p.IsHomePage)
+                    .OrderBy(p => p.SortOrder)
+                    .Take(5)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        type = "page",
+                        title = p.Title,
+                        url = !string.IsNullOrWhiteSpace(p.DirectUrl) ? (p.DirectUrl.StartsWith("/") ? p.DirectUrl : $"/{p.DirectUrl}") : $"/page/{p.Id}",
+                        sortOrder = 0,
+                        createdAtUtc = p.CreatedAtUtc
+                    })
+                    .ToListAsync();
+
+                combined = fallbackBlogs
+                    .Concat(fallbackPages)
+                    .ToList();
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(combined, "Ticker items retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves published website contact channels and social media profiles.
+        /// </summary>
+        /// <returns>List of published contact channels ordered by sort index.</returns>
+        [HttpGet("contact-channels")]
+        public async Task<IActionResult> GetPublishedContactChannels()
+        {
+            var channels = await _context.MisWebsiteContactChannels
+                .AsNoTracking()
+                .Where(c => c.IsPublished)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(channels, "Published contact channels retrieved."));
         }
     }
 
@@ -518,5 +986,10 @@ namespace Ozikol_BCC.Api.Controllers
         /// Optional public website URL or path where the submission originated.
         /// </summary>
         public string? SourcePageUrl { get; set; }
+
+        /// <summary>
+        /// Optional Google reCAPTCHA response token from client challenge widget.
+        /// </summary>
+        public string? RecaptchaToken { get; set; }
     }
 }

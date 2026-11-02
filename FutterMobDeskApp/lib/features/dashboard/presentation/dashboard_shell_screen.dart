@@ -1,0 +1,3063 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/connectivity_service.dart';
+import '../../../core/services/realtime_sync_service.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/services/in_app_update_service.dart';
+import '../../../core/widgets/app_badge.dart';
+import '../../../core/widgets/app_drawer.dart';
+import '../../../core/widgets/app_top_bar.dart';
+import '../../../core/widgets/exit_confirmation_dialog.dart';
+import '../../../core/widgets/offline_status_bar.dart';
+import '../../../core/widgets/tenant_avatar.dart';
+import '../../../core/widgets/tenant_cached_image.dart';
+import '../../../core/widgets/update_banner.dart';
+import '../../../core/models/workspace.dart';
+import '../../../core/theme/theme_provider.dart';
+import '../../workspace_auth/presentation/workspace_login_screen.dart';
+import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
+import '../../workspace_auth/state/workspace_state.dart';
+import '../../notifications/data/notification_service.dart';
+import '../../notifications/presentation/notifications_sheet.dart';
+import '../../../core/localization/language_provider.dart';
+import '../../../core/widgets/oz_lang_switcher.dart';
+import '../data/dashboard_repository.dart';
+import '../models/dashboard_metrics.dart';
+import 'widgets/user_profile_end_drawer.dart';
+import 'screens/user_directory/user_dashboard_overview_view.dart';
+import 'screens/user_directory/all_members_view.dart';
+import 'screens/user_directory/user_categories_view.dart';
+import 'screens/user_directory/registration_form_builder_view.dart';
+import 'screens/user_directory/auth_page_setup_view.dart';
+import 'screens/user_directory/kpis_leaderboard_view.dart';
+import 'screens/user_directory/user_settings_view.dart';
+import 'screens/user_directory/user_create_view.dart';
+import 'screens/identity_access/identity_dashboard_view.dart';
+import 'screens/identity_access/roles_permissions_view.dart';
+import 'screens/identity_access/member_invitations_view.dart';
+import 'screens/identity_access/global_security_policies_view.dart';
+import 'screens/manage_account/my_account_profile_view.dart';
+import 'screens/manage_account/change_password_view.dart';
+import 'screens/manage_account/two_factor_security_view.dart';
+import 'screens/manage_account/manage_devices_view.dart';
+import 'screens/manage_account/login_activity_view.dart';
+import 'screens/member_workspace/workspace_home_view.dart';
+
+/// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
+/// with the Ozikol BCC Angular Web Console Dashboard (`/dashboard/console`).
+/// Accommodates desktop window layouts (multi-column) and mobile viewports.
+class DashboardShellScreen extends ConsumerStatefulWidget {
+  /// Creates the primary [DashboardShellScreen].
+  const DashboardShellScreen({super.key});
+
+  @override
+  ConsumerState<DashboardShellScreen> createState() => _DashboardShellScreenState();
+}
+
+class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
+    with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _mobileScaffoldKey = GlobalKey<ScaffoldState>();
+  int _selectedNavIndex = 0;
+  bool _isSidebarCollapsed = false;
+  late AnimationController _refreshAnimController;
+
+  /// Toggles the desktop sidebar between expanded (250px) and collapsed (68px) rail mode.
+  void _toggleSidebarCollapse() {
+    setState(() {
+      _isSidebarCollapsed = !_isSidebarCollapsed;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(realtimeSyncServiceProvider).connect();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshAnimController.dispose();
+    super.dispose();
+  }
+
+  bool _isRefreshing = false;
+
+  /// Remakes all requests across the workspace:
+  /// 1. Tenant organization branding (logo, icon, organization name) via /api/SettingsApi/brand
+  /// 2. Dashboard operational metrics, member counters, and telemetry audit trail via /api/DashboardApi/metrics
+  /// 3. Unread notification counters and feed via /api/Notifications/feed
+  Future<void> _triggerRefresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    _refreshAnimController.repeat();
+
+    try {
+      // Evict in-memory and disk image caches so updated brand assets re-render immediately
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
+      // 1. Refresh tenant organization branding and custom assets
+      await ref.read(workspaceStateProvider.notifier).refreshWorkspaceBranding();
+
+      // 2. Refetch dashboard metrics and audit trail
+      await ref.read(dashboardMetricsProvider.notifier).refresh();
+
+      // 3. Refetch notifications feed and unread count
+      await ref.read(notificationProvider.notifier).loadFeed();
+
+      // Brief animation dwell so spin feels responsive and organic
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('Workspace branding, telemetry, and metrics refreshed.'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      // Gracefully handle network errors
+    } finally {
+      if (mounted) {
+        _refreshAnimController.reset();
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(workspaceStateProvider);
+    final notifState = ref.watch(notificationProvider);
+    final updateAsync = ref.watch(appUpdateCheckProvider);
+    final metricsAsync = ref.watch(dashboardMetricsProvider);
+    final connStatus = ref.watch(connectivityStatusProvider);
+    final isOnline = connStatus == ConnectivityStatus.online;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeWs = state.activeWorkspace;
+    final metrics = metricsAsync.value ?? DashboardMetrics.empty();
+    final isTelemetryLoading = metricsAsync.isLoading;
+
+    if (isTelemetryLoading && !_refreshAnimController.isAnimating) {
+      _refreshAnimController.repeat();
+    } else if (!isTelemetryLoading && _refreshAnimController.isAnimating) {
+      _refreshAnimController.reset();
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        // If the mobile navigation drawer is currently open, close it instead of prompting to exit the app
+        if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+          _mobileScaffoldKey.currentState?.closeDrawer();
+          return;
+        }
+        if (_mobileScaffoldKey.currentState?.isEndDrawerOpen ?? false) {
+          _mobileScaffoldKey.currentState?.closeEndDrawer();
+          return;
+        }
+        final shouldQuit = await ExitConfirmationDialog.show(context);
+        if (shouldQuit) {
+          SystemNavigator.pop();
+        }
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 900;
+
+          if (isDesktop) {
+            return _buildDesktopLayout(
+              context,
+              isDark: isDark,
+              activeWs: activeWs,
+              notifCount: notifState.unreadCount,
+              updateAsync: updateAsync,
+              metrics: metrics,
+              isLoading: isTelemetryLoading,
+              isOnline: isOnline,
+            );
+          }
+
+          return _buildMobileLayout(
+            context,
+            isDark: isDark,
+            activeWs: activeWs,
+            notifCount: notifState.unreadCount,
+            updateAsync: updateAsync,
+            metrics: metrics,
+            isLoading: isTelemetryLoading,
+            isOnline: isOnline,
+          );
+        },
+      ),
+    );
+  }
+
+  // =========================================================================
+  // DESKTOP LAYOUT (>= 900px)
+  // =========================================================================
+
+  Widget _buildDesktopLayout(
+    BuildContext context, {
+    required bool isDark,
+    required Workspace? activeWs,
+    required int notifCount,
+    required AsyncValue<dynamic> updateAsync,
+    required DashboardMetrics metrics,
+    required bool isLoading,
+    required bool isOnline,
+  }) {
+    return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
+      body: Stack(
+        children: [
+          Row(
+            children: [
+              // 1. Far Left Multi-Tenant Workspace Switcher Dock (68px)
+              const WorkspaceSwitcherDock(),
+
+              // 2. Persistent Navigation Sidebar (250px expanded / 68px collapsed) - Matches Angular BCC Admin
+              AppDrawer(
+                isPermanentSidebar: true,
+                isCollapsed: _isSidebarCollapsed,
+                width: 250,
+                collapsedWidth: 68,
+                onToggleCollapse: _toggleSidebarCollapse,
+                header: _buildDesktopSidebarHeader(
+                  isDark,
+                  activeWs,
+                  isCollapsed: _isSidebarCollapsed,
+                ),
+                sections: _buildNavigationSections(isDark, activeWs),
+                footer: _buildDesktopSidebarFooter(
+                  isDark,
+                  activeWs,
+                  isCollapsed: _isSidebarCollapsed,
+                ),
+              ),
+
+              // 3. Main Workspace Canvas
+              Expanded(
+                child: Column(
+                  children: [
+                    // Top Application Bar matching Angular Web Header
+                    _buildDesktopTopBar(
+                      context,
+                      isDark,
+                      activeWs,
+                      notifCount,
+                      isOnline: isOnline,
+                    ),
+
+                    // In-App Update Banner
+                    updateAsync.maybeWhen(
+                      data: (res) => res.hasUpdate && res.updateInfo != null
+                          ? UpdateBanner(updateInfo: res.updateInfo!)
+                          : const SizedBox.shrink(),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
+
+                    // Offline Network Resilience Bar
+                    const OfflineStatusBar(),
+
+                    // Central Feature Expiration Notice (Strictly visible to BCC Admins in Admin mode)
+                    _buildFeatureExpirationBanner(isDark, activeWs),
+
+                    // Main Active View Canvas
+                    Expanded(
+                      child: _buildActiveViewCanvas(
+                        isDark: isDark,
+                        isOnline: isOnline,
+                        isLoading: isLoading,
+                        metrics: metrics,
+                        activeWs: activeWs,
+                        isMobile: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Floating Ozi AI Assistant Button at Bottom-Right
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: _buildOziAiFloatingButton(isDark),
+          ),
+
+          // Full Workspace Refresh Loading Overlay
+          if (_isRefreshing)
+            Positioned.fill(
+              child: _buildRefreshingOverlay(isDark),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // MOBILE LAYOUT (< 900px)
+  // =========================================================================
+
+  Widget _buildMobileLayout(
+    BuildContext context, {
+    required bool isDark,
+    required Workspace? activeWs,
+    required int notifCount,
+    required AsyncValue<dynamic> updateAsync,
+    required DashboardMetrics metrics,
+    required bool isLoading,
+    required bool isOnline,
+  }) {
+    return Scaffold(
+      key: _mobileScaffoldKey,
+      backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
+      appBar: AppTopBar(
+        leadingType: AppTopBarLeadingType.menu,
+        centerContent: Row(
+          children: [
+            if (activeWs != null) ...[
+              TenantAvatar(
+                iconUrl: activeWs.iconUrl,
+                logoUrl: activeWs.logoUrl,
+                name: activeWs.displayName,
+                tenantKey: activeWs.tenantKey,
+                size: 32,
+                borderRadius: 8,
+              ),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          activeWs?.displayName ?? 'Console Dashboard',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Business Command Center',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          AppTopBarAction(
+            icon: Icons.refresh_rounded,
+            tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
+            customWidget: _isRefreshing
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark ? Colors.white : AppColors.primary,
+                      ),
+                    ),
+                  )
+                : null,
+            onTap: () {
+              if (!_isRefreshing) {
+                _triggerRefresh();
+              }
+            },
+          ),
+          AppTopBarAction(
+            icon: Icons.notifications_none_rounded,
+            tooltip: 'Notifications',
+            badge: notifCount > 0
+                ? AppBadge(text: '$notifCount', backgroundColor: AppColors.error)
+                : null,
+            onTap: () => NotificationsSheet.show(context),
+          ),
+          AppTopBarAction(
+            icon: Icons.person_rounded,
+            tooltip: 'profile.user_profile'.tr(ref, fallback: 'User Profile & Settings'),
+            customWidget: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _mobileScaffoldKey.currentState?.openEndDrawer(),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _getUserInitials(activeWs?.userFullName),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: -1,
+                    bottom: -1,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFDC2626),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            onTap: () => _mobileScaffoldKey.currentState?.openEndDrawer(),
+          ),
+        ],
+      ),
+      drawer: AppDrawer(
+        onClose: () => _mobileScaffoldKey.currentState?.closeDrawer(),
+        header: _buildDesktopSidebarHeader(isDark, activeWs, isMobile: true),
+        sections: _buildNavigationSections(isDark, activeWs),
+        footer: _buildDesktopSidebarFooter(isDark, activeWs, isMobile: true),
+      ),
+      endDrawer: UserProfileEndDrawer(
+        activeWorkspace: activeWs is Workspace ? activeWs : null,
+        onSwitchWorkspace: () => _showMobileWorkspaceSheet(context),
+        onSignOut: () => _handleSignOut(activeWs),
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              updateAsync.maybeWhen(
+                data: (res) => res.hasUpdate && res.updateInfo != null
+                    ? UpdateBanner(updateInfo: res.updateInfo!)
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              const OfflineStatusBar(),
+              _buildFeatureExpirationBanner(isDark, activeWs, isMobile: true),
+              // Main Active View Canvas
+              Expanded(
+                child: _buildActiveViewCanvas(
+                  isDark: isDark,
+                  isOnline: isOnline,
+                  isLoading: isLoading,
+                  metrics: metrics,
+                  activeWs: activeWs,
+                  isMobile: true,
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: _buildOziAiFloatingButton(isDark),
+          ),
+
+          // Full Workspace Refresh Loading Overlay
+          if (_isRefreshing)
+            Positioned.fill(
+              child: _buildRefreshingOverlay(isDark),
+            ),
+        ],
+      ),
+      bottomNavigationBar: _buildMobileBottomBar(isDark, activeWs),
+    );
+  }
+
+  // =========================================================================
+  // TOP BAR (DESKTOP)
+  // =========================================================================
+
+  Widget _buildDesktopTopBar(
+    BuildContext context,
+    bool isDark,
+    Workspace? activeWs,
+    int notifCount, {
+    bool isOnline = true,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final topBarWidth = constraints.maxWidth;
+
+        // Progressive responsive breakpoints
+        final isWide = topBarWidth >= 1050;
+        final isMedium = topBarWidth >= 780 && topBarWidth < 1050;
+        final isCompact = topBarWidth < 780;
+        final isUltraNarrow = topBarWidth < 620;
+
+        // Adaptive search box sizing: scales gracefully with the viewport
+        final double searchMaxWidth;
+        if (isWide) {
+          searchMaxWidth = (topBarWidth * 0.28).clamp(280.0, 440.0);
+        } else if (isMedium) {
+          searchMaxWidth = (topBarWidth * 0.24).clamp(190.0, 280.0);
+        } else {
+          searchMaxWidth = (topBarWidth * 0.22).clamp(130.0, 190.0);
+        }
+
+        return Container(
+          height: 64,
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            border: Border(bottom: BorderSide(color: borderColor, width: 1)),
+          ),
+          child: Row(
+            children: [
+              // 1. Sidebar toggle button
+              IconButton(
+                icon: Icon(
+                  _isSidebarCollapsed ? Icons.menu_rounded : Icons.menu_open_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                ),
+                tooltip: _isSidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar',
+                splashRadius: 18,
+                onPressed: _toggleSidebarCollapse,
+              ),
+              const SizedBox(width: 4),
+
+              // 2. Brand Emblem Icon (hidden only on ultra-narrow windows)
+              if (activeWs != null && !isUltraNarrow) ...[
+                Tooltip(
+                  message: '${activeWs.displayName} Workspace',
+                  child: TenantAvatar(
+                    iconUrl: activeWs.iconUrl,
+                    logoUrl: activeWs.logoUrl,
+                    name: activeWs.displayName,
+                    tenantKey: activeWs.tenantKey,
+                    size: 28,
+                    borderRadius: 7,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+
+              // 3. Adaptive Search workspace bar
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: searchMaxWidth,
+                  minWidth: isUltraNarrow ? 110 : 140,
+                ),
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? Colors.transparent : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isCompact
+                              ? 'Search...'
+                              : 'shell.search_placeholder'.tr(ref, fallback: 'Search workspace...'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                      if (isWide) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '⌘K',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              // 4. Central Pattern Multi-Language Switcher (compact when space is tighter)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: OzLangSwitcher(compact: !isWide),
+              ),
+
+              // 5. Utility Action Icons (Progressively responsive)
+              if (isWide) ...[
+                _buildTopRefreshBtn(isDark),
+                _buildTopIconBtn(
+                  icon: Icons.calendar_today_outlined,
+                  tooltip: 'Calendar & Schedules',
+                  isDark: isDark,
+                  onTap: () => _showCalendarDialog(context, isDark),
+                ),
+                _buildTopIconBtn(
+                  icon: Icons.help_outline_rounded,
+                  tooltip: 'Help & Knowledge Base',
+                  isDark: isDark,
+                  onTap: () => _showHelpSupportDialog(context, isDark),
+                ),
+              ] else if (isMedium) ...[
+                _buildTopRefreshBtn(isDark),
+                _buildTopMoreMenuBtn(context, isDark),
+              ] else ...[
+                _buildTopMoreMenuBtn(context, isDark, includeRefresh: true),
+              ],
+
+              // Theme Mode Toggle Icon
+              _buildTopIconBtn(
+                icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                tooltip: 'Toggle Color Theme',
+                isDark: isDark,
+                onTap: () => _toggleTheme(),
+              ),
+
+              // Notifications Icon with live counter badge
+              _buildTopIconBtn(
+                icon: Icons.notifications_none_rounded,
+                tooltip: 'Notifications',
+                isDark: isDark,
+                badgeCount: notifCount,
+                onTap: () => NotificationsSheet.show(context),
+              ),
+
+              // 6. Live Online / Offline Presence Notice Badge (on wider views)
+              if (isWide) ...[
+                const SizedBox(width: 8),
+                _buildOnlineOfflineStatusPill(isDark, isOnline),
+              ],
+
+              const SizedBox(width: 8),
+
+              // 7. Responsive User Profile Pill
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _showUserProfileDialog(context, isDark, activeWs),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // User Avatar with live presence dot
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _getUserInitials(activeWs?.userFullName),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: -1,
+                              bottom: -1,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Name & Role labels (adapt based on available width)
+                        if (!isCompact) ...[
+                          const SizedBox(width: 8),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: isWide ? 130 : 90,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activeWs?.userFullName ?? 'Workspace Admin',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                  ),
+                                ),
+                                if (isWide)
+                                  Text(
+                                    _getUserRoleBadge(activeWs),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Dropdown menu for secondary topbar actions on compact screen widths.
+  Widget _buildTopMoreMenuBtn(
+    BuildContext context,
+    bool isDark, {
+    bool includeRefresh = false,
+  }) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_horiz_rounded,
+        size: 20,
+        color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+      ),
+      tooltip: 'More actions',
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      onSelected: (val) {
+        switch (val) {
+          case 'refresh':
+            _triggerRefresh();
+            break;
+          case 'calendar':
+            _showCalendarDialog(context, isDark);
+            break;
+          case 'help':
+            _showHelpSupportDialog(context, isDark);
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        if (includeRefresh)
+          PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                ),
+                const SizedBox(width: 10),
+                const Text('Refresh Workspace', style: TextStyle(fontSize: 13)),
+              ],
+            ),
+          ),
+        PopupMenuItem(
+          value: 'calendar',
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+              ),
+              const SizedBox(width: 10),
+              const Text('Calendar & Schedules', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'help',
+          child: Row(
+            children: [
+              Icon(
+                Icons.help_outline_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+              ),
+              const SizedBox(width: 10),
+              const Text('Help & Knowledge Base', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopRefreshBtn(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: IconButton(
+        icon: _isRefreshing
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? Colors.white : AppColors.primary,
+                  ),
+                ),
+              )
+            : RotationTransition(
+                turns: _refreshAnimController,
+                child: Icon(
+                  Icons.refresh_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                ),
+              ),
+        tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
+        onPressed: _isRefreshing ? null : _triggerRefresh,
+      ),
+    );
+  }
+
+  /// <summary>
+  /// Renders a full-screen semi-transparent loading overlay during active workspace refresh.
+  /// Blocks interaction while displaying a modern glassmorphic status card with progress indicator.
+  /// </summary>
+  /// <param name="isDark">Whether dark mode is currently active.</param>
+  /// <returns>A centered overlay widget with glassmorphism blur and progress feedback.</returns>
+  Widget _buildRefreshingOverlay(bool isDark) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        color: (isDark ? Colors.black : Colors.white).withAlpha(140),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 80 : 30),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Refreshing Workspace...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.onBackgroundLight,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Synchronizing branding, telemetry, and metrics',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.gray400 : AppColors.gray500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopIconBtn({
+    required IconData icon,
+    required String tooltip,
+    required bool isDark,
+    required VoidCallback onTap,
+    int badgeCount = 0,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          IconButton(
+            icon: Icon(
+              icon,
+              size: 20,
+              color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+            ),
+            tooltip: tooltip,
+            onPressed: onTap,
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: AppBadge(
+                text: '$badgeCount',
+                backgroundColor: AppColors.error,
+                size: 16,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // COMMAND STRIP (Header with Refresh Telemetry & New Web Page)
+  // =========================================================================
+
+  // =========================================================================
+  // SIDEBAR & DRAWER SECTIONS (Matches Angular BCC Admin Sidebar)
+  // =========================================================================
+
+  Widget _buildDesktopSidebarHeader(
+    bool isDark,
+    Workspace? activeWs, {
+    bool isCollapsed = false,
+    bool isMobile = false,
+  }) {
+    if (isCollapsed) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            alignment: Alignment.center,
+            child: TenantAvatar(
+              iconUrl: activeWs?.iconUrl,
+              logoUrl: activeWs?.logoUrl,
+              name: activeWs?.displayName ?? 'Business Command Center',
+              tenantKey: activeWs?.tenantKey,
+              size: 34,
+              borderRadius: 8,
+            ),
+          ),
+
+        ],
+      );
+    }
+
+    final hasLogo = activeWs?.logoUrl != null && (activeWs!.logoUrl as String).trim().isNotEmpty;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasLogo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            alignment: Alignment.centerLeft,
+            child: TenantCachedImage(
+              imageUrl: activeWs.logoUrl,
+              tenantKey: activeWs.tenantKey,
+              height: 38,
+              fit: BoxFit.contain,
+              fallbackWidget: Row(
+                children: [
+                  TenantAvatar(
+                    iconUrl: activeWs.iconUrl,
+                    logoUrl: activeWs.logoUrl,
+                    name: activeWs.displayName,
+                    tenantKey: activeWs.tenantKey,
+                    size: 34,
+                    borderRadius: 8,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          activeWs.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Active Workspace',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                TenantAvatar(
+                  iconUrl: activeWs?.iconUrl,
+                  logoUrl: activeWs?.logoUrl,
+                  name: activeWs?.displayName ?? 'Business Command Center',
+                  tenantKey: activeWs?.tenantKey,
+                  size: 34,
+                  borderRadius: 8,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        activeWs?.displayName ?? 'Business Command Center',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Active Workspace',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Signs out of the current user session and returns to the organization's WorkspaceLoginScreen.
+  Future<void> _handleSignOut(Workspace? activeWs) async {
+    if (activeWs == null) return;
+    await ref.read(workspaceStateProvider.notifier).signOutSession(activeWs.tenantKey);
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => WorkspaceLoginScreen(workspace: activeWs)),
+      (route) => false,
+    );
+  }
+
+  Widget _buildDesktopSidebarFooter(
+    bool isDark,
+    Workspace? activeWs, {
+    bool isCollapsed = false,
+    bool isMobile = false,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+
+    if (isCollapsed) {
+      return Container(
+        padding: const EdgeInsets.only(top: 8),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: borderColor)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const OzLangSwitcher(compact: true),
+            const SizedBox(height: 4),
+            IconButton(
+              icon: Icon(
+                Icons.help_outline_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              ),
+              tooltip: 'shell.help_support'.tr(ref, fallback: 'Help & Support'),
+              splashRadius: 18,
+              onPressed: () => _showHelpSupportDialog(context, isDark),
+            ),
+            const SizedBox(height: 2),
+            IconButton(
+              icon: Icon(
+                Icons.logout_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              ),
+              tooltip: 'shell.sign_out'.tr(ref, fallback: 'Sign Out'),
+              splashRadius: 18,
+              onPressed: () => _handleSignOut(activeWs),
+            ),
+            const SizedBox(height: 6),
+            Tooltip(
+              message: 'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
+              child: Image.asset(
+                isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                width: 16,
+                height: 16,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.bolt_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+        ),
+      );
+    }
+
+    if (isMobile) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: borderColor)),
+        ),
+        child: Row(
+          children: [
+            Image.asset(
+              isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+              width: 16,
+              height: 16,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.bolt_rounded,
+                size: 16,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: borderColor)),
+      ),
+      child: Column(
+        children: [
+          // Language Switcher Row in Drawer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'shell.select_language'.tr(ref, fallback: 'Language'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const OzLangSwitcher(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () => _showHelpSupportDialog(context, isDark),
+                  icon: const Icon(Icons.help_outline_rounded, size: 14),
+                  label: Text(
+                    'shell.help_support'.tr(ref, fallback: 'Help & Support'),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  style: TextButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout_rounded, size: 16),
+                tooltip: 'shell.sign_out'.tr(ref, fallback: 'Sign Out'),
+                onPressed: () => _handleSignOut(activeWs),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<AppDrawerSection> _buildNavigationSections(bool isDark, Workspace? activeWs) {
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+    if (isAdministration) {
+      return _buildAdminConsoleSections(isDark, activeWs);
+    }
+
+    return _buildUsersWorkspaceSections(isDark, activeWs);
+  }
+
+  void _closeMobileDrawer() {
+    if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+      _mobileScaffoldKey.currentState?.closeDrawer();
+    }
+  }
+
+  /// Builds the exact 3-Feature User Management Administration Console navigation tree:
+  /// 1. User Directory (7 sub-items)
+  /// 2. Identity & Access Control (4 sub-items)
+  /// 3. Manage My Account (5 sub-items)
+  List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, Workspace? activeWs) {
+    final categoryAlias = activeWs?.effectiveCategoryAlias ?? 'Category';
+
+    return [
+      AppDrawerSection(
+        title: 'USER MANAGEMENT',
+        items: [
+          // 1. User Directory (expandable)
+          AppDrawerItem(
+            icon: Icons.groups_rounded,
+            title: 'User Directory',
+            initiallyExpanded: _selectedNavIndex >= 0 && _selectedNavIndex <= 6,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 0,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 0);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.people_outline,
+                title: 'All Members',
+                isSelected: _selectedNavIndex == 1,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 1);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.category_outlined,
+                title: categoryAlias,
+                isSelected: _selectedNavIndex == 2,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 2);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.dynamic_form_outlined,
+                title: 'Registration Form Builder',
+                isSelected: _selectedNavIndex == 3,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 3);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.palette_outlined,
+                title: 'Auth Page Setup',
+                isSelected: _selectedNavIndex == 4,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 4);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.leaderboard_outlined,
+                title: 'KPIs & Leaderboard',
+                isSelected: _selectedNavIndex == 5,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 5);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'User Settings',
+                isSelected: _selectedNavIndex == 6,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 6);
+                  _closeMobileDrawer();
+                },
+              ),
+            ],
+          ),
+
+          // 2. Identity & Access Control (expandable)
+          AppDrawerItem(
+            icon: Icons.admin_panel_settings_outlined,
+            title: 'Identity & Access Control',
+            initiallyExpanded: _selectedNavIndex >= 7 && _selectedNavIndex <= 10,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.shield_outlined,
+                title: 'Identity Dashboard',
+                isSelected: _selectedNavIndex == 7,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 7);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.vpn_key_outlined,
+                title: 'Roles & Permissions',
+                isSelected: _selectedNavIndex == 8,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 8);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.mail_outline,
+                title: 'Member Invitations',
+                isSelected: _selectedNavIndex == 9,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 9);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.lock_outline,
+                title: 'Global Security Policies',
+                isSelected: _selectedNavIndex == 10,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 10);
+                  _closeMobileDrawer();
+                },
+              ),
+            ],
+          ),
+
+          // 3. Manage My Account (expandable)
+          AppDrawerItem(
+            icon: Icons.manage_accounts_outlined,
+            title: 'Manage My Account',
+            initiallyExpanded: _selectedNavIndex >= 11 && _selectedNavIndex <= 15,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.person_outline,
+                title: 'My Account',
+                isSelected: _selectedNavIndex == 11,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 11);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.password_outlined,
+                title: 'Change Password',
+                isSelected: _selectedNavIndex == 12,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 12);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.security_outlined,
+                title: '2FA Security',
+                isSelected: _selectedNavIndex == 13,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 13);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.devices_outlined,
+                title: 'Manage Devices',
+                isSelected: _selectedNavIndex == 14,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 14);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.history_outlined,
+                title: 'Login Activity',
+                isSelected: _selectedNavIndex == 15,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 15);
+                  _closeMobileDrawer();
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Builds the exact 2-Feature Personal Workspace Hub navigation tree for members:
+  /// 1. Workspace Home (single item)
+  /// 2. Manage My Account (5 sub-items)
+  List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, Workspace? activeWs) {
+    final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+
+    return [
+      AppDrawerSection(
+        title: 'PERSONAL WORKSPACE HUB',
+        items: [
+          // 1. Workspace Home (single top-level item)
+          AppDrawerItem(
+            icon: Icons.space_dashboard_outlined,
+            title: 'Workspace Home',
+            isSelected: memberIndex == 0,
+            onTap: () {
+              setState(() => _selectedNavIndex = 0);
+              _closeMobileDrawer();
+            },
+          ),
+
+          // 2. Manage My Account (expandable)
+          AppDrawerItem(
+            icon: Icons.manage_accounts_outlined,
+            title: 'Manage My Account',
+            initiallyExpanded: memberIndex >= 1 && memberIndex <= 5,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.person_outline,
+                title: 'My Account',
+                isSelected: memberIndex == 1,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 1);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.password_outlined,
+                title: 'Change Password',
+                isSelected: memberIndex == 2,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 2);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.security_outlined,
+                title: '2FA Security',
+                isSelected: memberIndex == 3,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 3);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.devices_outlined,
+                title: 'Manage Devices',
+                isSelected: memberIndex == 4,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 4);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.history_outlined,
+                title: 'Login Activity',
+                isSelected: memberIndex == 5,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 5);
+                  _closeMobileDrawer();
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Renders the active sub-feature view corresponding to the active mode and selected menu index.
+  Widget _buildActiveViewCanvas({
+    required bool isDark,
+    required bool isOnline,
+    required bool isLoading,
+    required DashboardMetrics metrics,
+    required Workspace? activeWs,
+    bool isMobile = false,
+  }) {
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+    if (isAdministration) {
+      switch (_selectedNavIndex) {
+        case 0:
+          return UserDashboardOverviewView(
+            workspace: activeWs,
+            onNavigateToTab: (idx, {filterStatus}) => setState(() => _selectedNavIndex = idx),
+          );
+        case 1:
+          return AllMembersView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 2:
+          return UserCategoriesView(
+            workspace: activeWs,
+            onNavigateToTab: (idx, {categoryFilter}) => setState(() => _selectedNavIndex = idx),
+          );
+        case 3:
+          return RegistrationFormBuilderView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 4:
+          return AuthPageSetupView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 5:
+          return KpisLeaderboardView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 6:
+          return UserSettingsView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 7:
+          return IdentityDashboardView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 8:
+          return RolesPermissionsView(workspace: activeWs);
+        case 9:
+          return MemberInvitationsView(workspace: activeWs);
+        case 10:
+          return GlobalSecurityPoliciesView(workspace: activeWs);
+        case 11:
+          return MyAccountProfileView(workspace: activeWs);
+        case 12:
+          return ChangePasswordView(workspace: activeWs);
+        case 13:
+          return TwoFactorSecurityView(workspace: activeWs);
+        case 14:
+          return ManageDevicesView(workspace: activeWs);
+        case 15:
+          return LoginActivityView(workspace: activeWs);
+        case 16:
+          return UserCreateView(
+            workspace: activeWs,
+            onNavigateBack: () => setState(() => _selectedNavIndex = 1),
+            onUserCreated: () => setState(() => _selectedNavIndex = 1),
+          );
+        default:
+          return UserDashboardOverviewView(workspace: activeWs);
+      }
+    } else {
+      // Member mode
+      final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+      switch (memberIndex) {
+        case 0:
+          return WorkspaceHomeView(
+            workspace: activeWs,
+            onNavigate: (idx) => setState(() => _selectedNavIndex = idx >= 100 ? idx - 100 : idx),
+          );
+        case 1:
+          return MyAccountProfileView(workspace: activeWs);
+        case 2:
+          return ChangePasswordView(workspace: activeWs);
+        case 3:
+          return TwoFactorSecurityView(workspace: activeWs);
+        case 4:
+          return ManageDevicesView(workspace: activeWs);
+        case 5:
+          return LoginActivityView(workspace: activeWs);
+        default:
+          return WorkspaceHomeView(
+            workspace: activeWs,
+            onNavigate: (idx) => setState(() => _selectedNavIndex = idx >= 100 ? idx - 100 : idx),
+          );
+      }
+    }
+  }
+
+  Widget _buildMobileBottomBar(bool isDark, Workspace? activeWs) {
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+    final items = isAdministration
+        ? const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard_rounded),
+              label: 'Overview',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline),
+              activeIcon: Icon(Icons.people_rounded),
+              label: 'Members',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shield_outlined),
+              activeIcon: Icon(Icons.shield_rounded),
+              label: 'Identity',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.manage_accounts_outlined),
+              activeIcon: Icon(Icons.manage_accounts_rounded),
+              label: 'Account',
+            ),
+          ]
+        : const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.space_dashboard_outlined),
+              activeIcon: Icon(Icons.space_dashboard_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Account',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.security_outlined),
+              activeIcon: Icon(Icons.security_rounded),
+              label: 'Security',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.devices_outlined),
+              activeIcon: Icon(Icons.devices_rounded),
+              label: 'Devices',
+            ),
+          ];
+
+    int currentBottomIndex = 0;
+    if (isAdministration) {
+      if (_selectedNavIndex >= 0 && _selectedNavIndex <= 6) {
+        currentBottomIndex = _selectedNavIndex == 1 ? 1 : 0;
+      } else if (_selectedNavIndex >= 7 && _selectedNavIndex <= 10) {
+        currentBottomIndex = 2;
+      } else if (_selectedNavIndex >= 11 && _selectedNavIndex <= 15) {
+        currentBottomIndex = 3;
+      }
+    } else {
+      final mIdx = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+      if (mIdx == 0) {
+        currentBottomIndex = 0;
+      } else if (mIdx == 1 || mIdx == 2 || mIdx == 5) {
+        currentBottomIndex = 1;
+      } else if (mIdx == 3) {
+        currentBottomIndex = 2;
+      } else if (mIdx == 4) {
+        currentBottomIndex = 3;
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+          ),
+        ),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: currentBottomIndex.clamp(0, items.length - 1),
+        onTap: (index) {
+          if (isAdministration) {
+            switch (index) {
+              case 0:
+                setState(() => _selectedNavIndex = 0);
+                break;
+              case 1:
+                setState(() => _selectedNavIndex = 1);
+                break;
+              case 2:
+                setState(() => _selectedNavIndex = 7);
+                break;
+              case 3:
+                setState(() => _selectedNavIndex = 11);
+                break;
+            }
+          } else {
+            switch (index) {
+              case 0:
+                setState(() => _selectedNavIndex = 0);
+                break;
+              case 1:
+                setState(() => _selectedNavIndex = 1);
+                break;
+              case 2:
+                setState(() => _selectedNavIndex = 3);
+                break;
+              case 3:
+                setState(() => _selectedNavIndex = 4);
+                break;
+            }
+          }
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+        type: BottomNavigationBarType.fixed,
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
+        items: items,
+      ),
+    );
+  }
+
+  /// Feature Expiration Alert Banner visible strictly to administrators in Administration mode.
+  Widget _buildFeatureExpirationBanner(bool isDark, Workspace? activeWs, {bool isMobile = false}) {
+    if (activeWs == null || !activeWs.isAdmin || activeWs.activeConsoleMode == 'workspace') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        isMobile ? 16 : 28,
+        isMobile ? 8 : 12,
+        isMobile ? 16 : 28,
+        isMobile ? 4 : 4,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2D2010) : const Color(0xFFFFFBEB),
+        border: Border.all(
+          color: isDark ? const Color(0xFF78350F) : const Color(0xFFFDE68A),
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Central Feature Subscriptions Active (Admin Notice)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Organization capabilities are governed by Central Master Catalog licenses.',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? const Color(0xFFD97706) : const Color(0xFF92400E),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: const Text(
+              'LICENSES',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getUserInitials(String? fullName) {
+    if (fullName == null || fullName.trim().isEmpty) return 'U';
+    final parts = fullName.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+
+  void _toggleTheme() {
+    ref.read(themeModeProvider.notifier).toggleTheme(context);
+  }
+
+  void _showMobileWorkspaceSheet(BuildContext context) {
+    final state = ref.read(workspaceStateProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.gray700 : AppColors.gray300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Switch Tenant Workspace',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              ...state.enrolledWorkspaces.map((ws) {
+                final isCurrent = ws.tenantKey == state.activeWorkspace?.tenantKey;
+                return ListTile(
+                  leading: TenantAvatar(
+                    iconUrl: ws.iconUrl,
+                    logoUrl: ws.logoUrl,
+                    name: ws.displayName,
+                    tenantKey: ws.tenantKey,
+                    size: 36,
+                  ),
+                  title: Text(ws.displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Organization Workspace', style: TextStyle(fontSize: 12)),
+                  trailing: isCurrent
+                      ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    if (!ws.isAuthenticated) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => WorkspaceLoginScreen(workspace: ws),
+                        ),
+                      );
+                    } else {
+                      ref.read(workspaceStateProvider.notifier).switchWorkspace(ws.tenantKey);
+                    }
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // =========================================================================
+  // TOP BAR INTERACTION MODALS & PRESENCE INDICATORS
+  // =========================================================================
+
+  /// Live presence indicator pill reflecting network connectivity state.
+  Widget _buildOnlineOfflineStatusPill(bool isDark, bool isOnline) {
+    final bg = isOnline
+        ? const Color(0xFF22C55E).withValues(alpha: 0.12)
+        : const Color(0xFFEF4444).withValues(alpha: 0.12);
+    final border = isOnline
+        ? const Color(0xFF22C55E).withValues(alpha: 0.3)
+        : const Color(0xFFEF4444).withValues(alpha: 0.3);
+    final fg = isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+
+    return Tooltip(
+      message: isOnline
+          ? 'Network Online • Real-Time Connected'
+          : 'Network Offline • Showing Cached Workspace Data',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fg,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isOnline ? 'Online' : 'Offline',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: fg,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Displays the interactive Calendar & Schedules modal dialog.
+  void _showCalendarDialog(BuildContext context, bool isDark) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+
+    final now = DateTime.now();
+    final dateStr = '${_monthName(now.month)} ${now.day}, ${now.year}';
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: dialogBg,
+        child: Container(
+          width: 520,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Calendar & Schedules',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'Workspace Operations • $dateStr',
+                          style: TextStyle(fontSize: 12, color: subColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'UPCOMING WORKSPACE SCHEDULES',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: subColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildCalendarEventItem(
+                isDark,
+                title: 'Daily Telemetry & Membership Sync',
+                time: '08:00 AM UTC • Automated',
+                category: 'HEALTH',
+                categoryColor: const Color(0xFF16A34A),
+              ),
+              const SizedBox(height: 8),
+              _buildCalendarEventItem(
+                isDark,
+                title: 'CMS Page Cache & Asset Purge',
+                time: '12:00 PM UTC • Scheduled',
+                category: 'CMS',
+                categoryColor: const Color(0xFF0284C7),
+              ),
+              const SizedBox(height: 8),
+              _buildCalendarEventItem(
+                isDark,
+                title: 'Tenant Security & Access Audit Review',
+                time: 'Tomorrow, 09:30 AM • Operations',
+                category: 'SECURITY',
+                categoryColor: const Color(0xFFF59E0B),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: borderColor),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(dialogCtx).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Opening Follow-Up scheduler...')),
+                      );
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    label: const Text(
+                      'New Event',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Displays the Help & Knowledge Base modal dialog.
+  void _showHelpSupportDialog(BuildContext context, bool isDark) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: dialogBg,
+        child: Container(
+          width: 540,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.help_outline_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Help & Knowledge Base',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'Business Command Center Documentation',
+                          style: TextStyle(fontSize: 12, color: subColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search_rounded, size: 18, color: subColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Search documentation, guides, and FAQs...',
+                        style: TextStyle(fontSize: 13, color: subColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'QUICK GUIDANCE & WORKFLOWS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: subColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildHelpTopicTile(
+                isDark,
+                icon: Icons.dashboard_outlined,
+                title: 'Console Dashboard Telemetry',
+                description: 'Understand live counters, health metrics, and audit log activities.',
+              ),
+              const SizedBox(height: 6),
+              _buildHelpTopicTile(
+                isDark,
+                icon: Icons.layers_outlined,
+                title: 'Dynamic Web Page & Hero Customizer',
+                description: 'Build sections, configure brand tokens, and publish HTML templates.',
+              ),
+              const SizedBox(height: 6),
+              _buildHelpTopicTile(
+                isDark,
+                icon: Icons.domain_rounded,
+                title: 'Multi-Tenant Workspace & Domains',
+                description: 'Manage custom domains, database partitioning, and tenant vaults.',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Need assistance? Contact your workspace administrator',
+                      style: TextStyle(fontSize: 11, color: subColor),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Done', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Displays the user profile, role credentials, and presence details modal dialog.
+  void _showUserProfileDialog(BuildContext context, bool isDark, Workspace? activeWs) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final connStatus = ref.read(connectivityStatusProvider);
+    final isOnline = connStatus == ConnectivityStatus.online;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: dialogBg,
+        child: Container(
+          width: 420,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _getUserInitials(activeWs?.userFullName),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: dialogBg, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeWs?.userFullName ?? 'Workspace Member',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _getUserRoleBadge(activeWs),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isOnline ? 'Online' : 'Offline Mode',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Divider(color: borderColor, height: 1),
+              const SizedBox(height: 16),
+              _buildProfileDetailRow(
+                isDark,
+                icon: Icons.business_rounded,
+                label: 'Active Workspace',
+                value: activeWs?.displayName ?? 'Business Command Center',
+              ),
+              const SizedBox(height: 10),
+              _buildProfileDetailRow(
+                isDark,
+                icon: Icons.language_rounded,
+                label: 'Primary Domain',
+                value: activeWs?.primaryDomain ?? 'mb-cocacola.localhost:4200',
+              ),
+              const SizedBox(height: 10),
+              _buildProfileDetailRow(
+                isDark,
+                icon: Icons.wifi_rounded,
+                label: 'Network Status',
+                value: isOnline ? 'Online • Real-Time Connected' : 'Offline • Local Cache Active',
+                valueColor: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(dialogCtx).pop();
+                    _showPrivilegesDialog(context, isDark, activeWs);
+                  },
+                  icon: const Icon(Icons.verified_user_outlined, size: 16, color: AppColors.primary),
+                  label: Text(
+                    'rbac.view_privileges'.tr(ref, fallback: 'View Privileges & Access'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        _showMobileWorkspaceSheet(context);
+                      },
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                      label: const Text('Switch Tenant'),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: borderColor),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        _handleSignOut(activeWs);
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 16, color: Colors.white),
+                      label: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarEventItem(
+    bool isDark, {
+    required String title,
+    required String time,
+    required String category,
+    required Color categoryColor,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC);
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: categoryColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              category,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: categoryColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                Text(time, style: TextStyle(fontSize: 11, color: subColor)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpTopicTile(
+    bool isDark, {
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC);
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 11, color: subColor),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailRow(
+    bool isDark, {
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: subColor),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: subColor),
+        ),
+        const SizedBox(width: 8),
+        const Spacer(),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? textColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[(month - 1).clamp(0, 11)];
+  }
+
+  /// Resolves the user's role badge (SuperAdmin, Administrator, or Member).
+  String _getUserRoleBadge(Workspace? activeWs) {
+    if (activeWs == null) return 'Member';
+    final roles = activeWs.userRoles.map((r) => r.toLowerCase()).toList();
+    if (activeWs.isSuperAdmin || roles.contains('superadmin') || roles.contains('systemadministrator')) {
+      return 'SuperAdmin';
+    }
+    if (activeWs.isAdmin || roles.any((r) => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].contains(r))) {
+      return 'Administrator';
+    }
+    return 'Member';
+  }
+
+  /// Displays the account roles, granted capabilities, and unlocked suites modal dialog or bottom sheet.
+  void _showPrivilegesDialog(BuildContext context, bool isDark, Workspace? activeWs) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final roleBadge = _getUserRoleBadge(activeWs);
+
+    final List<String> roles = activeWs?.userRoles.toList() ?? [];
+    if (roles.isEmpty) {
+      roles.add(roleBadge);
+    }
+
+    final List<String> capabilities = roleBadge == 'SuperAdmin'
+        ? [
+            'Full System Executive Administration',
+            'Identity & RBAC Governance',
+            'Security Audit & User Forensics',
+            'Emergency 2FA Bypass & Log Analysis',
+            'Suite Entitlements & Feature Billing',
+            'Remote Session Kill & Revocation',
+            'Brand Configuration & Custom Domains',
+            'Cross-Platform Parity Management',
+          ]
+        : roleBadge == 'Administrator'
+            ? [
+                'User Directory & Invitation Dispatch',
+                'Content CMS & Category Publishing',
+                'Role Assignment & Membership Control',
+                'Broadcast Studio Notifications',
+                'Commerce Products & Order Management',
+                'Community & Cohort Moderation',
+                'Personal Workspace & Collaborative Tools',
+                'Audit Log Verification',
+              ]
+            : [
+                'Personal Workspace & Profile',
+                'Dynamic CV Biography Portfolio',
+                'Encrypted Real-Time Chat Messenger',
+                'Community Groups & Cohort Forums',
+                'Alumni Directory Access',
+                'Personal Order & Purchase History',
+                'Two-Factor Authentication Setup',
+                'Account Security & Active Session View',
+              ];
+
+    final List<Map<String, dynamic>> accessibleSuites = roleBadge == 'SuperAdmin'
+        ? [
+            {'name': 'Executive Command & Governance', 'icon': Icons.space_dashboard_rounded},
+            {'name': 'Suite 01: People & Community', 'icon': Icons.groups_outlined},
+            {'name': 'Suite 02: Workforce & Shifts', 'icon': Icons.calendar_month_outlined},
+            {'name': 'Suite 03: Reports & Forms', 'icon': Icons.summarize_outlined},
+            {'name': 'Suite 04: Events & Ticketing', 'icon': Icons.confirmation_number_outlined},
+            {'name': 'Suite 05: Finance & Revenue', 'icon': Icons.account_balance_wallet_outlined},
+            {'name': 'Suite 06: Operations & Logistics', 'icon': Icons.storefront_outlined},
+            {'name': 'Suite 07: Communication & AI', 'icon': Icons.campaign_outlined},
+            {'name': 'Suite 08: Governance & Compliance', 'icon': Icons.folder_zip_outlined},
+            {'name': 'Suite 09: Demographics & Census', 'icon': Icons.map_outlined},
+            {'name': 'Personal Workspace Hub', 'icon': Icons.person_outline_rounded},
+          ]
+        : roleBadge == 'Administrator'
+            ? [
+                {'name': 'Executive Command & Governance', 'icon': Icons.space_dashboard_rounded},
+                {'name': 'Suite 01: People & Community', 'icon': Icons.groups_outlined},
+                {'name': 'Suite 06: Operations & Logistics', 'icon': Icons.storefront_outlined},
+                {'name': 'Suite 07: Communication & AI', 'icon': Icons.campaign_outlined},
+                {'name': 'Personal Workspace Hub', 'icon': Icons.person_outline_rounded},
+              ]
+            : [
+                {'name': 'Personal Workspace Hub', 'icon': Icons.person_outline_rounded},
+                {'name': 'Community Channels & Groups', 'icon': Icons.groups_outlined},
+                {'name': 'Chat Messenger', 'icon': Icons.chat_bubble_outline_rounded},
+                {'name': 'Alumni Network', 'icon': Icons.school_outlined},
+                {'name': 'My Purchases & Dues', 'icon': Icons.shopping_bag_outlined},
+              ];
+
+    Widget buildContent(BuildContext ctx) => SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.verified_user_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'rbac.privileges_modal_title'.tr(ref, fallback: 'Account Roles & Security Privileges'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${activeWs?.userFullName ?? 'Member'} • $roleBadge',
+                      style: TextStyle(fontSize: 12, color: subColor, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close_rounded, color: subColor),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Divider(color: borderColor, height: 1),
+          const SizedBox(height: 16),
+
+          // Section 1: Assigned Roles
+          Row(
+            children: [
+              const Icon(Icons.badge_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'rbac.assigned_roles'.tr(ref, fallback: 'Assigned Platform Roles'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: roles.map((role) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  role,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Section 2: Unlocked Capabilities
+          Row(
+            children: [
+              const Icon(Icons.lock_open_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'rbac.unlocked_capabilities'.tr(ref, fallback: 'Granted System Capabilities'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Column(
+            children: capabilities.map((cap) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          cap,
+                          style: TextStyle(fontSize: 12, color: textColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Section 3: Accessible Suites
+          Row(
+            children: [
+              const Icon(Icons.grid_view_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'rbac.accessible_pages'.tr(ref, fallback: 'Unlocked Suites & Modules'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: accessibleSuites.map((suite) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(suite['icon'] as IconData, size: 14, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      suite['name'] as String,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 24),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    if (isMobile) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: dialogBg,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetCtx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: buildContent(sheetCtx),
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: dialogBg,
+          child: Container(
+            width: 520,
+            constraints: const BoxConstraints(maxHeight: 640),
+            padding: const EdgeInsets.all(24),
+            child: buildContent(dialogCtx),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildOziAiFloatingButton(bool isDark) {
+    return FloatingActionButton.extended(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI Assistant is available in the workspace studio.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      },
+      backgroundColor: AppColors.primary,
+      icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+      label: const Text(
+        'AI Assistant',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}

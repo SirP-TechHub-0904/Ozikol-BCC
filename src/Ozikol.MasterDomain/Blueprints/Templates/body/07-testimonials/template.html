@@ -1,0 +1,28 @@
+<section class="oz-testimonials-section {{ CustomClass }}">
+  <div class="oz-container">
+    <div class="oz-section-header">
+      {{#if MiniTitle}}<span class="oz-badge">{{ MiniTitle }}</span>{{/if}}
+      <h2 class="oz-title">{{ Title }}</h2>
+      <p class="oz-subtitle">{{ Description }}</p>
+    </div>
+    <div class="oz-testimonials-grid">
+      {{#each PageSectionLists}}
+      <div class="oz-testimonial-card">
+        <div class="oz-stars-row">
+          ★★★★★
+        </div>
+        <p class="oz-quote-text">"{{ Description }}"</p>
+        <div class="oz-author-row">
+          {{#if ImageUrl}}
+          <img src="{{ ImageUrl }}" alt="{{ Title }}" class="oz-avatar" />
+          {{/if}}
+          <div>
+            <h4 class="oz-author-name">{{ Title }}</h4>
+            <span class="oz-author-role">{{ MiniTitle }}</span>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>

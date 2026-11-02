@@ -49,7 +49,7 @@ import { ToastService } from '../../../core/services/toast.service';
         <div class="verified-seal-banner">
           <div class="seal-left">
             <span class="material-symbols-outlined">verified</span>
-            <span>VERIFIED OFFICIAL CAREER DOSSIER • OZIKOL-BCC PROFESSIONAL REGISTRY</span>
+            <span>VERIFIED OFFICIAL CAREER DOSSIER • PROFESSIONAL TALENT REGISTRY</span>
           </div>
           <span class="dossier-id">MEMBER RECORD: {{ bio.userId }}</span>
         </div>
@@ -184,7 +184,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
         <!-- Dossier Footer Note -->
         <footer class="dossier-footer">
-          <p>Official Curriculum Vitae • Verified via Ozikol-BCC Alumni & Talent Network</p>
+          <p>Official Curriculum Vitae • Verified via Alumni & Talent Network</p>
         </footer>
       </div>
     </div>

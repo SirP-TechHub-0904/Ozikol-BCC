@@ -70,9 +70,40 @@ public class NewsModel : PageModel
     public IReadOnlyList<NewsCategory> Categories { get; private set; } = Array.Empty<NewsCategory>();
 
     /// <summary>
-    /// Gets the filtered list of news stories.
+    /// Gets the filtered list of news stories for the current page.
     /// </summary>
     public IReadOnlyList<NewsArticle> Articles { get; private set; } = Array.Empty<NewsArticle>();
+
+    /// <summary>
+    /// Gets or sets the current 1-based page number for public article browsing.
+    /// </summary>
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+
+    /// <summary>
+    /// Gets the number of articles displayed per public news page.
+    /// </summary>
+    public int PageSize { get; } = 6;
+
+    /// <summary>
+    /// Gets the total count of articles matching the active filter criteria.
+    /// </summary>
+    public int TotalArticlesCount { get; private set; }
+
+    /// <summary>
+    /// Gets total calculated pages for the active filter criteria.
+    /// </summary>
+    public int TotalPages => (int)Math.Ceiling(TotalArticlesCount / (double)PageSize);
+
+    /// <summary>
+    /// Gets whether a previous page exists.
+    /// </summary>
+    public bool HasPreviousPage => PageNumber > 1;
+
+    /// <summary>
+    /// Gets whether a next page exists.
+    /// </summary>
+    public bool HasNextPage => PageNumber < TotalPages;
 
     /// <summary>
     /// Gets the headline featured article.
@@ -97,7 +128,18 @@ public class NewsModel : PageModel
     {
         ResolveCulture();
         Categories = await _newsService.GetCategoriesAsync();
-        Articles = await _newsService.GetArticlesAsync(Category, Query);
+        var allArticles = await _newsService.GetArticlesAsync(Category, Query);
+        TotalArticlesCount = allArticles.Count;
+
+        if (PageNumber < 1) PageNumber = 1;
+        if (TotalPages > 0 && PageNumber > TotalPages) PageNumber = TotalPages;
+
+        Articles = allArticles
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .ToList()
+            .AsReadOnly();
+
         FeaturedArticle = await _newsService.GetFeaturedArticleAsync();
     }
 

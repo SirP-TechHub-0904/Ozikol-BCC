@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -381,6 +381,117 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterAffiliateReferrals");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DailyQuotaLimit")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("KeyAlias")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LastUsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("RateLimitCooldownUntilUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TodayRequestsCount")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TotalRequestsCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Provider");
+
+                    b.HasIndex("RateLimitCooldownUntilUtc");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("MasterAiApiKeys");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKeyUsageLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CompletionTokens")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("MasterAiApiKeyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("PromptTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestTimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ResponseTimeMs")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionName");
+
+                    b.HasIndex("MasterAiApiKeyId");
+
+                    b.HasIndex("RequestTimestampUtc");
+
+                    b.HasIndex("StatusCode");
+
+                    b.ToTable("MasterAiApiKeyUsageLogs");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -443,6 +554,146 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.HasIndex("EntityType", "CreatedUtc");
 
                     b.ToTable("MasterAuditLogs");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("IntervalSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JobKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("JobParametersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("LastDurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("LastResultSummary")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("LastRunUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("NextRunUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ScheduleCron")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TargetTenantCatalogId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.HasIndex("JobKey")
+                        .IsUnique();
+
+                    b.HasIndex("NextRunUtc");
+
+                    b.HasIndex("Scope");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TargetTenantCatalogId");
+
+                    b.ToTable("MasterBackgroundJobs");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJobLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ErrorDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ItemsProcessedCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LogOutput")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SummaryMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("TargetTenantCatalogId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenantKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("StartedAtUtc");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TargetTenantCatalogId");
+
+                    b.HasIndex("TenantKey");
+
+                    b.ToTable("MasterBackgroundJobLogs");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBillingTransaction", b =>
@@ -745,6 +996,70 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterBodySectionLists");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterClientRelease", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BuildNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DownloadUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MinSupportedVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReleaseNotes")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Sha256Checksum")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MasterClientReleases");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterContactChannelItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -824,6 +1139,106 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsUnique();
 
                     b.ToTable("MasterContactContents");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterCoupon", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AllowedFeatureIdsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("DurationDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GrantedFeaturesSummary")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPercentage")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxRedemptions")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SpecificFeatureId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartsAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TimesRedeemed")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpecificFeatureId");
+
+                    b.ToTable("MasterCoupons");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterCouponRedemption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("DiscountApplied")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("FinalPricePaid")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("MasterCouponId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MasterFeatureCatalogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MasterTenantCatalogId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("OriginalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("RedeemedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MasterCouponId");
+
+                    b.HasIndex("MasterFeatureCatalogId");
+
+                    b.HasIndex("MasterTenantCatalogId");
+
+                    b.ToTable("MasterCouponRedemptions");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterCreatorApplication", b =>
@@ -1728,6 +2143,89 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterMarketplaceCategories");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceDraftSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CategoryKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DetectedFontsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DraftSuiteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("HtmlTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JsScript")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("RequiredCssLibrariesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequiredJsLibrariesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequiredLibrariesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SampleContentJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ScopedCss")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceChannel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SuiteName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VariantCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MasterMarketplaceDraftSections");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceTemplate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2091,6 +2589,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<DateTime>("PublishedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<long>("ReadCount")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("ReadTimeText")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -2178,6 +2679,79 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterNewsCategories");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DispatchedChannels")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ReadAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecipientUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TargetAudience")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TargetRole")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MasterNotifications");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterPlatformSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -2189,18 +2763,72 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("CertificationAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CloudflareTurnstileSiteKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CloudinaryApiKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CloudinaryApiSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CloudinaryCloudName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("CreatorAdminEmails")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("DefaultFromEmail")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("DefaultTrialDays")
+                        .HasColumnType("int");
 
                     b.Property<bool>("EnableAdminNotifications")
                         .HasColumnType("bit");
 
                     b.Property<bool>("EnableTicketAutoClose")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsMaintenanceMode")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MaintenanceMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MinimumAppVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MongoLogsCollectionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MongoLogsConnectionString")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MongoLogsDatabaseName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OneSignalAppId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("PartnerAdminEmails")
                         .HasColumnType("nvarchar(max)");
@@ -2209,6 +2837,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SentryDsn")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("SupportAdminEmails")
                         .HasColumnType("nvarchar(max)");
@@ -2475,6 +3107,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("IconText")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -2633,6 +3269,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
@@ -2645,8 +3285,32 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("DeletedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSuspended")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastAccessedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("OrganizationName")
                         .IsRequired()
@@ -2661,6 +3325,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("ReferredByPartnerCode")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SuspendedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("SuspendedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SuspensionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("TenantKey")
                         .IsRequired()
@@ -2679,6 +3354,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.HasIndex("CustomDomain");
 
                     b.HasIndex("IsActive");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("IsSuspended");
 
                     b.HasIndex("PrimaryDomain")
                         .IsUnique();
@@ -2854,6 +3533,130 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterVideoGuides");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterVoucherApplication", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AdminNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("CountryCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FacebookProfile")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("GrantedDiscountPercentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("GrantedDurationDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GrantedFeaturesSummary")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("InstagramHandle")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsNewsletterSubscribed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("IssuedCouponCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("IssuedCouponId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LinkedInProfile")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("OrganizationName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ReferenceNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("RequestedFeaturesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedByAdminId")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SnapchatHandle")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TwitterHandle")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("WorkEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("WorkspaceSlug")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("YouTubeHandle")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("ReferenceNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WorkEmail");
+
+                    b.ToTable("MasterVoucherApplications");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Ozikol.MasterDomain.Models.CentralRole", null)
@@ -2931,6 +3734,45 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("AffiliatePartner");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKeyUsageLog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterAiApiKey", "MasterAiApiKey")
+                        .WithMany("UsageLogs")
+                        .HasForeignKey("MasterAiApiKeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MasterAiApiKey");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "TargetTenantCatalog")
+                        .WithMany()
+                        .HasForeignKey("TargetTenantCatalogId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("TargetTenantCatalog");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJobLog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterBackgroundJob", "Job")
+                        .WithMany("ExecutionLogs")
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "TargetTenantCatalog")
+                        .WithMany()
+                        .HasForeignKey("TargetTenantCatalogId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Job");
+
+                    b.Navigation("TargetTenantCatalog");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBillingTransaction", b =>
@@ -3015,6 +3857,40 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("MasterMarketplaceTemplate");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterCoupon", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterFeatureCatalog", "SpecificFeature")
+                        .WithMany()
+                        .HasForeignKey("SpecificFeatureId");
+
+                    b.Navigation("SpecificFeature");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterCouponRedemption", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterCoupon", "MasterCoupon")
+                        .WithMany("Redemptions")
+                        .HasForeignKey("MasterCouponId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterFeatureCatalog", "MasterFeatureCatalog")
+                        .WithMany()
+                        .HasForeignKey("MasterFeatureCatalogId");
+
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "MasterTenantCatalog")
+                        .WithMany()
+                        .HasForeignKey("MasterTenantCatalogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MasterCoupon");
+
+                    b.Navigation("MasterFeatureCatalog");
+
+                    b.Navigation("MasterTenantCatalog");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>
@@ -3224,6 +4100,16 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Navigation("Referrals");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKey", b =>
+                {
+                    b.Navigation("UsageLogs");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>
+                {
+                    b.Navigation("ExecutionLogs");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBlogContent", b =>
                 {
                     b.Navigation("Posts");
@@ -3237,6 +4123,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterContactContent", b =>
                 {
                     b.Navigation("Channels");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterCoupon", b =>
+                {
+                    b.Navigation("Redemptions");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureCatalog", b =>

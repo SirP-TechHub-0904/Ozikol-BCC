@@ -54,6 +54,18 @@ namespace Ozikol_BCC.Api.Models
                 Timestamp = DateTime.UtcNow
             };
         }
+
+        public static ApiResponse<T> FailureResponse(string message, T? data, List<string>? errors = null)
+        {
+            return new ApiResponse<T>
+            {
+                IsSuccess = false,
+                Message = message,
+                Data = data,
+                Errors = errors ?? new List<string> { message },
+                Timestamp = DateTime.UtcNow
+            };
+        }
     }
 
     /// <summary>

@@ -1,0 +1,44 @@
+<section class="oz-hero-slider {{ CustomClass }}">
+  <div class="oz-slider-track">
+    {{#each PageSectionLists}}
+    <div class="oz-slide {{#if @first}}active{{/if}}" data-slide="{{ @index }}">
+      <div class="oz-slide-bg" {{#if ImageUrl}}style="background-image: url('{{ ImageUrl }}');"{{/if}}></div>
+      <div class="oz-slide-overlay"></div>
+      <div class="oz-slide-container">
+        <div class="oz-slide-content">
+          {{#if MiniTitle}}<span class="oz-slide-badge">{{ MiniTitle }}</span>{{/if}}
+          <h1 class="oz-slide-title">{{ Title }}</h1>
+          <p class="oz-slide-desc">{{ Description }}</p>
+          <div class="oz-slide-actions">
+            {{#if ButtonText}}
+            <a href="{{ ButtonLink }}" class="oz-btn-primary">{{ ButtonText }}</a>
+            {{/if}}
+            {{#if SecondaryButtonText}}
+            <a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <!-- Navigation Controls -->
+  <button type="button" class="oz-slider-arrow oz-prev" aria-label="Previous Slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+  <button type="button" class="oz-slider-arrow oz-next" aria-label="Next Slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- Pagination Dots -->
+  <div class="oz-slider-dots">
+    {{#each PageSectionLists}}
+    <button type="button" class="oz-slider-dot {{#if @first}}active{{/if}}" data-index="{{ @index }}" aria-label="Slide {{ @number }}"></button>
+    {{/each}}
+  </div>
+</section>

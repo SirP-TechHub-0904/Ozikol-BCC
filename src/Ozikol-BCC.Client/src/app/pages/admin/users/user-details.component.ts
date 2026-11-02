@@ -17,14 +17,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         eyebrow="360° MEMBER COMMAND CENTER"
         icon="account_circle"
         [title]="user.fullName || 'Member Details'"
-        [subtitle]="'Member ID: ' + (user.memberId || 'N/A') + ' • ' + (user.designation || 'Member') + ' • ' + (user.categoryName || 'Unassigned Category')"
+        [subtitle]="'Member ID: ' + sanitizeId(user.memberId || 'N/A') + ' • ' + (user.designation || 'Member') + ' • ' + (user.categoryName || 'Unassigned Category')"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
 
       <!-- Main 360 Grid -->
       <div class="dossier-grid">
-        <!-- LEFT COLUMN: Profile Summary, Notes, Danger Zone -->
+        <!-- LEFT COLUMN: Profile Summary, Role & Permissions, Notes, Danger Zone -->
         <div class="dossier-col-left">
           <!-- 1. Profile Summary Card -->
           <div class="dossier-card">
@@ -94,10 +94,106 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
 
             <div class="card-action-footer">
-              <a [routerLink]="['/admin/users/edit', userId]" class="btn btn-outline btn-full">
+              <a [routerLink]="['/users/console/edit', userId]" class="btn btn-outline btn-full">
                 <span class="material-symbols-outlined">edit</span>
                 <span>Edit Profile Information</span>
               </a>
+            </div>
+          </div>
+
+          <!-- 1.4 Role & Workspace Permissions Card -->
+          <div class="dossier-card">
+            <div class="card-header" style="justify-content: space-between;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span class="material-symbols-outlined header-icon">admin_panel_settings</span>
+                <div>
+                  <h3>Role & Workspace Permissions</h3>
+                  <p>Platform access tier, security scope & administrative capabilities</p>
+                </div>
+              </div>
+              <a
+                *ngIf="!isRootSuperAdmin"
+                [routerLink]="['/users/console/permissions', userId]"
+                class="btn-permission-action"
+                title="Configure user system roles, feature authorizations, and action scopes"
+              >
+                <span class="material-symbols-outlined icon-shield">admin_panel_settings</span>
+                <span class="btn-text">Update Permission</span>
+                <span class="material-symbols-outlined icon-arrow">arrow_forward</span>
+              </a>
+            </div>
+
+            <div class="card-body">
+              <!-- View Mode -->
+              <div *ngIf="!isEditingRole" class="permission-view-mode">
+                <div class="role-display-row">
+                  <div class="role-badge-large" [class.badge-admin]="isCurrentRoleAdmin" [class.badge-super]="isRootSuperAdmin">
+                    <span class="material-symbols-outlined">{{ getRoleIcon(currentRole) }}</span>
+                    <span>{{ currentRole }}</span>
+                  </div>
+                  <span *ngIf="isRootSuperAdmin" class="locked-root-pill">
+                    <span class="material-symbols-outlined">lock</span>
+                    Locked Root Role
+                  </span>
+                </div>
+
+                <p class="role-desc-text">{{ getRoleDescription(currentRole) }}</p>
+
+                <!-- Scoped Feature Badges if Feature Editor -->
+                <div *ngIf="currentRole === 'Feature Editor'" class="feature-scope-box">
+                  <span class="feature-scope-label">Assigned Modular Capability Scope:</span>
+                  <div class="scope-badges-list">
+                    <span class="scope-pill">
+                      <span class="material-symbols-outlined">tune</span>
+                      {{ user.assignedFeatureArea || 'User Directory (Default)' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div *ngIf="isRootSuperAdmin" class="root-notice-box">
+                  <span class="material-symbols-outlined">shield</span>
+                  <span>SuperAdmin is strictly reserved for the root workspace account and cannot be modified.</span>
+                </div>
+              </div>
+
+              <!-- Edit Mode Form -->
+              <div *ngIf="isEditingRole" class="permission-edit-form">
+                <div class="form-group-role">
+                  <label class="role-input-label">System Access Role *</label>
+                  <select [(ngModel)]="selectedRole" (change)="onRoleSelectionChange()" class="role-select-box">
+                    <option value="Member">Member (Standard Portal Access)</option>
+                    <option value="Admin">Admin (Full Administrative Access)</option>
+                    <option value="Global Editor">Global Editor (Tenant-Wide Content & Entities)</option>
+                    <option value="Feature Editor">Feature Editor (Scoped Modular Capability)</option>
+                    <option value="Read Only">Read Only (Inspection & Audit Telemetry)</option>
+                  </select>
+                </div>
+
+                <!-- Feature Area Scope (Visible only when Feature Editor is selected) -->
+                <div *ngIf="selectedRole === 'Feature Editor'" class="form-group-role" style="margin-top: 12px;">
+                  <label class="role-input-label">Assigned Capability Scope *</label>
+                  <select [(ngModel)]="selectedFeatureArea" class="role-select-box">
+                    <option value="UserManager">User Directory & Categories</option>
+                    <option value="ContentManager">Website Pages & Blog Management</option>
+                    <option value="CrmManager">CRM & Member Relationship Center</option>
+                    <option value="BillingManager">Invoicing & Plan Subscriptions</option>
+                    <option value="StoreManager">Product Catalog & Orders</option>
+                    <option value="EventsManager">Event Schedules & Registrations</option>
+                    <option value="FormsManager">Custom Intake & Survey Forms</option>
+                  </select>
+                </div>
+
+                <div class="role-action-buttons" style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px;">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="cancelRoleEditor()" [disabled]="isSavingRole">
+                    Cancel
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" (click)="saveRolePermission()" [disabled]="isSavingRole">
+                    <span class="material-symbols-outlined" *ngIf="!isSavingRole">check_circle</span>
+                    <span class="material-symbols-outlined spinner" *ngIf="isSavingRole">progress_activity</span>
+                    <span>{{ isSavingRole ? 'Updating...' : 'Save Permission' }}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -182,7 +278,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <p>Evaluation records, period metrics, and feedback</p>
                 </div>
               </div>
-              <a [routerLink]="['/admin/users/kpi/grade', userId]" class="btn btn-primary btn-sm">
+              <a [routerLink]="['/users/console/kpi/grade', userId]" class="btn btn-primary btn-sm">
                 <span class="material-symbols-outlined">assignment_turned_in</span>
                 <span>Grade Member</span>
               </a>
@@ -509,10 +605,76 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn-sm { height: 32px; padding: 0 12px; font-size: 11px; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { background: #0050e5 !important; color: #ffffff !important; opacity: 0.65; cursor: not-allowed; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
     .btn-danger { background: #dc2626; color: #ffffff; }
     .btn-danger:hover { background: #b91c1c; }
+
+    /* Role & Permissions Card */
+    .btn-permission-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef2f2 100%);
+      border: 1.5px solid #f87171;
+      border-radius: 9999px;
+      color: #991b1b;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.12);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-permission-action:hover {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: #ef4444;
+      color: #7f1d1d;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.22);
+      transform: translateY(-1px);
+    }
+    .btn-permission-action .icon-shield {
+      font-size: 17px;
+      color: #dc2626;
+    }
+    .btn-permission-action .btn-text {
+      letter-spacing: 0.01em;
+    }
+    .btn-permission-action .icon-arrow {
+      font-size: 15px;
+      color: #dc2626;
+      transition: transform 0.15s ease;
+    }
+    .btn-permission-action:hover .icon-arrow {
+      transform: translateX(3px);
+    }
+    .permission-view-mode { display: flex; flex-direction: column; gap: 10px; }
+    .role-display-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .role-badge-large { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .role-badge-large .material-symbols-outlined { font-size: 18px; }
+    .role-badge-large.badge-admin { background: #eff6ff; color: #0050e5; border-color: #93c5fd; }
+    .role-badge-large.badge-super { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .locked-root-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #b45309; background: #fffbeb; padding: 4px 8px; border-radius: 6px; border: 1px solid #fde68a; }
+    .locked-root-pill .material-symbols-outlined { font-size: 13px; }
+    .role-desc-text { font-size: 12.5px; color: #475569; margin: 0; line-height: 1.5; }
+    .feature-scope-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .feature-scope-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; }
+    .scope-badges-list { display: flex; gap: 6px; flex-wrap: wrap; }
+    .scope-pill { display: inline-flex; align-items: center; gap: 4px; background: #eff6ff; color: #0050e5; font-size: 11.5px; font-weight: 700; padding: 2px 10px; border-radius: 9999px; border: 1px solid #dbeafe; }
+    .scope-pill .material-symbols-outlined { font-size: 13px; }
+    .root-notice-box { display: flex; align-items: center; gap: 8px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #92400e; }
+    .root-notice-box .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
+    .form-group-role { display: flex; flex-direction: column; gap: 6px; }
+    .role-input-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; }
+    .role-select-box { height: 40px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; width: 100%; transition: border-color 0.15s; }
+    .role-select-box:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
 })
 export class UserDetailsComponent implements OnInit {
@@ -544,6 +706,12 @@ export class UserDetailsComponent implements OnInit {
   newNoteText = '';
   isPostingNote = false;
 
+  // Role & Permissions Management State
+  isEditingRole = false;
+  selectedRole = 'Member';
+  selectedFeatureArea = 'UserManager';
+  isSavingRole = false;
+
   headerButtons: PageHeaderButton[] = [];
 
   constructor(
@@ -553,10 +721,105 @@ export class UserDetailsComponent implements OnInit {
     private toast: ToastService
   ) {}
 
+  get currentRole(): string {
+    if (!this.user?.roles || this.user.roles.length === 0) return 'Member';
+    return this.user.roles[0];
+  }
+
+  get isCurrentRoleAdmin(): boolean {
+    return this.currentRole === 'Admin' || this.currentRole === 'SuperAdmin';
+  }
+
+  get isRootSuperAdmin(): boolean {
+    return this.currentRole === 'SuperAdmin';
+  }
+
+  getRoleIcon(role: string): string {
+    switch (role) {
+      case 'SuperAdmin': return 'military_tech';
+      case 'Admin': return 'admin_panel_settings';
+      case 'Global Editor': return 'edit_document';
+      case 'Feature Editor': return 'auto_stories';
+      case 'Read Only': return 'visibility';
+      default: return 'person';
+    }
+  }
+
+  getRoleDescription(role: string): string {
+    switch (role) {
+      case 'SuperAdmin':
+        return 'Highest level root authority with permanent, unrestricted control over master tenant configurations, key pools, and licensing.';
+      case 'Admin':
+        return 'Full workspace administrative access across user accounts, organization settings, templates, communications, and audit telemetry.';
+      case 'Global Editor':
+        return 'Broad content and operational privileges to create, edit, and publish tenant entities, website content, forms, and categories.';
+      case 'Feature Editor':
+        return 'Specialized management access restricted strictly to your workspace assigned modular capability scope.';
+      case 'Read Only':
+        return 'Inspection and audit view privileges across directory listings and reports without permission to modify system records.';
+      default:
+        return 'Standard membership access for directory self-service, workspace dashboard, personal profile, and designated portal modules.';
+    }
+  }
+
+  openRoleEditor(): void {
+    this.selectedRole = this.currentRole === 'SuperAdmin' ? 'Admin' : this.currentRole;
+    this.selectedFeatureArea = this.user?.assignedFeatureArea || 'UserManager';
+    this.isEditingRole = true;
+  }
+
+  cancelRoleEditor(): void {
+    this.isEditingRole = false;
+  }
+
+  onRoleSelectionChange(): void {
+    if (this.selectedRole === 'Feature Editor' && !this.selectedFeatureArea) {
+      this.selectedFeatureArea = 'UserManager';
+    }
+  }
+
+  saveRolePermission(): void {
+    if (!this.userId) return;
+    if (this.selectedRole === 'SuperAdmin') {
+      this.toast.error('The SuperAdmin role cannot be assigned.');
+      return;
+    }
+
+    this.isSavingRole = true;
+    const payload = {
+      userId: this.userId,
+      roleName: this.selectedRole,
+      featureArea: this.selectedRole === 'Feature Editor' ? this.selectedFeatureArea : null
+    };
+
+    this.api.post<any>('IdentityApi/roles/assign', payload).subscribe({
+      next: () => {
+        this.isSavingRole = false;
+        this.isEditingRole = false;
+        this.toast.success(`Role & permissions updated to '${this.selectedRole}' successfully!`);
+        if (this.user) {
+          this.user.roles = [this.selectedRole];
+          if (this.selectedRole === 'Feature Editor') {
+            this.user.assignedFeatureArea = this.selectedFeatureArea;
+          }
+        }
+      },
+      error: (err) => {
+        this.isSavingRole = false;
+        this.toast.error(err?.error?.message || 'Failed to update user role & permissions.');
+      }
+    });
+  }
+
+  sanitizeId(id: string): string {
+    if (!id) return '';
+    return id.replace(/[-]{2,}/g, '-').replace(/[/]{2,}/g, '/').replace(/[_]{2,}/g, '_');
+  }
+
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.userId) {
-      this.router.navigate(['/admin/users/list']);
+      this.router.navigate(['/users/console/list']);
       return;
     }
 
@@ -565,13 +828,13 @@ export class UserDetailsComponent implements OnInit {
         text: 'Edit Profile',
         icon: 'edit',
         isPrimary: true,
-        routerLink: `/admin/users/edit/${this.userId}`
+        routerLink: `/users/console/edit/${this.userId}`
       },
       {
         text: 'Back to List',
         icon: 'arrow_back',
         isPrimary: false,
-        routerLink: '/admin/users/list'
+        routerLink: '/users/console/list'
       }
     ];
 
@@ -584,11 +847,18 @@ export class UserDetailsComponent implements OnInit {
       next: (res) => {
         this.isLoading = false;
         this.user = res.data;
+        if (this.user) {
+          // Ensure suffix is attached to the full name if present and not already suffixed
+          const suffix = this.user.suffix;
+          if (suffix && !this.user.fullName?.toLowerCase().includes(suffix.toLowerCase())) {
+            this.user.fullName = `${this.user.fullName}, ${suffix}`.trim();
+          }
+        }
       },
       error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load member dossier.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       }
     });
   }
@@ -884,7 +1154,7 @@ export class UserDetailsComponent implements OnInit {
     this.api.delete<any>(`UsersApi/${this.userId}`).subscribe({
       next: () => {
         this.toast.success('Member account deleted permanently.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to delete member.');
@@ -894,11 +1164,18 @@ export class UserDetailsComponent implements OnInit {
 
   getInitials(name: string): string {
     if (!name) return 'U';
-    const parts = name.trim().split(' ');
+    // Clean out comma and suffix if present (e.g. "Dr. First Last, mni" -> "Dr. First Last")
+    const cleanName = name.split(',')[0].trim();
+    const parts = cleanName.split(/\s+/).filter(p => p.length > 0);
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      const titles = ['mr', 'mr.', 'mrs', 'mrs.', 'ms', 'ms.', 'dr', 'dr.', 'prof', 'prof.', 'chief', 'engr', 'engr.', 'barr', 'barr.', 'rev', 'rev.', 'pastor', 'hon', 'hon.'];
+      let firstIndex = 0;
+      if (titles.includes(parts[0].toLowerCase()) && parts.length >= 3) {
+        firstIndex = 1;
+      }
+      return (parts[firstIndex][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return cleanName.substring(0, 2).toUpperCase();
   }
 
   getGradient(name: string): string {

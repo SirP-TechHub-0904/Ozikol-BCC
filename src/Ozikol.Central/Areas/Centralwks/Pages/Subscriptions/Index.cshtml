@@ -1,159 +1,299 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Subscriptions.IndexModel
 @{
-    ViewData["Title"] = "Subscription Matrix";
+    ViewData["Title"] = "Tenant Subscriptions & Billing";
     ViewData["BreadcrumbSection"] = "Platform Core";
 }
 
+<!-- Page Header -->
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Fleet Subscription Matrix</h1>
-        <p class="admin-subtitle">Live cross-tenant matrix of activated modular capabilities, recurring subscription billing, and expiration schedules.</p>
+        <h1 class="admin-title">Tenant Subscriptions &amp; Billing Posture</h1>
+        <p class="admin-subtitle">Cross-tenant aggregation of contracted modular capabilities, feature expiration horizons (30d, 60d, >60d), renewal telemetry, and granular line-item billing.</p>
     </div>
     <div class="admin-actions">
+        <a href="/centralwks/billing/create" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">receipt</span>
+            Record Billing Invoice
+        </a>
         <a href="/centralwks/tenants" class="btn-admin btn-admin-primary">
-            <span>+</span> Manage by Tenant
+            <span class="material-symbols-outlined" style="font-size: 18px;">domain</span>
+            Manage Tenants
         </a>
     </div>
 </div>
 
-@* ── Stat Cards ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-indigo" style="width: 40px; height: 40px; font-size: 18px;">📋</div>
+<!-- Alerts -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--admin-success); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--admin-danger); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <span class="material-symbols-outlined" style="font-size: 20px;">error</span>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<!-- Executive Stat Ribbon -->
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 44px; height: 44px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
+        </div>
         <div class="stat-details">
-            <span class="stat-label">Active Subscriptions</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-indigo);">@Model.ActiveCount</span>
+            <span class="stat-label">Platform MRR</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalPlatformMRR.ToString("N2")</span>
+            <span class="stat-subtext">Active contracted monthly run-rate</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">💰</div>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-indigo" style="width: 44px; height: 44px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">domain</span>
+        </div>
         <div class="stat-details">
-            <span class="stat-label">Contracted Recurring / Mo</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-success);">$@Model.TotalMonthlyValue.ToString("N2")</span>
+            <span class="stat-label">Subscribed Tenants</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-indigo);">@Model.ActiveSubscribedTenantsCount</span>
+            <span class="stat-subtext">Tenants with active capabilities</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏸</div>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 44px; height: 44px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">hourglass_top</span>
+        </div>
         <div class="stat-details">
-            <span class="stat-label">Suspended</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-warning);">@Model.SuspendedCount</span>
+            <span class="stat-label">Expiring in ≤30 Days</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-warning);">@Model.DueWithin30DaysCount</span>
+            <span class="stat-subtext">Tenants with renewals in next month</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper @(Model.OverdueTenantsCount > 0 ? "stat-icon-primary" : "stat-icon-info")" style="width: 44px; height: 44px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">warning</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Overdue / Action Needed</span>
+            <span class="stat-value" style="font-size: 22px; color: @(Model.OverdueTenantsCount > 0 ? "var(--admin-danger)" : "var(--admin-text)");">@Model.OverdueTenantsCount</span>
+            <span class="stat-subtext">Expired or past due subscriptions</span>
         </div>
     </div>
 </div>
 
-<div class="admin-card">
-    <div class="table-toolbar">
-        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center;">
-            <div class="table-search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" name="search" value="@Model.Search" placeholder="Search tenant or feature..." />
+<!-- Filter Tabs & Search Toolbar -->
+<div class="admin-card" style="margin-bottom: 24px;">
+    <div style="border-bottom: 1px solid var(--admin-border); padding: 0 20px; display: flex; align-items: center; gap: 8px; overflow-x: auto;">
+        <a href="?search=@Model.Search" class="nav-tab @(string.IsNullOrEmpty(Model.Filter) ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(string.IsNullOrEmpty(Model.Filter) ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(string.IsNullOrEmpty(Model.Filter) ? "var(--admin-primary)" : "transparent");">
+            All Tenants
+            <span class="badge" style="background: var(--admin-bg-hover); font-size: 11px;">@Model.TotalCount</span>
+        </a>
+        <a href="?filter=expiring_30d&search=@Model.Search" class="nav-tab @(Model.Filter == "expiring_30d" || Model.Filter == "expiring_soon" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "expiring_30d" || Model.Filter == "expiring_soon" ? "var(--admin-warning)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "expiring_30d" || Model.Filter == "expiring_soon" ? "var(--admin-warning)" : "transparent");">
+            Expiring in ≤30d
+            @if (Model.DueWithin30DaysCount > 0)
+            {
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--admin-warning); font-size: 11px;">@Model.DueWithin30DaysCount</span>
+            }
+        </a>
+        <a href="?filter=expiring_60d&search=@Model.Search" class="nav-tab @(Model.Filter == "expiring_60d" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "expiring_60d" ? "#3b82f6" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "expiring_60d" ? "#3b82f6" : "transparent");">
+            Expiring in 31–60d
+            @if (Model.DueWithin60DaysCount > 0)
+            {
+                <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; font-size: 11px;">@Model.DueWithin60DaysCount</span>
+            }
+        </a>
+        <a href="?filter=healthy&search=@Model.Search" class="nav-tab @(Model.Filter == "healthy" || Model.Filter == "healthy_60d" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "healthy" || Model.Filter == "healthy_60d" ? "var(--admin-success)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "healthy" || Model.Filter == "healthy_60d" ? "var(--admin-success)" : "transparent");">
+            Healthy (>60d / Core)
+            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-success); font-size: 11px;">@Model.HealthyTenantsCount</span>
+        </a>
+        <a href="?filter=overdue&search=@Model.Search" class="nav-tab @(Model.Filter == "overdue" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "overdue" ? "var(--admin-danger)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "overdue" ? "var(--admin-danger)" : "transparent");">
+            Overdue
+            @if (Model.OverdueTenantsCount > 0)
+            {
+                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 11px;">@Model.OverdueTenantsCount</span>
+            }
+        </a>
+        <a href="?filter=no_subscriptions&search=@Model.Search" class="nav-tab @(Model.Filter == "no_subscriptions" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "no_subscriptions" ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "no_subscriptions" ? "var(--admin-primary)" : "transparent");">
+            No Subscriptions
+        </a>
+    </div>
+
+    <div class="table-toolbar" style="padding: 16px 20px;">
+        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <input type="hidden" name="filter" value="@Model.Filter" />
+            <div class="table-search-box" style="flex: 1; min-width: 260px; position: relative;">
+                <span class="material-symbols-outlined search-icon" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--admin-text-muted);">search</span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search tenant organization, key, domain, or feature..." class="form-control" style="padding-left: 36px; height: 38px;" />
             </div>
 
-            <select name="status" class="form-select" style="width: 160px; padding: 8px 12px; font-size: 13px;">
-                <option value="">All Statuses</option>
-                <option value="active" selected="@(Model.Status == "active")">Active Only</option>
-                <option value="suspended" selected="@(Model.Status == "suspended")">Suspended Only</option>
-            </select>
+            <button type="submit" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
+                Filter
+            </button>
 
-            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">Filter</button>
-            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Status) || Model.TenantId.HasValue || Model.FeatureId.HasValue)
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Filter))
             {
-                <a href="/centralwks/subscriptions" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">Clear</a>
+                <a href="/centralwks/subscriptions" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 14px; color: var(--admin-danger); display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    Reset
+                </a>
             }
         </form>
 
         <div style="font-size: 12.5px; color: var(--admin-text-muted);">
-            Showing @Model.Subscriptions.Count of @Model.TotalCount subscriptions
+            Showing <strong>@Model.Tenants.Count</strong> of <strong>@Model.TotalCount</strong> tenant organizations
         </div>
     </div>
 
+    <!-- Tenant Subscriptions Matrix Table -->
     <div class="table-responsive">
         <table class="admin-table">
             <thead>
                 <tr>
+                    <th style="width: 50px; text-align: center;">S/N</th>
                     <th>Tenant Organization</th>
-                    <th>Capability Module</th>
-                    <th>Cadence</th>
-                    <th>Recurring Rate</th>
-                    <th>Expires At</th>
-                    <th>Auto-Renew</th>
-                    <th>Status</th>
-                    <th style="text-align: right;">Actions</th>
+                    <th>Next Billing Amount</th>
+                    <th>Date of Next Billing</th>
+                    <th>Feature Expiration Posture (30d / 60d / >60d)</th>
+                    <th>Notification Status / Count</th>
+                    <th style="text-align: right; width: 120px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @if (Model.Subscriptions.Any())
+                @if (Model.Tenants.Any())
                 {
-                    @foreach (var sub in Model.Subscriptions)
+                    @for (int i = 0; i < Model.Tenants.Count; i++)
                     {
+                        var tenant = Model.Tenants[i];
+                        var sn = (Model.PageNumber - 1) * Model.PageSize + (i + 1);
+
                         <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@sn</span>
+                            </td>
                             <td>
                                 <div>
-                                    <a href="/centralwks/tenants/details?id=@sub.MasterTenantCatalogId" style="color: var(--admin-text); font-weight: 600; text-decoration: none;">
-                                        @sub.MasterTenantCatalog.OrganizationName
-                                    </a>
-                                    <div style="font-size: 11.5px; color: var(--admin-text-dim);">
-                                        <code>@sub.MasterTenantCatalog.TenantKey</code>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <a href="/centralwks/subscriptions/details?tenantId=@tenant.TenantId" style="color: var(--admin-text); font-weight: 700; text-decoration: none; font-size: 14px;">
+                                            @tenant.OrganizationName
+                                        </a>
+                                        @if (tenant.IsTenantSuspended)
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 10px; padding: 1px 6px;">Suspended</span>
+                                        }
+                                    </div>
+                                    <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px; display: flex; align-items: center; gap: 8px;">
+                                        <code style="background: var(--admin-bg-surface-elevated); padding: 1px 4px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">@tenant.TenantKey</code>
+                                        <span>•</span>
+                                        <span>@tenant.PrimaryDomain</span>
                                     </div>
                                 </div>
                             </td>
                             <td>
                                 <div>
-                                    <a href="/centralwks/features/details?id=@sub.MasterFeatureCatalogId" style="color: var(--admin-text); font-weight: 500; text-decoration: none;">
-                                        @sub.MasterFeatureCatalog.Name
-                                    </a>
-                                    <div style="font-size: 11.5px; color: var(--admin-text-dim);">
-                                        <code>@sub.MasterFeatureCatalog.FeatureCode</code> • @sub.MasterFeatureCatalog.Category
-                                    </div>
+                                    @if (tenant.ActiveFeaturesCount > 0)
+                                    {
+                                        <div style="font-weight: 700; color: var(--admin-text); font-size: 15px; letter-spacing: -0.02em;">
+                                            $@tenant.NextBillingAmount.ToString("N2")
+                                        </div>
+                                        <div style="font-size: 11px; color: var(--admin-success); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span>
+                                            @tenant.ActiveFeaturesCount @(tenant.ActiveFeaturesCount == 1 ? "Active Capability" : "Active Capabilities")
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div style="color: var(--admin-text-dim); font-size: 13px; font-weight: 500;">
+                                            $0.00
+                                        </div>
+                                        <div style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">
+                                            No active capabilities
+                                        </div>
+                                    }
                                 </div>
                             </td>
-                            <td>@sub.DurationType</td>
                             <td>
-                                @if (sub.CustomPriceOverride.HasValue)
+                                @if (tenant.NextBillingDateUtc.HasValue)
                                 {
-                                    <strong style="color: var(--admin-warning);">$@sub.CustomPriceOverride.Value.ToString("N2")</strong>
-                                    <small style="font-size: 11px; color: var(--admin-text-dim);">(Custom)</small>
+                                    <div style="font-weight: 600; color: var(--admin-text); font-size: 13px;">
+                                        @tenant.NextBillingDateUtc.Value.ToString("MMM dd, yyyy")
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                        Earliest renewal cycle
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span>$@sub.RecurringPrice.ToString("N2")</span>
-                                }
-                            </td>
-                            <td style="font-size: 12px; color: var(--admin-text-muted);">
-                                @sub.ExpiresAtUtc.ToString("MMM dd, yyyy")
-                            </td>
-                            <td>
-                                @if (sub.AutoRenew)
-                                {
-                                    <span class="badge badge-success">On</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-neutral">Off</span>
+                                    <span style="color: var(--admin-text-dim); font-size: 12.5px;">Perpetual Platform</span>
                                 }
                             </td>
                             <td>
-                                @if (sub.IsActive)
+                                @if (tenant.ActiveFeaturesCount > 0)
                                 {
-                                    <span class="badge badge-success"><span class="badge-dot"></span> @sub.Status</span>
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                                        @if (tenant.OverdueCount > 0)
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 11px; font-weight: 700; padding: 3px 7px;">
+                                                @tenant.OverdueCount Overdue
+                                            </span>
+                                        }
+                                        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--admin-warning); font-size: 11px; font-weight: 600; padding: 3px 7px;" title="Features expiring within 30 days">
+                                            @tenant.Expiring30DaysCount in ≤30d
+                                        </span>
+                                        <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; font-size: 11px; font-weight: 600; padding: 3px 7px;" title="Features expiring between 31 and 60 days">
+                                            @tenant.Expiring60DaysCount in 31–60d
+                                        </span>
+                                        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-success); font-size: 11px; font-weight: 600; padding: 3px 7px;" title="Features expiring beyond 60 days or Core Perpetual Platform">
+                                            @tenant.Beyond60DaysCount >60d / Core
+                                        </span>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-danger"><span class="badge-dot"></span> @sub.Status</span>
+                                    <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text-dim); font-size: 11px;">No Subscriptions</span>
                                 }
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div>
+                                        @if (tenant.NotificationCount > 0)
+                                        {
+                                            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: var(--admin-indigo); font-size: 11.5px; font-weight: 600; padding: 3px 8px;">
+                                                <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle;">mail</span>
+                                                @tenant.NotificationStatus
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text-muted); font-size: 11.5px; padding: 3px 8px; border: 1px solid var(--admin-border);">
+                                                <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle; color: var(--admin-text-dim);">schedule_send</span>
+                                                @tenant.NotificationStatus
+                                            </span>
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(tenant.AdminEmail) && tenant.ActiveFeaturesCount > 0)
+                                    {
+                                        <form method="post" asp-page-handler="SendRenewalNotice" asp-route-tenantId="@tenant.TenantId" style="display: inline; margin: 0;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin-icon" title="Send manual renewal reminder notice now" onclick="return confirm('Send renewal reminder email to @tenant.AdminEmail?');">
+                                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-indigo);">send</span>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             </td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                    <a href="/centralwks/subscriptions/details?id=@sub.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Details</a>
-                                    <a href="/centralwks/subscriptions/edit?id=@sub.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Edit</a>
-                                    <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@sub.Id" style="display: inline; margin: 0;">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin @(sub.IsActive ? "btn-admin-danger" : "btn-admin-primary") btn-admin-sm" onclick="return confirm('Toggle status for this subscription?');">
-                                            @(sub.IsActive ? "Suspend" : "Activate")
-                                        </button>
-                                    </form>
-                                </div>
+                                <a href="/centralwks/subscriptions/details?tenantId=@tenant.TenantId" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
+                                    Details
+                                </a>
                             </td>
                         </tr>
                     }
@@ -161,11 +301,11 @@
                 else
                 {
                     <tr>
-                        <td colspan="8">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">📋</div>
-                                <h3 class="empty-state-title">No Subscriptions Found</h3>
-                                <p class="empty-state-desc">No active or suspended subscriptions match your filter criteria.</p>
+                        <td colspan="7">
+                            <div class="empty-state" style="padding: 48px; text-align: center;">
+                                <span class="material-symbols-outlined" style="font-size: 42px; color: var(--admin-text-dim); margin-bottom: 12px; display: block;">receipt_long</span>
+                                <h3 class="empty-state-title" style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin-bottom: 6px;">No Subscriptions Found</h3>
+                                <p class="empty-state-desc" style="font-size: 13px; color: var(--admin-text-muted); max-width: 420px; margin: 0 auto;">No tenant organizations match your current search or filter criteria.</p>
                             </div>
                         </td>
                     </tr>
@@ -174,26 +314,33 @@
         </table>
     </div>
 
+    <!-- Pagination -->
     @if (Model.TotalPages > 1)
     {
-        <div class="admin-card-footer">
-            <div style="font-size: 12.5px; color: var(--admin-text-muted);">
-                Page @Model.PageNumber of @Model.TotalPages
+        <div class="table-pagination" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--admin-border);">
+            <div style="font-size: 13px; color: var(--admin-text-muted);">
+                Page <strong>@Model.PageNumber</strong> of <strong>@Model.TotalPages</strong>
             </div>
-            <ul class="admin-pagination">
-                <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
-                    <a class="page-link" href="?pageNumber=@(Model.PageNumber - 1)&search=@Model.Search&status=@Model.Status">‹ Previous</a>
-                </li>
+            <div style="display: flex; gap: 6px;">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="?pageNumber=@(Model.PageNumber - 1)&filter=@Model.Filter&search=@Model.Search" class="btn-admin btn-admin-secondary btn-admin-sm">
+                        Previous
+                    </a>
+                }
                 @for (int p = Math.Max(1, Model.PageNumber - 2); p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
                 {
-                    <li class="page-item @(p == Model.PageNumber ? "active" : "")">
-                        <a class="page-link" href="?pageNumber=@p&search=@Model.Search&status=@Model.Status">@p</a>
-                    </li>
+                    <a href="?pageNumber=@p&filter=@Model.Filter&search=@Model.Search" class="btn-admin @(p == Model.PageNumber ? "btn-admin-primary" : "btn-admin-secondary") btn-admin-sm">
+                        @p
+                    </a>
                 }
-                <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
-                    <a class="page-link" href="?pageNumber=@(Model.PageNumber + 1)&search=@Model.Search&status=@Model.Status">Next ›</a>
-                </li>
-            </ul>
+                @if (Model.PageNumber < Model.TotalPages)
+                {
+                    <a href="?pageNumber=@(Model.PageNumber + 1)&filter=@Model.Filter&search=@Model.Search" class="btn-admin btn-admin-secondary btn-admin-sm">
+                        Next
+                    </a>
+                }
+            </div>
         </div>
     }
 </div>

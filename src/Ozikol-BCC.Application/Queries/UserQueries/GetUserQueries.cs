@@ -11,6 +11,7 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
         public string Title { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string Suffix { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
@@ -44,7 +45,8 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
         public async Task<List<UserDto>> Handle(GetUserListQuery request, CancellationToken cancellationToken)
         {
             var userRoles = await _dbContext.UserRoles
-                .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+                .AsNoTracking()
+                .Join(_dbContext.Roles.AsNoTracking(), ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
                 .ToListAsync(cancellationToken);
 
             var rolesByUser = userRoles
@@ -60,29 +62,51 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
 
             return users
                 .Where(u => !rolesByUser.TryGetValue(u.Id, out var rList) || !rList.Contains("SuperAdmin"))
-                .Select(u => new UserDto
+                .Select(u =>
                 {
-                    Id = u.Id,
-                    Title = u.Title ?? "",
-                    FirstName = u.FirstName ?? "",
-                    LastName = u.LastName ?? "",
-                    Email = u.Email ?? "",
-                    PhoneNumber = u.PhoneNumber ?? "",
-                    FullName = u.FullName,
-                    UserStatus = u.UserStatus.ToString(),
-                    UserType = u.UserType.ToString(),
-                    MemberId = u.MemberId ?? "CC-" + u.Id.Substring(0, 6).ToUpper(),
-                    Designation = u.Designation ?? "Member",
-                    AvatarUrl = u.AvatarUrl,
-                    JoinDate = u.JoinDate,
-                    LastLogin = u.LastLogin,
-                    BcpUserCategoryId = u.BcpUserCategoryId,
-                    CategoryName = u.BcpUserCategory?.Name,
-                    CategoryColor = u.BcpUserCategory?.ColorCode,
-                    CategoryIcon = u.BcpUserCategory?.Icon,
-                    EmailConfirmed = u.EmailConfirmed,
-                    PhoneNumberConfirmed = u.PhoneNumberConfirmed,
-                    Roles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" }
+                    string suffix = "";
+                    if (!string.IsNullOrWhiteSpace(u.CustomAttributesJson))
+                    {
+                        try
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(u.CustomAttributesJson);
+                            if (doc.RootElement.TryGetProperty("suffix", out var sProp))
+                            {
+                                suffix = sProp.GetString() ?? "";
+                            }
+                        }
+                        catch { }
+                    }
+
+                    var cleanFullName = !string.IsNullOrWhiteSpace(suffix) && !u.FullName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                        ? $"{u.FullName}, {suffix}".Trim()
+                        : u.FullName;
+
+                    return new UserDto
+                    {
+                        Id = u.Id,
+                        Title = u.Title ?? "",
+                        FirstName = u.FirstName ?? "",
+                        LastName = u.LastName ?? "",
+                        Suffix = suffix,
+                        Email = u.Email ?? "",
+                        PhoneNumber = u.PhoneNumber ?? "",
+                        FullName = cleanFullName,
+                        UserStatus = u.UserStatus.ToString(),
+                        UserType = u.UserType.ToString(),
+                        MemberId = u.MemberId ?? "CC-" + u.Id.Substring(0, 6).ToUpper(),
+                        Designation = u.Designation ?? "Member",
+                        AvatarUrl = u.AvatarUrl,
+                        JoinDate = u.JoinDate,
+                        LastLogin = u.LastLogin,
+                        BcpUserCategoryId = u.BcpUserCategoryId,
+                        CategoryName = u.BcpUserCategory?.Name,
+                        CategoryColor = u.BcpUserCategory?.ColorCode,
+                        CategoryIcon = u.BcpUserCategory?.Icon,
+                        EmailConfirmed = u.EmailConfirmed,
+                        PhoneNumberConfirmed = u.PhoneNumberConfirmed,
+                        Roles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" }
+                    };
                 }).ToList();
         }
     }
@@ -118,15 +142,34 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name!)
                 .ToListAsync(cancellationToken);
 
+            string suffix = "";
+            if (!string.IsNullOrWhiteSpace(u.CustomAttributesJson))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(u.CustomAttributesJson);
+                    if (doc.RootElement.TryGetProperty("suffix", out var sProp))
+                    {
+                        suffix = sProp.GetString() ?? "";
+                    }
+                }
+                catch { }
+            }
+
+            var cleanFullName = !string.IsNullOrWhiteSpace(suffix) && !u.FullName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                ? $"{u.FullName}, {suffix}".Trim()
+                : u.FullName;
+
             return new UserDto
             {
                 Id = u.Id,
                 Title = u.Title ?? "",
                 FirstName = u.FirstName ?? "",
                 LastName = u.LastName ?? "",
+                Suffix = suffix,
                 Email = u.Email ?? "",
                 PhoneNumber = u.PhoneNumber ?? "",
-                FullName = u.FullName,
+                FullName = cleanFullName,
                 UserStatus = u.UserStatus.ToString(),
                 UserType = u.UserType.ToString(),
                 MemberId = u.MemberId ?? "CC-" + u.Id.Substring(0, 6).ToUpper(),

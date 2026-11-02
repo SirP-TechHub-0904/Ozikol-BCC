@@ -1,226 +1,157 @@
-@page "{id:guid}"
+@page "/centralwks/templates/{id:guid}"
 @model Ozikol.Central.Areas.Centralwks.Pages.Templates.DetailsModel
 @{
-    ViewData["Title"] = $"Template: {Model.Template.Name}";
+    ViewData["Title"] = $"Inspect {Model.Template.Name}";
     ViewData["BreadcrumbSection"] = "Marketplace";
 }
 
-<div class="admin-page-header">
-    <div class="admin-title-group">
-        <h1 class="admin-title">@Model.Template.Name</h1>
-        <p class="admin-subtitle">Programmatic Variant Code: <code style="color: #38bdf8; font-size: 14px;">@Model.Template.VariantCode</code></p>
-    </div>
-    <div class="admin-actions">
-        <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary">
-            <span>✏️</span> Edit Template
-        </a>
-        <a href="/centralwks/templates" class="btn-admin btn-admin-secondary">
-            <span>&larr;</span> Back to Templates
-        </a>
-    </div>
-</div>
-
-@if (!string.IsNullOrEmpty(Model.StatusMessage))
-{
-    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
-        @Model.StatusMessage
-    </div>
+@section Styles {
+<style>
+    .details-split-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 24px;
+    }
+    @@media (max-width: 1024px) {
+        .details-split-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .badge-pill-primary { background: var(--admin-primary-light); color: var(--admin-primary); }
+    .badge-pill-secondary { background: var(--admin-bg-hover); color: var(--admin-text-muted); }
+</style>
 }
 
-@* ── Template Identity Hero Card ── *@
-<div class="admin-card" style="margin-bottom: 24px; overflow: hidden;">
-    <div style="height: 120px; background: @Model.Template.ThumbnailGradient; position: relative; padding: 24px; display: flex; align-items: flex-end;">
-        <div style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px;">
-            <span class="badge @(Model.Template.IsActive ? "badge-success" : "badge-secondary")" style="font-size: 12px; padding: 6px 14px;">
-                @(Model.Template.IsActive ? "Active & Published" : "Hidden Blueprint")
-            </span>
-            @if (!string.IsNullOrWhiteSpace(Model.Template.Badge))
-            {
-                <span class="badge badge-warning" style="font-size: 12px; padding: 6px 12px;">
-                    @Model.Template.Badge
-                </span>
+<!-- Header -->
+<div class="admin-page-header">
+        <div class="admin-title-group">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <a href="/centralwks/templates" class="btn-admin btn-admin-secondary btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                    Templates
+                </a>
+                <span class="badge-pill badge-pill-primary">@Model.Template.CategoryKey</span>
+                <span style="font-family: monospace; font-size: 11px; color: var(--admin-text-muted);">@Model.Template.VariantCode</span>
+            </div>
+            <h1 class="admin-title">@Model.Template.Name</h1>
+            <p class="admin-subtitle">@(string.IsNullOrEmpty(Model.Template.Description) ? "Modular website marketplace section." : Model.Template.Description)</p>
+        </div>
+
+        <div class="admin-actions">
+            <a href="/centralwks/templates/@Model.Template.Id/edit" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined">edit</span>
+                Edit Section Code
+            </a>
+        </div>
+    </div>
+
+    <!-- Inspector Split Layout -->
+    <div class="details-split-grid">
+        <!-- Left: Live Sandbox Viewport -->
+        <div class="admin-card" style="overflow: hidden; display: flex; flex-direction: column;">
+            <div style="padding: 14px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
+                <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 18px;">desktop_windows</span>
+                    Live Sandbox Viewport
+                </div>
+                <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" id="btnWDesktop" onclick="setIframeWidth('100%', this)">Desktop</button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnWTablet" onclick="setIframeWidth('768px', this)">Tablet</button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnWMobile" onclick="setIframeWidth('375px', this)">Mobile</button>
+                </div>
+            </div>
+            <div style="flex: 1; padding: 20px; background: var(--admin-bg); display: flex; justify-content: center; align-items: center; min-height: 520px; overflow: auto;">
+                <iframe id="detailsPreviewFrame" style="width: 100%; height: 520px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); border: 1px solid var(--admin-border); background: #ffffff;" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+        </div>
+
+        <!-- Right: Code Tabs -->
+        <div class="admin-card" style="overflow: hidden; display: flex; flex-direction: column;">
+            <div style="display: flex; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="btnTabHtml" onclick="switchDetailTab('html')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">html</span> HTML Template
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="btnTabCss" onclick="switchDetailTab('css')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">css</span> Scoped CSS
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="btnTabJson" onclick="switchDetailTab('json')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">data_object</span> Mock JSON
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="btnTabJs" onclick="switchDetailTab('js')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">javascript</span> JS
+                </button>
+            </div>
+
+            <div style="padding: 16px; flex: 1; overflow: auto; background: var(--admin-bg); max-height: 540px;">
+                <div id="contentTabHtml">
+                    <pre style="margin: 0; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; color: var(--admin-text); white-space: pre-wrap;"><code>@Model.Template.HtmlTemplate</code></pre>
+                </div>
+                <div id="contentTabCss" style="display:none;">
+                    <pre style="margin: 0; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; color: var(--admin-text); white-space: pre-wrap;"><code>@Model.Template.CssStyles</code></pre>
+                </div>
+                <div id="contentTabJson" style="display:none;">
+                    <pre style="margin: 0; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; color: var(--admin-text); white-space: pre-wrap;"><code>@(string.IsNullOrEmpty(Model.Template.DefaultSectionListsJson) ? "/* No default JSON lists */" : Model.Template.DefaultSectionListsJson)</code></pre>
+                </div>
+                <div id="contentTabJs" style="display:none;">
+                    <pre style="margin: 0; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; color: var(--admin-text); white-space: pre-wrap;"><code>@(string.IsNullOrEmpty(Model.Template.JsScript) ? "/* No custom JS logic */" : Model.Template.JsScript)</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@section Scripts {
+    <script>
+        var previewHtml = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SandboxPreviewHtml));
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var iframe = document.getElementById('detailsPreviewFrame');
+            if (iframe && previewHtml) {
+                var doc = iframe.contentDocument || iframe.contentWindow.document;
+                doc.open();
+                doc.write(previewHtml);
+                doc.close();
             }
-        </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 56px; height: 56px; border-radius: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff;">
-                <span>◈</span>
-            </div>
-            <div>
-                <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);">
-                    @Model.Template.Name
-                </h2>
-                <div style="font-size: 13px; color: rgba(255, 255, 255, 0.8); margin-top: 2px;">
-                    Category: <strong style="color: #fff;">@(Model.Template.Category?.Name ?? Model.Template.CategoryKey)</strong> &bull;
-                    Tag: <span style="font-weight: 600;">#@Model.Template.Tag</span> &bull;
-                    Version: <span style="font-family: monospace;">v@Model.Template.Version</span>
-                </div>
-            </div>
-        </div>
-    </div>
+        });
 
-    @if (!string.IsNullOrWhiteSpace(Model.Template.Description))
-    {
-        <div style="padding: 16px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 14px; color: var(--admin-text-muted); line-height: 1.6;">
-            @Model.Template.Description
-        </div>
-    }
-</div>
+        function setIframeWidth(width, btn) {
+            var iframe = document.getElementById('detailsPreviewFrame');
+            if (iframe) iframe.style.width = width;
+            document.querySelectorAll('#btnWDesktop, #btnWTablet, #btnWMobile').forEach(function(b) {
+                b.classList.remove('btn-admin-primary');
+                b.classList.add('btn-admin-secondary');
+            });
+            btn.classList.remove('btn-admin-secondary');
+            btn.classList.add('btn-admin-primary');
+        }
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-    @* ── Left: Source Code Inspector ── *@
-    <div>
-        <div class="admin-card" style="margin-bottom: 24px;">
-            <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">💻</div>
-                <div>
-                    <h3 class="card-header-title">Source Markup & Code</h3>
-                    <p class="card-header-subtitle">Inspect the underlying template source code and stylesheets.</p>
-                </div>
-            </div>
-
-            <div style="padding: 20px;">
-                @* HTML Template *@
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                            Semantic HTML (Mustache Syntax)
-                        </span>
-                        <span style="font-size: 11px; font-family: monospace; color: #38bdf8;">@Model.Template.HtmlTemplate.Length chars</span>
-                    </div>
-                    <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #38bdf8; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 280px; margin: 0;"><code>@Model.Template.HtmlTemplate</code></pre>
-                </div>
-
-                @* Scoped CSS *@
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                            Scoped CSS Stylesheet
-                        </span>
-                        <span style="font-size: 11px; font-family: monospace; color: #a78bfa;">@Model.Template.CssStyles.Length chars</span>
-                    </div>
-                    <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #a78bfa; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 240px; margin: 0;"><code>@Model.Template.CssStyles</code></pre>
-                </div>
-
-                @* Sandboxed JS *@
-                @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
-                {
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                                Sandboxed JavaScript Execution
-                            </span>
-                            <span style="font-size: 11px; font-family: monospace; color: #facc15;">@Model.Template.JsScript.Length chars</span>
-                        </div>
-                        <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #facc15; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 180px; margin: 0;"><code>@Model.Template.JsScript</code></pre>
-                    </div>
+        function switchDetailTab(tab) {
+            ['html', 'css', 'json', 'js'].forEach(function(t) {
+                var btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                var content = document.getElementById('contentTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (btn) {
+                    btn.classList.remove('btn-admin-primary');
+                    btn.classList.add('btn-admin-secondary');
                 }
+                if (content) content.style.display = 'none';
+            });
 
-                @* Mock Lists JSON *@
-                @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
-                {
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                                Mock Section List Items (JSON)
-                            </span>
-                        </div>
-                        <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #4ade80; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 180px; margin: 0;"><code>@Model.Template.DefaultSectionListsJson</code></pre>
-                    </div>
-                }
-            </div>
-        </div>
-
-        @* ── Simulated Preview ── *@
-        <div class="admin-card">
-            <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">👁️</div>
-                <div>
-                    <h3 class="card-header-title">Rendered HTML Simulation</h3>
-                    <p class="card-header-subtitle">Substituted mock parameters evaluated against template markup.</p>
-                </div>
-            </div>
-
-            <div style="padding: 24px; background: rgba(0, 0, 0, 0.2); border-radius: 0 0 12px 12px;">
-                <div style="background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 24px; min-height: 160px;">
-                    <style>
-                        @Html.Raw(Model.Template.CssStyles)
-                    </style>
-                    @Html.Raw(Model.RenderedPreviewHtml)
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @* ── Right: Template Attributes & Actions ── *@
-    <div>
-        <div class="admin-card" style="margin-bottom: 24px;">
-            <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">📊</div>
-                <div>
-                    <h3 class="card-header-title">Blueprint Metrics</h3>
-                    <p class="card-header-subtitle">Configuration parameters.</p>
-                </div>
-            </div>
-
-            <div style="padding: 20px;">
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Unique ID</div>
-                        <div style="font-family: monospace; font-size: 12px; color: #fff; margin-top: 2px;">@Model.Template.Id</div>
-                    </div>
-
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Variant Code</div>
-                        <div style="font-family: monospace; font-size: 13px; color: #38bdf8; font-weight: 600; margin-top: 2px;">@Model.Template.VariantCode</div>
-                    </div>
-
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Display Sort Order</div>
-                        <div style="font-size: 14px; font-weight: 600; color: #fff; margin-top: 2px;">#@Model.Template.SortOrder</div>
-                    </div>
-
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Registered Date</div>
-                        <div style="font-size: 13px; color: #fff; margin-top: 2px;">@Model.Template.CreatedUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
-                    </div>
-
-                    @if (Model.Template.UpdatedUtc.HasValue)
-                    {
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Last Modified</div>
-                            <div style="font-size: 13px; color: #fff; margin-top: 2px;">@Model.Template.UpdatedUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC</div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="admin-card">
-            <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚡</div>
-                <div>
-                    <h3 class="card-header-title">Management Actions</h3>
-                    <p class="card-header-subtitle">Administrative controls.</p>
-                </div>
-            </div>
-
-            <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="justify-content: center;">
-                    <span>✏️</span> Edit Template
-                </a>
-
-                <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Template.Id">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center;">
-                        <span>@(Model.Template.IsActive ? "⏸️" : "▶️")</span>
-                        @(Model.Template.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")
-                    </button>
-                </form>
-
-                <a href="/centralwks/templates" class="btn-admin btn-admin-secondary" style="justify-content: center;">
-                    Back to All Templates
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+            var activeBtn = document.getElementById('btnTab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            var activeContent = document.getElementById('contentTab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-admin-secondary');
+                activeBtn.classList.add('btn-admin-primary');
+            }
+            if (activeContent) activeContent.style.display = 'block';
+        }
+    </script>
+}

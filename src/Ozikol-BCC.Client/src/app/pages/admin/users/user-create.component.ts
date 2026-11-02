@@ -36,27 +36,25 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
 
             <div class="card-body">
-              <div class="form-grid-3">
-                <div class="form-group">
-                  <label>Title / Salutation</label>
+              <div class="name-row-flex">
+                <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                  <label>Title</label>
                   <select [(ngModel)]="model.title" name="title">
                     <option value="">None</option>
-                    <option value="Mr.">Mr.</option>
-                    <option value="Mrs.">Mrs.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Dr.">Dr.</option>
-                    <option value="Prof.">Prof.</option>
-                    <option value="Engr.">Engr.</option>
-                    <option value="Chief">Chief</option>
+                    <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
                   </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group first-name-col">
                   <label>First Name *</label>
-                  <input type="text" [(ngModel)]="model.firstName" name="firstName" placeholder="e.g. Jane" required />
+                  <input type="text" [(ngModel)]="model.firstName" name="firstName" placeholder="e.g. First Name" required />
                 </div>
-                <div class="form-group">
+                <div class="form-group last-name-col">
                   <label>Last Name *</label>
-                  <input type="text" [(ngModel)]="model.lastName" name="lastName" placeholder="e.g. Doe" required />
+                  <input type="text" [(ngModel)]="model.lastName" name="lastName" placeholder="e.g. Last Name" required />
+                </div>
+                <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                  <label>Suffix</label>
+                  <input type="text" [(ngModel)]="model.suffix" name="suffix" placeholder="e.g. mni, PhD, Esq" />
                 </div>
               </div>
 
@@ -70,13 +68,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </div>
                 <div class="form-group">
                   <label>Email Address *</label>
-                  <input type="email" [(ngModel)]="model.email" name="email" placeholder="jane.doe@organization.org" required />
+                  <input type="email" [(ngModel)]="model.email" name="email" placeholder="name@company.com" required />
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Phone Number</label>
-                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +1 555-0199" />
+                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
               </div>
             </div>
           </div>
@@ -111,9 +109,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <select [(ngModel)]="model.role" name="role">
                     <option value="Member">Member</option>
                     <option value="Admin">Admin</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Moderator">Moderator</option>
-                    <option value="SuperAdmin">SuperAdmin</option>
+                    <option value="Global Editor">Global Editor</option>
+                    <option value="Feature Editor">Feature Editor</option>
+                    <option value="Read Only">Read Only</option>
                   </select>
                 </div>
               </div>
@@ -127,7 +125,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </span>
                 </label>
                 <div class="locked-input-wrapper">
-                  <input type="text" [value]="activeIdPreview || 'Auto-generated on creation (e.g. ' + (activeFormatName || 'Active Format') + ')'" disabled readonly class="locked-input" />
+                  <input type="text" [value]="(activeIdPreview || '').replace('--', '-') || 'Auto-generated on creation (e.g. ' + (activeFormatName || 'Active Format') + ')'" disabled readonly class="locked-input" />
                   <span class="material-symbols-outlined locked-icon">tag</span>
                 </div>
                 <span class="input-hint-locked">Member ID will be uniquely generated and permanently assigned using your workspace's configured coding rules.</span>
@@ -173,7 +171,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
 
           <div class="card-footer">
-            <a routerLink="/admin/users/list" class="btn btn-outline">Cancel</a>
+            <a routerLink="/users/console/list" class="btn btn-outline">Cancel</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.email || !model.firstName || !model.lastName">
               <span *ngIf="!isSaving" class="material-symbols-outlined">person_add</span>
               <span>{{ isSaving ? 'Provisioning Account...' : 'Create & Provision Member' }}</span>
@@ -199,6 +197,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .form-grid-3 { display: grid; grid-template-columns: 120px 1fr 1fr; gap: 14px; }
     @media (max-width: 600px) { .form-grid-3 { grid-template-columns: 1fr; } }
 
+    .name-row-flex { display: flex; gap: 12px; flex-wrap: wrap; }
+    .name-row-flex .title-col { flex: 0 0 110px; }
+    .name-row-flex .first-name-col { flex: 1 1 160px; }
+    .name-row-flex .last-name-col { flex: 1 1 160px; }
+    .name-row-flex .suffix-col { flex: 0 0 130px; }
+    @media (max-width: 600px) {
+      .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
+    }
+
     .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 600px) { .form-grid-2 { grid-template-columns: 1fr; } }
 
@@ -221,19 +228,30 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn { height: 40px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class UserCreateComponent implements OnInit {
   isSaving = false;
   categories: any[] = [];
 
+  userSettings: any = {
+    enableTitle: true,
+    preFilledTitles: 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor',
+    enableSuffix: false
+  };
+  titleOptions: string[] = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
+
   model: any = {
     title: '',
     firstName: '',
     lastName: '',
+    suffix: '',
     gender: 0, // 0 = Male, 1 = Female
     email: '',
     phoneNumber: '',
@@ -253,7 +271,7 @@ export class UserCreateComponent implements OnInit {
       text: 'Back to Directory',
       icon: 'arrow_back',
       isPrimary: false,
-      routerLink: '/admin/users/list'
+      routerLink: '/users/console/list'
     }
   ];
 
@@ -265,8 +283,29 @@ export class UserCreateComponent implements OnInit {
 
   ngOnInit(): void {
     this.generatePassword();
+    this.loadUserSettings();
     this.loadCategories();
     this.loadMemberIdConfig();
+  }
+
+  loadUserSettings(): void {
+    this.api.get<any>('UsersApi/settings').subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.userSettings.enableTitle = res.data.enableTitle ?? true;
+          this.userSettings.enableSuffix = res.data.enableSuffix ?? false;
+          if (res.data.preFilledTitles) {
+            const raw = res.data.preFilledTitles;
+            if (Array.isArray(raw)) {
+              this.titleOptions = raw;
+            } else if (typeof raw === 'string') {
+              this.titleOptions = raw.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+            }
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadMemberIdConfig(): void {
@@ -278,7 +317,9 @@ export class UserCreateComponent implements OnInit {
           const activePreview = previews.find(p => p.key === activeKey);
           if (activePreview) {
             this.activeFormatName = activePreview.name;
-            this.activeIdPreview = activePreview.previewExample;
+            let preview = activePreview.previewExample || '';
+            preview = preview.replace(/[-]{2,}/g, '-').replace(/[/]{2,}/g, '/').replace(/[_]{2,}/g, '_');
+            this.activeIdPreview = preview;
           }
         }
       },
@@ -315,7 +356,7 @@ export class UserCreateComponent implements OnInit {
       next: () => {
         this.isSaving = false;
         this.toast.success(`Account for ${this.model.firstName} ${this.model.lastName} provisioned successfully!`);
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       },
       error: (err) => {
         this.isSaving = false;

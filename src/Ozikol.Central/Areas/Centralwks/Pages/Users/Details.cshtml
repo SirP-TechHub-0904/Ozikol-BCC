@@ -1,113 +1,211 @@
-@page "/centralwks/users/details/{id}"
+@page "/centralwks/users/details/{id?}"
 @model Ozikol.Central.Areas.Centralwks.Pages.Users.DetailsModel
 @{
     ViewData["Title"] = "Operator: " + Model.Operator.UserName;
     ViewData["BreadcrumbSection"] = "Identity";
 }
 
-<div class="admin-page-header">
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
     <div class="admin-title-group">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <a href="/centralwks/users" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Operators</a>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+            <a href="/centralwks/users" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span> Back to Operators
+            </a>
             <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
-            <span style="font-family: monospace; font-size: 12px; color: #93c5fd;">
+            <span style="font-family: monospace; font-size: 12.5px; color: var(--admin-primary);">
                 @@@Model.Operator.UserName
             </span>
             @if (Model.IsLockedOut)
             {
-                <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">🔒 Locked Out</span>
+                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 11px;">
+                    <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle;">lock</span> Locked Out
+                </span>
             }
             else if (Model.Operator.IsActive)
             {
-                <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">● Active</span>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 11px;">● Active</span>
             }
             else
             {
-                <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">○ Suspended</span>
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 11px;">○ Suspended</span>
+            }
+            @if (Model.IsRootAccount)
+            {
+                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 11px;">Root System Admin</span>
             }
         </div>
         <h1 class="admin-title">@(string.IsNullOrEmpty(Model.Operator.FullName) ? Model.Operator.UserName : Model.Operator.FullName)</h1>
-        <p class="admin-subtitle">@Model.Operator.Email • @(Model.Operator.Department ?? "Engineering & Architecture")</p>
+        <p class="admin-subtitle">@Model.Operator.Email &bull; @(Model.Operator.Department ?? "Administration")</p>
     </div>
-    <div class="admin-actions">
-        @if (Model.IsLockedOut)
+    <div class="admin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        @* Send Notice Button *@
+        <button type="button" class="btn-admin btn-admin-secondary" onclick="openNoticeModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">forward_to_inbox</span>
+            Send Notice
+        </button>
+
+        @if (!Model.IsRootAccount)
+        {
+            <form method="post" asp-page-handler="GenerateActivationLink" asp-route-id="@Model.Operator.Id" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;" title="Generate a fresh 24h password setup link">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">key</span>
+                    Generate Setup Link
+                </button>
+            </form>
+        }
+
+        @if (Model.IsLockedOut && !Model.IsRootAccount)
         {
             <form method="post" asp-page-handler="Unlock" asp-route-id="@Model.Operator.Id" style="display: inline;">
-                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">lock_open</span>
                     Unlock Account
                 </button>
             </form>
         }
-        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Operator.Id" style="display: inline;">
-            <button type="submit" class="btn-admin btn-admin-secondary">
-                @(Model.Operator.IsActive ? "Suspend Account" : "Activate Account")
-            </button>
-        </form>
-        <a href="/centralwks/users/edit/@Model.Operator.Id" class="btn-admin btn-admin-primary">
-            <span>✏️</span> Edit Profile
-        </a>
+        @if (!Model.IsRootAccount)
+        {
+            <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Operator.Id" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin @(Model.Operator.IsActive ? "btn-admin-secondary" : "btn-admin-primary")" style="display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('@(Model.Operator.IsActive ? "Suspend operator access for " + Model.Operator.UserName + "?" : "Reactivate operator access for " + Model.Operator.UserName + "?")');">
+                    <span class="material-symbols-outlined" style="font-size: 16px; color: @(Model.Operator.IsActive ? "var(--admin-danger)" : "#059669");">@(Model.Operator.IsActive ? "block" : "check_circle")</span>
+                    @(Model.Operator.IsActive ? "Suspend Account" : "Activate Account")
+                </button>
+            </form>
+            <a href="/centralwks/users/edit/@Model.Operator.Id" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                Edit Roles &amp; Account
+            </a>
+        }
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
-    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
-        @Model.StatusMessage
+    <div class="admin-alert admin-alert-info" style="width: 100%; margin-bottom: 24px; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.25); color: #2563eb; border-radius: var(--radius-md); padding: 14px 18px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+        <span class="material-symbols-outlined" style="font-size: 20px;">info</span>
+        <div>@Model.StatusMessage</div>
     </div>
 }
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+@if (TempData["NewOperatorSetupUrl"] != null)
+{
+    var opName = TempData["NewOperatorName"]?.ToString() ?? Model.Operator.FullName;
+    var opUser = TempData["NewOperatorUserName"]?.ToString() ?? Model.Operator.UserName;
+    var opEmail = TempData["NewOperatorEmail"]?.ToString() ?? Model.Operator.Email;
+    var opDept = TempData["NewOperatorDepartment"]?.ToString() ?? Model.Operator.Department ?? "Administration";
+    var opRoles = TempData["NewOperatorRoles"]?.ToString() ?? string.Join(", ", Model.AssignedRoles);
+    var setupUrl = TempData["NewOperatorSetupUrl"]?.ToString() ?? "";
+    
+    var clipboardText = $"Platform Operator Invitation - Centralwks\n" +
+                        $"Name: {opName}\n" +
+                        $"Username: {opUser}\n" +
+                        $"Email: {opEmail}\n" +
+                        $"Department: {opDept}\n" +
+                        $"Assigned Roles: {opRoles}\n" +
+                        $"Activation Link: {setupUrl}\n\n" +
+                        $"Please click the activation link above to establish your permanent password and access the Central platform.";
+
+    <div class="admin-card" style="background: var(--admin-bg-surface, #ffffff); border: 1px solid rgba(16, 185, 129, 0.35); border-left: 5px solid #10b981; border-radius: 12px; padding: 22px 24px; margin-bottom: 24px; position: relative; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">key</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 16.5px; font-weight: 700; color: var(--admin-text, #0f172a); margin: 0;">Password Setup &amp; Activation Link Generated</h3>
+                    <p style="font-size: 13px; color: var(--admin-text-muted, #64748b); margin: 3px 0 0 0;">
+                        Share the activation credentials directly or copy the onboarding package below (link valid for 24h).
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="this.closest('.admin-card').style.display='none'" title="Dismiss" style="background: transparent; border: none; color: var(--admin-text-muted, #94a3b8); cursor: pointer; padding: 4px; display: flex; align-items: center;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--admin-text, #334155); margin-bottom: 6px;">
+                Direct Activation Link <span style="font-size: 11.5px; color: var(--admin-text-muted, #64748b); font-weight: normal;">(valid for 24 hours)</span>:
+            </label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="setupUrlInput" readonly value="@setupUrl" 
+                       style="flex: 1; background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #cbd5e1); border-radius: 6px; padding: 9px 12px; font-family: monospace; font-size: 12.5px; color: #0284c7; font-weight: 600;" />
+                <button type="button" id="copyUrlBtn" onclick="copySetupUrl()" class="btn-admin btn-admin-secondary" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">link</span>
+                    <span>Copy Link</span>
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;">
+            <textarea id="rawInviteText" style="display: none;">@clipboardText</textarea>
+            <button type="button" id="copyDetailsBtn" onclick="copyFullDetails()" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; background: #059669; border-color: #047857; color: #ffffff; font-weight: 600; font-size: 13px; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);">
+                <span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+                <span id="copyDetailsText">Copy Full Invitation Details</span>
+            </button>
+        </div>
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; width: 100%;">
     @* Left Column: Profile & Audit Log *@
     <div>
         @* Profile Dossier *@
-        <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
-            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Operator Dossier</h2>
+        <div class="admin-card" style="width: 100%; margin-bottom: 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Operator Dossier</h2>
+            </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Full Legal Name</div>
-                    <div style="font-size: 14px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Full Legal Name</div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-top: 2px;">
                         @(string.IsNullOrEmpty(Model.Operator.FullName) ? Model.Operator.UserName : Model.Operator.FullName)
                     </div>
                 </div>
 
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Email Address</div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Email Address</div>
                     <div style="font-size: 14px; color: var(--admin-text); margin-top: 2px;">
-                        <a href="mailto:@Model.Operator.Email" style="color: #93c5fd; text-decoration: none;">
+                        <a href="mailto:@Model.Operator.Email" style="color: var(--admin-primary); text-decoration: none; font-weight: 500;">
                             @Model.Operator.Email
                         </a>
                         @if (Model.Operator.EmailConfirmed)
                         {
-                            <span style="color: #34d399; font-size: 11px; margin-left: 4px;">✓ Verified</span>
+                            <span style="color: var(--admin-success); font-size: 11px; margin-left: 6px; display: inline-flex; align-items: center; gap: 2px;">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Verified
+                            </span>
                         }
                     </div>
                 </div>
 
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Phone Number</div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Phone Number</div>
                     <div style="font-size: 14px; color: var(--admin-text); margin-top: 2px;">
                         @(Model.Operator.PhoneNumber ?? "Not recorded")
                     </div>
                 </div>
 
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Department</div>
-                    <div style="font-size: 14px; color: var(--admin-text); margin-top: 2px;">
-                        @(Model.Operator.Department ?? "Engineering & Architecture")
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Department</div>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                        @(Model.Operator.Department ?? "Administration")
                     </div>
                 </div>
 
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Account Provisioned</div>
-                    <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Account Provisioned</div>
+                    <div style="font-size: 13.5px; color: var(--admin-text); margin-top: 2px;">
                         @Model.Operator.CreatedUtc.ToString("dd MMM yyyy, HH:mm") UTC
                     </div>
                 </div>
 
                 <div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted);">Last Successful Login</div>
-                    <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Last Successful Login</div>
+                    <div style="font-size: 13.5px; color: var(--admin-text); margin-top: 2px;">
                         @(Model.Operator.LastLoginUtc.HasValue ? Model.Operator.LastLoginUtc.Value.ToString("dd MMM yyyy, HH:mm") + " UTC" : "Never logged in")
                     </div>
                 </div>
@@ -115,12 +213,17 @@
         </div>
 
         @* Operator Audit Activity *@
-        <div class="admin-card" style="padding: 24px;">
-            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Recent Administrative Actions</h2>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Recent Administrative Actions &amp; Audit Log</h2>
+                <a href="/centralwks/audit-log" class="btn-admin btn-admin-secondary" style="font-size: 11.5px; padding: 4px 10px; text-decoration: none;">
+                    All Logs &rarr;
+                </a>
+            </div>
             
             @if (!Model.RecentAuditLogs.Any())
             {
-                <div style="font-size: 13px; color: var(--admin-text-muted); text-align: center; padding: 20px 0;">
+                <div style="font-size: 13.5px; color: var(--admin-text-muted); text-align: center; padding: 36px 20px;">
                     No recent administrative audit records attributed to this operator.
                 </div>
             }
@@ -129,25 +232,37 @@
                 <div style="overflow-x: auto;">
                     <table class="admin-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
-                                <th style="padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Action &amp; Target</th>
-                                <th style="padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Summary</th>
-                                <th style="padding: 10px 14px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Timestamp</th>
+                            <tr style="border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                                <th style="padding: 12px 18px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-dim);">Action &amp; Target</th>
+                                <th style="padding: 12px 18px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-dim);">Summary</th>
+                                <th style="padding: 12px 18px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-dim);">IP Address</th>
+                                <th style="padding: 12px 18px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-dim);">Timestamp</th>
+                                <th style="padding: 12px 18px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-dim);">Inspect</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var log in Model.RecentAuditLogs)
                             {
-                                <tr style="border-bottom: 1px solid var(--admin-card-border);">
-                                    <td style="padding: 10px 14px; font-size: 12px;">
-                                        <span style="font-weight: 600; color: #93c5fd;">@log.Action</span>
-                                        <span style="color: var(--admin-text-muted);">• @log.EntityType</span>
+                                <tr style="border-bottom: 1px solid var(--admin-border);">
+                                    <td style="padding: 12px 18px; font-size: 13px;">
+                                        <span style="font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, 0.12); padding: 2px 6px; border-radius: 4px; font-size: 11px;">
+                                            @log.Action
+                                        </span>
+                                        <span style="color: var(--admin-text-muted); font-size: 12px;">• @log.EntityType</span>
                                     </td>
-                                    <td style="padding: 10px 14px; font-size: 12px; color: var(--admin-text);">
+                                    <td style="padding: 12px 18px; font-size: 12.5px; color: var(--admin-text); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@log.Summary">
                                         @log.Summary
                                     </td>
-                                    <td style="padding: 10px 14px; text-align: right; font-size: 11px; color: var(--admin-text-muted);">
+                                    <td style="padding: 12px 18px; font-family: monospace; font-size: 11.5px; color: var(--admin-text-muted);">
+                                        @(log.IpAddress ?? "127.0.0.1")
+                                    </td>
+                                    <td style="padding: 12px 18px; text-align: right; font-size: 12px; color: var(--admin-text-muted);">
                                         @log.CreatedUtc.ToString("MM/dd HH:mm")
+                                    </td>
+                                    <td style="padding: 12px 18px; text-align: right;">
+                                        <a href="/centralwks/audit-log/details?id=@log.Id" class="btn-admin btn-admin-secondary" style="font-size: 11px; padding: 2px 8px; text-decoration: none;">
+                                            Diff
+                                        </a>
                                     </td>
                                 </tr>
                             }
@@ -161,72 +276,221 @@
     @* Right Column: RBAC & Security Parameters *@
     <div style="display: flex; flex-direction: column; gap: 24px;">
         @* Role Permissions *@
-        <div class="admin-card" style="padding: 20px;">
-            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 14px;">Role Permissions (RBAC)</h3>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 20px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 14.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Role Permissions (RBAC)</h3>
+                @if (!Model.IsRootAccount)
+                {
+                    <a href="/centralwks/users/edit/@Model.Operator.Id" style="font-size: 12px; color: var(--admin-primary); text-decoration: none; font-weight: 600;">
+                        Edit Roles &rarr;
+                    </a>
+                }
+            </div>
             
-            @if (!Model.AssignedRoles.Any())
-            {
-                <div style="font-size: 12px; color: var(--admin-text-muted);">No security roles assigned.</div>
-            }
-            else
-            {
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    @foreach (var role in Model.AssignedRoles)
-                    {
-                        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 16px;">🛡️</span>
-                            <div>
-                                <div style="font-size: 13px; font-weight: 600; color: #93c5fd;">@role</div>
-                                <div style="font-size: 10px; color: #94a3b8;">Central Platform Security Role</div>
+            <div style="padding: 20px;">
+                @if (!Model.AssignedRoles.Any())
+                {
+                    <div style="font-size: 12.5px; color: var(--admin-text-muted);">No security roles assigned.</div>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        @foreach (var role in Model.AssignedRoles)
+                        {
+                            <div style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 12px 14px; display: flex; align-items: center; gap: 10px;">
+                                <span class="material-symbols-outlined" style="font-size: 20px; color: #7c3aed;">shield</span>
+                                <div>
+                                    <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text);">@role</div>
+                                    <div style="font-size: 11px; color: var(--admin-text-muted);">Platform RBAC Security Role</div>
+                                </div>
                             </div>
-                        </div>
-                    }
-                </div>
-            }
+                        }
+                    </div>
+                }
+            </div>
         </div>
 
         @* Security Telemetry *@
-        <div class="admin-card" style="padding: 20px;">
-            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 14px;">Security Telemetry</h3>
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="padding: 18px 20px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <h3 style="font-size: 14.5px; font-weight: 600; color: var(--admin-text); margin: 0;">Security Telemetry</h3>
+            </div>
             
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Two-Factor Authentication</div>
-                <div style="font-size: 13px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
-                    @(Model.Operator.TwoFactorEnabled ? "🛡️ Enabled" : "Disabled")
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Two-Factor Authentication</div>
+                    <div style="font-size: 13.5px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                        @if (Model.Operator.TwoFactorEnabled)
+                        {
+                            <span style="color: var(--admin-success); display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">verified_user</span> Enabled (2FA OTP)
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--admin-text-muted);">Disabled</span>
+                        }
+                    </div>
                 </div>
-            </div>
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Failed Access Attempts</div>
-                <div style="font-size: 13px; font-family: monospace; color: var(--admin-text); margin-top: 2px;">
-                    @Model.Operator.AccessFailedCount
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Failed Access Attempts</div>
+                    <div style="font-size: 13.5px; font-family: monospace; color: var(--admin-text); margin-top: 2px;">
+                        @Model.Operator.AccessFailedCount
+                    </div>
                 </div>
-            </div>
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Lockout Policy</div>
-                <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
-                    @(Model.Operator.LockoutEnabled ? "Active (Auto-lock after failed attempts)" : "Disabled")
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Lockout Policy</div>
+                    <div style="font-size: 13.5px; color: var(--admin-text); margin-top: 2px;">
+                        @(Model.Operator.LockoutEnabled ? "Active (Auto-lock after failed attempts)" : "Disabled")
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <div style="font-size: 11px; color: var(--admin-text-muted);">Security Stamp</div>
-                <div style="font-size: 11px; font-family: monospace; color: #64748b; margin-top: 2px; word-break: break-all;">
-                    @Model.Operator.SecurityStamp
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Security Stamp</div>
+                    <div style="font-size: 11px; font-family: monospace; color: var(--admin-text-dim); margin-top: 2px; word-break: break-all;">
+                        @Model.Operator.SecurityStamp
+                    </div>
                 </div>
             </div>
         </div>
 
-        @* Danger Zone *@
-        <div class="admin-card" style="padding: 20px; border-color: rgba(239, 68, 68, 0.2);">
-            <h3 style="font-size: 14px; font-weight: 600; color: #f87171; margin-bottom: 8px;">Danger Zone</h3>
-            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 12px;">Permanently deletes this operator account and revokes all administrative access.</p>
-            <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Operator.Id">
-                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); width: 100%;" onclick="return confirm('Permanently delete operator account @Model.Operator.UserName?');">
-                    Permanently Delete Operator
-                </button>
-            </form>
-        </div>
+        @* Danger Zone (Only for non-root accounts) *@
+        @if (!Model.IsRootAccount)
+        {
+            <div class="admin-card" style="width: 100%; margin-bottom: 0; padding: 20px; background: var(--admin-bg-surface); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-lg);">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-danger); margin-bottom: 8px;">Danger Zone</h3>
+                <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 14px;">Permanently deletes this operator account and revokes all administrative permissions across Centralwks.</p>
+                <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Operator.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%;" onclick="return confirm('Permanently delete operator account @Model.Operator.UserName?');">
+                        Permanently Delete Operator
+                    </button>
+                </form>
+            </div>
+        }
     </div>
 </div>
+
+@* ── Modal: Send Official Notice / Warning ── *@
+<div id="noticeModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 600px; overflow: hidden; box-shadow: var(--shadow-lg);">
+        <form method="post" asp-page-handler="SendNotice" asp-route-id="@Model.Operator.Id" style="margin: 0;">
+            @Html.AntiForgeryToken()
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 22px;">forward_to_inbox</span>
+                    <h3 style="font-size: 15.5px; font-weight: 700; color: var(--admin-text); margin: 0;">Dispatch Operator Notice</h3>
+                </div>
+                <button type="button" onclick="closeNoticeModal()" style="background: transparent; border: none; color: var(--admin-text-muted); cursor: pointer; font-size: 20px; display: flex; align-items: center;">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Notice Category <span style="color: var(--admin-danger);">*</span>
+                    </label>
+                    <select name="noticeType" class="form-select" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); color: var(--admin-text); font-size: 13px;">
+                        <option value="General Instruction">General Instruction</option>
+                        <option value="Security Advisory">Security Advisory</option>
+                        <option value="Administrative Warning">Administrative Warning</option>
+                        <option value="Disciplinary Notice">Disciplinary Notice</option>
+                        <option value="Account Suspension Notice">Account Suspension Notice</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Subject Line <span style="color: var(--admin-danger);">*</span>
+                    </label>
+                    <input type="text" id="noticeSubjectInput" name="subject" class="form-control" placeholder="e.g. Action Required: Review Account Security Settings" required
+                           style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;" />
+                    <div id="spamAlertBox" style="display: none; font-size: 11.5px; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; padding: 6px 10px; border-radius: 6px; margin-top: 6px;">
+                        ⚠️ Warning: High-risk spam trigger words or ALL CAPS detected in subject line.
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Notice Body / Message <span style="color: var(--admin-danger);">*</span>
+                    </label>
+                    <textarea name="messageBody" rows="5" class="form-control" placeholder="e.g. Please be advised that two-factor authentication is required for all administrative access..." required
+                              style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;"></textarea>
+                </div>
+
+                <div style="font-size: 12px; color: var(--admin-text-muted); background: var(--admin-bg-surface-elevated); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--admin-border);">
+                    This message will be dispatched directly to <strong>@Model.Operator.Email</strong> via Postmark and recorded in the permanent audit logs.
+                </div>
+            </div>
+
+            <div style="padding: 14px 24px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeNoticeModal()" class="btn-admin btn-admin-secondary" style="font-size: 13px;">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary" style="font-size: 13px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">send</span>
+                    Dispatch Notice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openNoticeModal() {
+            document.getElementById('noticeModal').style.display = 'flex';
+        }
+
+        function closeNoticeModal() {
+            document.getElementById('noticeModal').style.display = 'none';
+        }
+
+        // Real-time Anti-Spam Keyword & ALL-CAPS Subject Line Check (Rule 6)
+        const subjectInput = document.getElementById('noticeSubjectInput');
+        const spamAlertBox = document.getElementById('spamAlertBox');
+        const spamKeywords = ['100% free', 'earn money', 'act now', 'guaranteed', 'winner', 'million dollars', 'no risk', 'urgent'];
+
+        subjectInput?.addEventListener('input', function() {
+            const val = this.value.trim();
+            const lower = val.toLowerCase();
+            const isAllCaps = val.length >= 8 && val === val.toUpperCase() && /[A-Z]/.test(val);
+            const hasSpamWord = spamKeywords.some(k => lower.includes(k));
+
+            if (isAllCaps || hasSpamWord) {
+                spamAlertBox.style.display = 'block';
+            } else {
+                spamAlertBox.style.display = 'none';
+            }
+        });
+
+        function copySetupUrl() {
+            var copyText = document.getElementById("setupUrlInput");
+            if (!copyText) return;
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(function() {
+                var btn = document.getElementById("copyUrlBtn");
+                if (btn) {
+                    var originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px; color: #34d399;">check</span> Copied!';
+                    setTimeout(function() { btn.innerHTML = originalHtml; }, 2500);
+                }
+            });
+        }
+
+        function copyFullDetails() {
+            var raw = document.getElementById("rawInviteText");
+            if (!raw) return;
+            navigator.clipboard.writeText(raw.value).then(function() {
+                var textSpan = document.getElementById("copyDetailsText");
+                if (textSpan) {
+                    var originalText = textSpan.innerText;
+                    textSpan.innerText = "Invitation Details Copied!";
+                    setTimeout(function() { textSpan.innerText = originalText; }, 2500);
+                }
+            });
+        }
+    </script>
+}

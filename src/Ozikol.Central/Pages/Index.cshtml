@@ -61,7 +61,7 @@
                     <span class="oz-fastnav-display is-placeholder" id="ozSectorDisplay">@SharedLocalizer["FastNav_ChooseSector"]</span>
                     <span class="oz-fastnav-chevron" aria-hidden="true">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                            <path d="M2 3.5L5 6.5L8 3.5" stroke="#e5173f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 3.5L5 6.5L8 3.5" stroke="#0050e5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
                 </div>
@@ -88,7 +88,7 @@
                     <span class="oz-fastnav-display is-placeholder" id="ozProductDisplay">@SharedLocalizer["FastNav_ChooseSolution"]</span>
                     <span class="oz-fastnav-chevron" aria-hidden="true">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                            <path d="M2 3.5L5 6.5L8 3.5" stroke="#e5173f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 3.5L5 6.5L8 3.5" stroke="#0050e5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
                 </div>
@@ -103,7 +103,7 @@
                 <span>@SharedLocalizer["FastNav_GetStarted"]</span>
                 <span class="oz-fastnav-btn-arrow">
                     <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                        <path d="M1.5 4.5H7.5M7.5 4.5L4.5 1.5M7.5 4.5L4.5 7.5" stroke="#e5173f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M1.5 4.5H7.5M7.5 4.5L4.5 1.5M7.5 4.5L4.5 7.5" stroke="#0050e5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </span>
             </a>
@@ -115,7 +115,7 @@
         <div class="container">
             <div class="oz-section-header">
                 <span class="oz-badge">@SharedLocalizer["Home_Suites_Badge"]</span>
-                <h2 class="oz-section-title">@SharedLocalizer["Home_Suites_Title"]</h2>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Suites_Title", CurrencyService.GetActiveFeaturesCount(), CurrencyService.GetActiveSuitesCount()]</h2>
                 <p class="oz-section-desc">@SharedLocalizer["Home_Suites_Desc"]</p>
             </div>
 
@@ -277,7 +277,7 @@
                                     <span class="oz-tab-check-icon">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                     </span>
-                                    <span>Single sign-on across all 37 organizational capabilities</span>
+                                    <span>Single sign-on across all @CurrencyService.GetActiveFeaturesCount() organizational capabilities</span>
                                 </li>
                                 <li class="oz-tab-bullet-item">
                                     <span class="oz-tab-check-icon">

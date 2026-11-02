@@ -14,7 +14,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
 {
     /// <summary>
     /// PageModel for manually recording or issuing a financial transaction / invoice in the master ledger.
-    /// Supports linking to specific sovereign tenant databases and optional feature subscription plans.
+    /// Supports linking to specific tenant databases and optional feature subscription plans.
     /// </summary>
     public class CreateModel : PageModel
     {
@@ -90,7 +90,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
             var tenantExists = await _dbContext.MasterTenantCatalogs.AnyAsync(t => t.Id == Input.TenantId);
             if (!tenantExists)
             {
-                ModelState.AddModelError("Input.TenantId", "The selected tenant was not found in the sovereign master catalog.");
+                ModelState.AddModelError("Input.TenantId", "The selected tenant was not found in the master catalog.");
                 await PopulateDropdownsAsync();
                 return Page();
             }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Domain.Models.Ai;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 
 
@@ -14,10 +15,10 @@ namespace Ozikol_BCC.Persistence.EF.SQL
 public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 {
     private readonly ITenantProvider _tenantProvider;
-    // Site and platform configuration tables shared by the website and BCP runtime.
-    public DbSet<ConfigSetting> ConfigSettings { get; set; } = null!;
-    public DbSet<ManagementSetting> ManagementSettings { get; set; } = null!;
-    public DbSet<BcpSetting> BcpSettings { get; set; } = null!;
+    // Tenant-level website UI/brand settings and operational configuration settings.
+    public DbSet<MisWebsiteSetting> MisWebsiteSettings { get; set; } = null!;
+    public DbSet<MisConfigurationSetting> MisConfigurationSettings { get; set; } = null!;
+    public DbSet<MisWebsiteContactChannel> MisWebsiteContactChannels { get; set; } = null!;
 
     // Console dashboard widgets and guided-tour/wizard persistence.
     public DbSet<BcpWidget> BcpWidgets { get; set; } = null!;
@@ -55,10 +56,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<TemplateCategory> TemplateCategories { get; set; } = null!;
     public DbSet<TemplateType> TemplateTypes { get; set; } = null!;
     public DbSet<MailingSystem> MailingSystems { get; set; } = null!;
-    public DbSet<Slider> Sliders { get; set; }
-    public DbSet<WebPage> WebPages { get; set; }
-    public DbSet<FAQ> FAQs { get; set; }
-    public DbSet<FAQCategory> FAQCategories { get; set; }
+    public DbSet<WebPage> WebPages { get; set; } = null!;
     public DbSet<Blog> Blogs { get; set; }
     public DbSet<BlogCategory> BlogCategories { get; set; }
     public DbSet<PageSection> PageSections { get; set; }
@@ -76,6 +74,9 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<PageFormField> PageFormFields { get; set; } = null!;
     public DbSet<PageFormSubmission> PageFormSubmissions { get; set; } = null!;
 
+    // --- Ozi AI: Studio Co-pilot Chat History & Snapshot Restorations ---
+    public DbSet<BcpAiChatHistory> AiChatHistories { get; set; } = null!;
+
     // Legacy website/content tables retained by the same tenant database.
     public DbSet<PostModal> PostModal { get; set; }
 
@@ -87,6 +88,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
     // --- BCP: User Management Feature ---
     public DbSet<BcpUserCategory> BcpUserCategories { get; set; }
+    public DbSet<BcpRegistrationFormField> BcpRegistrationFormFields { get; set; }
     public DbSet<BcpKpiIndicator> BcpKpiIndicators { get; set; }
     public DbSet<BcpKpiUserScore> BcpKpiUserScores { get; set; }
     public DbSet<BcpKpiPeriod> BcpKpiPeriods { get; set; } = null!;
@@ -207,7 +209,31 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
         if (entries.Any())
         {
-            var user = _httpContextAccessor?.HttpContext?.User;
+            var httpContext = _httpContextAccessor?.HttpContext;
+            var user = httpContext?.User;
+            var userEmail = user?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                ?? user?.FindFirst("email")?.Value
+                ?? (user?.Identity?.Name?.Contains('@') == true ? user.Identity.Name : null);
+            string? ipAddress = httpContext?.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                var forwarded = httpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(forwarded))
+                {
+                    ipAddress = forwarded.Split(',')[0].Trim();
+                }
+            }
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                ipAddress = httpContext?.Request.Headers["X-Real-IP"].FirstOrDefault();
+            }
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
+            }
+            string? systemId = httpContext?.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext?.Request.Headers["X-Device-Id"].FirstOrDefault();
+            string? userAgent = httpContext?.Request.Headers["User-Agent"].FirstOrDefault();
             var userId = user?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var userName = user?.Identity?.Name ?? "System";
 
@@ -224,7 +250,11 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                     PerformedByProfileId = userId,
                     PerformedByFullName = userName,
                     Module = "User Management",
-                    Date = DateTime.UtcNow
+                    Date = DateTime.UtcNow,
+                    PerformedByUserEmail = userEmail,
+                    IpAddress = ipAddress,
+                    SystemId = systemId,
+                    UserAgent = userAgent
                 };
 
                 if (entry.Entity is BcpUserFeatureRole role)
@@ -271,7 +301,12 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             // The current platform model is separate databases per tenant, not tenant selection inside auth.
             optionsBuilder.UseSqlServer(
                 _tenantProvider.ConnectionString,
-                o => o.MigrationsHistoryTable(HistoryRepository.DefaultTableName, /*_tenantProvider.DbSchemaName*/null));
+                o =>
+                {
+                    o.MigrationsHistoryTable(HistoryRepository.DefaultTableName, /*_tenantProvider.DbSchemaName*/null);
+                    o.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+                    o.CommandTimeout(60);
+                });
         }
     }
 
@@ -284,6 +319,26 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // --- Audit & Operational Log Indexes for Fast Telemetry Queries ---
+        modelBuilder.Entity<BcpActivityLog>(entity =>
+        {
+            entity.HasIndex(e => e.Date);
+            entity.HasIndex(e => e.PerformedByProfileId);
+            entity.HasIndex(e => e.PerformedByUserEmail);
+            entity.HasIndex(e => e.SystemId);
+            entity.HasIndex(e => e.IpAddress);
+            entity.HasIndex(e => e.ActionType);
+        });
+
+        modelBuilder.Entity<BcpLoginAuditLog>(entity =>
+        {
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.SystemId);
+            entity.HasIndex(e => e.IpAddress);
+        });
 
         // Identity-related feature records should not cascade-delete user-owned communication records.
         modelBuilder.Entity<BcpNewsletterRecipient>()
@@ -483,6 +538,12 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             .WithMany()
             .HasForeignKey(s => s.PageFormId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // --- Website Contact Channels Indexing for Fast Querying by Type and Status ---
+        modelBuilder.Entity<MisWebsiteContactChannel>(entity =>
+        {
+            entity.HasIndex(c => new { c.ChannelType, c.IsPublished, c.SortOrder });
+        });
 
         // ConfigureCustomer(modelBuilder);
     }

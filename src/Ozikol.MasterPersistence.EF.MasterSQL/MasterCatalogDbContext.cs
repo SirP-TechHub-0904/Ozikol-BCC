@@ -15,6 +15,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterTenantCatalog> MasterTenantCatalogs { get; set; } = null!;
     public DbSet<MasterMarketplaceCategory> MasterMarketplaceCategories { get; set; } = null!;
     public DbSet<MasterMarketplaceTemplate> MasterMarketplaceTemplates { get; set; } = null!;
+    public DbSet<MasterMarketplaceDraftSection> MasterMarketplaceDraftSections { get; set; } = null!;
     public DbSet<MasterTemplateSection> MasterTemplateSections { get; set; } = null!;
     public DbSet<MasterTemplateSectionList> MasterTemplateSectionLists { get; set; } = null!;
     public DbSet<MasterTemplatePlaceholder> MasterTemplatePlaceholders { get; set; } = null!;
@@ -55,6 +56,15 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterPlatformSetting> MasterPlatformSettings { get; set; } = null!;
     public DbSet<MasterTicketReply> MasterTicketReplies { get; set; } = null!;
     public DbSet<MasterLegalDocument> MasterLegalDocuments { get; set; } = null!;
+    public DbSet<MasterCoupon> MasterCoupons { get; set; } = null!;
+    public DbSet<MasterCouponRedemption> MasterCouponRedemptions { get; set; } = null!;
+    public DbSet<MasterVoucherApplication> MasterVoucherApplications { get; set; } = null!;
+
+    /// <summary>
+    /// Master client application release records powering in-app OTA updates and distribution.
+    /// </summary>
+    public DbSet<MasterClientRelease> MasterClientReleases { get; set; } = null!;
+
 
     /// <summary>
     /// Audit log entries tracking all administrative actions across the platform.
@@ -65,6 +75,31 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     /// Billing transaction records for tenant subscription payments, refunds, and manual adjustments.
     /// </summary>
     public DbSet<MasterBillingTransaction> MasterBillingTransactions { get; set; } = null!;
+
+    /// <summary>
+    /// Registered background jobs for Central platform and Tenant automation.
+    /// </summary>
+    public DbSet<MasterBackgroundJob> MasterBackgroundJobs { get; set; } = null!;
+
+    /// <summary>
+    /// Execution logs for background jobs.
+    /// </summary>
+    public DbSet<MasterBackgroundJobLog> MasterBackgroundJobLogs { get; set; } = null!;
+
+    /// <summary>
+    /// Central platform notifications and alerts.
+    /// </summary>
+    public DbSet<MasterNotification> MasterNotifications { get; set; } = null!;
+
+    /// <summary>
+    /// Registered AI provider API keys for Central key rotation pool and telemetry.
+    /// </summary>
+    public DbSet<MasterAiApiKey> MasterAiApiKeys { get; set; } = null!;
+
+    /// <summary>
+    /// Telemetry and audit log entries for all AI requests processed through the key pool.
+    /// </summary>
+    public DbSet<MasterAiApiKeyUsageLog> MasterAiApiKeyUsageLogs { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -112,6 +147,8 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.PrimaryDomain).IsUnique();
             entity.HasIndex(e => e.CustomDomain);
             entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.IsSuspended);
+            entity.HasIndex(e => e.IsDeleted);
         });
 
         modelBuilder.Entity<MasterFeatureCatalog>(entity =>
@@ -539,6 +576,76 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                 .WithMany()
                 .HasForeignKey(e => e.MasterTenantFeatureSubscriptionId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── Voucher Application Configurations ──
+        modelBuilder.Entity<MasterVoucherApplication>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReferenceNumber).IsUnique();
+            entity.HasIndex(e => e.WorkEmail);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAtUtc);
+        });
+
+        // ── Background Jobs Hub Configurations ──
+        modelBuilder.Entity<MasterBackgroundJob>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.JobKey).IsUnique();
+            entity.HasIndex(e => e.Scope);
+            entity.HasIndex(e => e.IsEnabled);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.NextRunUtc);
+            entity.HasIndex(e => e.TargetTenantCatalogId);
+
+            entity.HasOne(e => e.TargetTenantCatalog)
+                .WithMany()
+                .HasForeignKey(e => e.TargetTenantCatalogId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.ExecutionLogs)
+                .WithOne(e => e.Job)
+                .HasForeignKey(e => e.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MasterBackgroundJobLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.JobId);
+            entity.HasIndex(e => e.StartedAtUtc);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.TenantKey);
+            entity.HasIndex(e => e.TargetTenantCatalogId);
+
+            entity.HasOne(e => e.TargetTenantCatalog)
+                .WithMany()
+                .HasForeignKey(e => e.TargetTenantCatalogId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<MasterAiApiKey>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Provider);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.RateLimitCooldownUntilUtc);
+
+            entity.HasMany(e => e.UsageLogs)
+                .WithOne(e => e.MasterAiApiKey)
+                .HasForeignKey(e => e.MasterAiApiKeyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MasterAiApiKeyUsageLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MasterAiApiKeyId);
+            entity.HasIndex(e => e.RequestTimestampUtc);
+            entity.HasIndex(e => e.StatusCode);
+            entity.HasIndex(e => e.ActionName);
         });
     }
 }

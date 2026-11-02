@@ -1,10 +1,16 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Ozikol_BCC.Domain.Models.Settings;
+using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Application.Queries.SettingsQueries
 {
+    /// <summary>
+    /// Data transfer object holding tenant-level custom administrative aliases.
+    /// </summary>
     public class TerminologyAliasesDto
     {
         public string GroupAlias { get; set; } = "Group";
@@ -13,8 +19,14 @@ namespace Ozikol_BCC.Application.Queries.SettingsQueries
         public string AlumniAlias { get; set; } = "Alumni";
     }
 
+    /// <summary>
+    /// Query to fetch custom terminology aliases for the active tenant.
+    /// </summary>
     public class GetTerminologyAliasesQuery : IRequest<TerminologyAliasesDto> { }
 
+    /// <summary>
+    /// Handler resolving custom terminology aliases from <see cref="MisConfigurationSetting"/>.
+    /// </summary>
     public class GetTerminologyAliasesQueryHandler : IRequestHandler<GetTerminologyAliasesQuery, TerminologyAliasesDto>
     {
         private readonly DashboardDbContext _dbContext;
@@ -28,7 +40,7 @@ namespace Ozikol_BCC.Application.Queries.SettingsQueries
         {
             try
             {
-                var opsSetting = await _dbContext.Set<BcpTenantOperationsSetting>().FirstOrDefaultAsync(cancellationToken);
+                var opsSetting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync(cancellationToken);
                 return new TerminologyAliasesDto
                 {
                     GroupAlias = opsSetting?.GroupAlias ?? "Group",
@@ -44,9 +56,15 @@ namespace Ozikol_BCC.Application.Queries.SettingsQueries
         }
     }
 
-    public class GetBrandSettingsQuery : IRequest<BcpTenantBrandSetting> { }
+    /// <summary>
+    /// Query to retrieve brand identity settings.
+    /// </summary>
+    public class GetBrandSettingsQuery : IRequest<MisWebsiteSetting> { }
 
-    public class GetBrandSettingsQueryHandler : IRequestHandler<GetBrandSettingsQuery, BcpTenantBrandSetting>
+    /// <summary>
+    /// Handler resolving brand identity settings from <see cref="MisWebsiteSetting"/>.
+    /// </summary>
+    public class GetBrandSettingsQueryHandler : IRequestHandler<GetBrandSettingsQuery, MisWebsiteSetting>
     {
         private readonly DashboardDbContext _dbContext;
 
@@ -55,41 +73,16 @@ namespace Ozikol_BCC.Application.Queries.SettingsQueries
             _dbContext = dbContext;
         }
 
-        public async Task<BcpTenantBrandSetting> Handle(GetBrandSettingsQuery request, CancellationToken cancellationToken)
+        public async Task<MisWebsiteSetting> Handle(GetBrandSettingsQuery request, CancellationToken cancellationToken)
         {
             try
             {
-                var brandSetting = await _dbContext.Set<BcpTenantBrandSetting>().FirstOrDefaultAsync(cancellationToken);
-                return brandSetting ?? new BcpTenantBrandSetting();
+                var brandSetting = await _dbContext.MisWebsiteSettings.FirstOrDefaultAsync(cancellationToken);
+                return brandSetting ?? new MisWebsiteSetting();
             }
             catch
             {
-                return new BcpTenantBrandSetting();
-            }
-        }
-    }
-
-    public class GetCodeInjectionSettingsQuery : IRequest<BcpTenantCodeInjectionSetting> { }
-
-    public class GetCodeInjectionSettingsQueryHandler : IRequestHandler<GetCodeInjectionSettingsQuery, BcpTenantCodeInjectionSetting>
-    {
-        private readonly DashboardDbContext _dbContext;
-
-        public GetCodeInjectionSettingsQueryHandler(DashboardDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
-        public async Task<BcpTenantCodeInjectionSetting> Handle(GetCodeInjectionSettingsQuery request, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var scriptSetting = await _dbContext.Set<BcpTenantCodeInjectionSetting>().FirstOrDefaultAsync(cancellationToken);
-                return scriptSetting ?? new BcpTenantCodeInjectionSetting();
-            }
-            catch
-            {
-                return new BcpTenantCodeInjectionSetting();
+                return new MisWebsiteSetting();
             }
         }
     }

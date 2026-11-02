@@ -1,0 +1,266 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Coupons.IndexModel
+@{
+    ViewData["Title"] = "Vouchers & Promotional Coupons";
+    ViewData["BreadcrumbSection"] = "Billing & Plans";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Vouchers &amp; Promotional Coupons</h1>
+        <p class="admin-subtitle">Govern campaign discount codes, percentage vouchers, feature-restricted promos, and tenant redemption quotas.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/coupons/create" class="btn-admin btn-admin-primary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+            Create Voucher
+        </a>
+    </div>
+</div>
+
+@* ── KPI Summary Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">confirmation_number</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Vouchers</span>
+            <span class="stat-value">@Model.TotalCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">check_circle</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Active Promos</span>
+            <span class="stat-value" style="color: var(--admin-success);">@Model.ActiveCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-info">
+            <span class="material-symbols-outlined">redeem</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Redemptions</span>
+            <span class="stat-value" style="color: var(--admin-info);">@Model.TotalRedemptions.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+            <span class="material-symbols-outlined">savings</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Discounts Granted</span>
+            <span class="stat-value" style="color: #a855f7;">$@Model.TotalDiscountValueGranted.ToString("N2")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filter Toolbar & Table Card ── *@
+<div class="admin-card">
+    <div class="table-toolbar" style="flex-wrap: wrap; gap: 14px;">
+        <form method="get" class="table-filters" style="flex: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div class="table-search-box" style="min-width: 260px; flex: 1;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search by voucher code or campaign..." />
+            </div>
+
+            <select name="scope" class="form-select" style="min-width: 180px; padding: 8px 12px; font-size: 13px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); color: var(--admin-text);">
+                <option value="">All Voucher Scopes</option>
+                <option value="universal" selected="@(Model.Scope == "universal")">Universal (Any Feature/Base)</option>
+                <option value="feature" selected="@(Model.Scope == "feature")">Feature-Specific Only</option>
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
+                Filter
+            </button>
+
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Scope))
+            {
+                <a href="/centralwks/coupons" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    Clear
+                </a>
+            }
+        </form>
+
+        <div style="font-size: 12.5px; color: var(--admin-text-muted); display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">format_list_bulleted</span>
+            Showing @Model.Coupons.Count of @Model.TotalCount vouchers
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">S/N</th>
+                    <th>Voucher Promo Code</th>
+                    <th>Discount Value</th>
+                    <th>Scope / Restriction</th>
+                    <th>Redemption Usage</th>
+                    <th>Validity Window</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Coupons.Any())
+                {
+                    @for (int i = 0; i < Model.Coupons.Count; i++)
+                    {
+                        var coupon = Model.Coupons[i];
+                        var redemptionPercent = coupon.MaxRedemptions > 0
+                            ? Math.Min(100.0, (double)coupon.TimesRedeemed / coupon.MaxRedemptions * 100.0)
+                            : 100.0;
+                        <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <a href="/centralwks/coupons/details?id=@coupon.Id" style="font-family: monospace; font-weight: 700; font-size: 14px; color: var(--admin-primary); text-decoration: none;" class="coupon-code-link">
+                                            @coupon.Code
+                                        </a>
+                                        <button type="button" class="btn-copy-snippet" data-copy-text="@coupon.Code" title="Copy Promo Code" aria-label="Copy Code">
+                                            <span class="material-symbols-outlined">content_copy</span>
+                                        </button>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(coupon.Description))
+                                    {
+                                        <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px;">
+                                            @coupon.Description
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                @if (coupon.IsPercentage)
+                                {
+                                    @if (coupon.DiscountPercentage >= 100.00m)
+                                    {
+                                        <span class="badge badge-success" style="font-size: 12px; font-weight: 700;">
+                                            <span class="material-symbols-outlined" style="font-size: 14px; margin-right: 2px;">verified</span>
+                                            100% OFF (Free)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-primary" style="font-size: 12px; font-weight: 700;">
+                                            @coupon.DiscountPercentage.ToString("G29")% OFF
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge badge-info" style="font-size: 12px; font-weight: 700;">
+                                        $@coupon.DiscountAmount.ToString("N2") OFF
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (coupon.SpecificFeatureId.HasValue && coupon.SpecificFeature != null)
+                                {
+                                    <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <span class="badge badge-warning" style="font-size: 11px;">Feature-Restricted</span>
+                                        <span style="font-size: 12px; font-weight: 600; color: var(--admin-text);">@coupon.SpecificFeature.Name</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-info" style="font-size: 11px;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px; margin-right: 2px;">public</span>
+                                        Universal (All Modules &amp; Base)
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12px;">
+                                        <a href="/centralwks/coupons/details?id=@coupon.Id" style="font-weight: 600; color: var(--admin-primary); text-decoration: none;">
+                                            @coupon.TimesRedeemed @(coupon.MaxRedemptions > 0 ? $"/ {coupon.MaxRedemptions} used" : "used (Unlimited)")
+                                        </a>
+                                        @if (coupon.MaxRedemptions > 0)
+                                        {
+                                            <span style="font-size: 11px; font-weight: 600; color: var(--admin-text);">@redemptionPercent.ToString("F0")%</span>
+                                        }
+                                    </div>
+                                    @if (coupon.MaxRedemptions > 0)
+                                    {
+                                        <div style="height: 5px; background: var(--admin-bg-hover); border-radius: 3px; overflow: hidden; width: 110px;">
+                                            <div style="height: 100%; width: @redemptionPercent%; background: @(redemptionPercent >= 100 ? "var(--admin-danger)" : "var(--admin-primary)"); border-radius: 3px;"></div>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-size: 12px; color: var(--admin-text); font-weight: 500;">
+                                    From: @coupon.StartsAtUtc.ToString("yyyy-MM-dd")
+                                </div>
+                                <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                    @(coupon.ExpiresAtUtc.HasValue ? $"Expires: {coupon.ExpiresAtUtc.Value:yyyy-MM-dd}" : "No Expiration Date")
+                                </div>
+                            </td>
+                            <td>
+                                @if (coupon.IsActive)
+                                {
+                                    <span class="badge badge-success">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger">
+                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <a href="/centralwks/coupons/details?id=@coupon.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Redemptions" aria-label="Details">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                                    </a>
+                                    <a href="/centralwks/coupons/edit?id=@coupon.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Voucher" aria-label="Edit">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                                    </a>
+                                    <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@coupon.Id" style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: @(coupon.IsActive ? "var(--admin-warning)" : "var(--admin-success)");" title="@(coupon.IsActive ? "Deactivate Promo" : "Activate Promo")" onclick="return confirm('Toggle active status for voucher @coupon.Code?');">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">@(coupon.IsActive ? "toggle_off" : "toggle_on")</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state" style="padding: 40px; text-align: center;">
+                                <div class="empty-state-icon" style="margin-bottom: 12px;">
+                                    <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim);">confirmation_number</span>
+                                </div>
+                                <h3 class="empty-state-title">No Vouchers Found</h3>
+                                <p class="empty-state-desc" style="color: var(--admin-text-muted);">Create your first campaign promo code to offer onboarding or module discounts.</p>
+                                <a href="/centralwks/coupons/create" class="btn-admin btn-admin-primary" style="margin-top: 14px;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+                                    Create Promo Voucher
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
