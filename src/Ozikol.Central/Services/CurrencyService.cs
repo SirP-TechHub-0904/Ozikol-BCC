@@ -338,7 +338,7 @@ public class CurrencyService : ICurrencyService
                 {
                     var sum = dbContext.MasterFeatureCatalogs
                         .AsNoTracking()
-                        .Where(f => f.IsCompulsory && f.IsActive)
+                        .Where(f => f.IsCompulsory)
                         .Sum(f => f.YearlyPrice);
 
                     if (sum > 0)
@@ -383,7 +383,8 @@ public class CurrencyService : ICurrencyService
                 var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
                 if (dbContext != null && dbContext.Database.CanConnect())
                 {
-                    return dbContext.MasterFeatureCatalogs.AsNoTracking().Count(f => f.IsActive);
+                    // The landing page menu dropdown and public catalog showcase all 45 platform capabilities without publish restriction
+                    return dbContext.MasterFeatureCatalogs.AsNoTracking().Count();
                 }
             }
             catch (Exception ex)
@@ -406,12 +407,12 @@ public class CurrencyService : ICurrencyService
                 var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
                 if (dbContext != null && dbContext.Database.CanConnect())
                 {
-                    var suiteCount = dbContext.MasterFeatureSuites.AsNoTracking().Count(s => s.IsActive);
+                    var suiteCount = dbContext.MasterFeatureSuites.AsNoTracking().Count();
                     if (suiteCount > 0) return suiteCount;
 
                     return dbContext.MasterFeatureCatalogs
                         .AsNoTracking()
-                        .Where(f => f.IsActive && !string.IsNullOrEmpty(f.Category))
+                        .Where(f => !string.IsNullOrEmpty(f.Category))
                         .Select(f => f.Category)
                         .Distinct()
                         .Count();
@@ -437,7 +438,7 @@ public class CurrencyService : ICurrencyService
                 var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
                 if (dbContext != null && dbContext.Database.CanConnect())
                 {
-                    return dbContext.MasterFeatureCatalogs.AsNoTracking().Count(f => f.IsCompulsory && f.IsActive);
+                    return dbContext.MasterFeatureCatalogs.AsNoTracking().Count(f => f.IsCompulsory);
                 }
             }
             catch (Exception ex)
@@ -625,16 +626,17 @@ public class CurrencyService : ICurrencyService
                 var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
                 if (dbContext != null && dbContext.Database.CanConnect())
                 {
+                    // In the Central public landing page catalog and menu dropdown,
+                    // features and suites do not have publish restrictions so all 45
+                    // platform capabilities are fully visible to visitors and prospective customers.
                     var suites = dbContext.MasterFeatureSuites
                         .AsNoTracking()
-                        .Where(s => s.IsActive)
                         .OrderBy(s => s.SortOrder)
                         .ThenBy(s => s.Name)
                         .ToList();
 
                     var features = dbContext.MasterFeatureCatalogs
                         .AsNoTracking()
-                        .Where(f => f.IsActive)
                         .OrderBy(f => f.SortOrder)
                         .ThenBy(f => f.Name)
                         .ToList();
@@ -659,8 +661,8 @@ public class CurrencyService : ICurrencyService
                             mappedFeatures.Add(MapFeatureDto(f, colorIndex++));
                         }
 
-                        // Only include active suites that have at least one active feature (or all active suites)
-                        if (mappedFeatures.Count > 0 || s.IsActive)
+                        // Include all suites that contain child features or are configured in MasterFeatureSuites
+                        if (mappedFeatures.Count > 0 || suites.Count > 0)
                         {
                             result.Add(new PublicCatalogSuiteDto
                             {

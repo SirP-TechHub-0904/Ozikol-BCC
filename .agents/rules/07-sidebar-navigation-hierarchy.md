@@ -50,3 +50,4 @@ Across ALL client applications (Flutter Desktop/Mobile, Angular BCC Client, and 
 
 4. **Dynamic White-Label Brand Compliance**:
    - All folder names, titles, and breadcrumbs must resolve dynamically from the active tenant's brand name (e.g. `C:\{BrandName}-Workspace`). Never hardcode platform or vendor names.
+
