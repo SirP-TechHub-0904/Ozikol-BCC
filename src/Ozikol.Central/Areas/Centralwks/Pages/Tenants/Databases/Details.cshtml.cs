@@ -507,6 +507,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 : (deepDive?.ErrorMessage ?? deepDive?.Tenant?.Status?.ErrorMessage ?? "Database has pending migrations awaiting execution.");
 
             var sw = Stopwatch.StartNew();
+            MasterAiApiKey? activeKey = null;
 
             try
             {
@@ -556,7 +557,6 @@ CRITICAL DIAGNOSIS TASK:
             string jsonResponseText = string.Empty;
             string selectedModel = "gemini-3.5-flash";
             string lastError = string.Empty;
-            MasterAiApiKey? activeKey = null;
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(30);
 
