@@ -286,7 +286,7 @@ namespace Ozikol.Central.Services
                 return cachedModel;
             }
 
-            string selectedModel = "gemini-2.0-flash";
+            string selectedModel = "gemini-3.5-flash";
             try
             {
                 var client = _httpClientFactory.CreateClient();
@@ -311,9 +311,12 @@ namespace Ozikol.Central.Services
 
                             if (methods.Contains("generateContent", StringComparison.OrdinalIgnoreCase))
                             {
-                                // Skip deprecated or sunset models that return 404
-                                if (cleanName.Contains("2.5-flash", StringComparison.OrdinalIgnoreCase) ||
-                                    cleanName.Equals("gemini-1.5-flash", StringComparison.OrdinalIgnoreCase))
+                                // Skip multimodal audio/video/tts/deprecated models
+                                if (cleanName.Contains("tts", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("image", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("transcribe", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("2.5", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("1.5", StringComparison.OrdinalIgnoreCase))
                                 {
                                     continue;
                                 }
@@ -321,11 +324,13 @@ namespace Ozikol.Central.Services
                             }
                         }
 
-                        // Priority order for lowest latency, highest fidelity Flash models:
-                        var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-2.0-flash", StringComparison.OrdinalIgnoreCase))
-                            ?? validModels.FirstOrDefault(m => m.Contains("2.0-flash", StringComparison.OrdinalIgnoreCase))
-                            ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase) && !m.Contains("thinking", StringComparison.OrdinalIgnoreCase) && !m.Contains("2.5", StringComparison.OrdinalIgnoreCase))
-                            ?? validModels.FirstOrDefault(m => m.Contains("gemini", StringComparison.OrdinalIgnoreCase))
+                        // Priority order for verified active Flash models from ModelService:
+                        var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.5-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.7-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.8-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-flash-latest", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("3.", StringComparison.OrdinalIgnoreCase) && m.Contains("flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault();
 
                         if (!string.IsNullOrWhiteSpace(preferred))

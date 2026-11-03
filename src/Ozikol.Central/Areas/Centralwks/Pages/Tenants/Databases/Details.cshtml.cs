@@ -506,22 +506,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 ? request.ErrorMessage
                 : (deepDive?.ErrorMessage ?? deepDive?.Tenant?.Status?.ErrorMessage ?? "Database has pending migrations awaiting execution.");
 
-            var key = await _aiKeyPoolService.GetNextAvailableKeyAsync("Gemini", cancellationToken);
-            if (key == null)
-            {
-                // Fallback to DeepSeek if available
-                key = await _aiKeyPoolService.GetNextAvailableKeyAsync("DeepSeek", cancellationToken);
-            }
-
-            if (key == null)
-            {
-                return new JsonResult(new
-                {
-                    success = false,
-                    message = "No active AI API key available in Central Master Key Pool (Google Gemini). Please check active keys at /centralwks/aikeys."
-                });
-            }
-
             var sw = Stopwatch.StartNew();
 
             var systemPrompt = @"You are the Chief Database Administrator and SQL Diagnostics Specialist for Ozikol Business Command Center.
@@ -566,75 +550,86 @@ CRITICAL DIAGNOSIS TASK:
 3. Generate the exact 'DROP TABLE IF EXISTS [dbo].[TableName];' statement for EVERY colliding table so EF Core can run the migration cleanly.
 4. Output clean T-SQL without 'GO' or 'USE' statements.";
 
-            try
+            const int maxKeyAttempts = 4;
+            string jsonResponseText = string.Empty;
+            string selectedModel = "gemini-3.5-flash";
+            string lastError = string.Empty;
+            MasterAiApiKey? activeKey = null;
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(30);
+
+            for (int attempt = 1; attempt <= maxKeyAttempts; attempt++)
             {
-                var client = _httpClientFactory.CreateClient();
-                client.Timeout = TimeSpan.FromSeconds(30);
-
-                string jsonResponseText = string.Empty;
-                string selectedModel = await _aiKeyPoolService.ResolveSupportedModelAsync(key, cancellationToken);
-
-                if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+                var key = await _aiKeyPoolService.GetNextAvailableKeyAsync("Gemini", cancellationToken);
+                if (key == null)
                 {
-                    var candidateModels = new List<string>();
-                    if (!string.IsNullOrWhiteSpace(selectedModel) && !selectedModel.Contains("2.5", StringComparison.OrdinalIgnoreCase))
-                    {
-                        candidateModels.Add(selectedModel);
-                    }
-                    candidateModels.AddRange(new[] { "gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-pro" });
-                    candidateModels = candidateModels.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-
-                    HttpResponseMessage? httpResponse = null;
-                    string? lastErrBody = null;
-
-                    foreach (var model in candidateModels)
-                    {
-                        var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key.ApiKey}";
-                        var payload = new
-                        {
-                            system_instruction = new
-                            {
-                                parts = new[] { new { text = systemPrompt } }
-                            },
-                            contents = new[]
-                            {
-                                new
-                                {
-                                    role = "user",
-                                    parts = new[] { new { text = userPrompt } }
-                                }
-                            },
-                            generationConfig = new
-                            {
-                                temperature = 0.1,
-                                response_mime_type = "application/json"
-                            }
-                        };
-
-                        using var res = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
-                        if (res.IsSuccessStatusCode)
-                        {
-                            httpResponse = res;
-                            selectedModel = model;
-                            jsonResponseText = await res.Content.ReadAsStringAsync(cancellationToken);
-                            break;
-                        }
-
-                        lastErrBody = await res.Content.ReadAsStringAsync(cancellationToken);
-                        if ((int)res.StatusCode == 429)
-                        {
-                            await _aiKeyPoolService.MarkRateLimitedAsync(key.Id, 300, cancellationToken);
-                            break;
-                        }
-                    }
-
-                    if (httpResponse == null || !httpResponse.IsSuccessStatusCode)
-                    {
-                        throw new HttpRequestException($"Gemini API error: {lastErrBody}");
-                    }
+                    key = await _aiKeyPoolService.GetNextAvailableKeyAsync("DeepSeek", cancellationToken);
                 }
 
-                sw.Stop();
+                if (key == null)
+                {
+                    break;
+                }
+
+                try
+                {
+                    selectedModel = await _aiKeyPoolService.ResolveSupportedModelAsync(key, cancellationToken);
+                    var geminiUrl = await _aiKeyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
+
+                    var payload = new
+                    {
+                        contents = new[]
+                        {
+                            new
+                            {
+                                role = "user",
+                                parts = new[] { new { text = $"{systemPrompt}\n\n{userPrompt}" } }
+                            }
+                        },
+                        generationConfig = new
+                        {
+                            temperature = 0.1,
+                            responseMimeType = "application/json"
+                        }
+                    };
+
+                    using var res = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
+                    if (res.IsSuccessStatusCode)
+                    {
+                        activeKey = key;
+                        jsonResponseText = await res.Content.ReadAsStringAsync(cancellationToken);
+                        await _aiKeyPoolService.LogUsageAsync(key.Id, "DatabaseAiDoctor", (int)sw.ElapsedMilliseconds, 200, cancellationToken: cancellationToken);
+                        break;
+                    }
+
+                    var errBody = await res.Content.ReadAsStringAsync(cancellationToken);
+                    lastError = errBody;
+
+                    // Automatically cool down depleted (402), rate-limited (429), or busy (503) keys and rotate to next key
+                    if ((int)res.StatusCode == 429 || (int)res.StatusCode == 402 || (int)res.StatusCode == 401 || (int)res.StatusCode == 403 || (int)res.StatusCode == 503 || (int)res.StatusCode == 404)
+                    {
+                        var cooldown = (int)res.StatusCode == 402 ? 86400 : 300;
+                        await _aiKeyPoolService.MarkRateLimitedAsync(key.Id, cooldown, cancellationToken);
+                        await _aiKeyPoolService.LogUsageAsync(key.Id, "DatabaseAiDoctor", (int)sw.ElapsedMilliseconds, (int)res.StatusCode, errorMessage: errBody, cancellationToken: cancellationToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex.Message;
+                    await _aiKeyPoolService.MarkRateLimitedAsync(key.Id, 120, cancellationToken);
+                }
+            }
+
+            sw.Stop();
+
+            if (string.IsNullOrWhiteSpace(jsonResponseText))
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = $"AI Database Doctor could not generate diagnosis: {lastError}"
+                });
+            }
 
                 // Parse candidate text from Gemini
                 var doc = JsonDocument.Parse(jsonResponseText);
@@ -661,12 +656,15 @@ CRITICAL DIAGNOSIS TASK:
                     throw new InvalidOperationException("Failed to deserialize AI doctor prescription.");
                 }
 
-                await _aiKeyPoolService.LogUsageAsync(
-                    key.Id,
-                    "DatabaseAiDoctor",
-                    (int)sw.ElapsedMilliseconds,
-                    200,
-                    cancellationToken: cancellationToken);
+                if (activeKey != null)
+                {
+                    await _aiKeyPoolService.LogUsageAsync(
+                        activeKey.Id,
+                        "DatabaseAiDoctor",
+                        (int)sw.ElapsedMilliseconds,
+                        200,
+                        cancellationToken: cancellationToken);
+                }
 
                 return new JsonResult(new
                 {
@@ -674,7 +672,7 @@ CRITICAL DIAGNOSIS TASK:
                     diagnosis = diagnosisResult.Diagnosis,
                     recommendedSql = diagnosisResult.RecommendedSql,
                     explanation = diagnosisResult.Explanation,
-                    keyAliasUsed = $"{key.KeyAlias} [{selectedModel}]",
+                    keyAliasUsed = $"{activeKey?.KeyAlias ?? "AI"} [{selectedModel}]",
                     latencyMs = sw.ElapsedMilliseconds
                 });
             }
