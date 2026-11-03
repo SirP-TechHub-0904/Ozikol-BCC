@@ -70,38 +70,51 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
         <!-- 1-Click Preset Chips -->
         <div class="preset-bar">
           <span class="preset-lbl">Quick Presets:</span>
-          <button type="button" class="preset-chip" (click)="applyPreset('Committee', 'Committees', 'Sub-Committee', 'Sub-Committees', 'Chairperson', 'Secretary')">Committees</button>
-          <button type="button" class="preset-chip" (click)="applyPreset('Ministry', 'Ministries', 'Unit', 'Units', 'Ministry Lead', 'Secretary')">Ministries & Units</button>
-          <button type="button" class="preset-chip" (click)="applyPreset('Actor Group', 'Actors & Casts', 'Cast Unit', 'Cast Units', 'Director', 'Stage Manager')">Actors & Production</button>
-          <button type="button" class="preset-chip" (click)="applyPreset('Department', 'Departments', 'Team', 'Teams', 'Head of Department', 'Coordinator')">Departments & Teams</button>
-          <button type="button" class="preset-chip" (click)="applyPreset('Chapter', 'Chapters', 'Cell', 'Cells', 'Chapter President', 'Scribe')">Chapters & Cells</button>
-          <button type="button" class="preset-chip" (click)="applyPreset('Club', 'Clubs & Societies', 'Squad', 'Squads', 'Club Captain', 'Secretary')">Clubs & Societies</button>
+          <button type="button" class="preset-chip" [class.active]="model.aliasSingular === 'Committee'" (click)="applyPreset('Committee', 'Committees', 'Sub-Committee', 'Sub-Committees', 'Chairperson', 'Secretary')">Committees</button>
+          <button type="button" class="preset-chip" [class.active]="model.aliasSingular === 'Ministry'" (click)="applyPreset('Ministry', 'Ministries', 'Unit', 'Units', 'Ministry Lead', 'Secretary')">Ministries &amp; Units</button>
+          <button type="button" class="preset-chip" [class.active]="model.aliasSingular === 'Actor Group'" (click)="applyPreset('Actor Group', 'Actors &amp; Casts', 'Cast Unit', 'Cast Units', 'Director', 'Stage Manager')">Actors &amp; Production</button>
+          <button type="button" class="preset-chip" [class.active]="model.aliasSingular === 'Department'" (click)="applyPreset('Department', 'Departments', 'Team', 'Teams', 'Head of Department', 'Coordinator')">Departments &amp; Teams</button>
+          <button type="button" class="preset-chip" [class.active]="model.aliasSingular === 'Chapter'" (click)="applyPreset('Chapter', 'Chapters', 'Cell', 'Cells', 'Chapter President', 'Scribe')">Chapters &amp; Cells</button>
+          <button type="button" class="preset-chip" [class.active]="model.aliasSingular === 'Club'" (click)="applyPreset('Club', 'Clubs &amp; Societies', 'Squad', 'Squads', 'Club Captain', 'Secretary')">Clubs &amp; Societies</button>
         </div>
 
-        <div class="grid-3">
+        <!-- Primary Clean 2-Column Name Inputs -->
+        <div class="grid-2">
           <div class="field-grp">
-            <label>Singular Alias (replaces "Committee")</label>
-            <input type="text" [(ngModel)]="model.aliasSingular" placeholder="e.g. Ministry or Actor Group" />
+            <label>Singular Name</label>
+            <input type="text" [(ngModel)]="model.aliasSingular" (ngModelChange)="onSingularChange($event)" placeholder="e.g. Committee" />
           </div>
           <div class="field-grp">
-            <label>Plural Alias (Sidebar & Directory Title)</label>
-            <input type="text" [(ngModel)]="model.aliasPlural" placeholder="e.g. Ministries or Actors" />
+            <label>Plural Name</label>
+            <input type="text" [(ngModel)]="model.aliasPlural" placeholder="e.g. Committees" />
+          </div>
+        </div>
+
+        <!-- Collapsible Leadership & Sub-Unit Titles Toggle -->
+        <div class="advanced-toggle-row">
+          <button type="button" class="btn-toggle-advanced" (click)="showAdvancedTitles = !showAdvancedTitles">
+            <span class="material-symbols-outlined" style="font-size: 17px;">{{ showAdvancedTitles ? 'expand_less' : 'tune' }}</span>
+            <span>{{ showAdvancedTitles ? 'Hide Leadership & Sub-Unit Titles' : 'Customize Leadership & Sub-Unit Titles (Optional)' }}</span>
+          </button>
+        </div>
+
+        <!-- Optional Detailed Titles (Collapsed by default) -->
+        <div class="grid-2 advanced-section" *ngIf="showAdvancedTitles">
+          <div class="field-grp">
+            <label>Leader Title</label>
+            <input type="text" [(ngModel)]="model.leaderTitleAlias" placeholder="e.g. Chairperson" />
           </div>
           <div class="field-grp">
-            <label>Primary Leader Title</label>
-            <input type="text" [(ngModel)]="model.leaderTitleAlias" placeholder="e.g. Chairperson or Director" />
+            <label>Secretary Title</label>
+            <input type="text" [(ngModel)]="model.secretaryTitleAlias" placeholder="e.g. Secretary" />
           </div>
           <div class="field-grp">
-            <label>Sub-Unit Singular Alias</label>
-            <input type="text" [(ngModel)]="model.subGroupAliasSingular" placeholder="e.g. Unit or Cast" />
+            <label>Sub-Group Name (Singular)</label>
+            <input type="text" [(ngModel)]="model.subGroupAliasSingular" placeholder="e.g. Sub-Group" />
           </div>
           <div class="field-grp">
-            <label>Sub-Unit Plural Alias</label>
-            <input type="text" [(ngModel)]="model.subGroupAliasPlural" placeholder="e.g. Units or Casts" />
-          </div>
-          <div class="field-grp">
-            <label>Secretary / Scribe Title</label>
-            <input type="text" [(ngModel)]="model.secretaryTitleAlias" placeholder="e.g. Secretary or Stage Manager" />
+            <label>Sub-Group Name (Plural)</label>
+            <input type="text" [(ngModel)]="model.subGroupAliasPlural" placeholder="e.g. Sub-Groups" />
           </div>
         </div>
 
@@ -250,9 +263,25 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .preset-lbl { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; }
     .preset-chip {
       padding: 6px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #f8fafc;
-      font-size: 12px; font-weight: 600; color: #1e293b; cursor: pointer;
+      font-size: 12px; font-weight: 600; color: #1e293b; cursor: pointer; transition: all 0.15s ease;
     }
     .preset-chip:hover { border-color: #0050e5; color: #0050e5; background: rgba(0,80,229,0.06); }
+    .preset-chip.active { border-color: #0050e5; background: #0050e5; color: #ffffff; }
+
+    .advanced-toggle-row { display: flex; align-items: center; padding-top: 4px; }
+    .btn-toggle-advanced {
+      display: inline-flex; align-items: center; gap: 6px; background: transparent;
+      border: 1px dashed #cbd5e1; border-radius: 8px; padding: 7px 12px;
+      font-size: 12.5px; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-toggle-advanced:hover { border-color: #0050e5; color: #0050e5; background: rgba(0,80,229,0.04); }
+    :host-context(.dark-mode) .btn-toggle-advanced { border-color: rgba(255,255,255,0.15); color: #cbd5e1; }
+    .advanced-section {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;
+    }
+    :host-context(.dark-mode) .advanced-section {
+      background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);
+    }
 
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
@@ -300,6 +329,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
 export class CommitteesSettingsComponent implements OnInit {
   loading = false;
   saving = false;
+  showAdvancedTitles = false;
   forms: any[] = [];
   headerButtons: PageHeaderButton[] = [];
   activeInfo: CommitteeInfoSpec | null = null;
@@ -367,6 +397,20 @@ export class CommitteesSettingsComponent implements OnInit {
     this.model.subGroupAliasPlural = pSub;
     this.model.leaderTitleAlias = leader;
     this.model.secretaryTitleAlias = sec;
+  }
+
+  onSingularChange(val: string): void {
+    if (!val) return;
+    const trimmed = val.trim();
+    if (!this.model.aliasPlural || this.model.aliasPlural.toLowerCase() === (trimmed.toLowerCase() + 's') || this.model.aliasPlural.toLowerCase().startsWith(trimmed.toLowerCase())) {
+      if (trimmed.endsWith('y') && !trimmed.endsWith('ey') && !trimmed.endsWith('ay') && !trimmed.endsWith('oy')) {
+        this.model.aliasPlural = trimmed.substring(0, trimmed.length - 1) + 'ies';
+      } else if (trimmed.endsWith('s') || trimmed.endsWith('ch') || trimmed.endsWith('sh') || trimmed.endsWith('x')) {
+        this.model.aliasPlural = trimmed + 'es';
+      } else {
+        this.model.aliasPlural = trimmed + 's';
+      }
+    }
   }
 
   addCustomMetric(): void {
