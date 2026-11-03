@@ -4147,33 +4147,10 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   /**
-   * Canonical list of all 46 published capability codes matching MasterCatalogDbContext and the sidebar template
-   * so the sidebar immediately renders all published features before the async billing snapshot response returns.
+   * Baseline published capability codes before the first billing snapshot sync completes.
+   * Features that are not installed are excluded from sidebar display.
    */
-  private static readonly DEFAULT_PUBLISHED_FEATURE_CODES: string[] = [
-    // Suite A: People, Community & Collaboration
-    'bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing',
-    // Suite B: Workforce, Rota & Scheduling
-    'bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups',
-    // Suite C: Reports, Forms & Analytics
-    'bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms',
-    // Suite D: Events & Training Management
-    'bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management',
-    // Suite E: Finance & Commercial Revenue
-    'bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking',
-    // Suite F: Operations & Workflows
-    'bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks',
-    // Suite G: Communication, AI & Support
-    'bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai',
-    // Suite H: Compliance, Learning & Certification
-    'bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification',
-    // Suite I: Demographics & Civic Census
-    'bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics',
-    // Suite J: Life Events & Publications
-    'bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures',
-    // Suite K: Workspace
-    'bcp-workspace'
-  ];
+  private static readonly DEFAULT_PUBLISHED_FEATURE_CODES: string[] = [];
 
   /**
    * Baseline available capability codes before the first billing snapshot sync completes.
@@ -4303,31 +4280,37 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   /**
-   * Set of lowercase FeatureCodes that are visible to the tenant (Published in Central).
+   * Set of lowercase FeatureCodes that are visible to the tenant in the sidebar navigation menu.
+   * Only features that are Installed & Active OR Installed but Expired are included.
+   * Features that are Not Installed are excluded from the sidebar.
    */
   visibleFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_visible_feature_codes_v4');
+        const raw = localStorage.getItem('bcp_visible_feature_codes_v5');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
         }
-        return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
+        const activeRaw = localStorage.getItem('bcp_active_feature_codes');
+        if (activeRaw) {
+          const parsedActive = JSON.parse(activeRaw);
+          if (Array.isArray(parsedActive)) return parsedActive;
+        }
+        return [];
       } catch {
-        return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
+        return [];
       }
     })()
   );
 
   /**
    * Set of lowercase FeatureCodes that are Available for use (either via general availability or custom tenant availability).
-   * Features not in this set are shown as "Coming Soon" in the sidebar.
    */
   availableFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_available_feature_codes_v4');
+        const raw = localStorage.getItem('bcp_available_feature_codes_v5');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
@@ -4346,6 +4329,20 @@ export class AdminLayoutComponent implements OnInit {
     (() => {
       try {
         const raw = localStorage.getItem('bcp_active_feature_codes');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })()
+  );
+
+  /**
+   * Set of lowercase FeatureCodes that were installed but have expired (displaying the lock icon).
+   */
+  expiredFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_expired_feature_codes');
         return raw ? JSON.parse(raw) : [];
       } catch {
         return [];
@@ -4507,6 +4504,7 @@ export class AdminLayoutComponent implements OnInit {
     const visible = new Set<string>();
     const available = new Set<string>();
     const active = new Set<string>();
+    const expired = new Set<string>();
 
     const suiteMap = new Map<string, {
       categoryName: string;
@@ -4555,12 +4553,29 @@ export class AdminLayoutComponent implements OnInit {
       if (item.isPublished === false) {
         continue;
       }
-      visible.add(code);
       if (item.isAvailableForUse === true) {
         available.add(code);
       }
-      if (item.isActive && item.isAvailableForUse === true) {
+
+      // Feature Visibility & Lock Architecture:
+      // - Features that are Not Installed (!item.isActive && !isExpired) MUST NOT show in the sidebar.
+      // - Features that are Installed & Active show normally (clickable, unlocked).
+      // - Features that were Installed but are now Expired show in the sidebar with a Lock icon [lock].
+      // - isPublished means it appears in Central Subscription Dashboard (/billing/features) so the tenant can install it.
+      const isInstalledActive = Boolean(item.isActive && item.isAvailableForUse === true);
+      const isInstalledExpired = !isInstalledActive && (
+        item.status === 'Expired' ||
+        item.status === 'expired' ||
+        item.status === 'Suspended' ||
+        (Boolean(item.subscriptionId) && item.daysRemaining !== null && item.daysRemaining !== undefined && item.daysRemaining <= 0)
+      );
+
+      if (isInstalledActive) {
         active.add(code);
+        visible.add(code);
+      } else if (isInstalledExpired) {
+        expired.add(code);
+        visible.add(code);
       }
 
       const catKey = catName.toLowerCase();
@@ -4616,9 +4631,13 @@ export class AdminLayoutComponent implements OnInit {
     this.visibleFeatureCodes = visible;
     this.availableFeatureCodes = available;
     this.activeFeatureCodes = active;
-    localStorage.setItem('bcp_visible_feature_codes_v4', JSON.stringify(Array.from(visible)));
-    localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
+    this.expiredFeatureCodes = expired;
+    localStorage.setItem('bcp_visible_feature_codes_v5', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_available_feature_codes_v5', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+    localStorage.setItem('bcp_expired_feature_codes', JSON.stringify(Array.from(expired)));
+    localStorage.removeItem('bcp_visible_feature_codes_v4');
+    localStorage.removeItem('bcp_available_feature_codes_v4');
     if (Array.isArray(d.notices)) {
       this.expiringFeatures = d.notices.filter((f: any) =>
         (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
@@ -4703,6 +4722,17 @@ export class AdminLayoutComponent implements OnInit {
   isAnyFeatureActive(featureCodes: string[]): boolean {
     if (!featureCodes || featureCodes.length === 0) return false;
     return featureCodes.some(code => this.isFeatureActive(code));
+  }
+
+  /**
+   * Checks whether a specific modular capability was previously installed but has expired.
+   * When expired, the capability remains visible in the sidebar with a Lock icon.
+   * @param featureCode Canonical feature code (e.g. 'bcp-workspace').
+   * @returns True when the feature is installed but expired.
+   */
+  isFeatureExpired(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.expiredFeatureCodes.has(featureCode.toLowerCase());
   }
 
   /**
