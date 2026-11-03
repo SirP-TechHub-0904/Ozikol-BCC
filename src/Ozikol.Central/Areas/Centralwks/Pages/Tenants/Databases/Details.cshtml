@@ -757,7 +757,13 @@
                 alert('No recommended SQL to apply.');
                 return;
             }
-            setSqlQuery(currentAiRecommendedSql);
+            // Clean up any batch separators or redundant USE statements for direct ADO.NET execution
+            let cleanSql = currentAiRecommendedSql
+                .replace(/^\s*USE\s+\[?[a-zA-Z0-9_]+\]?\s*;?\s*(\r?\n)+/im, '')
+                .replace(/^\s*GO\s*$/gim, '')
+                .trim();
+
+            setSqlQuery(cleanSql || currentAiRecommendedSql);
             if (executeNow) {
                 executeEmergencySql();
             }

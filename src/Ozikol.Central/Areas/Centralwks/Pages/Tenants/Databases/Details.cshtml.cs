@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -336,18 +337,37 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 using var conn = new SqlConnection(harmonizedConnStr);
                 await conn.OpenAsync();
 
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = trimmedSql;
-                cmd.CommandTimeout = 60;
+                // Split script by 'GO' batch separators (case-insensitive, on their own line)
+                var rawBatches = Regex.Split(trimmedSql, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                var batches = rawBatches
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+
+                if (!batches.Any())
+                {
+                    return new JsonResult(new { success = false, message = "SQL query cannot be empty or contain only GO separators." });
+                }
 
                 var columns = new List<string>();
                 var rows = new List<List<string?>>();
-                int rowsAffected = 0;
+                int totalRowsAffected = 0;
                 bool hasResultSet = false;
 
-                using (var reader = await cmd.ExecuteReaderAsync())
+                foreach (var batch in batches)
                 {
-                    if (reader.FieldCount > 0)
+                    // If the batch is just a USE [db] statement, skip it since the connection is already targeting this database
+                    if (Regex.IsMatch(batch, @"^\s*USE\s+\[?[a-zA-Z0-9_]+\]?\s*;?\s*$", RegexOptions.IgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = batch;
+                    cmd.CommandTimeout = 120;
+
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (reader.FieldCount > 0 && !hasResultSet)
                     {
                         hasResultSet = true;
                         for (int i = 0; i < reader.FieldCount; i++)
@@ -368,7 +388,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                             count++;
                         }
                     }
-                    rowsAffected = reader.RecordsAffected;
+
+                    if (reader.RecordsAffected > 0)
+                    {
+                        totalRowsAffected += reader.RecordsAffected;
+                    }
                 }
 
                 sw.Stop();
@@ -392,14 +416,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 {
                     success = true,
                     executionTimeMs = sw.ElapsedMilliseconds,
-                    rowsAffected = rowsAffected >= 0 ? rowsAffected : 0,
+                    rowsAffected = totalRowsAffected >= 0 ? totalRowsAffected : 0,
                     hasResultSet,
                     columns,
                     rows,
                     totalReturned = rows.Count,
                     message = hasResultSet 
                         ? $"Query returned {rows.Count} rows in {sw.ElapsedMilliseconds} ms."
-                        : $"Command executed successfully in {sw.ElapsedMilliseconds} ms. Rows affected: {(rowsAffected >= 0 ? rowsAffected : 0)}"
+                        : $"Command executed successfully in {sw.ElapsedMilliseconds} ms. {(batches.Count > 1 ? $"({batches.Count} batches executed)" : $"Rows affected: {totalRowsAffected}")}"
                 });
             }
             catch (Exception ex)
@@ -506,6 +530,11 @@ When given an error message, database name, and migration details, you must:
 1. Provide a concise, clear diagnosis explaining exactly WHY the error occurred in plain English.
 2. Provide the exact Microsoft SQL Server repair script (T-SQL) to safely fix the issue so EF Core migrations can complete.
 3. Provide a brief explanation of how this SQL resolves the problem without unintended data loss.
+
+CRITICAL T-SQL FORMAT RULES:
+- Output clean, semicolon-terminated T-SQL statements (e.g. DROP TABLE IF EXISTS [dbo].[TableName];).
+- NEVER output 'GO' batch separators (they cause ADO.NET execution syntax errors).
+- NEVER output 'USE [database_name]' statements (the execution connection is already established directly on the target tenant database).
 
 STRICT JSON OUTPUT FORMAT ONLY:
 You must respond with ONLY a valid, parseable JSON object matching this schema with no markdown outside the JSON:
