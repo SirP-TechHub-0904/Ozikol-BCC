@@ -24,9 +24,15 @@
     </div>
 </div>
 
-@* ── Database Suite Mini-Dashboard ── *@
+@* ── Database Suite Mini-Dashboard (Clickable Filter Cards) ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
-    <div class="stat-card">
+    @{
+        var currentStatus = string.IsNullOrEmpty(Model.Status) ? "all" : Model.Status.ToLowerInvariant();
+    }
+    <a href="?status=all&pageSize=@Model.PageSize@(string.IsNullOrEmpty(Model.Search) ? "" : $"&search={Model.Search}")" 
+       class="stat-card stat-card-interactive" 
+       style="text-decoration: none; cursor: pointer; transition: all 0.2s ease; @(currentStatus == "all" ? "border-color: var(--admin-primary); box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.18); background: var(--admin-bg-surface-elevated);" : "")"
+       title="Filter: Show all databases">
         <div class="stat-icon-wrapper stat-icon-primary">
             <span class="material-symbols-outlined">database</span>
         </div>
@@ -34,8 +40,12 @@
             <span class="stat-label">Total Databases</span>
             <span class="stat-value">@Model.TotalDatabasesCount.ToString("N0")</span>
         </div>
-    </div>
-    <div class="stat-card">
+    </a>
+
+    <a href="?status=healthy&pageSize=@Model.PageSize@(string.IsNullOrEmpty(Model.Search) ? "" : $"&search={Model.Search}")" 
+       class="stat-card stat-card-interactive" 
+       style="text-decoration: none; cursor: pointer; transition: all 0.2s ease; @(currentStatus == "healthy" ? "border-color: var(--admin-success); box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18); background: var(--admin-bg-surface-elevated);" : "")"
+       title="Filter: Show only healthy &amp; synced databases">
         <div class="stat-icon-wrapper stat-icon-success">
             <span class="material-symbols-outlined">health_and_safety</span>
         </div>
@@ -43,8 +53,12 @@
             <span class="stat-label">Healthy &amp; Synced</span>
             <span class="stat-value" style="color: var(--admin-success);">@Model.HealthyDatabasesCount.ToString("N0")</span>
         </div>
-    </div>
-    <div class="stat-card">
+    </a>
+
+    <a href="?status=pending&pageSize=@Model.PageSize@(string.IsNullOrEmpty(Model.Search) ? "" : $"&search={Model.Search}")" 
+       class="stat-card stat-card-interactive" 
+       style="text-decoration: none; cursor: pointer; transition: all 0.2s ease; @(currentStatus == "pending" ? "border-color: var(--admin-warning); box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.25); background: var(--admin-bg-surface-elevated);" : "")"
+       title="Filter: Show only databases with pending migrations">
         <div class="stat-icon-wrapper stat-icon-warning">
             <span class="material-symbols-outlined">sync_problem</span>
         </div>
@@ -52,8 +66,12 @@
             <span class="stat-label">Pending Migrations</span>
             <span class="stat-value" style="color: var(--admin-warning);">@Model.PendingMigrationsCount.ToString("N0")</span>
         </div>
-    </div>
-    <div class="stat-card">
+    </a>
+
+    <a href="?status=unreachable&pageSize=@Model.PageSize@(string.IsNullOrEmpty(Model.Search) ? "" : $"&search={Model.Search}")" 
+       class="stat-card stat-card-interactive" 
+       style="text-decoration: none; cursor: pointer; transition: all 0.2s ease; @(currentStatus == "unreachable" ? "border-color: var(--admin-danger); box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18); background: var(--admin-bg-surface-elevated);" : "")"
+       title="Filter: Show only unreachable / offline databases">
         <div class="stat-icon-wrapper stat-icon-danger">
             <span class="material-symbols-outlined">cloud_off</span>
         </div>
@@ -61,7 +79,7 @@
             <span class="stat-label">Unreachable</span>
             <span class="stat-value" style="color: var(--admin-danger);">@Model.UnreachableDatabasesCount.ToString("N0")</span>
         </div>
-    </div>
+    </a>
 </div>
 
 @* ── Master Catalog Database Status Banner ── *@
@@ -107,7 +125,7 @@
     </div>
 }
 
-@* ── Database Fleet Table Card ── *@
+@* ── Database Suite Table Card ── *@
 <div class="admin-card">
     <div class="table-toolbar" style="flex-wrap: wrap; gap: 14px;">
         <form method="get" class="table-filters" style="flex: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
