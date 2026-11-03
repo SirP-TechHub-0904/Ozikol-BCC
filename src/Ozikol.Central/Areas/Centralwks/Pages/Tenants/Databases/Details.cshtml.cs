@@ -202,6 +202,132 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             return RedirectToPage(new { tenantKey });
         }
 
+        /// <summary>
+        /// Request model for executing raw SQL queries in the emergency repair room.
+        /// </summary>
+        public class ExecuteQueryRequest
+        {
+            /// <summary>
+            /// Tenant key identifier whose database is targeted.
+            /// </summary>
+            public string TenantKey { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Raw SQL query statement to execute.
+            /// </summary>
+            public string SqlQuery { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Handles AJAX POST requests to safely execute SQL queries and schema repair commands against the tenant's database.
+        /// </summary>
+        /// <param name="request">Query execution parameters containing the SQL query.</param>
+        /// <returns>JSON result with tabular rows or execution metadata.</returns>
+        public async Task<IActionResult> OnPostExecuteQueryAsync([FromBody] ExecuteQueryRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.TenantKey) || string.IsNullOrWhiteSpace(request?.SqlQuery))
+            {
+                return new JsonResult(new { success = false, message = "SQL query statement and tenant key are required." });
+            }
+
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == request.TenantKey);
+            if (tenant == null)
+            {
+                return new JsonResult(new { success = false, message = "Tenant database record not found." });
+            }
+
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+            var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
+            string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
+
+            var sw = Stopwatch.StartNew();
+            var trimmedSql = request.SqlQuery.Trim();
+
+            try
+            {
+                using var conn = new SqlConnection(harmonizedConnStr);
+                await conn.OpenAsync();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = trimmedSql;
+                cmd.CommandTimeout = 60;
+
+                var columns = new List<string>();
+                var rows = new List<List<string?>>();
+                int rowsAffected = 0;
+                bool hasResultSet = false;
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    if (reader.FieldCount > 0)
+                    {
+                        hasResultSet = true;
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            columns.Add(reader.GetName(i));
+                        }
+
+                        int count = 0;
+                        while (await reader.ReadAsync() && count < 100)
+                        {
+                            var row = new List<string?>();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                var val = reader.IsDBNull(i) ? "NULL" : reader.GetValue(i)?.ToString();
+                                row.Add(val);
+                            }
+                            rows.Add(row);
+                            count++;
+                        }
+                    }
+                    rowsAffected = reader.RecordsAffected;
+                }
+
+                sw.Stop();
+
+                // Audit log for platform compliance
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Database.EmergencyQueryExecuted",
+                    EntityType = "Database",
+                    EntityId = tenant.TenantKey,
+                    Summary = $"Admin {adminUser} executed SQL on '{tenant.DatabaseName}' ({sw.ElapsedMilliseconds}ms): {(trimmedSql.Length > 200 ? trimmedSql[..200] + "..." : trimmedSql)}",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    executionTimeMs = sw.ElapsedMilliseconds,
+                    rowsAffected = rowsAffected >= 0 ? rowsAffected : 0,
+                    hasResultSet,
+                    columns,
+                    rows,
+                    totalReturned = rows.Count,
+                    message = hasResultSet 
+                        ? $"Query returned {rows.Count} rows in {sw.ElapsedMilliseconds} ms."
+                        : $"Command executed successfully in {sw.ElapsedMilliseconds} ms. Rows affected: {(rowsAffected >= 0 ? rowsAffected : 0)}"
+                });
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _logger.LogError(ex, "Emergency SQL execution error on tenant {TenantKey}: {Sql}", tenant.TenantKey, trimmedSql);
+
+                return new JsonResult(new
+                {
+                    success = false,
+                    executionTimeMs = sw.ElapsedMilliseconds,
+                    message = ex.Message
+                });
+            }
+        }
+
         private async Task MeasurePingLatencyAsync(string connectionString)
         {
             var sw = Stopwatch.StartNew();

@@ -263,6 +263,10 @@
                                         <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
                                     </a>
 
+                                    <a href="/centralwks/tenants/databases/details?tenantKey=@db.TenantKey#sqlRepairRoom" class="btn-admin btn-admin-secondary btn-admin-sm" title="SQL Query & Emergency Repair Room">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
+                                    </a>
+
                                     @if (db.Status.HasPendingMigrations)
                                     {
                                         <form method="post" asp-page-handler="MigrateTenant" asp-route-tenantKey="@db.TenantKey" style="display: inline; margin: 0;">
