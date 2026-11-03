@@ -508,7 +508,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
 
             var sw = Stopwatch.StartNew();
 
-            var systemPrompt = @"You are the Chief Database Administrator and SQL Diagnostics Specialist for Ozikol Business Command Center.
+            try
+            {
+                var systemPrompt = @"You are the Chief Database Administrator and SQL Diagnostics Specialist for Ozikol Business Command Center.
 You specialize in Microsoft SQL Server, Entity Framework Core migrations, table collision handling, and schema recovery.
 When given an error message, database name, and migration details, you must:
 1. Provide a concise, clear diagnosis explaining exactly WHY the error occurred in plain English.
@@ -679,15 +681,18 @@ CRITICAL DIAGNOSIS TASK:
             catch (Exception ex)
             {
                 sw.Stop();
-                _logger.LogError(ex, "Gemini AI Database Doctor failed on key '{KeyAlias}' for tenant {TenantKey}", key.KeyAlias, tenant.TenantKey);
+                _logger.LogError(ex, "Gemini AI Database Doctor failed on key '{KeyAlias}' for tenant {TenantKey}", activeKey?.KeyAlias ?? "Unknown", tenant.TenantKey);
 
-                await _aiKeyPoolService.LogUsageAsync(
-                    key.Id,
-                    "DatabaseAiDoctor",
-                    (int)sw.ElapsedMilliseconds,
-                    500,
-                    errorMessage: ex.Message,
-                    cancellationToken: cancellationToken);
+                if (activeKey != null)
+                {
+                    await _aiKeyPoolService.LogUsageAsync(
+                        activeKey.Id,
+                        "DatabaseAiDoctor",
+                        (int)sw.ElapsedMilliseconds,
+                        500,
+                        errorMessage: ex.Message,
+                        cancellationToken: cancellationToken);
+                }
 
                 return new JsonResult(new
                 {
