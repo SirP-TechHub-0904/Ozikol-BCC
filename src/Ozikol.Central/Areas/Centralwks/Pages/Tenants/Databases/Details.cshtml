@@ -252,39 +252,26 @@
     </div>
 
     <div class="admin-card-body" style="padding: 20px;">
-        @* Quick-Fix Preset Chips *@
-        <div style="margin-bottom: 14px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                <span style="font-size: 12px; font-weight: 600; color: var(--admin-text-dim); text-transform: uppercase; letter-spacing: 0.5px;">
-                    Quick-Fix Presets &amp; AI Intelligence:
-                </span>
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnAiDiagnose" onclick="diagnoseWithGemini();" style="font-size: 12px; background: linear-gradient(135deg, rgba(0, 80, 229, 0.12), rgba(124, 58, 237, 0.12)); border: 1px solid var(--admin-primary); color: var(--admin-primary); font-weight: 700;">
-                    <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">auto_awesome</span>
-                    ✨ AI Database Doctor (Diagnose with Gemini)
-                </button>
+        @* AI Database Doctor Header Bar (Dynamic Diagnostics & Resolution) *@
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding: 12px 18px; background: linear-gradient(135deg, rgba(0, 80, 229, 0.06), rgba(99, 102, 241, 0.08)); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); display: flex; align-items: center; justify-content: center; color: #6366F1;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">auto_awesome</span>
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                        Gemini AI Database Doctor
+                        <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; font-size: 10px;">Gemini 2.5 Flash</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">
+                        Intelligently inspects database schema discrepancies, explains root causes, and generates the exact T-SQL script to fix them.
+                    </div>
+                </div>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="setSqlQuery('DROP TABLE IF EXISTS [dbo].[BcpWorkstationActivityLogs];');" style="font-size: 12px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; color: #DC2626;">delete_forever</span>
-                    Drop Conflicting Table [BcpWorkstationActivityLogs]
-                </button>
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="setSqlQuery('SELECT MigrationId, ProductVersion FROM [dbo].[__EFMigrationsHistory] ORDER BY MigrationId DESC;');" style="font-size: 12px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-primary);">history_edu</span>
-                    Inspect EF Migrations History
-                </button>
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="setSqlQuery('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = \'BASE TABLE\' ORDER BY TABLE_NAME ASC;');" style="font-size: 12px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-primary);">table_chart</span>
-                    List All Base Tables
-                </button>
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="setSqlQuery('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE \'%Committee%\' OR TABLE_NAME LIKE \'%Activity%\';');" style="font-size: 12px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-primary);">filter_alt</span>
-                    Check Committee &amp; Activity Tables
-                </button>
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="setSqlQuery('SELECT COUNT(*) AS TotalBaseTables FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = \'BASE TABLE\';');" style="font-size: 12px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-primary);">pin</span>
-                    Count Total Tables
-                </button>
-            </div>
+            <button type="button" class="btn-admin btn-admin-primary" id="btnAiDiagnose" onclick="diagnoseWithGemini();" style="padding: 8px 18px; font-weight: 700; background: #6366F1; border-color: #6366F1;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">auto_awesome</span>
+                Diagnose Issue &amp; Generate Fix
+            </button>
         </div>
 
         @* ── AI Database Doctor Prescription Box ── *@
@@ -703,7 +690,12 @@
             btn.disabled = true;
 
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const queryError = document.getElementById('sqlExecutionStatus')?.innerText || '';
+            let queryError = document.getElementById('sqlExecutionStatus')?.innerText?.trim() || '';
+            const editorText = document.getElementById('sqlQueryInput')?.value?.trim() || '';
+            if (!queryError) {
+                const alertEl = document.querySelector('.admin-alert, .alert, [class*="alert-danger"], .badge-danger');
+                if (alertEl) queryError = alertEl.innerText.trim();
+            }
 
             try {
                 const response = await fetch('?handler=AiDiagnose', {
@@ -714,7 +706,8 @@
                     },
                     body: JSON.stringify({
                         tenantKey: '@Model.Tenant.TenantKey',
-                        errorMessage: queryError
+                        errorMessage: queryError,
+                        userNotes: editorText
                     })
                 });
 

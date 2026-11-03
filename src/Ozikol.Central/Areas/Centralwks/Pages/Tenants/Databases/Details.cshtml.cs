@@ -439,6 +439,10 @@ You must respond with ONLY a valid, parseable JSON object matching this schema w
   ""explanation"": ""Why this script fixes the issue...""
 }";
 
+            var existingTablesSnippet = deepDive?.Tables?.Any() == true
+                ? string.Join(", ", deepDive.Tables.Take(80).Select(t => t.FullName))
+                : "None";
+
             var userPrompt = $@"
 DATABASE CONTEXT:
 - Dedicated Tenant Database: {tenant.DatabaseName}
@@ -447,9 +451,10 @@ DATABASE CONTEXT:
 - Pending Migrations: {(deepDive?.PendingMigrations?.Any() == true ? string.Join(", ", deepDive.PendingMigrations) : "None")}
 - Latest Applied Migration: {(deepDive?.AppliedMigrations?.Any() == true ? deepDive.AppliedMigrations.LastOrDefault() : "None")}
 - Error Message / Symptom: {errorContext}
-- Administrator Notes: {request.UserNotes ?? "None"}
+- Existing Database Tables (Sample): {existingTablesSnippet}
+- Administrator Notes / Query: {request.UserNotes ?? "None"}
 
-Diagnose the error and provide the exact T-SQL script to resolve this failure.";
+Diagnose the error, identify any table/schema collisions, and provide the exact T-SQL script to resolve this failure.";
 
             try
             {
