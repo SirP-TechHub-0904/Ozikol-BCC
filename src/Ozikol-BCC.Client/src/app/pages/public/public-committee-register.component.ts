@@ -125,6 +125,9 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Unlock native document scrolling for public website mode to prevent onesided/clipped layouts
+    document.body.classList.add('public-website-mode');
+
     this.tenantSlug = this.route.snapshot.paramMap.get('tenantSlug') || '';
     this.groupSlug = this.route.snapshot.paramMap.get('groupSlug') || '';
     this.inviteToken = this.route.snapshot.queryParamMap.get('token') || '';
@@ -141,6 +144,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.body.classList.remove('public-website-mode');
     document.getElementById('tenant-dynamic-theme-styles')?.remove();
   }
 
@@ -266,11 +270,22 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
         next: (uiRes: any) => {
           if (uiRes?.data) {
             const data = uiRes.data;
-            this.brandInfo = data;
-            this.brandName = data.brandName || data.companyName || data.siteTitle || '';
-            this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || '';
+            this.brandInfo = { ...this.brandInfo, ...data };
+            this.brandName = data.brandName || data.companyName || data.siteTitle || this.brandName;
+            this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || this.brandLogoUrl;
           }
-          resolve();
+          this.apiService.get('SettingsApi/brand').subscribe({
+            next: (bRes: any) => {
+              if (bRes?.data) {
+                const bData = bRes.data;
+                this.brandInfo = { ...this.brandInfo, ...bData };
+                if (bData.companyName) this.brandName = bData.companyName;
+                if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+              }
+              resolve();
+            },
+            error: () => resolve()
+          });
         },
         error: () => resolve()
       });
@@ -701,6 +716,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
         url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
       }));
 
+    const footerDescription = this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '';
     const footerContext: any = {
       brandName: this.brandName,
       BrandName: this.brandName,
@@ -713,6 +729,12 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
       WhiteLogoUrl: this.brandLogoUrl,
       hasBrandLogo: Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0),
       HasBrandLogo: Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0),
+      Description: footerDescription,
+      description: footerDescription,
+      FooterDescription: footerDescription,
+      footerDescription: footerDescription,
+      tagline: this.brandInfo?.tagline || '',
+      Tagline: this.brandInfo?.tagline || '',
       footerCategories: footerCategories,
       FooterCategories: footerCategories,
       categories: footerCategories,
@@ -723,10 +745,22 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
       LegalPages: footerBottomPages,
       quickLinks: quickLinkPages,
       QuickLinks: quickLinkPages,
+      taggedPages: {
+        quicklinks: quickLinkPages
+      },
+      TaggedPages: {
+        quicklinks: quickLinkPages
+      },
       contactItems: contactItems,
       ContactItems: contactItems,
+      contactChannels: contactItems,
+      ContactChannels: contactItems,
+      hasContactInfo: contactItems.length > 0,
+      HasContactInfo: contactItems.length > 0,
       socialLinks: footerSocialLinks,
       SocialLinks: footerSocialLinks,
+      hasSocialLinks: footerSocialLinks.length > 0,
+      HasSocialLinks: footerSocialLinks.length > 0,
       channels: footerChannels,
       Channels: footerChannels,
       address: contactAddress,
@@ -739,8 +773,10 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
       Year: currentYear,
       currentYear: currentYear,
       CurrentYear: currentYear,
-      companyDescription: this.brandInfo?.companyDescription || '',
-      CompanyDescription: this.brandInfo?.companyDescription || '',
+      copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
+      Copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
+      companyDescription: footerDescription,
+      CompanyDescription: footerDescription,
       activateLogin: this.brandInfo?.activateLogin !== false,
       ActivateLogin: this.brandInfo?.activateLogin !== false,
       activateLoginInFooter: this.brandInfo?.activateLoginInFooter !== false,
@@ -787,112 +823,16 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Renders the canonical 404 Signal Lost Section.
+   * Renders a clean, standard Not Available status section.
    */
   private render404SignalLostHtml(): string {
     return `
-      <section class="oz-404-section">
-        <div class="oz-404-wrapper">
-          <div class="oz-404-badge">
-            <span class="oz-404-badge-dot"></span>
-            <span class="oz-404-badge-text">ERROR 404 &bull; SIGNAL LOST</span>
-          </div>
-
-          <div class="oz-404-graphic">
-            <svg viewBox="0 0 500 340" fill="none" xmlns="http://www.w3.org/2000/svg" class="oz-404-svg" aria-label="Page Not Found Illustration">
-              <defs>
-                <linearGradient id="ozGlobeGrad" x1="130" y1="100" x2="290" y2="260" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#38bdf8"/>
-                  <stop offset="50%" stop-color="#2563eb"/>
-                  <stop offset="100%" stop-color="#1e40af"/>
-                </linearGradient>
-                <radialGradient id="ozGlobeHalo" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
-                </radialGradient>
-                <linearGradient id="ozVisorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#38bdf8"/>
-                  <stop offset="100%" stop-color="#0284c7"/>
-                </linearGradient>
-                <linearGradient id="ozSuitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#ffffff"/>
-                  <stop offset="100%" stop-color="#e2e8f0"/>
-                </linearGradient>
-              </defs>
-
-              <g class="oz-stars-group">
-                <polygon points="70,60 72,66 78,68 72,70 70,76 68,70 62,68 68,66" fill="#38bdf8" class="oz-star oz-anim-star-1"/>
-                <polygon points="430,75 432,79 436,80 432,81 430,85 428,81 424,80 428,79" fill="#818cf8" class="oz-star oz-anim-star-2"/>
-                <polygon points="100,240 101,244 105,245 101,246 100,250 99,246 95,245 99,244" fill="#60a5fa" class="oz-star oz-anim-star-3"/>
-                <circle cx="55" cy="160" r="2.5" fill="#cbd5e1" class="oz-star oz-anim-star-2"/>
-                <circle cx="445" cy="190" r="3" fill="#38bdf8" class="oz-star oz-anim-star-1"/>
-                <circle cx="150" cy="50" r="2" fill="#94a3b8" class="oz-star oz-anim-star-3"/>
-                <circle cx="365" cy="270" r="2.5" fill="#60a5fa" class="oz-star oz-anim-star-2"/>
-                <circle cx="270" cy="45" r="2" fill="#38bdf8" class="oz-star oz-anim-star-1"/>
-              </g>
-
-              <circle cx="210" cy="175" r="115" fill="url(#ozGlobeHalo)" class="oz-anim-pulse"/>
-              <circle cx="210" cy="175" r="110" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5 7" opacity="0.4" class="oz-anim-radar-1" fill="none"/>
-              <circle cx="210" cy="175" r="135" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3 5" opacity="0.25" class="oz-anim-radar-2" fill="none"/>
-              <circle cx="210" cy="175" r="82" fill="url(#ozGlobeGrad)"/>
-              <ellipse cx="210" cy="175" rx="82" ry="28" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55" fill="none"/>
-              <ellipse cx="210" cy="175" rx="82" ry="58" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55" fill="none"/>
-              <ellipse cx="210" cy="175" rx="40" ry="82" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55" fill="none"/>
-              <line x1="210" y1="93" x2="210" y2="257" stroke="#bae6fd" stroke-width="1.5" stroke-opacity="0.55"/>
-
-              <g transform="rotate(-18 210 175)">
-                <ellipse cx="210" cy="175" rx="120" ry="42" stroke="#38bdf8" stroke-width="1.75" stroke-dasharray="6 6" fill="none" opacity="0.6"/>
-                <g transform="translate(328, 175)">
-                  <circle cx="0" cy="0" r="5" fill="#38bdf8"/>
-                  <circle cx="0" cy="0" r="8" stroke="#38bdf8" stroke-width="1.5" opacity="0.5" class="oz-anim-pulse"/>
-                </g>
-              </g>
-
-              <g class="oz-anim-man">
-                <rect x="300" y="112" width="28" height="64" rx="8" fill="#64748b"/>
-                <rect x="302" y="118" width="10" height="18" rx="3" fill="#94a3b8"/>
-                <path d="M312 128 C298 138 298 162 312 172" stroke="#38bdf8" stroke-width="3" fill="none" stroke-linecap="round"/>
-
-                <rect x="318" y="122" width="48" height="62" rx="16" fill="url(#ozSuitGrad)" stroke="#cbd5e1" stroke-width="2"/>
-                <rect x="330" y="136" width="24" height="18" rx="4" fill="#0f172a"/>
-                <circle cx="336" cy="145" r="2" fill="#ef4444"/>
-                <circle cx="342" cy="145" r="2" fill="#10b981"/>
-                <circle cx="348" cy="145" r="2" fill="#38bdf8"/>
-
-                <path d="M318 135 L288 146 L274 140" stroke="#f1f5f9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-                <rect x="260" y="130" width="16" height="22" rx="4" fill="#1e293b" transform="rotate(-12 260 130)"/>
-                <rect x="263" y="133" width="11" height="13" rx="2" fill="#38bdf8" transform="rotate(-12 260 130)"/>
-                <path d="M251 134 C247 137 247 143 251 146" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" fill="none" class="oz-anim-pulse"/>
-
-                <rect x="332" y="176" width="16" height="42" rx="8" fill="url(#ozSuitGrad)" stroke="#cbd5e1" stroke-width="2"/>
-                <rect x="328" y="212" width="22" height="12" rx="4" fill="#334155"/>
-                <rect x="350" y="176" width="16" height="40" rx="8" fill="url(#ozSuitGrad)" stroke="#cbd5e1" stroke-width="2" transform="rotate(-10 350 176)"/>
-                <rect x="352" y="210" width="22" height="12" rx="4" fill="#334155" transform="rotate(-10 352 210)"/>
-
-                <circle cx="342" cy="100" r="26" fill="url(#ozSuitGrad)" stroke="#cbd5e1" stroke-width="2"/>
-                <rect x="324" y="88" width="36" height="22" rx="10" fill="url(#ozVisorGrad)" stroke="#0284c7" stroke-width="1.5"/>
-                <ellipse cx="334" cy="94" rx="6" ry="3" fill="#ffffff" opacity="0.6"/>
-              </g>
-            </svg>
-          </div>
-
-          <h1 class="oz-404-title">Coordinates Uncharted</h1>
-          <p class="oz-404-description">The page or module you are attempting to access does not exist, is not installed, or has been relocated within the workspace grid.</p>
-
-          <div class="oz-404-actions">
-            <a href="/" class="oz-404-btn oz-404-btn-primary">
-              <span class="material-symbols-outlined">home</span>
-              <span>Return to Home</span>
-            </a>
-            <a href="javascript:history.back()" class="oz-404-btn oz-404-btn-secondary">
-              <span class="material-symbols-outlined">arrow_back</span>
-              <span>Go Back</span>
-            </a>
-          </div>
-
-          <div class="oz-404-footer-hint">
-            <span>Need navigation assistance?</span>
-            <a href="/contact" class="oz-404-link">Contact Support &rarr;</a>
+      <section class="oz-not-available-section">
+        <div class="oz-not-available-box">
+          <div class="oz-na-badge">404</div>
+          <h1 class="oz-na-title">Not Available</h1>
+          <div class="oz-na-actions">
+            <a href="/" class="oz-na-btn">Return to Home</a>
           </div>
         </div>
       </section>
@@ -1381,185 +1321,61 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
         border-color: #94a3b8;
       }
 
-      /* Standardized 404 Signal Lost Styles */
-      .oz-404-section {
-        min-height: calc(80vh - 120px);
+      /* Clean Not Available Status Styles */
+      .oz-not-available-section {
+        min-height: 420px;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 60px 24px;
-        background: radial-gradient(circle at 50% 25%, rgba(56, 189, 248, 0.08) 0%, rgba(255, 255, 255, 0) 70%), #ffffff;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: #0f172a;
-        box-sizing: border-box;
+        padding: 80px 24px;
+        background: #ffffff;
         width: 100%;
+        box-sizing: border-box;
       }
-      .oz-404-wrapper {
-        max-width: 600px;
+      .oz-not-available-box {
+        max-width: 440px;
         width: 100%;
         margin: 0 auto;
         text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
       }
-      .oz-404-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 16px;
-        border-radius: 9999px;
-        background: rgba(239, 68, 68, 0.08);
-        border: 1px solid rgba(239, 68, 68, 0.22);
-        margin-bottom: 20px;
-      }
-      .oz-404-badge-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: #ef4444;
-        box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
-        animation: ozDotPulse 1.8s infinite ease-in-out;
-      }
-      .oz-404-badge-text {
-        font-size: 11px;
+      .oz-na-badge {
+        display: inline-block;
+        padding: 4px 14px;
+        font-size: 13px;
         font-weight: 700;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.08em;
         color: #dc2626;
-        text-transform: uppercase;
+        background: rgba(220, 38, 38, 0.08);
+        border-radius: 9999px;
+        margin-bottom: 16px;
       }
-      .oz-404-graphic {
-        width: 100%;
-        max-width: 440px;
-        margin: 0 auto 24px auto;
-        position: relative;
-      }
-      .oz-404-svg {
-        width: 100%;
-        height: auto;
-        display: block;
-        overflow: visible;
-      }
-      .oz-404-title {
+      .oz-na-title {
         font-size: 32px;
         font-weight: 800;
         color: #0f172a;
-        margin: 0 0 12px 0;
-        line-height: 1.25;
+        margin: 0 0 24px 0;
         letter-spacing: -0.02em;
       }
-      .oz-404-description {
-        font-size: 16px;
-        color: #64748b;
-        margin: 0 0 32px 0;
-        line-height: 1.6;
-        max-width: 480px;
-      }
-      .oz-404-actions {
+      .oz-na-actions {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
         justify-content: center;
-        gap: 14px;
-        margin-bottom: 28px;
       }
-      .oz-404-btn {
+      .oz-na-btn {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
         gap: 8px;
-        padding: 12px 26px;
-        font-size: 15px;
-        font-weight: 600;
-        border-radius: 10px;
-        text-decoration: none;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        cursor: pointer;
-        box-sizing: border-box;
-      }
-      .oz-404-btn-primary {
-        background: linear-gradient(135deg, #0050e5 0%, #003ebd 100%);
+        padding: 10px 24px;
+        border-radius: 8px;
+        background: #0050e5;
         color: #ffffff !important;
-        border: 1px solid transparent;
-        box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
-      }
-      .oz-404-btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 22px rgba(0, 80, 229, 0.42);
-        background: linear-gradient(135deg, #003ebd 0%, #002d8f 100%);
-      }
-      .oz-404-btn-secondary {
-        background: #ffffff;
-        color: #334155 !important;
-        border: 1px solid #e2e8f0;
-      }
-      .oz-404-btn-secondary:hover {
-        transform: translateY(-2px);
-        background: #f8fafc;
-        border-color: #cbd5e1;
-        color: #0f172a !important;
-      }
-      .oz-404-footer-hint {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
         font-size: 14px;
-        color: #94a3b8;
-      }
-      .oz-404-link {
-        color: #0050e5;
         font-weight: 600;
         text-decoration: none;
+        transition: all 0.2s ease;
       }
-      .oz-404-link:hover {
-        color: #003ebd;
-        text-decoration: underline;
-      }
-      .oz-anim-man {
-        animation: ozFloat 5s ease-in-out infinite;
-        transform-origin: 340px 170px;
-      }
-      .oz-anim-pulse {
-        animation: ozPulse 3s ease-in-out infinite;
-        transform-origin: 210px 175px;
-      }
-      .oz-anim-radar-1 {
-        animation: ozRadar 3.5s ease-out infinite;
-        transform-origin: 210px 175px;
-      }
-      .oz-anim-radar-2 {
-        animation: ozRadar 3.5s ease-out infinite 1.2s;
-        transform-origin: 210px 175px;
-      }
-      .oz-anim-star-1 {
-        animation: ozTwinkle 2.5s ease-in-out infinite;
-      }
-      .oz-anim-star-2 {
-        animation: ozTwinkle 3.2s ease-in-out infinite 0.8s;
-      }
-      .oz-anim-star-3 {
-        animation: ozTwinkle 2.8s ease-in-out infinite 1.5s;
-      }
-      @keyframes ozFloat {
-        0%, 100% { transform: translateY(0px) rotate(0deg); }
-        50% { transform: translateY(-12px) rotate(2deg); }
-      }
-      @keyframes ozPulse {
-        0%, 100% { transform: scale(0.96); opacity: 0.25; }
-        50% { transform: scale(1.05); opacity: 0.55; }
-      }
-      @keyframes ozRadar {
-        0% { transform: scale(0.85); opacity: 0.8; }
-        100% { transform: scale(1.25); opacity: 0; }
-      }
-      @keyframes ozTwinkle {
-        0%, 100% { opacity: 0.25; transform: scale(0.8); }
-        50% { opacity: 1; transform: scale(1.2); }
-      }
-      @keyframes ozDotPulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.3); opacity: 0.6; }
+      .oz-na-btn:hover {
+        background: #003db3;
+        transform: translateY(-1px);
       }
     `;
   }
