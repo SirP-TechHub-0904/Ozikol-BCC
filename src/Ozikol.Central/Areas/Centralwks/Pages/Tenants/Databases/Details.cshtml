@@ -76,6 +76,14 @@
             SQL Repair Room
         </a>
 
+        <form method="post" asp-page-handler="OptimizeActivityLogs" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" onclick="return confirm('Purge activity logs older than 90 days and apply SQL Server PAGE data compression to [dbo].[BcpActivityLogs] on @Model.Tenant.DatabaseName?\n\nThis reclaims disk space immediately.');" title="Purge >90d logs and apply PAGE data compression">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">compress</span>
+                Optimize &amp; Compress Logs
+            </button>
+        </form>
+
         @if (Model.DeepDive.HasPendingMigrations)
         {
             <form method="post" asp-page-handler="Migrate" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">

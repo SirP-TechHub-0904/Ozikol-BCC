@@ -292,6 +292,7 @@ builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, O
 builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDbHealthJobHandler>();
 builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDailyDigestJobHandler>();
 builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantEmailQueueJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantActivityLogRetentionJobHandler>();
 builder.Services.AddSingleton<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>());
 

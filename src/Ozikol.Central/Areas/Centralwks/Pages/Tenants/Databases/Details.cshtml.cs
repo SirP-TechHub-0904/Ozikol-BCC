@@ -215,6 +215,82 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         }
 
         /// <summary>
+        /// Handles HTTP POST requests to purge activity logs older than 90 days and apply PAGE data compression
+        /// to <c>[dbo].[BcpActivityLogs]</c> immediately on this tenant's dedicated database.
+        /// </summary>
+        public async Task<IActionResult> OnPostOptimizeActivityLogsAsync(string tenantKey)
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant database record not found.";
+                return RedirectToPage(new { tenantKey });
+            }
+
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+            var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
+            string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
+
+            var sw = Stopwatch.StartNew();
+            int totalPurged = 0;
+
+            try
+            {
+                await using var conn = new SqlConnection(harmonizedConnStr);
+                await conn.OpenAsync();
+
+                // 1. Purge in safe batches (>90 days old)
+                int loop = 0;
+                while (loop < 20)
+                {
+                    loop++;
+                    await using var purgeCmd = conn.CreateCommand();
+                    purgeCmd.CommandText = @"
+                        DELETE TOP (5000) 
+                        FROM [dbo].[BcpActivityLogs] 
+                        WHERE [Date] < DATEADD(DAY, -90, GETUTCDATE());
+                        SELECT @@ROWCOUNT;";
+                    purgeCmd.CommandTimeout = 90;
+                    var rows = Convert.ToInt32(await purgeCmd.ExecuteScalarAsync());
+                    totalPurged += rows;
+                    if (rows == 0) break;
+                }
+
+                // 2. Apply PAGE compression
+                await using var compCmd = conn.CreateCommand();
+                compCmd.CommandText = "ALTER TABLE [dbo].[BcpActivityLogs] REBUILD WITH (DATA_COMPRESSION = PAGE);";
+                compCmd.CommandTimeout = 180;
+                await compCmd.ExecuteNonQueryAsync();
+
+                sw.Stop();
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Database.TableOptimized",
+                    EntityType = "Database",
+                    EntityId = tenant.TenantKey,
+                    Summary = $"Admin {adminUser} optimized [dbo].[BcpActivityLogs] on '{tenant.DatabaseName}': purged {totalPurged:N0} logs (>90d old) and applied PAGE data compression ({sw.ElapsedMilliseconds}ms).",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = $"Optimization complete in {sw.ElapsedMilliseconds} ms: Purged {totalPurged:N0} records older than 90 days and applied SQL Server PAGE data compression.";
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _logger.LogError(ex, "Failed to optimize [dbo].[BcpActivityLogs] on tenant {TenantKey}", tenant.TenantKey);
+                TempData["Error"] = $"Optimization failed: {ex.Message}";
+            }
+
+            return RedirectToPage(new { tenantKey });
+        }
+
+        /// <summary>
         /// Request model for executing raw SQL queries in the emergency repair room.
         /// </summary>
         public class ExecuteQueryRequest
