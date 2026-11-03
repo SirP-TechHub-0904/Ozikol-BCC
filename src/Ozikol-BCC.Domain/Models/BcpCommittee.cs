@@ -261,7 +261,7 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// User ID of the administrator who created this group.
         /// </summary>
-        [StringLength(100)]
+        [StringLength(450)]
         public string? CreatedByUserId { get; set; }
 
         /// <summary>
@@ -320,10 +320,10 @@ namespace Ozikol_BCC.Domain.Models
         public BcpCommittee? Committee { get; set; }
 
         /// <summary>
-        /// Foreign key referencing <see cref="Profile.Id"/> in the tenant identity table.
+        /// Foreign key referencing <see cref="Profile.Id"/> in the tenant identity table (AspNetUsers.Id is nvarchar(450)).
         /// </summary>
         [Required]
-        [StringLength(100)]
+        [StringLength(450)]
         public string UserProfileId { get; set; } = string.Empty;
 
         /// <summary>
@@ -361,7 +361,7 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// User ID of the admin or leader who added/approved the member.
         /// </summary>
-        [StringLength(100)]
+        [StringLength(450)]
         public string? AddedByUserId { get; set; }
 
         /// <summary>
@@ -416,7 +416,7 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// User ID of the administrator who created the form.
         /// </summary>
-        [StringLength(100)]
+        [StringLength(450)]
         public string? CreatedByUserId { get; set; }
 
         /// <summary>
@@ -457,7 +457,7 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// Populated if the applicant is already an existing workspace user (signed in or matched by email).
         /// </summary>
-        [StringLength(100)]
+        [StringLength(450)]
         public string? ApplicantUserProfileId { get; set; }
 
         /// <summary>
@@ -518,7 +518,7 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// User ID of the administrator or group leader who reviewed the application.
         /// </summary>
-        [StringLength(100)]
+        [StringLength(450)]
         public string? ReviewedByUserId { get; set; }
 
         /// <summary>
@@ -561,7 +561,7 @@ namespace Ozikol_BCC.Domain.Models
         /// User Profile ID of the author who submitted the report.
         /// </summary>
         [Required]
-        [StringLength(100)]
+        [StringLength(450)]
         public string SubmittedByUserId { get; set; } = string.Empty;
 
         /// <summary>
@@ -664,7 +664,7 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// User ID of the administrator who reviewed the report.
         /// </summary>
-        [StringLength(100)]
+        [StringLength(450)]
         public string? ReviewedByUserId { get; set; }
 
         /// <summary>
@@ -721,7 +721,7 @@ namespace Ozikol_BCC.Domain.Models
         /// Workspace User Profile ID of the member/leader who connected and linked the document.
         /// </summary>
         [Required]
-        [StringLength(100)]
+        [StringLength(450)]
         public string OwnerUserProfileId { get; set; } = string.Empty;
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -21,7 +21,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     IsGlobalDefault = table.Column<bool>(type: "bit", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     FieldsSchemaJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedByUserId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CreatedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -110,7 +110,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     RequireApproval = table.Column<bool>(type: "bit", nullable: false),
                     ExternalInviteToken = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: true),
                     ExtraInfoFormId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreatedByUserId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CreatedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -138,7 +138,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CommitteeId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     ReportId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    OwnerUserProfileId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    OwnerUserProfileId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     OwnerDisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     Provider = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
                     Title = table.Column<string>(type: "nvarchar(260)", maxLength: 260, nullable: false),
@@ -167,12 +167,12 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CommitteeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserProfileId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    UserProfileId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     Role = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
                     CustomRoleTitle = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: true),
                     ExtraInfoResponsesJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
-                    AddedByUserId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    AddedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     JoinedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -198,7 +198,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CommitteeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ApplicantUserProfileId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ApplicantUserProfileId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     IsExternalApplicant = table.Column<bool>(type: "bit", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
@@ -208,7 +208,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     AttachmentUrlsJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     ReviewNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    ReviewedByUserId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ReviewedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -229,7 +229,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CommitteeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SubmittedByUserId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SubmittedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     SubmittedByName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Title = table.Column<string>(type: "nvarchar(240)", maxLength: 240, nullable: false),
                     MeetingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -247,7 +247,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     AiExecutiveDigest = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ReviewStatus = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     AdminRemarks = table.Column<string>(type: "nvarchar(1500)", maxLength: 1500, nullable: true),
-                    ReviewedByUserId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ReviewedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsSharedWithMembers = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
