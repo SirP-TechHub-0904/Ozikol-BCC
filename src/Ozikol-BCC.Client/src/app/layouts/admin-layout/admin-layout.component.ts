@@ -4287,15 +4287,10 @@ export class AdminLayoutComponent implements OnInit {
   visibleFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_visible_feature_codes_v5');
+        const raw = localStorage.getItem('bcp_visible_feature_codes_v6');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
-        }
-        const activeRaw = localStorage.getItem('bcp_active_feature_codes');
-        if (activeRaw) {
-          const parsedActive = JSON.parse(activeRaw);
-          if (Array.isArray(parsedActive)) return parsedActive;
         }
         return [];
       } catch {
@@ -4310,7 +4305,7 @@ export class AdminLayoutComponent implements OnInit {
   availableFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_available_feature_codes_v5');
+        const raw = localStorage.getItem('bcp_available_feature_codes_v6');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
@@ -4342,7 +4337,7 @@ export class AdminLayoutComponent implements OnInit {
   expiredFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_expired_feature_codes');
+        const raw = localStorage.getItem('bcp_expired_feature_codes_v2');
         return raw ? JSON.parse(raw) : [];
       } catch {
         return [];
@@ -4561,14 +4556,10 @@ export class AdminLayoutComponent implements OnInit {
       // - Features that are Not Installed (!item.isActive && !isExpired) MUST NOT show in the sidebar.
       // - Features that are Installed & Active show normally (clickable, unlocked).
       // - Features that were Installed but are now Expired show in the sidebar with a Lock icon [lock].
+      // - Deactivated / uninstalled capabilities (status === 'Suspended') are NOT expired and MUST NOT show in the sidebar.
       // - isPublished means it appears in Central Subscription Dashboard (/billing/features) so the tenant can install it.
       const isInstalledActive = Boolean(item.isActive && item.isAvailableForUse === true);
-      const isInstalledExpired = !isInstalledActive && (
-        item.status === 'Expired' ||
-        item.status === 'expired' ||
-        item.status === 'Suspended' ||
-        (Boolean(item.subscriptionId) && item.daysRemaining !== null && item.daysRemaining !== undefined && item.daysRemaining <= 0)
-      );
+      const isInstalledExpired = !isInstalledActive && String(item.status || '').trim().toLowerCase() === 'expired';
 
       if (isInstalledActive) {
         active.add(code);
@@ -4632,10 +4623,13 @@ export class AdminLayoutComponent implements OnInit {
     this.availableFeatureCodes = available;
     this.activeFeatureCodes = active;
     this.expiredFeatureCodes = expired;
-    localStorage.setItem('bcp_visible_feature_codes_v5', JSON.stringify(Array.from(visible)));
-    localStorage.setItem('bcp_available_feature_codes_v5', JSON.stringify(Array.from(available)));
+    localStorage.setItem('bcp_visible_feature_codes_v6', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_available_feature_codes_v6', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
-    localStorage.setItem('bcp_expired_feature_codes', JSON.stringify(Array.from(expired)));
+    localStorage.setItem('bcp_expired_feature_codes_v2', JSON.stringify(Array.from(expired)));
+    localStorage.removeItem('bcp_visible_feature_codes_v5');
+    localStorage.removeItem('bcp_available_feature_codes_v5');
+    localStorage.removeItem('bcp_expired_feature_codes');
     localStorage.removeItem('bcp_visible_feature_codes_v4');
     localStorage.removeItem('bcp_available_feature_codes_v4');
     if (Array.isArray(d.notices)) {
