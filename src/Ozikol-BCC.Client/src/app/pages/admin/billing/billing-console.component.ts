@@ -364,8 +364,16 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.togglingFeatureCode = feat.featureCode;
     this.suppressNextSocketToast = true;
 
+    const startTime = Date.now();
     this.billingService.toggleFeatureActive(feat.featureId, feat.featureCode, desiredState).subscribe({
-      next: res => {
+      next: async res => {
+        // Enforce smooth 3-second installation loading badge
+        const elapsed = Date.now() - startTime;
+        const remainingDelay = Math.max(0, 3000 - elapsed);
+        if (remainingDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, remainingDelay));
+        }
+
         this.togglingFeatureCode = null;
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (ok) {
@@ -386,12 +394,19 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
               `'${feat.name}' has been deactivated and removed from your sidebar menu.`
             );
           }
+          // Refresh the page state & snapshot so UI immediately updates
+          this.loadSnapshot();
         } else {
           this.suppressNextSocketToast = false;
           this.toastService.error('Update Failed', res?.message || 'Could not update capability status.');
         }
       },
-      error: err => {
+      error: async err => {
+        const elapsed = Date.now() - startTime;
+        const remainingDelay = Math.max(0, 3000 - elapsed);
+        if (remainingDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, remainingDelay));
+        }
         this.togglingFeatureCode = null;
         this.suppressNextSocketToast = false;
         const msg = err?.error?.message || 'Could not update feature status.';

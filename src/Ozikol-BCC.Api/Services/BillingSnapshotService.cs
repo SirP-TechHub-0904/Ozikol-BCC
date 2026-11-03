@@ -502,17 +502,21 @@ namespace Ozikol_BCC.Api.Services
                     continue;
                 }
 
+                bool isFreeCapability = !isPaidCapability;
                 var days = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
                 bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase)
                                     && !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)
                                     && !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
-                var live = sub.IsActive
-                           && notSuspended
-                           && sub.ExpiresAtUtc > now;
+                var live = isFreeCapability
+                    ? (sub.IsActive && notSuspended)
+                    : (sub.IsActive && notSuspended && sub.ExpiresAtUtc > now);
+
                 // A lapsed subscription is reported as Expired regardless of the stored status string
-                var status = !live && sub.IsActive && notSuspended && sub.ExpiresAtUtc <= now
-                    ? "Expired"
-                    : (live ? (isTrialPeriod ? "Trial" : "Active") : sub.Status);
+                var status = isFreeCapability
+                    ? (live ? "Active" : sub.Status)
+                    : (!live && sub.IsActive && notSuspended && sub.ExpiresAtUtc <= now
+                        ? "Expired"
+                        : (live ? (isTrialPeriod ? "Trial" : "Active") : sub.Status));
 
                 var effectiveDuration = isYearlyOnly ? SubscriptionBillingDuration.Yearly : sub.DurationType;
                 decimal subEffectiveUsd = effectiveDuration == SubscriptionBillingDuration.Yearly
@@ -528,9 +532,10 @@ namespace Ozikol_BCC.Api.Services
                 item.Status = status;
                 item.BillingCadence = effectiveDuration.ToString();
                 item.EffectivePrice = Math.Round(subEffectiveUsd * currRate, 2);
-                item.ExpiresAtUtc = sub.ExpiresAtUtc;
-                item.DaysRemaining = days;
-                bool isTrackedForRenewal = sub.IsActive
+                item.ExpiresAtUtc = isFreeCapability ? null : sub.ExpiresAtUtc;
+                item.DaysRemaining = isFreeCapability ? null : days;
+                bool isTrackedForRenewal = !isFreeCapability
+                                           && sub.IsActive
                                            && notSuspended
                                            && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase);
                 item.Severity = isTrackedForRenewal

@@ -226,6 +226,14 @@ namespace Ozikol_BCC.Api.Controllers
                         existing.IsTrialPeriod = true;
                         existing.Status = "Trial";
                     }
+                    else if (effectiveUsdPrice <= 0m)
+                    {
+                        existing.StartsAtUtc = now;
+                        existing.ExpiresAtUtc = now.AddYears(10);
+                        existing.HasUsedFreeTrial = true;
+                        existing.IsTrialPeriod = false;
+                        existing.Status = "Active";
+                    }
                     else
                     {
                         existing.IsTrialPeriod = false;
@@ -257,12 +265,12 @@ namespace Ozikol_BCC.Api.Controllers
                     DurationType = cadence,
                     RecurringPrice = effectiveUsdPrice,
                     StartsAtUtc = now,
-                    ExpiresAtUtc = now.AddDays(effectiveFreeTrialDays),
+                    ExpiresAtUtc = effectiveUsdPrice <= 0m ? now.AddYears(10) : now.AddDays(effectiveFreeTrialDays),
                     AutoRenew = true,
                     IsActive = targetActive,
-                    Status = targetActive ? "Trial" : "Suspended",
+                    Status = targetActive ? (effectiveUsdPrice <= 0m ? "Active" : "Trial") : "Suspended",
                     HasUsedFreeTrial = true,
-                    IsTrialPeriod = true,
+                    IsTrialPeriod = effectiveUsdPrice > 0m,
                     IsAvailableForUseOverride = tenant.UseCustomAvailability && targetActive ? true : null,
                     CreatedUtc = now
                 };
