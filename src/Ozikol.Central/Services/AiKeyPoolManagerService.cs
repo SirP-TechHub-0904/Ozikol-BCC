@@ -311,6 +311,12 @@ namespace Ozikol.Central.Services
 
                             if (methods.Contains("generateContent", StringComparison.OrdinalIgnoreCase))
                             {
+                                // Skip deprecated or sunset models that return 404
+                                if (cleanName.Contains("2.5-flash", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Equals("gemini-1.5-flash", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
                                 validModels.Add(cleanName);
                             }
                         }
@@ -318,7 +324,7 @@ namespace Ozikol.Central.Services
                         // Priority order for lowest latency, highest fidelity Flash models:
                         var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-2.0-flash", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault(m => m.Contains("2.0-flash", StringComparison.OrdinalIgnoreCase))
-                            ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase) && !m.Contains("thinking", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase) && !m.Contains("thinking", StringComparison.OrdinalIgnoreCase) && !m.Contains("2.5", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault(m => m.Contains("gemini", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault();
 

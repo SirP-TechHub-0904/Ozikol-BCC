@@ -545,7 +545,7 @@ You must respond with ONLY a valid, parseable JSON object matching this schema w
 }";
 
             var existingTablesSnippet = deepDive?.Tables?.Any() == true
-                ? string.Join(", ", deepDive.Tables.Take(80).Select(t => t.FullName))
+                ? string.Join(", ", deepDive.Tables.Select(t => t.FullName))
                 : "None";
 
             var userPrompt = $@"
@@ -556,10 +556,15 @@ DATABASE CONTEXT:
 - Pending Migrations: {(deepDive?.PendingMigrations?.Any() == true ? string.Join(", ", deepDive.PendingMigrations) : "None")}
 - Latest Applied Migration: {(deepDive?.AppliedMigrations?.Any() == true ? deepDive.AppliedMigrations.LastOrDefault() : "None")}
 - Error Message / Symptom: {errorContext}
-- Existing Database Tables (Sample): {existingTablesSnippet}
+- Tables Introduced in Pending Migration: BcpWorkstationActivityLogs, BcpCommitteeForms, BcpCommitteeSettings, BcpCommittees, BcpCommitteeMembers, BcpCommitteeRoles, BcpCommitteeMeetings, BcpCommitteeAgendas, BcpCommitteeMinutes, BcpCommitteeDocuments
+- Complete List of Existing Database Tables: {existingTablesSnippet}
 - Administrator Notes / Query: {request.UserNotes ?? "None"}
 
-Diagnose the error, identify any table/schema collisions, and provide the exact T-SQL script to resolve this failure.";
+CRITICAL DIAGNOSIS TASK:
+1. Inspect the 'Tables Introduced in Pending Migration' against 'Complete List of Existing Database Tables'.
+2. Identify all tables that ALREADY exist in the database (e.g. BcpWorkstationActivityLogs, BcpCommittees, etc.).
+3. Generate the exact 'DROP TABLE IF EXISTS [dbo].[TableName];' statement for EVERY colliding table so EF Core can run the migration cleanly.
+4. Output clean T-SQL without 'GO' or 'USE' statements.";
 
             try
             {
@@ -571,40 +576,62 @@ Diagnose the error, identify any table/schema collisions, and provide the exact 
 
                 if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
                 {
-                    var geminiUrl = await _aiKeyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
-                    var payload = new
+                    var candidateModels = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(selectedModel) && !selectedModel.Contains("2.5", StringComparison.OrdinalIgnoreCase))
                     {
-                        system_instruction = new
-                        {
-                            parts = new[] { new { text = systemPrompt } }
-                        },
-                        contents = new[]
-                        {
-                            new
-                            {
-                                role = "user",
-                                parts = new[] { new { text = userPrompt } }
-                            }
-                        },
-                        generationConfig = new
-                        {
-                            temperature = 0.1,
-                            response_mime_type = "application/json"
-                        }
-                    };
+                        candidateModels.Add(selectedModel);
+                    }
+                    candidateModels.AddRange(new[] { "gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-pro" });
+                    candidateModels = candidateModels.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-                    using var httpResponse = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
-                    if (!httpResponse.IsSuccessStatusCode)
+                    HttpResponseMessage? httpResponse = null;
+                    string? lastErrBody = null;
+
+                    foreach (var model in candidateModels)
                     {
-                        var errBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
-                        if ((int)httpResponse.StatusCode == 429)
+                        var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key.ApiKey}";
+                        var payload = new
+                        {
+                            system_instruction = new
+                            {
+                                parts = new[] { new { text = systemPrompt } }
+                            },
+                            contents = new[]
+                            {
+                                new
+                                {
+                                    role = "user",
+                                    parts = new[] { new { text = userPrompt } }
+                                }
+                            },
+                            generationConfig = new
+                            {
+                                temperature = 0.1,
+                                response_mime_type = "application/json"
+                            }
+                        };
+
+                        using var res = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            httpResponse = res;
+                            selectedModel = model;
+                            jsonResponseText = await res.Content.ReadAsStringAsync(cancellationToken);
+                            break;
+                        }
+
+                        lastErrBody = await res.Content.ReadAsStringAsync(cancellationToken);
+                        if ((int)res.StatusCode == 429)
                         {
                             await _aiKeyPoolService.MarkRateLimitedAsync(key.Id, 300, cancellationToken);
+                            break;
                         }
-                        throw new HttpRequestException($"Gemini API error ({httpResponse.StatusCode}): {errBody}", null, httpResponse.StatusCode);
                     }
 
-                    jsonResponseText = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                    if (httpResponse == null || !httpResponse.IsSuccessStatusCode)
+                    {
+                        throw new HttpRequestException($"Gemini API error: {lastErrBody}");
+                    }
                 }
 
                 sw.Stop();
