@@ -560,7 +560,7 @@ export class CommitteesMemberDetailComponent implements OnInit, OnDestroy {
       this.candidates = [];
       return;
     }
-    this.committeesService.searchUserCandidates(this.candidateSearch).subscribe({
+    this.committeesService.searchUserCandidates(this.candidateSearch, this.committeeId).subscribe({
       next: (res) => {
         if (res?.isSuccess) this.candidates = res.data || [];
       }

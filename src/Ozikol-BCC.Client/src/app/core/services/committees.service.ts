@@ -183,8 +183,10 @@ export class CommitteesService {
     return this.api.post<any>(`committees/${id}/regenerate-link`, {});
   }
 
-  searchUserCandidates(search: string): Observable<any> {
-    return this.api.get<any>('committees/candidates', { search: search || '' });
+  searchUserCandidates(search: string, committeeId?: string): Observable<any> {
+    const params: any = { search: search || '' };
+    if (committeeId) params.committeeId = committeeId;
+    return this.api.get<any>('committees/candidates', params);
   }
 
   addMember(committeeId: string, payload: { userProfileId: string; role: string; customRoleTitle?: string }): Observable<any> {

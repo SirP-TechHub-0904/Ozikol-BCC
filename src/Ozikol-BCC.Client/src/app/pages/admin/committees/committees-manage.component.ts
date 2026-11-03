@@ -183,7 +183,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
               <h3>Enrolled Members & Delegated Micro-Roles</h3>
               <p>Appoint a {{ aliases.leaderTitleAlias }} or {{ aliases.secretaryTitleAlias }} so they can take attendance, submit reports, and approve applicants for this {{ aliases.aliasSingular.toLowerCase() }}.</p>
             </div>
-            <button type="button" class="btn-primary-sm" (click)="showAddMemberModal = true; searchCandidates()">
+            <button type="button" class="btn-primary-sm" (click)="openAddMemberModal()">
               <span class="material-symbols-outlined">person_add</span>
               <span>Add Workspace Member</span>
             </button>
@@ -417,8 +417,8 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
       <!-- =============================================================== -->
       <!-- MODAL: CREATE / EDIT COMMITTEE OR SUB-GROUP                     -->
       <!-- =============================================================== -->
-      <div class="modal-backdrop" *ngIf="showEditorModal" (click)="showEditorModal = false">
-        <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-backdrop" *ngIf="showEditorModal">
+        <div class="modal-card">
           <div class="modal-head">
             <h3>{{ editingId ? 'Edit' : 'Create' }} {{ editorForm.parentCommitteeId ? aliases.subGroupAliasSingular : aliases.aliasSingular }}</h3>
             <button type="button" class="btn-icon" (click)="showEditorModal = false"><span class="material-symbols-outlined">close</span></button>
@@ -513,16 +513,26 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
       <!-- =============================================================== -->
       <!-- MODAL: ADD WORKSPACE MEMBER TO ROSTER                           -->
       <!-- =============================================================== -->
-      <div class="modal-backdrop" *ngIf="showAddMemberModal" (click)="showAddMemberModal = false">
-        <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-backdrop" *ngIf="showAddMemberModal">
+        <div class="modal-card">
           <div class="modal-head">
-            <h3>Add Member to {{ selectedDetails?.committee?.name }}</h3>
-            <button type="button" class="btn-icon" (click)="showAddMemberModal = false"><span class="material-symbols-outlined">close</span></button>
+            <div class="modal-title-wrap">
+              <span class="material-symbols-outlined text-blue">person_add</span>
+              <div>
+                <h3>Add Member to {{ selectedDetails?.committee?.name }}</h3>
+                <p class="modal-subtitle">Enroll an active workspace member into this {{ aliases.aliasSingular.toLowerCase() }}.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-icon" (click)="showAddMemberModal = false" title="Close"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">
             <div class="field-grp">
               <label>Search Workspace Members</label>
-              <input type="text" [(ngModel)]="candidateQuery" (input)="searchCandidates()" placeholder="e.g. First Last or name@company.com" />
+              <div class="input-icon-wrap">
+                <span class="material-symbols-outlined input-icon">search</span>
+                <input type="text" [(ngModel)]="candidateQuery" (input)="searchCandidates()" placeholder="e.g. First Last or name@company.com" />
+                <span class="spinner-sm" *ngIf="searchingCandidates"></span>
+              </div>
             </div>
             <div class="form-grid-2">
               <div class="field-grp">
@@ -541,22 +551,52 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
               </div>
             </div>
 
+            <!-- Candidate Counter & Status -->
+            <div class="cand-status-row">
+              <span class="cand-count" *ngIf="!searchingCandidates">
+                <strong>{{ userCandidates.length }}</strong> eligible candidate(s)
+                <span *ngIf="userCandidates.length >= 50" class="cand-capped-hint">(Capped at 50 — refine search for more)</span>
+              </span>
+              <span class="cand-count" *ngIf="searchingCandidates">Searching workspace members...</span>
+            </div>
+
+            <!-- Candidate List with Scrollbar -->
             <div class="candidate-list">
               <div class="cand-row" *ngFor="let u of userCandidates">
-                <div>
-                  <div class="u-name">{{ u.fullName || u.email }}</div>
-                  <div class="u-sub">{{ u.email }} {{ u.designation ? '• ' + u.designation : '' }}</div>
+                <div class="cand-user-meta">
+                  <div class="cand-avatar">
+                    <img *ngIf="u.avatarUrl" [src]="u.avatarUrl" alt="Avatar" />
+                    <span *ngIf="!u.avatarUrl">{{ getInitials(u.fullName || u.email) }}</span>
+                  </div>
+                  <div>
+                    <div class="u-name">{{ u.fullName || u.email }}</div>
+                    <div class="u-sub">{{ u.email }} {{ u.designation ? '• ' + u.designation : '' }}</div>
+                  </div>
                 </div>
-                <button type="button" class="btn-primary-sm" (click)="enrollCandidate(u.id)">Enroll</button>
+                <button type="button" class="btn-primary-sm" (click)="enrollCandidate(u.id)" [disabled]="enrollingId === u.id">
+                  <span class="material-symbols-outlined" style="font-size: 15px;">how_to_reg</span>
+                  <span>{{ enrollingId === u.id ? 'Enrolling...' : 'Enroll' }}</span>
+                </button>
+              </div>
+
+              <!-- Empty State -->
+              <div class="cand-empty-state" *ngIf="!searchingCandidates && userCandidates.length === 0">
+                <span class="material-symbols-outlined">person_search</span>
+                <p>No eligible workspace members found.</p>
+                <small *ngIf="candidateQuery">Try typing a different name, email, or designation.</small>
+                <small *ngIf="!candidateQuery">All active workspace members may already be enrolled in this roster.</small>
               </div>
             </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn-secondary-sm" (click)="showAddMemberModal = false">Cancel</button>
           </div>
         </div>
       </div>
 
       <!-- MODAL: INSPECT MEMBER EXTRA-INFO ANSWERS -->
-      <div class="modal-backdrop" *ngIf="inspectedResponses" (click)="inspectedResponses = null">
-        <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-backdrop" *ngIf="inspectedResponses">
+        <div class="modal-card">
           <div class="modal-head">
             <h3>Extra-Info Responses — {{ inspectedMemberName }}</h3>
             <button type="button" class="btn-icon" (click)="inspectedResponses = null"><span class="material-symbols-outlined">close</span></button>
@@ -682,12 +722,15 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .form-attach-box { padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; }
     .form-attach-box label { font-weight: 700; font-size: 13px; }
 
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 10200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 10200; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px); }
     .modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 48px rgba(0,0,0,0.2); }
     :host-context(.dark-mode) .modal-card { background: #1e293b; color: #f8fafc; }
     .modal-head, .modal-foot { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
     .modal-foot { border-bottom: none; border-top: 1px solid #e2e8f0; justify-content: flex-end; gap: 10px; }
     .modal-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+    .modal-title-wrap { display: flex; align-items: center; gap: 10px; }
+    .modal-subtitle { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+    :host-context(.dark-mode) .modal-subtitle { color: #94a3b8; }
     .modal-body { padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
     .form-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .form-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
@@ -695,10 +738,26 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .field-grp label { font-size: 12.5px; font-weight: 600; color: #475569; }
     :host-context(.dark-mode) .field-grp label { color: #cbd5e1; }
     .field-grp input, .field-grp select, .field-grp textarea { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; background: inherit; color: inherit; }
+    .input-icon-wrap { position: relative; display: flex; align-items: center; }
+    .input-icon-wrap .input-icon { position: absolute; left: 10px; color: #94a3b8; font-size: 18px; pointer-events: none; }
+    .input-icon-wrap input { width: 100%; padding-left: 36px !important; }
+    .spinner-sm { position: absolute; right: 12px; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #0050e5; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .cand-status-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b; margin-top: 2px; }
+    .cand-capped-hint { color: #d97706; font-weight: 600; margin-left: 6px; }
     .check-row { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
     .check-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .candidate-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
-    .cand-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .candidate-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+    .cand-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; transition: all 0.15s ease; background: #ffffff; }
+    :host-context(.dark-mode) .cand-row { background: #0f172a; border-color: rgba(255,255,255,0.08); }
+    .cand-row:hover { border-color: #0050e5; background: rgba(0,80,229,0.02); }
+    .cand-user-meta { display: flex; align-items: center; gap: 10px; }
+    .cand-avatar { width: 34px; height: 34px; border-radius: 50%; background: #0050e5; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+    .cand-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .cand-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; text-align: center; color: #64748b; gap: 6px; border: 1px dashed #cbd5e1; border-radius: 10px; }
+    .cand-empty-state .material-symbols-outlined { font-size: 32px; color: #94a3b8; }
+    .cand-empty-state p { margin: 0; font-size: 13.5px; font-weight: 600; color: #334155; }
+    :host-context(.dark-mode) .cand-empty-state p { color: #e2e8f0; }
+    .cand-empty-state small { font-size: 12px; color: #94a3b8; }
     .kv-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
     .empty-inline { display: flex; flex-direction: column; align-items: center; padding: 28px; color: #64748b; gap: 6px; }
   `]
@@ -727,6 +786,8 @@ export class CommitteesManageComponent implements OnInit, OnDestroy {
   showAddMemberModal = false;
   candidateQuery = '';
   userCandidates: any[] = [];
+  searchingCandidates = false;
+  enrollingId: string | null = null;
   newMemberRole = 'Member';
   newMemberCustomTitle = '';
 
@@ -940,28 +1001,54 @@ export class CommitteesManageComponent implements OnInit, OnDestroy {
     });
   }
 
+  openAddMemberModal(): void {
+    this.candidateQuery = '';
+    this.newMemberRole = 'Member';
+    this.newMemberCustomTitle = '';
+    this.showAddMemberModal = true;
+    this.searchCandidates();
+  }
+
   searchCandidates(): void {
-    this.committeesService.searchUserCandidates(this.candidateQuery).subscribe({
+    const committeeId = this.selectedDetails?.committee?.id;
+    this.searchingCandidates = true;
+    this.committeesService.searchUserCandidates(this.candidateQuery, committeeId).subscribe({
       next: (res) => {
+        this.searchingCandidates = false;
         if (res?.isSuccess) this.userCandidates = res.data || [];
+        else this.userCandidates = [];
+      },
+      error: () => {
+        this.searchingCandidates = false;
+        this.userCandidates = [];
       }
     });
   }
 
   enrollCandidate(userProfileId: string): void {
     if (!this.selectedDetails) return;
+    this.enrollingId = userProfileId;
     this.committeesService.addMember(this.selectedDetails.committee.id, {
       userProfileId,
       role: this.newMemberRole,
       customRoleTitle: this.newMemberCustomTitle
     }).subscribe({
       next: () => {
+        this.enrollingId = null;
         this.toast.success('Member enrolled and notified.');
         this.showAddMemberModal = false;
         this.loadSingleDetail(this.selectedDetails.committee.id);
       },
-      error: (err) => this.toast.error(err?.error?.message || 'Unable to add member.')
+      error: (err) => {
+        this.enrollingId = null;
+        this.toast.error(err?.error?.message || 'Unable to add member.');
+      }
     });
+  }
+
+  getInitials(name: string): string {
+    if (!name) return 'MB';
+    return name.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
   updateMemberRole(m: any, role: string): void {

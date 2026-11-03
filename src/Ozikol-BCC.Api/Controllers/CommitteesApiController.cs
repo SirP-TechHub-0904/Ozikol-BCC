@@ -868,26 +868,57 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Searches active workspace users so an administrator or leader can add them directly to a committee roster.
+        /// Strictly excludes root SuperAdmin accounts and optionally excludes members already in the target committee.
         /// </summary>
         /// <param name="search">Name or email search query.</param>
+        /// <param name="committeeId">Optional target committee ID to exclude existing roster members.</param>
         /// <param name="cancellationToken">Request cancellation token.</param>
         /// <returns>Matching user directory candidates.</returns>
         [HttpGet("candidates")]
-        public async Task<IActionResult> SearchWorkspaceUserCandidates([FromQuery] string? search = null, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> SearchWorkspaceUserCandidates(
+            [FromQuery] string? search = null,
+            [FromQuery] Guid? committeeId = null,
+            CancellationToken cancellationToken = default)
         {
-            var query = _db.Users.AsNoTracking().AsQueryable();
+            // 1. Strictly exclude root SuperAdmin accounts from roster candidate selections
+            var superAdminRole = await _db.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Name == "SuperAdmin", cancellationToken);
+            var superAdminUserIds = superAdminRole != null
+                ? await _db.UserRoles.AsNoTracking().Where(ur => ur.RoleId == superAdminRole.Id).Select(ur => ur.UserId).ToListAsync(cancellationToken)
+                : new List<string>();
+
+            var query = _db.Users.AsNoTracking()
+                .Where(u => !superAdminUserIds.Contains(u.Id) && u.UserStatus != UserStatus.Deleted && u.UserStatus != UserStatus.Suspended)
+                .AsQueryable();
+
+            // 2. Exclude users who are already enrolled in this committee roster
+            if (committeeId.HasValue && committeeId.Value != Guid.Empty)
+            {
+                var existingMemberUserIds = await _db.BcpCommitteeMembers.AsNoTracking()
+                    .Where(m => m.CommitteeId == committeeId.Value)
+                    .Select(m => m.UserProfileId)
+                    .ToListAsync(cancellationToken);
+
+                if (existingMemberUserIds.Count > 0)
+                {
+                    query = query.Where(u => !existingMemberUserIds.Contains(u.Id));
+                }
+            }
+
+            // 3. Search query filter across first name, last name, email, and designation
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim().ToLower();
                 query = query.Where(u =>
                     (u.FirstName != null && u.FirstName.ToLower().Contains(term)) ||
                     (u.LastName != null && u.LastName.ToLower().Contains(term)) ||
-                    (u.Email != null && u.Email.ToLower().Contains(term)));
+                    (u.Email != null && u.Email.ToLower().Contains(term)) ||
+                    (u.Designation != null && u.Designation.ToLower().Contains(term)));
             }
 
             var users = await query
                 .OrderBy(u => u.FirstName)
-                .Take(30)
+                .ThenBy(u => u.LastName)
+                .Take(50)
                 .Select(u => new
                 {
                     u.Id,
