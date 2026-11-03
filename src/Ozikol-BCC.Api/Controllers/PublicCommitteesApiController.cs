@@ -231,7 +231,7 @@ namespace Ozikol_BCC.Api.Controllers
                             effectiveForm.Id,
                             effectiveForm.Title,
                             effectiveForm.Description,
-                            Fields = CommitteesApiController.ParseJsonFallback<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
+                            Fields = CommitteesApiController.ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
                         } : null
                     };
                 })
@@ -352,7 +352,7 @@ namespace Ozikol_BCC.Api.Controllers
                         effectiveForm.Id,
                         effectiveForm.Title,
                         effectiveForm.Description,
-                        Fields = CommitteesApiController.ParseJsonFallback<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
+                        Fields = CommitteesApiController.ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
                     } : null
                 }
             }, "Public group registration loaded."));
@@ -587,46 +587,10 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (string.IsNullOrWhiteSpace(uploadedUrl))
             {
-                var folder = Path.Combine(AppContext.BaseDirectory, "Uploads", "Committees");
-                Directory.CreateDirectory(folder);
-                var safeName = $"{Guid.NewGuid():N}{ext}";
-                await using (var stream = new FileStream(Path.Combine(folder, safeName), FileMode.Create))
-                {
-                    await file.CopyToAsync(stream, cancellationToken);
-                }
-                uploadedUrl = $"/api/public/committees/files/{safeName}";
+                return BadRequest(ApiResponse<object>.FailureResponse("Document upload failed.", errorCode: StandardErrorCodes.MediaUploadFailed));
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new { FileName = file.FileName, FileUrl = uploadedUrl }, "File uploaded."));
-        }
-
-        /// <summary>
-        /// Serves locally stored fallback committee documents when running offline or without external CDN storage.
-        /// </summary>
-        /// <param name="fileName">Sanitized filename.</param>
-        /// <returns>Physical file stream.</returns>
-        [HttpGet("files/{fileName}")]
-        public IActionResult ServeLocalAttachment(string fileName)
-        {
-            var safeFileName = Path.GetFileName(fileName);
-            if (string.IsNullOrWhiteSpace(safeFileName))
-            {
-                return NotFound();
-            }
-
-            var fullPath = Path.Combine(AppContext.BaseDirectory, "Uploads", "Committees", safeFileName);
-            if (!System.IO.File.Exists(fullPath))
-            {
-                return NotFound();
-            }
-
-            var provider = new FileExtensionContentTypeProvider();
-            if (!provider.TryGetContentType(safeFileName, out var contentType))
-            {
-                contentType = "application/octet-stream";
-            }
-
-            return PhysicalFile(fullPath, contentType);
         }
 
         private async Task<Profile?> ResolveSignedInProfileAsync(CancellationToken cancellationToken)

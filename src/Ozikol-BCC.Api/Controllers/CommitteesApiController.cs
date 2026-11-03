@@ -167,7 +167,7 @@ namespace Ozikol_BCC.Api.Controllers
                 settings.AllowAnyMemberReportSubmission,
                 settings.MaxUploadSizeMb,
                 settings.ReportReminderCadence,
-                CustomReportMetrics = ParseJsonFallback<List<CommitteeMetricSchemaDto>>(settings.CustomReportMetricsJson, new List<CommitteeMetricSchemaDto>()),
+                CustomReportMetrics = ParseJsonOrDefault<List<CommitteeMetricSchemaDto>>(settings.CustomReportMetricsJson, new List<CommitteeMetricSchemaDto>()),
                 GooglePickerConfig = new
                 {
                     ClientId = googleClientId,
@@ -649,7 +649,7 @@ namespace Ozikol_BCC.Api.Controllers
                     committee.ExtraInfoFormId,
                     ExtraInfoFormTitle = committee.ExtraInfoForm?.Title,
                     ExtraInfoFormFields = committee.ExtraInfoForm != null
-                        ? ParseJsonFallback<List<CommitteeFormFieldDto>>(committee.ExtraInfoForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
+                        ? ParseJsonOrDefault<List<CommitteeFormFieldDto>>(committee.ExtraInfoForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
                         : new List<CommitteeFormFieldDto>(),
                     committee.CreatedAt,
                     committee.UpdatedAt
@@ -676,7 +676,7 @@ namespace Ozikol_BCC.Api.Controllers
                     m.CustomRoleTitle,
                     m.Status,
                     ExtraInfoResponses = canManageGroup
-                        ? ParseJsonFallback<Dictionary<string, object>>(m.ExtraInfoResponsesJson, new Dictionary<string, object>())
+                        ? ParseJsonOrDefault<Dictionary<string, object>>(m.ExtraInfoResponsesJson, new Dictionary<string, object>())
                         : null,
                     m.JoinedAt
                 }),
@@ -1159,7 +1159,7 @@ namespace Ozikol_BCC.Api.Controllers
                 f.Description,
                 f.IsGlobalDefault,
                 f.IsActive,
-                Fields = ParseJsonFallback<List<CommitteeFormFieldDto>>(f.FieldsSchemaJson, new List<CommitteeFormFieldDto>()),
+                Fields = ParseJsonOrDefault<List<CommitteeFormFieldDto>>(f.FieldsSchemaJson, new List<CommitteeFormFieldDto>()),
                 AttachedCommitteesCount = usageMap.TryGetValue(f.Id, out var cnt) ? cnt : 0,
                 f.CreatedAt,
                 f.UpdatedAt
@@ -1351,8 +1351,8 @@ namespace Ozikol_BCC.Api.Controllers
                 FullName = $"{r.FirstName} {r.LastName}".Trim(),
                 r.Email,
                 r.PhoneNumber,
-                ExtraInfoResponses = ParseJsonFallback<Dictionary<string, object>>(r.ExtraInfoResponsesJson, new Dictionary<string, object>()),
-                AttachmentUrls = ParseJsonFallback<List<string>>(r.AttachmentUrlsJson, new List<string>()),
+                ExtraInfoResponses = ParseJsonOrDefault<Dictionary<string, object>>(r.ExtraInfoResponsesJson, new Dictionary<string, object>()),
+                AttachmentUrls = ParseJsonOrDefault<List<string>>(r.AttachmentUrlsJson, new List<string>()),
                 r.Status,
                 r.ReviewNotes,
                 r.ReviewedAt,
@@ -1863,18 +1863,9 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // Graceful local workspace upload fallback when offline or unconfigured
             if (string.IsNullOrWhiteSpace(uploadedUrl))
             {
-                var folder = Path.Combine(AppContext.BaseDirectory, "Uploads", "Committees");
-                Directory.CreateDirectory(folder);
-                var safeName = $"{Guid.NewGuid():N}{ext}";
-                var fullPath = Path.Combine(folder, safeName);
-                await using (var stream = new FileStream(fullPath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream, cancellationToken);
-                }
-                uploadedUrl = $"/api/public/committees/files/{safeName}";
+                return BadRequest(ApiResponse<object>.FailureResponse("Document upload failed.", errorCode: StandardErrorCodes.MediaUploadFailed));
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
@@ -2081,7 +2072,7 @@ namespace Ozikol_BCC.Api.Controllers
                         effectiveForm.Id,
                         effectiveForm.Title,
                         effectiveForm.Description,
-                        Fields = ParseJsonFallback<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
+                        Fields = ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
                     } : null
                 };
             });
@@ -2559,7 +2550,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             // 3. Deterministic In-Memory Executive Digest when external AI pool is unreachable
-            var actions = ParseJsonFallback<List<ReportActionItemDto>>(report.ActionItemsJson, new List<ReportActionItemDto>());
+            var actions = ParseJsonOrDefault<List<ReportActionItemDto>>(report.ActionItemsJson, new List<ReportActionItemDto>());
             var totalHeadcount = report.PresentCount + report.ExcusedCount + report.AbsentCount;
             var outcomeLine = !string.IsNullOrWhiteSpace(report.Summary)
                 ? report.Summary
@@ -2625,16 +2616,23 @@ namespace Ozikol_BCC.Api.Controllers
             return url;
         }
 
-        internal static T ParseJsonFallback<T>(string? json, T fallback)
+        /// <summary>
+        /// Deserializes a JSON string into target type <typeparamref name="T"/>, returning <paramref name="defaultValue"/> on empty or parsing failure.
+        /// </summary>
+        /// <typeparam name="T">Target deserialization type.</typeparam>
+        /// <param name="json">Raw JSON string.</param>
+        /// <param name="defaultValue">Default value if json is missing or invalid.</param>
+        /// <returns>Deserialized instance or default value.</returns>
+        internal static T ParseJsonOrDefault<T>(string? json, T defaultValue)
         {
-            if (string.IsNullOrWhiteSpace(json)) return fallback;
+            if (string.IsNullOrWhiteSpace(json)) return defaultValue;
             try
             {
-                return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? fallback;
+                return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? defaultValue;
             }
             catch
             {
-                return fallback;
+                return defaultValue;
             }
         }
 
@@ -2650,9 +2648,9 @@ namespace Ozikol_BCC.Api.Controllers
             r.PresentCount,
             r.ExcusedCount,
             r.AbsentCount,
-            UploadedFilesCount = ParseJsonFallback<List<ReportUploadedFileDto>>(r.UploadedFilesJson, new List<ReportUploadedFileDto>()).Count,
-            CloudLinksCount = ParseJsonFallback<List<ReportCloudLinkDto>>(r.CloudLinksJson, new List<ReportCloudLinkDto>()).Count,
-            ActionItemsCount = ParseJsonFallback<List<ReportActionItemDto>>(r.ActionItemsJson, new List<ReportActionItemDto>()).Count,
+            UploadedFilesCount = ParseJsonOrDefault<List<ReportUploadedFileDto>>(r.UploadedFilesJson, new List<ReportUploadedFileDto>()).Count,
+            CloudLinksCount = ParseJsonOrDefault<List<ReportCloudLinkDto>>(r.CloudLinksJson, new List<ReportCloudLinkDto>()).Count,
+            ActionItemsCount = ParseJsonOrDefault<List<ReportActionItemDto>>(r.ActionItemsJson, new List<ReportActionItemDto>()).Count,
             HasAiDigest = !string.IsNullOrWhiteSpace(r.AiExecutiveDigest),
             r.ReviewStatus,
             r.AdminRemarks,
@@ -2672,14 +2670,14 @@ namespace Ozikol_BCC.Api.Controllers
             r.Summary,
             r.RichMinutesContent,
             r.DecisionsText,
-            ActionItems = ParseJsonFallback<List<ReportActionItemDto>>(r.ActionItemsJson, new List<ReportActionItemDto>()),
-            AttendanceRollCall = ParseJsonFallback<List<AttendanceRollCallItemDto>>(r.AttendanceRollCallJson, new List<AttendanceRollCallItemDto>()),
+            ActionItems = ParseJsonOrDefault<List<ReportActionItemDto>>(r.ActionItemsJson, new List<ReportActionItemDto>()),
+            AttendanceRollCall = ParseJsonOrDefault<List<AttendanceRollCallItemDto>>(r.AttendanceRollCallJson, new List<AttendanceRollCallItemDto>()),
             r.PresentCount,
             r.ExcusedCount,
             r.AbsentCount,
-            CustomMetricsValues = ParseJsonFallback<Dictionary<string, decimal>>(r.CustomMetricsValuesJson, new Dictionary<string, decimal>()),
-            UploadedFiles = ParseJsonFallback<List<ReportUploadedFileDto>>(r.UploadedFilesJson, new List<ReportUploadedFileDto>()),
-            CloudLinks = ParseJsonFallback<List<ReportCloudLinkDto>>(r.CloudLinksJson, new List<ReportCloudLinkDto>()),
+            CustomMetricsValues = ParseJsonOrDefault<Dictionary<string, decimal>>(r.CustomMetricsValuesJson, new Dictionary<string, decimal>()),
+            UploadedFiles = ParseJsonOrDefault<List<ReportUploadedFileDto>>(r.UploadedFilesJson, new List<ReportUploadedFileDto>()),
+            CloudLinks = ParseJsonOrDefault<List<ReportCloudLinkDto>>(r.CloudLinksJson, new List<ReportCloudLinkDto>()),
             r.AiExecutiveDigest,
             r.ReviewStatus,
             r.AdminRemarks,
