@@ -52,6 +52,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ITenantProvider? _tenantProvider;
         private readonly IHubContext<NotificationHub>? _notificationHub;
         private readonly IConfiguration _configuration;
+        private readonly ITenantFeatureGateService? _featureGateService;
 
         /// <summary>
         /// Roles considered workspace-wide administrators for the Committees Console.
@@ -81,6 +82,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="activityLogger">Tenant security and operational audit logger.</param>
         /// <param name="tenantProvider">Active tenant context provider.</param>
         /// <param name="notificationHub">SignalR real-time hub context for live alias updates.</param>
+        /// <param name="featureGateService">Tenant modular feature gate evaluator.</param>
         public CommitteesApiController(
             DashboardDbContext db,
             IConfiguration configuration,
@@ -90,7 +92,8 @@ namespace Ozikol_BCC.Api.Controllers
             ICloudinaryService? cloudinaryService = null,
             ITenantActivityLogger? activityLogger = null,
             ITenantProvider? tenantProvider = null,
-            IHubContext<NotificationHub>? notificationHub = null)
+            IHubContext<NotificationHub>? notificationHub = null,
+            ITenantFeatureGateService? featureGateService = null)
         {
             _db = db;
             _configuration = configuration;
@@ -101,6 +104,20 @@ namespace Ozikol_BCC.Api.Controllers
             _activityLogger = activityLogger;
             _tenantProvider = tenantProvider;
             _notificationHub = notificationHub;
+            _featureGateService = featureGateService;
+        }
+
+        /// <summary>
+        /// Validates that the Committees &amp; Sub-Groups feature (<c>bcp-committees</c>) is active and licensed.
+        /// </summary>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        /// <returns>True if feature is active; otherwise false.</returns>
+        private async Task<bool> IsFeatureActiveAsync(CancellationToken cancellationToken)
+        {
+            if (_featureGateService == null) return true;
+            var tenantKey = ResolveCurrentTenantKey();
+            if (string.IsNullOrWhiteSpace(tenantKey)) return true;
+            return await _featureGateService.IsFeatureActiveAsync(tenantKey, "bcp-committees", cancellationToken);
         }
 
         // =====================================================================
@@ -116,6 +133,12 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("settings")]
         public async Task<IActionResult> GetSettings(CancellationToken cancellationToken)
         {
+            if (!await IsFeatureActiveAsync(cancellationToken))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.FailureResponse("This capability is not active on your workspace plan.", errorCode: StandardErrorCodes.CapabilityNotActive));
+            }
+
             var settings = await GetOrCreateSettingsAsync(cancellationToken);
             var googleClientId = _configuration["GoogleWorkspace:ClientId"]
                               ?? Environment.GetEnvironmentVariable("GOOGLE_WORKSPACE_CLIENT_ID")
@@ -2343,9 +2366,16 @@ namespace Ozikol_BCC.Api.Controllers
         private string ResolveCurrentTenantKey()
         {
             var candidate = _tenantProvider?.CurrentTenant;
-            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate.Trim().ToLowerInvariant();
             var headerKey = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
-            return headerKey ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(headerKey)) return headerKey.ToLowerInvariant();
+            var host = HttpContext.Request.Host.Host.ToLowerInvariant();
+            var parts = host.Split('.');
+            if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
+            {
+                return parts[0];
+            }
+            return string.Empty;
         }
 
         private static string FormatRoleDisplay(string role, BcpCommitteeSettings settings)

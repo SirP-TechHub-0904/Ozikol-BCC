@@ -37,6 +37,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ICloudinaryService? _cloudinaryService;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly ITenantFeatureGateService? _featureGateService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublicCommitteesApiController"/> class.
@@ -45,16 +46,76 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="notificationDispatcher">Unified notification dispatcher.</param>
         /// <param name="cloudinaryService">Managed document upload service.</param>
         /// <param name="tenantProvider">Active tenant context provider.</param>
+        /// <param name="featureGateService">Tenant modular feature gate evaluator.</param>
         public PublicCommitteesApiController(
             DashboardDbContext db,
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ICloudinaryService? cloudinaryService = null,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            ITenantFeatureGateService? featureGateService = null)
         {
             _db = db;
             _notificationDispatcher = notificationDispatcher;
             _cloudinaryService = cloudinaryService;
             _tenantProvider = tenantProvider;
+            _featureGateService = featureGateService;
+        }
+
+        /// <summary>
+        /// Resolves the current tenant identifier from provider context, custom header, or host subdomain.
+        /// </summary>
+        /// <param name="explicitTenantKey">Optional explicit tenant key provided in route or query parameters.</param>
+        /// <returns>Resolved tenant key or null if unresolvable.</returns>
+        private string? ResolveCurrentTenantKey(string? explicitTenantKey = null)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitTenantKey))
+            {
+                return explicitTenantKey.Trim().ToLowerInvariant();
+            }
+
+            var candidate = _tenantProvider?.CurrentTenant;
+            if (!string.IsNullOrWhiteSpace(candidate))
+            {
+                return candidate.Trim().ToLowerInvariant();
+            }
+
+            var headerKey = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(headerKey))
+            {
+                return headerKey.ToLowerInvariant();
+            }
+
+            var host = HttpContext.Request.Host.Host.ToLowerInvariant();
+            var parts = host.Split('.');
+            if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
+            {
+                return parts[0];
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Evaluates whether the Committees &amp; Sub-Groups modular capability (<c>bcp-committees</c>)
+        /// is active and subscribed for the current tenant workspace.
+        /// </summary>
+        /// <param name="explicitTenantKey">Optional tenant key passed from route or payload.</param>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        /// <returns>True if active and entitled; otherwise false.</returns>
+        private async Task<bool> IsFeatureActiveAsync(string? explicitTenantKey, CancellationToken cancellationToken)
+        {
+            if (_featureGateService == null)
+            {
+                return true;
+            }
+
+            var tenantKey = ResolveCurrentTenantKey(explicitTenantKey);
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                return true;
+            }
+
+            return await _featureGateService.IsFeatureActiveAsync(tenantKey, "bcp-committees", cancellationToken);
         }
 
         /// <summary>
@@ -66,6 +127,11 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("directory")]
         public async Task<IActionResult> GetPublicDirectory(CancellationToken cancellationToken)
         {
+            if (!await IsFeatureActiveAsync(null, cancellationToken))
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
+            }
+
             var settings = await _db.BcpCommitteeSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
                         ?? new BcpCommitteeSettings();
 
@@ -177,14 +243,21 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <param name="groupSlug">URL-safe slug of the target committee.</param>
         /// <param name="token">Optional invite token enabling invite-only external registration.</param>
+        /// <param name="tenantKey">Optional explicit tenant key override.</param>
         /// <param name="cancellationToken">Request cancellation token.</param>
         /// <returns>Single committee public registration metadata and Extra-Info schema.</returns>
         [HttpGet("{groupSlug}")]
         public async Task<IActionResult> GetPublicCommitteeBySlug(
             string groupSlug,
             [FromQuery] string? token = null,
+            [FromQuery] string? tenantKey = null,
             CancellationToken cancellationToken = default)
         {
+            if (!await IsFeatureActiveAsync(tenantKey, cancellationToken))
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
+            }
+
             var settings = await _db.BcpCommitteeSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
                         ?? new BcpCommitteeSettings();
 
@@ -296,6 +369,11 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> SubmitExternalRegistration([FromBody] PublicCommitteeRegisterDto dto, CancellationToken cancellationToken)
         {
+            if (!await IsFeatureActiveAsync(null, cancellationToken))
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
+            }
+
             if (dto == null || dto.CommitteeId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Required information is missing.", errorCode: StandardErrorCodes.RequiredFieldMissing));
@@ -461,11 +539,17 @@ namespace Ozikol_BCC.Api.Controllers
         /// Uploads a supplemental form attachment (e.g. CV, portfolio PDF, audition photo) during external registration.
         /// </summary>
         /// <param name="file">Multipart file payload.</param>
+        /// <param name="tenantKey">Optional explicit tenant key override.</param>
         /// <param name="cancellationToken">Request cancellation token.</param>
         /// <returns>Uploaded attachment URL.</returns>
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadPublicRegistrationFile(IFormFile file, CancellationToken cancellationToken)
+        public async Task<IActionResult> UploadPublicRegistrationFile(IFormFile file, [FromQuery] string? tenantKey = null, CancellationToken cancellationToken = default)
         {
+            if (!await IsFeatureActiveAsync(tenantKey, cancellationToken))
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
+            }
+
             if (file == null || file.Length == 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("No file selected.", errorCode: StandardErrorCodes.RequiredFieldMissing));
