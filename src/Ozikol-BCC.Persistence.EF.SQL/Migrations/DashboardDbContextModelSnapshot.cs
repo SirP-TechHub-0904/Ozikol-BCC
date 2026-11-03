@@ -558,6 +558,503 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpChatAuditLogs");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommittee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AllowExternalRegistration")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CategoryTag")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("CoverBannerUrl")
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ExternalInviteToken")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid?>("ExtraInfoFormId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IconName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<int?>("MaxCapacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MeetingLocationOrLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MeetingSchedule")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("MissionStatement")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<Guid?>("ParentCommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("RequireApproval")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExtraInfoFormId");
+
+                    b.HasIndex("ParentCommitteeId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "Visibility");
+
+                    b.ToTable("BcpCommittees");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeCloudDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ConnectedAccountEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DocumentUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("EmbedUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ExternalFileId")
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<bool>("IsPinnedToShelf")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OwnerDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("OwnerUserProfileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid?>("ReportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserProfileId");
+
+                    b.HasIndex("CommitteeId", "IsPinnedToShelf");
+
+                    b.ToTable("BcpCommitteeCloudDocuments");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("FieldsSchemaJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsGlobalDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BcpCommitteeForms");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AddedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("CommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CustomRoleTitle")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ExtraInfoResponsesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("UserProfileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserProfileId");
+
+                    b.HasIndex("CommitteeId", "UserProfileId")
+                        .IsUnique();
+
+                    b.ToTable("BcpCommitteeMembers");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeRegistration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApplicantUserProfileId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AttachmentUrlsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ExtraInfoResponsesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsExternalApplicant")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommitteeId", "Status", "SubmittedAt");
+
+                    b.ToTable("BcpCommitteeRegistrations");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AbsentCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ActionItemsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AdminRemarks")
+                        .HasMaxLength(1500)
+                        .HasColumnType("nvarchar(1500)");
+
+                    b.Property<string>("AiExecutiveDigest")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AttendanceRollCallJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CloudLinksJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomMetricsValuesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionsText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExcusedCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsSharedWithMembers")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("MeetingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PresentCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReviewStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RichMinutesContent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubmittedByName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SubmittedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(1500)
+                        .HasColumnType("nvarchar(1500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("nvarchar(240)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedFilesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewStatus");
+
+                    b.HasIndex("CommitteeId", "MeetingDate");
+
+                    b.ToTable("BcpCommitteeReports");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AliasPlural")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("AliasSingular")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<bool>("AllowAnyMemberReportSubmission")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowExternalRegistration")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowGoogleCloudLinking")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AutoProvisionMemberOnApprove")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomReportMetricsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DefaultExtraInfoFormId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LeaderTitleAlias")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("MaxUploadSizeMb")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReportReminderCadence")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<bool>("RequireApprovalForExternal")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecretaryTitleAlias")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("SubGroupAliasPlural")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("SubGroupAliasSingular")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BcpCommitteeSettings");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpContact", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4460,6 +4957,85 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpWorkstationAccessRequests");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpWorkstationActivityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AppDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("FilePath")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MachineName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ProcessName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ScreenshotUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StationKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("WindowTitle")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("WorkstationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BcpWorkstationActivityLogs");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpWorkstationAppPolicy", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6681,6 +7257,74 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommittee", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpCommitteeForm", "ExtraInfoForm")
+                        .WithMany()
+                        .HasForeignKey("ExtraInfoFormId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpCommittee", "ParentCommittee")
+                        .WithMany("SubGroups")
+                        .HasForeignKey("ParentCommitteeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ExtraInfoForm");
+
+                    b.Navigation("ParentCommittee");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeCloudDocument", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpCommittee", "Committee")
+                        .WithMany("CloudDocuments")
+                        .HasForeignKey("CommitteeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Committee");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeMember", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpCommittee", "Committee")
+                        .WithMany("Members")
+                        .HasForeignKey("CommitteeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
+                        .WithMany()
+                        .HasForeignKey("UserProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Committee");
+
+                    b.Navigation("UserProfile");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeRegistration", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpCommittee", "Committee")
+                        .WithMany("Registrations")
+                        .HasForeignKey("CommitteeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Committee");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommitteeReport", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpCommittee", "Committee")
+                        .WithMany("Reports")
+                        .HasForeignKey("CommitteeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Committee");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpContact", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpPhoneBook", "BcpPhoneBook")
@@ -7819,6 +8463,19 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCandidate", b =>
                 {
                     b.Navigation("BcpUserVotes");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommittee", b =>
+                {
+                    b.Navigation("CloudDocuments");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("Registrations");
+
+                    b.Navigation("Reports");
+
+                    b.Navigation("SubGroups");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpDonor", b =>

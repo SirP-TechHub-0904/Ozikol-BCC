@@ -107,6 +107,15 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpWorkstationAccessRequest> BcpWorkstationAccessRequests { get; set; } = null!;
     public DbSet<BcpWorkstationActivityLog> BcpWorkstationActivityLogs { get; set; } = null!;
 
+    // --- BCP: Independent Committees & Sub-Groups Suite (bcp-committees) ---
+    public DbSet<BcpCommitteeSettings> BcpCommitteeSettings { get; set; } = null!;
+    public DbSet<BcpCommittee> BcpCommittees { get; set; } = null!;
+    public DbSet<BcpCommitteeMember> BcpCommitteeMembers { get; set; } = null!;
+    public DbSet<BcpCommitteeForm> BcpCommitteeForms { get; set; } = null!;
+    public DbSet<BcpCommitteeRegistration> BcpCommitteeRegistrations { get; set; } = null!;
+    public DbSet<BcpCommitteeReport> BcpCommitteeReports { get; set; } = null!;
+    public DbSet<BcpCommitteeCloudDocument> BcpCommitteeCloudDocuments { get; set; } = null!;
+
     // --- BCP: Committees & Groups Feature ---
     public DbSet<BcpGroup> BcpGroups { get; set; }
     public DbSet<BcpGroupMember> BcpGroupMembers { get; set; }
@@ -806,6 +815,65 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             .WithMany()
             .HasForeignKey(s => s.PageFormId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // --- Independent Committees & Sub-Groups Suite (bcp-committees) ---
+        modelBuilder.Entity<BcpCommittee>(entity =>
+        {
+            entity.HasIndex(c => c.Slug).IsUnique();
+            entity.HasIndex(c => new { c.Status, c.Visibility });
+
+            entity.HasOne(c => c.ParentCommittee)
+                .WithMany(p => p.SubGroups)
+                .HasForeignKey(c => c.ParentCommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(c => c.ExtraInfoForm)
+                .WithMany()
+                .HasForeignKey(c => c.ExtraInfoFormId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<BcpCommitteeMember>(entity =>
+        {
+            entity.HasIndex(m => new { m.CommitteeId, m.UserProfileId }).IsUnique();
+            entity.HasOne(m => m.Committee)
+                .WithMany(c => c.Members)
+                .HasForeignKey(m => m.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(m => m.UserProfile)
+                .WithMany()
+                .HasForeignKey(m => m.UserProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BcpCommitteeRegistration>(entity =>
+        {
+            entity.HasIndex(r => new { r.CommitteeId, r.Status, r.SubmittedAt });
+            entity.HasOne(r => r.Committee)
+                .WithMany(c => c.Registrations)
+                .HasForeignKey(r => r.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BcpCommitteeReport>(entity =>
+        {
+            entity.HasIndex(r => new { r.CommitteeId, r.MeetingDate });
+            entity.HasIndex(r => r.ReviewStatus);
+            entity.HasOne(r => r.Committee)
+                .WithMany(c => c.Reports)
+                .HasForeignKey(r => r.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BcpCommitteeCloudDocument>(entity =>
+        {
+            entity.HasIndex(d => new { d.CommitteeId, d.IsPinnedToShelf });
+            entity.HasIndex(d => d.OwnerUserProfileId);
+            entity.HasOne(d => d.Committee)
+                .WithMany(c => c.CloudDocuments)
+                .HasForeignKey(d => d.CommitteeId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
         // --- Website Contact Channels Indexing for Fast Querying by Type and Status ---
         modelBuilder.Entity<MisWebsiteContactChannel>(entity =>
