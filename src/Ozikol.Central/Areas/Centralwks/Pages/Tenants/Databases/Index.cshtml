@@ -162,6 +162,7 @@
                     <th>Connectivity</th>
                     <th>Schema Version</th>
                     <th>Tables &amp; Records</th>
+                    <th>Allocated Storage</th>
                     <th>Provisioned (UTC)</th>
                     <th style="text-align: right;">Actions</th>
                 </tr>
@@ -250,6 +251,15 @@
                                 </div>
                             </td>
                             <td>
+                                <div style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-primary);">storage</span>
+                                    @db.FormattedTotalStorage
+                                </div>
+                                <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                    @(db.TotalStorageKb > 0 ? $"{db.TotalStorageKb:N0} KB" : "0 KB")
+                                </div>
+                            </td>
+                            <td>
                                 <div style="font-size: 12.5px; color: var(--admin-text);">
                                     @db.CreatedUtc.ToString("yyyy-MM-dd")
                                 </div>
@@ -292,7 +302,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
+                        <td colspan="9" style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
                             <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-text-dim); display: block; margin-bottom: 8px;">database</span>
                             <div style="font-weight: 600; font-size: 15px; color: var(--admin-text);">No databases found</div>
                             <div style="font-size: 13px; margin-top: 4px;">Try adjusting your search criteria or health filters.</div>

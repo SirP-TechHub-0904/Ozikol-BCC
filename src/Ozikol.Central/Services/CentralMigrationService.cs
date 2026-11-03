@@ -60,6 +60,7 @@ public class TenantMigrationSummary
     public DateTime CreatedUtc { get; set; }
     public int TotalTablesCount { get; set; }
     public long TotalRecordsCount { get; set; }
+    public long TotalStorageKb { get; set; }
     public DatabaseMigrationStatus Status { get; set; } = new();
 
     public string FormattedTotalRecords => TotalRecordsCount switch
@@ -67,6 +68,19 @@ public class TenantMigrationSummary
         1 => "1 record",
         _ => $"{TotalRecordsCount:N0} records"
     };
+
+    public string FormattedTotalStorage
+    {
+        get
+        {
+            if (TotalStorageKb <= 0) return "0 KB";
+            if (TotalStorageKb < 1024) return $"{TotalStorageKb:N0} KB";
+            var mb = TotalStorageKb / 1024.0;
+            if (mb < 1024) return $"{mb:F1} MB";
+            var gb = mb / 1024.0;
+            return $"{gb:F2} GB";
+        }
+    }
 }
 
 /// <summary>
@@ -405,6 +419,7 @@ public class CentralMigrationService : ICentralMigrationService
                         var stats = await GetTableStatsFromConnectionAsync(tenantConnStr, cancellationToken);
                         tenantSummary.TotalTablesCount = stats.Count;
                         tenantSummary.TotalRecordsCount = stats.Sum(s => s.TotalRows);
+                        tenantSummary.TotalStorageKb = stats.Sum(s => s.UsedSpaceKb);
                     }
                     else
                     {
