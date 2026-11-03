@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { COMMITTEES_TRANSLATIONS } from '../i18n/committees.translations';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 export type SupportedLanguage = 'en' | 'fr' | 'es' | 'de';
@@ -4747,6 +4748,9 @@ export class TranslationService {
 
   public translate(key: string, fallback?: string): string {
     const lang = this.currentLangSubject.value;
+    if (COMMITTEES_TRANSLATIONS[lang]?.[key]) {
+      return COMMITTEES_TRANSLATIONS[lang][key];
+    }
     if (TranslationService.BILLING_BANNER_TRANSLATIONS[lang]?.[key]) {
       return TranslationService.BILLING_BANNER_TRANSLATIONS[lang][key];
     }
@@ -4755,6 +4759,9 @@ export class TranslationService {
       return table[key];
     }
     // Fallback to English dictionary
+    if (COMMITTEES_TRANSLATIONS['en']?.[key]) {
+      return COMMITTEES_TRANSLATIONS['en'][key];
+    }
     if (this.translations['en'] && this.translations['en'][key]) {
       return this.translations['en'][key];
     }

@@ -785,3 +785,4 @@ namespace Ozikol_BCC.Domain.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
+

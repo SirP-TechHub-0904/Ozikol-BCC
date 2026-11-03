@@ -514,10 +514,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-committees') && isMenuOpen('groups')" *ngSwitchCase="'bcp-committees'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-committees') && (isParentActive('/groups/console') || isParentActive('/admin/groups'))" [class.feature-locked]="!isFeatureActive('bcp-committees')" (click)="onFeatureMenuClick('bcp-committees', getFeatureFullTitle('bcp-committees', 'Committees & Sub-Groups'), $event, 'groups')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-committees') && (isParentActive('/committees/console') || isParentActive('/groups/console'))" [class.feature-locked]="!isFeatureActive('bcp-committees')" (click)="onFeatureMenuClick('bcp-committees', getFeatureFullTitle('bcp-committees', 'Committees & Sub-Groups'), $event, 'groups')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">diversity_3</span>
-                <span>{{ getFeatureMenuTitle('bcp-committees', 'Groups & Committees') }}</span>
+                <span>{{ committeeAliases.aliasPlural || getFeatureMenuTitle('bcp-committees', 'Groups & Committees') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-committees') && !isFeatureActive('bcp-committees')" title="Available — Click to view details & install">
                 <span class="material-symbols-outlined">lock</span>
@@ -528,18 +528,49 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-committees') && isMenuOpen('groups')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.groups_dashboard' | translate:'Groups Dashboard' }}</span>
+                  <a routerLink="/committees/console/dashboard" [class.active]="isCurrentRoute('/committees/console/dashboard')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ committeeAliases.aliasSingular }} Dashboard</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin('Groups Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/console/dashboard')" (click)="togglePin(committeeAliases.aliasSingular + ' Dashboard', '/committees/console/dashboard', 'space_dashboard')" [title]="isPinned('/committees/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/groups/console" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>{{ 'adm.manage_groups' | translate:'Manage Groups' }}</span>
+                  <a routerLink="/committees/console/manage" [class.active]="isCurrentRoute('/committees/console/manage')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>Manage {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/console/manage')" (click)="togglePin('Manage ' + committeeAliases.aliasPlural, '/committees/console/manage', 'diversity_3')" [title]="isPinned('/committees/console/manage') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/console/manage') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/registrations" [class.active]="isCurrentRoute('/committees/console/registrations')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>Registrations &amp; Intake</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/reports" [class.active]="isCurrentRoute('/committees/console/reports')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">summarize</span>Meeting Reports &amp; Docs</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/forms" [class.active]="isCurrentRoute('/committees/console/forms')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">dynamic_form</span>Extra-Info Forms</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/settings" [class.active]="isCurrentRoute('/committees/console/settings')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ committeeAliases.aliasSingular }} Settings</span>
                   </a>
                 </div>
               </li>
@@ -1145,6 +1176,59 @@ export interface SuiteInfoDetail {
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Log Activity', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 3. Committees & Sub-Groups Member Workspace (bcp-committees) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_committees')" *ngIf="isFeatureActive('bcp-committees')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/committees/workspace') || isParentActive('/groups/workspace')" (click)="toggleMenu('workspace_committees')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">diversity_3</span>
+                <span>{{ committeeAliases.aliasPlural }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_committees')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/my" [class.active]="isCurrentRoute('/committees/workspace/my')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">groups</span>My {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/my')" (click)="togglePin('My ' + committeeAliases.aliasPlural, '/committees/workspace/my', 'groups')" [title]="isPinned('/committees/workspace/my') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/my') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/discover" [class.active]="isCurrentRoute('/committees/workspace/discover')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">explore</span>Browse &amp; Join {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/discover')" (click)="togglePin('Browse & Join ' + committeeAliases.aliasPlural, '/committees/workspace/discover', 'explore')" [title]="isPinned('/committees/workspace/discover') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/discover') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/reports/compose" [class.active]="isCurrentRoute('/committees/workspace/reports/compose')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_document</span>Compose Meeting Report</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/reports/compose')" (click)="togglePin('Compose Meeting Report', '/committees/workspace/reports/compose', 'edit_document')" [title]="isPinned('/committees/workspace/reports/compose') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/reports/compose') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/cloud-links" [class.active]="isCurrentRoute('/committees/workspace/cloud-links')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">cloud_done</span>My Connected Cloud Docs</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/cloud-links')" (click)="togglePin('Connected Cloud Docs', '/committees/workspace/cloud-links', 'cloud_done')" [title]="isPinned('/committees/workspace/cloud-links') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/cloud-links') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -3643,6 +3727,18 @@ export class AdminLayoutComponent implements OnInit {
   expiringFeatures: any[] = [];
   isExpirationBannerDismissed = false;
 
+  committeeAliases: {
+    aliasSingular: string;
+    aliasPlural: string;
+    subGroupAliasSingular: string;
+    subGroupAliasPlural: string;
+  } = {
+    aliasSingular: 'Committee',
+    aliasPlural: 'Committees',
+    subGroupAliasSingular: 'Sub-Group',
+    subGroupAliasPlural: 'Sub-Groups'
+  };
+
   get isConsoleActive(): boolean {
     return this.isAdmin && this.currentConsoleMode === 'console';
   }
@@ -4758,8 +4854,10 @@ export class AdminLayoutComponent implements OnInit {
       this.openMenus = { content: true };
     } else if (url.startsWith('/identity/console') || url.startsWith('/admin/identity')) {
       this.openMenus = { identity: true };
-    } else if (url.startsWith('/groups/console') || url.startsWith('/admin/groups')) {
+    } else if (url.startsWith('/groups/console') || url.startsWith('/admin/groups') || url.startsWith('/committees/console')) {
       this.openMenus = { groups: true };
+    } else if (url.startsWith('/committees/workspace') || url.startsWith('/groups/workspace')) {
+      this.openMenus = { workspace_committees: true };
     } else if (url.startsWith('/admin/alumni') || url.startsWith('/users/workspace/alumni')) {
       this.openMenus = { alumni: true };
     } else if (url.startsWith('/products/console')) {
@@ -5086,6 +5184,17 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/users/workspace/alumni')) { tabTitle = 'Alumni Network'; tabIcon = 'school'; }
     else if (url.includes('/users/workspace/profile/biography')) { tabTitle = 'My CV Biography'; tabIcon = 'assignment_ind'; }
     else if (url.includes('/users/workspace/profile')) { tabTitle = 'My Account'; tabIcon = 'account_circle'; }
+    else if (url.includes('/committees/console/dashboard')) { tabTitle = `${this.committeeAliases.aliasSingular} Dashboard`; tabIcon = 'space_dashboard'; }
+    else if (url.includes('/committees/console/manage')) { tabTitle = `Manage ${this.committeeAliases.aliasPlural}`; tabIcon = 'diversity_3'; }
+    else if (url.includes('/committees/console/registrations')) { tabTitle = 'Registrations & Intake'; tabIcon = 'how_to_reg'; }
+    else if (url.includes('/committees/console/reports')) { tabTitle = 'Meeting Reports'; tabIcon = 'summarize'; }
+    else if (url.includes('/committees/console/forms')) { tabTitle = 'Extra-Info Forms'; tabIcon = 'dynamic_form'; }
+    else if (url.includes('/committees/console/settings')) { tabTitle = `${this.committeeAliases.aliasSingular} Settings`; tabIcon = 'settings'; }
+    else if (url.includes('/committees/workspace/my')) { tabTitle = `My ${this.committeeAliases.aliasPlural}`; tabIcon = 'groups'; }
+    else if (url.includes('/committees/workspace/discover')) { tabTitle = `Browse & Join ${this.committeeAliases.aliasPlural}`; tabIcon = 'explore'; }
+    else if (url.includes('/committees/workspace/view')) { tabTitle = `${this.committeeAliases.aliasSingular} Hub`; tabIcon = 'diversity_3'; }
+    else if (url.includes('/committees/workspace/reports/compose')) { tabTitle = 'Compose Meeting Report'; tabIcon = 'edit_document'; }
+    else if (url.includes('/committees/workspace/cloud-links')) { tabTitle = 'Connected Cloud Docs'; tabIcon = 'cloud_done'; }
     else if (url.includes('/groups')) { tabTitle = 'Group Channels'; tabIcon = 'diversity_3'; }
     else if (url.includes('/billing/features') || url.includes('/billing/plans') || url.includes('/billing/console')) { tabTitle = 'Features & Capabilities'; tabIcon = 'extension'; }
     else if (url.includes('/billing/paymentmethod') || url.includes('/billing/payment-methods')) { tabTitle = 'Payment Methods'; tabIcon = 'account_balance_wallet'; }

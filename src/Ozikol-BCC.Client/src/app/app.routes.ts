@@ -6,6 +6,20 @@ import { ResetPasswordComponent } from './pages/auth/reset-password/reset-passwo
 import { AccessDeniedComponent } from './pages/auth/access-denied/access-denied.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 
+// Committees & Sub-Groups Suite (Feature #1: bcp-committees)
+import { CommitteesAdminDashboardComponent } from './pages/admin/committees/committees-admin-dashboard.component';
+import { CommitteesManageComponent } from './pages/admin/committees/committees-manage.component';
+import { CommitteesFormsComponent } from './pages/admin/committees/committees-forms.component';
+import { CommitteesRegistrationsComponent } from './pages/admin/committees/committees-registrations.component';
+import { CommitteesReportsAdminComponent } from './pages/admin/committees/committees-reports-admin.component';
+import { CommitteesSettingsComponent } from './pages/admin/committees/committees-settings.component';
+import { CommitteesMemberHubComponent } from './pages/workspace/committees/committees-member-hub.component';
+import { CommitteesDiscoverComponent } from './pages/workspace/committees/committees-discover.component';
+import { CommitteesMemberDetailComponent } from './pages/workspace/committees/committees-member-detail.component';
+import { CommitteesReportComposerComponent } from './pages/workspace/committees/committees-report-composer.component';
+import { CommitteesCloudVaultComponent } from './pages/workspace/committees/committees-cloud-vault.component';
+import { PublicCommitteeRegisterComponent } from './pages/public/public-committee-register.component';
+
 // Dashboards
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
 import { WorkspaceDashboardComponent } from './pages/workspace/workspace-dashboard.component';
@@ -141,6 +155,9 @@ export const routes: Routes = [
   { path: 'onboarding', component: RegisterComponent },
   { path: 'signup', component: RegisterComponent },
   { path: 'auth/:customSlug', component: RegisterComponent },
+  { path: 'join-committee', component: PublicCommitteeRegisterComponent },
+  { path: 'join-committee/:tenantSlug', component: PublicCommitteeRegisterComponent },
+  { path: 'join-committee/:tenantSlug/:groupSlug', component: PublicCommitteeRegisterComponent },
   { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
@@ -247,7 +264,29 @@ export const routes: Routes = [
       { path: 'notifications', redirectTo: 'users/workspace/notifications', pathMatch: 'full' },
 
       // 3. Groups & Channels
-      { path: 'groups/console', component: GroupsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      // 3. Committees & Sub-Groups Suite (bcp-committees)
+      // Admin Console Routes
+      { path: 'committees/console', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
+      { path: 'committees/console/dashboard', component: CommitteesAdminDashboardComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/manage', component: CommitteesManageComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/manage/:id', component: CommitteesManageComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/forms', component: CommitteesFormsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/registrations', component: CommitteesRegistrationsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/reports', component: CommitteesReportsAdminComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/settings', component: CommitteesSettingsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+
+      // Member Workspace Routes
+      { path: 'committees/workspace', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
+      { path: 'committees/workspace/my', component: CommitteesMemberHubComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/discover', component: CommitteesDiscoverComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/view/:id', component: CommitteesMemberDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/reports/compose', component: CommitteesReportComposerComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/cloud-links', component: CommitteesCloudVaultComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+
+      // Legacy Aliases
+      { path: 'groups/console', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
+      { path: 'groups/workspace', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
+      { path: 'groups', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
       { path: 'groups/workspace', component: GroupsDirectoryComponent },
       { path: 'groups', component: GroupsComponent },
 
