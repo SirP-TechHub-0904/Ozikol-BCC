@@ -1,22 +1,14 @@
 import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml, Title } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommitteesService } from '../../core/services/committees.service';
-import { ApiService } from '../../core/services/api.service';
-import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
-import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
-import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
+import { PublicPageShellService } from '../../core/services/public-page-shell.service';
 
 /**
  * Public Committee & Sub-Group Registration Portal
  * Routes: /join-committee, /join-committee/:tenantSlug, /join-committee/:tenantSlug/:groupSlug
- * Compiles the entire page using the canonical CMS Section Assembler (HtmlAssemblerService):
- * - Navbar (live menu template hydrated via ContentHydrationService)
- * - Breadcrumb Banner (live breadcrumb template hydrated via ContentHydrationService)
- * - Body Section (Committee Registration Card or Standard 404 Signal Lost Section)
- * - Footer (live footer template hydrated with enforced Ozikol compliance)
- * - Scoped CSS and 3-zone script injection
+ * Wraps custom committee registration body into the official Landing Page shell via PublicPageShellService.
  */
 @Component({
   selector: 'app-public-committee-register',
@@ -32,7 +24,7 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
         </div>
       </div>
 
-      <!-- CMS Section Assembler Output: Complete Assembled Document (Menu + Breadcrumb + Body + Footer) -->
+      <!-- Assembled Landing Page Shell: Menu + Breadcrumb + Injected Registration Body + Footer -->
       <main *ngIf="!loading" class="dynamic-rendered-content" [innerHTML]="safeRenderedHtml"></main>
     </div>
   `,
@@ -82,10 +74,6 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   directoryMode = true;
 
   brand: any = null;
-  brandInfo: any = null;
-  brandName = '';
-  brandLogoUrl = '';
-
   aliases: any = {
     aliasSingular: 'Committee',
     aliasPlural: 'Committees',
@@ -97,10 +85,6 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   activeCommittee: any = null;
 
   safeRenderedHtml: SafeHtml | null = null;
-  private rawActiveTemplates: any[] = [];
-  private publishedPages: any[] = [];
-  private navigationCategories: any[] = [];
-  private rawCodeInjections: CodeInjectionTag[] = [];
 
   extraAnswers: Record<string, any> = {};
   attachmentUrls: string[] = [];
@@ -115,24 +99,18 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private committeesService: CommitteesService,
-    private apiService: ApiService,
-    private templateHydration: TemplateHydrationService,
-    private contentHydration: ContentHydrationService,
-    private htmlAssembler: HtmlAssemblerService,
+    private publicShell: PublicPageShellService,
     private sanitizer: DomSanitizer,
-    private titleService: Title,
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void {
-    // Unlock native document scrolling for public website mode to prevent onesided/clipped layouts
-    document.body.classList.add('public-website-mode');
-
+  async ngOnInit(): Promise<void> {
     this.tenantSlug = this.route.snapshot.paramMap.get('tenantSlug') || '';
     this.groupSlug = this.route.snapshot.paramMap.get('groupSlug') || '';
     this.inviteToken = this.route.snapshot.queryParamMap.get('token') || '';
 
-    this.loadSiteThemeData();
+    // Load official Landing Page shell metadata
+    await this.publicShell.loadSiteThemeData();
 
     if (this.groupSlug) {
       this.directoryMode = false;
@@ -144,8 +122,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    document.body.classList.remove('public-website-mode');
-    document.getElementById('tenant-dynamic-theme-styles')?.remove();
+    this.publicShell.destroyPublicShell();
   }
 
   /**
@@ -249,594 +226,43 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Loads live website templates, navigation categories, published pages, and code injections.
-   */
-  private loadSiteThemeData(): void {
-    Promise.all([
-      this.fetchBrandSettings(),
-      this.fetchActiveTemplates(),
-      this.fetchPublishedPages(),
-      this.fetchCategories(),
-      this.fetchCodeInjections()
-    ]).then(() => {
-      this.assembleLayout(this.isNotFound);
-    });
-  }
 
-  private fetchBrandSettings(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/ui-settings').subscribe({
-        next: (uiRes: any) => {
-          if (uiRes?.data) {
-            const data = uiRes.data;
-            this.brandInfo = { ...this.brandInfo, ...data };
-            this.brandName = data.brandName || data.companyName || data.siteTitle || this.brandName;
-            this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || this.brandLogoUrl;
-          }
-          this.apiService.get('SettingsApi/brand').subscribe({
-            next: (bRes: any) => {
-              if (bRes?.data) {
-                const bData = bRes.data;
-                this.brandInfo = { ...this.brandInfo, ...bData };
-                if (bData.companyName) this.brandName = bData.companyName;
-                if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
-              }
-              resolve();
-            },
-            error: () => resolve()
-          });
-        },
-        error: () => resolve()
-      });
-    });
-  }
-
-  private fetchActiveTemplates(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
-        next: (res: any) => {
-          this.rawActiveTemplates = res?.data || [];
-          resolve();
-        },
-        error: () => resolve()
-      });
-    });
-  }
-
-  private fetchPublishedPages(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/pages').subscribe({
-        next: (res: any) => {
-          this.publishedPages = res?.data || [];
-          resolve();
-        },
-        error: () => resolve()
-      });
-    });
-  }
-
-  private fetchCategories(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/categories').subscribe({
-        next: (res: any) => {
-          this.navigationCategories = res?.data || [];
-          resolve();
-        },
-        error: () => resolve()
-      });
-    });
-  }
-
-  private fetchCodeInjections(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/code-injections').subscribe({
-        next: (res: any) => {
-          const list: CodeInjectionTag[] = [];
-          if (res?.data) {
-            const data = res.data;
-            (data.head || []).forEach((t: any) => list.push({ ...t, zone: 'head', isActive: t.isActive !== false }));
-            (data.bodyOpen || []).forEach((t: any) => list.push({ ...t, zone: 'body_open', isActive: t.isActive !== false }));
-            (data.footer || []).forEach((t: any) => list.push({ ...t, zone: 'footer', isActive: t.isActive !== false }));
-          }
-          this.rawCodeInjections = list;
-          resolve();
-        },
-        error: () => resolve()
-      });
-    });
-  }
 
   /**
-   * Invokes the Section Assembler to assemble the full document:
-   * Navbar + Breadcrumb + Injected Body + Footer.
+   * Invokes PublicPageShellService to wrap the dynamic body into the Landing Page shell.
    */
   private assembleLayout(is404: boolean): void {
-    if (!this.rawActiveTemplates || this.rawActiveTemplates.length === 0) return;
-
-    const brandDisplay = this.brandName || this.brand?.brandName || 'Organization Workspace';
-    const committeeDisplay = this.activeCommittee?.name || 'Registration';
-
-    // 1. Navbar Section Unit
-    const menuTpl = this.rawActiveTemplates.find((t: any) => (t.category || t.categoryKey || '').toLowerCase() === 'menu');
-    const headerSection: SectionTemplateUnit | undefined = menuTpl?.htmlTemplate ? {
-      id: menuTpl.id,
-      name: menuTpl.name,
-      category: 'menu',
-      html: this.hydrateMenu(menuTpl.htmlTemplate),
-      css: menuTpl.cssStyles,
-      js: menuTpl.jsScript
-    } : undefined;
-
-    // 2. Breadcrumb Section Unit (omitted when 404)
-    let breadcrumbSection: SectionTemplateUnit | undefined;
-    const breadcrumbTpl = this.rawActiveTemplates.find((t: any) => (t.category || t.categoryKey || '').toLowerCase() === 'breadcrumb');
-    if (!is404 && breadcrumbTpl?.htmlTemplate) {
-      const breadcrumbContext = this.buildBreadcrumbContext();
-      breadcrumbSection = {
-        id: breadcrumbTpl.id,
-        name: breadcrumbTpl.name,
-        category: 'breadcrumb',
-        html: this.contentHydration.hydrate(breadcrumbTpl.htmlTemplate, breadcrumbContext, 'breadcrumb'),
-        css: breadcrumbTpl.cssStyles,
-        js: breadcrumbTpl.jsScript
-      };
+    if (is404) {
+      const bundle = this.publicShell.assembleNotAvailable('Page Not Found');
+      this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(bundle.visualBodyMarkup);
+      this.cdr.detectChanges();
+      return;
     }
 
-    // 3. Body Section Unit (404 Signal Lost OR Registration Form Card)
-    const bodySection: SectionTemplateUnit = {
-      name: is404 ? '404 Not Found' : 'Committee Registration Body',
-      category: 'body',
-      html: is404 ? this.render404SignalLostHtml() : this.renderRegistrationCardHtml(),
-      css: this.getBodyStyles(),
-      sortOrder: 1
-    };
+    const c = this.activeCommittee;
+    const committeeName = c?.name || 'Registration';
+    const parentName = c?.parentCommitteeName;
 
-    // 4. Footer Section Unit
-    const footerTpl = this.rawActiveTemplates.find((t: any) => (t.category || t.categoryKey || '').toLowerCase() === 'footer');
-    const footerSection: SectionTemplateUnit | undefined = footerTpl?.htmlTemplate ? {
-      id: footerTpl.id,
-      name: footerTpl.name,
-      category: 'footer',
-      html: this.hydrateFooter(footerTpl.htmlTemplate),
-      css: footerTpl.cssStyles,
-      js: footerTpl.jsScript
-    } : undefined;
-
-    // 5. Assemble unified page bundle via HtmlAssemblerService
-    const pageBundle = this.htmlAssembler.assemblePageBundle({
-      pageTitle: is404 ? `Page Not Found | ${brandDisplay}` : `${committeeDisplay} | ${brandDisplay}`,
-      pageSlug: is404 ? '404' : 'join-committee',
-      metaDescription: is404 ? 'Page Not Found' : (this.activeCommittee?.description || this.brandInfo?.companyDescription),
-      faviconUrl: this.brandInfo?.faviconUrl,
-      codeInjections: this.rawCodeInjections,
-      headerSection,
-      breadcrumbSection,
-      bodySections: [bodySection],
-      footerSection
+    const bundle = this.publicShell.assemblePageWithBody({
+      pageTitle: committeeName,
+      pageSlug: 'join-committee',
+      breadcrumb: {
+        title: committeeName,
+        parentTitle: parentName || this.aliases.aliasPlural,
+        parentUrl: parentName ? '#' : '/join-committee',
+        backgroundImageUrl: c?.coverBannerUrl || c?.imageUrl || ''
+      },
+      bodySections: [{
+        name: 'Committee Registration Body',
+        category: 'body',
+        html: this.renderRegistrationCardHtml(),
+        css: this.getBodyStyles(),
+        sortOrder: 1
+      }]
     });
 
-    // 6. Inject Scoped CSS into document head
-    let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
-    if (!styleTag) {
-      styleTag = document.createElement('style');
-      styleTag.id = 'tenant-dynamic-theme-styles';
-      document.head.appendChild(styleTag);
-    }
-    const cleanStyles = (pageBundle.combinedStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
-    styleTag.textContent = cleanStyles;
-
-    this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(pageBundle.visualBodyMarkup);
-    this.titleService.setTitle(is404 ? `Page Not Found | ${brandDisplay}` : `${committeeDisplay} | ${brandDisplay}`);
+    this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(bundle.visualBodyMarkup);
     this.cdr.detectChanges();
-  }
-
-  /**
-   * Assembles the live Navbar using real database navigation tokens.
-   */
-  private hydrateMenu(rawHtml: string): string {
-    const authed = !!this.signedInMember || !!localStorage.getItem('token') || !!sessionStorage.getItem('token');
-    const isAdmin = authed && (localStorage.getItem('user_role')?.includes('Admin') || this.signedInMember?.role === 'Admin');
-
-    const loginText = !authed 
-      ? (this.brandInfo?.loginButtonText || 'Sign In') 
-      : (isAdmin ? 'Console' : 'My Workspace');
-    const loginUrl = !authed 
-      ? '/login' 
-      : (isAdmin ? '/billing/features' : '/committees/workspace/my');
-
-    const normalizeZone = (val: any): string => {
-      if (!val) return 'first';
-      const s = String(val).toLowerCase();
-      if (s.includes('mid') || s === '2') return 'middle';
-      if (s.includes('last') || s === '3' || s.includes('right')) return 'last';
-      if (s.includes('top') || s === '4') return 'top';
-      return 'first';
-    };
-
-    const dropdownItems: any[] = [];
-    const usedUrls = new Set<string>();
-
-    (this.navigationCategories || [])
-      .filter((c: any) => c.publish !== false && c.Publish !== false && c.showInMenu !== false && c.ShowInMenu !== false)
-      .forEach((c: any) => {
-        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
-        const rawWebPages = c.webPages || c.WebPages || [];
-        const childPages = (rawWebPages && rawWebPages.length > 0)
-          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false && p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false)
-          : (this.publishedPages || []).filter((p: any) => (p.publish !== false && p.Publish !== false) && 
-              (p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false) && 
-              (p.pageCategoryId === c.id || p.pageCategoryId === c.Id));
-
-        if (!childPages || childPages.length === 0) return;
-
-        const pagesList = childPages.map((p: any) => {
-          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
-          usedUrls.add(pUrl.toLowerCase());
-          return {
-            title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
-            url: pUrl,
-            customClass: p.customClass || p.CustomClass || '',
-            sortOrder: p.dropdownSortOrder || p.DropdownSortOrder || p.sortOrder || p.SortOrder || 0
-          };
-        });
-
-        dropdownItems.push({
-          title: catTitle,
-          url: '#',
-          isDropdown: true,
-          publish: true,
-          showInMainMenu: true,
-          pages: pagesList,
-          zone: normalizeZone(c.menuPosition ?? c.MenuPosition ?? 1),
-          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : (c.sortOrder || 0)),
-          customClass: c.customClass || c.CustomClass || ''
-        });
-      });
-
-    const standaloneItems: any[] = [];
-    (this.publishedPages || [])
-      .filter((p: any) => (p.publish !== false && p.Publish !== false) && 
-                   (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
-                   !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
-      .forEach((p: any) => {
-        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '');
-        const pUrl = (rawUrl === '' || rawUrl.toLowerCase() === 'home') ? '/' : `/${rawUrl}`;
-        const pLower = pUrl.toLowerCase();
-
-        if (pLower !== '/' && usedUrls.has(pLower)) return;
-        if (usedUrls.has(pLower)) return;
-        usedUrls.add(pLower);
-
-        standaloneItems.push({
-          title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
-          url: pUrl,
-          isDropdown: false,
-          publish: true,
-          showInMainMenu: true,
-          pages: [],
-          zone: normalizeZone(p.menuPosition ?? p.MenuPosition ?? 1),
-          sortOrder: (p.mainMenuSortOrder !== undefined && p.mainMenuSortOrder !== 0) ? p.mainMenuSortOrder : ((p.MainMenuSortOrder !== undefined && p.MainMenuSortOrder !== 0) ? p.MainMenuSortOrder : (p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0))),
-          customClass: p.customClass || p.CustomClass || ''
-        });
-      });
-
-    const navigationMenu = [...standaloneItems, ...dropdownItems].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-
-    const topBarPages = (this.publishedPages || [])
-      .filter((p: any) => (p.publish !== false && p.Publish !== false) && (normalizeZone(p.menuPosition) === 'top' || p.showInMenuTopBar === true || p.showInTopBar === true))
-      .sort((a: any, b: any) => (a.topBarSortOrder || a.TopBarSortOrder || a.sortOrder || 0) - (b.topBarSortOrder || b.TopBarSortOrder || b.sortOrder || 0))
-      .map((p: any) => ({
-        title: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        customClass: p.customClass || ''
-      }));
-
-    const menuCtaButtons = (this.publishedPages || [])
-      .filter((p: any) => (p.isMenuCTA || p.IsMenuCTA) && p.publish !== false && p.Publish !== false)
-      .sort((a: any, b: any) => (a.sortOrder || a.SortOrder || 0) - (b.sortOrder || b.SortOrder || 0))
-      .map((p: any) => {
-        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
-        const ctaTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.menuCtaText || p.MenuCtaText || p.title || p.Title || '');
-        const ctaUrl = isAuthDirect && authed ? (isAdmin ? '/billing/features' : '/committees/workspace/my') : (p.menuCtaUrl || p.MenuCtaUrl || `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`);
-        const ctaStyle = p.menuCtaStyle || p.MenuCtaStyle || p.buttonClass || (isAuthDirect ? 'oz-btn-ghost' : 'oz-btn-primary');
-        return {
-          title: ctaTitle,
-          url: ctaUrl,
-          buttonClass: ctaStyle.startsWith('oz-btn-') ? ctaStyle : `oz-btn-${ctaStyle}`,
-          customClass: p.customClass || p.CustomClass || (isAuthDirect ? 'oz-login-cta' : '')
-        };
-      });
-
-    const channels: any[] = this.brandInfo?.contactChannels || [];
-    const defaultEmail = channels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'email');
-    const defaultPhone = channels.find((c: any) => c.channelType?.toLowerCase() === 'phone' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'phone');
-    const defaultAddress = channels.find((c: any) => c.channelType?.toLowerCase() === 'address' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'address');
-    const defaultHours = channels.find((c: any) => (c.channelType?.toLowerCase() === 'hours' || c.channelType?.toLowerCase() === 'workinghours') && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'hours' || c.channelType?.toLowerCase() === 'workinghours');
-    const socialLinks = channels.filter((c: any) => c.channelType?.toLowerCase() === 'socialmedia');
-
-    const contactEmail = defaultEmail?.value || this.brandInfo?.contactEmail || '';
-    const contactPhone = defaultPhone?.value || this.brandInfo?.primaryPhone || '';
-    const contactAddress = defaultAddress?.value || this.brandInfo?.address || '';
-    const workingHours = defaultHours?.value || this.brandInfo?.workingHours || '';
-    const hasContactInfo = Boolean(contactEmail || contactPhone || contactAddress || channels.length > 0);
-    const hasBrandLogo = Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0);
-
-    const menuContext: any = {
-      navigationMenu,
-      NavigationMenu: navigationMenu,
-      PageCategories: navigationMenu,
-      categories: navigationMenu,
-      topBarPages,
-      TopBarPages: topBarPages,
-      menuCtaButtons,
-      MenuCtaButtons: menuCtaButtons,
-      cartCount: 0,
-      BrandName: this.brandName,
-      brandName: this.brandName,
-      CompanyName: this.brandName,
-      LogoUrl: this.brandLogoUrl,
-      logoUrl: this.brandLogoUrl,
-      BrandLogo: this.brandLogoUrl,
-      brandLogo: this.brandLogoUrl,
-      WhiteLogoUrl: this.brandLogoUrl,
-      HasBrandLogo: hasBrandLogo,
-      hasBrandLogo: hasBrandLogo,
-      HomeUrl: '/',
-      WebsiteUrl: '/',
-      email: contactEmail,
-      Email: contactEmail,
-      phone: contactPhone,
-      Phone: contactPhone,
-      address: contactAddress,
-      Address: contactAddress,
-      workingHours: workingHours,
-      WorkingHours: workingHours,
-      socialLinks: socialLinks,
-      SocialLinks: socialLinks,
-      hasContactInfo: hasContactInfo,
-      HasContactInfo: hasContactInfo,
-      activateLogin: this.brandInfo?.activateLogin !== false,
-      ActivateLogin: this.brandInfo?.activateLogin !== false,
-      activateLoginInMenu: this.brandInfo?.activateLoginInMenu !== false,
-      ActivateLoginInMenu: this.brandInfo?.activateLoginInMenu !== false,
-      loginText: loginText,
-      LoginText: loginText,
-      loginUrl: loginUrl,
-      LoginUrl: loginUrl,
-      isUserAuthenticated: authed,
-      IsAuthenticated: authed,
-      isUserAdmin: isAdmin,
-      IsAdmin: isAdmin
-    };
-
-    return this.contentHydration.hydrate(rawHtml, menuContext, 'menu');
-  }
-
-  /**
-   * Assembles the live Footer using real database navigation tokens.
-   */
-  private hydrateFooter(rawHtml: string): string {
-    const authed = !!this.signedInMember || !!localStorage.getItem('token') || !!sessionStorage.getItem('token');
-    const isAdmin = authed && (localStorage.getItem('user_role')?.includes('Admin') || this.signedInMember?.role === 'Admin');
-
-    const loginText = !authed 
-      ? (this.brandInfo?.loginButtonText || 'Sign In') 
-      : (isAdmin ? 'Console' : 'My Workspace');
-    const loginUrl = !authed 
-      ? '/login' 
-      : (isAdmin ? '/billing/features' : '/committees/workspace/my');
-
-    const footerCategories = (this.navigationCategories || [])
-      .filter((c: any) => c.publish !== false && c.showInFooter !== false)
-      .map((c: any) => {
-        const catTitle = c.title || c.categoryName || c.name || 'Category';
-        const displayTitle = c.footerDisplayTitle || catTitle;
-        const childPages = (c.webPages && c.webPages.length > 0)
-          ? c.webPages.filter((p: any) => p.publish !== false && p.showInFooter !== false)
-          : (this.publishedPages || []).filter((p: any) => (p.publish !== false && p.showInFooter !== false) && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
-
-        return {
-          name: catTitle,
-          title: catTitle,
-          displayTitle: displayTitle,
-          pages: childPages.map((p: any) => ({
-            title: p.title || p.Title || '',
-            url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
-          }))
-        };
-      });
-
-    const footerBottomPages = (this.publishedPages || [])
-      .filter((p: any) => (p.showInFooterBottom || p.ShowInFooterBottom || p.isLegal || p.IsLegal) && p.publish !== false && p.Publish !== false)
-      .sort((a: any, b: any) => (a.footerBottomSortOrder || a.FooterBottomSortOrder || a.sortOrder || a.SortOrder || 0) - (b.footerBottomSortOrder || b.FooterBottomSortOrder || b.sortOrder || b.SortOrder || 0))
-      .map((p: any) => {
-        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
-        const itemTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.title || p.Title || '');
-        const itemUrl = isAuthDirect && authed ? (isAdmin ? '/billing/features' : '/committees/workspace/my') : `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`;
-        return {
-          title: itemTitle,
-          url: itemUrl,
-          customClass: p.customClass || p.CustomClass || ''
-        };
-      });
-
-    const currentYear = new Date().getFullYear().toString();
-    const footerChannels: any[] = this.brandInfo?.contactChannels || [];
-    const footerEmail = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'email');
-    const footerPhone = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'phone' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'phone');
-    const footerAddress = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'address' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'address');
-    const footerSocialLinks = footerChannels.filter((c: any) => c.channelType?.toLowerCase() === 'socialmedia');
-
-    const contactEmail = footerEmail?.value || this.brandInfo?.contactEmail || '';
-    const contactPhone = footerPhone?.value || this.brandInfo?.primaryPhone || '';
-    const contactAddress = footerAddress?.value || this.brandInfo?.address || '';
-
-    const contactItems: any[] = [];
-    if (contactAddress) {
-      contactItems.push({
-        title: 'Address',
-        content: contactAddress,
-        value: contactAddress,
-        type: 'address',
-        iconClass: 'fa-solid fa-location-dot',
-        url: '#'
-      });
-    }
-    if (contactPhone) {
-      contactItems.push({
-        title: 'Phone',
-        content: contactPhone,
-        value: contactPhone,
-        type: 'phone',
-        iconClass: 'fa-solid fa-phone',
-        url: `tel:${contactPhone.replace(/[^0-9+]/g, '')}`
-      });
-    }
-    if (contactEmail) {
-      contactItems.push({
-        title: 'Email',
-        content: contactEmail,
-        value: contactEmail,
-        type: 'email',
-        iconClass: 'fa-solid fa-envelope',
-        url: `mailto:${contactEmail}`
-      });
-    }
-
-    const quickLinkPages = (this.publishedPages || [])
-      .filter((p: any) => p.publish !== false && (
-        (p.tags && p.tags.toLowerCase().includes('quicklink')) ||
-        p.showInFooter === true ||
-        p.ShowInFooter === true
-      ))
-      .slice(0, 8)
-      .map((p: any) => ({
-        title: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
-      }));
-
-    const footerDescription = this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '';
-    const footerContext: any = {
-      brandName: this.brandName,
-      BrandName: this.brandName,
-      companyName: this.brandName,
-      CompanyName: this.brandName,
-      logoUrl: this.brandLogoUrl,
-      LogoUrl: this.brandLogoUrl,
-      BrandLogo: this.brandLogoUrl,
-      brandLogo: this.brandLogoUrl,
-      WhiteLogoUrl: this.brandLogoUrl,
-      hasBrandLogo: Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0),
-      HasBrandLogo: Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0),
-      Description: footerDescription,
-      description: footerDescription,
-      FooterDescription: footerDescription,
-      footerDescription: footerDescription,
-      tagline: this.brandInfo?.tagline || '',
-      Tagline: this.brandInfo?.tagline || '',
-      footerCategories: footerCategories,
-      FooterCategories: footerCategories,
-      categories: footerCategories,
-      Categories: footerCategories,
-      footerBottomPages: footerBottomPages,
-      FooterBottomPages: footerBottomPages,
-      legalPages: footerBottomPages,
-      LegalPages: footerBottomPages,
-      quickLinks: quickLinkPages,
-      QuickLinks: quickLinkPages,
-      taggedPages: {
-        quicklinks: quickLinkPages
-      },
-      TaggedPages: {
-        quicklinks: quickLinkPages
-      },
-      contactItems: contactItems,
-      ContactItems: contactItems,
-      contactChannels: contactItems,
-      ContactChannels: contactItems,
-      hasContactInfo: contactItems.length > 0,
-      HasContactInfo: contactItems.length > 0,
-      socialLinks: footerSocialLinks,
-      SocialLinks: footerSocialLinks,
-      hasSocialLinks: footerSocialLinks.length > 0,
-      HasSocialLinks: footerSocialLinks.length > 0,
-      channels: footerChannels,
-      Channels: footerChannels,
-      address: contactAddress,
-      Address: contactAddress,
-      phone: contactPhone,
-      Phone: contactPhone,
-      email: contactEmail,
-      Email: contactEmail,
-      year: currentYear,
-      Year: currentYear,
-      currentYear: currentYear,
-      CurrentYear: currentYear,
-      copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
-      Copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
-      companyDescription: footerDescription,
-      CompanyDescription: footerDescription,
-      activateLogin: this.brandInfo?.activateLogin !== false,
-      ActivateLogin: this.brandInfo?.activateLogin !== false,
-      activateLoginInFooter: this.brandInfo?.activateLoginInFooter !== false,
-      ActivateLoginInFooter: this.brandInfo?.activateLoginInFooter !== false,
-      loginText: loginText,
-      LoginText: loginText,
-      loginUrl: loginUrl,
-      LoginUrl: loginUrl,
-      isUserAuthenticated: authed,
-      IsAuthenticated: authed,
-      isUserAdmin: isAdmin,
-      IsAdmin: isAdmin
-    };
-
-    const hydrated = this.contentHydration.hydrate(rawHtml, footerContext, 'footer');
-    return this.templateHydration.enforceOzikolCredit(hydrated);
-  }
-
-  private buildBreadcrumbContext(): any {
-    const committeeName = this.activeCommittee?.name || 'Registration';
-    const parentName = this.activeCommittee?.parentCommitteeName;
-    const trails = [
-      { label: 'Home', url: '/', isActive: false },
-      { label: this.aliases.aliasPlural, url: '/join-committee', isActive: false }
-    ];
-    if (parentName) {
-      trails.push({ label: parentName, url: '#', isActive: false });
-    }
-    trails.push({ label: committeeName, url: '#', isActive: true });
-
-    const effectiveBg = this.activeCommittee?.coverBannerUrl || this.activeCommittee?.imageUrl || '';
-
-    return {
-      title: committeeName,
-      Title: committeeName,
-      pageTitle: committeeName,
-      miniTitle: this.activeCommittee?.parentCommitteeId ? this.aliases.subGroupAliasSingular : this.aliases.aliasSingular,
-      description: this.activeCommittee?.description || this.activeCommittee?.missionStatement || 'Complete the registration form to enroll.',
-      backgroundImageUrl: effectiveBg,
-      imageUrl: effectiveBg,
-      breadcrumbTrail: trails,
-      breadcrumbs: trails
-    };
-  }
-
-  /**
-   * Renders a clean, standard Not Available status section.
-   */
-  private render404SignalLostHtml(): string {
-    return `
-      <section class="oz-not-available-section">
-        <div class="oz-not-available-box">
-          <div class="oz-na-badge">404</div>
-          <h1 class="oz-na-title">Not Available</h1>
-          <div class="oz-na-actions">
-            <a href="/" class="oz-na-btn">Return to Home</a>
-          </div>
-        </div>
-      </section>
-    `;
   }
 
   /**
@@ -863,7 +289,17 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     }
 
     if (!this.activeCommittee) {
-      return this.render404SignalLostHtml();
+      return `
+        <section class="oz-not-available-section">
+          <div class="oz-not-available-box">
+            <div class="oz-na-badge">404</div>
+            <h1 class="oz-na-title">Not Available</h1>
+            <div class="oz-na-actions">
+              <a href="/" class="oz-na-btn">Return to Home</a>
+            </div>
+          </div>
+        </section>
+      `;
     }
 
     const c = this.activeCommittee;
