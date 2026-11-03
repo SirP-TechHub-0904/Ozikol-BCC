@@ -86,7 +86,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
           </div>
           <div class="field-grp">
             <label>Plural Name</label>
-            <input type="text" [(ngModel)]="model.aliasPlural" placeholder="e.g. Committees" />
+            <input type="text" [(ngModel)]="model.aliasPlural" (ngModelChange)="onPluralChange($event)" placeholder="e.g. Committees" />
           </div>
         </div>
 
@@ -397,6 +397,7 @@ export class CommitteesSettingsComponent implements OnInit {
     this.model.subGroupAliasPlural = pSub;
     this.model.leaderTitleAlias = leader;
     this.model.secretaryTitleAlias = sec;
+    this.committeesService.applyAliases(this.model);
   }
 
   onSingularChange(val: string): void {
@@ -411,6 +412,12 @@ export class CommitteesSettingsComponent implements OnInit {
         this.model.aliasPlural = trimmed + 's';
       }
     }
+    this.committeesService.applyAliases(this.model);
+  }
+
+  onPluralChange(val: string): void {
+    this.model.aliasPlural = val;
+    this.committeesService.applyAliases(this.model);
   }
 
   addCustomMetric(): void {

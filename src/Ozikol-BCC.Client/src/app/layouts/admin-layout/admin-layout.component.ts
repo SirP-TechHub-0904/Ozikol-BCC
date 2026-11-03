@@ -1,6 +1,7 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -11,6 +12,7 @@ import { FirstRunSetupModalComponent } from '../../shared/components/first-run-s
 import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUAGES } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
+import { CommitteesService } from '../../core/services/committees.service';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
@@ -3214,7 +3216,8 @@ export interface SuiteInfoDetail {
     }
   `]
 })
-export class AdminLayoutComponent implements OnInit {
+export class AdminLayoutComponent implements OnInit, OnDestroy {
+  private committeeAliasesSub?: Subscription;
   sidebarCollapsed = false;
   darkMode = false;
 
@@ -3945,7 +3948,9 @@ export class AdminLayoutComponent implements OnInit {
     private signalR: SignalRService,
     private aiAssistantService: AiAssistantContextService,
     public translation: TranslationService,
-    private multiWorkspace: MultiWorkspaceService
+    private multiWorkspace: MultiWorkspaceService,
+    private committeesService: CommitteesService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   /// <summary>
@@ -4010,6 +4015,29 @@ export class AdminLayoutComponent implements OnInit {
     // Subscribe to global AI assistant layout and open state
     this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);
     this.aiAssistantService.layoutMode$.subscribe(mode => this.aiLayoutMode = mode);
+    // Subscribe to dynamic Committee & Sub-Group aliases
+    this.committeeAliasesSub = this.committeesService.aliases$.subscribe(aliases => {
+      if (aliases) {
+        this.committeeAliases = {
+          aliasSingular: aliases.aliasSingular || 'Committee',
+          aliasPlural: aliases.aliasPlural || 'Committees',
+          subGroupAliasSingular: aliases.subGroupAliasSingular || 'Sub-Group',
+          subGroupAliasPlural: aliases.subGroupAliasPlural || 'Sub-Groups'
+        };
+        this.cdr.markForCheck();
+      }
+    });
+
+    // Also load fresh settings from backend if committees module is accessible
+    this.committeesService.getSettings().subscribe({
+      next: (res) => {
+        if (res?.isSuccess && res.data) {
+          this.committeesService.applyAliases(res.data);
+        }
+      },
+      error: () => {}
+    });
+
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
 
@@ -5424,5 +5452,9 @@ export class AdminLayoutComponent implements OnInit {
     if (mode === 'default') {
       this.loadSidebarForms();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.committeeAliasesSub?.unsubscribe();
   }
 }
