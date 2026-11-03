@@ -622,7 +622,7 @@ Output format:
                 generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
             };
 
-            var models = new[] { "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-2.5-flash" };
+            var models = new[] { "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-flash-8b" };
             foreach (var m in models)
             {
                 var url = $"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={apiKey}";

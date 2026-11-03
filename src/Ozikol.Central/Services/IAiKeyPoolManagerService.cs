@@ -59,6 +59,23 @@ namespace Ozikol.Central.Services
         Task<(bool Success, int LatencyMs, string? ErrorMessage)> TestKeyConnectionAsync(string provider, string apiKey, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Dynamically resolves the best active, supported generation model name (e.g. "gemini-2.0-flash", "gemini-1.5-flash")
+        /// for the specified key by probing Google's ModelService, caching the result in-memory so there is zero latency on subsequent calls.
+        /// </summary>
+        /// <param name="key">The MasterAiApiKey instance.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Resolved model name string.</returns>
+        Task<string> ResolveSupportedModelAsync(MasterAiApiKey key, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Constructs the canonical generation endpoint URL for the key (e.g. https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}).
+        /// </summary>
+        /// <param name="key">The MasterAiApiKey instance.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Full API endpoint URL.</returns>
+        Task<string> GetGenerateContentEndpointAsync(MasterAiApiKey key, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Retrieves aggregated KPI statistics for all registered keys across providers.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>

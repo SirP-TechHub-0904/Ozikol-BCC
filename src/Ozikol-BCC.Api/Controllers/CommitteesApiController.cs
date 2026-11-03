@@ -2377,7 +2377,7 @@ namespace Ozikol_BCC.Api.Controllers
                     try
                     {
                         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-                        var models = new[] { "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash" };
+                        var models = new[] { "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash" };
                         foreach (var model in models)
                         {
                             var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={geminiKey.ApiKey}";

@@ -538,50 +538,11 @@ Diagnose the error, identify any table/schema collisions, and provide the exact 
                 client.Timeout = TimeSpan.FromSeconds(30);
 
                 string jsonResponseText = string.Empty;
-                string selectedModel = "gemini-2.0-flash";
+                string selectedModel = await _aiKeyPoolService.ResolveSupportedModelAsync(key, cancellationToken);
 
                 if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Dynamically resolve supported Gemini model for this API key to guarantee 0 404 errors
-                    try
-                    {
-                        var listModelsUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={key.ApiKey}";
-                        using var listResponse = await client.GetAsync(listModelsUrl, cancellationToken);
-                        if (listResponse.IsSuccessStatusCode)
-                        {
-                            var listJson = await listResponse.Content.ReadAsStringAsync(cancellationToken);
-                            using var listDoc = JsonDocument.Parse(listJson);
-                            if (listDoc.RootElement.TryGetProperty("models", out var modelsElem))
-                            {
-                                foreach (var m in modelsElem.EnumerateArray())
-                                {
-                                    var mName = m.GetProperty("name").GetString() ?? string.Empty;
-                                    var methods = m.TryGetProperty("supportedGenerationMethods", out var methodsElem)
-                                        ? methodsElem.ToString()
-                                        : string.Empty;
-
-                                    if (methods.Contains("generateContent", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        if (mName.Contains("gemini-2.0-flash", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            selectedModel = mName.Replace("models/", "");
-                                            break;
-                                        }
-                                        if (mName.Contains("gemini", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            selectedModel = mName.Replace("models/", "");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception listEx)
-                    {
-                        _logger.LogWarning(listEx, "Could not list Gemini models for key '{KeyAlias}', falling back to {Model}", key.KeyAlias, selectedModel);
-                    }
-
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{selectedModel}:generateContent?key={key.ApiKey}";
+                    var geminiUrl = await _aiKeyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
                     var payload = new
                     {
                         system_instruction = new

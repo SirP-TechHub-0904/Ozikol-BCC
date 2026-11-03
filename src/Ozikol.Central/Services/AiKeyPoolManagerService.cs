@@ -25,6 +25,7 @@ namespace Ozikol.Central.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<AiKeyPoolManagerService> _logger;
         private static readonly SemaphoreSlim _keySelectLock = new(1, 1);
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, string> _resolvedModelCache = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AiKeyPoolManagerService"/> class.
@@ -268,6 +269,93 @@ namespace Ozikol.Central.Services
                 AverageLatencyMs = Math.Round(avgLatency, 1),
                 Keys = keys
             };
+        }
+
+        /// <inheritdoc />
+        public async Task<string> ResolveSupportedModelAsync(MasterAiApiKey key, CancellationToken cancellationToken = default)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            if (!string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                return key.Provider;
+            }
+
+            if (_resolvedModelCache.TryGetValue(key.Id, out var cachedModel) && !string.IsNullOrWhiteSpace(cachedModel))
+            {
+                return cachedModel;
+            }
+
+            string selectedModel = "gemini-2.0-flash";
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+
+                var listModelsUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={key.ApiKey}";
+                using var response = await client.GetAsync(listModelsUrl, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("models", out var modelsElem))
+                    {
+                        var validModels = new List<string>();
+                        foreach (var m in modelsElem.EnumerateArray())
+                        {
+                            var mName = m.GetProperty("name").GetString() ?? string.Empty;
+                            var cleanName = mName.StartsWith("models/") ? mName.Substring(7) : mName;
+                            var methods = m.TryGetProperty("supportedGenerationMethods", out var methodsElem)
+                                ? methodsElem.ToString()
+                                : string.Empty;
+
+                            if (methods.Contains("generateContent", StringComparison.OrdinalIgnoreCase))
+                            {
+                                validModels.Add(cleanName);
+                            }
+                        }
+
+                        // Priority order for lowest latency, highest fidelity Flash models:
+                        var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-2.0-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("2.0-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase) && !m.Contains("thinking", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("gemini", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault();
+
+                        if (!string.IsNullOrWhiteSpace(preferred))
+                        {
+                            selectedModel = preferred;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not dynamically probe Gemini ModelService for Key '{Alias}', falling back to {Model}", key.KeyAlias, selectedModel);
+            }
+
+            _resolvedModelCache[key.Id] = selectedModel;
+            _logger.LogInformation("🎯 [AI Key Pool] Dynamically resolved Gemini model for Key '{Alias}': {Model}", key.KeyAlias, selectedModel);
+            return selectedModel;
+        }
+
+        /// <inheritdoc />
+        public async Task<string> GetGenerateContentEndpointAsync(MasterAiApiKey key, CancellationToken cancellationToken = default)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                var model = await ResolveSupportedModelAsync(key, cancellationToken);
+                return $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key.ApiKey}";
+            }
+
+            if (string.Equals(key.Provider, "DeepSeek", StringComparison.OrdinalIgnoreCase))
+            {
+                return "https://api.deepseek.com/v1/chat/completions";
+            }
+
+            return key.ApiKey;
         }
     }
 }
