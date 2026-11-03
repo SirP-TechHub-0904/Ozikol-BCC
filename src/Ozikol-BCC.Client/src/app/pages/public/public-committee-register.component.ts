@@ -1,31 +1,32 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, Title } from '@angular/platform-browser';
 import { CommitteesService } from '../../core/services/committees.service';
 import { ApiService } from '../../core/services/api.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
 import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
-import { TranslatePipe } from '../../core/pipes/translate.pipe';
+import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
 
 /**
  * Public Committee & Sub-Group External Registration Portal
  * Routes: /join-committee, /join-committee/:tenantSlug, /join-committee/:tenantSlug/:groupSlug
- * Integrates natively with the website layout:
- * - Top: Live CMS Studio Navbar template from 'my-templates' (or clean responsive brand navbar fallback).
+ * Integrates directly with the Live CMS Studio Website Layout Architecture:
+ * - Top: Live CMS Studio Navbar template from 'my-templates' (hydrated via ContentHydrationService & HtmlAssemblerService).
  * - Breadcrumb: Live CMS Studio Breadcrumb template from 'my-templates'.
  * - Body: Centered single registration card containing committee context and form fields (zero member count clutter).
- * - Bottom: Live CMS Studio Footer template from 'my-templates' (or clean responsive brand footer fallback).
+ * - Bottom: Live CMS Studio Footer template from 'my-templates' (with enforced compliance credit).
+ * - Scoped Styles: Dynamic injection of theme CSS and fonts synthesized via HtmlAssemblerService.
  */
 @Component({
   selector: 'app-public-committee-register',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div class="pub-site-shell">
+    <div class="pub-site-shell public-dynamic-site-wrapper">
       <!-- 1. FULL-WIDTH WEBSITE NAVBAR / HEADER (LIVE CMS ACTIVE TEMPLATE OR CLEAN BRAND FALLBACK) -->
-      <header class="pub-cms-header" *ngIf="safeHeaderHtml" [innerHTML]="safeHeaderHtml"></header>
+      <header class="dynamic-rendered-content pub-cms-header" *ngIf="safeHeaderHtml" [innerHTML]="safeHeaderHtml"></header>
       <header class="pub-site-header" *ngIf="!safeHeaderHtml">
         <div class="pub-site-header-inner">
           <a routerLink="/" class="pub-site-brand">
@@ -57,10 +58,10 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
       </header>
 
       <!-- 2. LIVE CMS STUDIO BREADCRUMB TEMPLATE -->
-      <div class="pub-cms-breadcrumb" *ngIf="safeBreadcrumbHtml" [innerHTML]="safeBreadcrumbHtml"></div>
+      <div class="dynamic-rendered-content pub-cms-breadcrumb" *ngIf="safeBreadcrumbHtml" [innerHTML]="safeBreadcrumbHtml"></div>
 
       <!-- 3. MAIN WEBSITE BODY (CENTERED REGISTRATION FORM) -->
-      <main class="pub-site-main">
+      <main class="dynamic-rendered-content pub-site-main">
         <div class="pub-main-centered-wrap">
 
           <!-- Loading State -->
@@ -158,7 +159,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
                 </div>
               </div>
 
-              <!-- Contact Grid (Email & Phone Number) -->
+              <!-- Contact Grid (Email & Phone) -->
               <div class="pub-form-row two-cols">
                 <div class="pub-field">
                   <label>Email Address <span class="req">*</span></label>
@@ -172,7 +173,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
                   />
                 </div>
                 <div class="pub-field">
-                  <label>Phone Number (Optional)</label>
+                  <label>Phone Number</label>
                   <input
                     type="tel"
                     [(ngModel)]="phoneNumber"
@@ -183,11 +184,11 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
                 </div>
               </div>
 
-              <!-- Dynamic Extra Intake Questions -->
+              <!-- Dynamic Intake Questions Defined on Committee Schema -->
               <div class="pub-extra-section" *ngIf="activeCommittee.intakeFormSchema?.questions?.length > 0">
                 <div class="pub-extra-head">
-                  <h4>Intake Questions</h4>
-                  <p>Please provide the additional information requested by the {{ aliases.aliasSingular.toLowerCase() }} leadership.</p>
+                  <h4>Additional Information</h4>
+                  <p>Please answer the committee intake questions below.</p>
                 </div>
 
                 <div class="pub-field" *ngFor="let q of activeCommittee.intakeFormSchema.questions">
@@ -288,7 +289,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
       </main>
 
       <!-- 4. FULL-WIDTH WEBSITE FOOTER (LIVE CMS ACTIVE TEMPLATE OR CLEAN BRAND FALLBACK) -->
-      <footer class="pub-cms-footer" *ngIf="safeFooterHtml" [innerHTML]="safeFooterHtml"></footer>
+      <footer class="dynamic-rendered-content pub-cms-footer" *ngIf="safeFooterHtml" [innerHTML]="safeFooterHtml"></footer>
       <footer class="pub-site-footer" *ngIf="!safeFooterHtml">
         <div class="pub-site-footer-inner">
           <div class="pub-footer-brand-col">
@@ -748,6 +749,9 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   safeBreadcrumbHtml: SafeHtml | null = null;
   safeFooterHtml: SafeHtml | null = null;
   private rawActiveTemplates: any[] = [];
+  private publishedPages: any[] = [];
+  private navigationCategories: any[] = [];
+  private rawCodeInjections: CodeInjectionTag[] = [];
 
   firstName = '';
   lastName = '';
@@ -765,11 +769,15 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private committeesService: CommitteesService,
     private apiService: ApiService,
     private templateHydration: TemplateHydrationService,
     private contentHydration: ContentHydrationService,
-    private sanitizer: DomSanitizer
+    private htmlAssembler: HtmlAssemblerService,
+    private sanitizer: DomSanitizer,
+    private titleService: Title,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -777,8 +785,8 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     this.groupSlug = this.route.snapshot.paramMap.get('groupSlug') || '';
     this.inviteToken = this.route.snapshot.queryParamMap.get('token') || '';
 
-    // Fetch the live CMS Studio templates (menu, breadcrumb, footer) from active-templates
-    this.loadCmsActiveTemplates();
+    // Load full live CMS website runtime concurrently
+    this.loadSiteThemeData();
 
     if (this.groupSlug) {
       this.directoryMode = false;
@@ -790,81 +798,264 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.getElementById('tenant-dynamic-theme-styles')?.remove();
     document.getElementById('committee-cms-theme-styles')?.remove();
   }
 
   /**
-   * Fetches active templates from CMS Studio (my-templates) and hydrates the live
-   * Website Navbar, Breadcrumb, and Footer so that /join-committee renders within
-   * the exact live website theme.
+   * Intercepts navigation link clicks inside hydrated CMS HTML templates
+   * to ensure single-page client routing via Angular Router.
    */
-  private loadCmsActiveTemplates(): void {
-    this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
-      next: (res: any) => {
-        this.rawActiveTemplates = res?.data || [];
-        this.hydrateCmsLayout();
-      },
-      error: () => {
-        // Fallback to installed templates if admin endpoint exists
-        this.apiService.get('ContentApi/templates/installed').subscribe({
-          next: (adminRes: any) => {
-            const all = adminRes?.data || [];
-            this.rawActiveTemplates = all.filter((t: any) => t.isActive);
-            this.hydrateCmsLayout();
-          },
-          error: () => {
-            // Clean fallback brand layout is already in place
-          }
-        });
+  @HostListener('click', ['$event'])
+  onGlobalClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+
+    const anchor = target.closest('a') as HTMLAnchorElement;
+    if (anchor && !anchor.classList.contains('dropdown-toggle') && !anchor.classList.contains('oz-dropdown-toggle')) {
+      const isThemeToggle = anchor.getAttribute('data-bs-toggle') !== null ||
+                            anchor.getAttribute('data-toggle') !== null ||
+                            anchor.hasAttribute('data-bs-target') ||
+                            anchor.hasAttribute('data-target') ||
+                            anchor.classList.contains('toggle-btn') ||
+                            anchor.classList.contains('menu-toggle');
+
+      const href = (anchor.getAttribute('href') || '').trim();
+      if (isThemeToggle || href === '#' || href === '' || href.startsWith('javascript:')) {
+        return;
       }
+
+      if (href && !href.startsWith('http') && !href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('javascript:')) {
+        if (href.startsWith('#')) {
+          e.preventDefault();
+          const element = document.querySelector(href);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+          return;
+        }
+
+        e.preventDefault();
+        document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+        this.router.navigateByUrl(href);
+      }
+    }
+  }
+
+  /**
+   * Fetches active templates, published navigation pages, categories, and code injections
+   * from the live CMS delivery API.
+   */
+  private loadSiteThemeData(): void {
+    Promise.all([
+      this.fetchActiveTemplates(),
+      this.fetchPublishedPages(),
+      this.fetchCategories(),
+      this.fetchCodeInjections()
+    ]).then(() => {
+      this.hydrateCmsLayout();
+    }).catch(() => {
+      // Fallback layout remains active
     });
   }
 
+  private fetchActiveTemplates(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
+        next: (res: any) => {
+          this.rawActiveTemplates = res?.data || [];
+          resolve();
+        },
+        error: () => {
+          this.apiService.get('ContentApi/templates/installed').subscribe({
+            next: (adminRes: any) => {
+              const all = adminRes?.data || [];
+              this.rawActiveTemplates = all.filter((t: any) => t.isActive);
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
+      });
+    });
+  }
+
+  private fetchPublishedPages(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/pages').subscribe({
+        next: (res: any) => {
+          this.publishedPages = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchCategories(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/categories').subscribe({
+        next: (res: any) => {
+          this.navigationCategories = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchCodeInjections(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/code-injections').subscribe({
+        next: (res: any) => {
+          const list: CodeInjectionTag[] = [];
+          if (res?.data) {
+            const data = res.data;
+            (data.head || []).forEach((t: any) => list.push({ ...t, zone: 'head', isActive: t.isActive !== false }));
+            (data.bodyOpen || []).forEach((t: any) => list.push({ ...t, zone: 'body_open', isActive: t.isActive !== false }));
+            (data.footer || []).forEach((t: any) => list.push({ ...t, zone: 'footer', isActive: t.isActive !== false }));
+          }
+          this.rawCodeInjections = list;
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  /**
+   * Synthesizes the active CMS templates using ContentHydrationService,
+   * TemplateHydrationService, and HtmlAssemblerService.
+   */
   private hydrateCmsLayout(): void {
     if (!this.rawActiveTemplates || this.rawActiveTemplates.length === 0) return;
 
-    const menuTpl = this.rawActiveTemplates.find((t: any) => (t.category || '').toLowerCase() === 'menu');
-    const breadcrumbTpl = this.rawActiveTemplates.find((t: any) => (t.category || '').toLowerCase() === 'breadcrumb');
-    const footerTpl = this.rawActiveTemplates.find((t: any) => (t.category || '').toLowerCase() === 'footer');
+    const brandName = this.brand?.brandName || 'Organization Workspace';
+    const committeeName = this.activeCommittee?.name || 'Registration';
 
-    // Collect and inject all CSS styles into document head
-    const allCss = [menuTpl?.cssStyles, breadcrumbTpl?.cssStyles, footerTpl?.cssStyles].filter(Boolean).join('\n');
-    if (allCss) {
-      let styleEl = document.getElementById('committee-cms-theme-styles');
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'committee-cms-theme-styles';
-        document.head.appendChild(styleEl);
-      }
-      styleEl.textContent = allCss;
-    }
+    // 1. Find category templates
+    const menuTpl = this.rawActiveTemplates.find((t: any) => (t.category || t.categoryKey || '').toLowerCase() === 'menu');
+    const breadcrumbTpl = this.rawActiveTemplates.find((t: any) => (t.category || t.categoryKey || '').toLowerCase() === 'breadcrumb');
+    const footerTpl = this.rawActiveTemplates.find((t: any) => (t.category || t.categoryKey || '').toLowerCase() === 'footer');
 
-    // Hydrate Navigation / Menu
+    // 2. Hydrate Navigation Header
+    let headerSection: SectionTemplateUnit | undefined;
     if (menuTpl?.htmlTemplate) {
       const navContext = this.buildNavigationContext();
       const hydratedNav = this.contentHydration.hydrate(menuTpl.htmlTemplate, navContext, 'menu');
       this.safeHeaderHtml = this.sanitizer.bypassSecurityTrustHtml(hydratedNav);
+      headerSection = {
+        id: menuTpl.id,
+        name: menuTpl.name,
+        category: 'menu',
+        html: hydratedNav,
+        css: menuTpl.cssStyles,
+        js: menuTpl.jsScript
+      };
     }
 
-    // Hydrate Breadcrumb
+    // 3. Hydrate Breadcrumb Banner
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTpl?.htmlTemplate) {
       const breadcrumbContext = this.buildBreadcrumbContext();
       const hydratedBreadcrumb = this.contentHydration.hydrate(breadcrumbTpl.htmlTemplate, breadcrumbContext, 'breadcrumb');
       this.safeBreadcrumbHtml = this.sanitizer.bypassSecurityTrustHtml(hydratedBreadcrumb);
+      breadcrumbSection = {
+        id: breadcrumbTpl.id,
+        name: breadcrumbTpl.name,
+        category: 'breadcrumb',
+        html: hydratedBreadcrumb,
+        css: breadcrumbTpl.cssStyles,
+        js: breadcrumbTpl.jsScript
+      };
     }
 
-    // Hydrate Footer
+    // 4. Hydrate Footer
+    let footerSection: SectionTemplateUnit | undefined;
     if (footerTpl?.htmlTemplate) {
       const footerContext = this.buildFooterContext();
       const hydratedFooter = this.contentHydration.hydrate(footerTpl.htmlTemplate, footerContext, 'footer');
       const finalFooter = this.templateHydration.enforceOzikolCredit(hydratedFooter);
       this.safeFooterHtml = this.sanitizer.bypassSecurityTrustHtml(finalFooter);
+      footerSection = {
+        id: footerTpl.id,
+        name: footerTpl.name,
+        category: 'footer',
+        html: finalFooter,
+        css: footerTpl.cssStyles,
+        js: footerTpl.jsScript
+      };
     }
+
+    // 5. Delegate full page style synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${committeeName} | ${brandName}`,
+      pageSlug: 'join-committee',
+      metaDescription: this.activeCommittee?.description || this.brand?.companyDescription,
+      faviconUrl: this.brand?.faviconUrl,
+      codeInjections: this.rawCodeInjections,
+      headerSection,
+      breadcrumbSection,
+      footerSection
+    });
+
+    // 6. Inject compiled styles into document head matching standard theme styles ID
+    let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'tenant-dynamic-theme-styles';
+      document.head.appendChild(styleTag);
+    }
+    const cleanStyles = (pageBundle.combinedStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+    styleTag.textContent = cleanStyles;
+
+    this.titleService.setTitle(`${committeeName} | ${brandName}`);
+    this.cdr.detectChanges();
   }
 
   private buildNavigationContext(): any {
     const brandName = this.brand?.brandName || 'Organization Workspace';
     const logoUrl = this.brand?.logoUrl || '';
+
+    // Map real published pages
+    const topMenuItems = (this.publishedPages || [])
+      .filter((p: any) => p.showInMenu !== false && !p.pageCategoryId)
+      .slice(0, 8)
+      .map((p: any) => ({
+        title: p.title || p.name,
+        Title: p.title || p.name,
+        url: p.directUrl ? `/${p.directUrl.replace(/^\//, '')}` : `/page/${p.slug}`,
+        Url: p.directUrl ? `/${p.directUrl.replace(/^\//, '')}` : `/page/${p.slug}`,
+        isExternal: false
+      }));
+
+    if (topMenuItems.length === 0) {
+      topMenuItems.push({ title: 'Home', Title: 'Home', url: '/', Url: '/', isExternal: false });
+    }
+
+    // Map real categories with child pages for dropdown menus
+    const menuDropdowns = (this.navigationCategories || []).map((cat: any) => {
+      const childPages = (this.publishedPages || [])
+        .filter((p: any) => p.pageCategoryId === cat.id && p.showInMenu !== false)
+        .map((p: any) => ({
+          title: p.title || p.name,
+          Title: p.title || p.name,
+          url: p.directUrl ? `/${p.directUrl.replace(/^\//, '')}` : `/page/${p.slug}`,
+          Url: p.directUrl ? `/${p.directUrl.replace(/^\//, '')}` : `/page/${p.slug}`
+        }));
+
+      return {
+        categoryName: cat.categoryName || cat.name || cat.title,
+        CategoryName: cat.categoryName || cat.name || cat.title,
+        slug: cat.slug || '',
+        pages: childPages,
+        Pages: childPages
+      };
+    });
+
+    const ctaLabel = this.signedInMember ? 'My Workspace' : 'Sign In';
+    const ctaUrl = this.signedInMember ? '/committees/workspace/my' : '/login';
+
     return {
       brandName,
       BrandName: brandName,
@@ -872,18 +1063,16 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
       LogoUrl: logoUrl,
       brandLogo: logoUrl,
       BrandLogo: logoUrl,
-      topMenuItems: [
-        { title: 'Home', Title: 'Home', url: '/', Url: '/', isExternal: false }
-      ],
-      menuDropdowns: [],
+      topMenuItems,
+      menuDropdowns,
       menuCtaButtons: [
-        { label: this.signedInMember ? 'My Workspace' : 'Sign In', url: this.signedInMember ? '/committees/workspace/my' : '/login', isPrimary: true }
+        { label: ctaLabel, url: ctaUrl, isPrimary: true }
       ],
       activateLoginInMenu: true,
-      loginUrl: this.signedInMember ? '/committees/workspace/my' : '/login',
-      loginText: this.signedInMember ? 'My Workspace' : 'Sign In',
-      ctaLabel: this.signedInMember ? 'Workspace' : 'Sign In',
-      ctaUrl: this.signedInMember ? '/committees/workspace/my' : '/login'
+      loginUrl: ctaUrl,
+      loginText: ctaLabel,
+      ctaLabel,
+      ctaUrl
     };
   }
 
@@ -899,12 +1088,17 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     }
     trails.push({ label: committeeName, url: '#', isActive: true });
 
+    const effectiveBg = this.activeCommittee?.imageUrl ||
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
+
     return {
       title: committeeName,
       Title: committeeName,
       pageTitle: committeeName,
       miniTitle: this.activeCommittee?.parentCommitteeId ? this.aliases.subGroupAliasSingular : this.aliases.aliasSingular,
       description: this.activeCommittee?.description || this.activeCommittee?.missionStatement || 'Complete the registration form to enroll.',
+      backgroundImageUrl: effectiveBg,
+      imageUrl: effectiveBg,
       breadcrumbTrail: trails,
       breadcrumbs: trails
     };
@@ -914,6 +1108,17 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     const brandName = this.brand?.brandName || 'Organization Workspace';
     const logoUrl = this.brand?.logoUrl || '';
     const currentYear = new Date().getFullYear();
+
+    const footerCategories = (this.navigationCategories || []).slice(0, 4).map((cat: any) => ({
+      categoryName: cat.categoryName || cat.name || cat.title,
+      links: (this.publishedPages || [])
+        .filter((p: any) => p.pageCategoryId === cat.id)
+        .map((p: any) => ({
+          label: p.title || p.name,
+          url: p.directUrl ? `/${p.directUrl.replace(/^\//, '')}` : `/page/${p.slug}`
+        }))
+    }));
+
     return {
       brandName,
       BrandName: brandName,
@@ -924,7 +1129,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
       Year: currentYear,
       copyright: `&copy; ${currentYear} ${brandName}. All rights reserved.`,
       Copyright: `&copy; ${currentYear} ${brandName}. All rights reserved.`,
-      footerCategories: [],
+      footerCategories,
       legalPages: [],
       socialLinks: [],
       IsAuthenticated: !!this.signedInMember
@@ -994,7 +1199,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     this.extraAnswers = {};
     this.attachmentUrls = [];
     this.formError = '';
-    // Refresh breadcrumbs for the selected committee
+    // Refresh breadcrumbs and metadata for the selected committee
     this.hydrateCmsLayout();
   }
 
@@ -1022,7 +1227,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
     this.uploadingFile = true;
     this.formError = '';
 
-    this.committeesService.uploadPublicIntakeFile(file, this.tenantSlug || undefined).subscribe({
+    this.committeesService.uploadPublicAttachment(file, this.tenantSlug || undefined).subscribe({
       next: (res: any) => {
         this.uploadingFile = false;
         if (res?.isSuccess && res.data?.fileUrl) {

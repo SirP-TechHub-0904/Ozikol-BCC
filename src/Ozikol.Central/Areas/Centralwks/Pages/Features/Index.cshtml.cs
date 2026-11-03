@@ -847,9 +847,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         f.MonthlyPrice,
                         f.QuarterlyPrice,
                         f.YearlyPrice,
-                        f.IsCompulsory,
-                        f.IsActive,
-                        f.IsPublished
+                        f.IsCompulsory
                     })
                     .FirstOrDefaultAsync();
 
@@ -869,8 +867,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 
                 // If amount is 0, don't publish! Unpublish immediately if price drops to 0.
                 bool hasPrice = effectiveMonthly > 0m || effectiveYearly > 0m;
-                bool newIsActive = hasPrice && featureInfo.IsActive;
-                bool newIsPublished = hasPrice && featureInfo.IsPublished;
 
                 try
                 {
@@ -882,8 +878,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             .SetProperty(f => f.YearlyPrice, effectiveYearly)
                             .SetProperty(f => f.IsCompulsory, false)
                             .SetProperty(f => f.FreeTrialDays, clampedDays)
-                            .SetProperty(f => f.IsActive, newIsActive)
-                            .SetProperty(f => f.IsPublished, newIsPublished));
+                            .SetProperty(f => f.IsActive, hasPrice ? f.IsActive : false)
+                            .SetProperty(f => f.IsPublished, hasPrice ? f.IsPublished : false));
                 }
                 catch
                 {
@@ -895,8 +891,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
                             .SetProperty(f => f.YearlyPrice, effectiveYearly)
                             .SetProperty(f => f.IsCompulsory, false)
-                            .SetProperty(f => f.IsActive, newIsActive)
-                            .SetProperty(f => f.IsPublished, newIsPublished));
+                            .SetProperty(f => f.IsActive, hasPrice ? f.IsActive : false)
+                            .SetProperty(f => f.IsPublished, hasPrice ? f.IsPublished : false));
                 }
 
                 _dbContext.MasterAuditLogs.Add(new MasterAuditLog
