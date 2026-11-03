@@ -242,8 +242,9 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
                   </td>
                   <td>{{ m.joinedAt | date:'mediumDate' }}</td>
                   <td>
-                    <button type="button" class="btn-icon danger" title="Remove" (click)="removeMember(m)">
+                    <button type="button" class="btn-remove-member" [title]="'Remove ' + m.fullName + ' from this roster'" (click)="removeMember(m)">
                       <span class="material-symbols-outlined">person_remove</span>
+                      <span>Remove</span>
                     </button>
                   </td>
                 </tr>
@@ -330,7 +331,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
                 <a [href]="doc.documentUrl" target="_blank" rel="noopener">{{ doc.title }}</a>
                 <span>{{ doc.provider }} • Linked by {{ doc.ownerDisplayName || 'Member' }}</span>
               </div>
-              <button type="button" class="btn-icon danger" (click)="unlinkCloudDoc(doc.id)">
+              <button type="button" class="btn-icon danger" title="Unlink document" (click)="unlinkCloudDoc(doc.id)">
                 <span class="material-symbols-outlined">link_off</span>
               </button>
             </div>
@@ -686,6 +687,16 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     }
     .btn-icon:hover { color: #0050e5; border-color: #0050e5; }
     .btn-icon.danger:hover { color: #dc2626; border-color: #dc2626; }
+    .btn-remove-member {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2;
+      border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-remove-member:hover { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+    .btn-remove-member .material-symbols-outlined { font-size: 16px; }
+    :host-context(.dark-mode) .btn-remove-member { background: rgba(220, 38, 38, 0.12); border-color: rgba(220, 38, 38, 0.25); color: #f87171; }
+    :host-context(.dark-mode) .btn-remove-member:hover { background: rgba(220, 38, 38, 0.22); border-color: rgba(220, 38, 38, 0.4); }
     .info-icon-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; }
 
     .panel-box, .empty-card {
