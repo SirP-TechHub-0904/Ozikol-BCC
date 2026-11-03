@@ -881,14 +881,38 @@ namespace Ozikol_BCC.Api.Controllers
             CancellationToken cancellationToken = default)
         {
             // 1. Strictly exclude root SuperAdmin accounts from roster candidate selections
-            var superAdminRole = await _db.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Name == "SuperAdmin", cancellationToken);
+            var superAdminRole = await _db.Roles.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Name == "SuperAdmin" || r.NormalizedName == "SUPERADMIN", cancellationToken);
             var superAdminUserIds = superAdminRole != null
                 ? await _db.UserRoles.AsNoTracking().Where(ur => ur.RoleId == superAdminRole.Id).Select(ur => ur.UserId).ToListAsync(cancellationToken)
                 : new List<string>();
 
+            // Exclude Tenant Root Administrator Email from Master Catalog
+            string? tenantAdminEmail = null;
+            if (_masterCatalogDbContext != null)
+            {
+                var tenantKey = ResolveCurrentTenantKey();
+                if (!string.IsNullOrEmpty(tenantKey))
+                {
+                    tenantAdminEmail = await _masterCatalogDbContext.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .Where(t => t.TenantKey == tenantKey)
+                        .Select(t => t.AdminEmail)
+                        .FirstOrDefaultAsync(cancellationToken);
+                }
+            }
+
             var query = _db.Users.AsNoTracking()
                 .Where(u => !superAdminUserIds.Contains(u.Id) && u.UserStatus != UserStatus.Deleted && u.UserStatus != UserStatus.Suspended)
                 .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(tenantAdminEmail))
+            {
+                var cleanAdminEmail = tenantAdminEmail.Trim().ToLower();
+                query = query.Where(u => u.Email == null || u.Email.ToLower() != cleanAdminEmail);
+            }
+
+            query = query.Where(u => u.Email == null || !u.Email.ToLower().Contains("superadmin"));
 
             // 2. Exclude users who are already enrolled in this committee roster
             if (committeeId.HasValue && committeeId.Value != Guid.Empty)

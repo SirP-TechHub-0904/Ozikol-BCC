@@ -146,9 +146,9 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
         </article>
       </div>
 
-      <!-- Supplemental Extra-Info Join Modal -->
-      <div class="cd-modal-backdrop" *ngIf="selectedGroup" (click)="closeJoinModal()">
-        <div class="cd-modal" (click)="$event.stopPropagation()">
+      <!-- Supplemental Extra-Info Join Modal (Explicit Close Only - Never auto-vanish on accidental backdrop click) -->
+      <div class="cd-modal-backdrop" *ngIf="selectedGroup">
+        <div class="cd-modal">
           <div class="cd-modal-header">
             <div>
               <span class="cd-eyebrow">SUPPLEMENTAL ONBOARDING</span>

@@ -1599,8 +1599,8 @@ export interface SuiteInfoDetail {
       </div>
 
       <!-- Page Content & AI Side-by-Side Split Workspace Container (70% Body / 30% AI) -->
-      <div class="bcp-workspace-container" [class.ai-docked-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'" [class.ai-docked-right-active]="isAiOpen && aiLayoutMode === 'docked-right'">
-        <div class="bcp-page-shell" [class.ai-split-70]="isAiOpen && aiLayoutMode === 'docked-right'" [class.ai-split-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'">
+      <div class="bcp-workspace-container" [class.is-workspace-mode]="!isConsoleActive" [class.ai-docked-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'" [class.ai-docked-right-active]="isAiOpen && aiLayoutMode === 'docked-right'">
+        <div class="bcp-page-shell" [class.is-workspace-mode]="!isConsoleActive" [class.ai-split-70]="isAiOpen && aiLayoutMode === 'docked-right'" [class.ai-split-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'">
           <router-outlet></router-outlet>
         </div>
 
@@ -1867,6 +1867,10 @@ export interface SuiteInfoDetail {
     .bcp-workspace-container.ai-docked-bottom {
       flex-direction: column;
     }
+    .bcp-workspace-container.is-workspace-mode {
+      padding: 0;
+      gap: 0;
+    }
     .bcp-page-shell {
       flex: 1 1 0;
       min-height: 0;
@@ -1881,6 +1885,13 @@ export interface SuiteInfoDetail {
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
       transition: flex 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bcp-page-shell.is-workspace-mode {
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 24px 32px;
+      width: 100%;
     }
     .bcp-page-shell.ai-split-70 {
       flex: 1 1 0;
