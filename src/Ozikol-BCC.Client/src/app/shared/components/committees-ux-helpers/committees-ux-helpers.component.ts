@@ -75,11 +75,11 @@ import { CommitteeInfoSpec, CommitteeTourStep } from '../../../core/services/com
       <div class="ux-card tour-card" (click)="$event.stopPropagation()">
         <div class="ux-card-header">
           <div class="ux-icon-badge">
-            <span class="material-symbols-outlined">{{ tourSteps[tourIndex]?.icon || 'explore' }}</span>
+            <span class="material-symbols-outlined">{{ tourSteps[tourIndex].icon || 'explore' }}</span>
           </div>
           <div class="ux-header-titles">
             <span class="ux-kicker">{{ 'committees.tour_guide' | translate:'Tour Guide' }} ({{ tourIndex + 1 }} / {{ tourSteps.length }})</span>
-            <h3>{{ tourSteps[tourIndex]?.title }}</h3>
+            <h3>{{ tourSteps[tourIndex].title }}</h3>
           </div>
           <button type="button" class="ux-close-btn" (click)="finishTour()">
             <span class="material-symbols-outlined">close</span>
@@ -87,7 +87,7 @@ import { CommitteeInfoSpec, CommitteeTourStep } from '../../../core/services/com
         </div>
 
         <div class="ux-card-body">
-          <p class="tour-desc">{{ tourSteps[tourIndex]?.description }}</p>
+          <p class="tour-desc">{{ tourSteps[tourIndex].description }}</p>
           <div class="tour-dots">
             <span *ngFor="let s of tourSteps; let idx = index" class="tour-dot" [class.active]="idx === tourIndex"></span>
           </div>
