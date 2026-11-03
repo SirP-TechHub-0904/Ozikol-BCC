@@ -1,6 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -20,6 +26,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
     {
         private readonly ICentralMigrationService _migrationService;
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly IAiKeyPoolManagerService _aiKeyPoolService;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<DetailsModel> _logger;
 
         /// <summary>
@@ -28,10 +36,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         public DetailsModel(
             ICentralMigrationService migrationService,
             MasterCatalogDbContext dbContext,
+            IAiKeyPoolManagerService aiKeyPoolService,
+            IHttpClientFactory httpClientFactory,
             ILogger<DetailsModel> logger)
         {
             _migrationService = migrationService;
             _dbContext = dbContext;
+            _aiKeyPoolService = aiKeyPoolService;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
 
@@ -326,6 +338,247 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                     message = ex.Message
                 });
             }
+        }
+
+        /// <summary>
+        /// Request model for AI Database Doctor diagnosis.
+        /// </summary>
+        public class AiDoctorRequest
+        {
+            /// <summary>
+            /// Target tenant key identifier.
+            /// </summary>
+            public string TenantKey { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Optional error message to analyze.
+            /// </summary>
+            public string? ErrorMessage { get; set; }
+
+            /// <summary>
+            /// Optional custom notes or user query.
+            /// </summary>
+            public string? UserNotes { get; set; }
+        }
+
+        /// <summary>
+        /// Output DTO returned by Gemini AI Database Doctor.
+        /// </summary>
+        public class DatabaseAiDiagnosisResult
+        {
+            /// <summary>
+            /// Plain-English explanation of why the error or discrepancy occurred.
+            /// </summary>
+            public string Diagnosis { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Exact T-SQL repair script to execute against the tenant's database.
+            /// </summary>
+            public string RecommendedSql { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Why this specific SQL script resolves the problem.
+            /// </summary>
+            public string Explanation { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Handles AJAX POST requests to diagnose database schema collisions and generate repair SQL via Google Gemini 2.5 Flash.
+        /// </summary>
+        /// <param name="request">Request parameters containing the tenant key and error context.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>JSON result with diagnosis, recommended SQL, and metadata.</returns>
+        public async Task<IActionResult> OnPostAiDiagnoseAsync([FromBody] AiDoctorRequest request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(request?.TenantKey))
+            {
+                return new JsonResult(new { success = false, message = "Tenant key is required." });
+            }
+
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == request.TenantKey, cancellationToken);
+            if (tenant == null)
+            {
+                return new JsonResult(new { success = false, message = "Tenant database record not found." });
+            }
+
+            var deepDive = await _migrationService.GetTenantDeepDiveAsync(tenant.TenantKey, cancellationToken);
+            var errorContext = !string.IsNullOrWhiteSpace(request.ErrorMessage)
+                ? request.ErrorMessage
+                : (deepDive?.Status?.ErrorMessage ?? "Database has pending migrations awaiting execution.");
+
+            var key = await _aiKeyPoolService.GetNextAvailableKeyAsync("Gemini", cancellationToken);
+            if (key == null)
+            {
+                // Fallback to DeepSeek if available
+                key = await _aiKeyPoolService.GetNextAvailableKeyAsync("DeepSeek", cancellationToken);
+            }
+
+            if (key == null)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "No active AI API key available in Central Master Key Pool (Google Gemini). Please check active keys at /centralwks/aikeys."
+                });
+            }
+
+            var sw = Stopwatch.StartNew();
+
+            var systemPrompt = @"You are the Chief Database Administrator and SQL Diagnostics Specialist for Ozikol Business Command Center.
+You specialize in Microsoft SQL Server, Entity Framework Core migrations, table collision handling, and schema recovery.
+When given an error message, database name, and migration details, you must:
+1. Provide a concise, clear diagnosis explaining exactly WHY the error occurred in plain English.
+2. Provide the exact Microsoft SQL Server repair script (T-SQL) to safely fix the issue so EF Core migrations can complete.
+3. Provide a brief explanation of how this SQL resolves the problem without unintended data loss.
+
+STRICT JSON OUTPUT FORMAT ONLY:
+You must respond with ONLY a valid, parseable JSON object matching this schema with no markdown outside the JSON:
+{
+  ""diagnosis"": ""Concise explanation of the error..."",
+  ""recommendedSql"": ""-- T-SQL script to run\nDROP TABLE IF EXISTS ..."",
+  ""explanation"": ""Why this script fixes the issue...""
+}";
+
+            var userPrompt = $@"
+DATABASE CONTEXT:
+- Dedicated Tenant Database: {tenant.DatabaseName}
+- Tenant Key: {tenant.TenantKey}
+- Organization: {tenant.OrganizationName}
+- Pending Migrations: {(deepDive?.PendingMigrations?.Any() == true ? string.Join(", ", deepDive.PendingMigrations) : "None")}
+- Latest Applied Migration: {(deepDive?.AppliedMigrations?.Any() == true ? deepDive.AppliedMigrations.LastOrDefault() : "None")}
+- Error Message / Symptom: {errorContext}
+- Administrator Notes: {request.UserNotes ?? "None"}
+
+Diagnose the error and provide the exact T-SQL script to resolve this failure.";
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(30);
+
+                string jsonResponseText = string.Empty;
+
+                if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+                {
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key.ApiKey}";
+                    var payload = new
+                    {
+                        system_instruction = new
+                        {
+                            parts = new[] { new { text = systemPrompt } }
+                        },
+                        contents = new[]
+                        {
+                            new
+                            {
+                                role = "user",
+                                parts = new[] { new { text = userPrompt } }
+                            }
+                        },
+                        generationConfig = new
+                        {
+                            temperature = 0.1,
+                            response_mime_type = "application/json"
+                        }
+                    };
+
+                    using var httpResponse = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
+                    if (!httpResponse.IsSuccessStatusCode)
+                    {
+                        var errBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                        if ((int)httpResponse.StatusCode == 429)
+                        {
+                            await _aiKeyPoolService.MarkCooldownAsync(key.Id, 300, cancellationToken);
+                        }
+                        throw new HttpRequestException($"Gemini API error ({httpResponse.StatusCode}): {errBody}", null, httpResponse.StatusCode);
+                    }
+
+                    jsonResponseText = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
+                }
+
+                sw.Stop();
+
+                // Parse candidate text from Gemini
+                var doc = JsonDocument.Parse(jsonResponseText);
+                var candidates = doc.RootElement.GetProperty("candidates");
+                if (candidates.GetArrayLength() == 0)
+                {
+                    throw new InvalidOperationException("Gemini returned no candidates.");
+                }
+
+                var textContent = candidates[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString() ?? "{}";
+
+                var cleanJson = CleanJsonFences(textContent);
+                var diagnosisResult = JsonSerializer.Deserialize<DatabaseAiDiagnosisResult>(cleanJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (diagnosisResult == null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize AI doctor prescription.");
+                }
+
+                await _aiKeyPoolService.LogUsageAsync(
+                    key.Id,
+                    "DatabaseAiDoctor",
+                    (int)sw.ElapsedMilliseconds,
+                    200,
+                    cancellationToken: cancellationToken);
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    diagnosis = diagnosisResult.Diagnosis,
+                    recommendedSql = diagnosisResult.RecommendedSql,
+                    explanation = diagnosisResult.Explanation,
+                    keyAliasUsed = key.KeyAlias,
+                    latencyMs = sw.ElapsedMilliseconds
+                });
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _logger.LogError(ex, "Gemini AI Database Doctor failed on key '{KeyAlias}' for tenant {TenantKey}", key.KeyAlias, tenant.TenantKey);
+
+                await _aiKeyPoolService.LogUsageAsync(
+                    key.Id,
+                    "DatabaseAiDoctor",
+                    (int)sw.ElapsedMilliseconds,
+                    500,
+                    errorMessage: ex.Message,
+                    cancellationToken: cancellationToken);
+
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = $"AI Database Doctor encountered an error: {ex.Message}",
+                    latencyMs = sw.ElapsedMilliseconds
+                });
+            }
+        }
+
+        private static string CleanJsonFences(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return "{}";
+            var trimmed = text.Trim();
+            if (trimmed.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmed = trimmed.Substring(7);
+            }
+            else if (trimmed.StartsWith("```", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmed = trimmed.Substring(3);
+            }
+            if (trimmed.EndsWith("```", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmed = trimmed.Substring(0, trimmed.Length - 3);
+            }
+            return trimmed.Trim();
         }
 
         private async Task MeasurePingLatencyAsync(string connectionString)

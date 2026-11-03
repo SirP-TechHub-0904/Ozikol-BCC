@@ -254,9 +254,15 @@
     <div class="admin-card-body" style="padding: 20px;">
         @* Quick-Fix Preset Chips *@
         <div style="margin-bottom: 14px;">
-            <span style="font-size: 12px; font-weight: 600; color: var(--admin-text-dim); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">
-                Quick-Fix Presets:
-            </span>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 12px; font-weight: 600; color: var(--admin-text-dim); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Quick-Fix Presets &amp; AI Intelligence:
+                </span>
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnAiDiagnose" onclick="diagnoseWithGemini();" style="font-size: 12px; background: linear-gradient(135deg, rgba(0, 80, 229, 0.12), rgba(124, 58, 237, 0.12)); border: 1px solid var(--admin-primary); color: var(--admin-primary); font-weight: 700;">
+                    <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">auto_awesome</span>
+                    ✨ AI Database Doctor (Diagnose with Gemini)
+                </button>
+            </div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                 <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="setSqlQuery('DROP TABLE IF EXISTS [dbo].[BcpWorkstationActivityLogs];');" style="font-size: 12px;">
                     <span class="material-symbols-outlined" style="font-size: 14px; color: #DC2626;">delete_forever</span>
@@ -278,6 +284,57 @@
                     <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-primary);">pin</span>
                     Count Total Tables
                 </button>
+            </div>
+        </div>
+
+        @* ── AI Database Doctor Prescription Box ── *@
+        <div id="aiDoctorBox" style="display: none; margin-bottom: 16px; border: 1px solid #6366F1; border-radius: 8px; background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.02) 100%); padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #6366F1; font-size: 22px;">auto_awesome</span>
+                    <span style="font-weight: 700; font-size: 14.5px; color: var(--admin-text);">Gemini AI Database Doctor — Prescription</span>
+                    <span class="badge" id="aiDoctorKeyBadge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; font-size: 11px;">Gemini 2.5 Flash</span>
+                </div>
+                <button type="button" onclick="document.getElementById('aiDoctorBox').style.display='none';" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 2px 8px; font-size: 11px;">
+                    ✕ Dismiss
+                </button>
+            </div>
+
+            <div id="aiDoctorLoading" style="display: none; padding: 18px 0; text-align: center;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: #6366F1; animation: spin 1s infinite linear; display: inline-block; margin-bottom: 6px;">sync</span>
+                <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text);">Gemini 2.5 Flash is analyzing SQL Server schema, table collisions, and migrations...</div>
+                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">Consulting Central Master Key Pool...</div>
+            </div>
+
+            <div id="aiDoctorContent" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Diagnosis</div>
+                    <div id="aiDoctorDiagnosis" style="font-size: 13.5px; line-height: 1.5; color: var(--admin-text); font-weight: 500;"></div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Explanation &amp; Root Cause</div>
+                    <div id="aiDoctorExplanation" style="font-size: 12.5px; line-height: 1.5; color: var(--admin-text-muted);"></div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Recommended T-SQL Script</div>
+                    <div style="position: relative;">
+                        <pre id="aiDoctorSqlCode" style="margin: 0; padding: 12px 14px; background: #0F172A; color: #38BDF8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px; border-radius: 6px; border: 1px solid #334155; overflow-x: auto; white-space: pre-wrap;"></pre>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="applyAiPrescription(false);" style="font-size: 12px; font-weight: 700;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">input</span>
+                        Copy Script into SQL Editor
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="applyAiPrescription(true);" style="font-size: 12px; color: var(--admin-primary); font-weight: 700;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span>
+                        Copy &amp; Execute Now
+                    </button>
+                    <span id="aiDoctorLatency" style="font-size: 11.5px; color: var(--admin-text-dim); margin-left: auto;"></span>
+                </div>
             </div>
         </div>
 
@@ -625,6 +682,83 @@
             } finally {
                 btn.innerHTML = originalBtnHtml;
                 btn.disabled = false;
+            }
+        }
+
+        let currentAiRecommendedSql = '';
+
+        async function diagnoseWithGemini() {
+            const box = document.getElementById('aiDoctorBox');
+            const loading = document.getElementById('aiDoctorLoading');
+            const content = document.getElementById('aiDoctorContent');
+            const btn = document.getElementById('btnAiDiagnose');
+
+            box.style.display = 'block';
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; animation: spin 1s infinite linear;">sync</span> Consulting Gemini...';
+            btn.disabled = true;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const queryError = document.getElementById('sqlExecutionStatus')?.innerText || '';
+
+            try {
+                const response = await fetch('?handler=AiDiagnose', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        tenantKey: '@Model.Tenant.TenantKey',
+                        errorMessage: queryError
+                    })
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    content.style.display = 'block';
+                    document.getElementById('aiDoctorDiagnosis').innerText = data.diagnosis;
+                    document.getElementById('aiDoctorExplanation').innerText = data.explanation;
+                    document.getElementById('aiDoctorSqlCode').innerText = data.recommendedSql;
+                    currentAiRecommendedSql = data.recommendedSql;
+
+                    if (data.keyAliasUsed) {
+                        document.getElementById('aiDoctorKeyBadge').innerText = `${data.keyAliasUsed} (${data.latencyMs}ms)`;
+                    }
+                    if (data.latencyMs) {
+                        document.getElementById('aiDoctorLatency').innerText = `Generated in ${data.latencyMs} ms`;
+                    }
+                } else {
+                    content.style.display = 'block';
+                    document.getElementById('aiDoctorDiagnosis').innerHTML = `<span style="color: var(--admin-danger); font-weight: 700;">AI Diagnosis Failed:</span> ${data.message}`;
+                    document.getElementById('aiDoctorExplanation').innerText = 'Please ensure you have active Google Gemini API keys configured in /centralwks/aikeys.';
+                    document.getElementById('aiDoctorSqlCode').innerText = '-- No script generated';
+                    currentAiRecommendedSql = '';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                document.getElementById('aiDoctorDiagnosis').innerText = 'Network error connecting to Gemini AI Doctor: ' + err.message;
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function applyAiPrescription(executeNow) {
+            if (!currentAiRecommendedSql) {
+                alert('No recommended SQL to apply.');
+                return;
+            }
+            setSqlQuery(currentAiRecommendedSql);
+            if (executeNow) {
+                executeEmergencySql();
             }
         }
 
