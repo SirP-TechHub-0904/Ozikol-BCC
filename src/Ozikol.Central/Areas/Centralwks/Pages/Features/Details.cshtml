@@ -16,17 +16,6 @@
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
                     <span class="badge badge-neutral" style="font-size: 11.5px;">@Model.Feature.Category</span>
                     <code style="font-size: 11.5px; padding: 2px 6px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: 4px; color: var(--admin-info);">@Model.Feature.FeatureCode</code>
-                    @if (Model.Feature.IsCompulsory)
-                    {
-                        <span class="badge badge-info" style="font-size: 11px;">
-                            <span class="material-symbols-outlined" style="font-size: 12px; margin-right: 2px;">lock</span>
-                            Compulsory Core
-                        </span>
-                    }
-                    else
-                    {
-                        <span class="badge badge-neutral" style="font-size: 11px;">Optional Addon</span>
-                    }
                     @if (Model.Feature.IsInBeta)
                     {
                         <span class="badge badge-warning" style="font-size: 11px;"><span class="badge-dot" style="background-color: var(--admin-warning);"></span> Under Maintenance</span>
@@ -146,15 +135,6 @@
                 {
                     @* Yearly Only Feature *@
                     <div style="padding: 20px; background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); margin-bottom: 16px; position: relative;">
-                        @if (Model.Feature.IsCompulsory)
-                        {
-                            <div style="position: absolute; top: 12px; right: 12px;">
-                                <span class="badge badge-info" style="font-size: 11px; font-weight: 700;">
-                                    <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">lock</span>
-                                    Compulsory Core
-                                </span>
-                            </div>
-                        }
                         <div style="font-size: 11.5px; color: var(--admin-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.03em;">Subscription Cadence: Yearly Fixed Price</div>
                         <div style="font-size: 28px; font-weight: 800; color: var(--admin-text); margin-top: 6px;">
                             @Model.FormattedYearlyPrice

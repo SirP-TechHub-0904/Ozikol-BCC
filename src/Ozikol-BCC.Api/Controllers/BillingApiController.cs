@@ -189,15 +189,16 @@ namespace Ozikol_BCC.Api.Controllers
                 ? existing.CustomPriceOverride.Value
                 : feature.MonthlyPrice;
 
-            int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 0;
+            int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 14;
             bool hasCustomTrialOverride = existing?.CustomFreeTrialDaysOverride != null;
             int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability || hasCustomTrialOverride) && hasCustomTrialOverride)
                 ? Math.Max(0, existing!.CustomFreeTrialDaysOverride!.Value)
                 : catalogTrialDays;
+            if (effectiveFreeTrialDays <= 0) effectiveFreeTrialDays = 14;
             bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
-            bool startFirstTimeTrial = targetActive && !feature.IsCompulsory && effectiveFreeTrialDays > 0 && !hasUsedFreeTrial;
+            bool startFirstTimeTrial = targetActive && !hasUsedFreeTrial;
 
-            // Safeguard: If activating a paid capability when no first-time free trial applies,
+            // Safeguard: If activating a capability when no first-time free trial applies,
             // only allow re-enabling if the tenant already holds an unexpired paid subscription that is currently suspended.
             // Renewals or expired/post-trial paid activations MUST go through Paystack Inline Checkout (/api/billing/features/paystack/initialize).
             bool hasUnexpiredPaidTerm = existing != null
@@ -206,7 +207,7 @@ namespace Ozikol_BCC.Api.Controllers
                 && existing.ExpiresAtUtc > now
                 && !currentlyActive;
 
-            if (targetActive && !feature.IsCompulsory && effectiveUsdPrice > 0m && !startFirstTimeTrial && !hasUnexpiredPaidTerm)
+            if (targetActive && effectiveUsdPrice > 0m && !startFirstTimeTrial && !hasUnexpiredPaidTerm)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
                     $"Payment is required to activate or renew '{feature.Name}'. Please complete payment via Paystack Inline Checkout."));
@@ -229,11 +230,6 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         existing.IsTrialPeriod = false;
                         existing.Status = "Active";
-                        if (feature.IsCompulsory || effectiveUsdPrice <= 0m)
-                        {
-                            existing.StartsAtUtc = now;
-                            existing.ExpiresAtUtc = now.AddYears(10);
-                        }
                     }
 
                     if (tenant.UseCustomAvailability)
@@ -261,14 +257,12 @@ namespace Ozikol_BCC.Api.Controllers
                     DurationType = cadence,
                     RecurringPrice = effectiveUsdPrice,
                     StartsAtUtc = now,
-                    ExpiresAtUtc = startFirstTimeTrial
-                        ? now.AddDays(effectiveFreeTrialDays)
-                        : now.AddYears(10),
+                    ExpiresAtUtc = now.AddDays(effectiveFreeTrialDays),
                     AutoRenew = true,
                     IsActive = targetActive,
-                    Status = targetActive ? (startFirstTimeTrial ? "Trial" : "Active") : "Suspended",
-                    HasUsedFreeTrial = startFirstTimeTrial,
-                    IsTrialPeriod = startFirstTimeTrial,
+                    Status = targetActive ? "Trial" : "Suspended",
+                    HasUsedFreeTrial = true,
+                    IsTrialPeriod = true,
                     IsAvailableForUseOverride = tenant.UseCustomAvailability && targetActive ? true : null,
                     CreatedUtc = now
                 };

@@ -75,10 +75,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   selectedSuite = '';
   availabilityFilter: 'all' | 'available' | 'coming_soon' = 'all';
   statusFilter: 'all' | 'active' | 'not_active' | 'coming_soon' = 'all';
-  tierFilter: 'all' | 'compulsory' | 'optional' = 'all';
-
   // Table Sorting controls
-  sortColumn: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier' = 'serialNo';
+  sortColumn: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' = 'serialNo';
   sortDirection: 'asc' | 'desc' = 'asc';
 
   // Snapshot data from MasterCatalogDbContext via /api/billing/features
@@ -358,7 +356,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
     // If activating or renewing a paid capability when no first-time free trial applies,
     // launch the Central Paystack Inline Checkout instead of bypassing payment.
-    if (desiredState && !feat.isCompulsory && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
+    if (desiredState && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
       this.payAndRenewFeature(feat);
       return;
     }
@@ -840,7 +838,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   get expiringOrExpiredFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     return this.activeInstalledFeatures.filter(
-      f => !f.isCompulsory && this.getFeatureDisplayAmount(f) > 0 && (f.status === 'Expired' || (f.daysRemaining ?? 999) <= 30)
+      f => this.getFeatureDisplayAmount(f) > 0 && (f.status === 'Expired' || (f.daysRemaining ?? 999) <= 30)
     );
   }
 
@@ -1032,13 +1030,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         return false;
       }
 
-      if (this.tierFilter === 'compulsory' && !f.isCompulsory) {
-        return false;
-      }
-      if (this.tierFilter === 'optional' && f.isCompulsory) {
-        return false;
-      }
-
       return true;
     });
 
@@ -1068,10 +1059,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           cmp = this.getFeatureStatusRank(a) - this.getFeatureStatusRank(b);
           if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
           break;
-        case 'tier':
-          cmp = (a.isCompulsory === b.isCompulsory) ? 0 : (a.isCompulsory ? -1 : 1);
-          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
-          break;
       }
       return cmp * dir;
     });
@@ -1080,7 +1067,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   /**
    * Toggles table sorting by the specified column.
    */
-  toggleSort(column: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier'): void {
+  toggleSort(column: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status'): void {
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -1140,7 +1127,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   hasFeatureExpirationInfo(feat: BillingFeatureItem): boolean {
     if (!feat || !feat.isActive) return false;
-    if (this.getFeatureDisplayAmount(feat) <= 0 && feat.isCompulsory && !feat.expiresAtUtc) return false;
+    if (this.getFeatureDisplayAmount(feat) <= 0 && !feat.expiresAtUtc) return false;
     return !!(feat.expiresAtUtc || (feat.daysRemaining !== undefined && feat.daysRemaining !== null));
   }
 
@@ -1263,7 +1250,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   get compulsoryCount(): number {
-    return this.allOrderedFeatures.filter(f => f.isCompulsory).length;
+    return 0;
   }
 
   get hasActiveFilters(): boolean {
@@ -1272,7 +1259,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.selectedSuite !== '' ||
       this.availabilityFilter !== 'all' ||
       this.statusFilter !== 'all' ||
-      this.tierFilter !== 'all' ||
       this.sortColumn !== 'serialNo' ||
       this.sortDirection !== 'asc'
     );
@@ -1283,16 +1269,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.availabilityFilter = this.availabilityFilter === filter ? 'all' : filter;
   }
 
-  filterByTier(tier: 'all' | 'compulsory' | 'optional'): void {
-    this.tierFilter = this.tierFilter === tier ? 'all' : tier;
-  }
-
   resetFilters(): void {
     this.searchQuery = '';
     this.selectedSuite = '';
     this.availabilityFilter = 'all';
     this.statusFilter = 'all';
-    this.tierFilter = 'all';
     this.sortColumn = 'serialNo';
     this.sortDirection = 'asc';
   }

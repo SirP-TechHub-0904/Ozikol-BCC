@@ -433,16 +433,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                     if (isRunning)
                     {
-                        if (f.IsCompulsory)
-                        {
-                            activeCompulsoryCount++;
-                            if (tenant.UseCustomPricing && sub?.CustomPriceOverride != null && sub.CustomPriceOverride.Value > 0)
-                            {
-                                tenantMrr += sub.CustomPriceOverride.Value;
-                            }
-                        }
-                        else
-                        {
+
                             activeAddonCount++;
                             decimal subPrice = (tenant.UseCustomPricing && sub?.CustomPriceOverride != null)
                                 ? sub.CustomPriceOverride.Value
@@ -466,7 +457,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                                 Duration = sub.DurationType.ToString(),
                                 IsIdle = isTenantIdle
                             });
-                        }
                     }
 
                     bool isAvailForTenant = (tenant.UseCustomAvailability && sub?.IsAvailableForUseOverride != null)
@@ -481,11 +471,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         Category = f.Category,
                         SuiteCode = GetSuiteMetadata(f.Category).Code,
                         Icon = string.IsNullOrEmpty(f.Icon) ? "extension" : f.Icon,
-                        IsCompulsory = f.IsCompulsory,
+                        IsCompulsory = false,
                         IsActive = isRunning,
                         IsAvailableForUse = isAvailForTenant,
                         HasCustomPrice = sub?.CustomPriceOverride != null,
-                        Status = isRunning ? (f.IsCompulsory ? "Active (Core)" : "Active (Subscribed)") : "Not Active",
+                        Status = isRunning ? "Active" : "Not Active",
                         MonthlyPrice = f.MonthlyPrice,
                         RecurringPrice = effectiveMonthly,
                         Duration = sub?.DurationType.ToString() ?? "Monthly",
@@ -630,12 +620,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 string classification;
                 string statusColor;
 
-                if (feat.IsCompulsory)
-                {
-                    classification = "Compulsory Core";
-                    statusColor = "#0050E5";
-                }
-                else if (adoptionRate >= 70.0)
+                if (adoptionRate >= 70.0)
                 {
                     classification = "High Adoption";
                     statusColor = "#10b981";

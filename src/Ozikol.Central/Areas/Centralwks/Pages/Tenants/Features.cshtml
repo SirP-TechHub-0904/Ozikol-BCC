@@ -469,7 +469,7 @@
                                             </span>
                                         }
 
-                                        @if (!feat.IsCompulsory && item.HasActiveOrOverdueSubscription && item.RemainingDays.HasValue)
+                                        @if (item.HasActiveOrOverdueSubscription && item.RemainingDays.HasValue)
                                         {
                                             var remDays = item.RemainingDays.Value;
                                             <button type="button"
@@ -495,19 +495,6 @@
                                             <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.28);">
                                                 <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
                                                 @(Model.Tenant.UseCustomAvailability ? "Not Available (Custom)" : "Coming Soon (General)")
-                                            </span>
-                                        }
-
-                                        @if (feat.IsCompulsory)
-                                        {
-                                            <span class="badge" style="background: rgba(0, 80, 229, 0.08); color: var(--ozikol-primary, #0050e5); font-weight: 700; font-size: 11px;">
-                                                Compulsory Core
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 11px;">
-                                                Optional Add-on
                                             </span>
                                         }
 
@@ -571,7 +558,7 @@
                                         {
                                             <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10px; font-weight: 700;">Custom Price</span>
                                         }
-                                        else if (!feat.IsCompulsory || item.EffectiveMonthlyPrice > 0)
+                                        else if (item.EffectiveMonthlyPrice > 0)
                                         {
                                             <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 600;">General Price</span>
                                         }
@@ -687,16 +674,13 @@
                                                         <span>Set Custom Price &amp; Trial...</span>
                                                     </button>
 
-                                                    @if (!feat.IsCompulsory)
-                                                    {
-                                                        <button type="button"
-                                                                onclick="openAdjustExpiryModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(item.RemainingDays ?? item.EffectiveFreeTrialDays))"
-                                                                class="dropdown-item-btn"
-                                                                style="width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #b45309; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                                                            <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
-                                                            <span>Adjust Remaining Days (0 / -2d)...</span>
-                                                        </button>
-                                                    }
+                                                    <button type="button"
+                                                            onclick="openAdjustExpiryModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(item.RemainingDays ?? item.EffectiveFreeTrialDays))"
+                                                            class="dropdown-item-btn"
+                                                            style="width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #b45309; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                        <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
+                                                        <span>Adjust Remaining Days (0 / -2d)...</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

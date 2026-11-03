@@ -430,7 +430,7 @@ namespace Ozikol_BCC.Api.Services
                 decimal effectiveYearly = Math.Round(yearlyUsd * currRate, 2);
                 bool isYearlyOnly = effectiveMonthly <= 0m && effectiveYearly > 0m;
                 decimal defaultEffectivePrice = isYearlyOnly ? effectiveYearly : effectiveMonthly;
-                string defaultCadence = f.IsCompulsory ? "Included" : (isYearlyOnly ? "Yearly" : "Monthly");
+                string defaultCadence = isYearlyOnly ? "Yearly" : "Monthly";
 
                 var matchedSuite = ResolveMatchedSuite(f);
                 var suiteFullTitle = matchedSuite?.Name ?? f.Category;
@@ -439,13 +439,14 @@ namespace Ozikol_BCC.Api.Services
                 var suiteSortOrder = matchedSuite?.SortOrder ?? (GetSuiteOrder(suiteFullTitle) + 1);
 
                 bool hasCustomTrial = sub?.CustomFreeTrialDaysOverride != null;
-                int catalogTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 0;
+                int catalogTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 14;
                 int effectiveTrialDays = ((tenant?.UseCustomPricing == true || tenant?.UseCustomAvailability == true || hasCustomTrial) && hasCustomTrial)
                     ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
                     : catalogTrialDays;
+                if (effectiveTrialDays <= 0) effectiveTrialDays = 14;
                 bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
-                bool isTrialPeriod = (sub?.IsTrialPeriod ?? false) && (sub?.ExpiresAtUtc > now);
-                bool isEligibleForFreeTrial = effectiveTrialDays > 0 && !hasUsedTrial;
+                bool isTrialPeriod = ((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now);
+                bool isEligibleForFreeTrial = !hasUsedTrial;
 
                 bool isPaidCapability = defaultEffectivePrice > 0m || effectiveYearly > 0m;
                 var item = new BillingFeatureItemDto
@@ -461,7 +462,7 @@ namespace Ozikol_BCC.Api.Services
                     Description = f.Description,
                     Icon = f.Icon,
                     RoutePrefix = f.RoutePrefix,
-                    IsCompulsory = f.IsCompulsory && !isPaidCapability,
+                    IsCompulsory = false,
                     IsAvailableForUse = isAvailForUse,
                     IsInBeta = f.IsInBeta,
                     HasCustomPriceOverride = sub?.CustomPriceOverride != null,
@@ -507,11 +508,11 @@ namespace Ozikol_BCC.Api.Services
                                     && !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
                 var live = sub.IsActive
                            && notSuspended
-                           && (f.IsCompulsory || sub.ExpiresAtUtc > now);
+                           && sub.ExpiresAtUtc > now;
                 // A lapsed subscription is reported as Expired regardless of the stored status string
-                var status = !live && sub.IsActive && notSuspended && !f.IsCompulsory && sub.ExpiresAtUtc <= now
+                var status = !live && sub.IsActive && notSuspended && sub.ExpiresAtUtc <= now
                     ? "Expired"
-                    : (live ? "Active" : sub.Status);
+                    : (live ? (isTrialPeriod ? "Trial" : "Active") : sub.Status);
 
                 var effectiveDuration = isYearlyOnly ? SubscriptionBillingDuration.Yearly : sub.DurationType;
                 decimal subEffectiveUsd = effectiveDuration == SubscriptionBillingDuration.Yearly
@@ -531,17 +532,12 @@ namespace Ozikol_BCC.Api.Services
                 item.DaysRemaining = days;
                 bool isTrackedForRenewal = sub.IsActive
                                            && notSuspended
-                                           && !f.IsCompulsory
                                            && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase);
                 item.Severity = isTrackedForRenewal
                     ? SeverityFor(days)
                     : "None";
 
-                if (live && f.IsCompulsory && item.EffectivePrice <= 0)
-                {
-                    snapshot.Included.Add(item);
-                }
-                else if (live)
+                if (live)
                 {
                     snapshot.Subscribed.Add(item);
                 }

@@ -636,7 +636,7 @@
           <div class="card-label">Total Modular Capabilities</div>
           <div class="card-breakdown">
             <div class="breakdown-row">
-              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ compulsoryCount }}</strong> Compulsory Core</span>
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ activeCapabilitiesCount }}</strong> Active in Menu</span>
             </div>
           </div>
         </div>
@@ -691,12 +691,8 @@
 
         <!-- Card 5: Active Recurring Spend -->
         <div
-          class="metric-card clickable"
-          [class.active-card]="tierFilter === 'compulsory'"
-          (click)="filterByTier('compulsory')"
-          role="button"
-          tabindex="0"
-          title="Click to filter Compulsory Baseline Core capabilities"
+          class="metric-card"
+          title="Active recurring monthly spend"
         >
           <div class="card-top">
             <div class="card-icon bg-teal">
@@ -708,7 +704,7 @@
           <div class="card-label">Active Recurring Spend</div>
           <div class="card-breakdown">
             <div class="breakdown-row">
-              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ activeCapabilitiesCount }}</strong> Capabilities Active</span>
             </div>
           </div>
         </div>
@@ -747,12 +743,6 @@
               @if (!snapshot.useCustomAvailability) {
                 <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
               }
-            </select>
-
-            <select [(ngModel)]="tierFilter" class="filter-select select-tier">
-              <option value="all">All Tier Classes</option>
-              <option value="compulsory">Compulsory Core</option>
-              <option value="optional">Optional Add-on</option>
             </select>
 
             @if (hasActiveFilters) {
@@ -884,21 +874,11 @@
                             </span>
                           }
 
-                          @if (feat.isCompulsory) {
-                            <span class="badge-pill-md badge-compulsory">
-                              <span class="material-symbols-outlined">lock</span>
-                              <span>Compulsory Core</span>
+                          @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                            <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                              <span class="material-symbols-outlined">redeem</span>
+                              <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
                             </span>
-                          } @else {
-                            <span class="badge-pill-md badge-optional">
-                              <span>Optional Add-on</span>
-                            </span>
-                            @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
-                              <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
-                                <span class="material-symbols-outlined">redeem</span>
-                                <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
-                              </span>
-                            }
                           }
                         </div>
                       </div>
@@ -1014,12 +994,6 @@
                         <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
                       </span>
                     </th>
-                    <th class="sortable-th" (click)="toggleSort('tier')">
-                      <span class="th-sort-wrap">
-                        <span>TIER CLASS</span>
-                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'tier'">{{ getSortIcon('tier') }}</span>
-                      </span>
-                    </th>
                     <th class="sortable-th" (click)="toggleSort('amount')">
                       <span class="th-sort-wrap">
                         <span>AMOUNT</span>
@@ -1076,16 +1050,6 @@
                             <span class="material-symbols-outlined">schedule</span>
                             <span>Coming Soon</span>
                           </span>
-                        }
-                      </td>
-                      <td>
-                        @if (feat.isCompulsory) {
-                          <span class="badge-pill-md badge-compulsory">
-                            <span class="material-symbols-outlined">lock</span>
-                            <span>Compulsory Core</span>
-                          </span>
-                        } @else {
-                          <span class="badge-pill-md badge-optional">Optional Add-on</span>
                         }
                       </td>
                       <td>
