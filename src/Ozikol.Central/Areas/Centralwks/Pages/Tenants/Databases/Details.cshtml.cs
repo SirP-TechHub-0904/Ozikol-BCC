@@ -541,7 +541,7 @@ Diagnose the error, identify any table/schema collisions, and provide the exact 
 
                 if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
                 {
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key.ApiKey}";
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
                     var payload = new
                     {
                         system_instruction = new
