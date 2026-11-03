@@ -701,8 +701,11 @@
             let queryError = document.getElementById('sqlExecutionStatus')?.innerText?.trim() || '';
             const editorText = document.getElementById('sqlQueryInput')?.value?.trim() || '';
             if (!queryError) {
-                const alertEl = document.querySelector('.admin-alert, .alert, [class*="alert-danger"], .badge-danger');
+                const alertEl = document.querySelector('.alert-danger, [class*="alert-danger"], .admin-alert-danger, .admin-alert');
                 if (alertEl) queryError = alertEl.innerText.trim();
+            }
+            if (!queryError) {
+                queryError = '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(TempData["Error"]?.ToString() ?? ""))';
             }
 
             try {
