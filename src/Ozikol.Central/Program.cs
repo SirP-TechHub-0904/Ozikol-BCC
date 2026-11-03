@@ -510,6 +510,24 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapRazorPages();
 
+// Transparent AES-256-GCM in-place encryption auto-migrator for tenant database connection strings
+try
+{
+    using var encScope = app.Services.CreateScope();
+    var migrationService = encScope.ServiceProvider.GetRequiredService<ICentralMigrationService>();
+    var encResult = await migrationService.EncryptAllUnencryptedConnectionStringsAsync();
+    if (encResult.NewlyEncryptedCount > 0)
+    {
+        var logger = encScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("AES-256-GCM In-Place Migration: Successfully encrypted {Count} tenant database connection strings in SQL Server.", encResult.NewlyEncryptedCount);
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetService<ILogger<Program>>();
+    logger?.LogWarning(ex, "Tenant connection string auto-encryption startup check encountered a non-blocking issue.");
+}
+
 app.Run();
 
 static string ResolveCentralClientIp(HttpContext httpContext)

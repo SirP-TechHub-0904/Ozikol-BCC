@@ -3,8 +3,10 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Ozikol.MasterDomain.Models;
+using Ozikol.MasterDomain.Security;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Infrastructure.Caching;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 
@@ -267,6 +269,25 @@ public class BatchMigrationExecutionResult
     public List<MigrationExecutionResult> Details { get; set; } = new();
 }
 
+public class ConnectionStringsEncryptionStatus
+{
+    public int TotalDatabases { get; set; }
+    public int EncryptedCount { get; set; }
+    public int UnencryptedCount { get; set; }
+    public bool IsFullyEncrypted => UnencryptedCount == 0 && TotalDatabases > 0;
+    public string EncryptionAlgorithm { get; set; } = "AES-256-GCM (Authenticated 256-bit)";
+}
+
+public class ConnectionStringsEncryptionResult
+{
+    public bool Success { get; set; }
+    public int TotalScanned { get; set; }
+    public int NewlyEncryptedCount { get; set; }
+    public int AlreadyEncryptedCount { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public List<string> EncryptedDatabases { get; set; } = new();
+}
+
 public interface ICentralMigrationService
 {
     Task<MasterMigrationSummary> GetMasterMigrationStatusAsync(CancellationToken cancellationToken = default);
@@ -275,6 +296,8 @@ public interface ICentralMigrationService
     Task<MigrationExecutionResult> MigrateMasterDatabaseAsync(CancellationToken cancellationToken = default);
     Task<MigrationExecutionResult> MigrateTenantDatabaseAsync(string tenantKey, CancellationToken cancellationToken = default);
     Task<BatchMigrationExecutionResult> MigrateAllTenantsBatchAsync(CancellationToken cancellationToken = default);
+    Task<ConnectionStringsEncryptionStatus> GetConnectionStringsEncryptionStatusAsync(CancellationToken cancellationToken = default);
+    Task<ConnectionStringsEncryptionResult> EncryptAllUnencryptedConnectionStringsAsync(CancellationToken cancellationToken = default);
 }
 
 public class CentralMigrationService : ICentralMigrationService
@@ -850,6 +873,150 @@ public class CentralMigrationService : ICentralMigrationService
         }
 
         return distribution;
+    }
+
+    /// <summary>
+    /// Computes the encryption status of tenant database connection strings across the platform fleet.
+    /// Inspects stored raw SQL values to detect whether they have been upgraded to AES-256-GCM ciphertext (`enc:v1:...`).
+    /// </summary>
+    public async Task<ConnectionStringsEncryptionStatus> GetConnectionStringsEncryptionStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var status = new ConnectionStringsEncryptionStatus();
+        try
+        {
+            var conn = _masterCatalogDbContext.Database.GetDbConnection();
+            var wasClosed = conn.State != ConnectionState.Open;
+            if (wasClosed) await conn.OpenAsync(cancellationToken);
+
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT 
+                        COUNT(1) AS TotalCount,
+                        SUM(CASE WHEN ConnectionString LIKE 'enc:v1:%' THEN 1 ELSE 0 END) AS EncryptedCount,
+                        SUM(CASE WHEN ConnectionString NOT LIKE 'enc:v1:%' AND ConnectionString IS NOT NULL AND LEN(ConnectionString) > 0 THEN 1 ELSE 0 END) AS UnencryptedCount
+                    FROM [dbo].[MasterTenantCatalogs]
+                    WHERE [IsDeleted] = 0;";
+
+                using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
+                {
+                    status.TotalDatabases = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+                    status.EncryptedCount = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+                    status.UnencryptedCount = reader.IsDBNull(2) ? 0 : Convert.ToInt32(reader[2]);
+                }
+            }
+            finally
+            {
+                if (wasClosed) await conn.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to compute connection string encryption metrics.");
+        }
+        return status;
+    }
+
+    /// <summary>
+    /// Scans all tenant database connection strings in the Master Catalog Database and converts
+    /// any unencrypted plaintext values into authenticated AES-256-GCM ciphertext (`enc:v1:...`) in-place.
+    /// Operates directly via parameterized SQL to bypass EF Core change-tracking omissions and updates the cache.
+    /// </summary>
+    public async Task<ConnectionStringsEncryptionResult> EncryptAllUnencryptedConnectionStringsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = new ConnectionStringsEncryptionResult();
+        try
+        {
+            var conn = _masterCatalogDbContext.Database.GetDbConnection();
+            var wasClosed = conn.State != ConnectionState.Open;
+            if (wasClosed) await conn.OpenAsync(cancellationToken);
+
+            try
+            {
+                // 1. Fetch unencrypted rows directly using raw ADO.NET so EF Core ValueConverter does not interfere
+                var unencryptedRows = new List<(Guid Id, string DatabaseName, string RawConnectionString)>();
+                using (var selectCmd = conn.CreateCommand())
+                {
+                    selectCmd.CommandText = @"
+                        SELECT [Id], [DatabaseName], [ConnectionString]
+                        FROM [dbo].[MasterTenantCatalogs]
+                        WHERE [ConnectionString] IS NOT NULL 
+                          AND LEN([ConnectionString]) > 0
+                          AND [ConnectionString] NOT LIKE 'enc:v1:%';";
+
+                    using var reader = await selectCmd.ExecuteReaderAsync(cancellationToken);
+                    while (await reader.ReadAsync(cancellationToken))
+                    {
+                        unencryptedRows.Add((
+                            reader.GetGuid(0),
+                            reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                            reader.GetString(2)
+                        ));
+                    }
+                }
+
+                result.TotalScanned = unencryptedRows.Count;
+
+                // 2. Encrypt each row using OzikolDataCipher.EncryptIfNeeded
+                foreach (var row in unencryptedRows)
+                {
+                    if (string.IsNullOrWhiteSpace(row.RawConnectionString) || row.RawConnectionString.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                    {
+                        result.AlreadyEncryptedCount++;
+                        continue;
+                    }
+
+                    string encrypted = OzikolDataCipher.EncryptIfNeeded(row.RawConnectionString) ?? row.RawConnectionString;
+
+                    using var updateCmd = conn.CreateCommand();
+                    updateCmd.CommandText = @"
+                        UPDATE [dbo].[MasterTenantCatalogs]
+                        SET [ConnectionString] = @enc
+                        WHERE [Id] = @id;";
+
+                    var pEnc = updateCmd.CreateParameter();
+                    pEnc.ParameterName = "@enc";
+                    pEnc.Value = encrypted;
+                    updateCmd.Parameters.Add(pEnc);
+
+                    var pId = updateCmd.CreateParameter();
+                    pId.ParameterName = "@id";
+                    pId.Value = row.Id;
+                    updateCmd.Parameters.Add(pId);
+
+                    await updateCmd.ExecuteNonQueryAsync(cancellationToken);
+
+                    result.NewlyEncryptedCount++;
+                    result.EncryptedDatabases.Add(row.DatabaseName);
+                }
+
+                // 3. Invalidate distributed cache so tenants immediately use refreshed credentials
+                var cacheInvalidator = _serviceProvider.GetService<ITenantCacheInvalidator>();
+                if (cacheInvalidator != null)
+                {
+                    await cacheInvalidator.InvalidateTenantCatalogAsync(null);
+                }
+
+                result.Success = true;
+                result.Message = result.NewlyEncryptedCount > 0
+                    ? $"Successfully encrypted {result.NewlyEncryptedCount} tenant database connection strings using authenticated AES-256-GCM."
+                    : "All tenant database connection strings are already encrypted.";
+            }
+            finally
+            {
+                if (wasClosed) await conn.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to encrypt tenant database connection strings.");
+            result.Success = false;
+            result.Message = $"Encryption failed: {ex.Message}";
+        }
+
+        return result;
     }
 
     private static string BuildTenantConnectionString(string masterConnStr, string targetDbName)
