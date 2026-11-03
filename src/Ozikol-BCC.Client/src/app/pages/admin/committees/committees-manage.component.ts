@@ -143,7 +143,9 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
         </div>
 
         <div class="empty-card" *ngIf="committees.length === 0 && !loading">
-          <span class="material-symbols-outlined">diversity_3</span>
+          <div class="empty-icon-wrap">
+            <span class="material-symbols-outlined">diversity_3</span>
+          </div>
           <h3>No {{ aliases.aliasPlural }} Created Yet</h3>
           <p>Create your first {{ aliases.aliasSingular.toLowerCase() }} to organize members, share an external registration link, and receive meeting reports.</p>
           <button type="button" class="btn-primary-sm" (click)="openCreateModal()">
@@ -672,10 +674,17 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .card-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 
     .btn-primary-sm {
-      display: inline-flex; align-items: center; gap: 6px; background: #0050e5; color: #ffffff;
+      display: inline-flex; align-items: center; gap: 6px; background: #0050e5; color: #ffffff !important;
       border: none; border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none;
     }
     .btn-primary-sm:hover { background: #003db3; }
+    .btn-primary-sm .material-symbols-outlined,
+    .btn-primary-sm span {
+      color: #ffffff !important;
+    }
+    .btn-primary-sm .material-symbols-outlined {
+      font-size: 18px !important;
+    }
     .btn-secondary-sm, .btn-secondary-xs {
       display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #334155;
       border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none;
@@ -705,7 +714,13 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     }
     :host-context(.dark-mode) .panel-box, :host-context(.dark-mode) .empty-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
     .empty-card { align-items: center; text-align: center; padding: 48px 20px; }
-    .empty-card .material-symbols-outlined { font-size: 44px; color: #0050e5; }
+    .empty-icon-wrap {
+      width: 56px; height: 56px; border-radius: 16px; background: rgba(0,80,229,0.08);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+    }
+    .empty-icon-wrap .material-symbols-outlined { font-size: 30px; color: #0050e5; }
+    :host-context(.dark-mode) .empty-icon-wrap { background: rgba(0,80,229,0.2); }
+    :host-context(.dark-mode) .empty-icon-wrap .material-symbols-outlined { color: #60a5fa; }
     .panel-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
     .panel-head-row h3 { margin: 0; font-size: 16px; font-weight: 700; }
     .panel-head-row p { margin: 4px 0 0; font-size: 13px; color: #64748b; }

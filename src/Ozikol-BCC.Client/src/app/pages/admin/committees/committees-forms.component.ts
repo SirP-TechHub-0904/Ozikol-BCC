@@ -101,7 +101,9 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
         </div>
 
         <div class="empty-card" *ngIf="forms.length === 0 && !loading">
-          <span class="material-symbols-outlined">dynamic_form</span>
+          <div class="empty-icon-wrap">
+            <span class="material-symbols-outlined">dynamic_form</span>
+          </div>
           <h3>No Supplemental Extra-Info Forms Yet</h3>
           <p>Need extra details such as Skillset, Availability, Audition Link, Portfolio PDF, or Shirt Size when someone joins a {{ aliases.aliasSingular.toLowerCase() }}? Create a form here.</p>
           <button type="button" class="btn-primary-sm" (click)="startNewForm()">
@@ -250,7 +252,13 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     }
     :host-context(.dark-mode) .form-card, :host-context(.dark-mode) .empty-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
     .empty-card { align-items: center; text-align: center; padding: 48px 20px; }
-    .empty-card .material-symbols-outlined { font-size: 42px; color: #0050e5; }
+    .empty-icon-wrap {
+      width: 56px; height: 56px; border-radius: 16px; background: rgba(0,80,229,0.08);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+    }
+    .empty-icon-wrap .material-symbols-outlined { font-size: 30px; color: #0050e5; }
+    :host-context(.dark-mode) .empty-icon-wrap { background: rgba(0,80,229,0.2); }
+    :host-context(.dark-mode) .empty-icon-wrap .material-symbols-outlined { color: #60a5fa; }
     .fc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
     .fc-head h3 { margin: 4px 0 0; font-size: 16px; font-weight: 700; }
     .default-pill { font-size: 10.5px; font-weight: 700; background: rgba(0,80,229,0.12); color: #0050e5; padding: 2px 8px; border-radius: 999px; }
@@ -302,8 +310,15 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .prev-file { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px dashed #94a3b8; border-radius: 8px; font-size: 12.5px; color: #475569; }
 
     .btn-primary-sm {
-      display: inline-flex; align-items: center; gap: 6px; background: #0050e5; color: #ffffff;
+      display: inline-flex; align-items: center; gap: 6px; background: #0050e5; color: #ffffff !important;
       border: none; border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    }
+    .btn-primary-sm .material-symbols-outlined,
+    .btn-primary-sm span {
+      color: #ffffff !important;
+    }
+    .btn-primary-sm .material-symbols-outlined {
+      font-size: 18px !important;
     }
     .btn-secondary-sm {
       display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #334155;

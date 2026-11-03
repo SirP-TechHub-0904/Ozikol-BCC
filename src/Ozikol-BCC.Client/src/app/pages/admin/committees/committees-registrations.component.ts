@@ -121,7 +121,9 @@ import { CommitteesService, CommitteeAliases } from '../../../core/services/comm
       </div>
 
       <div class="empty-card" *ngIf="registrations.length === 0 && !loading">
-        <span class="material-symbols-outlined">inbox</span>
+        <div class="empty-icon-wrap">
+          <span class="material-symbols-outlined">inbox</span>
+        </div>
         <h3>No {{ statusFilter !== 'All' ? statusFilter : '' }} Registrations</h3>
         <p>Share your external registration link to receive new applications.</p>
       </div>
@@ -179,7 +181,13 @@ import { CommitteesService, CommitteeAliases } from '../../../core/services/comm
     }
     :host-context(.dark-mode) .reg-card, :host-context(.dark-mode) .empty-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
     .empty-card { flex-direction: column; align-items: center; text-align: center; padding: 48px 20px; }
-    .empty-card .material-symbols-outlined { font-size: 42px; color: #94a3b8; }
+    .empty-icon-wrap {
+      width: 56px; height: 56px; border-radius: 16px; background: rgba(0,80,229,0.08);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+    }
+    .empty-icon-wrap .material-symbols-outlined { font-size: 30px; color: #0050e5; }
+    :host-context(.dark-mode) .empty-icon-wrap { background: rgba(0,80,229,0.2); }
+    :host-context(.dark-mode) .empty-icon-wrap .material-symbols-outlined { color: #60a5fa; }
 
     .reg-main { display: flex; gap: 14px; flex: 1; min-width: 260px; }
     .reg-avatar {

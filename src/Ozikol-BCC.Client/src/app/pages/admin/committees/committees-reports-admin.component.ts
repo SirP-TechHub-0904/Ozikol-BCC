@@ -196,7 +196,9 @@ import { CommitteesService, CommitteeAliases } from '../../../core/services/comm
       </div>
 
       <div class="empty-card" *ngIf="reports.length === 0 && !loading">
-        <span class="material-symbols-outlined">assignment</span>
+        <div class="empty-icon-wrap">
+          <span class="material-symbols-outlined">assignment</span>
+        </div>
         <h3>No Meeting Reports Found</h3>
         <p>Submitted reports, uploaded Excel/Word files, and linked Google Docs will appear here automatically.</p>
       </div>
@@ -245,7 +247,13 @@ import { CommitteesService, CommitteeAliases } from '../../../core/services/comm
     }
     :host-context(.dark-mode) .report-reader, :host-context(.dark-mode) .empty-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
     .empty-card { align-items: center; text-align: center; padding: 48px 20px; }
-    .empty-card .material-symbols-outlined { font-size: 42px; color: #94a3b8; }
+    .empty-icon-wrap {
+      width: 56px; height: 56px; border-radius: 16px; background: rgba(0,80,229,0.08);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+    }
+    .empty-icon-wrap .material-symbols-outlined { font-size: 30px; color: #0050e5; }
+    :host-context(.dark-mode) .empty-icon-wrap { background: rgba(0,80,229,0.2); }
+    :host-context(.dark-mode) .empty-icon-wrap .material-symbols-outlined { color: #60a5fa; }
 
     .reader-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
     .reader-kicker { font-size: 11.5px; font-weight: 700; color: #0050e5; text-transform: uppercase; }
