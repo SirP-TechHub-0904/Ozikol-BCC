@@ -480,7 +480,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             var deepDive = await _migrationService.GetTenantDeepDiveAsync(tenant.TenantKey, cancellationToken);
             var errorContext = !string.IsNullOrWhiteSpace(request.ErrorMessage)
                 ? request.ErrorMessage
-                : (deepDive?.Status?.ErrorMessage ?? "Database has pending migrations awaiting execution.");
+                : (deepDive?.ErrorMessage ?? deepDive?.Tenant?.Status?.ErrorMessage ?? "Database has pending migrations awaiting execution.");
 
             var key = await _aiKeyPoolService.GetNextAvailableKeyAsync("Gemini", cancellationToken);
             if (key == null)
@@ -569,7 +569,7 @@ Diagnose the error, identify any table/schema collisions, and provide the exact 
                         var errBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
                         if ((int)httpResponse.StatusCode == 429)
                         {
-                            await _aiKeyPoolService.MarkCooldownAsync(key.Id, 300, cancellationToken);
+                            await _aiKeyPoolService.MarkRateLimitedAsync(key.Id, 300, cancellationToken);
                         }
                         throw new HttpRequestException($"Gemini API error ({httpResponse.StatusCode}): {errBody}", null, httpResponse.StatusCode);
                     }
