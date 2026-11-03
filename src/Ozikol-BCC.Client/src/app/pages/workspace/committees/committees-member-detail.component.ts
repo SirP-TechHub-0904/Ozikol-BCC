@@ -324,7 +324,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     </div>
   `,
   styles: [`
-    .cv-shell { padding: 24px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    .cv-shell { display: flex; flex-direction: column; gap: 18px; width: 100%; }
     .cv-back-link { display: inline-flex; align-items: center; gap: 6px; color: #0050e5; text-decoration: none; font-size: 13px; font-weight: 600; }
     .cv-hero {
       background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 22px;

@@ -138,7 +138,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     </div>
   `,
   styles: [`
-    .vault-shell { padding: 24px; max-width: 1380px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    .vault-shell { display: flex; flex-direction: column; gap: 18px; width: 100%; }
     .vault-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
     .vault-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: #0050e5; text-transform: uppercase; }
     .vault-title-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }

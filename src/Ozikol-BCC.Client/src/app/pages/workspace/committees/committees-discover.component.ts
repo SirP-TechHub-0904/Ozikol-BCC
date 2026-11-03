@@ -239,7 +239,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     </div>
   `,
   styles: [`
-    .cd-shell { padding: 24px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+    .cd-shell { display: flex; flex-direction: column; gap: 20px; width: 100%; }
     .cd-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
     .cd-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: #0050e5; text-transform: uppercase; }
     .cd-title-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
