@@ -2465,15 +2465,16 @@ export interface SuiteInfoDetail {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin: 10px 14px 0 14px;
-      padding: 10px 16px;
+      margin: 10px 14px 4px 14px;
+      padding: 12px 18px;
       background: #fffbeb;
-      border: 1px solid #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.35);
       border-left: 4px solid #f59e0b;
-      border-radius: 8px;
+      border-radius: 10px;
       color: #92400e;
       font-size: 13px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);
+      transition: all 0.2s ease;
     }
     :host-context(.dark-mode) .central-feature-expiration-banner {
       background: #2d2010;
@@ -3833,7 +3834,10 @@ export class AdminLayoutComponent implements OnInit {
     this.api.get<any>('SettingsApi/feature-expirations').subscribe({
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
-          this.expiringFeatures = res.data;
+          this.expiringFeatures = res.data.filter((f: any) =>
+            (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
+            f.daysRemaining !== null && f.daysRemaining !== undefined
+          );
           this.checkExpirationBannerDismissal();
           this.loadNotificationFeed();
         }
@@ -4616,7 +4620,10 @@ export class AdminLayoutComponent implements OnInit {
     localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
     if (Array.isArray(d.notices)) {
-      this.expiringFeatures = d.notices;
+      this.expiringFeatures = d.notices.filter((f: any) =>
+        (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
+        f.daysRemaining !== null && f.daysRemaining !== undefined
+      );
       this.checkExpirationBannerDismissal();
     }
     this.translation.registerDynamicCatalogStrings(dynamicTexts);
