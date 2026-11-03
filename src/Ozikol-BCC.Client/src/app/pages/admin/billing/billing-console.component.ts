@@ -1105,29 +1105,24 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
   /**
    * Resolves the human-readable billing duration / cadence label for a feature.
+   * Standardized to 'Monthly' or 'Yearly'.
    */
   getFeatureDurationLabel(feat: BillingFeatureItem): string {
     if (!feat) return 'Monthly';
-    const amt = this.getFeatureDisplayAmount(feat);
-    if (amt <= 0) {
-      return 'Lifetime / Free';
-    }
     const cadence = (feat.billingCadence || '').trim().toLowerCase();
     if (cadence === 'yearly' || (feat.monthlyPrice <= 0 && feat.yearlyPrice > 0)) {
       return 'Yearly';
-    }
-    if (cadence === 'quarterly') {
-      return 'Quarterly';
     }
     return 'Monthly';
   }
 
   /**
-   * Returns true if an active feature has an expiration date or remaining days counter.
+   * Returns true if an active paid feature has an expiration date or remaining days counter.
+   * Free or included features do not display an expiration countdown.
    */
   hasFeatureExpirationInfo(feat: BillingFeatureItem): boolean {
     if (!feat || !feat.isActive) return false;
-    if (this.getFeatureDisplayAmount(feat) <= 0 && !feat.expiresAtUtc) return false;
+    if (this.getFeatureDisplayAmount(feat) <= 0) return false;
     return !!(feat.expiresAtUtc || (feat.daysRemaining !== undefined && feat.daysRemaining !== null));
   }
 
