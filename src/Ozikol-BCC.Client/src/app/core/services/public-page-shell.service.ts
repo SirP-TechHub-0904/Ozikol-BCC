@@ -463,13 +463,26 @@ export class PublicPageShellService {
       }));
 
     const menuCtaButtons = (this.publishedPages || [])
-      .filter(p => p.publish !== false && (p.isCtaButton || p.IsCtaButton))
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-      .map(p => ({
-        text: p.ctaButtonText || p.title || 'Get Started',
-        url: p.ctaButtonUrl || `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        customClass: p.customClass || 'btn-primary'
-      }));
+      .filter(p => (p.isMenuCTA || p.IsMenuCTA || p.isCtaButton || p.IsCtaButton) && p.publish !== false && p.Publish !== false)
+      .sort((a, b) => (a.sortOrder || a.SortOrder || 0) - (b.sortOrder || b.SortOrder || 0))
+      .map(p => {
+        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const ctaTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.menuCtaText || p.MenuCtaText || p.ctaButtonText || p.title || p.Title || 'Get Started');
+        const ctaUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : (p.menuCtaUrl || p.MenuCtaUrl || p.ctaButtonUrl || `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`);
+        const ctaStyle = p.menuCtaStyle || p.MenuCtaStyle || p.buttonClass || (isAuthDirect ? 'oz-btn-ghost' : 'oz-btn-primary');
+        return {
+          title: ctaTitle,
+          Title: ctaTitle,
+          text: ctaTitle,
+          Text: ctaTitle,
+          url: ctaUrl,
+          Url: ctaUrl,
+          buttonClass: ctaStyle,
+          ButtonClass: ctaStyle,
+          style: ctaStyle,
+          customClass: ctaStyle
+        };
+      });
 
     const channels: any[] = this.brandInfo?.contactChannels || [];
     const emailCh = channels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'email');
@@ -527,11 +540,19 @@ export class PublicPageShellService {
       contactChannels: channels,
       ContactChannels: channels,
       IsAuthenticated: authed,
+      isAuthenticated: authed,
       IsAdmin: isAdmin,
+      isAdmin: isAdmin,
       IsMember: isMember,
+      isMember: isMember,
       ActivateLoginInMenu: isLoginActive && isLoginInMenu,
+      activateLoginInMenu: isLoginActive && isLoginInMenu,
       LoginText: loginText,
-      LoginUrl: loginUrl
+      loginText: loginText,
+      LoginUrl: loginUrl,
+      loginUrl: loginUrl,
+      homeUrl: '/',
+      websiteUrl: '/'
     };
 
     let html = this.contentHydration.hydrate(rawHtml, menuContext, 'menu');
