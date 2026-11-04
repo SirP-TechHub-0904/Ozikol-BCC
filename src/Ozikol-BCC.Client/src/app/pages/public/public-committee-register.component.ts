@@ -105,9 +105,32 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.tenantSlug = this.route.snapshot.paramMap.get('tenantSlug') || '';
-    this.groupSlug = this.route.snapshot.paramMap.get('groupSlug') || '';
+    const paramTenant = this.route.snapshot.paramMap.get('tenantSlug') || '';
+    const paramGroup = this.route.snapshot.paramMap.get('groupSlug') || '';
     this.inviteToken = this.route.snapshot.queryParamMap.get('token') || '';
+
+    const hostTenant = this.extractHostTenant();
+    const localTenant = localStorage.getItem('tenant_key') || '';
+    const inferredTenant = hostTenant || localTenant;
+
+    if (paramTenant && paramGroup) {
+      // Direct two-segment route: e.g. /join-committee/rozzy-touchxz/feed
+      this.tenantSlug = paramTenant;
+      this.groupSlug = paramGroup;
+    } else if (paramTenant && !paramGroup) {
+      // Single-segment route: e.g. /join-committee/feed on a tenant subdomain, OR /join-committee/rozzy-touchxz on main domain
+      if (inferredTenant && paramTenant.toLowerCase() !== inferredTenant.toLowerCase()) {
+        this.tenantSlug = inferredTenant;
+        this.groupSlug = paramTenant;
+      } else {
+        this.tenantSlug = paramTenant;
+        this.groupSlug = '';
+      }
+    } else {
+      // No segments in path: e.g. /join-committee
+      this.tenantSlug = inferredTenant;
+      this.groupSlug = '';
+    }
 
     // Load official Landing Page shell metadata
     await this.publicShell.loadSiteThemeData();
@@ -119,6 +142,18 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
       this.directoryMode = true;
       this.loadDirectory();
     }
+  }
+
+  /**
+   * Helper extracting the tenant identifier from the browser hostname when on a subdomain (e.g. rozzy-touchxz.localhost:4200).
+   */
+  private extractHostTenant(): string {
+    const host = window.location.hostname.toLowerCase();
+    const parts = host.split('.');
+    if (parts.length > 1 && !['localhost', '127.0.0.1', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
+      return parts[0];
+    }
+    return '';
   }
 
   ngOnDestroy(): void {
@@ -849,7 +884,7 @@ export class PublicCommitteeRegisterComponent implements OnInit, OnDestroy {
   private loadSingleGroup(): void {
     this.loading = true;
     this.committeesService
-      .getPublicCommitteeBySlug(this.groupSlug, this.inviteToken || undefined, this.tenantSlug || undefined)
+      .getPublicCommitteeBySlug(this.groupSlug, this.tenantSlug || undefined, this.inviteToken || undefined)
       .subscribe({
         next: (res: any) => {
           if (res?.isSuccess && res.data) {

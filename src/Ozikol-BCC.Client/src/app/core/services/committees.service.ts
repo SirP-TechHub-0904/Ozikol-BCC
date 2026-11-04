@@ -321,20 +321,25 @@ export class CommitteesService {
   }
 
   getPublicDirectory(tenantSlug?: string): Observable<any> {
-    return this.http.get<any>(`${this.getApiRoot()}/public/committees/directory`, {
+    const q = tenantSlug ? `?tenantKey=${encodeURIComponent(tenantSlug)}` : '';
+    return this.http.get<any>(`${this.getApiRoot()}/public/committees/directory${q}`, {
       headers: this.buildPublicHeaders(tenantSlug)
     });
   }
 
   getPublicCommitteeBySlug(groupSlug: string, tenantSlug?: string, inviteToken?: string): Observable<any> {
-    const q = inviteToken ? `?token=${encodeURIComponent(inviteToken)}` : '';
+    const params = new URLSearchParams();
+    if (inviteToken) params.set('token', inviteToken);
+    if (tenantSlug) params.set('tenantKey', tenantSlug);
+    const q = params.toString() ? `?${params.toString()}` : '';
     return this.http.get<any>(`${this.getApiRoot()}/public/committees/${encodeURIComponent(groupSlug)}${q}`, {
       headers: this.buildPublicHeaders(tenantSlug)
     });
   }
 
   submitPublicRegistration(payload: any, tenantSlug?: string): Observable<any> {
-    return this.http.post<any>(`${this.getApiRoot()}/public/committees/register`, payload, {
+    const q = tenantSlug ? `?tenantKey=${encodeURIComponent(tenantSlug)}` : '';
+    return this.http.post<any>(`${this.getApiRoot()}/public/committees/register${q}`, payload, {
       headers: this.buildPublicHeaders(tenantSlug)
     });
   }
@@ -342,7 +347,8 @@ export class CommitteesService {
   uploadPublicAttachment(file: File, tenantSlug?: string): Observable<any> {
     const fd = new FormData();
     fd.append('file', file);
-    return this.http.post<any>(`${this.getApiRoot()}/public/committees/upload`, fd, {
+    const q = tenantSlug ? `?tenantKey=${encodeURIComponent(tenantSlug)}` : '';
+    return this.http.post<any>(`${this.getApiRoot()}/public/committees/upload${q}`, fd, {
       headers: this.buildPublicHeaders(tenantSlug)
     });
   }

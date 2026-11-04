@@ -122,12 +122,18 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves the tenant's public directory of externally open committees/sub-groups, brand identity,
         /// dynamic terminology aliases, and signed-in user identity (if the visitor already holds a valid session).
         /// </summary>
+        /// <param name="tenantKey">Optional explicit tenant key provided in query or header.</param>
         /// <param name="cancellationToken">Request cancellation token.</param>
         /// <returns>Public onboarding directory payload.</returns>
         [HttpGet("directory")]
-        public async Task<IActionResult> GetPublicDirectory(CancellationToken cancellationToken)
+        public async Task<IActionResult> GetPublicDirectory([FromQuery] string? tenantKey = null, CancellationToken cancellationToken = default)
         {
-            if (!await IsFeatureActiveAsync(null, cancellationToken))
+            var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
+            using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
+                ? _tenantProvider.BeginScope(resolvedTenant)
+                : null;
+
+            if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
             {
                 return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
             }
@@ -253,7 +259,12 @@ namespace Ozikol_BCC.Api.Controllers
             [FromQuery] string? tenantKey = null,
             CancellationToken cancellationToken = default)
         {
-            if (!await IsFeatureActiveAsync(tenantKey, cancellationToken))
+            var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
+            using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
+                ? _tenantProvider.BeginScope(resolvedTenant)
+                : null;
+
+            if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
             {
                 return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
             }
@@ -364,12 +375,21 @@ namespace Ozikol_BCC.Api.Controllers
         /// while saving their supplemental Extra-Info answers.
         /// </summary>
         /// <param name="dto">External registration payload.</param>
+        /// <param name="tenantKey">Optional explicit tenant key provided in query or header.</param>
         /// <param name="cancellationToken">Request cancellation token.</param>
         /// <returns>Enrollment or pending review confirmation.</returns>
         [HttpPost("register")]
-        public async Task<IActionResult> SubmitExternalRegistration([FromBody] PublicCommitteeRegisterDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> SubmitExternalRegistration(
+            [FromBody] PublicCommitteeRegisterDto dto,
+            [FromQuery] string? tenantKey = null,
+            CancellationToken cancellationToken = default)
         {
-            if (!await IsFeatureActiveAsync(null, cancellationToken))
+            var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
+            using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
+                ? _tenantProvider.BeginScope(resolvedTenant)
+                : null;
+
+            if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
             {
                 return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
             }
@@ -545,7 +565,12 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("upload")]
         public async Task<IActionResult> UploadPublicRegistrationFile(IFormFile file, [FromQuery] string? tenantKey = null, CancellationToken cancellationToken = default)
         {
-            if (!await IsFeatureActiveAsync(tenantKey, cancellationToken))
+            var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
+            using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
+                ? _tenantProvider.BeginScope(resolvedTenant)
+                : null;
+
+            if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
             {
                 return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
             }
