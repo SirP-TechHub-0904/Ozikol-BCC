@@ -116,6 +116,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpCommitteeReport> BcpCommitteeReports { get; set; } = null!;
     public DbSet<BcpCommitteeCloudDocument> BcpCommitteeCloudDocuments { get; set; } = null!;
 
+    // --- BCP: Unified Workforce, Rota & Attendance Suite (bcp-staff-rota & bcp-attendance-tracking) ---
+    public DbSet<BcpClientSite> BcpClientSites { get; set; } = null!;
+    public DbSet<BcpShift> BcpShifts { get; set; } = null!;
+    public DbSet<BcpShiftAttendance> BcpShiftAttendances { get; set; } = null!;
+    public DbSet<BcpShiftSwapRequest> BcpShiftSwapRequests { get; set; } = null!;
+    public DbSet<BcpShiftLeaveRequest> BcpShiftLeaveRequests { get; set; } = null!;
+
     // --- BCP: Committees & Groups Feature ---
     public DbSet<BcpGroup> BcpGroups { get; set; }
     public DbSet<BcpGroupMember> BcpGroupMembers { get; set; }
@@ -873,6 +880,53 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                 .WithMany(c => c.CloudDocuments)
                 .HasForeignKey(d => d.CommitteeId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // --- BCP: Unified Workforce, Rota & Attendance Suite ---
+        modelBuilder.Entity<BcpClientSite>(entity =>
+        {
+            entity.HasIndex(s => new { s.TenantKey, s.SiteCode }).IsUnique();
+            entity.HasIndex(s => new { s.TenantKey, s.IsActive });
+        });
+
+        modelBuilder.Entity<BcpShift>(entity =>
+        {
+            entity.HasIndex(s => new { s.TenantKey, s.StartsAtUtc, s.EndsAtUtc });
+            entity.HasIndex(s => new { s.TenantKey, s.AssignedUserId, s.StartsAtUtc });
+            entity.HasIndex(s => new { s.TenantKey, s.ClientSiteId, s.StartsAtUtc });
+            entity.HasIndex(s => new { s.TenantKey, s.Status });
+            entity.HasOne(s => s.ClientSite)
+                .WithMany(cs => cs.Shifts)
+                .HasForeignKey(s => s.ClientSiteId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BcpShiftAttendance>(entity =>
+        {
+            entity.HasIndex(a => a.ShiftId).IsUnique();
+            entity.HasIndex(a => new { a.TenantKey, a.UserId, a.ClockInUtc });
+            entity.HasIndex(a => new { a.TenantKey, a.IsFlagged });
+            entity.HasOne(a => a.Shift)
+                .WithOne(s => s.AttendanceRecord)
+                .HasForeignKey<BcpShiftAttendance>(a => a.ShiftId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BcpShiftSwapRequest>(entity =>
+        {
+            entity.HasIndex(r => new { r.TenantKey, r.ShiftId });
+            entity.HasIndex(r => new { r.TenantKey, r.RequestingUserId, r.Status });
+            entity.HasIndex(r => new { r.TenantKey, r.OfferedToUserId, r.Status });
+            entity.HasOne(r => r.Shift)
+                .WithMany(s => s.SwapRequests)
+                .HasForeignKey(r => r.ShiftId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BcpShiftLeaveRequest>(entity =>
+        {
+            entity.HasIndex(l => new { l.TenantKey, l.UserId, l.StartDate, l.EndDate });
+            entity.HasIndex(l => new { l.TenantKey, l.Status });
         });
 
         // --- Website Contact Channels Indexing for Fast Querying by Type and Status ---

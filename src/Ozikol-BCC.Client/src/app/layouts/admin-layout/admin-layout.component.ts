@@ -4194,7 +4194,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     'bcp-committees': 'Groups & Committees',
     'bcp-alumni-directory': 'Alumni Network',
     'bcp-whistleblowing': 'Whistleblowing',
-    'bcp-staff-rota': 'Staff & Volunteer Rota',
+    'bcp-staff-rota': 'Staff Rota & Shifts',
     'bcp-shift-swaps': 'Shift Swaps & Leave',
     'bcp-attendance-tracking': 'Attendance & Clock-In',
     'bcp-appointment-booking': 'Appointment Booking',
@@ -4404,7 +4404,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       infoTitleKey: 'adm.workforce_shifts_overview',
       infoTitleFallback: 'Workforce & Shifts Overview',
       suiteSortOrder: 2,
-      featureCodes: ['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
+      featureCodes: ['bcp-staff-rota', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
     },
     {
       categoryName: 'Reports, Forms & Analytics',
