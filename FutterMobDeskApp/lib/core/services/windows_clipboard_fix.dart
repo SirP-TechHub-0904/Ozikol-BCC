@@ -71,3 +71,4 @@ class WindowsClipboardFix {
     return false;
   }
 }
+

@@ -248,7 +248,7 @@ namespace Ozikol_BCC.Api.Controllers
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                    ApiResponse<object>.FailureResponse("Public committee registration is currently initializing. Please check back shortly.", ex.Message, StandardErrorCodes.ServiceUnavailable));
+                    ApiResponse<object>.FailureResponse("Public committee registration is currently initializing. Please check back shortly.", errorCode: StandardErrorCodes.ServiceUnavailable, realError: ex.Message));
             }
         }
 
@@ -381,7 +381,7 @@ namespace Ozikol_BCC.Api.Controllers
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                    ApiResponse<object>.FailureResponse("Public committee registration is currently initializing. Please check back shortly.", ex.Message, StandardErrorCodes.ServiceUnavailable));
+                    ApiResponse<object>.FailureResponse("Public committee registration is currently initializing. Please check back shortly.", errorCode: StandardErrorCodes.ServiceUnavailable, realError: ex.Message));
             }
         }
 

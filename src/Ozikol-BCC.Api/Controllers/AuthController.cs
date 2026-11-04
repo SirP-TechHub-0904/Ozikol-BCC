@@ -926,7 +926,7 @@ namespace Ozikol_BCC.Api.Controllers
             // Set secure custom response header for trust token if selected
             if (request.TrustDevice && !string.IsNullOrEmpty(newDeviceTrustToken))
             {
-                Response.Headers.Add("X-Device-Trust-Token", newDeviceTrustToken);
+                Response.Headers.Append("X-Device-Trust-Token", newDeviceTrustToken);
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
