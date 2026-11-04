@@ -18,7 +18,6 @@ import { CommitteesDiscoverComponent } from './pages/workspace/committees/commit
 import { CommitteesMemberDetailComponent } from './pages/workspace/committees/committees-member-detail.component';
 import { CommitteesReportComposerComponent } from './pages/workspace/committees/committees-report-composer.component';
 import { CommitteesCloudVaultComponent } from './pages/workspace/committees/committees-cloud-vault.component';
-import { PublicCommitteeRegisterComponent } from './pages/public/public-committee-register.component';
 
 // Dashboards
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
@@ -155,9 +154,9 @@ export const routes: Routes = [
   { path: 'onboarding', component: RegisterComponent },
   { path: 'signup', component: RegisterComponent },
   { path: 'auth/:customSlug', component: RegisterComponent },
-  { path: 'join-committee', component: PublicCommitteeRegisterComponent },
-  { path: 'join-committee/:tenantSlug', component: PublicCommitteeRegisterComponent },
-  { path: 'join-committee/:tenantSlug/:groupSlug', component: PublicCommitteeRegisterComponent },
+  { path: 'join-committee', component: LandingComponent },
+  { path: 'join-committee/:tenantSlug', component: LandingComponent },
+  { path: 'join-committee/:tenantSlug/:groupSlug', component: LandingComponent },
   { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },

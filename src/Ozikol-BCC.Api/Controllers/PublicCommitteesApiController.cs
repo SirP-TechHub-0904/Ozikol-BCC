@@ -128,100 +128,53 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("directory")]
         public async Task<IActionResult> GetPublicDirectory([FromQuery] string? tenantKey = null, CancellationToken cancellationToken = default)
         {
-            var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
-            using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
-                ? _tenantProvider.BeginScope(resolvedTenant)
-                : null;
-
-            if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
+            try
             {
-                return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
-            }
+                var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
+                using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
+                    ? _tenantProvider.BeginScope(resolvedTenant)
+                    : null;
 
-            var settings = await _db.BcpCommitteeSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
-                        ?? new BcpCommitteeSettings();
-
-            var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-            var brandName = !string.IsNullOrWhiteSpace(site?.BrandName)
-                ? site.BrandName
-                : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Organization Workspace");
-
-            if (!settings.AllowExternalRegistration)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.FailureResponse("External registration is currently closed for this workspace.", errorCode: StandardErrorCodes.InvalidOperationState));
-            }
-
-            BcpCommitteeForm? defaultForm = null;
-            if (settings.DefaultExtraInfoFormId.HasValue)
-            {
-                defaultForm = await _db.BcpCommitteeForms.AsNoTracking()
-                    .FirstOrDefaultAsync(f => f.Id == settings.DefaultExtraInfoFormId.Value && f.IsActive, cancellationToken);
-            }
-            defaultForm ??= await _db.BcpCommitteeForms.AsNoTracking()
-                .FirstOrDefaultAsync(f => f.IsGlobalDefault && f.IsActive, cancellationToken);
-
-            var openCommittees = await _db.BcpCommittees
-                .AsNoTracking()
-                .Include(c => c.ExtraInfoForm)
-                .Include(c => c.ParentCommittee)
-                .Where(c => c.Status == "Active" && c.AllowExternalRegistration && c.Visibility != "Private")
-                .OrderBy(c => c.ParentCommitteeId.HasValue)
-                .ThenBy(c => c.Name)
-                .Select(c => new
+                if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
                 {
-                    c.Id,
-                    c.ParentCommitteeId,
-                    ParentCommitteeName = c.ParentCommittee != null ? c.ParentCommittee.Name : null,
-                    c.Name,
-                    c.Slug,
-                    c.CategoryTag,
-                    c.Description,
-                    c.MissionStatement,
-                    c.MeetingSchedule,
-                    c.IconName,
-                    c.CoverBannerUrl,
-                    c.MaxCapacity,
-                    MemberCount = c.Members.Count(m => m.Status == "Active"),
-                    Form = c.ExtraInfoForm != null && c.ExtraInfoForm.IsActive ? c.ExtraInfoForm : null
-                })
-                .ToListAsync(cancellationToken);
+                    return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
+                }
 
-            var currentUserProfile = await ResolveSignedInProfileAsync(cancellationToken);
+                var settings = await _db.BcpCommitteeSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
+                            ?? new BcpCommitteeSettings();
 
-            return Ok(ApiResponse<object>.SuccessResponse(new
-            {
-                Brand = new
+                var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                var brandName = !string.IsNullOrWhiteSpace(site?.BrandName)
+                    ? site.BrandName
+                    : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Organization Workspace");
+
+                if (!settings.AllowExternalRegistration)
                 {
-                    BrandName = brandName,
-                    LogoUrl = site?.CompanyLogoUrl,
-                    IconUrl = site?.CompanyIconUrl,
-                    TenantKey = _tenantProvider?.CurrentTenant ?? HttpContext.Request.Headers["X-Tenant-Key"].ToString()
-                },
-                Aliases = new
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ApiResponse<object>.FailureResponse("External registration is currently closed for this workspace.", errorCode: StandardErrorCodes.InvalidOperationState));
+                }
+
+                BcpCommitteeForm? defaultForm = null;
+                if (settings.DefaultExtraInfoFormId.HasValue)
                 {
-                    settings.AliasSingular,
-                    settings.AliasPlural,
-                    settings.SubGroupAliasSingular,
-                    settings.SubGroupAliasPlural,
-                    settings.LeaderTitleAlias
-                },
-                SignedInMember = currentUserProfile != null ? new
-                {
-                    currentUserProfile.Id,
-                    currentUserProfile.FirstName,
-                    currentUserProfile.LastName,
-                    currentUserProfile.Email,
-                    currentUserProfile.PhoneNumber
-                } : null,
-                Committees = openCommittees.Select(c =>
-                {
-                    var effectiveForm = c.Form ?? defaultForm;
-                    return new
+                    defaultForm = await _db.BcpCommitteeForms.AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.Id == settings.DefaultExtraInfoFormId.Value && f.IsActive, cancellationToken);
+                }
+                defaultForm ??= await _db.BcpCommitteeForms.AsNoTracking()
+                    .FirstOrDefaultAsync(f => f.IsGlobalDefault && f.IsActive, cancellationToken);
+
+                var openCommittees = await _db.BcpCommittees
+                    .AsNoTracking()
+                    .Include(c => c.ExtraInfoForm)
+                    .Include(c => c.ParentCommittee)
+                    .Where(c => c.Status == "Active" && c.AllowExternalRegistration && c.Visibility != "Private")
+                    .OrderBy(c => c.ParentCommitteeId.HasValue)
+                    .ThenBy(c => c.Name)
+                    .Select(c => new
                     {
                         c.Id,
                         c.ParentCommitteeId,
-                        c.ParentCommitteeName,
+                        ParentCommitteeName = c.ParentCommittee != null ? c.ParentCommittee.Name : null,
                         c.Name,
                         c.Slug,
                         c.CategoryTag,
@@ -231,17 +184,72 @@ namespace Ozikol_BCC.Api.Controllers
                         c.IconName,
                         c.CoverBannerUrl,
                         c.MaxCapacity,
-                        c.MemberCount,
-                        ExtraInfoForm = effectiveForm != null ? new
+                        MemberCount = c.Members.Count(m => m.Status == "Active"),
+                        Form = c.ExtraInfoForm != null && c.ExtraInfoForm.IsActive ? c.ExtraInfoForm : null
+                    })
+                    .ToListAsync(cancellationToken);
+
+                var currentUserProfile = await ResolveSignedInProfileAsync(cancellationToken);
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    Brand = new
+                    {
+                        BrandName = brandName,
+                        LogoUrl = site?.CompanyLogoUrl,
+                        IconUrl = site?.CompanyIconUrl,
+                        TenantKey = _tenantProvider?.CurrentTenant ?? HttpContext.Request.Headers["X-Tenant-Key"].ToString()
+                    },
+                    Aliases = new
+                    {
+                        settings.AliasSingular,
+                        settings.AliasPlural,
+                        settings.SubGroupAliasSingular,
+                        settings.SubGroupAliasPlural,
+                        settings.LeaderTitleAlias
+                    },
+                    SignedInMember = currentUserProfile != null ? new
+                    {
+                        currentUserProfile.Id,
+                        currentUserProfile.FirstName,
+                        currentUserProfile.LastName,
+                        currentUserProfile.Email,
+                        currentUserProfile.PhoneNumber
+                    } : null,
+                    Committees = openCommittees.Select(c =>
+                    {
+                        var effectiveForm = c.Form ?? defaultForm;
+                        return new
                         {
-                            effectiveForm.Id,
-                            effectiveForm.Title,
-                            effectiveForm.Description,
-                            Fields = CommitteesApiController.ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
-                        } : null
-                    };
-                })
-            }, "Public directory loaded."));
+                            c.Id,
+                            c.ParentCommitteeId,
+                            c.ParentCommitteeName,
+                            c.Name,
+                            c.Slug,
+                            c.CategoryTag,
+                            c.Description,
+                            c.MissionStatement,
+                            c.MeetingSchedule,
+                            c.IconName,
+                            c.CoverBannerUrl,
+                            c.MaxCapacity,
+                            c.MemberCount,
+                            ExtraInfoForm = effectiveForm != null ? new
+                            {
+                                effectiveForm.Id,
+                                effectiveForm.Title,
+                                effectiveForm.Description,
+                                Fields = CommitteesApiController.ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
+                            } : null
+                        };
+                    })
+                }, "Public directory loaded."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<object>.FailureResponse("Public committee registration is currently initializing. Please check back shortly.", ex.Message, StandardErrorCodes.ServiceUnavailable));
+            }
         }
 
         /// <summary>
@@ -259,114 +267,122 @@ namespace Ozikol_BCC.Api.Controllers
             [FromQuery] string? tenantKey = null,
             CancellationToken cancellationToken = default)
         {
-            var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
-            using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
-                ? _tenantProvider.BeginScope(resolvedTenant)
-                : null;
-
-            if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
+            try
             {
-                return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
-            }
+                var resolvedTenant = ResolveCurrentTenantKey(tenantKey);
+                using var explicitScope = !string.IsNullOrWhiteSpace(resolvedTenant) && _tenantProvider != null
+                    ? _tenantProvider.BeginScope(resolvedTenant)
+                    : null;
 
-            var settings = await _db.BcpCommitteeSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
-                        ?? new BcpCommitteeSettings();
-
-            if (!settings.AllowExternalRegistration)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.FailureResponse("External registration is currently closed.", errorCode: StandardErrorCodes.InvalidOperationState));
-            }
-
-            var normalizedSlug = (groupSlug ?? string.Empty).Trim().ToLowerInvariant();
-            var committee = await _db.BcpCommittees
-                .AsNoTracking()
-                .Include(c => c.ExtraInfoForm)
-                .Include(c => c.ParentCommittee)
-                .FirstOrDefaultAsync(c => (c.Slug == normalizedSlug || (c.Slug != null && c.Slug.ToLower() == normalizedSlug)) && c.Status == "Active", cancellationToken);
-
-            if (committee == null || !committee.AllowExternalRegistration)
-            {
-                return NotFound(ApiResponse<object>.FailureResponse("This registration link is unavailable or inactive.", errorCode: StandardErrorCodes.RecordNotFound));
-            }
-
-            // Enforce invite token when visibility is Private
-            if (committee.Visibility == "Private" &&
-                (string.IsNullOrWhiteSpace(token) || !string.Equals(committee.ExternalInviteToken, token.Trim(), StringComparison.Ordinal)))
-            {
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.FailureResponse("A valid private invitation link is required to join this group.", errorCode: StandardErrorCodes.AccessDenied));
-            }
-
-            BcpCommitteeForm? effectiveForm = committee.ExtraInfoForm != null && committee.ExtraInfoForm.IsActive
-                ? committee.ExtraInfoForm
-                : null;
-
-            if (effectiveForm == null && settings.DefaultExtraInfoFormId.HasValue)
-            {
-                effectiveForm = await _db.BcpCommitteeForms.AsNoTracking()
-                    .FirstOrDefaultAsync(f => f.Id == settings.DefaultExtraInfoFormId.Value && f.IsActive, cancellationToken);
-            }
-            effectiveForm ??= await _db.BcpCommitteeForms.AsNoTracking()
-                .FirstOrDefaultAsync(f => f.IsGlobalDefault && f.IsActive, cancellationToken);
-
-            var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-            var brandName = !string.IsNullOrWhiteSpace(site?.BrandName)
-                ? site.BrandName
-                : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Organization Workspace");
-
-            var currentUserProfile = await ResolveSignedInProfileAsync(cancellationToken);
-            var memberCount = await _db.BcpCommitteeMembers.CountAsync(m => m.CommitteeId == committee.Id && m.Status == "Active", cancellationToken);
-
-            return Ok(ApiResponse<object>.SuccessResponse(new
-            {
-                Brand = new
+                if (!await IsFeatureActiveAsync(resolvedTenant, cancellationToken))
                 {
-                    BrandName = brandName,
-                    LogoUrl = site?.CompanyLogoUrl,
-                    IconUrl = site?.CompanyIconUrl,
-                    TenantKey = _tenantProvider?.CurrentTenant ?? HttpContext.Request.Headers["X-Tenant-Key"].ToString()
-                },
-                Aliases = new
-                {
-                    settings.AliasSingular,
-                    settings.AliasPlural,
-                    settings.SubGroupAliasSingular,
-                    settings.SubGroupAliasPlural
-                },
-                SignedInMember = currentUserProfile != null ? new
-                {
-                    currentUserProfile.Id,
-                    currentUserProfile.FirstName,
-                    currentUserProfile.LastName,
-                    currentUserProfile.Email,
-                    currentUserProfile.PhoneNumber
-                } : null,
-                Committee = new
-                {
-                    committee.Id,
-                    committee.ParentCommitteeId,
-                    ParentCommitteeName = committee.ParentCommittee?.Name,
-                    committee.Name,
-                    committee.Slug,
-                    committee.CategoryTag,
-                    committee.Description,
-                    committee.MissionStatement,
-                    committee.MeetingSchedule,
-                    committee.IconName,
-                    committee.CoverBannerUrl,
-                    committee.MaxCapacity,
-                    MemberCount = memberCount,
-                    RequiresApproval = settings.RequireApprovalForExternal || committee.RequireApproval || committee.Visibility == "ApprovalRequired",
-                    ExtraInfoForm = effectiveForm != null ? new
-                    {
-                        effectiveForm.Id,
-                        effectiveForm.Title,
-                        effectiveForm.Description,
-                        Fields = CommitteesApiController.ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
-                    } : null
+                    return NotFound(ApiResponse<object>.FailureResponse("Page not found.", errorCode: StandardErrorCodes.RecordNotFound));
                 }
-            }, "Public group registration loaded."));
+
+                var settings = await _db.BcpCommitteeSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
+                            ?? new BcpCommitteeSettings();
+
+                if (!settings.AllowExternalRegistration)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ApiResponse<object>.FailureResponse("External registration is currently closed.", errorCode: StandardErrorCodes.InvalidOperationState));
+                }
+
+                var normalizedSlug = (groupSlug ?? string.Empty).Trim().ToLowerInvariant();
+                var committee = await _db.BcpCommittees
+                    .AsNoTracking()
+                    .Include(c => c.ExtraInfoForm)
+                    .Include(c => c.ParentCommittee)
+                    .FirstOrDefaultAsync(c => (c.Slug == normalizedSlug || (c.Slug != null && c.Slug.ToLower() == normalizedSlug)) && c.Status == "Active", cancellationToken);
+
+                if (committee == null || !committee.AllowExternalRegistration)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("This registration link is unavailable or inactive.", errorCode: StandardErrorCodes.RecordNotFound));
+                }
+
+                // Enforce invite token when visibility is Private
+                if (committee.Visibility == "Private" &&
+                    (string.IsNullOrWhiteSpace(token) || !string.Equals(committee.ExternalInviteToken, token.Trim(), StringComparison.Ordinal)))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        ApiResponse<object>.FailureResponse("A valid private invitation link is required to join this group.", errorCode: StandardErrorCodes.AccessDenied));
+                }
+
+                BcpCommitteeForm? effectiveForm = committee.ExtraInfoForm != null && committee.ExtraInfoForm.IsActive
+                    ? committee.ExtraInfoForm
+                    : null;
+
+                if (effectiveForm == null && settings.DefaultExtraInfoFormId.HasValue)
+                {
+                    effectiveForm = await _db.BcpCommitteeForms.AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.Id == settings.DefaultExtraInfoFormId.Value && f.IsActive, cancellationToken);
+                }
+                effectiveForm ??= await _db.BcpCommitteeForms.AsNoTracking()
+                    .FirstOrDefaultAsync(f => f.IsGlobalDefault && f.IsActive, cancellationToken);
+
+                var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                var brandName = !string.IsNullOrWhiteSpace(site?.BrandName)
+                    ? site.BrandName
+                    : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Organization Workspace");
+
+                var currentUserProfile = await ResolveSignedInProfileAsync(cancellationToken);
+                var memberCount = await _db.BcpCommitteeMembers.CountAsync(m => m.CommitteeId == committee.Id && m.Status == "Active", cancellationToken);
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    Brand = new
+                    {
+                        BrandName = brandName,
+                        LogoUrl = site?.CompanyLogoUrl,
+                        IconUrl = site?.CompanyIconUrl,
+                        TenantKey = _tenantProvider?.CurrentTenant ?? HttpContext.Request.Headers["X-Tenant-Key"].ToString()
+                    },
+                    Aliases = new
+                    {
+                        settings.AliasSingular,
+                        settings.AliasPlural,
+                        settings.SubGroupAliasSingular,
+                        settings.SubGroupAliasPlural
+                    },
+                    SignedInMember = currentUserProfile != null ? new
+                    {
+                        currentUserProfile.Id,
+                        currentUserProfile.FirstName,
+                        currentUserProfile.LastName,
+                        currentUserProfile.Email,
+                        currentUserProfile.PhoneNumber
+                    } : null,
+                    Committee = new
+                    {
+                        committee.Id,
+                        committee.ParentCommitteeId,
+                        ParentCommitteeName = committee.ParentCommittee?.Name,
+                        committee.Name,
+                        committee.Slug,
+                        committee.CategoryTag,
+                        committee.Description,
+                        committee.MissionStatement,
+                        committee.MeetingSchedule,
+                        committee.IconName,
+                        committee.CoverBannerUrl,
+                        committee.MaxCapacity,
+                        MemberCount = memberCount,
+                        RequiresApproval = settings.RequireApprovalForExternal || committee.RequireApproval || committee.Visibility == "ApprovalRequired",
+                        ExtraInfoForm = effectiveForm != null ? new
+                        {
+                            effectiveForm.Id,
+                            effectiveForm.Title,
+                            effectiveForm.Description,
+                            Fields = CommitteesApiController.ParseJsonOrDefault<List<CommitteeFormFieldDto>>(effectiveForm.FieldsSchemaJson, new List<CommitteeFormFieldDto>())
+                        } : null
+                    }
+                }, "Public group registration loaded."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<object>.FailureResponse("Public committee registration is currently initializing. Please check back shortly.", ex.Message, StandardErrorCodes.ServiceUnavailable));
+            }
         }
 
         /// <summary>
