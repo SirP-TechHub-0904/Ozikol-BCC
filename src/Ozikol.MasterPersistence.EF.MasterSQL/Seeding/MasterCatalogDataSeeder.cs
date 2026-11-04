@@ -1618,23 +1618,6 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 },
                 new MasterFeatureCatalog
                 {
-                    FeatureCode = "bcp-shift-swaps",
-                    Name = "Shift Swaps & Leave Management (Merged into Rota)",
-                    Category = "Workforce, Rota & Scheduling",
-                    Description = "Consolidated into Staff Rota & Shift Management (bcp-staff-rota).",
-                    Icon = "swap_horiz",
-                    RoutePrefix = "/leave",
-                    IsCompulsory = false,
-                    BillingType = FeatureBillingType.FlatSubscription,
-                    MonthlyPrice = 0.00m,
-                    QuarterlyPrice = 0.00m,
-                    YearlyPrice = 0.74m,
-                    IsMetered = false,
-                    SortOrder = 6,
-                    IsActive = false
-                },
-                new MasterFeatureCatalog
-                {
                     FeatureCode = "bcp-attendance-tracking",
                     Name = "Biometric & QR Attendance Tracking",
                     Category = "Workforce, Rota & Scheduling",
@@ -1647,7 +1630,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 7,
+                    SortOrder = 6,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1664,7 +1647,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 8,
+                    SortOrder = 7,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1681,7 +1664,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 9,
+                    SortOrder = 8,
                     IsActive = true
                 },
 
@@ -1702,7 +1685,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 10,
+                    SortOrder = 9,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1719,7 +1702,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 11,
+                    SortOrder = 10,
                     IsActive = true,
                     IsAvailableForUse = true
                 },
@@ -1737,7 +1720,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 12,
+                    SortOrder = 11,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1754,7 +1737,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 13,
+                    SortOrder = 12,
                     IsActive = true
                 },
 
@@ -1775,7 +1758,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 14,
+                    SortOrder = 13,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1792,7 +1775,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 15,
+                    SortOrder = 14,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1809,7 +1792,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 16,
+                    SortOrder = 15,
                     IsActive = true
                 },
 
@@ -1830,7 +1813,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 17,
+                    SortOrder = 16,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1847,7 +1830,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 18,
+                    SortOrder = 17,
                     IsActive = true,
                     IsAvailableForUse = true
                 },
@@ -1865,7 +1848,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 19,
+                    SortOrder = 18,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1882,7 +1865,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 20,
+                    SortOrder = 19,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1899,7 +1882,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 21,
+                    SortOrder = 20,
                     IsActive = true
                 },
 
@@ -1920,7 +1903,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 22,
+                    SortOrder = 21,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1937,7 +1920,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 23,
+                    SortOrder = 22,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1954,7 +1937,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 24,
+                    SortOrder = 23,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1971,7 +1954,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 25,
+                    SortOrder = 24,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1988,7 +1971,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 26,
+                    SortOrder = 25,
                     IsActive = true
                 },
 
@@ -2009,7 +1992,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 27,
+                    SortOrder = 26,
                     IsActive = true,
                     IsAvailableForUse = true
                 },
@@ -2027,7 +2010,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 28,
+                    SortOrder = 27,
                     IsActive = true,
                     IsAvailableForUse = true
                 },
@@ -2045,7 +2028,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 29,
+                    SortOrder = 28,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2062,7 +2045,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 30,
+                    SortOrder = 29,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2079,7 +2062,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 31,
+                    SortOrder = 30,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2096,7 +2079,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 32,
+                    SortOrder = 31,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2113,7 +2096,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 33,
+                    SortOrder = 32,
                     IsActive = true
                 },
 
@@ -2134,7 +2117,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 34,
+                    SortOrder = 33,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2151,7 +2134,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 35,
+                    SortOrder = 34,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2168,7 +2151,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 36,
+                    SortOrder = 35,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2185,7 +2168,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 37,
+                    SortOrder = 36,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2202,7 +2185,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 38,
+                    SortOrder = 37,
                     IsActive = true
                 },
 
@@ -2223,7 +2206,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 39,
+                    SortOrder = 38,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2240,7 +2223,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 40,
+                    SortOrder = 39,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2257,7 +2240,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 41,
+                    SortOrder = 40,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2274,7 +2257,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 42,
+                    SortOrder = 41,
                     IsActive = true
                 },
 
@@ -2295,7 +2278,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 43,
+                    SortOrder = 42,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2312,7 +2295,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 44,
+                    SortOrder = 43,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2329,7 +2312,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 45,
+                    SortOrder = 44,
                     IsActive = true
                 },
 
@@ -2352,7 +2335,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 46,
+                    SortOrder = 45,
                     IsActive = true,
                     IsPublished = true,
                     IsAvailableForUse = false

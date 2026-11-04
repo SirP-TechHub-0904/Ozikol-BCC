@@ -23,18 +23,23 @@ SET [Name] = 'Staff Rota & Shift Management',
 WHERE [FeatureCode] = 'bcp-staff-rota';
 ");
 
-            // 2. Update Feature #6: bcp-shift-swaps (Merged into bcp-staff-rota)
+            // 2. Remove Feature #6: bcp-shift-swaps (Merged into bcp-staff-rota)
             migrationBuilder.Sql(@"
-UPDATE [dbo].[MasterFeatureCatalogs]
-SET [Name] = 'Shift Swaps & Leave Management (Merged into Rota)',
-    [Description] = 'Consolidated into Staff Rota & Shift Management (bcp-staff-rota).',
-    [IsActive] = 0,
-    [IsPublished] = 0,
-    [IsAvailableForUse] = 0
+DELETE FROM [dbo].[MasterTenantFeatureSubscriptions]
+WHERE [MasterFeatureCatalogId] IN (SELECT [Id] FROM [dbo].[MasterFeatureCatalogs] WHERE [FeatureCode] = 'bcp-shift-swaps');
+
+DELETE FROM [dbo].[MasterFeatureCatalogs]
 WHERE [FeatureCode] = 'bcp-shift-swaps';
 ");
 
-            // 3. Update Feature #7: bcp-attendance-tracking (Biometric, QR & Live GPS Duty Monitor)
+            // 3. Shift SortOrder down by 1 for all features after the removed bcp-shift-swaps
+            migrationBuilder.Sql(@"
+UPDATE [dbo].[MasterFeatureCatalogs]
+SET [SortOrder] = [SortOrder] - 1
+WHERE [SortOrder] > 6;
+");
+
+            // 4. Update Feature #6 (formerly #7): bcp-attendance-tracking (Biometric, QR & Live GPS Duty Monitor)
             migrationBuilder.Sql(@"
 UPDATE [dbo].[MasterFeatureCatalogs]
 SET [Name] = 'Biometric & QR Attendance Tracking',
@@ -52,19 +57,30 @@ WHERE [FeatureCode] = 'bcp-attendance-tracking';
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(@"
+-- Shift SortOrder back up by 1
+UPDATE [dbo].[MasterFeatureCatalogs]
+SET [SortOrder] = [SortOrder] + 1
+WHERE [SortOrder] >= 6;
+
+-- Re-insert bcp-shift-swaps at SortOrder 6
+IF NOT EXISTS (SELECT 1 FROM [dbo].[MasterFeatureCatalogs] WHERE [FeatureCode] = 'bcp-shift-swaps')
+BEGIN
+    INSERT INTO [dbo].[MasterFeatureCatalogs] (
+        [Id], [FeatureCode], [Name], [MenuTitle], [Category], [Description], [Icon], [RoutePrefix],
+        [IsCompulsory], [BillingType], [MonthlyPrice], [QuarterlyPrice], [YearlyPrice], [IsMetered],
+        [SortOrder], [IsActive], [IsPublished], [IsAvailableForUse], [FreeTrialDays], [CreatedUtc]
+    ) VALUES (
+        NEWID(), 'bcp-shift-swaps', 'Shift Swaps & Leave Management', 'Shift Swaps & Leave', 'Workforce, Rota & Scheduling',
+        'Peer-to-peer shift trade approvals, open-shift claiming, annual leave accrual tracking, sick leave requests, and supervisor sign-offs.',
+        'swap_horiz', '/leave', 0, 1, 0.00, 0.00, 0.74, 0, 6, 1, 1, 0, 14, GETUTCDATE()
+    );
+END
+
 UPDATE [dbo].[MasterFeatureCatalogs]
 SET [Name] = 'Staff & Volunteer Rota Scheduling',
     [MenuTitle] = 'Staff & Volunteer Rota',
     [Description] = 'Multi-department weekly shift scheduling, recurring duty patterns, on-call assignment, and conflict detection.'
 WHERE [FeatureCode] = 'bcp-staff-rota';
-
-UPDATE [dbo].[MasterFeatureCatalogs]
-SET [Name] = 'Shift Swaps & Leave Management',
-    [MenuTitle] = 'Shift Swaps & Leave',
-    [Description] = 'Peer-to-peer shift trade approvals, open-shift claiming, annual leave accrual tracking, sick leave requests, and supervisor sign-offs.',
-    [IsActive] = 1,
-    [IsPublished] = 1
-WHERE [FeatureCode] = 'bcp-shift-swaps';
 
 UPDATE [dbo].[MasterFeatureCatalogs]
 SET [Name] = 'Biometric & QR Attendance Tracking',

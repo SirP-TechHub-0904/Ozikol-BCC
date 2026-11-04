@@ -96,8 +96,7 @@ namespace Ozikol.MasterDomain.Models
 
             // Suite B: Workforce, Rota & Scheduling
             ["bcp-staff-rota"] = "Staff Rota & Shifts",
-            ["bcp-shift-swaps"] = "Shift Swaps & Leave",
-            ["bcp-attendance-tracking"] = "Attendance & QR",
+            ["bcp-attendance-tracking"] = "Attendance & Live Duty",
             ["bcp-appointment-booking"] = "Appointment Booking",
             ["bcp-calendar-followups"] = "Calendar & Follow-Ups",
 

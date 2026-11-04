@@ -4280,7 +4280,6 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     'bcp-alumni-directory': 'Alumni Network',
     'bcp-whistleblowing': 'Whistleblowing',
     'bcp-staff-rota': 'Staff Rota & Shifts',
-    'bcp-shift-swaps': 'Shift Swaps & Leave',
     'bcp-attendance-tracking': 'Attendance & Clock-In',
     'bcp-appointment-booking': 'Appointment Booking',
     'bcp-calendar-followups': 'Calendar & Follow-Ups',
