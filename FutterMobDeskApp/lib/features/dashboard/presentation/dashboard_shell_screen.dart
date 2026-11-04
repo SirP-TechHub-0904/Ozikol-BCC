@@ -1978,7 +1978,95 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
-      // 2. FEATURES & WORKSPACE (Desktop Workstation only — hidden on Android/iOS mobile)
+      // 2. MODULAR FEATURES & EXTENSIONS: PEOPLE & COMMUNITY (bcp-committees)
+      // Placed immediately after Core User Management, strictly before Billing and Security
+      if (activeWs != null && activeWs.isFeatureActive('bcp-committees'))
+        AppDrawerSection(
+          title: 'PEOPLE & COMMUNITY',
+          infoTooltip: 'Groups, Sub-Units, Minutes & Dynamic Extra-Info Forms',
+          items: [
+            AppDrawerItem(
+              icon: Icons.groups_rounded,
+              title: ref.watch(committeesProvider).aliases.aliasPlural,
+              initiallyExpanded: _selectedNavIndex >= 30 && _selectedNavIndex <= 37,
+              subItems: [
+                AppDrawerSubItem(
+                  icon: Icons.dashboard_outlined,
+                  title: 'Overview Dashboard',
+                  isSelected: _selectedNavIndex == 35,
+                  onTap: () {
+                    _navigateToTab(35, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.format_list_bulleted_rounded,
+                  title: 'Manage ${ref.watch(committeesProvider).aliases.aliasPlural}',
+                  isSelected: _selectedNavIndex == 30,
+                  onTap: () {
+                    _navigateToTab(30, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.how_to_reg_outlined,
+                  title: 'Intake Registrations',
+                  isSelected: _selectedNavIndex == 31,
+                  onTap: () {
+                    _navigateToTab(31, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.description_outlined,
+                  title: 'Meeting Minutes & AI',
+                  isSelected: _selectedNavIndex == 32,
+                  onTap: () {
+                    _navigateToTab(32, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.dynamic_form_outlined,
+                  title: 'Intake Forms Designer',
+                  isSelected: _selectedNavIndex == 33,
+                  onTap: () {
+                    _navigateToTab(33, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.tune_rounded,
+                  title: 'Terminology & Settings',
+                  isSelected: _selectedNavIndex == 34,
+                  onTap: () {
+                    _navigateToTab(34, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+              ],
+            ),
+          ],
+        )
+      else if (activeWs != null && (activeWs.isFeatureExpired('bcp-committees') || activeWs.licensedFeatures.contains('bcp-committees-expired')))
+        AppDrawerSection(
+          title: 'PEOPLE & COMMUNITY',
+          infoTooltip: 'Feature Expired — Renew in Billing',
+          items: [
+            AppDrawerItem(
+              icon: Icons.groups_rounded,
+              title: ref.watch(committeesProvider).aliases.aliasPlural,
+              isSelected: false,
+              trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
+              onTap: () {
+                _navigateToTab(22, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+          ],
+        ),
+
+      // 3. MODULAR FEATURES & EXTENSIONS: WORKSPACE (Desktop Workstation — below People & Community)
       if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
         AppDrawerSection(
           title: 'WORKSPACE',
@@ -2101,93 +2189,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
-      // 6. PEOPLE & COMMUNITY (bcp-committees)
-      if (activeWs != null && activeWs.isFeatureActive('bcp-committees'))
-        AppDrawerSection(
-          title: 'PEOPLE & COMMUNITY',
-          infoTooltip: 'Groups, Sub-Units, Minutes & Dynamic Extra-Info Forms',
-          items: [
-            AppDrawerItem(
-              icon: Icons.groups_rounded,
-              title: ref.watch(committeesProvider).aliases.aliasPlural,
-              initiallyExpanded: _selectedNavIndex >= 30 && _selectedNavIndex <= 37,
-              subItems: [
-                AppDrawerSubItem(
-                  icon: Icons.dashboard_outlined,
-                  title: 'Overview Dashboard',
-                  isSelected: _selectedNavIndex == 35,
-                  onTap: () {
-                    _navigateToTab(35, clearHistory: true);
-                    _closeMobileDrawer();
-                  },
-                ),
-                AppDrawerSubItem(
-                  icon: Icons.format_list_bulleted_rounded,
-                  title: 'Manage ${ref.watch(committeesProvider).aliases.aliasPlural}',
-                  isSelected: _selectedNavIndex == 30,
-                  onTap: () {
-                    _navigateToTab(30, clearHistory: true);
-                    _closeMobileDrawer();
-                  },
-                ),
-                AppDrawerSubItem(
-                  icon: Icons.how_to_reg_outlined,
-                  title: 'Intake Registrations',
-                  isSelected: _selectedNavIndex == 31,
-                  onTap: () {
-                    _navigateToTab(31, clearHistory: true);
-                    _closeMobileDrawer();
-                  },
-                ),
-                AppDrawerSubItem(
-                  icon: Icons.description_outlined,
-                  title: 'Meeting Minutes & AI',
-                  isSelected: _selectedNavIndex == 32,
-                  onTap: () {
-                    _navigateToTab(32, clearHistory: true);
-                    _closeMobileDrawer();
-                  },
-                ),
-                AppDrawerSubItem(
-                  icon: Icons.dynamic_form_outlined,
-                  title: 'Intake Forms Designer',
-                  isSelected: _selectedNavIndex == 33,
-                  onTap: () {
-                    _navigateToTab(33, clearHistory: true);
-                    _closeMobileDrawer();
-                  },
-                ),
-                AppDrawerSubItem(
-                  icon: Icons.tune_rounded,
-                  title: 'Terminology & Settings',
-                  isSelected: _selectedNavIndex == 34,
-                  onTap: () {
-                    _navigateToTab(34, clearHistory: true);
-                    _closeMobileDrawer();
-                  },
-                ),
-              ],
-            ),
-          ],
-        )
-      else if (activeWs != null && (activeWs.isFeatureExpired('bcp-committees') || activeWs.licensedFeatures.contains('bcp-committees-expired')))
-        AppDrawerSection(
-          title: 'PEOPLE & COMMUNITY',
-          infoTooltip: 'Feature Expired — Renew in Billing',
-          items: [
-            AppDrawerItem(
-              icon: Icons.groups_rounded,
-              title: ref.watch(committeesProvider).aliases.aliasPlural,
-              isSelected: false,
-              trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
-              onTap: () {
-                _navigateToTab(22, clearHistory: true);
-                _closeMobileDrawer();
-              },
-            ),
-          ],
-        ),
-
     ];
   }
 
@@ -2195,6 +2196,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// Strict Enterprise Architecture:
   /// - Default Menus: ONLY Dashboard ('Workspace Home') and 'Manage My Account'
   /// - Modular Features: NEVER show in member menu unless active/licensed on the administrator end
+  /// - Features are expandable dropdown accordions (matching Manage My Account)
+  /// - Sorting: 1. Dashboard -> 2. People & Community (dropdown) -> 3. Workspace -> 4. Manage My Account (dropdown)
   List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, Workspace? activeWs) {
     final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
 
@@ -2211,7 +2214,62 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ),
     ];
 
-    // Modular Feature Suite: Only shows in Member menu on Desktop OS if active on the Administrator end
+    // 2. Modular Feature Suite: bcp-committees in Member workspace (Expandable Dropdown)
+    if (activeWs != null && activeWs.isFeatureActive('bcp-committees')) {
+      final committeeAliases = ref.watch(committeesProvider).aliases;
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.groups_rounded,
+          title: committeeAliases.aliasPlural,
+          initiallyExpanded: memberIndex >= 10 && memberIndex <= 13,
+          subItems: [
+            AppDrawerSubItem(
+              icon: Icons.people_alt_outlined,
+              title: 'My ${committeeAliases.aliasPlural}',
+              isSelected: memberIndex == 10 || memberIndex == 13,
+              onTap: () {
+                _navigateToTab(110, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+            AppDrawerSubItem(
+              icon: Icons.explore_outlined,
+              title: 'Browse & Join',
+              isSelected: memberIndex == 11,
+              onTap: () {
+                _navigateToTab(111, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+            AppDrawerSubItem(
+              icon: Icons.edit_note_rounded,
+              title: 'Compose Report',
+              isSelected: memberIndex == 12,
+              onTap: () {
+                _navigateToTab(112, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+          ],
+        ),
+      );
+    } else if (activeWs != null && (activeWs.isFeatureExpired('bcp-committees') || activeWs.licensedFeatures.contains('bcp-committees-expired'))) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.groups_rounded,
+          title: ref.watch(committeesProvider).aliases.aliasPlural,
+          isSelected: false,
+          trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
+          onTap: () {
+            _navigateToTab(22, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+
+    // 3. Modular Feature Suite: bcp-workspace (Station Gatekeeper / Shift Tracker)
+    // Strictly placed BELOW People & Community per Canonical Hierarchy
     final isDesktopOS = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     if (isDesktopOS && activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
       memberItems.add(
@@ -2227,45 +2285,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       );
     }
 
-    // Modular Feature Suite: bcp-committees in Member workspace
-    if (activeWs != null && activeWs.isFeatureActive('bcp-committees')) {
-      final committeeAliases = ref.watch(committeesProvider).aliases;
-      memberItems.add(
-        AppDrawerItem(
-          icon: Icons.people_alt_outlined,
-          title: 'My ${committeeAliases.aliasPlural}',
-          isSelected: memberIndex == 10,
-          onTap: () {
-            _navigateToTab(110, clearHistory: true);
-            _closeMobileDrawer();
-          },
-        ),
-      );
-      memberItems.add(
-        AppDrawerItem(
-          icon: Icons.explore_outlined,
-          title: 'Browse & Join',
-          isSelected: memberIndex == 11,
-          onTap: () {
-            _navigateToTab(111, clearHistory: true);
-            _closeMobileDrawer();
-          },
-        ),
-      );
-      memberItems.add(
-        AppDrawerItem(
-          icon: Icons.edit_note_rounded,
-          title: 'Compose Report',
-          isSelected: memberIndex == 12,
-          onTap: () {
-            _navigateToTab(112, clearHistory: true);
-            _closeMobileDrawer();
-          },
-        ),
-      );
-    }
-
-    // 2. Manage My Account (expandable) - ALWAYS present by default
+    // 4. Manage My Account (expandable) - ALWAYS present by default
     memberItems.add(
       AppDrawerItem(
         icon: Icons.manage_accounts_outlined,

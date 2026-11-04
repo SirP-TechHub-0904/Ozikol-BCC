@@ -1121,7 +1121,61 @@ export interface SuiteInfoDetail {
             </a>
           </div>
 
-          <!-- 2. Manage My Account Dropdown -->
+          <!-- 2. Committees & Sub-Groups Member Workspace (bcp-committees) -->
+          <!-- Placed before Manage My Account per Canonical Navigation Hierarchy -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_committees')" *ngIf="isFeatureActive('bcp-committees')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/committees/workspace') || isParentActive('/groups/workspace')" (click)="toggleMenu('workspace_committees')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">diversity_3</span>
+                <span>{{ committeeAliases.aliasPlural }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_committees')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/my" [class.active]="isCurrentRoute('/committees/workspace/my')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">groups</span>My {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/my')" (click)="togglePin('My ' + committeeAliases.aliasPlural, '/committees/workspace/my', 'groups')" [title]="isPinned('/committees/workspace/my') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/my') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/discover" [class.active]="isCurrentRoute('/committees/workspace/discover')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">explore</span>Browse &amp; Join {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/discover')" (click)="togglePin('Browse & Join ' + committeeAliases.aliasPlural, '/committees/workspace/discover', 'explore')" [title]="isPinned('/committees/workspace/discover') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/discover') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/reports/compose" [class.active]="isCurrentRoute('/committees/workspace/reports/compose')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_document</span>Compose Meeting Report</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/reports/compose')" (click)="togglePin('Compose Meeting Report', '/committees/workspace/reports/compose', 'edit_document')" [title]="isPinned('/committees/workspace/reports/compose') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/reports/compose') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/cloud-links" [class.active]="isCurrentRoute('/committees/workspace/cloud-links')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">cloud_done</span>My Connected Cloud Docs</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/cloud-links')" (click)="togglePin('Connected Cloud Docs', '/committees/workspace/cloud-links', 'cloud_done')" [title]="isPinned('/committees/workspace/cloud-links') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/cloud-links') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 3. Manage My Account Dropdown -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account') || isParentActive('/users/workspace/profile')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
@@ -1178,59 +1232,6 @@ export interface SuiteInfoDetail {
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Log Activity', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 3. Committees & Sub-Groups Member Workspace (bcp-committees) -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_committees')" *ngIf="isFeatureActive('bcp-committees')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/committees/workspace') || isParentActive('/groups/workspace')" (click)="toggleMenu('workspace_committees')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">diversity_3</span>
-                <span>{{ committeeAliases.aliasPlural }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_committees')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/committees/workspace/my" [class.active]="isCurrentRoute('/committees/workspace/my')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">groups</span>My {{ committeeAliases.aliasPlural }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/my')" (click)="togglePin('My ' + committeeAliases.aliasPlural, '/committees/workspace/my', 'groups')" [title]="isPinned('/committees/workspace/my') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/my') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/committees/workspace/discover" [class.active]="isCurrentRoute('/committees/workspace/discover')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">explore</span>Browse &amp; Join {{ committeeAliases.aliasPlural }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/discover')" (click)="togglePin('Browse & Join ' + committeeAliases.aliasPlural, '/committees/workspace/discover', 'explore')" [title]="isPinned('/committees/workspace/discover') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/discover') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/committees/workspace/reports/compose" [class.active]="isCurrentRoute('/committees/workspace/reports/compose')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_document</span>Compose Meeting Report</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/reports/compose')" (click)="togglePin('Compose Meeting Report', '/committees/workspace/reports/compose', 'edit_document')" [title]="isPinned('/committees/workspace/reports/compose') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/reports/compose') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/committees/workspace/cloud-links" [class.active]="isCurrentRoute('/committees/workspace/cloud-links')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">cloud_done</span>My Connected Cloud Docs</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/cloud-links')" (click)="togglePin('Connected Cloud Docs', '/committees/workspace/cloud-links', 'cloud_done')" [title]="isPinned('/committees/workspace/cloud-links') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/cloud-links') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
