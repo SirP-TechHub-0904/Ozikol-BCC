@@ -278,6 +278,7 @@ builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidationService, Ozikol.Central.Services.Validation.EmailValidationService>();
 builder.Services.AddScoped<IAiKeyPoolManagerService, AiKeyPoolManagerService>();
+builder.Services.AddScoped<IVpsSystemTelemetryService, VpsSystemTelemetryService>();
 builder.Services.AddScoped<ISectionAiStudioService, SectionAiStudioService>();
 builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderClientService>();
 builder.Services.AddHttpClient<Ozikol.Central.Services.Extraction.INativeSectionExtractorService, Ozikol.Central.Services.Extraction.NativeSectionExtractorService>();

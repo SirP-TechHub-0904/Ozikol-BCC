@@ -12,8 +12,9 @@ public class ShiftSwapsLeaveModel : FeatureDetailPageModel
     /// Handles GET requests by issuing a permanent 301 redirect to the consolidated Staff Rota page.
     /// </summary>
     /// <returns>Permanent redirect to Staff Rota.</returns>
-    public override IActionResult OnGet()
+    public new IActionResult OnGet()
     {
+        base.OnGet();
         return RedirectToPagePermanent("/Features/StaffRota");
     }
 }
