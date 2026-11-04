@@ -60,7 +60,7 @@ void main(List<String> args) async {
         backgroundColor: Colors.white,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
-        title: 'Business Command Center',
+        title: 'Ozikol',
       );
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.show();
@@ -81,7 +81,7 @@ void main(List<String> args) async {
   await SingleTenantConfig.initialize(storageService);
   if (SingleTenantConfig.isLocked && !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     try {
-      await windowManager.setTitle('${SingleTenantConfig.organizationName} - Command Center');
+      await windowManager.setTitle('${SingleTenantConfig.organizationName} - Ozikol');
     } catch (_) {}
   }
   final cacheService = await TenantCacheService.create(storageService);
@@ -190,7 +190,7 @@ class OzikolApp extends ConsumerWidget {
     });
 
     return MaterialApp(
-      title: 'Business Command Center',
+      title: 'Ozikol',
       locale: Locale(currentLang),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
@@ -218,7 +218,7 @@ class OzikolApp extends ConsumerWidget {
             ? Column(
                 children: [
                   DesktopTitleBar(
-                    title: brandingWs != null ? '${brandingWs.displayName} - Command Center' : 'Business Command Center',
+                    title: brandingWs != null ? '${brandingWs.displayName} - Ozikol' : 'Ozikol',
                     iconUrl: brandingWs?.iconUrl,
                     logoUrl: brandingWs?.logoUrl,
                   ),
