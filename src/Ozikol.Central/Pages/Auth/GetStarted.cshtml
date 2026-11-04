@@ -118,7 +118,7 @@
 
                 <!-- Google reCAPTCHA Verification Widget -->
                 <div class="oz-recaptcha-wrap" style="margin: 18px 0 10px; display: flex; justify-content: center;">
-                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey" data-callback="onRecaptchaSolved" data-expired-callback="onRecaptchaExpired" data-error-callback="onRecaptchaExpired"></div>
                 </div>
 
                 <button type="button" onclick="goToStep2()" class="btn-auth-submit" style="margin-top: 10px; width: 100%; font-size: 15px; font-weight: 700; padding: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
@@ -306,6 +306,36 @@
 let savedRecaptchaToken = ''; // Stores reCAPTCHA token from Step 1 for use in Step 2 submission
 let slugDebounceTimer = null;
 
+// reCAPTCHA tokens are single-use and expire ~2 minutes after being issued by Google.
+// Track the live token so a stale or already-consumed token is never submitted to the server.
+const RECAPTCHA_TOKEN_TTL_MS = 110 * 1000; // Refresh slightly before Google's 120s hard expiry
+let recaptchaIssuedAt = 0;
+
+/** Widget callback: records the freshly issued token and its issue time. */
+function onRecaptchaSolved(token) {
+    savedRecaptchaToken = token || '';
+    recaptchaIssuedAt = Date.now();
+}
+
+/** Widget callback: discards the token once Google expires it or the widget errors. */
+function onRecaptchaExpired() {
+    savedRecaptchaToken = '';
+    recaptchaIssuedAt = 0;
+}
+
+/** True when a saved token exists and is still inside its validity window. */
+function hasFreshRecaptchaToken() {
+    return !!savedRecaptchaToken && (Date.now() - recaptchaIssuedAt) < RECAPTCHA_TOKEN_TTL_MS;
+}
+
+/** Clears the consumed token, resets the widget and returns the user to Step 1 to re-verify. */
+function returnToStep1ForRecaptcha() {
+    onRecaptchaExpired();
+    if (window.grecaptcha) { try { grecaptcha.reset(); } catch (_) { } }
+    document.getElementById('step2Container').style.display = 'none';
+    document.getElementById('step1Container').style.display = 'block';
+}
+
 function goToStep2() {
     const fullName = document.getElementById('inputFullName');
     const orgName = document.getElementById('inputOrgName');
@@ -435,6 +465,13 @@ async function handleOnboardingSubmit(e) {
     const form = document.getElementById('onboardingForm');
     const modal = document.getElementById('provisioningModal');
 
+    // Guard: the token must be fresh. Otherwise Google rejects it with "timeout-or-duplicate".
+    if (!hasFreshRecaptchaToken()) {
+        returnToStep1ForRecaptcha();
+        alert('Your security verification expired. Please tick "I\'m not a robot" again, then continue.');
+        return;
+    }
+
     modal.style.display = 'flex';
 
     setTimeout(() => {
@@ -466,6 +503,10 @@ async function handleOnboardingSubmit(e) {
 
         const result = await resp.json();
 
+        // The token is single-use: it is consumed by this request whether or not setup succeeded.
+        onRecaptchaExpired();
+        if (!result.success && window.grecaptcha) { try { grecaptcha.reset(); } catch (_) { } }
+
         if (result.success) {
             // Store onboarding result for subsequent seed choice
             pendingOnboardingResult = result;
@@ -491,7 +532,9 @@ async function handleOnboardingSubmit(e) {
             }, 600);
         } else {
             modal.style.display = 'none';
-            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
+            // Any failure consumed the token, so the user must re-verify before retrying.
+            returnToStep1ForRecaptcha();
+            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.') + '\n\nPlease tick "I\'m not a robot" again before retrying.');
         }
     } catch (err) {
         form.submit();
