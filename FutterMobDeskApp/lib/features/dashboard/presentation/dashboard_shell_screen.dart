@@ -59,6 +59,17 @@ import 'screens/billing/subscriptions_invoices_view.dart';
 import 'screens/identity_access/security_audit_logs_view.dart';
 import 'screens/identity_access/error_codes_view.dart';
 import 'screens/member_workspace/workspace_home_view.dart';
+import '../../committees/presentation/admin/committees_admin_dashboard_view.dart';
+import '../../committees/presentation/admin/committees_manage_view.dart';
+import '../../committees/presentation/admin/committees_registrations_view.dart';
+import '../../committees/presentation/admin/committees_reports_admin_view.dart';
+import '../../committees/presentation/admin/committees_forms_view.dart';
+import '../../committees/presentation/admin/committees_settings_view.dart';
+import '../../committees/presentation/member/committees_member_hub_view.dart';
+import '../../committees/presentation/member/committees_discover_view.dart';
+import '../../committees/presentation/member/committees_detail_view.dart';
+import '../../committees/presentation/member/committees_report_composer_view.dart';
+import '../../committees/state/committees_state.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
 /// with the Ozikol BCC Angular Web Console Dashboard (`/dashboard/console`).
@@ -88,6 +99,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
   Map<String, dynamic>? _selectedMember;
+  String? _selectedCommitteeId;
 
   /// <summary>
   /// Navigates to the full-page 360-degree Member Command Center view for a member.
@@ -2089,6 +2101,93 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
+      // 6. PEOPLE & COMMUNITY (bcp-committees)
+      if (activeWs != null && activeWs.isFeatureActive('bcp-committees'))
+        AppDrawerSection(
+          title: 'PEOPLE & COMMUNITY',
+          infoTooltip: 'Groups, Sub-Units, Minutes & Dynamic Extra-Info Forms',
+          items: [
+            AppDrawerItem(
+              icon: Icons.groups_rounded,
+              title: ref.watch(committeesProvider).aliases.aliasPlural,
+              initiallyExpanded: _selectedNavIndex >= 30 && _selectedNavIndex <= 37,
+              subItems: [
+                AppDrawerSubItem(
+                  icon: Icons.dashboard_outlined,
+                  title: 'Overview Dashboard',
+                  isSelected: _selectedNavIndex == 35,
+                  onTap: () {
+                    _navigateToTab(35, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.format_list_bulleted_rounded,
+                  title: 'Manage ${ref.watch(committeesProvider).aliases.aliasPlural}',
+                  isSelected: _selectedNavIndex == 30,
+                  onTap: () {
+                    _navigateToTab(30, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.how_to_reg_outlined,
+                  title: 'Intake Registrations',
+                  isSelected: _selectedNavIndex == 31,
+                  onTap: () {
+                    _navigateToTab(31, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.description_outlined,
+                  title: 'Meeting Minutes & AI',
+                  isSelected: _selectedNavIndex == 32,
+                  onTap: () {
+                    _navigateToTab(32, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.dynamic_form_outlined,
+                  title: 'Intake Forms Designer',
+                  isSelected: _selectedNavIndex == 33,
+                  onTap: () {
+                    _navigateToTab(33, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.tune_rounded,
+                  title: 'Terminology & Settings',
+                  isSelected: _selectedNavIndex == 34,
+                  onTap: () {
+                    _navigateToTab(34, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+              ],
+            ),
+          ],
+        )
+      else if (activeWs != null && (activeWs.isFeatureExpired('bcp-committees') || activeWs.licensedFeatures.contains('bcp-committees-expired')))
+        AppDrawerSection(
+          title: 'PEOPLE & COMMUNITY',
+          infoTooltip: 'Feature Expired — Renew in Billing',
+          items: [
+            AppDrawerItem(
+              icon: Icons.groups_rounded,
+              title: ref.watch(committeesProvider).aliases.aliasPlural,
+              isSelected: false,
+              trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
+              onTap: () {
+                _navigateToTab(22, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+          ],
+        ),
+
     ];
   }
 
@@ -2122,6 +2221,44 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           isSelected: memberIndex == 7,
           onTap: () {
             _navigateToTab(7, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+
+    // Modular Feature Suite: bcp-committees in Member workspace
+    if (activeWs != null && activeWs.isFeatureActive('bcp-committees')) {
+      final committeeAliases = ref.watch(committeesProvider).aliases;
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.people_alt_outlined,
+          title: 'My ${committeeAliases.aliasPlural}',
+          isSelected: memberIndex == 10,
+          onTap: () {
+            _navigateToTab(110, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.explore_outlined,
+          title: 'Browse & Join',
+          isSelected: memberIndex == 11,
+          onTap: () {
+            _navigateToTab(111, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.edit_note_rounded,
+          title: 'Compose Report',
+          isSelected: memberIndex == 12,
+          onTap: () {
+            _navigateToTab(112, clearHistory: true);
             _closeMobileDrawer();
           },
         ),
@@ -2378,6 +2515,44 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return ErrorCodesView(workspace: activeWs);
         case 25:
           return WorkstationView(workspace: activeWs);
+        case 30:
+          return CommitteesManageView(
+            workspace: activeWs,
+            onOpenCommitteeDetail: (id) {
+              setState(() => _selectedCommitteeId = id);
+              _navigateToTab(36);
+            },
+          );
+        case 31:
+          return CommitteesRegistrationsView(workspace: activeWs);
+        case 32:
+          return CommitteesReportsAdminView(workspace: activeWs);
+        case 33:
+          return CommitteesFormsView(workspace: activeWs);
+        case 34:
+          return CommitteesSettingsView(workspace: activeWs);
+        case 35:
+          return CommitteesAdminDashboardView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) {
+              if (idx == 1) _navigateToTab(30);
+              if (idx == 2) _navigateToTab(31);
+              if (idx == 3) _navigateToTab(32);
+            },
+          );
+        case 36:
+          return CommitteesDetailView(
+            committeeId: _selectedCommitteeId ?? '',
+            workspace: activeWs,
+            onNavigateBack: _navigateBack,
+            onComposeReport: () => _navigateToTab(37),
+          );
+        case 37:
+          return CommitteesReportComposerView(
+            workspace: activeWs,
+            initialCommitteeId: _selectedCommitteeId,
+            onNavigateBack: _navigateBack,
+          );
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }
@@ -2427,6 +2602,38 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return WorkspaceHomeView(
             workspace: activeWs,
             onNavigate: (idx) => _navigateToTab(idx >= 100 ? idx - 100 : idx),
+          );
+        case 10:
+          return CommitteesMemberHubView(
+            workspace: activeWs,
+            onOpenCommitteeDetail: (id) {
+              setState(() => _selectedCommitteeId = id);
+              _navigateToTab(113);
+            },
+            onNavigateToDiscover: () => _navigateToTab(111),
+            onNavigateToComposeReport: () => _navigateToTab(112),
+          );
+        case 11:
+          return CommitteesDiscoverView(
+            workspace: activeWs,
+            onOpenCommitteeDetail: (id) {
+              setState(() => _selectedCommitteeId = id);
+              _navigateToTab(113);
+            },
+            onNavigateToHub: () => _navigateToTab(110),
+          );
+        case 12:
+          return CommitteesReportComposerView(
+            workspace: activeWs,
+            initialCommitteeId: _selectedCommitteeId,
+            onNavigateBack: () => _navigateToTab(110),
+          );
+        case 13:
+          return CommitteesDetailView(
+            committeeId: _selectedCommitteeId ?? '',
+            workspace: activeWs,
+            onNavigateBack: () => _navigateToTab(110),
+            onComposeReport: () => _navigateToTab(112),
           );
         default:
           return WorkspaceHomeView(

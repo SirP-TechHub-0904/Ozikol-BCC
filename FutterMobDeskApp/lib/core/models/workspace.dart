@@ -142,6 +142,14 @@ class Workspace {
     return licensedFeatures.any((f) => f.trim().toLowerCase() == target);
   }
 
+  /// Verifies if a modular capability is in expired or grace-period state
+  bool isFeatureExpired(String code) {
+    if (code.trim().isEmpty) return false;
+    final target = code.trim().toLowerCase();
+    final expiredTarget = '$target-expired';
+    return licensedFeatures.any((f) => f.trim().toLowerCase() == expiredTarget);
+  }
+
   /// Checks if the user has mutation/editing permission for a given feature code
   bool canEditFeature(String code) {
     if (isSuperAdmin || isAdmin || hasGlobalEdit) return true;
