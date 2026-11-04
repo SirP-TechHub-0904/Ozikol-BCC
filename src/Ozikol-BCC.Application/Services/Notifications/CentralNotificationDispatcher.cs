@@ -13,6 +13,7 @@ using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Repository.NotifyRegister;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.EmailServices.Postmark.Interfaces;
+using Ozikol_BCC.Infrastructure.Services.Email;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -28,6 +29,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
     {
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ISmtpEmailDispatcher? _smtpEmailDispatcher;
         private readonly IPostmarkEmailService? _emailService;
         private readonly ISmsSendService? _smsService;
         private readonly IMessageTemplateService? _templateService;
@@ -54,6 +56,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// <param name="hubContext">SignalR notification hub context.</param>
         /// <param name="logger">Logger service.</param>
         /// <param name="configuration">Application configuration.</param>
+        /// <param name="smtpEmailDispatcher">Optional Mailcow SMTP email dispatcher.</param>
         /// <param name="emailService">Optional Postmark email service.</param>
         /// <param name="smsService">Optional carrier SMS gateway service.</param>
         /// <param name="templateService">Optional multi-channel message template service.</param>
@@ -63,6 +66,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             IHubContext<NotificationHub> hubContext,
             ILogger<CentralNotificationDispatcher> logger,
             IConfiguration configuration,
+            ISmtpEmailDispatcher? smtpEmailDispatcher = null,
             IPostmarkEmailService? emailService = null,
             ISmsSendService? smsService = null,
             IMessageTemplateService? templateService = null,
@@ -72,6 +76,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _smtpEmailDispatcher = smtpEmailDispatcher;
             _emailService = emailService;
             _smsService = smsService;
             _templateService = templateService;
@@ -408,9 +413,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
             NotificationDispatchResult result,
             CancellationToken cancellationToken)
         {
-            if (_emailService == null)
+            if (_smtpEmailDispatcher == null && _emailService == null)
             {
-                result.Errors.Add("Postmark email service is not registered in the service container.");
+                result.Errors.Add("No transactional email dispatch service (Mailcow SMTP or Postmark) is registered in the service container.");
                 return;
             }
 
@@ -498,11 +503,37 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         }
                     }
 
-                    await _emailService.SendHtmlEmailAsync(
-                        to: email,
-                        subject: safeSubject,
-                        htmlBody: htmlBody,
-                        tag: $"notification-{severityLabel.ToLowerInvariant()}");
+                    if (_smtpEmailDispatcher != null)
+                    {
+                        var fromAddress = !string.IsNullOrWhiteSpace(payload.TenantKey)
+                            ? $"noreply@{payload.TenantKey}.ozikol.cloud"
+                            : "noreply@ozikol.cloud";
+
+                        var sent = await _smtpEmailDispatcher.SendEmailAsync(
+                            toEmail: email,
+                            subject: safeSubject,
+                            htmlBody: htmlBody,
+                            fromEmail: fromAddress,
+                            fromName: tenantBrand,
+                            replyTo: null,
+                            isCentralPlatformEmail: false,
+                            tenantName: tenantBrand,
+                            tenantAdminEmail: null,
+                            cancellationToken: cancellationToken);
+
+                        if (!sent)
+                        {
+                            throw new InvalidOperationException($"SMTP delivery to {email} returned non-success.");
+                        }
+                    }
+                    else if (_emailService != null)
+                    {
+                        await _emailService.SendHtmlEmailAsync(
+                            to: email,
+                            subject: safeSubject,
+                            htmlBody: htmlBody,
+                            tag: $"notification-{severityLabel.ToLowerInvariant()}");
+                    }
 
                     _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
                     {

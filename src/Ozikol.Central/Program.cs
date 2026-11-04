@@ -59,6 +59,9 @@ builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderCli
 });
 builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
 
+// Register Mailcow Automated Email Provisioning & Transactional SMTP Dispatcher
+builder.Services.AddMailcowSupport();
+
 // Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
 builder.Services.AddPostmarkEmailServices(builder.Configuration);
 builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(ErrorAlertSettings.SectionName));

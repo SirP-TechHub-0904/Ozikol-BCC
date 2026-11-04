@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Infrastructure.Services.Email;
 
 namespace Ozikol.Central.Services;
 
@@ -38,19 +39,22 @@ public class CentralEmailService : ICentralEmailService
     private readonly ILogger<CentralEmailService> _logger;
     private readonly IConfiguration _configuration;
     private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
-    private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService _postmarkEmailService;
+    private readonly ISmtpEmailDispatcher _smtpEmailDispatcher;
+    private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? _postmarkEmailService;
 
     public CentralEmailService(
         MasterCatalogDbContext masterCatalogDbContext,
         ILogger<CentralEmailService> logger,
         IConfiguration configuration,
         Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
-        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService postmarkEmailService)
+        ISmtpEmailDispatcher smtpEmailDispatcher,
+        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? postmarkEmailService = null)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
         _logger = logger;
         _configuration = configuration;
         _emailValidationService = emailValidationService;
+        _smtpEmailDispatcher = smtpEmailDispatcher;
         _postmarkEmailService = postmarkEmailService;
     }
 
@@ -63,46 +67,75 @@ public class CentralEmailService : ICentralEmailService
             return false;
         }
 
+        var effectiveProvider = provider ?? "Mailcow";
         var log = new MasterEmailLog
         {
             Id = Guid.NewGuid(),
             RecipientEmail = toEmail,
             Subject = subject,
             BodyHtml = htmlBody,
-            Provider = provider ?? "Postmark",
+            Provider = effectiveProvider,
             SentAtUtc = DateTime.UtcNow,
             Status = "NotSent"
         };
 
         try
         {
-            _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Postmark...", subject, toEmail);
-
-            // Dispatch via real Postmark API service
-            var response = await _postmarkEmailService.SendHtmlEmailAsync(
-                to: toEmail,
-                subject: subject,
-                htmlBody: htmlBody,
-                tag: "central-transactional");
-
-            if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+            if (string.Equals(provider, "Postmark", StringComparison.OrdinalIgnoreCase) && _postmarkEmailService != null)
             {
-                log.Status = "Sent";
-                log.ErrorMessage = null;
-                _logger.LogInformation("✅ [CentralEmailService] Postmark successfully delivered email to [{Recipient}] (MessageID: {MessageId})", toEmail, response.MessageID);
+                _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Postmark...", subject, toEmail);
+
+                var response = await _postmarkEmailService.SendHtmlEmailAsync(
+                    to: toEmail,
+                    subject: subject,
+                    htmlBody: htmlBody,
+                    tag: "central-transactional");
+
+                if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+                {
+                    log.Status = "Sent";
+                    log.ErrorMessage = null;
+                    _logger.LogInformation("✅ [CentralEmailService] Postmark successfully delivered email to [{Recipient}] (MessageID: {MessageId})", toEmail, response.MessageID);
+                }
+                else
+                {
+                    log.Status = "Failed";
+                    log.ErrorMessage = response.Message ?? "Postmark delivery status returned non-success.";
+                    _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}", toEmail, response.Message);
+                }
             }
             else
             {
-                log.Status = "Failed";
-                log.ErrorMessage = response.Message ?? "Postmark delivery status returned non-success.";
-                _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}", toEmail, response.Message);
+                _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Mailcow SMTP...", subject, toEmail);
+
+                var delivered = await _smtpEmailDispatcher.SendEmailAsync(
+                    toEmail: toEmail,
+                    subject: subject,
+                    htmlBody: htmlBody,
+                    fromEmail: "noreply@ozikol.cloud",
+                    fromName: "Ozikol Business Command Center",
+                    isCentralPlatformEmail: true,
+                    cancellationToken: cancellationToken);
+
+                if (delivered)
+                {
+                    log.Status = "Sent";
+                    log.ErrorMessage = null;
+                    _logger.LogInformation("✅ [CentralEmailService] Mailcow successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
+                }
+                else
+                {
+                    log.Status = "Failed";
+                    log.ErrorMessage = "Mailcow SMTP delivery returned failure. Check Mailcow and network telemetry.";
+                    _logger.LogWarning("⚠️ [CentralEmailService] Mailcow delivery failed for [{Recipient}].", toEmail);
+                }
             }
         }
         catch (Exception ex)
         {
             log.Status = "Failed";
             log.ErrorMessage = ex.Message;
-            _logger.LogError(ex, "❌ [CentralEmailService] Exception during Postmark delivery for {Recipient}", toEmail);
+            _logger.LogError(ex, "❌ [CentralEmailService] Exception during email delivery for {Recipient}", toEmail);
         }
         finally
         {

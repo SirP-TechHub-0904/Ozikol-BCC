@@ -56,6 +56,7 @@ namespace Ozikol_BCC.Api
                 .AddApplicationExtensions(builder.Configuration)
                 .AddTenantSupport(builder.Configuration)
                 .AddRecaptchaSupport()
+                .AddMailcowSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
             builder.Services.AddPostmarkEmailServices(builder.Configuration);

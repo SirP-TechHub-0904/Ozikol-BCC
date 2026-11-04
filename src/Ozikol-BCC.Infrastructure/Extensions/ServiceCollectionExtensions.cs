@@ -30,4 +30,19 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Recaptcha.IRecaptchaService, Ozikol_BCC.Infrastructure.Services.Recaptcha.GoogleRecaptchaService>();
         return services;
     }
+
+    /// <summary>
+    /// Registers Mailcow automated provisioning and SMTP email dispatch services.
+    /// </summary>
+    public static IServiceCollection AddMailcowSupport(this IServiceCollection services)
+    {
+        services.AddHttpClient<Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService, Ozikol_BCC.Infrastructure.Services.Email.MailcowProvisioningService>()
+            .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        services.AddTransient<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher, Ozikol_BCC.Infrastructure.Services.Email.SmtpEmailDispatcher>();
+        return services;
+    }
 }
