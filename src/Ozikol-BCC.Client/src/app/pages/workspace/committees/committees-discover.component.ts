@@ -251,6 +251,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .cd-btn-primary, .cd-btn-secondary, .cd-btn-ghost, .cd-btn-joined, .cd-btn-pending {
       display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 16px;
       border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; border: 1px solid transparent;
+      box-sizing: border-box; max-width: 100%; transition: all 0.18s ease;
     }
     .cd-btn-primary { background: #0050e5; color: #ffffff; width: 100%; }
     .cd-modal-footer .cd-btn-primary { width: auto; }
@@ -258,14 +259,28 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .cd-btn-secondary { background: rgba(0, 80, 229, 0.08); color: #0050e5; border-color: rgba(0, 80, 229, 0.2); }
     .cd-btn-ghost { background: #ffffff; color: #334155; border-color: #cbd5e1; }
     :host-context(.dark-mode) .cd-btn-ghost { background: #1e293b; color: #e2e8f0; border-color: rgba(255,255,255,0.12); }
-    .cd-btn-joined { background: rgba(16, 185, 129, 0.1); color: #059669; border-color: rgba(16, 185, 129, 0.25); width: 100%; }
-    .cd-btn-pending { background: #f8fafc; color: #64748b; border-color: #cbd5e1; width: 100%; cursor: not-allowed; }
+    .cd-btn-joined {
+      background: #ffffff; color: #059669; border: 1px solid rgba(16, 185, 129, 0.4); width: 100%;
+    }
+    .cd-btn-joined:hover { background: rgba(16, 185, 129, 0.05); border-color: #059669; }
+    :host-context(.dark-mode) .cd-btn-joined {
+      background: transparent; color: #34d399; border-color: rgba(52, 211, 153, 0.35);
+    }
+    :host-context(.dark-mode) .cd-btn-joined:hover { background: rgba(52, 211, 153, 0.08); }
+    .cd-btn-pending {
+      background: #ffffff; color: #64748b; border: 1px solid #cbd5e1; width: 100%; cursor: not-allowed;
+    }
+    :host-context(.dark-mode) .cd-btn-pending { background: transparent; color: #94a3b8; border-color: rgba(255,255,255,0.14); }
     .cd-alert {
       display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px;
-      background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #065f46; font-size: 13.5px; font-weight: 600;
+      background: #ffffff; border: 1px solid rgba(16, 185, 129, 0.35); color: #065f46; font-size: 13.5px; font-weight: 600;
+      box-sizing: border-box;
     }
-    .cd-alert.error { background: rgba(220, 38, 38, 0.08); border-color: rgba(220, 38, 38, 0.25); color: #dc2626; }
+    .cd-alert.error { background: #ffffff; border-color: rgba(220, 38, 38, 0.35); color: #dc2626; }
+    :host-context(.dark-mode) .cd-alert { background: #1e293b; border-color: rgba(16, 185, 129, 0.3); color: #34d399; }
+    :host-context(.dark-mode) .cd-alert.error { background: #1e293b; border-color: rgba(220, 38, 38, 0.3); color: #f87171; }
     .cd-alert button { margin-left: auto; background: transparent; border: none; color: inherit; cursor: pointer; }
+    .cd-footer { width: 100%; display: flex; margin-top: auto; box-sizing: border-box; }
     .cd-toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .cd-search {
       display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cbd5e1;
@@ -288,7 +303,7 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
     .cd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
     .cd-card {
       background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px;
-      display: flex; flex-direction: column; gap: 14px;
+      display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; overflow: hidden;
     }
     :host-context(.dark-mode) .cd-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
     .cd-card-head { display: flex; gap: 14px; align-items: flex-start; }
