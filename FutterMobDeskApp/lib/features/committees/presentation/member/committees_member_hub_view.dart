@@ -183,7 +183,7 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
                               crossAxisCount: crossAxisCount,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
-                              mainAxisExtent: 245,
+                              mainAxisExtent: 220,
                             ),
                             itemCount: state.myCommittees.length,
                             itemBuilder: (_, i) => _buildCommitteeCard(state.myCommittees[i], aliases),
@@ -493,36 +493,53 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
   }
 
   Widget _buildStatBadge(String count, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          count,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
-        ),
-      ],
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: '$count ',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          TextSpan(
+            text: label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w400,
+              fontSize: 12.5,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildCommitteeCard(Committee committee, CommitteeAliases aliases) {
-    final roleText = committee.customRoleTitle ??
-        committee.myRoleDisplay ??
-        committee.myRole ??
-        'Member';
+    final typeText = committee.isSubUnit
+        ? (aliases.subGroupAliasSingular.isNotEmpty ? aliases.subGroupAliasSingular : 'Sub-Group')
+        : (aliases.aliasSingular.isNotEmpty ? aliases.aliasSingular : (committee.category?.isNotEmpty == true ? committee.category! : 'Group'));
+
+    final roleText = committee.customRoleTitle?.isNotEmpty == true
+        ? committee.customRoleTitle!
+        : (committee.myRoleDisplay?.isNotEmpty == true
+            ? committee.myRoleDisplay!
+            : (committee.myRole?.isNotEmpty == true ? committee.myRole! : 'Member'));
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(4), blurRadius: 8, offset: const Offset(0, 2)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -532,77 +549,79 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0050E5).withAlpha(15),
-                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFF0050E5).withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.groups_rounded,
                   color: Color(0xFF0050E5),
-                  size: 22,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                    Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.grey.shade300, width: 0.8),
+                            color: committee.isSubUnit
+                                ? const Color(0xFF0EA5E9).withAlpha(30)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            committee.isSubUnit ? aliases.subGroupAliasSingular : (committee.category ?? aliases.aliasSingular),
-                            style: TextStyle(color: Colors.grey.shade800, fontSize: 10.5, fontWeight: FontWeight.w600),
+                            typeText,
+                            style: TextStyle(
+                              color: committee.isSubUnit ? const Color(0xFF0284C7) : const Color(0xFF475569),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                           decoration: BoxDecoration(
                             color: committee.isLeader
-                                ? const Color(0xFF0050E5).withAlpha(15)
-                                : const Color(0xFF10B981).withAlpha(15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: committee.isLeader
-                                  ? const Color(0xFF0050E5).withAlpha(60)
-                                  : const Color(0xFF10B981).withAlpha(60),
-                              width: 0.8,
-                            ),
+                                ? const Color(0xFF0050E5).withAlpha(30)
+                                : const Color(0xFF64748B).withAlpha(30),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             roleText,
                             style: TextStyle(
-                              color: committee.isLeader ? const Color(0xFF0050E5) : const Color(0xFF059669),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
+                              color: committee.isLeader ? const Color(0xFF0050E5) : const Color(0xFF334155),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Text(
                       committee.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                     if (committee.parentCommitteeName != null && committee.parentCommitteeName!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           'Under ${committee.parentCommitteeName}',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                         ),
                       ),
                   ],
@@ -610,64 +629,68 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             committee.description?.isNotEmpty == true
                 ? committee.description!
                 : 'Active workspace collaboration unit.',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3),
+            style: const TextStyle(
+              fontSize: 13.5,
+              color: Color(0xFF475569),
+              height: 1.45,
+            ),
           ),
           const Spacer(),
-          // Stats Row matching Web: 1 Members • 0 Reports • 0 Cloud Docs
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade100),
-                bottom: BorderSide(color: Colors.grey.shade100),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatBadge(committee.memberCount.toString(), 'Members'),
-                _buildStatBadge(committee.reportsCount.toString(), 'Reports'),
-                _buildStatBadge(committee.cloudDocsCount.toString(), 'Cloud Docs'),
-              ],
-            ),
+          // Stats Row matching Web cm-meta-stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatBadge(committee.memberCount.toString(), 'Members'),
+              _buildStatBadge(committee.reportsCount.toString(), 'Reports'),
+              _buildStatBadge(committee.cloudDocsCount.toString(), 'Cloud Docs'),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => widget.onOpenCommitteeDetail?.call(committee.id),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0050E5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: const Size(0, 36),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                child: SizedBox(
+                  height: 42,
+                  child: ElevatedButton.icon(
+                    onPressed: () => widget.onOpenCommitteeDetail?.call(committee.id),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0050E5),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    label: const Text(
+                      'Open Hub',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                  label: const Text('Open Hub', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
               if (committee.canSubmitReport) ...[
                 const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () => widget.onNavigateToComposeReport?.call(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0050E5),
-                    side: const BorderSide(color: Color(0xFF0050E5)),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    minimumSize: const Size(0, 36),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                SizedBox(
+                  height: 42,
+                  child: OutlinedButton.icon(
+                    onPressed: () => widget.onNavigateToComposeReport?.call(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0050E5),
+                      side: const BorderSide(color: Color(0xFF0050E5)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.post_add_rounded, size: 16),
+                    label: const Text(
+                      'Report',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  icon: const Icon(Icons.post_add_rounded, size: 14),
-                  label: const Text('Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ],
             ],
