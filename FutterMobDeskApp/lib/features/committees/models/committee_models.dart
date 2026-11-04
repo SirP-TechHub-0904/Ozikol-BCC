@@ -91,6 +91,45 @@ class Committee {
   final List<Committee> subCommittees;
   final List<PinnedCloudResource> cloudDocuments;
 
+  /// Role of the currently authenticated member within this committee (e.g. "Member", "Chairperson", "Administrator").
+  final String? myRole;
+
+  /// User-friendly display label for the authenticated member's role formatted via tenant aliases.
+  final String? myRoleDisplay;
+
+  /// Optional custom role title assigned to this member.
+  final String? customRoleTitle;
+
+  /// Whether the authenticated member holds an executive or leadership role.
+  final bool isLeader;
+
+  /// Whether the authenticated member is authorized to submit meeting reports.
+  final bool canSubmitReport;
+
+  /// Aggregate count of recorded meeting minutes/reports for this committee.
+  final int reportsCount;
+
+  /// Aggregate count of shared cloud resources and document vaults.
+  final int cloudDocsCount;
+
+  /// Whether the authenticated member has joined this committee.
+  final bool isJoined;
+
+  /// Whether the authenticated member has an intake registration pending approval.
+  final bool isPendingApproval;
+
+  /// Whether joining this committee requires administrative or chairperson approval.
+  final bool requiresApproval;
+
+  /// Visibility level: "Public", "ApprovalRequired", or "Private".
+  final String? visibility;
+
+  /// Material icon name associated with this committee.
+  final String? iconName;
+
+  /// Pinned cover banner image URL.
+  final String? coverBannerUrl;
+
   const Committee({
     required this.id,
     required this.name,
@@ -117,6 +156,19 @@ class Committee {
     this.members = const [],
     this.subCommittees = const [],
     this.cloudDocuments = const [],
+    this.myRole,
+    this.myRoleDisplay,
+    this.customRoleTitle,
+    this.isLeader = false,
+    this.canSubmitReport = false,
+    this.reportsCount = 0,
+    this.cloudDocsCount = 0,
+    this.isJoined = false,
+    this.isPendingApproval = false,
+    this.requiresApproval = false,
+    this.visibility = 'Public',
+    this.iconName,
+    this.coverBannerUrl,
   });
 
   bool get isSubUnit => parentCommitteeId != null && parentCommitteeId!.isNotEmpty;
@@ -124,15 +176,15 @@ class Committee {
 
   factory Committee.fromJson(Map<String, dynamic> json) {
     return Committee(
-      id: (json['id'] ?? '').toString(),
+      id: (json['id'] ?? json['committeeId'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
       code: json['code']?.toString(),
       slug: json['slug']?.toString(),
-      description: json['description']?.toString(),
-      category: json['category']?.toString(),
-      maxMembers: int.tryParse(json['maxMembers']?.toString() ?? '0') ?? 0,
+      description: json['description']?.toString() ?? json['missionStatement']?.toString(),
+      category: json['category']?.toString() ?? json['categoryTag']?.toString(),
+      maxMembers: int.tryParse(json['maxMembers']?.toString() ?? json['maxCapacity']?.toString() ?? '0') ?? 0,
       meetingSchedule: json['meetingSchedule']?.toString(),
-      meetingLocation: json['meetingLocation']?.toString(),
+      meetingLocation: json['meetingLocation']?.toString() ?? json['meetingLocationOrLink']?.toString(),
       isPublicJoin: json['isPublicJoin'] == true || json['visibility'] == 'Public',
       allowExternalRegistration: json['allowExternalRegistration'] == true,
       leaderName: json['leaderName']?.toString() ?? json['leader']?['name']?.toString(),
@@ -147,7 +199,9 @@ class Committee {
       status: json['status']?.toString() ?? 'Active',
       extraInfoFormId: json['extraInfoFormId']?.toString(),
       extraInfoFormTitle: json['extraInfoFormTitle']?.toString(),
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : (json['joinedAt'] != null ? DateTime.tryParse(json['joinedAt'].toString()) : null),
       members: (json['members'] as List<dynamic>?)
               ?.map((m) => CommitteeMember.fromJson(m as Map<String, dynamic>))
               .toList() ??
@@ -160,6 +214,19 @@ class Committee {
               ?.map((d) => PinnedCloudResource.fromJson(d as Map<String, dynamic>))
               .toList() ??
           const [],
+      myRole: json['myRole']?.toString(),
+      myRoleDisplay: json['myRoleDisplay']?.toString() ?? json['myRole']?.toString(),
+      customRoleTitle: json['customRoleTitle']?.toString(),
+      isLeader: json['isLeader'] == true,
+      canSubmitReport: json['canSubmitReport'] == true,
+      reportsCount: int.tryParse(json['reportsCount']?.toString() ?? '0') ?? 0,
+      cloudDocsCount: int.tryParse(json['cloudDocsCount']?.toString() ?? '0') ?? 0,
+      isJoined: json['isJoined'] == true,
+      isPendingApproval: json['isPendingApproval'] == true,
+      requiresApproval: json['requiresApproval'] == true || json['requireApproval'] == true || json['visibility'] == 'ApprovalRequired',
+      visibility: json['visibility']?.toString() ?? 'Public',
+      iconName: json['iconName']?.toString(),
+      coverBannerUrl: json['coverBannerUrl']?.toString(),
     );
   }
 

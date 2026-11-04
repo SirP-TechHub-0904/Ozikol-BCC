@@ -112,10 +112,8 @@ class CommitteesNotifier extends StateNotifier<CommitteesState> {
         state = state.copyWith(aliases: CommitteeAliases.fromJson(data['aliases'] as Map<String, dynamic>?));
       }
 
-      final commsList = (data['myCommittees'] as List<dynamic>?)
-              ?.map((e) => Committee.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          (data['items'] as List<dynamic>?)
+      final rawComms = data['enrolledCommittees'] ?? data['myCommittees'] ?? data['items'];
+      final commsList = (rawComms as List<dynamic>?)
               ?.map((e) => Committee.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];

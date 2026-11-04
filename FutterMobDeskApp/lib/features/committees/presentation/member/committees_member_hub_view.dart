@@ -122,6 +122,10 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
                   children: [
                     // Top Actions Banner
                     _buildTopActionsCard(context, aliases, isDesktop),
+                    const SizedBox(height: 16),
+
+                    // Summary KPI Cards (Parity with Web cm-kpi-grid)
+                    _buildKpiStrip(state, aliases),
                     const SizedBox(height: 20),
 
                     // Upcoming Meetings & Action Items Row
@@ -179,7 +183,7 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
                               crossAxisCount: crossAxisCount,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
-                              mainAxisExtent: 210,
+                              mainAxisExtent: 245,
                             ),
                             itemCount: state.myCommittees.length,
                             itemBuilder: (_, i) => _buildCommitteeCard(state.myCommittees[i], aliases),
@@ -384,7 +388,133 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
     );
   }
 
+  /// KPI strip displaying summary metrics with 1-to-1 Web parity.
+  Widget _buildKpiStrip(CommitteesState state, CommitteeAliases aliases) {
+    final leaderCount = state.myCommittees.where((c) => c.isLeader).length;
+    final totalCloudDocs = state.myCommittees.fold<int>(0, (sum, c) => sum + c.cloudDocsCount);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 650;
+        final kpis = [
+          _buildKpiCard(
+            label: 'Enrolled ${aliases.aliasPlural}',
+            value: state.myCommittees.length.toString(),
+            icon: Icons.diversity_3_rounded,
+          ),
+          _buildKpiCard(
+            label: 'Leadership Portfolios',
+            value: leaderCount.toString(),
+            icon: Icons.workspace_premium_rounded,
+          ),
+          _buildKpiCard(
+            label: 'Pending Requests',
+            value: '0',
+            icon: Icons.hourglass_top_rounded,
+          ),
+          _buildKpiCard(
+            label: 'Shared Cloud Docs',
+            value: totalCloudDocs.toString(),
+            icon: Icons.cloud_done_rounded,
+          ),
+        ];
+
+        if (isNarrow) {
+          return GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 2.2,
+            children: kpis,
+          );
+        }
+
+        return Row(
+          children: kpis
+              .map((kpi) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: kpi,
+                    ),
+                  ))
+              .toList(),
+        );
+      },
+    );
+  }
+
+  /// Individual KPI summary block.
+  Widget _buildKpiCard({required String label, required String value, required IconData icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(3), blurRadius: 6, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0050E5).withAlpha(15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: const Color(0xFF0050E5), size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatBadge(String count, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          count,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCommitteeCard(Committee committee, CommitteeAliases aliases) {
+    final roleText = committee.customRoleTitle ??
+        committee.myRoleDisplay ??
+        committee.myRole ??
+        'Member';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -399,67 +529,147 @@ class _CommitteesMemberHubViewState extends ConsumerState<CommitteesMemberHubVie
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFF0050E5).withAlpha(15),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  committee.isSubUnit ? aliases.subGroupAliasSingular : aliases.aliasSingular,
-                  style: const TextStyle(color: Color(0xFF0050E5), fontSize: 11, fontWeight: FontWeight.bold),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: Color(0xFF0050E5),
+                  size: 22,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withAlpha(20),
-                  borderRadius: BorderRadius.circular(6),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey.shade300, width: 0.8),
+                          ),
+                          child: Text(
+                            committee.isSubUnit ? aliases.subGroupAliasSingular : (committee.category ?? aliases.aliasSingular),
+                            style: TextStyle(color: Colors.grey.shade800, fontSize: 10.5, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: committee.isLeader
+                                ? const Color(0xFF0050E5).withAlpha(15)
+                                : const Color(0xFF10B981).withAlpha(15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: committee.isLeader
+                                  ? const Color(0xFF0050E5).withAlpha(60)
+                                  : const Color(0xFF10B981).withAlpha(60),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            roleText,
+                            style: TextStyle(
+                              color: committee.isLeader ? const Color(0xFF0050E5) : const Color(0xFF059669),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      committee.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5),
+                    ),
+                    if (committee.parentCommitteeName != null && committee.parentCommitteeName!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          'Under ${committee.parentCommitteeName}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        ),
+                      ),
+                  ],
                 ),
-                child: const Text('Enrolled', style: TextStyle(color: Color(0xFF059669), fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
-            committee.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            committee.description ?? 'Collaborate with fellow workspace members.',
+            committee.description?.isNotEmpty == true
+                ? committee.description!
+                : 'Active workspace collaboration unit.',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3),
           ),
           const Spacer(),
-          const Divider(height: 14),
+          // Stats Row matching Web: 1 Members • 0 Reports • 0 Cloud Docs
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.grey.shade100),
+                bottom: BorderSide(color: Colors.grey.shade100),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildStatBadge(committee.memberCount.toString(), 'Members'),
+                _buildStatBadge(committee.reportsCount.toString(), 'Reports'),
+                _buildStatBadge(committee.cloudDocsCount.toString(), 'Cloud Docs'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.people_outline, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text('${committee.memberCount} members', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                ],
-              ),
-              ElevatedButton.icon(
-                onPressed: () => widget.onOpenCommitteeDetail?.call(committee.id),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0050E5),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  minimumSize: const Size(0, 32),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => widget.onOpenCommitteeDetail?.call(committee.id),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0050E5),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                  label: const Text('Open Hub', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
-                icon: const Icon(Icons.launch_rounded, size: 12),
-                label: const Text('Open Hub', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
               ),
+              if (committee.canSubmitReport) ...[
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => widget.onNavigateToComposeReport?.call(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0050E5),
+                    side: const BorderSide(color: Color(0xFF0050E5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.post_add_rounded, size: 14),
+                  label: const Text('Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ],
           ),
         ],

@@ -240,7 +240,7 @@ class _CommitteesDiscoverViewState extends ConsumerState<CommitteesDiscoverView>
   }
 
   Widget _buildDiscoverCard(Committee c, CommitteeAliases aliases, CommitteesState state) {
-    final isEnrolled = state.myCommittees.any((m) => m.id == c.id);
+    final isEnrolled = state.myCommittees.any((m) => m.id == c.id) || c.isJoined;
     final isFull = c.isFull;
     final isJoining = _joiningCommitteeId == c.id;
 
@@ -279,6 +279,15 @@ class _CommitteesDiscoverViewState extends ConsumerState<CommitteesDiscoverView>
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text('Enrolled', style: TextStyle(color: Color(0xFF059669), fontSize: 11, fontWeight: FontWeight.bold)),
+                )
+              else if (c.isPendingApproval)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withAlpha(20),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('Pending Approval', style: TextStyle(color: Color(0xFFD97706), fontSize: 11, fontWeight: FontWeight.bold)),
                 )
               else if (isFull)
                 Container(
