@@ -625,26 +625,65 @@ export interface SuiteInfoDetail {
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-whistleblowing')">{{ 'badge.soon' | translate }}</span>
             </a>
           </div>
-          <div class="nav-item" *ngSwitchCase="'bcp-staff-rota'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event)">
-              <div class="nav-link-content"><span class="material-symbols-outlined">event_note</span><span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff & Volunteer Rota') }}</span></div>
-              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')"><span class="material-symbols-outlined">lock</span></span>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')" *ngSwitchCase="'bcp-staff-rota'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-staff-rota') && isParentActive('/workforce/console')" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event, 'staff_rota')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">event_note</span>
+                <span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff Rota & Shifts') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-staff-rota')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-staff-rota')">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/schedule" [class.active]="isCurrentRoute('/workforce/console/schedule')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Rota Calendar</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/schedule')" (click)="togglePin('Rota Calendar', '/workforce/console/schedule', 'calendar_month')" [title]="isPinned('/workforce/console/schedule') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/schedule') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/sites" [class.active]="isCurrentRoute('/workforce/console/sites')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">location_on</span>Client Sites &amp; Geofences</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/sites')" (click)="togglePin('Client Sites', '/workforce/console/sites', 'location_on')" [title]="isPinned('/workforce/console/sites') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/sites') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
           </div>
-          <div class="nav-item" *ngSwitchCase="'bcp-shift-swaps'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-shift-swaps')" (click)="onFeatureMenuClick('bcp-shift-swaps', getFeatureFullTitle('bcp-shift-swaps', 'Shift Swaps & Leave Management'), $event)">
-              <div class="nav-link-content"><span class="material-symbols-outlined">swap_horiz</span><span>{{ getFeatureMenuTitle('bcp-shift-swaps', 'Shift Swaps & Leave') }}</span></div>
-              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-shift-swaps') && !isFeatureActive('bcp-shift-swaps')"><span class="material-symbols-outlined">lock</span></span>
-              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-shift-swaps')">{{ 'badge.soon' | translate }}</span>
-            </a>
-          </div>
-          <div class="nav-item" *ngSwitchCase="'bcp-attendance-tracking'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event)">
-              <div class="nav-link-content"><span class="material-symbols-outlined">timer</span><span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & QR') }}</span></div>
-              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')"><span class="material-symbols-outlined">lock</span></span>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-attendance-tracking') && isMenuOpen('attendance_tracking')" *ngSwitchCase="'bcp-attendance-tracking'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-attendance-tracking') && isParentActive('/attendance/console')" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event, 'attendance_tracking')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">timer</span>
+                <span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & Live Duty') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-attendance-tracking')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-attendance-tracking')">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-attendance-tracking') && isMenuOpen('attendance_tracking')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/attendance/console/live" [class.active]="isCurrentRoute('/attendance/console/live')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">radar</span>Live Duty Monitor</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/attendance/console/live')" (click)="togglePin('Live Duty Monitor', '/attendance/console/live', 'radar')" [title]="isPinned('/attendance/console/live') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/attendance/console/live') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
           </div>
           <div class="nav-item" *ngSwitchCase="'bcp-appointment-booking'">
             <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-appointment-booking')" (click)="onFeatureMenuClick('bcp-appointment-booking', getFeatureFullTitle('bcp-appointment-booking', 'Appointment & Facility Booking'), $event)">
@@ -1175,7 +1214,53 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- 3. Manage My Account Dropdown -->
+          <!-- 3. Workforce Rota & Shift Management Member Workspace (bcp-staff-rota) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_workforce')" *ngIf="isFeatureActive('bcp-staff-rota')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/workforce/workspace')" (click)="toggleMenu('workspace_workforce')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">event_note</span>
+                <span>My Shifts &amp; Rota</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_workforce')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>My Assigned Shifts</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/workspace/my-shifts')" (click)="togglePin('My Assigned Shifts', '/workforce/workspace/my-shifts', 'calendar_month')" [title]="isPinned('/workforce/workspace/my-shifts') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/workspace/my-shifts') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 4. Attendance & Duty Clock-In Member Workspace (bcp-attendance-tracking) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_attendance')" *ngIf="isFeatureActive('bcp-attendance-tracking')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/attendance/workspace')" (click)="toggleMenu('workspace_attendance')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">timer</span>
+                <span>Duty Clock &amp; GPS</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_attendance')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Live Shift Clock-In</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/attendance/workspace/clock')" (click)="togglePin('Live Shift Clock-In', '/attendance/workspace/clock', 'timer')" [title]="isPinned('/attendance/workspace/clock') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/attendance/workspace/clock') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 5. Manage My Account Dropdown -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account') || isParentActive('/users/workspace/profile')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
