@@ -69,6 +69,7 @@ import '../../committees/presentation/member/committees_member_hub_view.dart';
 import '../../committees/presentation/member/committees_discover_view.dart';
 import '../../committees/presentation/member/committees_detail_view.dart';
 import '../../committees/presentation/member/committees_report_composer_view.dart';
+import '../../committees/presentation/member/committees_cloud_vault_view.dart';
 import '../../committees/state/committees_state.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
@@ -1991,8 +1992,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               initiallyExpanded: _selectedNavIndex >= 30 && _selectedNavIndex <= 37,
               subItems: [
                 AppDrawerSubItem(
-                  icon: Icons.dashboard_outlined,
-                  title: 'Overview Dashboard',
+                  icon: Icons.space_dashboard_outlined,
+                  title: 'Dashboard',
                   isSelected: _selectedNavIndex == 35,
                   onTap: () {
                     _navigateToTab(35, clearHistory: true);
@@ -2010,7 +2011,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 ),
                 AppDrawerSubItem(
                   icon: Icons.how_to_reg_outlined,
-                  title: 'Intake Registrations',
+                  title: 'Registrations & Intake',
                   isSelected: _selectedNavIndex == 31,
                   onTap: () {
                     _navigateToTab(31, clearHistory: true);
@@ -2019,7 +2020,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 ),
                 AppDrawerSubItem(
                   icon: Icons.description_outlined,
-                  title: 'Meeting Minutes & AI',
+                  title: 'Meeting Reports',
                   isSelected: _selectedNavIndex == 32,
                   onTap: () {
                     _navigateToTab(32, clearHistory: true);
@@ -2028,7 +2029,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 ),
                 AppDrawerSubItem(
                   icon: Icons.dynamic_form_outlined,
-                  title: 'Intake Forms Designer',
+                  title: 'Extra-Info Forms',
                   isSelected: _selectedNavIndex == 33,
                   onTap: () {
                     _navigateToTab(33, clearHistory: true);
@@ -2037,7 +2038,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 ),
                 AppDrawerSubItem(
                   icon: Icons.tune_rounded,
-                  title: 'Terminology & Settings',
+                  title: 'Settings',
                   isSelected: _selectedNavIndex == 34,
                   onTap: () {
                     _navigateToTab(34, clearHistory: true);
@@ -2221,7 +2222,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         AppDrawerItem(
           icon: Icons.groups_rounded,
           title: committeeAliases.aliasPlural,
-          initiallyExpanded: memberIndex >= 10 && memberIndex <= 13,
+          initiallyExpanded: memberIndex >= 10 && memberIndex <= 14,
           subItems: [
             AppDrawerSubItem(
               icon: Icons.people_alt_outlined,
@@ -2243,10 +2244,19 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
             AppDrawerSubItem(
               icon: Icons.edit_note_rounded,
-              title: 'Compose Report',
+              title: 'Compose Meeting Report',
               isSelected: memberIndex == 12,
               onTap: () {
                 _navigateToTab(112, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+            AppDrawerSubItem(
+              icon: Icons.cloud_done_outlined,
+              title: 'Connected Cloud Docs',
+              isSelected: memberIndex == 14,
+              onTap: () {
+                _navigateToTab(114, clearHistory: true);
                 _closeMobileDrawer();
               },
             ),
@@ -2654,6 +2664,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             onNavigateBack: () => _navigateToTab(110),
             onComposeReport: () => _navigateToTab(112),
+          );
+        case 14:
+          return CommitteesCloudVaultView(
+            workspace: activeWs,
+            onNavigateBack: () => _navigateToTab(110),
           );
         default:
           return WorkspaceHomeView(

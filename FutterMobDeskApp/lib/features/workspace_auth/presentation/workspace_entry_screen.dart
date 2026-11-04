@@ -1136,8 +1136,8 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               children: [
                 Image.asset(
                   isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
-                  height: 28,
-                  width: 28,
+                  height: 38,
+                  width: 38,
                   fit: BoxFit.contain,
                 ),
                 const Spacer(),

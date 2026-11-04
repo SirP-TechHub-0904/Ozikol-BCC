@@ -287,6 +287,15 @@ class CommitteesApiService {
   // CLOUD SHELF (GOOGLE DOCS, SHEETS, SLIDES, NOTEBOOKLM, EXCEL ONLINE)
   // =========================================================================
 
+  Future<List<PinnedCloudResource>> getMyCloudDocuments() async {
+    final res = await _dio.get('api/committees/workspace/cloud-docs');
+    final data = res.data is Map ? (res.data['data'] ?? res.data) : res.data;
+    if (data is List) {
+      return data.map((d) => PinnedCloudResource.fromJson(d as Map<String, dynamic>)).toList();
+    }
+    return const [];
+  }
+
   Future<PinnedCloudResource> linkCloudDocument(Map<String, dynamic> payload) async {
     final res = await _dio.post('api/committees/workspace/cloud-docs', data: payload);
     final data = res.data is Map ? (res.data['data'] ?? res.data) : res.data;

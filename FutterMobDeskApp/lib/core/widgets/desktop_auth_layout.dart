@@ -461,9 +461,9 @@ class DesktopAuthLayout extends ConsumerWidget {
           _buildBrandLogo(
             logoUrl: logoUrl,
             isCardHero: true,
-            maxHeight: 58,
+            maxHeight: 68,
             maxWidth: 240,
-            fallbackSize: 56,
+            fallbackSize: 64,
           ),
           const SizedBox(height: 18),
         ] else if (cardAvatar != null) ...[

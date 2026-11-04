@@ -531,9 +531,9 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/committees/console/dashboard" [class.active]="isCurrentRoute('/committees/console/dashboard')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ committeeAliases.aliasSingular }} Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Dashboard</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/console/dashboard')" (click)="togglePin(committeeAliases.aliasSingular + ' Dashboard', '/committees/console/dashboard', 'space_dashboard')" [title]="isPinned('/committees/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/console/dashboard')" (click)="togglePin('Dashboard', '/committees/console/dashboard', 'space_dashboard')" [title]="isPinned('/committees/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/committees/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -558,7 +558,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/committees/console/reports" [class.active]="isCurrentRoute('/committees/console/reports')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">summarize</span>Meeting Reports &amp; Docs</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">summarize</span>Meeting Reports</span>
                   </a>
                 </div>
               </li>
@@ -572,7 +572,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/committees/console/settings" [class.active]="isCurrentRoute('/committees/console/settings')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ committeeAliases.aliasSingular }} Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Settings</span>
                   </a>
                 </div>
               </li>
@@ -1145,9 +1145,9 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/committees/workspace/discover" [class.active]="isCurrentRoute('/committees/workspace/discover')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">explore</span>Browse &amp; Join {{ committeeAliases.aliasPlural }}</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">explore</span>Browse &amp; Join</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/discover')" (click)="togglePin('Browse & Join ' + committeeAliases.aliasPlural, '/committees/workspace/discover', 'explore')" [title]="isPinned('/committees/workspace/discover') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/discover')" (click)="togglePin('Browse & Join', '/committees/workspace/discover', 'explore')" [title]="isPinned('/committees/workspace/discover') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/discover') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -1165,7 +1165,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/committees/workspace/cloud-links" [class.active]="isCurrentRoute('/committees/workspace/cloud-links')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">cloud_done</span>My Connected Cloud Docs</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">cloud_done</span>Connected Cloud Docs</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/cloud-links')" (click)="togglePin('Connected Cloud Docs', '/committees/workspace/cloud-links', 'cloud_done')" [title]="isPinned('/committees/workspace/cloud-links') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/cloud-links') ? 'keep_off' : 'push_pin' }}</span>
