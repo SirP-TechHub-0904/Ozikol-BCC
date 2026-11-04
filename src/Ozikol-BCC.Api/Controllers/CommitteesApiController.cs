@@ -59,7 +59,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         private static readonly HashSet<string> ConsoleAdminRoles = new(StringComparer.OrdinalIgnoreCase)
         {
-            "SuperAdmin", "Admin", "UserManager", "IdentityManager"
+            "SuperAdmin", "Admin", "UserManager", "IdentityManager",
+            "Super Administrator", "Administrator", "System Administrator", "SystemAdministrator", "GlobalEditor"
         };
 
         /// <summary>
@@ -1893,6 +1894,7 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var currentUserId = GetCurrentUserId();
             var settings = await GetOrCreateSettingsAsync(cancellationToken);
+            var isAdmin = IsCurrentUserConsoleAdmin();
 
             var memberships = await _db.BcpCommitteeMembers
                 .AsNoTracking()
@@ -1902,25 +1904,39 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderByDescending(m => m.JoinedAt)
                 .ToListAsync(cancellationToken);
 
-            var committeeIds = memberships.Select(m => m.CommitteeId).ToList();
+            var enrolledCommitteeIds = memberships.Select(m => m.CommitteeId).ToHashSet();
+            var allCommitteeIds = new List<Guid>(enrolledCommitteeIds);
+
+            List<BcpCommittee> adminExtraCommittees = new();
+            if (isAdmin)
+            {
+                adminExtraCommittees = await _db.BcpCommittees
+                    .AsNoTracking()
+                    .Include(c => c.ParentCommittee)
+                    .Where(c => c.Status == "Active" && !enrolledCommitteeIds.Contains(c.Id))
+                    .OrderBy(c => c.Name)
+                    .ToListAsync(cancellationToken);
+
+                allCommitteeIds.AddRange(adminExtraCommittees.Select(c => c.Id));
+            }
 
             var reportCounts = await _db.BcpCommitteeReports
                 .AsNoTracking()
-                .Where(r => committeeIds.Contains(r.CommitteeId))
+                .Where(r => allCommitteeIds.Contains(r.CommitteeId))
                 .GroupBy(r => r.CommitteeId)
                 .Select(g => new { CommitteeId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.CommitteeId, x => x.Count, cancellationToken);
 
             var memberCounts = await _db.BcpCommitteeMembers
                 .AsNoTracking()
-                .Where(m => committeeIds.Contains(m.CommitteeId) && m.Status == "Active")
+                .Where(m => allCommitteeIds.Contains(m.CommitteeId) && m.Status == "Active")
                 .GroupBy(m => m.CommitteeId)
                 .Select(g => new { CommitteeId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.CommitteeId, x => x.Count, cancellationToken);
 
             var cloudDocCounts = await _db.BcpCommitteeCloudDocuments
                 .AsNoTracking()
-                .Where(d => d.CommitteeId.HasValue && committeeIds.Contains(d.CommitteeId.Value))
+                .Where(d => d.CommitteeId.HasValue && allCommitteeIds.Contains(d.CommitteeId.Value))
                 .GroupBy(d => d.CommitteeId!.Value)
                 .Select(g => new { CommitteeId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.CommitteeId, x => x.Count, cancellationToken);
@@ -1960,13 +1976,41 @@ namespace Ozikol_BCC.Api.Controllers
                     MyRoleDisplay = FormatRoleDisplay(m.Role, settings),
                     m.CustomRoleTitle,
                     IsLeader = isLeader,
-                    CanSubmitReport = isLeader || settings.AllowAnyMemberReportSubmission || IsCurrentUserConsoleAdmin(),
+                    CanSubmitReport = isLeader || settings.AllowAnyMemberReportSubmission || isAdmin,
                     MemberCount = memberCounts.TryGetValue(c.Id, out var mc) ? mc : 1,
                     ReportsCount = reportCounts.TryGetValue(c.Id, out var rc) ? rc : 0,
                     CloudDocsCount = cloudDocCounts.TryGetValue(c.Id, out var dc) ? dc : 0,
                     m.JoinedAt
                 };
-            });
+            }).ToList();
+
+            if (isAdmin && adminExtraCommittees.Count > 0)
+            {
+                items.AddRange(adminExtraCommittees.Select(c => new
+                {
+                    CommitteeId = c.Id,
+                    c.ParentCommitteeId,
+                    ParentCommitteeName = c.ParentCommittee?.Name,
+                    c.Name,
+                    c.Slug,
+                    c.CategoryTag,
+                    c.Description,
+                    c.MissionStatement,
+                    c.MeetingSchedule,
+                    c.MeetingLocationOrLink,
+                    c.CoverBannerUrl,
+                    c.IconName,
+                    MyRole = "Administrator",
+                    MyRoleDisplay = "Administrator",
+                    CustomRoleTitle = (string?)null,
+                    IsLeader = true,
+                    CanSubmitReport = true,
+                    MemberCount = memberCounts.TryGetValue(c.Id, out var mc) ? mc : 0,
+                    ReportsCount = reportCounts.TryGetValue(c.Id, out var rc) ? rc : 0,
+                    CloudDocsCount = cloudDocCounts.TryGetValue(c.Id, out var dc) ? dc : 0,
+                    JoinedAt = c.CreatedAt
+                }));
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -2338,8 +2382,22 @@ namespace Ozikol_BCC.Api.Controllers
 
         private bool IsCurrentUserConsoleAdmin()
         {
-            var roleClaims = User.FindAll(ClaimTypes.Role).Select(c => c.Value)
-                .Concat(User.FindAll("role").Select(c => c.Value));
+            if (User == null) return false;
+
+            // 1. Direct framework role checks
+            foreach (var r in ConsoleAdminRoles)
+            {
+                if (User.IsInRole(r)) return true;
+            }
+
+            // 2. Comprehensive claim types inspection (handles mapped and unmapped JWT tokens)
+            var roleClaims = User.Claims
+                .Where(c => c.Type == ClaimTypes.Role
+                         || c.Type == "role"
+                         || c.Type == "roles"
+                         || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+                .Select(c => c.Value.Trim());
+
             return roleClaims.Any(r => ConsoleAdminRoles.Contains(r));
         }
 

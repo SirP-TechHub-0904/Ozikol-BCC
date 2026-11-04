@@ -176,7 +176,8 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
               </div>
             </div>
           </div>
-          <p class="rc-muted" *ngIf="rollCall.length === 0">Select a {{ aliases.aliasSingular.toLowerCase() }} above to load its member roll-call.</p>
+          <p class="rc-muted" *ngIf="!selectedCommitteeId">Select a {{ aliases.aliasSingular.toLowerCase() }} above to load its member roll-call.</p>
+          <p class="rc-muted" *ngIf="selectedCommitteeId && rollCall.length === 0">No enrolled members on this roster yet. You can still submit structured minutes, resolutions, and file attachments.</p>
         </div>
       </section>
 
@@ -439,19 +440,57 @@ export class CommitteesReportComposerComponent implements OnInit, OnDestroy {
 
     this.committeesService.getMyWorkspaceCommittees().subscribe({
       next: (res) => {
-        if (res?.isSuccess && res.data?.enrolledCommittees) {
-          const all: any[] = res.data.enrolledCommittees;
-          this.reportableGroups = all.filter((g) => g.canSubmitReport);
-          if (preselect && this.reportableGroups.some((g) => g.committeeId === preselect)) {
-            this.selectedCommitteeId = preselect;
-            this.onCommitteeChanged();
-          } else if (this.reportableGroups.length === 1) {
-            this.selectedCommitteeId = this.reportableGroups[0].committeeId;
-            this.onCommitteeChanged();
-          }
+        const enrolled: any[] = res?.isSuccess && res.data?.enrolledCommittees ? res.data.enrolledCommittees : [];
+        const reportable = enrolled.filter((g) => g.canSubmitReport);
+
+        if (reportable.length > 0) {
+          this.reportableGroups = reportable;
+          this.applyPreselection(preselect);
+        } else {
+          // Fallback: If not enrolled in any group or none reportable, load managed workspace committees (for admins)
+          this.loadManagedCommitteesFallback(preselect);
+        }
+      },
+      error: () => {
+        this.loadManagedCommitteesFallback(preselect);
+      }
+    });
+  }
+
+  /**
+   * Fallback loader for workspace administrators who are not directly enrolled on the member roster
+   * but have global permissions to submit reports for any committee in the workspace.
+   */
+  private loadManagedCommitteesFallback(preselect: string): void {
+    this.committeesService.getManagedCommittees().subscribe({
+      next: (res) => {
+        if (res?.isSuccess && Array.isArray(res.data)) {
+          this.reportableGroups = res.data
+            .filter((c: any) => c.status === 'Active')
+            .map((c: any) => ({
+              committeeId: c.id,
+              name: c.name,
+              myRole: 'Administrator',
+              myRoleDisplay: 'Administrator',
+              canSubmitReport: true
+            }));
+          this.applyPreselection(preselect);
         }
       }
     });
+  }
+
+  /**
+   * Applies preselection from query parameters or auto-selects if only one committee is available.
+   */
+  private applyPreselection(preselect: string): void {
+    if (preselect && this.reportableGroups.some((g) => g.committeeId === preselect)) {
+      this.selectedCommitteeId = preselect;
+      this.onCommitteeChanged();
+    } else if (this.reportableGroups.length === 1) {
+      this.selectedCommitteeId = this.reportableGroups[0].committeeId;
+      this.onCommitteeChanged();
+    }
   }
 
   ngOnDestroy(): void {
