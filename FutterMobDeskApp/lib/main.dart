@@ -22,7 +22,6 @@ import 'features/workspace_auth/presentation/workspace_login_screen.dart';
 import 'features/workspace_auth/state/workspace_state.dart';
 import 'core/services/client_config_service.dart';
 import 'core/services/realtime_sync_service.dart';
-import 'core/services/windows_clipboard_fix.dart';
 import 'core/services/windows_jump_list_service.dart';
 import 'core/localization/language_provider.dart';
 import 'core/widgets/desktop_title_bar.dart';
@@ -41,8 +40,7 @@ void main(List<String> args) async {
   );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  // Initialize Windows 11 clipboard history paste stream interceptor & taskbar jump list
-  WindowsClipboardFix.initialize();
+  // Initialize Windows taskbar jump list
   WindowsJumpListService.initialize();
 
   // Cap in-memory image cache to prevent Android lowmemorykiller (LMK) terminations

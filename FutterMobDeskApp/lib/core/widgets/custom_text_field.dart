@@ -54,6 +54,7 @@ class CustomTextField extends StatefulWidget {
 
 class _CustomTextFieldState extends State<CustomTextField> {
   late bool _obscureText;
+  late bool _hasText;
   TextEditingController? _internalController;
 
   TextEditingController get _effectiveController =>
@@ -66,6 +67,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     if (widget.controller == null && widget.initialValue != null) {
       _internalController = TextEditingController(text: widget.initialValue);
     }
+    _hasText = _effectiveController.text.isNotEmpty;
     _effectiveController.addListener(_onTextChanged);
   }
 
@@ -74,6 +76,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller?.removeListener(_onTextChanged);
+      _hasText = _effectiveController.text.isNotEmpty;
       _effectiveController.addListener(_onTextChanged);
     }
   }
@@ -86,8 +89,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
   }
 
   void _onTextChanged() {
-    if (mounted) {
-      setState(() {});
+    final nowHasText = _effectiveController.text.isNotEmpty;
+    if (nowHasText != _hasText && mounted) {
+      setState(() {
+        _hasText = nowHasText;
+      });
     }
   }
 
