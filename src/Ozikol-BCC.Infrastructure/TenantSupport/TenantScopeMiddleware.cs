@@ -99,7 +99,9 @@ public class TenantScopeMiddleware
                                    path.StartsWith("/api/auth/request-otp", StringComparison.OrdinalIgnoreCase) ||
                                    path.StartsWith("/api/auth/verify-login-mfa", StringComparison.OrdinalIgnoreCase) ||
                                    path.StartsWith("/api/auth/resend-login-mfa", StringComparison.OrdinalIgnoreCase) ||
-                                   path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase);
+                                   path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/SettingsApi/brand", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/SetupApi/client-config", StringComparison.OrdinalIgnoreCase);
 
         if (!isAuthBootstrapPath && match != null && httpContext.User?.Identity?.IsAuthenticated == true)
         {
