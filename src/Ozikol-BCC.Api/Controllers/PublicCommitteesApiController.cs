@@ -283,7 +283,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .AsNoTracking()
                 .Include(c => c.ExtraInfoForm)
                 .Include(c => c.ParentCommittee)
-                .FirstOrDefaultAsync(c => c.Slug.ToLower() == normalizedSlug && c.Status == "Active", cancellationToken);
+                .FirstOrDefaultAsync(c => (c.Slug == normalizedSlug || (c.Slug != null && c.Slug.ToLower() == normalizedSlug)) && c.Status == "Active", cancellationToken);
 
             if (committee == null || !committee.AllowExternalRegistration)
             {
