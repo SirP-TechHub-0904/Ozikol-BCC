@@ -73,5 +73,9 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is required to verify duty attendance at assigned client site geofences.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location is required for lone-worker welfare safety check-calls during assigned shifts.</string>
 </dict>
 </plist>

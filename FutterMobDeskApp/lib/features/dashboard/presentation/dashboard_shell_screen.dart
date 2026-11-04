@@ -71,6 +71,9 @@ import '../../committees/presentation/member/committees_detail_view.dart';
 import '../../committees/presentation/member/committees_report_composer_view.dart';
 import '../../committees/presentation/member/committees_cloud_vault_view.dart';
 import '../../committees/state/committees_state.dart';
+import '../../workforce/presentation/workforce_roster_screen.dart';
+import '../../workforce/presentation/workforce_clock_screen.dart';
+import '../../workforce/presentation/workforce_admin_monitor_screen.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
 /// with the Ozikol BCC Angular Web Console Dashboard (`/dashboard/console`).
@@ -2067,6 +2070,36 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ],
         ),
 
+      // 2B. MODULAR FEATURES & EXTENSIONS: WORKFORCE & SHIFTS (bcp-staff-rota & bcp-attendance-tracking)
+      // Placed immediately after People & Community per Canonical Navigation Hierarchy
+      if (activeWs != null && (activeWs.isFeatureActive('bcp-staff-rota') || activeWs.isFeatureActive('bcp-attendance-tracking')))
+        AppDrawerSection(
+          title: 'WORKFORCE & SHIFTS',
+          infoTooltip: 'Staff Rota, 24/7 Overnight Shifts, Client Sites & GPS Duty Monitor',
+          items: [
+            if (activeWs.isFeatureActive('bcp-staff-rota'))
+              AppDrawerItem(
+                icon: Icons.calendar_month_rounded,
+                title: 'Staff Rota & Calendar',
+                isSelected: _selectedNavIndex == 40,
+                onTap: () {
+                  _navigateToTab(40, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+            if (activeWs.isFeatureActive('bcp-attendance-tracking'))
+              AppDrawerItem(
+                icon: Icons.radar_rounded,
+                title: 'Live Duty Monitor',
+                isSelected: _selectedNavIndex == 41,
+                onTap: () {
+                  _navigateToTab(41, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+          ],
+        ),
+
       // 3. MODULAR FEATURES & EXTENSIONS: WORKSPACE (Desktop Workstation — below People & Community)
       if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
         AppDrawerSection(
@@ -2272,6 +2305,34 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
           onTap: () {
             _navigateToTab(22, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+
+    // 2B. Modular Feature Suite: bcp-staff-rota & bcp-attendance-tracking in Member workspace
+    if (activeWs != null && activeWs.isFeatureActive('bcp-staff-rota')) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.event_note_rounded,
+          title: 'My Shifts & Rota',
+          isSelected: memberIndex == 20,
+          onTap: () {
+            _navigateToTab(120, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+    if (activeWs != null && activeWs.isFeatureActive('bcp-attendance-tracking')) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.timer_rounded,
+          title: 'Duty Clock & Geofence',
+          isSelected: memberIndex == 21,
+          onTap: () {
+            _navigateToTab(121, clearHistory: true);
             _closeMobileDrawer();
           },
         ),
@@ -2583,6 +2644,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             initialCommitteeId: _selectedCommitteeId,
             onNavigateBack: _navigateBack,
           );
+        case 40:
+          return const WorkforceRosterScreen();
+        case 41:
+          return const WorkforceAdminMonitorScreen();
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }
@@ -2670,6 +2735,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             onNavigateBack: () => _navigateToTab(110),
           );
+        case 20:
+          return const WorkforceRosterScreen();
+        case 21:
+          return const WorkforceClockScreen();
         default:
           return WorkspaceHomeView(
             workspace: activeWs,
