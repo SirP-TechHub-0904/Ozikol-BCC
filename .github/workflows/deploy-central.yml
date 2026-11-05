@@ -69,6 +69,8 @@ jobs:
               docker load -i /tmp/ozikol-central.tar
               docker run -d --name ozikol-central \
                 --restart unless-stopped \
+                --network ozikol-network \
+                --env-file /opt/ozikol/.env \
                 -p 127.0.0.1:5001:8080 \
                 ozikol/central:latest dotnet Ozikol.Central.dll
               rm -f /tmp/ozikol-central.tar
