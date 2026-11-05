@@ -534,17 +534,19 @@ catch (Exception ex)
     logger?.LogWarning(ex, "Tenant connection string auto-encryption startup check encountered a non-blocking issue.");
 }
 
-// 7. Dynamic Central Master Platform Settings verification & telemetry diagnostic
+// 7. Dynamic Central Master Platform Settings verification & automatic secrets repair
 try
 {
     using var platformScope = app.Services.CreateScope();
     var masterDb = platformScope.ServiceProvider.GetService<MasterCatalogDbContext>();
     if (masterDb != null)
     {
+        var logger = platformScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        await Ozikol.Central.Services.MasterPlatformCredentialsSeeder.SeedOrRepairPlatformSecretsAsync(masterDb, app.Configuration, logger);
+
         var platformSettings = await masterDb.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
         if (platformSettings != null)
         {
-            var logger = platformScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("MasterPlatformSettings verified successfully. (Postmark: {PostmarkActive}, Cloudinary: {CloudinaryActive}, Recaptcha: {RecaptchaActive})",
                 !string.IsNullOrWhiteSpace(platformSettings.PostmarkServerToken),
                 !string.IsNullOrWhiteSpace(platformSettings.CloudinaryCloudName),
