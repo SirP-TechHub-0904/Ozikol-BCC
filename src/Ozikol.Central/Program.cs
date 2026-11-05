@@ -534,6 +534,30 @@ catch (Exception ex)
     logger?.LogWarning(ex, "Tenant connection string auto-encryption startup check encountered a non-blocking issue.");
 }
 
+// 7. Dynamic Central Master Platform Settings verification & telemetry diagnostic
+try
+{
+    using var platformScope = app.Services.CreateScope();
+    var masterDb = platformScope.ServiceProvider.GetService<MasterCatalogDbContext>();
+    if (masterDb != null)
+    {
+        var platformSettings = await masterDb.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+        if (platformSettings != null)
+        {
+            var logger = platformScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("MasterPlatformSettings verified successfully. (Postmark: {PostmarkActive}, Cloudinary: {CloudinaryActive}, Recaptcha: {RecaptchaActive})",
+                !string.IsNullOrWhiteSpace(platformSettings.PostmarkServerToken),
+                !string.IsNullOrWhiteSpace(platformSettings.CloudinaryCloudName),
+                !string.IsNullOrWhiteSpace(platformSettings.GoogleReCaptchaSiteKey));
+        }
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetService<ILogger<Program>>();
+    logger?.LogWarning(ex, "MasterPlatformSettings diagnostic check encountered a non-blocking issue during startup.");
+}
+
 app.Run();
 
 static string ResolveCentralClientIp(HttpContext httpContext)

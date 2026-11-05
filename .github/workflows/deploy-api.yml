@@ -13,6 +13,7 @@ on:
       - 'src/Ozikol-BCC.Domain/**'
       - 'src/Ozikol-BCC.Persistence.EF.SQL/**'
       - 'src/Ozikol-BCC.Application/**'
+      - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
 jobs:
@@ -41,27 +42,28 @@ jobs:
       - name: Export image
         run: docker save ozikol/api:latest -o ozikol-api.tar
 
-      # Transfer tarball to VPS
+      # Transfer tarball to VPS using native OpenSSH (Zero external downloads, No 403 errors)
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          ssh-keyscan -p "$PORT" -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
       - name: SCP image tarball to VPS
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          source: "ozikol-api.tar"
-          target: "/tmp/ozikol-api.tar"
+        run: |
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          scp -i ~/.ssh/deploy_key -P "$PORT" ozikol-api.tar ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/ozikol-api.tar
 
       # Deploy on VPS: stop old container, load new image, run new container
-      - name: Deploy API on VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script: |
-            # Check if tarball arrived as a regular file
+      - name: Deploy on VPS
+        run: |
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             if [ -f /tmp/ozikol-api.tar ]; then
               echo "Loading ozikol-api image..."
               docker rm -f ozikol-api || true
@@ -76,3 +78,4 @@ jobs:
               echo "Skipping ozikol-api deployment: /tmp/ozikol-api.tar not found or is a directory."
               rm -rf /tmp/ozikol-api.tar || true
             fi
+          EOF
