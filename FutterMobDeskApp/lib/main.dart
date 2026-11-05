@@ -60,7 +60,7 @@ void main(List<String> args) async {
         backgroundColor: Colors.white,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
-        title: 'Business Command Center',
+        title: 'Ozikol',
       );
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.show();
@@ -81,7 +81,7 @@ void main(List<String> args) async {
   await SingleTenantConfig.initialize(storageService);
   if (SingleTenantConfig.isLocked && !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     try {
-      await windowManager.setTitle('${SingleTenantConfig.organizationName} - Command Center');
+      await windowManager.setTitle('${SingleTenantConfig.organizationName} - Ozikol');
     } catch (_) {}
   }
   final cacheService = await TenantCacheService.create(storageService);
@@ -190,7 +190,7 @@ class OzikolApp extends ConsumerWidget {
     });
 
     return MaterialApp(
-      title: 'Business Command Center',
+      title: 'Ozikol',
       locale: Locale(currentLang),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
@@ -218,7 +218,7 @@ class OzikolApp extends ConsumerWidget {
             ? Column(
                 children: [
                   DesktopTitleBar(
-                    title: brandingWs != null ? '${brandingWs.displayName} - Command Center' : 'Business Command Center',
+                    title: brandingWs != null ? '${brandingWs.displayName} - Ozikol' : 'Ozikol',
                     iconUrl: brandingWs?.iconUrl,
                     logoUrl: brandingWs?.logoUrl,
                   ),
@@ -273,9 +273,7 @@ class OzikolApp extends ConsumerWidget {
             );
           }
           if (workspaceState.isInitializing) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return _AppStartupLaunchScreen(isDark: Theme.of(context).brightness == Brightness.dark);
           }
           if (workspaceState.hasActiveSession) {
             return const DashboardShellScreen();
@@ -290,9 +288,7 @@ class OzikolApp extends ConsumerWidget {
           }
           return const WorkspaceEntryScreen();
         },
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        loading: () => _AppStartupLaunchScreen(isDark: Theme.of(context).brightness == Brightness.dark),
         error: (error, stackTrace) {
           // If config fetch fails, continue safely with cached/default state
           if (workspaceState.hasActiveSession) {
@@ -308,6 +304,85 @@ class OzikolApp extends ConsumerWidget {
           }
           return const WorkspaceEntryScreen();
         },
+      ),
+    );
+  }
+}
+
+/// Branded launch & initialization screen rendering a prominent Ozikol emblem (88px)
+/// during app startup instead of a tiny raw spinner.
+class _AppStartupLaunchScreen extends StatelessWidget {
+  final bool isDark;
+
+  const _AppStartupLaunchScreen({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Image.asset(
+                isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.business_center_rounded,
+                  size: 48,
+                  color: Color(0xFF0050E5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Ozikol',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Business Command Center',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: 120,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: const LinearProgressIndicator(
+                  minHeight: 3,
+                  backgroundColor: Color(0xFFE2E8F0),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0050E5)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,8 @@ import 'widgets/approved_apps_modal.dart';
 import 'widgets/close_from_work_modal.dart';
 import 'widgets/pre_work_app_checker_modal.dart';
 import 'widgets/take_break_modal.dart';
+import '../../workforce/presentation/workforce_station_gatekeeper_dialog.dart';
+import '../../workforce/services/workforce_api_service.dart';
 
 /// <summary>
 /// Workstation & Shift Tracker Screen (bcp-workspace).
@@ -142,6 +144,23 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   }
 
   Future<void> _handleStartWork() async {
+    final activeWs = widget.workspace;
+    if (activeWs != null && activeWs.isFeatureActive('bcp-attendance-tracking')) {
+      // Station access gatekeeper handshake with single source of truth attendance
+      final validation = await ref.read(workforceApiServiceProvider).validateStationAccess(
+        activeWs.id.toString(),
+      );
+      if (validation.requiresClockIn && !validation.isAuthorized && mounted) {
+        final allowed = await WorkforceStationGatekeeperDialog.checkAndGatekeep(
+          context,
+          validation,
+          () => _handleStartWork(),
+        );
+        if (!allowed) return;
+      }
+    }
+
+    if (!mounted) return;
     final domain = widget.workspace?.primaryDomain ?? widget.workspace?.tenantDomain;
     final confirmed = await showPreWorkAppCheckerModal(context, ref, primaryDomain: domain);
     if (confirmed == true && mounted) {

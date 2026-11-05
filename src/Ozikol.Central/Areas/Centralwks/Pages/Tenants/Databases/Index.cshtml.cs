@@ -94,6 +94,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         public MasterMigrationSummary MasterSummary { get; set; } = new();
 
         /// <summary>
+        /// AES-256-GCM encryption at rest status across tenant database credentials.
+        /// </summary>
+        public ConnectionStringsEncryptionStatus EncryptionStatus { get; set; } = new();
+
+        /// <summary>
         /// List of tenant database summaries for the current paginated view.
         /// </summary>
         public List<TenantMigrationSummary> Databases { get; set; } = new();
@@ -109,6 +114,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             try
             {
                 MasterSummary = await _migrationService.GetMasterMigrationStatusAsync();
+                EncryptionStatus = await _migrationService.GetConnectionStringsEncryptionStatusAsync();
                 var allSummaries = await _migrationService.GetAllTenantMigrationStatusesAsync();
 
                 // Compute Mini-Dashboard Metrics
@@ -237,6 +243,42 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             else
             {
                 TempData["Warning"] = $"Batch migration completed with errors: {batchResult.SucceededCount} succeeded, {batchResult.FailedCount} failed.";
+            }
+
+            return RedirectToPage(new { Search, Status, PageNumber, PageSize });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to encrypt all unencrypted tenant connection strings in-place using authenticated AES-256-GCM.
+        /// </summary>
+        public async Task<IActionResult> OnPostEncryptConnectionStringsAsync()
+        {
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+            var now = DateTime.UtcNow;
+
+            var result = await _migrationService.EncryptAllUnencryptedConnectionStringsAsync();
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                UserName = adminUser,
+                Action = "Security.ConnectionStringsEncrypted",
+                EntityType = "DatabaseSuite",
+                Summary = $"Admin {adminUser} triggered in-place AES-256-GCM encryption of tenant database connection strings. Result: {result.Message} (Newly encrypted: {result.NewlyEncryptedCount})",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                CreatedUtc = now
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
             }
 
             return RedirectToPage(new { Search, Status, PageNumber, PageSize });

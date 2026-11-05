@@ -241,21 +241,19 @@ namespace Ozikol.Central.Pages
                 TrialDays = 14;
             }
 
-            // 3. Query active catalog features ordered by suite SortOrder, feature SortOrder, and name
+            // 3. Query all catalog features (without publish or active restriction, matching the solutions mega-menu showcase)
             List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> rawFeatures;
             try
             {
                 rawFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
                     .Include(f => f.Suite)
-                    .Where(f => f.IsActive)
                     .ToListAsync();
             }
             catch
             {
                 rawFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive)
                     .ToListAsync();
             }
 
@@ -278,6 +276,17 @@ namespace Ozikol.Central.Pages
             var idx = Array.FindIndex(Ozikol.Central.Areas.Centralwks.Pages.Features.IndexModel.CanonicalSuites,
                 s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
             return idx >= 0 ? idx : 500;
+        }
+
+        /// <summary>
+        /// Resolves the canonical single-letter designation (A-K) for a given suite name.
+        /// </summary>
+        /// <param name="category">The suite or category name.</param>
+        /// <returns>Suite character ('A'-'K'), or '•' if unrecognized.</returns>
+        public static char GetSuiteLetter(string? category)
+        {
+            var idx = GetSuiteOrder(category);
+            return (idx >= 0 && idx < 26) ? (char)('A' + idx) : '•';
         }
 
         /// <summary>

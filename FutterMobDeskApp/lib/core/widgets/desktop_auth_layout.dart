@@ -302,7 +302,7 @@ class DesktopAuthLayout extends ConsumerWidget {
                   children: [
                     SingleTenantConfig.isLocked ? const SizedBox.shrink() : _buildChangeWorkspacePill(context, ref),
                     Text(
-                      'auth.powered_by'.tr(ref, fallback: 'Powered by Business Command Center'),
+                      'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
                       style: const TextStyle(
                         fontSize: 11.5,
                         color: Colors.white54,
@@ -434,7 +434,7 @@ class DesktopAuthLayout extends ConsumerWidget {
                   ],
                   const SizedBox(height: 8),
                   Text(
-                    'auth.powered_by'.tr(ref, fallback: 'Powered by Business Command Center'),
+                    'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
                     style: const TextStyle(
                       fontSize: 11,
                       color: Colors.white38,
@@ -461,9 +461,9 @@ class DesktopAuthLayout extends ConsumerWidget {
           _buildBrandLogo(
             logoUrl: logoUrl,
             isCardHero: true,
-            maxHeight: 58,
+            maxHeight: 68,
             maxWidth: 240,
-            fallbackSize: 56,
+            fallbackSize: 64,
           ),
           const SizedBox(height: 18),
         ] else if (cardAvatar != null) ...[

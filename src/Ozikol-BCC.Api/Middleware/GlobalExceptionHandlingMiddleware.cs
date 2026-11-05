@@ -146,7 +146,8 @@ public class GlobalExceptionHandlingMiddleware
             }
 
             var postmarkService = context.RequestServices.GetService<IPostmarkEmailService>();
-            if (postmarkService == null)
+            var smtpDispatcher = context.RequestServices.GetService<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher>();
+            if (smtpDispatcher == null && postmarkService == null)
             {
                 return;
             }
@@ -173,12 +174,25 @@ public class GlobalExceptionHandlingMiddleware
                 <pre>{ex.StackTrace}</pre>
                 """;
 
-            await postmarkService.SendHtmlEmailAsync(
-                to: alertRecipient,
-                subject: $"[API Crash] {ex.GetType().Name} at {method} {path}",
-                htmlBody: body,
-                from: "Ozikol System Check <systemcheck@ozikol.cloud>",
-                tag: "api-crash-telemetry");
+            if (smtpDispatcher != null)
+            {
+                await smtpDispatcher.SendEmailAsync(
+                    toEmail: alertRecipient,
+                    subject: $"[API Crash] {ex.GetType().Name} at {method} {path}",
+                    htmlBody: body,
+                    fromEmail: "security@ozikol.cloud",
+                    fromName: "Ozikol API Crash Telemetry",
+                    isCentralPlatformEmail: true);
+            }
+            else if (postmarkService != null)
+            {
+                await postmarkService.SendHtmlEmailAsync(
+                    to: alertRecipient,
+                    subject: $"[API Crash] {ex.GetType().Name} at {method} {path}",
+                    htmlBody: body,
+                    from: "Ozikol System Check <systemcheck@ozikol.cloud>",
+                    tag: "api-crash-telemetry");
+            }
         }
         catch
         {

@@ -433,6 +433,79 @@
 
     @* Right Column: Infrastructure & Live Audit Stream *@
     <div style="display: flex; flex-direction: column; gap: 24px;">
+        @* Hostinger VPS & Hardware Telemetry Card *@
+        <div class="admin-card" id="vpsTelemetryCard" style="background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 12px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="border-bottom: 1px solid var(--admin-border, #f1f5f9); padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 16px; font-weight: 700; color: var(--admin-text, #0f172a); margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary, #0050e5);">server</span>
+                    Hostinger VPS Telemetry
+                </h2>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="vpsTelemetryTimestamp" style="font-size: 11px; color: var(--admin-text-muted, #64748b);">Live</span>
+                    <button type="button" id="refreshVpsTelemetryBtn" class="btn-admin btn-admin-secondary btn-admin-sm" title="Refresh live VPS hardware metrics" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px;">
+                        <span class="material-symbols-outlined" id="vpsRefreshIcon" style="font-size: 14px;">sync</span>
+                    </button>
+                </div>
+            </div>
+
+            @* Metric 1: NVMe SSD Storage *@
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-primary, #0050e5);">hard_drive</span>
+                        <span style="font-weight: 700; font-size: 13px; color: var(--admin-text, #0f172a);">NVMe SSD Storage</span>
+                        <span id="vpsDiskDevice" style="font-size: 11px; color: var(--admin-text-muted, #64748b);">(@Model.SystemTelemetry.DiskDeviceName)</span>
+                    </div>
+                    <span id="vpsDiskStatusBadge" class="badge" style="font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; @(Model.SystemTelemetry.DiskStatus switch { "Critical" => "background: rgba(220,38,38,0.12); color: #dc2626;", "Warning" => "background: rgba(217,119,6,0.12); color: #d97706;", _ => "background: rgba(5,150,105,0.12); color: #059669;" })">
+                        @Model.SystemTelemetry.DiskStatus
+                    </span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--admin-bg-surface-elevated, #f1f5f9); border-radius: 999px; overflow: hidden; margin-bottom: 6px;">
+                    <div id="vpsDiskProgressBar" style="width: @(Math.Min(100, Model.SystemTelemetry.DiskPercentUsed))%; height: 100%; background: @(Model.SystemTelemetry.DiskPercentUsed >= 90 ? "#dc2626" : (Model.SystemTelemetry.DiskPercentUsed >= 80 ? "#d97706" : "var(--admin-primary, #0050e5)")); border-radius: 999px; transition: width 0.4s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: var(--admin-text-muted, #64748b);">
+                    <span><strong id="vpsDiskUsedText" style="color: var(--admin-text, #0f172a);">@Model.SystemTelemetry.UsedDiskGb GB</strong> of <span id="vpsDiskTotalText">@Model.SystemTelemetry.TotalDiskGb GB</span> (<span id="vpsDiskPercentText">@Model.SystemTelemetry.DiskPercentUsed%</span>)</span>
+                    <span style="color: #059669; font-weight: 600;"><span id="vpsDiskFreeText">@Model.SystemTelemetry.FreeDiskGb GB</span> free</span>
+                </div>
+            </div>
+
+            @* Metric 2: Server RAM Headroom *@
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #7c3aed;">memory</span>
+                        <span style="font-weight: 700; font-size: 13px; color: var(--admin-text, #0f172a);">Server RAM</span>
+                    </div>
+                    <span id="vpsRamStatusBadge" class="badge" style="font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; @(Model.SystemTelemetry.RamStatus switch { "Critical" => "background: rgba(220,38,38,0.12); color: #dc2626;", "Warning" => "background: rgba(217,119,6,0.12); color: #d97706;", _ => "background: rgba(5,150,105,0.12); color: #059669;" })">
+                        @Model.SystemTelemetry.RamStatus
+                    </span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--admin-bg-surface-elevated, #f1f5f9); border-radius: 999px; overflow: hidden; margin-bottom: 6px;">
+                    <div id="vpsRamProgressBar" style="width: @(Math.Min(100, Model.SystemTelemetry.RamPercentUsed))%; height: 100%; background: @(Model.SystemTelemetry.RamPercentUsed >= 90 ? "#dc2626" : (Model.SystemTelemetry.RamPercentUsed >= 80 ? "#d97706" : "#7c3aed")); border-radius: 999px; transition: width 0.4s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: var(--admin-text-muted, #64748b);">
+                    <span><strong id="vpsRamUsedText" style="color: var(--admin-text, #0f172a);">@((Model.SystemTelemetry.UsedRamMb / 1024.0).ToString("F1")) GB</strong> of <span id="vpsRamTotalText">@((Model.SystemTelemetry.TotalRamMb / 1024.0).ToString("F1")) GB</span> (<span id="vpsRamPercentText">@Model.SystemTelemetry.RamPercentUsed%</span>)</span>
+                    <span style="color: #7c3aed; font-weight: 600;"><span id="vpsRamFreeText">@((Model.SystemTelemetry.FreeRamMb / 1024.0).ToString("F1")) GB</span> headroom</span>
+                </div>
+            </div>
+
+            @* Quick Specs Footer *@
+            <div style="padding-top: 12px; border-top: 1px dashed var(--admin-border, #f1f5f9); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11.5px;">
+                <div>
+                    <span style="color: var(--admin-text-muted, #64748b);">CPU Cores:</span>
+                    <strong id="vpsCpuCores" style="color: var(--admin-text, #0f172a); margin-left: 4px;">@Model.SystemTelemetry.CpuCoresCount vCPUs</strong>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-muted, #64748b);">Tenant DBs:</span>
+                    <strong id="vpsTenantDbs" style="color: var(--admin-text, #0f172a); margin-left: 4px;">@Model.SystemTelemetry.ActiveTenantsCount active</strong>
+                </div>
+                <div style="grid-column: span 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <span style="color: var(--admin-text-muted, #64748b);">Kernel/OS:</span>
+                    <span id="vpsOsDesc" style="color: var(--admin-text, #0f172a); margin-left: 4px;" title="@Model.SystemTelemetry.OperatingSystemDescription">@Model.SystemTelemetry.OperatingSystemDescription</span>
+                </div>
+            </div>
+        </div>
+
         @* Platform Infrastructure Card *@
         <div class="admin-card" style="background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 12px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
             <div style="border-bottom: 1px solid var(--admin-border, #f1f5f9); padding-bottom: 12px; margin-bottom: 16px;">
@@ -1303,6 +1376,101 @@
                     closeModal();
                 }
             });
+
+            // ── Live VPS Telemetry Refresh ──
+            const refreshVpsBtn = document.getElementById('refreshVpsTelemetryBtn');
+            const vpsRefreshIcon = document.getElementById('vpsRefreshIcon');
+
+            async function refreshVpsTelemetry() {
+                if (!refreshVpsBtn) return;
+                if (vpsRefreshIcon) {
+                    vpsRefreshIcon.style.transition = 'transform 0.6s linear';
+                    vpsRefreshIcon.style.transform = 'rotate(360deg)';
+                }
+
+                try {
+                    const res = await fetch('?handler=VpsTelemetry');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+
+                    // Update Disk
+                    const diskUsedEl = document.getElementById('vpsDiskUsedText');
+                    const diskTotalEl = document.getElementById('vpsDiskTotalText');
+                    const diskFreeEl = document.getElementById('vpsDiskFreeText');
+                    const diskPercentEl = document.getElementById('vpsDiskPercentText');
+                    const diskBar = document.getElementById('vpsDiskProgressBar');
+                    const diskBadge = document.getElementById('vpsDiskStatusBadge');
+                    const diskDevice = document.getElementById('vpsDiskDevice');
+
+                    if (diskUsedEl) diskUsedEl.textContent = data.usedDiskGb + ' GB';
+                    if (diskTotalEl) diskTotalEl.textContent = data.totalDiskGb + ' GB';
+                    if (diskFreeEl) diskFreeEl.textContent = data.freeDiskGb + ' GB';
+                    if (diskPercentEl) diskPercentEl.textContent = data.diskPercentUsed + '%';
+                    if (diskDevice) diskDevice.textContent = '(' + data.diskDeviceName + ')';
+                    if (diskBar) {
+                        diskBar.style.width = Math.min(100, data.diskPercentUsed) + '%';
+                        diskBar.style.background = data.diskPercentUsed >= 90 ? '#dc2626' : (data.diskPercentUsed >= 80 ? '#d97706' : 'var(--admin-primary, #0050e5)');
+                    }
+                    if (diskBadge) {
+                        diskBadge.textContent = data.diskStatus;
+                        diskBadge.style.background = data.diskStatus === 'Critical' ? 'rgba(220,38,38,0.12)' : (data.diskStatus === 'Warning' ? 'rgba(217,119,6,0.12)' : 'rgba(5,150,105,0.12)');
+                        diskBadge.style.color = data.diskStatus === 'Critical' ? '#dc2626' : (data.diskStatus === 'Warning' ? '#d97706' : '#059669');
+                    }
+
+                    // Update RAM
+                    const ramUsedGb = (data.usedRamMb / 1024.0).toFixed(1);
+                    const ramTotalGb = (data.totalRamMb / 1024.0).toFixed(1);
+                    const ramFreeGb = (data.freeRamMb / 1024.0).toFixed(1);
+
+                    const ramUsedEl = document.getElementById('vpsRamUsedText');
+                    const ramTotalEl = document.getElementById('vpsRamTotalText');
+                    const ramFreeEl = document.getElementById('vpsRamFreeText');
+                    const ramPercentEl = document.getElementById('vpsRamPercentText');
+                    const ramBar = document.getElementById('vpsRamProgressBar');
+                    const ramBadge = document.getElementById('vpsRamStatusBadge');
+
+                    if (ramUsedEl) ramUsedEl.textContent = ramUsedGb + ' GB';
+                    if (ramTotalEl) ramTotalEl.textContent = ramTotalGb + ' GB';
+                    if (ramFreeEl) ramFreeEl.textContent = ramFreeGb + ' GB';
+                    if (ramPercentEl) ramPercentEl.textContent = data.ramPercentUsed + '%';
+                    if (ramBar) {
+                        ramBar.style.width = Math.min(100, data.ramPercentUsed) + '%';
+                        ramBar.style.background = data.ramPercentUsed >= 90 ? '#dc2626' : (data.ramPercentUsed >= 80 ? '#d97706' : '#7c3aed');
+                    }
+                    if (ramBadge) {
+                        ramBadge.textContent = data.ramStatus;
+                        ramBadge.style.background = data.ramStatus === 'Critical' ? 'rgba(220,38,38,0.12)' : (data.ramStatus === 'Warning' ? 'rgba(217,119,6,0.12)' : 'rgba(5,150,105,0.12)');
+                        ramBadge.style.color = data.ramStatus === 'Critical' ? '#dc2626' : (data.ramStatus === 'Warning' ? '#d97706' : '#059669');
+                    }
+
+                    // Specs & Timestamp
+                    const coresEl = document.getElementById('vpsCpuCores');
+                    const tenantsEl = document.getElementById('vpsTenantDbs');
+                    const osEl = document.getElementById('vpsOsDesc');
+                    const tsEl = document.getElementById('vpsTelemetryTimestamp');
+
+                    if (coresEl) coresEl.textContent = data.cpuCoresCount + ' vCPUs';
+                    if (tenantsEl) tenantsEl.textContent = data.activeTenantsCount + ' active';
+                    if (osEl) osEl.textContent = data.operatingSystemDescription;
+                    if (tsEl) {
+                        const now = new Date();
+                        tsEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    }
+                } catch (err) {
+                    console.error('Failed to refresh VPS telemetry:', err);
+                } finally {
+                    if (vpsRefreshIcon) {
+                        setTimeout(() => {
+                            vpsRefreshIcon.style.transition = 'none';
+                            vpsRefreshIcon.style.transform = 'none';
+                        }, 600);
+                    }
+                }
+            }
+
+            if (refreshVpsBtn) {
+                refreshVpsBtn.addEventListener('click', refreshVpsTelemetry);
+            }
         });
     </script>
 }

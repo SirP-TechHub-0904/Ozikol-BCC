@@ -48,7 +48,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         {
             AvailableFeatures = await _dbContext.MasterFeatureCatalogs
                 .AsNoTracking()
-                .Where(f => !f.IsCompulsory && f.IsActive)
+                .Where(f => f.IsActive)
                 .OrderBy(f => f.Category)
                 .ThenBy(f => f.Name)
                 .ToListAsync();
@@ -64,7 +64,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             {
                 AvailableFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .Where(f => f.IsActive)
                     .OrderBy(f => f.Category)
                     .ThenBy(f => f.Name)
                     .ToListAsync();
@@ -77,7 +77,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 ModelState.AddModelError("Input.TenantKey", $"The tenant key '{cleanKey}' is reserved by the system and cannot be assigned to an organization.");
                 AvailableFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .Where(f => f.IsActive)
                     .OrderBy(f => f.Category)
                     .ThenBy(f => f.Name)
                     .ToListAsync();
@@ -90,7 +90,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 ModelState.AddModelError("Input.TenantKey", $"The tenant key '{cleanKey}' is already taken. Please choose another unique key.");
                 AvailableFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .Where(f => f.IsActive)
                     .OrderBy(f => f.Category)
                     .ThenBy(f => f.Name)
                     .ToListAsync();
@@ -119,7 +119,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 ModelState.AddModelError(string.Empty, $"Provisioning failed: {result.Message}. {result.ErrorDetail}");
                 AvailableFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .Where(f => f.IsActive)
                     .OrderBy(f => f.Category)
                     .ThenBy(f => f.Name)
                     .ToListAsync();

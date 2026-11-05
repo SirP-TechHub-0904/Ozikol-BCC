@@ -33,7 +33,7 @@ class DesktopTitleBar extends ConsumerStatefulWidget {
 
   const DesktopTitleBar({
     super.key,
-    this.title = 'Business Command Center',
+    this.title = 'Ozikol',
     this.iconUrl,
     this.logoUrl,
     this.backgroundColor,
@@ -282,7 +282,8 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
                               ],
                             ),
                           ),
-                        ] else if (widget.title.contains(' - Command Center') ||
+                        ] else if (widget.title.contains(' - Ozikol') ||
+                            widget.title.contains(' - Command Center') ||
                             widget.title.contains(' - Ozikol BCC') ||
                             widget.title.contains(' - Business Command Center')) ...[
                           const SizedBox(width: 8),

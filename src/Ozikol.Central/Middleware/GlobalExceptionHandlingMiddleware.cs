@@ -79,7 +79,8 @@ public class GlobalExceptionHandlingMiddleware
             }
 
             var postmarkService = context.RequestServices.GetService<IPostmarkEmailService>();
-            if (postmarkService == null)
+            var smtpDispatcher = context.RequestServices.GetService<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher>();
+            if (smtpDispatcher == null && postmarkService == null)
             {
                 return;
             }
@@ -109,12 +110,25 @@ public class GlobalExceptionHandlingMiddleware
             var recipients = options.RecipientEmails.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var recipient in recipients)
             {
-                await postmarkService.SendHtmlEmailAsync(
-                    to: recipient,
-                    subject: $"🚨 [CRITICAL ALERT] {ex.GetType().Name} on {context.Request.Host}",
-                    htmlBody: htmlBody,
-                    from: "Ozikol System Check <systemcheck@ozikol.cloud>",
-                    tag: "server-crash-alert");
+                if (smtpDispatcher != null)
+                {
+                    await smtpDispatcher.SendEmailAsync(
+                        toEmail: recipient,
+                        subject: $"🚨 [CRITICAL ALERT] {ex.GetType().Name} on {context.Request.Host}",
+                        htmlBody: htmlBody,
+                        fromEmail: "security@ozikol.cloud",
+                        fromName: "Ozikol Central Telemetry Monitor",
+                        isCentralPlatformEmail: true);
+                }
+                else if (postmarkService != null)
+                {
+                    await postmarkService.SendHtmlEmailAsync(
+                        to: recipient,
+                        subject: $"🚨 [CRITICAL ALERT] {ex.GetType().Name} on {context.Request.Host}",
+                        htmlBody: htmlBody,
+                        from: "Ozikol System Check <systemcheck@ozikol.cloud>",
+                        tag: "server-crash-alert");
+                }
             }
         }
         catch (Exception alertEx)

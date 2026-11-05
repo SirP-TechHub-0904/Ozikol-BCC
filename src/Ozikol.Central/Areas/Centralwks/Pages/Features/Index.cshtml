@@ -324,6 +324,9 @@
                                                     data-feature-id="@feat.Id"
                                                     data-toggle-kind="publish"
                                                     data-state="@(feat.IsActive ? "true" : "false")"
+                                                    data-monthly="@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                                    data-yearly="@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                                    data-trial-days="@feat.FreeTrialDays"
                                                     title="Click to switch instantly between Published and Unpublished">
                                                 <span class="material-symbols-outlined toggle-pill-icon">@(feat.IsActive ? "public" : "visibility_off")</span>
                                                 <span class="toggle-pill-label">@(feat.IsActive ? "Published" : "Unpublished")</span>
@@ -346,23 +349,9 @@
                                             </button>
                                         </form>
 
-                                        @* 3. Tier Badge & Clickable Free Trial Days Badge *@
-                                        @if (feat.IsCompulsory)
-                                        {
-                                            <span class="badge" style="background: rgba(0, 80, 229, 0.08); color: var(--ozikol-primary, #0050e5); font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.2);">
-                                                <span class="material-symbols-outlined" style="font-size: 12px;">lock</span>
-                                                Compulsory Core
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 11px; border: 1px solid #e2e8f0;">
-                                                Optional Addon
-                                            </span>
-                                        }
-
+                                        @* 3. Clickable Free Trial Days Badge *@
                                         <button type="button"
-                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', @(feat.IsCompulsory ? "true" : "false"))"
+                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)')"
                                                 class="badge"
                                                 style="background: @(feat.FreeTrialDays > 0 ? "rgba(124, 58, 237, 0.1)" : "#f1f5f9"); color: @(feat.FreeTrialDays > 0 ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 11px; border: 1px solid @(feat.FreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0"); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
                                                 title="Click to update Price &amp; First-Time Free Trial Days (General Mode)">
@@ -375,7 +364,7 @@
                                 @* Bottom Actions Row (Clickable Price + Price/Trial + Details + Actions) *@
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;">
                                     <button type="button"
-                                            onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', @(feat.IsCompulsory ? "true" : "false"))"
+                                            onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)')"
                                             style="font-size: 12.5px; font-weight: 800; color: #0f172a; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit; transition: all 0.15s ease;"
                                             title="Click to update Monthly/Yearly Price &amp; Free Trial Days right here">
                                         @if (feat.MonthlyPrice > 0)
@@ -513,12 +502,6 @@ else
                             </a>
                         </th>
                         <th>
-                            <a href="@GetSortUrl("tier")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                                <span>TIER CLASS</span>
-                                <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("tier")</span>
-                            </a>
-                        </th>
-                        <th>
                             <span>AVAILABILITY</span>
                         </th>
                         <th>
@@ -591,7 +574,7 @@ else
                                 <td>
                                     <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
                                         <button type="button"
-                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', @(feat.IsCompulsory ? "true" : "false"))"
+                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)')"
                                                 style="font-size: 12.5px; font-weight: 800; color: #0f172a; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 9px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit;"
                                                 title="Click to update Price &amp; Free Trial Days right here">
                                             @if (feat.MonthlyPrice > 0)
@@ -608,13 +591,13 @@ else
                                             }
                                             else
                                             {
-                                                <span style="color: #059669;">Included Free</span>
+                                                <span style="color: #dc2626; font-weight: 700;">Unpriced (₦0.00)</span>
                                             }
                                             <span class="material-symbols-outlined" style="font-size: 13px; color: #0050e5;">edit</span>
                                         </button>
 
                                         <button type="button"
-                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', @(feat.IsCompulsory ? "true" : "false"))"
+                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)')"
                                                 class="badge"
                                                 style="background: @(feat.FreeTrialDays > 0 ? "rgba(124, 58, 237, 0.1)" : "#f1f5f9"); color: @(feat.FreeTrialDays > 0 ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 10.5px; border: 1px solid @(feat.FreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0"); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
                                                 title="Click to update First-Time Free Trial Days before payment">
@@ -622,19 +605,6 @@ else
                                             <span>@(feat.FreeTrialDays > 0 ? $"{feat.FreeTrialDays}d Free Trial" : "0d Free Trial")</span>
                                         </button>
                                     </div>
-                                </td>
-                                <td>
-                                    @if (feat.IsCompulsory)
-                                    {
-                                        <span class="badge badge-info" style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">lock</span>
-                                            Compulsory Core
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge badge-neutral" style="font-size: 11px;">Optional Addon</span>
-                                    }
                                 </td>
                                 <td>
                                     <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'availability', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
@@ -659,6 +629,9 @@ else
                                                 data-feature-id="@feat.Id"
                                                 data-toggle-kind="publish"
                                                 data-state="@(feat.IsActive ? "true" : "false")"
+                                                data-monthly="@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-yearly="@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-trial-days="@feat.FreeTrialDays"
                                                 title="Click to switch instantly between Published and Unpublished">
                                             <span class="material-symbols-outlined toggle-pill-icon">@(feat.IsActive ? "public" : "visibility_off")</span>
                                             <span class="toggle-pill-label">@(feat.IsActive ? "Published" : "Unpublished")</span>
@@ -670,7 +643,7 @@ else
                                     <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
                                         <button type="button"
                                                 class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', @(feat.IsCompulsory ? "true" : "false"))"
+                                                onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)')"
                                                 title="Quick Edit Price &amp; Free Trial Days">
                                             <span class="material-symbols-outlined" style="font-size: 14px; color: #0050e5;">payments</span>
                                             <span>Price / Trial</span>
@@ -688,7 +661,7 @@ else
                                             </button>
 
                                             <div id="menu-table-@feat.Id" class="feature-action-dropdown-menu @(i < Model.Features.Count - 2 ? "dropdown-down" : "")">
-                                                <button type="button" class="dropdown-action-item" onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', @(feat.IsCompulsory ? "true" : "false"))">
+                                                <button type="button" class="dropdown-action-item" onclick="openFreeTrialDaysModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(feat.FreeTrialDays), '@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)', '@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)')">
                                                     <span class="material-symbols-outlined" style="color: #6d28d9;">redeem</span>
                                                     <span>Quick Edit Price &amp; Trial (@(feat.FreeTrialDays)d)</span>
                                                 </button>
@@ -1025,6 +998,18 @@ else
             const currentState = btn.getAttribute('data-state') === 'true';
             const nextState = !currentState;
 
+            // Guard: If amount is 0, do not publish!
+            if (kind === 'publish' && nextState === true) {
+                const mPrice = parseFloat(btn.getAttribute('data-monthly') || '0');
+                const yPrice = parseFloat(btn.getAttribute('data-yearly') || '0');
+                if (mPrice <= 0 && yPrice <= 0) {
+                    showInstantToast(`Cannot publish "${featureName}" because amount is ₦0.00 / $0.00. Assign a price first.`, false);
+                    const trialDays = parseInt(btn.getAttribute('data-trial-days') || '14', 10);
+                    openFreeTrialDaysModal(featureId, featureName, trialDays, '0.00', '0.00');
+                    return false;
+                }
+            }
+
             // Optimistically flip all matching pills for this feature on the page
             const allMatchingPills = document.querySelectorAll(`.status-toggle-pill[data-feature-id="${featureId}"][data-toggle-kind="${kind}"]`);
             allMatchingPills.forEach(p => {
@@ -1046,14 +1031,17 @@ else
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => {
-                if (!res.ok) throw new Error('Request failed');
+            .then(async res => {
+                const data = await res.json().catch(() => null);
+                if (!res.ok) {
+                    throw new Error((data && data.message) ? data.message : 'Request failed');
+                }
                 const statusLabel = kind === 'availability'
                     ? (nextState ? 'Available for Use' : 'Coming Soon')
                     : (nextState ? 'Published' : 'Unpublished');
                 showInstantToast(`${featureName} switched to ${statusLabel}`, true);
             })
-            .catch(() => {
+            .catch(err => {
                 // Revert optimistic state on failure
                 allMatchingPills.forEach(p => applyPillVisualState(p, kind, currentState));
                 if (kind === 'availability') {
@@ -1061,7 +1049,7 @@ else
                 } else {
                     updateKpiDelta('kpiPublishedCount', 'kpiUnpublishedCount', currentState);
                 }
-                showInstantToast(`Could not update ${featureName}. Please try again.`, false);
+                showInstantToast(err.message || `Could not update ${featureName}. Please try again.`, false);
             })
             .finally(() => {
                 allMatchingPills.forEach(p => p.classList.remove('is-saving'));
@@ -1082,16 +1070,14 @@ else
             }
         }
 
-        function openFreeTrialDaysModal(featureId, featureName, currentDays, monthlyPrice, yearlyPrice, isCompulsory) {
+        function openFreeTrialDaysModal(featureId, featureName, currentDays, monthlyPrice, yearlyPrice) {
             document.getElementById('freeTrialFeatureIdInput').value = featureId;
             document.getElementById('freeTrialFeatureNameText').textContent = featureName;
             document.getElementById('freeTrialDaysInput').value = (currentDays !== undefined && currentDays !== null) ? currentDays : 14;
             const monthlyEl = document.getElementById('quickModalMonthlyPriceInput');
             const yearlyEl = document.getElementById('quickModalYearlyPriceInput');
-            const tierEl = document.getElementById('quickModalIsCompulsorySelect');
             if (monthlyEl) monthlyEl.value = (monthlyPrice !== undefined && monthlyPrice !== null) ? monthlyPrice : '0.00';
             if (yearlyEl) yearlyEl.value = (yearlyPrice !== undefined && yearlyPrice !== null) ? yearlyPrice : '0.00';
-            if (tierEl) tierEl.value = isCompulsory ? 'true' : 'false';
             updateQuickModalPricingBadge();
             document.getElementById('freeTrialDaysModal').style.display = 'flex';
         }
@@ -1238,14 +1224,6 @@ else
             </div>
             <div id="quickModalPricingSavingsBadge" style="font-size: 11.5px; font-weight: 700; padding: 6px 10px; border-radius: 7px; margin-bottom: 14px; background: #f1f5f9; color: #475569;">
                 Set Monthly = 0 and Yearly &gt; 0 for Yearly-Only capabilities, or enter both for automatic annual discount calculation.
-            </div>
-
-            <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Tier Classification</label>
-                <select name="isCompulsory" id="quickModalIsCompulsorySelect" class="form-select">
-                    <option value="false">Optional Add-on (Subscribed per Tenant)</option>
-                    <option value="true">Compulsory Core (Included in Base Plan)</option>
-                </select>
             </div>
 
             <div class="form-group" style="margin-bottom: 18px; padding: 12px 14px; background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 10px;">

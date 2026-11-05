@@ -403,7 +403,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             var feature = await _dbContext.MasterFeatureCatalogs
                 .AsNoTracking()
                 .Where(f => f.Id == id)
-                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse })
+                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse, f.MonthlyPrice, f.YearlyPrice })
                 .FirstOrDefaultAsync();
 
             if (feature == null)
@@ -417,6 +417,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             var newActive = !feature.IsActive;
+
+            // Guard: If amount is 0, do not publish!
+            if (newActive && feature.MonthlyPrice <= 0m && feature.YearlyPrice <= 0m)
+            {
+                var priceMsg = $"Cannot publish '{feature.Name}' because its amount is ₦0.00 / $0.00. Please assign a Monthly or Yearly price before publishing.";
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return new JsonResult(new { success = false, message = priceMsg }) { StatusCode = 400 };
+                }
+                TempData["Error"] = priceMsg;
+                return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+            }
 
             await _dbContext.MasterFeatureCatalogs
                 .Where(f => f.Id == id)
@@ -835,7 +847,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         f.MonthlyPrice,
                         f.QuarterlyPrice,
                         f.YearlyPrice,
-                        f.IsCompulsory
+                        f.IsCompulsory,
+                        f.IsActive,
+                        f.IsPublished
                     })
                     .FirstOrDefaultAsync();
 
@@ -852,7 +866,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 decimal effectiveYearly = yearlyPrice.HasValue && yearlyPrice.Value >= 0m
                     ? Math.Max(0m, yearlyPrice.Value)
                     : (monthlyPrice.HasValue ? Math.Round(effectiveMonthly * 10m, 2) : featureInfo.YearlyPrice);
-                bool effectiveCompulsory = isCompulsory ?? featureInfo.IsCompulsory;
+                
+                // If amount is 0, don't publish! Unpublish immediately if price drops to 0.
+                bool hasPrice = effectiveMonthly > 0m || effectiveYearly > 0m;
+                bool newIsActive = hasPrice && featureInfo.IsActive;
+                bool newIsPublished = hasPrice && featureInfo.IsPublished;
 
                 try
                 {
@@ -862,19 +880,23 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             .SetProperty(f => f.MonthlyPrice, effectiveMonthly)
                             .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
                             .SetProperty(f => f.YearlyPrice, effectiveYearly)
-                            .SetProperty(f => f.IsCompulsory, effectiveCompulsory)
-                            .SetProperty(f => f.FreeTrialDays, clampedDays));
+                            .SetProperty(f => f.IsCompulsory, false)
+                            .SetProperty(f => f.FreeTrialDays, clampedDays)
+                            .SetProperty(f => f.IsActive, newIsActive)
+                            .SetProperty(f => f.IsPublished, newIsPublished));
                 }
                 catch
                 {
-                    // Fallback if FreeTrialDays column migration has not been applied yet: still save price and tier immediately
+                    // Fallback if FreeTrialDays column migration has not been applied yet: still save price immediately
                     await _dbContext.MasterFeatureCatalogs
                         .Where(f => f.Id == featureId)
                         .ExecuteUpdateAsync(s => s
                             .SetProperty(f => f.MonthlyPrice, effectiveMonthly)
                             .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
                             .SetProperty(f => f.YearlyPrice, effectiveYearly)
-                            .SetProperty(f => f.IsCompulsory, effectiveCompulsory));
+                            .SetProperty(f => f.IsCompulsory, false)
+                            .SetProperty(f => f.IsActive, newIsActive)
+                            .SetProperty(f => f.IsPublished, newIsPublished));
                 }
 
                 _dbContext.MasterAuditLogs.Add(new MasterAuditLog
@@ -884,7 +906,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     Action = "QuickUpdatePriceAndTrial",
                     EntityType = "Feature",
                     EntityId = featureInfo.Id.ToString(),
-                    Summary = $"Updated capability '{featureInfo.Name}' ({featureInfo.FeatureCode}): Price=${effectiveMonthly:F2}/mo (${effectiveYearly:F2}/yr), FreeTrial={clampedDays}d, Tier={(effectiveCompulsory ? "Compulsory Core" : "Optional Add-on")}",
+                    Summary = $"Updated capability '{featureInfo.Name}' ({featureInfo.FeatureCode}): Price=${effectiveMonthly:F2}/mo (${effectiveYearly:F2}/yr), FreeTrial={clampedDays}d",
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                     UserAgent = Request.Headers["User-Agent"].ToString(),
                     CreatedUtc = DateTime.UtcNow

@@ -230,7 +230,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 feature.YearlyPrice = Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
             }
 
-            feature.IsCompulsory = Input.IsCompulsory;
+            feature.IsCompulsory = false;
             feature.IsMetered = Input.IsMetered;
             feature.MeterUnitName = Input.IsMetered ? Input.MeterUnitName?.Trim() : null;
             feature.MeterUnitPrice = Input.IsMetered ? Input.MeterUnitPrice : 0m;
@@ -238,6 +238,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             feature.FreeTrialDays = Math.Clamp(Input.FreeTrialDays, 0, 365);
             var previousOrder = feature.SortOrder;
             feature.SortOrder = Input.DisplayOrder;
+
+            // Guard: If amount is 0, do not publish!
+            if (Input.IsPublished && feature.MonthlyPrice <= 0m && feature.YearlyPrice <= 0m)
+            {
+                ModelState.AddModelError("Input.IsPublished", "Cannot publish a capability with ₦0.00 / $0.00 price. Assign monthly or yearly pricing before publishing.");
+                await LoadSuitesAsync();
+                return Page();
+            }
+
             feature.IsActive = Input.IsPublished;
             feature.IsPublished = Input.IsPublished;
             feature.IsAvailableForUse = Input.IsAvailableForUse;

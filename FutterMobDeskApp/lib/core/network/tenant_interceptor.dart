@@ -46,14 +46,22 @@ class TenantInterceptor extends Interceptor {
             activeWorkspace.customDomain ?? activeWorkspace.primaryDomain;
       }
 
-      final normalizedPath = options.path.toLowerCase();
-      final isAuthPath = normalizedPath.contains('/auth/login') ||
-          normalizedPath.contains('/auth/password/request-otp') ||
-          normalizedPath.contains('/auth/password/reset-with-otp') ||
-          normalizedPath.contains('/auth/verify-otp') ||
-          normalizedPath.contains('/auth/resend-otp');
+      final explicitKey = options.headers[ApiConstants.headerTenantKey]?.toString().trim();
+      final isTargetingDifferentTenant = explicitKey != null &&
+          explicitKey.isNotEmpty &&
+          explicitKey.toLowerCase() != activeWorkspace.tenantKey.toLowerCase();
 
-      if (!isAuthPath &&
+      final normalizedPath = options.path.toLowerCase();
+      final isPublicOrDiscoveryPath = normalizedPath.contains('/auth/login') ||
+          normalizedPath.contains('/auth/password') ||
+          normalizedPath.contains('/auth/verify') ||
+          normalizedPath.contains('/auth/resend') ||
+          normalizedPath.contains('/settingsapi/brand') ||
+          normalizedPath.contains('/setupapi/client-config') ||
+          normalizedPath.contains('/tenantsapi');
+
+      if (!isPublicOrDiscoveryPath &&
+          !isTargetingDifferentTenant &&
           activeWorkspace.authToken != null &&
           activeWorkspace.authToken!.isNotEmpty &&
           !options.headers.containsKey(ApiConstants.headerAuthorization)) {

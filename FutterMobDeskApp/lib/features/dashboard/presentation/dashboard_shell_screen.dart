@@ -59,6 +59,21 @@ import 'screens/billing/subscriptions_invoices_view.dart';
 import 'screens/identity_access/security_audit_logs_view.dart';
 import 'screens/identity_access/error_codes_view.dart';
 import 'screens/member_workspace/workspace_home_view.dart';
+import '../../committees/presentation/admin/committees_admin_dashboard_view.dart';
+import '../../committees/presentation/admin/committees_manage_view.dart';
+import '../../committees/presentation/admin/committees_registrations_view.dart';
+import '../../committees/presentation/admin/committees_reports_admin_view.dart';
+import '../../committees/presentation/admin/committees_forms_view.dart';
+import '../../committees/presentation/admin/committees_settings_view.dart';
+import '../../committees/presentation/member/committees_member_hub_view.dart';
+import '../../committees/presentation/member/committees_discover_view.dart';
+import '../../committees/presentation/member/committees_detail_view.dart';
+import '../../committees/presentation/member/committees_report_composer_view.dart';
+import '../../committees/presentation/member/committees_cloud_vault_view.dart';
+import '../../committees/state/committees_state.dart';
+import '../../workforce/presentation/workforce_roster_screen.dart';
+import '../../workforce/presentation/workforce_clock_screen.dart';
+import '../../workforce/presentation/workforce_admin_monitor_screen.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
 /// with the Ozikol BCC Angular Web Console Dashboard (`/dashboard/console`).
@@ -88,6 +103,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
   Map<String, dynamic>? _selectedMember;
+  String? _selectedCommitteeId;
 
   /// <summary>
   /// Navigates to the full-page 360-degree Member Command Center view for a member.
@@ -1966,7 +1982,125 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
-      // 2. FEATURES & WORKSPACE (Desktop Workstation only — hidden on Android/iOS mobile)
+      // 2. MODULAR FEATURES & EXTENSIONS: PEOPLE & COMMUNITY (bcp-committees)
+      // Placed immediately after Core User Management, strictly before Billing and Security
+      if (activeWs != null && activeWs.isFeatureActive('bcp-committees'))
+        AppDrawerSection(
+          title: 'PEOPLE & COMMUNITY',
+          infoTooltip: 'Groups, Sub-Units, Minutes & Dynamic Extra-Info Forms',
+          items: [
+            AppDrawerItem(
+              icon: Icons.groups_rounded,
+              title: ref.watch(committeesProvider).aliases.aliasPlural,
+              initiallyExpanded: _selectedNavIndex >= 30 && _selectedNavIndex <= 37,
+              subItems: [
+                AppDrawerSubItem(
+                  icon: Icons.space_dashboard_outlined,
+                  title: 'Dashboard',
+                  isSelected: _selectedNavIndex == 35,
+                  onTap: () {
+                    _navigateToTab(35, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.format_list_bulleted_rounded,
+                  title: 'Manage ${ref.watch(committeesProvider).aliases.aliasPlural}',
+                  isSelected: _selectedNavIndex == 30,
+                  onTap: () {
+                    _navigateToTab(30, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.how_to_reg_outlined,
+                  title: 'Registrations & Intake',
+                  isSelected: _selectedNavIndex == 31,
+                  onTap: () {
+                    _navigateToTab(31, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.description_outlined,
+                  title: 'Meeting Reports',
+                  isSelected: _selectedNavIndex == 32,
+                  onTap: () {
+                    _navigateToTab(32, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.dynamic_form_outlined,
+                  title: 'Extra-Info Forms',
+                  isSelected: _selectedNavIndex == 33,
+                  onTap: () {
+                    _navigateToTab(33, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+                AppDrawerSubItem(
+                  icon: Icons.tune_rounded,
+                  title: 'Settings',
+                  isSelected: _selectedNavIndex == 34,
+                  onTap: () {
+                    _navigateToTab(34, clearHistory: true);
+                    _closeMobileDrawer();
+                  },
+                ),
+              ],
+            ),
+          ],
+        )
+      else if (activeWs != null && (activeWs.isFeatureExpired('bcp-committees') || activeWs.licensedFeatures.contains('bcp-committees-expired')))
+        AppDrawerSection(
+          title: 'PEOPLE & COMMUNITY',
+          infoTooltip: 'Feature Expired — Renew in Billing',
+          items: [
+            AppDrawerItem(
+              icon: Icons.groups_rounded,
+              title: ref.watch(committeesProvider).aliases.aliasPlural,
+              isSelected: false,
+              trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
+              onTap: () {
+                _navigateToTab(22, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+          ],
+        ),
+
+      // 2B. MODULAR FEATURES & EXTENSIONS: WORKFORCE & SHIFTS (bcp-staff-rota & bcp-attendance-tracking)
+      // Placed immediately after People & Community per Canonical Navigation Hierarchy
+      if (activeWs != null && (activeWs.isFeatureActive('bcp-staff-rota') || activeWs.isFeatureActive('bcp-attendance-tracking')))
+        AppDrawerSection(
+          title: 'WORKFORCE & SHIFTS',
+          infoTooltip: 'Staff Rota, 24/7 Overnight Shifts, Client Sites & GPS Duty Monitor',
+          items: [
+            if (activeWs.isFeatureActive('bcp-staff-rota'))
+              AppDrawerItem(
+                icon: Icons.calendar_month_rounded,
+                title: 'Staff Rota & Calendar',
+                isSelected: _selectedNavIndex == 40,
+                onTap: () {
+                  _navigateToTab(40, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+            if (activeWs.isFeatureActive('bcp-attendance-tracking'))
+              AppDrawerItem(
+                icon: Icons.radar_rounded,
+                title: 'Live Duty Monitor',
+                isSelected: _selectedNavIndex == 41,
+                onTap: () {
+                  _navigateToTab(41, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+          ],
+        ),
+
+      // 3. MODULAR FEATURES & EXTENSIONS: WORKSPACE (Desktop Workstation — below People & Community)
       if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
         AppDrawerSection(
           title: 'WORKSPACE',
@@ -2096,6 +2230,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// Strict Enterprise Architecture:
   /// - Default Menus: ONLY Dashboard ('Workspace Home') and 'Manage My Account'
   /// - Modular Features: NEVER show in member menu unless active/licensed on the administrator end
+  /// - Features are expandable dropdown accordions (matching Manage My Account)
+  /// - Sorting: 1. Dashboard -> 2. People & Community (dropdown) -> 3. Workspace -> 4. Manage My Account (dropdown)
   List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, Workspace? activeWs) {
     final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
 
@@ -2112,7 +2248,99 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ),
     ];
 
-    // Modular Feature Suite: Only shows in Member menu on Desktop OS if active on the Administrator end
+    // 2. Modular Feature Suite: bcp-committees in Member workspace (Expandable Dropdown)
+    if (activeWs != null && activeWs.isFeatureActive('bcp-committees')) {
+      final committeeAliases = ref.watch(committeesProvider).aliases;
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.groups_rounded,
+          title: committeeAliases.aliasPlural,
+          initiallyExpanded: memberIndex >= 10 && memberIndex <= 14,
+          subItems: [
+            AppDrawerSubItem(
+              icon: Icons.people_alt_outlined,
+              title: 'My ${committeeAliases.aliasPlural}',
+              isSelected: memberIndex == 10 || memberIndex == 13,
+              onTap: () {
+                _navigateToTab(110, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+            AppDrawerSubItem(
+              icon: Icons.explore_outlined,
+              title: 'Browse & Join',
+              isSelected: memberIndex == 11,
+              onTap: () {
+                _navigateToTab(111, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+            AppDrawerSubItem(
+              icon: Icons.edit_note_rounded,
+              title: 'Compose Meeting Report',
+              isSelected: memberIndex == 12,
+              onTap: () {
+                _navigateToTab(112, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+            AppDrawerSubItem(
+              icon: Icons.cloud_done_outlined,
+              title: 'Connected Cloud Docs',
+              isSelected: memberIndex == 14,
+              onTap: () {
+                _navigateToTab(114, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
+          ],
+        ),
+      );
+    } else if (activeWs != null && (activeWs.isFeatureExpired('bcp-committees') || activeWs.licensedFeatures.contains('bcp-committees-expired'))) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.groups_rounded,
+          title: ref.watch(committeesProvider).aliases.aliasPlural,
+          isSelected: false,
+          trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
+          onTap: () {
+            _navigateToTab(22, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+
+    // 2B. Modular Feature Suite: bcp-staff-rota & bcp-attendance-tracking in Member workspace
+    if (activeWs != null && activeWs.isFeatureActive('bcp-staff-rota')) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.event_note_rounded,
+          title: 'My Shifts & Rota',
+          isSelected: memberIndex == 20,
+          onTap: () {
+            _navigateToTab(120, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+    if (activeWs != null && activeWs.isFeatureActive('bcp-attendance-tracking')) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.timer_rounded,
+          title: 'Duty Clock & Geofence',
+          isSelected: memberIndex == 21,
+          onTap: () {
+            _navigateToTab(121, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+
+    // 3. Modular Feature Suite: bcp-workspace (Station Gatekeeper / Shift Tracker)
+    // Strictly placed BELOW People & Community per Canonical Hierarchy
     final isDesktopOS = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     if (isDesktopOS && activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
       memberItems.add(
@@ -2128,7 +2356,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       );
     }
 
-    // 2. Manage My Account (expandable) - ALWAYS present by default
+    // 4. Manage My Account (expandable) - ALWAYS present by default
     memberItems.add(
       AppDrawerItem(
         icon: Icons.manage_accounts_outlined,
@@ -2378,6 +2606,48 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return ErrorCodesView(workspace: activeWs);
         case 25:
           return WorkstationView(workspace: activeWs);
+        case 30:
+          return CommitteesManageView(
+            workspace: activeWs,
+            onOpenCommitteeDetail: (id) {
+              setState(() => _selectedCommitteeId = id);
+              _navigateToTab(36);
+            },
+          );
+        case 31:
+          return CommitteesRegistrationsView(workspace: activeWs);
+        case 32:
+          return CommitteesReportsAdminView(workspace: activeWs);
+        case 33:
+          return CommitteesFormsView(workspace: activeWs);
+        case 34:
+          return CommitteesSettingsView(workspace: activeWs);
+        case 35:
+          return CommitteesAdminDashboardView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) {
+              if (idx == 1) _navigateToTab(30);
+              if (idx == 2) _navigateToTab(31);
+              if (idx == 3) _navigateToTab(32);
+            },
+          );
+        case 36:
+          return CommitteesDetailView(
+            committeeId: _selectedCommitteeId ?? '',
+            workspace: activeWs,
+            onNavigateBack: _navigateBack,
+            onComposeReport: () => _navigateToTab(37),
+          );
+        case 37:
+          return CommitteesReportComposerView(
+            workspace: activeWs,
+            initialCommitteeId: _selectedCommitteeId,
+            onNavigateBack: _navigateBack,
+          );
+        case 40:
+          return const WorkforceRosterScreen();
+        case 41:
+          return const WorkforceAdminMonitorScreen();
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }
@@ -2428,6 +2698,47 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             onNavigate: (idx) => _navigateToTab(idx >= 100 ? idx - 100 : idx),
           );
+        case 10:
+          return CommitteesMemberHubView(
+            workspace: activeWs,
+            onOpenCommitteeDetail: (id) {
+              setState(() => _selectedCommitteeId = id);
+              _navigateToTab(113);
+            },
+            onNavigateToDiscover: () => _navigateToTab(111),
+            onNavigateToComposeReport: () => _navigateToTab(112),
+          );
+        case 11:
+          return CommitteesDiscoverView(
+            workspace: activeWs,
+            onOpenCommitteeDetail: (id) {
+              setState(() => _selectedCommitteeId = id);
+              _navigateToTab(113);
+            },
+            onNavigateToHub: () => _navigateToTab(110),
+          );
+        case 12:
+          return CommitteesReportComposerView(
+            workspace: activeWs,
+            initialCommitteeId: _selectedCommitteeId,
+            onNavigateBack: () => _navigateToTab(110),
+          );
+        case 13:
+          return CommitteesDetailView(
+            committeeId: _selectedCommitteeId ?? '',
+            workspace: activeWs,
+            onNavigateBack: () => _navigateToTab(110),
+            onComposeReport: () => _navigateToTab(112),
+          );
+        case 14:
+          return CommitteesCloudVaultView(
+            workspace: activeWs,
+            onNavigateBack: () => _navigateToTab(110),
+          );
+        case 20:
+          return const WorkforceRosterScreen();
+        case 21:
+          return const WorkforceClockScreen();
         default:
           return WorkspaceHomeView(
             workspace: activeWs,

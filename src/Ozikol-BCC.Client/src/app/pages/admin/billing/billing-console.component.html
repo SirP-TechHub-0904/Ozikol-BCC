@@ -480,8 +480,6 @@
                             </span>
                           }
                         </div>
-                      } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
-                        <span style="font-size: 11.5px; font-weight: 600; color: #059669; white-space: nowrap;">Lifetime / Free</span>
                       } @else {
                         <span style="color: #94a3b8; font-weight: 600;">—</span>
                       }
@@ -620,7 +618,7 @@
         <!-- Card 2: Total Capabilities -->
         <div
           class="metric-card clickable"
-          [class.active-card]="availabilityFilter === 'all' && tierFilter === 'all' && selectedSuite === ''"
+          [class.active-card]="availabilityFilter === 'all' && selectedSuite === ''"
           (click)="resetFilters()"
           role="button"
           tabindex="0"
@@ -636,7 +634,7 @@
           <div class="card-label">Total Modular Capabilities</div>
           <div class="card-breakdown">
             <div class="breakdown-row">
-              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ compulsoryCount }}</strong> Compulsory Core</span>
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ activeCapabilitiesCount }}</strong> Active in Menu</span>
             </div>
           </div>
         </div>
@@ -691,12 +689,8 @@
 
         <!-- Card 5: Active Recurring Spend -->
         <div
-          class="metric-card clickable"
-          [class.active-card]="tierFilter === 'compulsory'"
-          (click)="filterByTier('compulsory')"
-          role="button"
-          tabindex="0"
-          title="Click to filter Compulsory Baseline Core capabilities"
+          class="metric-card"
+          title="Active recurring monthly spend"
         >
           <div class="card-top">
             <div class="card-icon bg-teal">
@@ -708,7 +702,7 @@
           <div class="card-label">Active Recurring Spend</div>
           <div class="card-breakdown">
             <div class="breakdown-row">
-              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ activeCapabilitiesCount }}</strong> Capabilities Active</span>
             </div>
           </div>
         </div>
@@ -747,12 +741,6 @@
               @if (!snapshot.useCustomAvailability) {
                 <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
               }
-            </select>
-
-            <select [(ngModel)]="tierFilter" class="filter-select select-tier">
-              <option value="all">All Tier Classes</option>
-              <option value="compulsory">Compulsory Core</option>
-              <option value="optional">Optional Add-on</option>
             </select>
 
             @if (hasActiveFilters) {
@@ -884,21 +872,11 @@
                             </span>
                           }
 
-                          @if (feat.isCompulsory) {
-                            <span class="badge-pill-md badge-compulsory">
-                              <span class="material-symbols-outlined">lock</span>
-                              <span>Compulsory Core</span>
+                          @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                            <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                              <span class="material-symbols-outlined">redeem</span>
+                              <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
                             </span>
-                          } @else {
-                            <span class="badge-pill-md badge-optional">
-                              <span>Optional Add-on</span>
-                            </span>
-                            @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
-                              <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
-                                <span class="material-symbols-outlined">redeem</span>
-                                <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
-                              </span>
-                            }
                           }
                         </div>
                       </div>
@@ -1014,12 +992,6 @@
                         <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
                       </span>
                     </th>
-                    <th class="sortable-th" (click)="toggleSort('tier')">
-                      <span class="th-sort-wrap">
-                        <span>TIER CLASS</span>
-                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'tier'">{{ getSortIcon('tier') }}</span>
-                      </span>
-                    </th>
                     <th class="sortable-th" (click)="toggleSort('amount')">
                       <span class="th-sort-wrap">
                         <span>AMOUNT</span>
@@ -1079,16 +1051,6 @@
                         }
                       </td>
                       <td>
-                        @if (feat.isCompulsory) {
-                          <span class="badge-pill-md badge-compulsory">
-                            <span class="material-symbols-outlined">lock</span>
-                            <span>Compulsory Core</span>
-                          </span>
-                        } @else {
-                          <span class="badge-pill-md badge-optional">Optional Add-on</span>
-                        }
-                      </td>
-                      <td>
                         @if (getFeatureDisplayAmount(feat) > 0) {
                           <strong style="color: #0f172a; font-weight: 800;">{{ formatAmount(getFeatureDisplayAmount(feat)) }}</strong>
                         } @else {
@@ -1116,8 +1078,6 @@
                               </span>
                             }
                           </div>
-                        } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
-                          <span style="font-size: 11.5px; font-weight: 600; color: #059669; white-space: nowrap;">Lifetime / Free</span>
                         } @else {
                           <span style="color: #94a3b8; font-weight: 600;">—</span>
                         }
@@ -1202,10 +1162,15 @@
       </div>
 
       <div class="header-actions">
-        <a routerLink="/billing/features" class="btn btn-primary" style="text-decoration: none;">
-          <span class="material-symbols-outlined">add_circle</span>
-          <span>Install More Features</span>
-        </a>
+        <button
+          type="button"
+          class="btn btn-outline"
+          (click)="loadSnapshot()"
+          [disabled]="isLoading"
+        >
+          <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+          <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
+        </button>
       </div>
     </div>
 
@@ -1217,7 +1182,7 @@
           <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Capabilities currently active and displayed in your workspace navigation menu.</p>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          @if (expiringOrExpiredFeatures.length > 1 && totalExpiringAmountDue > 0) {
+          @if (expiringOrExpiredFeatures.length > 0 && totalExpiringAmountDue > 0) {
             <button
               type="button"
               class="btn btn-primary btn-sm-action"
@@ -1225,8 +1190,8 @@
               (click)="payAllExpiringFeatures()"
               title="Generate consolidated renewal invoice for all expiring/overdue features"
             >
-              <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'receipt_long' }}</span>
-              <span>{{ isPayingAllDue ? 'Preparing Invoice...' : ('Renew All Expiring Features (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
+              <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'autorenew' }}</span>
+              <span>{{ isPayingAllDue ? 'Preparing Invoice...' : (expiringOrExpiredFeatures.length > 1 ? ('Renew All Expiring (' + formatAmount(totalExpiringAmountDue) + ')') : ('Renew Subscription (' + formatAmount(totalExpiringAmountDue) + ')')) }}</span>
             </button>
           }
           <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
@@ -1311,28 +1276,24 @@
                   </td>
                   <td style="text-align: right; white-space: nowrap;">
                     <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-end;">
-                      @if (isFeatureExpiringWithinMonth(feat)) {
+                      @if (getFeatureDisplayAmount(feat) > 0 || feat.monthlyPrice > 0 || (feat.yearlyPrice || 0) > 0) {
                         <button
                           type="button"
                           class="btn btn-primary btn-sm-action"
-                          [disabled]="payingFeatureCode === feat.featureCode || togglingFeatureCode === feat.featureCode"
+                          [disabled]="payingFeatureCode === feat.featureCode"
                           (click)="payAndRenewFeature(feat)"
+                          title="Renew or extend this capability subscription"
                         >
                           <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
-                            {{ payingFeatureCode === feat.featureCode ? 'sync' : 'receipt_long' }}
+                            {{ payingFeatureCode === feat.featureCode ? 'sync' : 'autorenew' }}
                           </span>
-                          <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                          <span>{{ isFeatureExpiringWithinMonth(feat) ? 'Renew Now' : 'Renew / Extend' }}</span>
                         </button>
+                      } @else {
+                        <span style="font-size: 12px; font-weight: 600; color: #64748b; padding: 4px 8px;">
+                          Included Free
+                        </span>
                       }
-                      <button
-                        type="button"
-                        class="btn btn-outline btn-sm-action"
-                        [disabled]="togglingFeatureCode === feat.featureCode"
-                        (click)="toggleFeatureInstall(feat, false)"
-                      >
-                        <span class="material-symbols-outlined">toggle_off</span>
-                        <span>Deactivate</span>
-                      </button>
                     </div>
                   </td>
                 </tr>

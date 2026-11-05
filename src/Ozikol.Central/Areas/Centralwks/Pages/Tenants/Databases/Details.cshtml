@@ -71,9 +71,22 @@
             Test Ping Connection
         </button>
 
+        <a href="#sqlRepairRoom" class="btn-admin btn-admin-secondary" onclick="setTimeout(() => document.getElementById('sqlQueryInput')?.focus(), 100);">
+            <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
+            SQL Repair Room
+        </a>
+
+        <form method="post" asp-page-handler="OptimizeActivityLogs" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" onclick="return confirm('Purge activity logs older than 90 days and apply SQL Server PAGE data compression to [dbo].[BcpActivityLogs] on @Model.Tenant.DatabaseName?\n\nThis reclaims disk space immediately.');" title="Purge >90d logs and apply PAGE data compression">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">compress</span>
+                Optimize &amp; Compress Logs
+            </button>
+        </form>
+
         @if (Model.DeepDive.HasPendingMigrations)
         {
-            <form method="post" asp-page-handler="Migrate" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+            <form id="formMigrateNow" method="post" asp-page-handler="Migrate" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn-admin btn-admin-primary" onclick="return confirm('Apply pending migrations to @Model.Tenant.DatabaseName?');">
                     <span class="material-symbols-outlined" style="font-size: 16px;">sync</span>
@@ -223,6 +236,133 @@
                     <span style="font-size: 13px;">No hourly ingestion telemetry available.</span>
                 </div>
             }
+        </div>
+    </div>
+</div>
+
+@* ── SQL Query Console & Emergency Repair Room ── *@
+<div class="admin-card" id="sqlRepairRoom" style="margin-bottom: 24px; border-left: 4px solid var(--admin-primary);">
+    <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--admin-border);">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 22px;">terminal</span>
+                SQL Query Console &amp; Emergency Repair Room
+            </div>
+            <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                Directly execute diagnostics, schema repairs (e.g. dropping conflicting tables), or SQL inspection queries against <code>@Model.Tenant.DatabaseName</code>.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="badge badge-info" style="font-family: monospace;">
+                Database: @Model.Tenant.DatabaseName
+            </span>
+        </div>
+    </div>
+
+    <div class="admin-card-body" style="padding: 20px;">
+        @* AI Database Doctor Header Bar (Dynamic Diagnostics & Resolution) *@
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding: 12px 18px; background: linear-gradient(135deg, rgba(0, 80, 229, 0.06), rgba(99, 102, 241, 0.08)); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); display: flex; align-items: center; justify-content: center; color: #6366F1;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">auto_awesome</span>
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                        Gemini AI Database Doctor
+                        <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; font-size: 10px;">Gemini Flash</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">
+                        Intelligently inspects database schema discrepancies, explains root causes, and generates the exact T-SQL script to fix them.
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-admin btn-admin-primary" id="btnAiDiagnose" onclick="diagnoseWithGemini();" style="padding: 8px 18px; font-weight: 700; background: #6366F1; border-color: #6366F1;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">auto_awesome</span>
+                Diagnose Issue &amp; Generate Fix
+            </button>
+        </div>
+
+        @* ── AI Database Doctor Prescription Box ── *@
+        <div id="aiDoctorBox" style="display: none; margin-bottom: 16px; border: 1px solid #6366F1; border-radius: 8px; background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.02) 100%); padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #6366F1; font-size: 22px;">auto_awesome</span>
+                    <span style="font-weight: 700; font-size: 14.5px; color: var(--admin-text);">Gemini AI Database Doctor — Prescription</span>
+                    <span class="badge" id="aiDoctorKeyBadge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; font-size: 11px;">Gemini Flash</span>
+                </div>
+                <button type="button" onclick="document.getElementById('aiDoctorBox').style.display='none';" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 2px 8px; font-size: 11px;">
+                    ✕ Dismiss
+                </button>
+            </div>
+
+            <div id="aiDoctorLoading" style="display: none; padding: 18px 0; text-align: center;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: #6366F1; animation: spin 1s infinite linear; display: inline-block; margin-bottom: 6px;">sync</span>
+                <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text);">Gemini is analyzing SQL Server schema, table collisions, and migrations...</div>
+                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">Consulting Central Master Key Pool...</div>
+            </div>
+
+            <div id="aiDoctorContent" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Diagnosis</div>
+                    <div id="aiDoctorDiagnosis" style="font-size: 13.5px; line-height: 1.5; color: var(--admin-text); font-weight: 500;"></div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Explanation &amp; Root Cause</div>
+                    <div id="aiDoctorExplanation" style="font-size: 12.5px; line-height: 1.5; color: var(--admin-text-muted);"></div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Recommended T-SQL Script</div>
+                    <div style="position: relative;">
+                        <pre id="aiDoctorSqlCode" style="margin: 0; padding: 12px 14px; background: #0F172A; color: #38BDF8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px; border-radius: 6px; border: 1px solid #334155; overflow-x: auto; white-space: pre-wrap;"></pre>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="applyAiPrescription(false);" style="font-size: 12px; font-weight: 700;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">input</span>
+                        Copy Script into SQL Editor
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="applyAiPrescription(true);" style="font-size: 12px; color: var(--admin-primary); font-weight: 700;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span>
+                        Copy &amp; Execute Now
+                    </button>
+                    <span id="aiDoctorLatency" style="font-size: 11.5px; color: var(--admin-text-dim); margin-left: auto;"></span>
+                </div>
+            </div>
+        </div>
+
+        @* SQL Input Area *@
+        <div style="position: relative; margin-bottom: 12px;">
+            <textarea id="sqlQueryInput" rows="5" placeholder="Enter SQL query (e.g. DROP TABLE IF EXISTS [dbo].[BcpWorkstationActivityLogs]; or SELECT * FROM __EFMigrationsHistory;)" style="width: 100%; box-sizing: border-box; background: #0F172A; color: #38BDF8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; border: 1px solid #334155; border-radius: 8px; padding: 14px; resize: vertical; outline: none;"></textarea>
+        </div>
+
+        @* Action Buttons Row *@
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" id="btnExecuteSql" class="btn-admin btn-admin-primary" onclick="executeEmergencySql();" style="padding: 8px 18px; font-weight: 700;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span>
+                    Execute SQL Query
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="clearSqlQuery();">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">backspace</span>
+                    Clear
+                </button>
+            </div>
+            <div style="font-size: 12px; color: var(--admin-text-dim); display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-primary);">keyboard</span>
+                Tip: Press <kbd style="background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-border); font-family: monospace;">Ctrl</kbd> + <kbd style="background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-border); font-family: monospace;">Enter</kbd> to run
+            </div>
+        </div>
+
+        @* Execution Output & Results Container *@
+        <div id="sqlExecutionStatus" style="display: none; margin-bottom: 14px;"></div>
+        <div id="sqlResultsContainer" style="display: none; max-height: 420px; overflow: auto; border: 1px solid var(--admin-border); border-radius: 8px; background: var(--admin-bg-surface);">
+            <table class="admin-table" id="sqlResultsTable" style="margin: 0; font-size: 12.5px;">
+                <thead id="sqlResultsThead"></thead>
+                <tbody id="sqlResultsTbody"></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -407,6 +547,231 @@
                 const name = row.querySelector('.table-name-text')?.textContent.toLowerCase() || '';
                 row.style.display = name.includes(term) ? '' : 'none';
             });
+        }
+
+        function setSqlQuery(sql) {
+            const input = document.getElementById('sqlQueryInput');
+            if (input) {
+                input.value = sql;
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function clearSqlQuery() {
+            const input = document.getElementById('sqlQueryInput');
+            if (input) input.value = '';
+            document.getElementById('sqlExecutionStatus').style.display = 'none';
+            document.getElementById('sqlResultsContainer').style.display = 'none';
+        }
+
+        document.getElementById('sqlQueryInput')?.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                executeEmergencySql();
+            }
+        });
+
+        async function executeEmergencySql() {
+            const input = document.getElementById('sqlQueryInput');
+            const query = input?.value?.trim();
+            const statusDiv = document.getElementById('sqlExecutionStatus');
+            const resultsContainer = document.getElementById('sqlResultsContainer');
+            const thead = document.getElementById('sqlResultsThead');
+            const tbody = document.getElementById('sqlResultsTbody');
+            const btn = document.getElementById('btnExecuteSql');
+
+            if (!query) {
+                alert('Please enter a SQL statement to execute.');
+                input?.focus();
+                return;
+            }
+
+            const upper = query.toUpperCase();
+            if (upper.includes('DROP ') || upper.includes('TRUNCATE ') || upper.includes('DELETE FROM')) {
+                const confirmMsg = "⚠️ WARNING: You are executing a destructive SQL command on '@Model.Tenant.DatabaseName'.\n\nCommand:\n" + query + "\n\nDo you want to proceed?";
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+            }
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; animation: spin 1s infinite linear;">sync</span> Executing...';
+            btn.disabled = true;
+
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<div style="padding: 10px 14px; background: var(--admin-bg-surface-elevated); border-radius: 6px; font-size: 13px; color: var(--admin-text); display: flex; align-items: center; gap: 8px;"><span class="material-symbols-outlined" style="font-size: 16px; animation: spin 1s infinite linear; color: var(--admin-primary);">sync</span> Running query on database...</div>';
+            resultsContainer.style.display = 'none';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            try {
+                const response = await fetch('?handler=ExecuteQuery', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        tenantKey: '@Model.Tenant.TenantKey',
+                        sqlQuery: query
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const hasPendingMigrate = !!document.getElementById('formMigrateNow');
+                    statusDiv.innerHTML = `
+                        <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.12); border: 1px solid var(--admin-success); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-symbols-outlined" style="color: var(--admin-success); font-size: 20px;">check_circle</span>
+                                <span style="font-weight: 600; font-size: 13.5px; color: var(--admin-text);">${data.message}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px;">
+                                <span class="badge badge-success">Latency: ${data.executionTimeMs} ms</span>
+                                <span class="badge badge-secondary">Rows Affected: ${data.rowsAffected}</span>
+                                ${hasPendingMigrate ? '<button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="document.getElementById(\'formMigrateNow\').submit();" style="font-weight: 700; margin-left: 6px;"><span class="material-symbols-outlined" style="font-size: 15px;">sync</span> Apply Migrations Now</button>' : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    if (data.hasResultSet && data.columns && data.columns.length > 0) {
+                        // Render headers
+                        thead.innerHTML = '<tr>' + data.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+                        
+                        // Render rows
+                        if (data.rows && data.rows.length > 0) {
+                            tbody.innerHTML = data.rows.map(row => {
+                                return '<tr>' + row.map(cell => `<td style="font-family: monospace; font-size: 12px;">${cell === null || cell === 'NULL' ? '<span style="color: var(--admin-text-dim); font-style: italic;">NULL</span>' : cell}</td>`).join('') + '</tr>';
+                            }).join('');
+                        } else {
+                            tbody.innerHTML = `<tr><td colspan="${data.columns.length}" style="text-align: center; padding: 20px; color: var(--admin-text-muted);">No rows returned (0 records).</td></tr>`;
+                        }
+
+                        resultsContainer.style.display = 'block';
+                    } else {
+                        resultsContainer.style.display = 'none';
+                    }
+                } else {
+                    statusDiv.innerHTML = `
+                        <div style="padding: 12px 16px; background: rgba(239, 68, 68, 0.12); border: 1px solid var(--admin-danger); border-radius: 6px; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="material-symbols-outlined" style="color: var(--admin-danger); font-size: 20px; margin-top: 2px;">error</span>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-danger);">SQL Execution Error</div>
+                                    <div style="font-size: 12.5px; color: var(--admin-text); margin-top: 4px; font-family: monospace;">${data.message}</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-danger">Elapsed: ${data.executionTimeMs || 0} ms</span>
+                        </div>
+                    `;
+                    resultsContainer.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('SQL Execution failed', err);
+                statusDiv.innerHTML = `
+                    <div style="padding: 12px 16px; background: rgba(239, 68, 68, 0.12); border: 1px solid var(--admin-danger); border-radius: 6px; color: var(--admin-danger); font-size: 13px;">
+                        Network or server error executing SQL query: ${err.message || 'Unknown error'}
+                    </div>
+                `;
+                resultsContainer.style.display = 'none';
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        let currentAiRecommendedSql = '';
+
+        async function diagnoseWithGemini() {
+            const box = document.getElementById('aiDoctorBox');
+            const loading = document.getElementById('aiDoctorLoading');
+            const content = document.getElementById('aiDoctorContent');
+            const btn = document.getElementById('btnAiDiagnose');
+
+            box.style.display = 'block';
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; animation: spin 1s infinite linear;">sync</span> Consulting Gemini...';
+            btn.disabled = true;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            let queryError = document.getElementById('sqlExecutionStatus')?.innerText?.trim() || '';
+            const editorText = document.getElementById('sqlQueryInput')?.value?.trim() || '';
+            if (!queryError) {
+                const alertEl = document.querySelector('.alert-danger, [class*="alert-danger"], .admin-alert-danger, .admin-alert');
+                if (alertEl) queryError = alertEl.innerText.trim();
+            }
+            if (!queryError) {
+                queryError = '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(TempData["Error"]?.ToString() ?? ""))';
+            }
+
+            try {
+                const response = await fetch('?handler=AiDiagnose', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        tenantKey: '@Model.Tenant.TenantKey',
+                        errorMessage: queryError,
+                        userNotes: editorText
+                    })
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    content.style.display = 'block';
+                    document.getElementById('aiDoctorDiagnosis').innerText = data.diagnosis;
+                    document.getElementById('aiDoctorExplanation').innerText = data.explanation;
+                    document.getElementById('aiDoctorSqlCode').innerText = data.recommendedSql;
+                    currentAiRecommendedSql = data.recommendedSql;
+
+                    if (data.keyAliasUsed) {
+                        document.getElementById('aiDoctorKeyBadge').innerText = `${data.keyAliasUsed} (${data.latencyMs}ms)`;
+                    }
+                    if (data.latencyMs) {
+                        document.getElementById('aiDoctorLatency').innerText = `Generated in ${data.latencyMs} ms`;
+                    }
+                } else {
+                    content.style.display = 'block';
+                    document.getElementById('aiDoctorDiagnosis').innerHTML = `<span style="color: var(--admin-danger); font-weight: 700;">AI Diagnosis Failed:</span> ${data.message}`;
+                    document.getElementById('aiDoctorExplanation').innerText = 'Please ensure you have active Google Gemini API keys configured in /centralwks/aikeys.';
+                    document.getElementById('aiDoctorSqlCode').innerText = '-- No script generated';
+                    currentAiRecommendedSql = '';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                document.getElementById('aiDoctorDiagnosis').innerText = 'Network error connecting to Gemini AI Doctor: ' + err.message;
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function applyAiPrescription(executeNow) {
+            if (!currentAiRecommendedSql) {
+                alert('No recommended SQL to apply.');
+                return;
+            }
+            // Clean up any batch separators or redundant USE statements for direct ADO.NET execution
+            let cleanSql = currentAiRecommendedSql
+                .replace(/^\s*USE\s+\[?[a-zA-Z0-9_]+\]?\s*;?\s*(\r?\n)+/im, '')
+                .replace(/^\s*GO\s*$/gim, '')
+                .trim();
+
+            setSqlQuery(cleanSql || currentAiRecommendedSql);
+            if (executeNow) {
+                executeEmergencySql();
+            }
         }
 
         async function testPingConnection(tenantKey) {

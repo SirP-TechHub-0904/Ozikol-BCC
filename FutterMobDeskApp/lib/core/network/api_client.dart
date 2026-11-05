@@ -40,20 +40,21 @@ class ApiClient {
           handler.next(response);
         },
         onError: (DioException err, handler) async {
-          // On Android local development, automatically failover between 10.0.2.2 and 127.0.0.1
+          // On Android local development, automatically failover between 10.0.2.2 and 127.0.0.1 at most once
           if (!kIsWeb && Platform.isAndroid) {
             final uri = err.requestOptions.uri;
             final isConnectionIssue = err.type == DioExceptionType.connectionTimeout ||
                 err.type == DioExceptionType.connectionError;
+            final alreadyFailedOver = err.requestOptions.extra['_hasFailedOver'] == true;
 
-            if (isConnectionIssue && (uri.host == '10.0.2.2' || uri.host == '127.0.0.1')) {
+            if (!alreadyFailedOver && isConnectionIssue && (uri.host == '10.0.2.2' || uri.host == '127.0.0.1')) {
               final fallbackHost = uri.host == '10.0.2.2' ? '127.0.0.1' : '10.0.2.2';
               final fallbackBaseUrl = 'http://$fallbackHost:51025/';
               dio.options.baseUrl = fallbackBaseUrl;
               ApiConstants.setActiveAndroidHost(fallbackHost);
 
               if (kDebugMode) {
-                debugPrint('🔄 [DIO HOST FAILOVER] Switched local host to $fallbackHost, retrying ${uri.path}...');
+                debugPrint('🔄 [DIO HOST FAILOVER] Switched local host to $fallbackHost, retrying ${uri.path} once...');
               }
 
               try {
@@ -66,6 +67,8 @@ class ApiClient {
                     headers: err.requestOptions.headers,
                     responseType: err.requestOptions.responseType,
                     contentType: err.requestOptions.contentType,
+                    extra: Map<String, dynamic>.from(err.requestOptions.extra)
+                      ..['_hasFailedOver'] = true,
                   ),
                 );
                 return handler.resolve(response);

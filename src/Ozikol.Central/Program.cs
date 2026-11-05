@@ -59,6 +59,9 @@ builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderCli
 });
 builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
 
+// Register Mailcow Automated Email Provisioning & Transactional SMTP Dispatcher
+builder.Services.AddMailcowSupport();
+
 // Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
 builder.Services.AddPostmarkEmailServices(builder.Configuration);
 builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(ErrorAlertSettings.SectionName));
@@ -278,6 +281,7 @@ builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidationService, Ozikol.Central.Services.Validation.EmailValidationService>();
 builder.Services.AddScoped<IAiKeyPoolManagerService, AiKeyPoolManagerService>();
+builder.Services.AddScoped<IVpsSystemTelemetryService, VpsSystemTelemetryService>();
 builder.Services.AddScoped<ISectionAiStudioService, SectionAiStudioService>();
 builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderClientService>();
 builder.Services.AddHttpClient<Ozikol.Central.Services.Extraction.INativeSectionExtractorService, Ozikol.Central.Services.Extraction.NativeSectionExtractorService>();
@@ -292,6 +296,7 @@ builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, O
 builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDbHealthJobHandler>();
 builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDailyDigestJobHandler>();
 builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantEmailQueueJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantActivityLogRetentionJobHandler>();
 builder.Services.AddSingleton<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>());
 
@@ -508,6 +513,24 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapRazorPages();
+
+// Transparent AES-256-GCM in-place encryption auto-migrator for tenant database connection strings
+try
+{
+    using var encScope = app.Services.CreateScope();
+    var migrationService = encScope.ServiceProvider.GetRequiredService<ICentralMigrationService>();
+    var encResult = await migrationService.EncryptAllUnencryptedConnectionStringsAsync();
+    if (encResult.NewlyEncryptedCount > 0)
+    {
+        var logger = encScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("AES-256-GCM In-Place Migration: Successfully encrypted {Count} tenant database connection strings in SQL Server.", encResult.NewlyEncryptedCount);
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetService<ILogger<Program>>();
+    logger?.LogWarning(ex, "Tenant connection string auto-encryption startup check encountered a non-blocking issue.");
+}
 
 app.Run();
 

@@ -3039,7 +3039,7 @@ Instructions:
                             }
                         };
 
-                        var geminiModels = new[] { "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
+                        var geminiModels = new[] { "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
                         HttpResponseMessage? geminiResponse = null;
                         string matchedModel = "gemini-1.5-flash";
 
@@ -3635,7 +3635,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 if (!string.IsNullOrWhiteSpace(geminiKey))
                 {
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiKey}";
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={geminiKey}";
                     var geminiPayload = new
                     {
                         contents = new[] { new { parts = new[] { new { text = prompt } } } },

@@ -112,6 +112,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 yearly = Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
             }
 
+            bool hasPrice = monthly > 0m || yearly > 0m;
             var feature = new MasterFeatureCatalog
             {
                 Id = Guid.NewGuid(),
@@ -124,13 +125,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 MonthlyPrice = monthly,
                 QuarterlyPrice = quarterly,
                 YearlyPrice = yearly,
-                IsCompulsory = Input.IsCompulsory,
+                IsCompulsory = false,
                 IsMetered = Input.IsMetered,
                 MeterUnitName = Input.IsMetered ? Input.MeterUnitName?.Trim() : null,
                 MeterUnitPrice = Input.IsMetered ? Input.MeterUnitPrice : 0m,
                 MeterBlockSize = Input.IsMetered && Input.MeterBatchSize > 0 ? Input.MeterBatchSize : 1,
                 SortOrder = Input.DisplayOrder,
-                IsActive = true,
+                IsActive = hasPrice,
+                IsPublished = hasPrice,
                 CreatedUtc = DateTime.UtcNow
             };
 

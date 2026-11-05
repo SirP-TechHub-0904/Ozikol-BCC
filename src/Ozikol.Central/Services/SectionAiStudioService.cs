@@ -260,7 +260,7 @@ RAW JAVASCRIPT CANDIDATES:
 
 Return the filtered JSON object.";
 
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
+            var geminiUrl = await _keyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
             var payload = new
             {
                 system_instruction = new
@@ -614,7 +614,7 @@ Return the complete cleaned JSON object.";
             {
                 try
                 {
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
+                    var geminiUrl = await _keyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
                     var payload = new
                     {
                         system_instruction = new
@@ -765,7 +765,7 @@ USER INSTRUCTION:
 
 Return the updated JSON object.";
 
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
+            var geminiUrl = await _keyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
             var payload = new
             {
                 system_instruction = new
@@ -1001,7 +1001,7 @@ RULES FOR MODULAR DECOMPOSITION:
 - Brand Name: {brandName}
 - Hosted Source Image URL: {hostedImageUrl ?? "uploaded_screenshot.png"}";
 
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
+            var geminiUrl = await _keyPoolService.GetGenerateContentEndpointAsync(key, cancellationToken);
             var payload = new
             {
                 system_instruction = new

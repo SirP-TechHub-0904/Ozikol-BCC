@@ -430,7 +430,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     {
                         effectiveAvailableForUse = sub!.IsAvailableForUseOverride!.Value;
                     }
-                    else if (hasCustomPriceOverride || hasCustomFreeTrialOverride || (sub != null && sub.IsActive && !f.IsCompulsory))
+                    else if (hasCustomPriceOverride || hasCustomFreeTrialOverride || (sub != null && sub.IsActive))
                     {
                         // Sync: any feature given a custom price, custom free trial, or explicitly subscribed for this tenant is automatically Available
                         effectiveAvailableForUse = true;
@@ -457,14 +457,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
                                         !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
                                         !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
-                    isActiveForTenant = sub.IsActive && notSuspended && (f.IsCompulsory || notExpired);
+                    isActiveForTenant = sub.IsActive && notSuspended && notExpired;
                 }
                 else
                 {
                     isActiveForTenant = false;
                 }
 
-                bool isPaidSubscribed = isActiveForTenant && (!f.IsCompulsory || effectiveMonthlyPrice > 0);
+                bool isPaidSubscribed = isActiveForTenant && effectiveMonthlyPrice > 0;
                 int? subRemainingDays = null;
                 bool hasActiveOrOverdueSub = false;
                 if (sub != null && sub.IsActive &&

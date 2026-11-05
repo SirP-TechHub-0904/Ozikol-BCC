@@ -1,6 +1,7 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -11,6 +12,7 @@ import { FirstRunSetupModalComponent } from '../../shared/components/first-run-s
 import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUAGES } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
+import { CommitteesService } from '../../core/services/committees.service';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
@@ -514,10 +516,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-committees') && isMenuOpen('groups')" *ngSwitchCase="'bcp-committees'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-committees') && (isParentActive('/groups/console') || isParentActive('/admin/groups'))" [class.feature-locked]="!isFeatureActive('bcp-committees')" (click)="onFeatureMenuClick('bcp-committees', getFeatureFullTitle('bcp-committees', 'Committees & Sub-Groups'), $event, 'groups')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-committees') && (isParentActive('/committees/console') || isParentActive('/groups/console'))" [class.feature-locked]="!isFeatureActive('bcp-committees')" (click)="onFeatureMenuClick('bcp-committees', getFeatureFullTitle('bcp-committees', 'Committees & Sub-Groups'), $event, 'groups')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">diversity_3</span>
-                <span>{{ getFeatureMenuTitle('bcp-committees', 'Groups & Committees') }}</span>
+                <span>{{ committeeAliases.aliasPlural || getFeatureMenuTitle('bcp-committees', 'Groups & Committees') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-committees') && !isFeatureActive('bcp-committees')" title="Available — Click to view details & install">
                 <span class="material-symbols-outlined">lock</span>
@@ -528,18 +530,49 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-committees') && isMenuOpen('groups')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.groups_dashboard' | translate:'Groups Dashboard' }}</span>
+                  <a routerLink="/committees/console/dashboard" [class.active]="isCurrentRoute('/committees/console/dashboard')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Dashboard</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin('Groups Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/console/dashboard')" (click)="togglePin('Dashboard', '/committees/console/dashboard', 'space_dashboard')" [title]="isPinned('/committees/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/groups/console" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>{{ 'adm.manage_groups' | translate:'Manage Groups' }}</span>
+                  <a routerLink="/committees/console/manage" [class.active]="isCurrentRoute('/committees/console/manage')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>Manage {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/console/manage')" (click)="togglePin('Manage ' + committeeAliases.aliasPlural, '/committees/console/manage', 'diversity_3')" [title]="isPinned('/committees/console/manage') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/console/manage') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/registrations" [class.active]="isCurrentRoute('/committees/console/registrations')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>Registrations &amp; Intake</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/reports" [class.active]="isCurrentRoute('/committees/console/reports')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">summarize</span>Meeting Reports</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/forms" [class.active]="isCurrentRoute('/committees/console/forms')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">dynamic_form</span>Extra-Info Forms</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/console/settings" [class.active]="isCurrentRoute('/committees/console/settings')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Settings</span>
                   </a>
                 </div>
               </li>
@@ -592,26 +625,65 @@ export interface SuiteInfoDetail {
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-whistleblowing')">{{ 'badge.soon' | translate }}</span>
             </a>
           </div>
-          <div class="nav-item" *ngSwitchCase="'bcp-staff-rota'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event)">
-              <div class="nav-link-content"><span class="material-symbols-outlined">event_note</span><span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff & Volunteer Rota') }}</span></div>
-              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')"><span class="material-symbols-outlined">lock</span></span>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')" *ngSwitchCase="'bcp-staff-rota'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-staff-rota') && isParentActive('/workforce/console')" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event, 'staff_rota')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">event_note</span>
+                <span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff Rota & Shifts') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-staff-rota')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-staff-rota')">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/schedule" [class.active]="isCurrentRoute('/workforce/console/schedule')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Rota Calendar</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/schedule')" (click)="togglePin('Rota Calendar', '/workforce/console/schedule', 'calendar_month')" [title]="isPinned('/workforce/console/schedule') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/schedule') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/sites" [class.active]="isCurrentRoute('/workforce/console/sites')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">location_on</span>Client Sites &amp; Geofences</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/sites')" (click)="togglePin('Client Sites', '/workforce/console/sites', 'location_on')" [title]="isPinned('/workforce/console/sites') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/sites') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
           </div>
-          <div class="nav-item" *ngSwitchCase="'bcp-shift-swaps'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-shift-swaps')" (click)="onFeatureMenuClick('bcp-shift-swaps', getFeatureFullTitle('bcp-shift-swaps', 'Shift Swaps & Leave Management'), $event)">
-              <div class="nav-link-content"><span class="material-symbols-outlined">swap_horiz</span><span>{{ getFeatureMenuTitle('bcp-shift-swaps', 'Shift Swaps & Leave') }}</span></div>
-              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-shift-swaps') && !isFeatureActive('bcp-shift-swaps')"><span class="material-symbols-outlined">lock</span></span>
-              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-shift-swaps')">{{ 'badge.soon' | translate }}</span>
-            </a>
-          </div>
-          <div class="nav-item" *ngSwitchCase="'bcp-attendance-tracking'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event)">
-              <div class="nav-link-content"><span class="material-symbols-outlined">timer</span><span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & QR') }}</span></div>
-              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')"><span class="material-symbols-outlined">lock</span></span>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-attendance-tracking') && isMenuOpen('attendance_tracking')" *ngSwitchCase="'bcp-attendance-tracking'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-attendance-tracking') && isParentActive('/attendance/console')" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event, 'attendance_tracking')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">timer</span>
+                <span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & Live Duty') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-attendance-tracking')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-attendance-tracking')">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-attendance-tracking') && isMenuOpen('attendance_tracking')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/attendance/console/live" [class.active]="isCurrentRoute('/attendance/console/live')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">radar</span>Live Duty Monitor</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/attendance/console/live')" (click)="togglePin('Live Duty Monitor', '/attendance/console/live', 'radar')" [title]="isPinned('/attendance/console/live') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/attendance/console/live') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
           </div>
           <div class="nav-item" *ngSwitchCase="'bcp-appointment-booking'">
             <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-appointment-booking')" (click)="onFeatureMenuClick('bcp-appointment-booking', getFeatureFullTitle('bcp-appointment-booking', 'Appointment & Facility Booking'), $event)">
@@ -1088,7 +1160,107 @@ export interface SuiteInfoDetail {
             </a>
           </div>
 
-          <!-- 2. Manage My Account Dropdown -->
+          <!-- 2. Committees & Sub-Groups Member Workspace (bcp-committees) -->
+          <!-- Placed before Manage My Account per Canonical Navigation Hierarchy -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_committees')" *ngIf="isFeatureActive('bcp-committees')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/committees/workspace') || isParentActive('/groups/workspace')" (click)="toggleMenu('workspace_committees')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">diversity_3</span>
+                <span>{{ committeeAliases.aliasPlural }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_committees')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/my" [class.active]="isCurrentRoute('/committees/workspace/my')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">groups</span>My {{ committeeAliases.aliasPlural }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/my')" (click)="togglePin('My ' + committeeAliases.aliasPlural, '/committees/workspace/my', 'groups')" [title]="isPinned('/committees/workspace/my') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/my') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/discover" [class.active]="isCurrentRoute('/committees/workspace/discover')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">explore</span>Browse &amp; Join</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/discover')" (click)="togglePin('Browse & Join', '/committees/workspace/discover', 'explore')" [title]="isPinned('/committees/workspace/discover') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/discover') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/reports/compose" [class.active]="isCurrentRoute('/committees/workspace/reports/compose')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_document</span>Compose Meeting Report</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/reports/compose')" (click)="togglePin('Compose Meeting Report', '/committees/workspace/reports/compose', 'edit_document')" [title]="isPinned('/committees/workspace/reports/compose') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/reports/compose') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/committees/workspace/cloud-links" [class.active]="isCurrentRoute('/committees/workspace/cloud-links')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">cloud_done</span>Connected Cloud Docs</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/committees/workspace/cloud-links')" (click)="togglePin('Connected Cloud Docs', '/committees/workspace/cloud-links', 'cloud_done')" [title]="isPinned('/committees/workspace/cloud-links') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/committees/workspace/cloud-links') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 3. Workforce Rota & Shift Management Member Workspace (bcp-staff-rota) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_workforce')" *ngIf="isFeatureActive('bcp-staff-rota')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/workforce/workspace')" (click)="toggleMenu('workspace_workforce')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">event_note</span>
+                <span>My Shifts &amp; Rota</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_workforce')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>My Assigned Shifts</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/workspace/my-shifts')" (click)="togglePin('My Assigned Shifts', '/workforce/workspace/my-shifts', 'calendar_month')" [title]="isPinned('/workforce/workspace/my-shifts') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/workspace/my-shifts') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 4. Attendance & Duty Clock-In Member Workspace (bcp-attendance-tracking) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_attendance')" *ngIf="isFeatureActive('bcp-attendance-tracking')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/attendance/workspace')" (click)="toggleMenu('workspace_attendance')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">timer</span>
+                <span>Duty Clock &amp; GPS</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_attendance')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Live Shift Clock-In</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/attendance/workspace/clock')" (click)="togglePin('Live Shift Clock-In', '/attendance/workspace/clock', 'timer')" [title]="isPinned('/attendance/workspace/clock') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/attendance/workspace/clock') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 5. Manage My Account Dropdown -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account') || isParentActive('/users/workspace/profile')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
@@ -1515,8 +1687,8 @@ export interface SuiteInfoDetail {
       </div>
 
       <!-- Page Content & AI Side-by-Side Split Workspace Container (70% Body / 30% AI) -->
-      <div class="bcp-workspace-container" [class.ai-docked-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'" [class.ai-docked-right-active]="isAiOpen && aiLayoutMode === 'docked-right'">
-        <div class="bcp-page-shell" [class.ai-split-70]="isAiOpen && aiLayoutMode === 'docked-right'" [class.ai-split-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'">
+      <div class="bcp-workspace-container" [class.is-workspace-mode]="!isConsoleActive" [class.ai-docked-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'" [class.ai-docked-right-active]="isAiOpen && aiLayoutMode === 'docked-right'">
+        <div class="bcp-page-shell" [class.is-workspace-mode]="!isConsoleActive" [class.ai-split-70]="isAiOpen && aiLayoutMode === 'docked-right'" [class.ai-split-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'">
           <router-outlet></router-outlet>
         </div>
 
@@ -1783,6 +1955,10 @@ export interface SuiteInfoDetail {
     .bcp-workspace-container.ai-docked-bottom {
       flex-direction: column;
     }
+    .bcp-workspace-container.is-workspace-mode {
+      padding: 0;
+      gap: 0;
+    }
     .bcp-page-shell {
       flex: 1 1 0;
       min-height: 0;
@@ -1797,6 +1973,13 @@ export interface SuiteInfoDetail {
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
       transition: flex 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bcp-page-shell.is-workspace-mode {
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 24px 32px;
+      width: 100%;
     }
     .bcp-page-shell.ai-split-70 {
       flex: 1 1 0;
@@ -2370,15 +2553,16 @@ export interface SuiteInfoDetail {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin: 10px 14px 0 14px;
-      padding: 10px 16px;
+      margin: 10px 14px 4px 14px;
+      padding: 12px 18px;
       background: #fffbeb;
-      border: 1px solid #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.35);
       border-left: 4px solid #f59e0b;
-      border-radius: 8px;
+      border-radius: 10px;
       color: #92400e;
       font-size: 13px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);
+      transition: all 0.2s ease;
     }
     :host-context(.dark-mode) .central-feature-expiration-banner {
       background: #2d2010;
@@ -3118,7 +3302,8 @@ export interface SuiteInfoDetail {
     }
   `]
 })
-export class AdminLayoutComponent implements OnInit {
+export class AdminLayoutComponent implements OnInit, OnDestroy {
+  private committeeAliasesSub?: Subscription;
   sidebarCollapsed = false;
   darkMode = false;
 
@@ -3643,6 +3828,18 @@ export class AdminLayoutComponent implements OnInit {
   expiringFeatures: any[] = [];
   isExpirationBannerDismissed = false;
 
+  committeeAliases: {
+    aliasSingular: string;
+    aliasPlural: string;
+    subGroupAliasSingular: string;
+    subGroupAliasPlural: string;
+  } = {
+    aliasSingular: 'Committee',
+    aliasPlural: 'Committees',
+    subGroupAliasSingular: 'Sub-Group',
+    subGroupAliasPlural: 'Sub-Groups'
+  };
+
   get isConsoleActive(): boolean {
     return this.isAdmin && this.currentConsoleMode === 'console';
   }
@@ -3726,7 +3923,10 @@ export class AdminLayoutComponent implements OnInit {
     this.api.get<any>('SettingsApi/feature-expirations').subscribe({
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
-          this.expiringFeatures = res.data;
+          this.expiringFeatures = res.data.filter((f: any) =>
+            (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
+            f.daysRemaining !== null && f.daysRemaining !== undefined
+          );
           this.checkExpirationBannerDismissal();
           this.loadNotificationFeed();
         }
@@ -3834,7 +4034,9 @@ export class AdminLayoutComponent implements OnInit {
     private signalR: SignalRService,
     private aiAssistantService: AiAssistantContextService,
     public translation: TranslationService,
-    private multiWorkspace: MultiWorkspaceService
+    private multiWorkspace: MultiWorkspaceService,
+    private committeesService: CommitteesService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   /// <summary>
@@ -3899,6 +4101,29 @@ export class AdminLayoutComponent implements OnInit {
     // Subscribe to global AI assistant layout and open state
     this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);
     this.aiAssistantService.layoutMode$.subscribe(mode => this.aiLayoutMode = mode);
+    // Subscribe to dynamic Committee & Sub-Group aliases
+    this.committeeAliasesSub = this.committeesService.aliases$.subscribe(aliases => {
+      if (aliases) {
+        this.committeeAliases = {
+          aliasSingular: aliases.aliasSingular || 'Committee',
+          aliasPlural: aliases.aliasPlural || 'Committees',
+          subGroupAliasSingular: aliases.subGroupAliasSingular || 'Sub-Group',
+          subGroupAliasPlural: aliases.subGroupAliasPlural || 'Sub-Groups'
+        };
+        this.cdr.markForCheck();
+      }
+    });
+
+    // Also load fresh settings from backend if committees module is accessible
+    this.committeesService.getSettings().subscribe({
+      next: (res) => {
+        if (res?.isSuccess && res.data) {
+          this.committeesService.applyAliases(res.data);
+        }
+      },
+      error: () => {}
+    });
+
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
 
@@ -4036,33 +4261,10 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   /**
-   * Canonical list of all 46 published capability codes matching MasterCatalogDbContext and the sidebar template
-   * so the sidebar immediately renders all published features before the async billing snapshot response returns.
+   * Baseline published capability codes before the first billing snapshot sync completes.
+   * Features that are not installed are excluded from sidebar display.
    */
-  private static readonly DEFAULT_PUBLISHED_FEATURE_CODES: string[] = [
-    // Suite A: People, Community & Collaboration
-    'bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing',
-    // Suite B: Workforce, Rota & Scheduling
-    'bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups',
-    // Suite C: Reports, Forms & Analytics
-    'bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms',
-    // Suite D: Events & Training Management
-    'bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management',
-    // Suite E: Finance & Commercial Revenue
-    'bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking',
-    // Suite F: Operations & Workflows
-    'bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks',
-    // Suite G: Communication, AI & Support
-    'bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai',
-    // Suite H: Compliance, Learning & Certification
-    'bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification',
-    // Suite I: Demographics & Civic Census
-    'bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics',
-    // Suite J: Life Events & Publications
-    'bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures',
-    // Suite K: Workspace
-    'bcp-workspace'
-  ];
+  private static readonly DEFAULT_PUBLISHED_FEATURE_CODES: string[] = [];
 
   /**
    * Baseline available capability codes before the first billing snapshot sync completes.
@@ -4077,8 +4279,7 @@ export class AdminLayoutComponent implements OnInit {
     'bcp-committees': 'Groups & Committees',
     'bcp-alumni-directory': 'Alumni Network',
     'bcp-whistleblowing': 'Whistleblowing',
-    'bcp-staff-rota': 'Staff & Volunteer Rota',
-    'bcp-shift-swaps': 'Shift Swaps & Leave',
+    'bcp-staff-rota': 'Staff Rota & Shifts',
     'bcp-attendance-tracking': 'Attendance & Clock-In',
     'bcp-appointment-booking': 'Appointment Booking',
     'bcp-calendar-followups': 'Calendar & Follow-Ups',
@@ -4192,31 +4393,32 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   /**
-   * Set of lowercase FeatureCodes that are visible to the tenant (Published in Central).
+   * Set of lowercase FeatureCodes that are visible to the tenant in the sidebar navigation menu.
+   * Only features that are Installed & Active OR Installed but Expired are included.
+   * Features that are Not Installed are excluded from the sidebar.
    */
   visibleFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_visible_feature_codes_v4');
+        const raw = localStorage.getItem('bcp_visible_feature_codes_v6');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
         }
-        return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
+        return [];
       } catch {
-        return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
+        return [];
       }
     })()
   );
 
   /**
    * Set of lowercase FeatureCodes that are Available for use (either via general availability or custom tenant availability).
-   * Features not in this set are shown as "Coming Soon" in the sidebar.
    */
   availableFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_available_feature_codes_v4');
+        const raw = localStorage.getItem('bcp_available_feature_codes_v6');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
@@ -4235,6 +4437,20 @@ export class AdminLayoutComponent implements OnInit {
     (() => {
       try {
         const raw = localStorage.getItem('bcp_active_feature_codes');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })()
+  );
+
+  /**
+   * Set of lowercase FeatureCodes that were installed but have expired (displaying the lock icon).
+   */
+  expiredFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_expired_feature_codes_v2');
         return raw ? JSON.parse(raw) : [];
       } catch {
         return [];
@@ -4272,7 +4488,7 @@ export class AdminLayoutComponent implements OnInit {
       infoTitleKey: 'adm.workforce_shifts_overview',
       infoTitleFallback: 'Workforce & Shifts Overview',
       suiteSortOrder: 2,
-      featureCodes: ['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
+      featureCodes: ['bcp-staff-rota', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
     },
     {
       categoryName: 'Reports, Forms & Analytics',
@@ -4396,6 +4612,7 @@ export class AdminLayoutComponent implements OnInit {
     const visible = new Set<string>();
     const available = new Set<string>();
     const active = new Set<string>();
+    const expired = new Set<string>();
 
     const suiteMap = new Map<string, {
       categoryName: string;
@@ -4444,12 +4661,25 @@ export class AdminLayoutComponent implements OnInit {
       if (item.isPublished === false) {
         continue;
       }
-      visible.add(code);
       if (item.isAvailableForUse === true) {
         available.add(code);
       }
-      if (item.isActive && item.isAvailableForUse === true) {
+
+      // Feature Visibility & Lock Architecture:
+      // - Features that are Not Installed (!item.isActive && !isExpired) MUST NOT show in the sidebar.
+      // - Features that are Installed & Active show normally (clickable, unlocked).
+      // - Features that were Installed but are now Expired show in the sidebar with a Lock icon [lock].
+      // - Deactivated / uninstalled capabilities (status === 'Suspended') are NOT expired and MUST NOT show in the sidebar.
+      // - isPublished means it appears in Central Subscription Dashboard (/billing/features) so the tenant can install it.
+      const isInstalledActive = Boolean(item.isActive && item.isAvailableForUse === true);
+      const isInstalledExpired = !isInstalledActive && String(item.status || '').trim().toLowerCase() === 'expired';
+
+      if (isInstalledActive) {
         active.add(code);
+        visible.add(code);
+      } else if (isInstalledExpired) {
+        expired.add(code);
+        visible.add(code);
       }
 
       const catKey = catName.toLowerCase();
@@ -4505,11 +4735,21 @@ export class AdminLayoutComponent implements OnInit {
     this.visibleFeatureCodes = visible;
     this.availableFeatureCodes = available;
     this.activeFeatureCodes = active;
-    localStorage.setItem('bcp_visible_feature_codes_v4', JSON.stringify(Array.from(visible)));
-    localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
+    this.expiredFeatureCodes = expired;
+    localStorage.setItem('bcp_visible_feature_codes_v6', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_available_feature_codes_v6', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+    localStorage.setItem('bcp_expired_feature_codes_v2', JSON.stringify(Array.from(expired)));
+    localStorage.removeItem('bcp_visible_feature_codes_v5');
+    localStorage.removeItem('bcp_available_feature_codes_v5');
+    localStorage.removeItem('bcp_expired_feature_codes');
+    localStorage.removeItem('bcp_visible_feature_codes_v4');
+    localStorage.removeItem('bcp_available_feature_codes_v4');
     if (Array.isArray(d.notices)) {
-      this.expiringFeatures = d.notices;
+      this.expiringFeatures = d.notices.filter((f: any) =>
+        (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
+        f.daysRemaining !== null && f.daysRemaining !== undefined
+      );
       this.checkExpirationBannerDismissal();
     }
     this.translation.registerDynamicCatalogStrings(dynamicTexts);
@@ -4589,6 +4829,17 @@ export class AdminLayoutComponent implements OnInit {
   isAnyFeatureActive(featureCodes: string[]): boolean {
     if (!featureCodes || featureCodes.length === 0) return false;
     return featureCodes.some(code => this.isFeatureActive(code));
+  }
+
+  /**
+   * Checks whether a specific modular capability was previously installed but has expired.
+   * When expired, the capability remains visible in the sidebar with a Lock icon.
+   * @param featureCode Canonical feature code (e.g. 'bcp-workspace').
+   * @returns True when the feature is installed but expired.
+   */
+  isFeatureExpired(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.expiredFeatureCodes.has(featureCode.toLowerCase());
   }
 
   /**
@@ -4758,8 +5009,10 @@ export class AdminLayoutComponent implements OnInit {
       this.openMenus = { content: true };
     } else if (url.startsWith('/identity/console') || url.startsWith('/admin/identity')) {
       this.openMenus = { identity: true };
-    } else if (url.startsWith('/groups/console') || url.startsWith('/admin/groups')) {
+    } else if (url.startsWith('/groups/console') || url.startsWith('/admin/groups') || url.startsWith('/committees/console')) {
       this.openMenus = { groups: true };
+    } else if (url.startsWith('/committees/workspace') || url.startsWith('/groups/workspace')) {
+      this.openMenus = { workspace_committees: true };
     } else if (url.startsWith('/admin/alumni') || url.startsWith('/users/workspace/alumni')) {
       this.openMenus = { alumni: true };
     } else if (url.startsWith('/products/console')) {
@@ -5086,6 +5339,17 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/users/workspace/alumni')) { tabTitle = 'Alumni Network'; tabIcon = 'school'; }
     else if (url.includes('/users/workspace/profile/biography')) { tabTitle = 'My CV Biography'; tabIcon = 'assignment_ind'; }
     else if (url.includes('/users/workspace/profile')) { tabTitle = 'My Account'; tabIcon = 'account_circle'; }
+    else if (url.includes('/committees/console/dashboard')) { tabTitle = `${this.committeeAliases.aliasSingular} Dashboard`; tabIcon = 'space_dashboard'; }
+    else if (url.includes('/committees/console/manage')) { tabTitle = `Manage ${this.committeeAliases.aliasPlural}`; tabIcon = 'diversity_3'; }
+    else if (url.includes('/committees/console/registrations')) { tabTitle = 'Registrations & Intake'; tabIcon = 'how_to_reg'; }
+    else if (url.includes('/committees/console/reports')) { tabTitle = 'Meeting Reports'; tabIcon = 'summarize'; }
+    else if (url.includes('/committees/console/forms')) { tabTitle = 'Extra-Info Forms'; tabIcon = 'dynamic_form'; }
+    else if (url.includes('/committees/console/settings')) { tabTitle = `${this.committeeAliases.aliasSingular} Settings`; tabIcon = 'settings'; }
+    else if (url.includes('/committees/workspace/my')) { tabTitle = `My ${this.committeeAliases.aliasPlural}`; tabIcon = 'groups'; }
+    else if (url.includes('/committees/workspace/discover')) { tabTitle = `Browse & Join ${this.committeeAliases.aliasPlural}`; tabIcon = 'explore'; }
+    else if (url.includes('/committees/workspace/view')) { tabTitle = `${this.committeeAliases.aliasSingular} Hub`; tabIcon = 'diversity_3'; }
+    else if (url.includes('/committees/workspace/reports/compose')) { tabTitle = 'Compose Meeting Report'; tabIcon = 'edit_document'; }
+    else if (url.includes('/committees/workspace/cloud-links')) { tabTitle = 'Connected Cloud Docs'; tabIcon = 'cloud_done'; }
     else if (url.includes('/groups')) { tabTitle = 'Group Channels'; tabIcon = 'diversity_3'; }
     else if (url.includes('/billing/features') || url.includes('/billing/plans') || url.includes('/billing/console')) { tabTitle = 'Features & Capabilities'; tabIcon = 'extension'; }
     else if (url.includes('/billing/paymentmethod') || url.includes('/billing/payment-methods')) { tabTitle = 'Payment Methods'; tabIcon = 'account_balance_wallet'; }
@@ -5273,5 +5537,9 @@ export class AdminLayoutComponent implements OnInit {
     if (mode === 'default') {
       this.loadSidebarForms();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.committeeAliasesSub?.unsubscribe();
   }
 }

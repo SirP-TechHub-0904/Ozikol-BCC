@@ -243,6 +243,25 @@ public class TenantProvisioningService : ITenantProvisioningService
             }
         }
 
+        // Register custom domain in Mailcow if present
+        if (!string.IsNullOrEmpty(tenant.CustomDomain))
+        {
+            try
+            {
+                var mailcow = _serviceProvider.GetService(typeof(Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService))
+                    as Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService;
+                if (mailcow != null)
+                {
+                    _logger.LogInformation("📧 [TenantProvisioning] Auto-provisioning custom domain '{Domain}' on Mailcow...", tenant.CustomDomain);
+                    await mailcow.EnsureDomainExistsAsync(tenant.CustomDomain, $"Workspace {tenant.TenantKey} Domain", cancellationToken);
+                }
+            }
+            catch (Exception mailcowEx)
+            {
+                _logger.LogWarning(mailcowEx, "⚠️ [TenantProvisioning] Non-blocking Mailcow registration warning for '{Domain}'", tenant.CustomDomain);
+            }
+        }
+
         return true;
     }
 
@@ -375,7 +394,13 @@ END";
                     CurrencyCode = "USD",
                     CurrencySymbol = "$",
                     EnableSms = true,
-                    EmailProvider = "Postmark",
+                    EmailProvider = "Mailcow",
+                    SmtpHost = "mail.ozikol.cloud",
+                    SmtpPort = 587,
+                    SmtpUsername = "noreply@ozikol.cloud",
+                    SmtpEnableSsl = true,
+                    SenderEmail = $"noreply@{request.TenantKey?.ToLowerInvariant() ?? "workspace"}.ozikol.cloud",
+                    SenderName = request.OrganizationName,
                     MaximumUsers = 1000,
                     SessionTimeoutMinutes = 120,
                     EnableListDownload = true

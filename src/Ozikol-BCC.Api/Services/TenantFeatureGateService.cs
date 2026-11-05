@@ -111,22 +111,24 @@ namespace Ozikol_BCC.Api.Services
                 string status = "Not Active";
 
                 // On setup, no feature is enabled by default. A feature is only active when explicitly activated by the tenant admin or Central operator.
+                bool isFreeCapability = feature.MonthlyPrice <= 0m && feature.YearlyPrice <= 0m && (sub == null || sub.CustomPriceOverride == null || sub.CustomPriceOverride <= 0m);
+
                 if (isSubscribed && sub != null)
                 {
-                    expiresAt = sub.ExpiresAtUtc;
-                    daysRemaining = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
+                    expiresAt = isFreeCapability ? null : sub.ExpiresAtUtc;
+                    daysRemaining = isFreeCapability ? null : (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
                     status = string.IsNullOrWhiteSpace(sub.Status) ? (sub.IsActive ? "Active" : "Not Active") : sub.Status;
 
                     if (sub.IsActive &&
                         !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
-                        (feature.IsCompulsory || sub.ExpiresAtUtc > now))
+                        (feature.IsCompulsory || isFreeCapability || sub.ExpiresAtUtc > now))
                     {
                         isActive = true;
                         status = "Active";
                     }
-                    else if (!feature.IsCompulsory && sub.IsActive && sub.ExpiresAtUtc <= now)
+                    else if (!feature.IsCompulsory && !isFreeCapability && sub.IsActive && sub.ExpiresAtUtc <= now)
                     {
                         status = "Expired";
                     }
@@ -153,8 +155,9 @@ namespace Ozikol_BCC.Api.Services
                     Status = status
                 };
 
-                // Build expiration notice if applicable (non-compulsory, licensed subscription or free trial within 30 days of expiry or expired)
+                // Build expiration notice if applicable (strictly for non-compulsory, paid capabilities or active free trials within 30 days of expiry)
                 if (isSubscribed && sub != null && sub.IsActive &&
+                    !isFreeCapability &&
                     !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&

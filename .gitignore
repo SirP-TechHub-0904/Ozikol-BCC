@@ -396,3 +396,6 @@ scratch/
 /zh-Hans/
 /zh-Hant/
 /runtimes/
+
+.secrets/
+*.ini

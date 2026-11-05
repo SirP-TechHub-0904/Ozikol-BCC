@@ -6,6 +6,26 @@ import { ResetPasswordComponent } from './pages/auth/reset-password/reset-passwo
 import { AccessDeniedComponent } from './pages/auth/access-denied/access-denied.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 
+// Committees & Sub-Groups Suite (Feature #1: bcp-committees)
+import { CommitteesAdminDashboardComponent } from './pages/admin/committees/committees-admin-dashboard.component';
+import { CommitteesManageComponent } from './pages/admin/committees/committees-manage.component';
+import { CommitteesFormsComponent } from './pages/admin/committees/committees-forms.component';
+import { CommitteesRegistrationsComponent } from './pages/admin/committees/committees-registrations.component';
+import { CommitteesReportsAdminComponent } from './pages/admin/committees/committees-reports-admin.component';
+import { CommitteesSettingsComponent } from './pages/admin/committees/committees-settings.component';
+import { CommitteesMemberHubComponent } from './pages/workspace/committees/committees-member-hub.component';
+import { CommitteesDiscoverComponent } from './pages/workspace/committees/committees-discover.component';
+import { CommitteesMemberDetailComponent } from './pages/workspace/committees/committees-member-detail.component';
+import { CommitteesReportComposerComponent } from './pages/workspace/committees/committees-report-composer.component';
+import { CommitteesCloudVaultComponent } from './pages/workspace/committees/committees-cloud-vault.component';
+
+// Workforce Rota & Attendance Suite (bcp-staff-rota & bcp-attendance-tracking)
+import { WorkforceScheduleComponent } from './pages/admin/workforce/workforce-schedule.component';
+import { WorkforceSitesComponent } from './pages/admin/workforce/workforce-sites.component';
+import { WorkforceAttendanceLiveComponent } from './pages/admin/workforce/workforce-attendance-live.component';
+import { WorkforceMyShiftsComponent } from './pages/workspace/workforce/workforce-my-shifts.component';
+import { WorkforceClockComponent } from './pages/workspace/workforce/workforce-clock.component';
+
 // Dashboards
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
 import { WorkspaceDashboardComponent } from './pages/workspace/workspace-dashboard.component';
@@ -141,6 +161,9 @@ export const routes: Routes = [
   { path: 'onboarding', component: RegisterComponent },
   { path: 'signup', component: RegisterComponent },
   { path: 'auth/:customSlug', component: RegisterComponent },
+  { path: 'join-committee', component: LandingComponent },
+  { path: 'join-committee/:tenantSlug', component: LandingComponent },
+  { path: 'join-committee/:tenantSlug/:groupSlug', component: LandingComponent },
   { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
@@ -247,7 +270,43 @@ export const routes: Routes = [
       { path: 'notifications', redirectTo: 'users/workspace/notifications', pathMatch: 'full' },
 
       // 3. Groups & Channels
-      { path: 'groups/console', component: GroupsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      // 3. Committees & Sub-Groups Suite (bcp-committees)
+      // Admin Console Routes
+      { path: 'committees/console', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
+      { path: 'committees/console/dashboard', component: CommitteesAdminDashboardComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/manage', component: CommitteesManageComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/manage/:id', component: CommitteesManageComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/forms', component: CommitteesFormsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/registrations', component: CommitteesRegistrationsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/reports', component: CommitteesReportsAdminComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/settings', component: CommitteesSettingsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+
+      // Member Workspace Routes
+      { path: 'committees/workspace', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
+      { path: 'committees/workspace/my', component: CommitteesMemberHubComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/discover', component: CommitteesDiscoverComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/view/:id', component: CommitteesMemberDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/reports/compose', component: CommitteesReportComposerComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/cloud-links', component: CommitteesCloudVaultComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+
+      // 4. Staff Rota & Shift Management (bcp-staff-rota) + Attendance (bcp-attendance-tracking)
+      // Admin Console Routes
+      { path: 'workforce/console', redirectTo: 'workforce/console/schedule', pathMatch: 'full' },
+      { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/sites', component: WorkforceSitesComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'attendance/console', redirectTo: 'attendance/console/live', pathMatch: 'full' },
+      { path: 'attendance/console/live', component: WorkforceAttendanceLiveComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },
+
+      // Member Workspace Routes
+      { path: 'workforce/workspace', redirectTo: 'workforce/workspace/my-shifts', pathMatch: 'full' },
+      { path: 'workforce/workspace/my-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'attendance/workspace', redirectTo: 'attendance/workspace/clock', pathMatch: 'full' },
+      { path: 'attendance/workspace/clock', component: WorkforceClockComponent, canActivate: [featureGuard], data: { feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },
+
+      // Legacy Aliases
+      { path: 'groups/console', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
+      { path: 'groups/workspace', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
+      { path: 'groups', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
       { path: 'groups/workspace', component: GroupsDirectoryComponent },
       { path: 'groups', component: GroupsComponent },
 

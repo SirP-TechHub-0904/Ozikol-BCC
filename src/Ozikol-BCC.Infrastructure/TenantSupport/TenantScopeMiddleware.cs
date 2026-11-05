@@ -99,7 +99,9 @@ public class TenantScopeMiddleware
                                    path.StartsWith("/api/auth/request-otp", StringComparison.OrdinalIgnoreCase) ||
                                    path.StartsWith("/api/auth/verify-login-mfa", StringComparison.OrdinalIgnoreCase) ||
                                    path.StartsWith("/api/auth/resend-login-mfa", StringComparison.OrdinalIgnoreCase) ||
-                                   path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase);
+                                   path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/SettingsApi/brand", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/SetupApi/client-config", StringComparison.OrdinalIgnoreCase);
 
         if (!isAuthBootstrapPath && match != null && httpContext.User?.Identity?.IsAuthenticated == true)
         {
@@ -244,6 +246,19 @@ public class TenantScopeMiddleware
         if (httpContext.Request.Headers.TryGetValue("X-Tenant-Domain", out var headerTenantDomain) && !string.IsNullOrWhiteSpace(headerTenantDomain))
         {
             return CleanIdentifier(headerTenantDomain.ToString());
+        }
+
+        // 2b. Priority 2b: Check explicit query parameters (?tenantKey=... or ?tenant=...)
+        if (httpContext.Request.Query.TryGetValue("tenantKey", out var queryTenantKey) && !string.IsNullOrWhiteSpace(queryTenantKey))
+        {
+            var clean = CleanIdentifier(queryTenantKey.ToString());
+            if (!string.IsNullOrEmpty(clean)) return clean;
+        }
+
+        if (httpContext.Request.Query.TryGetValue("tenant", out var queryTenant) && !string.IsNullOrWhiteSpace(queryTenant))
+        {
+            var clean = CleanIdentifier(queryTenant.ToString());
+            if (!string.IsNullOrEmpty(clean)) return clean;
         }
 
         // 3. Priority 3: Check Authorization Bearer header or User claims for tenant_key

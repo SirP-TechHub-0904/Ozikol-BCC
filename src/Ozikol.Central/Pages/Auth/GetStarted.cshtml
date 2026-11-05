@@ -118,7 +118,7 @@
 
                 <!-- Google reCAPTCHA Verification Widget -->
                 <div class="oz-recaptcha-wrap" style="margin: 18px 0 10px; display: flex; justify-content: center;">
-                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey" data-callback="onRecaptchaSolved" data-expired-callback="onRecaptchaExpired" data-error-callback="onRecaptchaExpired"></div>
                 </div>
 
                 <button type="button" onclick="goToStep2()" class="btn-auth-submit" style="margin-top: 10px; width: 100%; font-size: 15px; font-weight: 700; padding: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
@@ -165,26 +165,19 @@
                     </div>
                 </div>
 
-                @* All active features grouped by suite: numbered, display-only, no checkboxes or prices *@
+                @* All active and upcoming platform features grouped by suite: numbered, display-only *@
                 @{
                     int featureSerialNo = 0;
                     var featureGroups = Model.AllFeatures
                         .GroupBy(f => f.Category)
                         .OrderBy(g => GetStartedModel.GetSuiteOrder(g.Key));
-
-                    var allCategories = featureGroups.Select(g => g.Key).ToList();
-                    var suiteLetterMap = new Dictionary<string, char>();
-                    for (int i = 0; i < allCategories.Count; i++)
-                    {
-                        suiteLetterMap[allCategories[i]] = (char)('A' + i);
-                    }
                 }
                 <div style="max-height: 460px; overflow-y: auto; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; margin-bottom: 24px; display: flex; flex-direction: column; gap: 22px;">
                     @foreach (var group in featureGroups)
                     {
                         <div>
                             <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px dashed #cbd5e1; color: #334155;">
-                                <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @(suiteLetterMap.TryGetValue(group.Key, out var letter) ? letter : '•')</span>
+                                <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @GetStartedModel.GetSuiteLetter(group.Key)</span>
                                 <span>@group.Key</span>
                             </div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
@@ -194,7 +187,13 @@
                                     <div style="display: flex; align-items: flex-start; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 10px;">
                                         <span style="color: #10b981; font-weight: 800; margin-top: 1px;">✓</span>
                                         <div>
-                                            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</div>
+                                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                                <span style="font-size: 13px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</span>
+                                                @if (!feat.IsAvailableForUse)
+                                                {
+                                                    <span style="font-size: 9.5px; font-weight: 700; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;">Coming Soon</span>
+                                                }
+                                            </div>
                                             @if (!string.IsNullOrWhiteSpace(feat.Description))
                                             {
                                                 <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">@feat.Description</div>
@@ -306,6 +305,36 @@
 <script>
 let savedRecaptchaToken = ''; // Stores reCAPTCHA token from Step 1 for use in Step 2 submission
 let slugDebounceTimer = null;
+
+// reCAPTCHA tokens are single-use and expire ~2 minutes after being issued by Google.
+// Track the live token so a stale or already-consumed token is never submitted to the server.
+const RECAPTCHA_TOKEN_TTL_MS = 110 * 1000; // Refresh slightly before Google's 120s hard expiry
+let recaptchaIssuedAt = 0;
+
+/** Widget callback: records the freshly issued token and its issue time. */
+function onRecaptchaSolved(token) {
+    savedRecaptchaToken = token || '';
+    recaptchaIssuedAt = Date.now();
+}
+
+/** Widget callback: discards the token once Google expires it or the widget errors. */
+function onRecaptchaExpired() {
+    savedRecaptchaToken = '';
+    recaptchaIssuedAt = 0;
+}
+
+/** True when a saved token exists and is still inside its validity window. */
+function hasFreshRecaptchaToken() {
+    return !!savedRecaptchaToken && (Date.now() - recaptchaIssuedAt) < RECAPTCHA_TOKEN_TTL_MS;
+}
+
+/** Clears the consumed token, resets the widget and returns the user to Step 1 to re-verify. */
+function returnToStep1ForRecaptcha() {
+    onRecaptchaExpired();
+    if (window.grecaptcha) { try { grecaptcha.reset(); } catch (_) { } }
+    document.getElementById('step2Container').style.display = 'none';
+    document.getElementById('step1Container').style.display = 'block';
+}
 
 function goToStep2() {
     const fullName = document.getElementById('inputFullName');
@@ -436,6 +465,13 @@ async function handleOnboardingSubmit(e) {
     const form = document.getElementById('onboardingForm');
     const modal = document.getElementById('provisioningModal');
 
+    // Guard: the token must be fresh. Otherwise Google rejects it with "timeout-or-duplicate".
+    if (!hasFreshRecaptchaToken()) {
+        returnToStep1ForRecaptcha();
+        alert('Your security verification expired. Please tick "I\'m not a robot" again, then continue.');
+        return;
+    }
+
     modal.style.display = 'flex';
 
     setTimeout(() => {
@@ -467,6 +503,10 @@ async function handleOnboardingSubmit(e) {
 
         const result = await resp.json();
 
+        // The token is single-use: it is consumed by this request whether or not setup succeeded.
+        onRecaptchaExpired();
+        if (!result.success && window.grecaptcha) { try { grecaptcha.reset(); } catch (_) { } }
+
         if (result.success) {
             // Store onboarding result for subsequent seed choice
             pendingOnboardingResult = result;
@@ -492,7 +532,9 @@ async function handleOnboardingSubmit(e) {
             }, 600);
         } else {
             modal.style.display = 'none';
-            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
+            // Any failure consumed the token, so the user must re-verify before retrying.
+            returnToStep1ForRecaptcha();
+            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.') + '\n\nPlease tick "I\'m not a robot" again before retrying.');
         }
     } catch (err) {
         form.submit();

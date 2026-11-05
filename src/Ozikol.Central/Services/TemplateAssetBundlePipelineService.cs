@@ -540,7 +540,7 @@ Respond strictly in valid JSON array format matching:
                 }
             };
 
-            var models = new[] { "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-2.5-flash" };
+            var models = new[] { "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-flash-8b" };
             foreach (var model in models)
             {
                 var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";

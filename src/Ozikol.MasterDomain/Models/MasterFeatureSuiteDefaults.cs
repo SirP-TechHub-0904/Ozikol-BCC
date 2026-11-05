@@ -95,9 +95,8 @@ namespace Ozikol.MasterDomain.Models
             ["bcp-whistleblowing"] = "Whistleblowing",
 
             // Suite B: Workforce, Rota & Scheduling
-            ["bcp-staff-rota"] = "Staff & Volunteer Rota",
-            ["bcp-shift-swaps"] = "Shift Swaps & Leave",
-            ["bcp-attendance-tracking"] = "Attendance & QR",
+            ["bcp-staff-rota"] = "Staff Rota & Shifts",
+            ["bcp-attendance-tracking"] = "Attendance & Live Duty",
             ["bcp-appointment-booking"] = "Appointment Booking",
             ["bcp-calendar-followups"] = "Calendar & Follow-Ups",
 

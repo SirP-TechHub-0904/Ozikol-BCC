@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -23,16 +24,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
     public class IndexModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly IVpsSystemTelemetryService _telemetryService;
         private readonly ILogger<IndexModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of <see cref="IndexModel"/>.
         /// </summary>
         /// <param name="dbContext">Master catalog database context.</param>
+        /// <param name="telemetryService">VPS server and storage telemetry provider.</param>
         /// <param name="logger">Telemetry logger.</param>
-        public IndexModel(MasterCatalogDbContext dbContext, ILogger<IndexModel> logger)
+        public IndexModel(
+            MasterCatalogDbContext dbContext,
+            IVpsSystemTelemetryService telemetryService,
+            ILogger<IndexModel> logger)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -82,6 +89,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
 
         /// <summary>Total registered template creator studios from database.</summary>
         public int TotalCreators { get; set; }
+
+        /// <summary>
+        /// Real-time VPS server hardware, NVMe disk storage, and RAM telemetry snapshot.
+        /// </summary>
+        public VpsSystemTelemetryDto SystemTelemetry { get; set; } = new();
 
         #endregion
 
@@ -322,6 +334,34 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
 
             // 8. Generate Multi-Period Time Series and Serialization Bundle directly aggregated from database
             await BuildChartTelemetryPayloadAsync(now);
+
+            // 9. Capture Live VPS Server Hardware & Storage Telemetry Snapshot
+            try
+            {
+                SystemTelemetry = await _telemetryService.GetTelemetryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to capture VPS telemetry snapshot.");
+            }
+        }
+
+        /// <summary>
+        /// Handles AJAX requests to stream live VPS hardware, storage, and memory telemetry snapshot directly to the dashboard.
+        /// </summary>
+        /// <returns>JSON serialized telemetry snapshot.</returns>
+        public async Task<IActionResult> OnGetVpsTelemetryAsync()
+        {
+            try
+            {
+                var data = await _telemetryService.GetTelemetryAsync();
+                return new JsonResult(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to stream VPS telemetry snapshot.");
+                return StatusCode(500, new { error = "Unable to read VPS telemetry." });
+            }
         }
 
         /// <summary>

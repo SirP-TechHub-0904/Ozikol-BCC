@@ -75,10 +75,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   selectedSuite = '';
   availabilityFilter: 'all' | 'available' | 'coming_soon' = 'all';
   statusFilter: 'all' | 'active' | 'not_active' | 'coming_soon' = 'all';
-  tierFilter: 'all' | 'compulsory' | 'optional' = 'all';
-
   // Table Sorting controls
-  sortColumn: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier' = 'serialNo';
+  sortColumn: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' = 'serialNo';
   sortDirection: 'asc' | 'desc' = 'asc';
 
   // Snapshot data from MasterCatalogDbContext via /api/billing/features
@@ -358,7 +356,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
     // If activating or renewing a paid capability when no first-time free trial applies,
     // launch the Central Paystack Inline Checkout instead of bypassing payment.
-    if (desiredState && !feat.isCompulsory && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
+    if (desiredState && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
       this.payAndRenewFeature(feat);
       return;
     }
@@ -366,8 +364,16 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.togglingFeatureCode = feat.featureCode;
     this.suppressNextSocketToast = true;
 
+    const startTime = Date.now();
     this.billingService.toggleFeatureActive(feat.featureId, feat.featureCode, desiredState).subscribe({
-      next: res => {
+      next: async res => {
+        // Enforce smooth 3-second installation loading badge
+        const elapsed = Date.now() - startTime;
+        const remainingDelay = Math.max(0, 3000 - elapsed);
+        if (remainingDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, remainingDelay));
+        }
+
         this.togglingFeatureCode = null;
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (ok) {
@@ -388,12 +394,19 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
               `'${feat.name}' has been deactivated and removed from your sidebar menu.`
             );
           }
+          // Refresh the page state & snapshot so UI immediately updates
+          this.loadSnapshot();
         } else {
           this.suppressNextSocketToast = false;
           this.toastService.error('Update Failed', res?.message || 'Could not update capability status.');
         }
       },
-      error: err => {
+      error: async err => {
+        const elapsed = Date.now() - startTime;
+        const remainingDelay = Math.max(0, 3000 - elapsed);
+        if (remainingDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, remainingDelay));
+        }
         this.togglingFeatureCode = null;
         this.suppressNextSocketToast = false;
         const msg = err?.error?.message || 'Could not update feature status.';
@@ -840,7 +853,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   get expiringOrExpiredFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     return this.activeInstalledFeatures.filter(
-      f => !f.isCompulsory && this.getFeatureDisplayAmount(f) > 0 && (f.status === 'Expired' || (f.daysRemaining ?? 999) <= 30)
+      f => this.getFeatureDisplayAmount(f) > 0 && (f.status === 'Expired' || (f.daysRemaining ?? 999) <= 30)
     );
   }
 
@@ -1032,13 +1045,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         return false;
       }
 
-      if (this.tierFilter === 'compulsory' && !f.isCompulsory) {
-        return false;
-      }
-      if (this.tierFilter === 'optional' && f.isCompulsory) {
-        return false;
-      }
-
       return true;
     });
 
@@ -1068,10 +1074,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           cmp = this.getFeatureStatusRank(a) - this.getFeatureStatusRank(b);
           if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
           break;
-        case 'tier':
-          cmp = (a.isCompulsory === b.isCompulsory) ? 0 : (a.isCompulsory ? -1 : 1);
-          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
-          break;
       }
       return cmp * dir;
     });
@@ -1080,7 +1082,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   /**
    * Toggles table sorting by the specified column.
    */
-  toggleSort(column: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier'): void {
+  toggleSort(column: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status'): void {
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -1118,29 +1120,24 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
   /**
    * Resolves the human-readable billing duration / cadence label for a feature.
+   * Standardized to 'Monthly' or 'Yearly'.
    */
   getFeatureDurationLabel(feat: BillingFeatureItem): string {
     if (!feat) return 'Monthly';
-    const amt = this.getFeatureDisplayAmount(feat);
-    if (amt <= 0) {
-      return 'Lifetime / Free';
-    }
     const cadence = (feat.billingCadence || '').trim().toLowerCase();
     if (cadence === 'yearly' || (feat.monthlyPrice <= 0 && feat.yearlyPrice > 0)) {
       return 'Yearly';
-    }
-    if (cadence === 'quarterly') {
-      return 'Quarterly';
     }
     return 'Monthly';
   }
 
   /**
-   * Returns true if an active feature has an expiration date or remaining days counter.
+   * Returns true if an active paid feature has an expiration date or remaining days counter.
+   * Free or included features do not display an expiration countdown.
    */
   hasFeatureExpirationInfo(feat: BillingFeatureItem): boolean {
     if (!feat || !feat.isActive) return false;
-    if (this.getFeatureDisplayAmount(feat) <= 0 && feat.isCompulsory && !feat.expiresAtUtc) return false;
+    if (this.getFeatureDisplayAmount(feat) <= 0) return false;
     return !!(feat.expiresAtUtc || (feat.daysRemaining !== undefined && feat.daysRemaining !== null));
   }
 
@@ -1263,7 +1260,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   get compulsoryCount(): number {
-    return this.allOrderedFeatures.filter(f => f.isCompulsory).length;
+    return 0;
   }
 
   get hasActiveFilters(): boolean {
@@ -1272,7 +1269,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.selectedSuite !== '' ||
       this.availabilityFilter !== 'all' ||
       this.statusFilter !== 'all' ||
-      this.tierFilter !== 'all' ||
       this.sortColumn !== 'serialNo' ||
       this.sortDirection !== 'asc'
     );
@@ -1283,16 +1279,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.availabilityFilter = this.availabilityFilter === filter ? 'all' : filter;
   }
 
-  filterByTier(tier: 'all' | 'compulsory' | 'optional'): void {
-    this.tierFilter = this.tierFilter === tier ? 'all' : tier;
-  }
-
   resetFilters(): void {
     this.searchQuery = '';
     this.selectedSuite = '';
     this.availabilityFilter = 'all';
     this.statusFilter = 'all';
-    this.tierFilter = 'all';
     this.sortColumn = 'serialNo';
     this.sortDirection = 'asc';
   }

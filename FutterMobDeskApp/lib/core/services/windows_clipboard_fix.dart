@@ -7,10 +7,16 @@ import 'package:flutter/services.dart';
 ///
 /// When an item is selected from Windows Clipboard History (`Win + V`), Windows injects
 /// a synthetic keystroke sequence via Win32 `SendInput` where `Ctrl` is released prematurely
-/// before `V`, and physical keys carry the unmapped synthetic scan code `0x1600000000`.
+/// milliseconds before `V`, and physical keys carry the synthetic scan code `0x1600000000`.
 ///
-/// This interceptor catches the synthetic key event or unmapped paste intent on desktop
-/// and programmatically triggers [PasteTextIntent] on the currently active text field.
+/// This interceptor ONLY triggers when:
+/// 1. `Ctrl` is NOT physically pressed (`!HardwareKeyboard.instance.isControlPressed`),
+/// 2. Key is `V`,
+/// 3. Physical key is synthetic `0x1600000000`,
+/// 4. `Ctrl` was released within the last 80ms by `SendInput`.
+///
+/// Manual user keystrokes (`Ctrl + V`) have `isControlPressed == true` and are NEVER intercepted,
+/// allowing Flutter's native text editing engine to paste cleanly without duplication.
 class WindowsClipboardFix {
   static bool _initialized = false;
   static DateTime? _lastControlUp;
@@ -36,27 +42,28 @@ class WindowsClipboardFix {
     }
 
     if (event is KeyDownEvent) {
-      final isKeyV = event.logicalKey == LogicalKeyboardKey.keyV;
-      // Synthetic physical key scan code for SendInput on Windows is 0x1600000000 (scan code 0)
-      final isSyntheticV = event.physicalKey.usbHidUsage == 0x1600000000 ||
-          event.physicalKey.usbHidUsage == 0;
-      final recentlyReleasedCtrl = _lastControlUp != null &&
-          DateTime.now().difference(_lastControlUp!).inMilliseconds < 400;
-      final isCtrlActive =
-          HardwareKeyboard.instance.isControlPressed || recentlyReleasedCtrl;
+      // If Control is physically held down, this is a normal manual Ctrl+V.
+      // NEVER intercept normal manual Ctrl+V; Flutter handles it natively!
+      if (HardwareKeyboard.instance.isControlPressed) {
+        return false;
+      }
 
-      // When Windows 11 Win+V injects synthetic V (or V with synthetic scan code / recently released Ctrl)
-      if (isKeyV && (isSyntheticV || isCtrlActive)) {
+      final isKeyV = event.logicalKey == LogicalKeyboardKey.keyV;
+      // Synthetic physical key scan code for SendInput on Windows is specifically 0x1600000000
+      final isSyntheticV = event.physicalKey.usbHidUsage == 0x1600000000;
+      final recentlyReleasedCtrl = _lastControlUp != null &&
+          DateTime.now().difference(_lastControlUp!).inMilliseconds < 80;
+
+      // Only fire when Windows 11 Win+V injects synthetic V after releasing Ctrl
+      if (isKeyV && isSyntheticV && recentlyReleasedCtrl) {
         final primaryFocus = FocusManager.instance.primaryFocus;
         if (primaryFocus != null && primaryFocus.context != null) {
-          final result = Actions.maybeInvoke(
+          Actions.maybeInvoke(
             primaryFocus.context!,
             const PasteTextIntent(SelectionChangedCause.keyboard),
           );
-          if (result != null) {
-            _lastControlUp = null;
-            return true; // Successfully consumed and pasted into focused text field!
-          }
+          _lastControlUp = null;
+          return true; // Successfully consumed synthetic Win+V event
         }
       }
     }
@@ -64,3 +71,4 @@ class WindowsClipboardFix {
     return false;
   }
 }
+

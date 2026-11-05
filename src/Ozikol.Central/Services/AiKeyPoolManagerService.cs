@@ -25,6 +25,7 @@ namespace Ozikol.Central.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<AiKeyPoolManagerService> _logger;
         private static readonly SemaphoreSlim _keySelectLock = new(1, 1);
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, string> _resolvedModelCache = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AiKeyPoolManagerService"/> class.
@@ -268,6 +269,104 @@ namespace Ozikol.Central.Services
                 AverageLatencyMs = Math.Round(avgLatency, 1),
                 Keys = keys
             };
+        }
+
+        /// <inheritdoc />
+        public async Task<string> ResolveSupportedModelAsync(MasterAiApiKey key, CancellationToken cancellationToken = default)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            if (!string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                return key.Provider;
+            }
+
+            if (_resolvedModelCache.TryGetValue(key.Id, out var cachedModel) && !string.IsNullOrWhiteSpace(cachedModel))
+            {
+                return cachedModel;
+            }
+
+            string selectedModel = "gemini-3.5-flash";
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+
+                var listModelsUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={key.ApiKey}";
+                using var response = await client.GetAsync(listModelsUrl, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("models", out var modelsElem))
+                    {
+                        var validModels = new List<string>();
+                        foreach (var m in modelsElem.EnumerateArray())
+                        {
+                            var mName = m.GetProperty("name").GetString() ?? string.Empty;
+                            var cleanName = mName.StartsWith("models/") ? mName.Substring(7) : mName;
+                            var methods = m.TryGetProperty("supportedGenerationMethods", out var methodsElem)
+                                ? methodsElem.ToString()
+                                : string.Empty;
+
+                            if (methods.Contains("generateContent", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Skip multimodal audio/video/tts/deprecated models
+                                if (cleanName.Contains("tts", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("image", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("transcribe", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("2.5", StringComparison.OrdinalIgnoreCase) ||
+                                    cleanName.Contains("1.5", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+                                validModels.Add(cleanName);
+                            }
+                        }
+
+                        // Priority order for verified active Flash models from ModelService:
+                        var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.5-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.7-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.8-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-flash-latest", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("3.", StringComparison.OrdinalIgnoreCase) && m.Contains("flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault();
+
+                        if (!string.IsNullOrWhiteSpace(preferred))
+                        {
+                            selectedModel = preferred;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not dynamically probe Gemini ModelService for Key '{Alias}', falling back to {Model}", key.KeyAlias, selectedModel);
+            }
+
+            _resolvedModelCache[key.Id] = selectedModel;
+            _logger.LogInformation("🎯 [AI Key Pool] Dynamically resolved Gemini model for Key '{Alias}': {Model}", key.KeyAlias, selectedModel);
+            return selectedModel;
+        }
+
+        /// <inheritdoc />
+        public async Task<string> GetGenerateContentEndpointAsync(MasterAiApiKey key, CancellationToken cancellationToken = default)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            if (string.Equals(key.Provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                var model = await ResolveSupportedModelAsync(key, cancellationToken);
+                return $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key.ApiKey}";
+            }
+
+            if (string.Equals(key.Provider, "DeepSeek", StringComparison.OrdinalIgnoreCase))
+            {
+                return "https://api.deepseek.com/v1/chat/completions";
+            }
+
+            return key.ApiKey;
         }
     }
 }

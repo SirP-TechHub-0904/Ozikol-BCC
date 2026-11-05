@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
+import { CommitteesService } from '../../core/services/committees.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
 import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
 import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
@@ -687,12 +688,35 @@ export class LandingComponent implements OnInit, OnDestroy {
   renderedStyles: string = '';
   safeRenderedHtml: SafeHtml | null = null;
 
+  // Public Committee & Sub-Group Registration State
+  committeeTenantSlug: string = '';
+  committeeGroupSlug: string = '';
+  committeeInviteToken: string = '';
+  activeCommittee: any = null;
+  openCommittees: any[] = [];
+  committeeAliases: any = {
+    aliasSingular: 'Committee',
+    aliasPlural: 'Committees',
+    subGroupAliasSingular: 'Sub-Group',
+    subGroupAliasPlural: 'Sub-Groups'
+  };
+  committeeExtraAnswers: Record<string, any> = {};
+  committeeAttachmentUrls: string[] = [];
+  committeeSubmitting: boolean = false;
+  committeeFormError: string = '';
+  committeeSubmittedSuccess: boolean = false;
+  committeeSubmissionStatus: string = '';
+  committeeSubmissionMessage: string = '';
+  committeeSignedInMember: any = null;
+  committeeDirectoryMode: boolean = false;
+
   private routeSub: Subscription | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private apiService: ApiService,
+    private committeesService: CommitteesService,
     public cartService: CartService,
     private toastService: ToastService,
     private templateHydration: TemplateHydrationService,
@@ -737,8 +761,48 @@ export class LandingComponent implements OnInit, OnDestroy {
       const blogIdParam = params.get('id') || (urlSegments[0] === 'blog' && urlSegments[1] ? urlSegments[1] : null);
       this.activeBlogId = blogIdParam;
 
+      // Check if viewing committees public portal (/join-committee)
+      if (slugParam === 'join-committee') {
+        const seg1 = urlSegments[1] || '';
+        const seg2 = urlSegments[2] || '';
+        this.committeeInviteToken = this.route.snapshot.queryParamMap.get('token') || '';
+
+        const hostTenant = this.extractSubdomainTenant();
+        const storedTenant = localStorage.getItem('tenant_key') || '';
+        const inferredTenant = hostTenant || storedTenant;
+
+        if (seg1 && seg2) {
+          this.committeeTenantSlug = seg1;
+          this.committeeGroupSlug = seg2;
+        } else if (seg1 && !seg2) {
+          if (inferredTenant && seg1.toLowerCase() !== inferredTenant.toLowerCase()) {
+            this.committeeTenantSlug = inferredTenant;
+            this.committeeGroupSlug = seg1;
+          } else {
+            this.committeeTenantSlug = seg1;
+            this.committeeGroupSlug = '';
+          }
+        } else {
+          this.committeeTenantSlug = inferredTenant;
+          this.committeeGroupSlug = '';
+        }
+      }
+
       this.loadSiteData();
     });
+  }
+
+  /**
+   * Helper extracting the tenant identifier from the browser hostname when on a subdomain (e.g. rozzy-touchxz.localhost:4200).
+   */
+  private extractSubdomainTenant(): string {
+    if (typeof window === 'undefined') return '';
+    const host = window.location.hostname.toLowerCase();
+    const parts = host.split('.');
+    if (parts.length > 1 && !['localhost', '127.0.0.1', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
+      return parts[0];
+    }
+    return '';
   }
 
   ngOnDestroy(): void {
@@ -797,6 +861,9 @@ export class LandingComponent implements OnInit, OnDestroy {
           await this.fetchAllBlogs();
           this.composeBlogArchive();
         }
+      } else if (this.currentSlug === 'join-committee') {
+        // 3. Public Committee & Sub-Group Registration Portal (Wrapped directly in official Landing Page shell)
+        await this.fetchAndComposePublicCommittee();
       } else {
         // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
         await this.fetchPageBySlug(this.currentSlug);
@@ -2045,6 +2112,788 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
+
+  // ========================================================
+  // PUBLIC COMMITTEE & SUB-GROUP REGISTRATION ORCHESTRATION
+  // ========================================================
+
+  /**
+   * Fetches public committee registration or directory metadata and wraps it directly inside
+   * the authentic Landing Page layout (Navbar + Breadcrumb + Body + Footer) with 100% theme fidelity.
+   */
+  private async fetchAndComposePublicCommittee(): Promise<void> {
+    try {
+      if (this.committeeGroupSlug) {
+        this.committeeDirectoryMode = false;
+        const res: any = await this.committeesService.getPublicCommitteeBySlug(
+          this.committeeGroupSlug,
+          this.committeeTenantSlug || undefined,
+          this.committeeInviteToken || undefined
+        ).toPromise();
+
+        if (res?.data) {
+          const data = res.data;
+          this.activeCommittee = data.committee || data.Committee;
+          this.committeeAliases = { ...this.committeeAliases, ...(data.aliases || data.Aliases || {}) };
+          this.committeeSignedInMember = data.signedInMember || data.SignedInMember;
+          if (data.brand?.brandName) {
+            this.brandName = data.brand.brandName;
+          }
+          this.composeCommitteeRegistrationView();
+        } else {
+          this.composeNotFoundPage();
+        }
+      } else {
+        this.committeeDirectoryMode = true;
+        const res: any = await this.committeesService.getPublicDirectory(
+          this.committeeTenantSlug || undefined
+        ).toPromise();
+
+        if (res?.data) {
+          const data = res.data;
+          this.openCommittees = data.committees || data.Committees || [];
+          this.committeeAliases = { ...this.committeeAliases, ...(data.aliases || data.Aliases || {}) };
+          this.committeeSignedInMember = data.signedInMember || data.SignedInMember;
+          if (data.brand?.brandName) {
+            this.brandName = data.brand.brandName;
+          }
+          if (this.openCommittees.length > 0) {
+            this.activeCommittee = this.openCommittees[0];
+            this.composeCommitteeRegistrationView();
+          } else {
+            this.composeNotFoundPage();
+          }
+        } else {
+          this.composeNotFoundPage();
+        }
+      }
+    } catch {
+      this.composeNotFoundPage();
+    }
+  }
+
+  /**
+   * Assembles the Public Committee Registration page wrapped directly in the Landing Page shell.
+   */
+  private composeCommitteeRegistrationView(): void {
+    if (!this.activeCommittee) {
+      this.composeNotFoundPage();
+      return;
+    }
+
+    const c = this.activeCommittee;
+    const committeeName = c.name || 'Registration';
+    const parentName = c.parentCommitteeName;
+
+    this.titleService.setTitle(`${committeeName} | ${this.brandName}`);
+
+    // 1. Navigation Header Section Unit (Uses exact same hydrator and template)
+    const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'join-committee'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    // 2. Breadcrumb Header Section Unit
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    let breadcrumbSection: SectionTemplateUnit | undefined;
+    if (breadcrumbTemplate) {
+      const coverImg = c.coverBannerUrl || c.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80';
+      const breadcrumbData = {
+        title: committeeName,
+        Title: committeeName,
+        pageTitle: committeeName,
+        miniTitle: parentName || this.committeeAliases.aliasPlural,
+        description: c.description || c.missionStatement || '',
+        backgroundImageUrl: coverImg,
+        imageUrl: coverImg,
+        breadcrumbTrail: [
+          { label: 'Home', url: '/', isActive: false },
+          { label: parentName || this.committeeAliases.aliasPlural, url: parentName ? '#' : '/join-committee', isActive: false },
+          { label: committeeName, url: '#', isActive: true }
+        ],
+        breadcrumbs: [
+          { title: 'Home', url: '/', isActive: false },
+          { title: parentName || this.committeeAliases.aliasPlural, url: parentName ? '#' : '/join-committee', isActive: false },
+          { title: committeeName, url: '#', isActive: true }
+        ]
+      };
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
+      };
+    }
+
+    // 3. Registration Body Section Unit
+    const bodySectionsList: SectionTemplateUnit[] = [{
+      name: 'Committee Registration Card',
+      category: 'body',
+      sortOrder: 1,
+      html: this.renderCommitteeRegistrationHtml(),
+      css: this.getCommitteeRegistrationStyles()
+    }];
+
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
+
+    // 5. Synthesize Unified Page Bundle via HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${committeeName} | ${this.brandName}`,
+      pageSlug: 'join-committee',
+      metaDescription: c.description || this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
+  }
+
+  /**
+   * Renders the dynamic Committee Registration HTML card.
+   */
+  private renderCommitteeRegistrationHtml(): string {
+    if (this.committeeSubmittedSuccess) {
+      return `
+        <div class="pub-main-centered-wrap">
+          <div class="pub-card-state success">
+            <div class="pub-success-icon-wrap">
+              <span class="material-symbols-outlined">verified</span>
+            </div>
+            <h2>${this.committeeSubmissionStatus === 'Approved' ? 'You Are Enrolled!' : 'Application Submitted'}</h2>
+            <p>${this.committeeSubmissionMessage}</p>
+            <div class="pub-success-actions">
+              ${this.committeeSignedInMember ? `<a href="/committees/workspace/my" class="pub-btn-primary">Open My ${this.committeeAliases.aliasPlural}</a>` : ''}
+              ${!this.committeeSignedInMember && this.committeeDirectoryMode ? `<button type="button" class="pub-btn-secondary pub-btn-reset-trigger">Register for Another ${this.committeeAliases.aliasSingular}</button>` : ''}
+              ${!this.committeeSignedInMember && !this.committeeDirectoryMode ? `<a href="/" class="pub-btn-secondary">Return to Website</a>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (!this.activeCommittee) {
+      return '';
+    }
+
+    const c = this.activeCommittee;
+    const isSubGroup = !!c.parentCommitteeId;
+    const catBadge = isSubGroup ? this.committeeAliases.subGroupAliasSingular : this.committeeAliases.aliasSingular;
+
+    // Dropdown selector if multiple committees exist in directory
+    let dirSelectorHtml = '';
+    if (this.committeeDirectoryMode && this.openCommittees.length > 1) {
+      const optionsHtml = this.openCommittees.map(item => `
+        <option value="${item.id}" ${item.id === c.id ? 'selected' : ''}>
+          ${item.name} (${item.parentCommitteeName ? 'Under ' + item.parentCommitteeName : (item.categoryTag || this.committeeAliases.aliasSingular)})
+        </option>
+      `).join('');
+
+      dirSelectorHtml = `
+        <div class="pub-dir-select-bar">
+          <label>Select ${this.committeeAliases.aliasSingular} / ${this.committeeAliases.subGroupAliasSingular} to Join:</label>
+          <select class="pub-dir-dropdown">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }
+
+    // Extra-Info Form Fields
+    let extraFieldsHtml = '';
+    const fields: any[] = c.extraInfoForm?.fields || [];
+    if (fields.length > 0) {
+      const fieldsMarkup = fields.map(f => {
+        const reqStar = f.isRequired ? '<span class="req">*</span>' : '';
+        const reqAttr = f.isRequired ? 'required' : '';
+        let inputMarkup = '';
+
+        if (f.fieldType === 'textarea') {
+          inputMarkup = `<textarea name="${f.fieldName}" rows="3" placeholder="${f.placeholder || 'e.g. Provide details here'}" ${reqAttr}>${this.committeeExtraAnswers[f.fieldName] || ''}</textarea>`;
+        } else if (f.fieldType === 'number') {
+          inputMarkup = `<input type="number" name="${f.fieldName}" value="${this.committeeExtraAnswers[f.fieldName] || ''}" placeholder="e.g. 0" ${reqAttr} />`;
+        } else if (f.fieldType === 'date') {
+          inputMarkup = `<input type="date" name="${f.fieldName}" value="${this.committeeExtraAnswers[f.fieldName] || ''}" ${reqAttr} />`;
+        } else if (f.fieldType === 'select') {
+          const opts = (f.options || []).map((o: string) => `<option value="${o}" ${this.committeeExtraAnswers[f.fieldName] === o ? 'selected' : ''}>${o}</option>`).join('');
+          inputMarkup = `
+            <select name="${f.fieldName}" ${reqAttr}>
+              <option value="">-- Select an option --</option>
+              ${opts}
+            </select>
+          `;
+        } else if (f.fieldType === 'file') {
+          inputMarkup = `
+            <div class="pub-file-wrap">
+              <input type="file" id="file-${f.fieldName}" data-field-name="${f.fieldName}" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp" style="display: none;" />
+              <button type="button" class="pub-btn-upload" data-target-input="file-${f.fieldName}">
+                <span class="material-symbols-outlined">upload_file</span>
+                <span>${this.committeeExtraAnswers[f.fieldName] ? 'Replace Attached File' : (f.placeholder || 'Upload Document (PDF, Word, Image)')}</span>
+              </button>
+              ${this.committeeExtraAnswers[f.fieldName] ? `<div class="pub-uploaded-preview"><span class="material-symbols-outlined">attachment</span><a href="${this.committeeExtraAnswers[f.fieldName]}" target="_blank" rel="noopener">View Uploaded Document</a></div>` : ''}
+            </div>
+          `;
+        } else {
+          inputMarkup = `<input type="text" name="${f.fieldName}" value="${this.committeeExtraAnswers[f.fieldName] || ''}" placeholder="${f.placeholder || 'e.g. Your response'}" ${reqAttr} />`;
+        }
+
+        return `
+          <div class="pub-field">
+            <label>${f.label} ${reqStar}</label>
+            ${inputMarkup}
+            ${f.helpText ? `<small class="pub-hint">${f.helpText}</small>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      extraFieldsHtml = `
+        <div class="pub-extra-form-section">
+          <div class="pub-section-divider">
+            <h4>${c.extraInfoForm.title || 'Supplemental Information'}</h4>
+            ${c.extraInfoForm.description ? `<p>${c.extraInfoForm.description}</p>` : ''}
+          </div>
+          ${fieldsMarkup}
+        </div>
+      `;
+    }
+
+    const errorAlertHtml = this.committeeFormError ? `
+      <div class="pub-alert error">
+        <span class="material-symbols-outlined">error</span>
+        <span>${this.committeeFormError}</span>
+      </div>
+    ` : '';
+
+    const member = this.committeeSignedInMember;
+    const prefilledFirstName = member?.firstName || '';
+    const prefilledLastName = member?.lastName || '';
+    const prefilledEmail = member?.email || '';
+    const prefilledPhone = member?.phoneNumber || '';
+
+    return `
+      <div class="pub-main-centered-wrap">
+        <div class="pub-card-form">
+          ${dirSelectorHtml}
+
+          <div class="pub-card-header">
+            <div class="pub-badge-schedule-row">
+              <span class="pub-category-badge">${catBadge}</span>
+              ${c.meetingSchedule ? `<span class="pub-schedule-badge"><span class="material-symbols-outlined">event_repeat</span><span>${c.meetingSchedule}</span></span>` : ''}
+            </div>
+            <h1 class="pub-form-title">${c.name}</h1>
+            <p class="pub-form-desc">${c.description || c.missionStatement || 'Complete the registration form below to join.'}</p>
+          </div>
+
+          ${errorAlertHtml}
+
+          <form class="pub-form-body">
+            <div class="pub-form-row two-cols">
+              <div class="pub-field">
+                <label>First Name <span class="req">*</span></label>
+                <input type="text" name="firstName" value="${prefilledFirstName}" placeholder="e.g. First Name" required autocomplete="given-name" />
+              </div>
+              <div class="pub-field">
+                <label>Last Name <span class="req">*</span></label>
+                <input type="text" name="lastName" value="${prefilledLastName}" placeholder="e.g. Last Name" required autocomplete="family-name" />
+              </div>
+            </div>
+
+            <div class="pub-form-row two-cols">
+              <div class="pub-field">
+                <label>Email Address <span class="req">*</span></label>
+                <input type="email" name="email" value="${prefilledEmail}" placeholder="name@company.com" required autocomplete="email" />
+              </div>
+              <div class="pub-field">
+                <label>Phone Number</label>
+                <input type="tel" name="phoneNumber" value="${prefilledPhone}" placeholder="e.g. +0 (000) 000-0000" autocomplete="tel" />
+              </div>
+            </div>
+
+            ${extraFieldsHtml}
+
+            <div class="pub-form-actions">
+              <button type="submit" class="pub-btn-primary pub-submit-trigger" ${this.committeeSubmitting ? 'disabled' : ''}>
+                <span class="material-symbols-outlined">${this.committeeSubmitting ? 'progress_activity' : 'how_to_reg'}</span>
+                <span>${this.committeeSubmitting ? 'Submitting Registration...' : ('Complete ' + this.committeeAliases.aliasSingular + ' Registration')}</span>
+              </button>
+            </div>
+
+            <div class="pub-form-footer">
+              <span>Already a member of this workspace?</span>
+              <a href="/auth/login">Sign in to your member portal</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Scoped CSS styles for the dynamic committee registration body card.
+   */
+  private getCommitteeRegistrationStyles(): string {
+    return `
+      .pub-main-centered-wrap {
+        max-width: 680px;
+        width: 100%;
+        margin: 40px auto 60px auto;
+        padding: 0 20px;
+        box-sizing: border-box;
+      }
+      .pub-card-form {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 36px 32px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      }
+      .pub-dir-select-bar {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px dashed #e2e8f0;
+      }
+      .pub-dir-select-bar label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .pub-dir-dropdown {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 15px;
+        background: #ffffff;
+        color: #0f172a;
+        outline: none;
+      }
+      .pub-card-header {
+        margin-bottom: 28px;
+      }
+      .pub-badge-schedule-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .pub-category-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        color: #0050e5;
+        background: rgba(0, 80, 229, 0.08);
+        padding: 4px 10px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .pub-schedule-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        background: #f1f5f9;
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      .pub-schedule-badge .material-symbols-outlined {
+        font-size: 15px;
+        color: #0050e5;
+      }
+      .pub-form-title {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.02em;
+      }
+      .pub-form-desc {
+        font-size: 14.5px;
+        line-height: 1.6;
+        color: #64748b;
+        margin: 0;
+      }
+      .pub-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 13.5px;
+        font-weight: 600;
+      }
+      .pub-alert.error {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+      }
+      .pub-form-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      .pub-form-row.two-cols > div {
+        flex: 1;
+      }
+      .pub-field {
+        margin-bottom: 18px;
+      }
+      .pub-field label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 6px;
+      }
+      .pub-field label .req {
+        color: #dc2626;
+      }
+      .pub-field input[type="text"],
+      .pub-field input[type="email"],
+      .pub-field input[type="tel"],
+      .pub-field input[type="number"],
+      .pub-field input[type="date"],
+      .pub-field select,
+      .pub-field textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #0f172a;
+        background: #ffffff;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+      }
+      .pub-field input:focus,
+      .pub-field select:focus,
+      .pub-field textarea:focus {
+        border-color: #0050e5;
+        outline: none;
+      }
+      .pub-field .pub-hint {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .pub-extra-form-section {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+      }
+      .pub-section-divider {
+        margin-bottom: 18px;
+      }
+      .pub-section-divider h4 {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 4px 0;
+      }
+      .pub-section-divider p {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+      }
+      .pub-file-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .pub-btn-upload {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+      }
+      .pub-btn-upload:hover {
+        background: #f1f5f9;
+        border-color: #0050e5;
+        color: #0050e5;
+      }
+      .pub-uploaded-preview {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: #10b981;
+        font-weight: 600;
+      }
+      .pub-uploaded-preview a {
+        color: #0050e5;
+        text-decoration: underline;
+      }
+      .pub-form-actions {
+        margin-top: 28px;
+      }
+      .pub-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 13px 20px;
+        background: #0050e5;
+        color: #ffffff !important;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+        text-decoration: none;
+        box-sizing: border-box;
+      }
+      .pub-btn-primary:hover:not(:disabled) {
+        background: #003db3;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 80, 229, 0.35);
+      }
+      .pub-btn-primary:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+      .pub-form-footer {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 20px;
+        font-size: 13.5px;
+        color: #64748b;
+      }
+      .pub-form-footer a {
+        color: #0050e5;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .pub-card-state.success {
+        text-align: center;
+        padding: 48px 32px;
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+      }
+      .pub-success-icon-wrap {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        border-radius: 50%;
+        margin-bottom: 20px;
+      }
+      .pub-success-icon-wrap .material-symbols-outlined {
+        font-size: 40px;
+      }
+      .pub-card-state.success h2 {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 10px 0;
+      }
+      .pub-card-state.success p {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #64748b;
+        max-width: 480px;
+        margin: 0 auto 28px auto;
+      }
+      .pub-success-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .pub-btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 11px 20px;
+        background: #f1f5f9;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+      .pub-btn-secondary:hover {
+        background: #e2e8f0;
+        color: #0f172a !important;
+      }
+    `;
+  }
+
+  /**
+   * Submits the dynamic public committee registration form.
+   */
+  private handleCommitteeFormSubmit(form: HTMLFormElement): void {
+    if (this.committeeSubmitting || !this.activeCommittee) return;
+
+    const fd = new FormData(form);
+    const firstName = String(fd.get('firstName') || '').trim();
+    const lastName = String(fd.get('lastName') || '').trim();
+    const email = String(fd.get('email') || '').trim();
+    const phoneNumber = String(fd.get('phoneNumber') || '').trim();
+
+    if (!firstName || !lastName || !email) {
+      this.committeeFormError = 'Please fill out all required personal information fields.';
+      this.composeCommitteeRegistrationView();
+      return;
+    }
+
+    const extraResponses: Record<string, any> = { ...this.committeeExtraAnswers };
+    const fields: any[] = this.activeCommittee.extraInfoForm?.fields || [];
+    for (const f of fields) {
+      if (f.fieldType !== 'file') {
+        const val = fd.get(f.fieldName);
+        if (val !== null && val !== undefined) {
+          extraResponses[f.fieldName] = String(val).trim();
+        }
+      }
+      if (f.isRequired && (!extraResponses[f.fieldName] || String(extraResponses[f.fieldName]).trim() === '')) {
+        this.committeeFormError = `Please complete the required field: ${f.label}`;
+        this.composeCommitteeRegistrationView();
+        return;
+      }
+    }
+
+    this.committeeSubmitting = true;
+    this.committeeFormError = '';
+    this.composeCommitteeRegistrationView();
+
+    const payload = {
+      committeeId: this.activeCommittee.id,
+      inviteToken: this.committeeInviteToken || undefined,
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      extraInfoResponses: extraResponses,
+      attachmentUrls: this.committeeAttachmentUrls
+    };
+
+    this.committeesService.submitPublicRegistration(payload, this.committeeTenantSlug || undefined).subscribe({
+      next: (res: any) => {
+        this.committeeSubmitting = false;
+        if (res?.isSuccess) {
+          this.committeeSubmittedSuccess = true;
+          this.committeeSubmissionStatus = res.data?.status || 'Approved';
+          this.committeeSubmissionMessage = res.message || 'Your registration has been submitted successfully.';
+          this.composeCommitteeRegistrationView();
+        } else {
+          this.committeeFormError = res?.message || 'Registration could not be completed.';
+          this.composeCommitteeRegistrationView();
+        }
+      },
+      error: (err: any) => {
+        this.committeeSubmitting = false;
+        this.committeeFormError = err?.error?.message || 'An error occurred during registration. Please review and try again.';
+        this.composeCommitteeRegistrationView();
+      }
+    });
+  }
+
+  /**
+   * Resets committee registration state to allow applying for another group.
+   */
+  private resetCommitteeRegistration(): void {
+    this.committeeSubmittedSuccess = false;
+    this.committeeSubmissionStatus = '';
+    this.committeeSubmissionMessage = '';
+    this.committeeExtraAnswers = {};
+    this.committeeAttachmentUrls = [];
+    this.committeeFormError = '';
+    this.composeCommitteeRegistrationView();
+  }
+
+  /**
+   * Uploads an intake file attachment for the public committee registration form.
+   */
+  private handleCommitteeFileUpload(file: File, fieldName: string): void {
+    this.committeeFormError = '';
+    this.committeesService.uploadPublicAttachment(file, this.committeeTenantSlug || undefined).subscribe({
+      next: (res: any) => {
+        if (res?.isSuccess && res.data?.fileUrl) {
+          this.committeeExtraAnswers[fieldName] = res.data.fileUrl;
+          if (!this.committeeAttachmentUrls.includes(res.data.fileUrl)) {
+            this.committeeAttachmentUrls.push(res.data.fileUrl);
+          }
+          this.composeCommitteeRegistrationView();
+        } else {
+          this.committeeFormError = res?.message || 'Attachment upload failed.';
+          this.composeCommitteeRegistrationView();
+        }
+      },
+      error: (err: any) => {
+        this.committeeFormError = err?.error?.message || 'Attachment upload failed.';
+        this.composeCommitteeRegistrationView();
+      }
+    });
+  }
+
+  @HostListener('change', ['$event'])
+  onGlobalChange(e: Event): void {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+    if (target.classList.contains('pub-dir-dropdown')) {
+      const select = target as HTMLSelectElement;
+      const selectedId = select.value;
+      const match = this.openCommittees.find(c => c.id === selectedId);
+      if (match) {
+        this.activeCommittee = match;
+        this.composeCommitteeRegistrationView();
+      }
+    }
+  }
+
+
 
   /**
    * Fallback 404 handler for missing pages.
@@ -3517,13 +4366,46 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
+    // 3b. Committee Public Form Actions
+    if (this.currentSlug === 'join-committee') {
+      const resetBtn = target.closest('.pub-btn-reset-trigger');
+      if (resetBtn) {
+        e.preventDefault();
+        this.resetCommitteeRegistration();
+        return;
+      }
+
+      const uploadBtn = target.closest('.pub-btn-upload') as HTMLElement;
+      if (uploadBtn) {
+        e.preventDefault();
+        const targetId = uploadBtn.getAttribute('data-target-input');
+        if (targetId) {
+          const fileInput = document.getElementById(targetId) as HTMLInputElement;
+          if (fileInput) {
+            fileInput.onchange = () => {
+              if (fileInput.files && fileInput.files[0]) {
+                const fieldName = fileInput.getAttribute('data-field-name') || '';
+                this.handleCommitteeFileUpload(fileInput.files[0], fieldName);
+              }
+            };
+            fileInput.click();
+          }
+        }
+        return;
+      }
+    }
+
     // 4. Dynamic Form Submit Button Delegator
     const submitBtn = target.closest('button[type="submit"], input[type="submit"]') as HTMLElement;
     if (submitBtn) {
       const form = submitBtn.closest('form') as HTMLFormElement;
       if (form) {
         e.preventDefault();
-        this.submitDynamicForm(form, submitBtn);
+        if (form.classList.contains('pub-form-body')) {
+          this.handleCommitteeFormSubmit(form);
+        } else {
+          this.submitDynamicForm(form, submitBtn);
+        }
       }
     }
   }
@@ -3639,3 +4521,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     });
   }
 }
+
+
+
+
