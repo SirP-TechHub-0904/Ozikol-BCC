@@ -82,7 +82,6 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             chown -R www-data:www-data /var/www/client
             chmod -R 755 /var/www/client
-            docker cp /var/www/client/. ozikol-client:/usr/share/nginx/html/
-            docker restart ozikol-client
-            echo "ozikol-client container successfully updated."
+            docker exec ozikol-client nginx -s reload || docker restart ozikol-client
+            echo "ozikol-client reloaded successfully with newest static assets."
           EOF
