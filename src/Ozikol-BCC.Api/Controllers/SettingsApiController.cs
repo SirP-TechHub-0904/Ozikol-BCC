@@ -375,21 +375,21 @@ namespace Ozikol_BCC.Api.Controllers
             site.WebsiteTitle = dto.WebsiteTitle;
             site.SiteTitle = dto.WebsiteTitle;
             site.DashboardTitle = dto.DashboardTitle;
-            site.LogoUrl = dto.CompanyLogoUrl;
-            site.CompanyLogoUrl = dto.CompanyLogoUrl;
-            site.LogoKey = dto.CompanyLogoKey;
+            site.CompanyLogoUrl = SanitizeImageUrl(dto.CompanyLogoUrl);
+            site.LogoUrl = site.CompanyLogoUrl;
             site.CompanyLogoKey = dto.CompanyLogoKey;
-            site.WhiteLogoUrl = dto.CompanyWhiteLogoUrl;
-            site.CompanyWhiteLogoUrl = dto.CompanyWhiteLogoUrl;
-            site.WhiteLogoKey = dto.CompanyWhiteLogoKey;
+            site.LogoKey = dto.CompanyLogoKey;
+            site.CompanyWhiteLogoUrl = SanitizeImageUrl(dto.CompanyWhiteLogoUrl);
+            site.WhiteLogoUrl = site.CompanyWhiteLogoUrl;
             site.CompanyWhiteLogoKey = dto.CompanyWhiteLogoKey;
-            site.FaviconUrl = dto.CompanyIconUrl;
-            site.CompanyIconUrl = dto.CompanyIconUrl;
-            site.FaviconKey = dto.CompanyIconKey;
+            site.WhiteLogoKey = dto.CompanyWhiteLogoKey;
+            site.CompanyIconUrl = SanitizeImageUrl(dto.CompanyIconUrl);
+            site.FaviconUrl = site.CompanyIconUrl;
             site.CompanyIconKey = dto.CompanyIconKey;
-            site.ReloaderIconUrl = dto.ReloaderIconUrl;
+            site.FaviconKey = dto.CompanyIconKey;
+            site.ReloaderIconUrl = SanitizeImageUrl(dto.ReloaderIconUrl);
             site.ReloaderIconKey = dto.ReloaderIconKey;
-            site.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
+            site.LoginBackgroundImageUrl = SanitizeImageUrl(dto.LoginBackgroundImageUrl);
             site.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
             site.LoginLayout = !string.IsNullOrWhiteSpace(dto.LoginLayout) ? dto.LoginLayout : "centered";
             site.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
@@ -1060,6 +1060,22 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Computes organization abbreviation from company name.
         /// </summary>
+        /// <summary>
+        /// Sanitizes and validates image URLs to prevent SQL Server string truncation crashes (e.g. from raw base64 data URIs).
+        /// </summary>
+        /// <param name="url">The image URL or data string to inspect.</param>
+        /// <returns>A clean URL string or null if invalid or oversized.</returns>
+        private static string? SanitizeImageUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var trimmed = url.Trim();
+            if (trimmed.Length > 500 || trimmed.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            return trimmed;
+        }
+
         private static string ComputeAbbreviation(string? name)
         {
             if (string.IsNullOrWhiteSpace(name)) return "ORG";

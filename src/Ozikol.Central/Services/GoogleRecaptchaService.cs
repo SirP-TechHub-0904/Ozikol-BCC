@@ -98,7 +98,7 @@ public class GoogleRecaptchaService : IRecaptchaService
                     var dbSecret = masterDb?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1)?.GoogleReCaptchaSecretKey;
                     if (!string.IsNullOrWhiteSpace(dbSecret))
                     {
-                        return dbSecret.Trim();
+                        var decrypted = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(dbSecret)?.Trim();\n                        if (!string.IsNullOrWhiteSpace(decrypted)) return decrypted;
                     }
                 }
                 catch
