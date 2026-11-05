@@ -371,7 +371,7 @@
                         <label asp-for="Input.GoogleReCaptchaSiteKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
                             Google reCAPTCHA v2 Site Key ("I'm not a robot")
                         </label>
-                        <input asp-for="Input.GoogleReCaptchaSiteKey" class="form-control" placeholder="e.g. 6LdBsb8tAAAAAPuXWg5SLjjbPVZd0_-v1w4WbK6H" 
+                        <input asp-for="Input.GoogleReCaptchaSiteKey" class="form-control" placeholder="e.g. 6Lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
                                style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
                         <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Checkbox verification widget public site key.</span>
                         <span asp-validation-for="Input.GoogleReCaptchaSiteKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
@@ -391,7 +391,7 @@
                         </div>
                         <div style="position: relative;">
                             <input asp-for="Input.GoogleReCaptchaSecretKey" value="@Model.Input.GoogleReCaptchaSecretKey" id="recaptchaSecretInput" type="password" class="form-control" 
-                                   placeholder="e.g. 6LdBsb8tAAAAAJ2JJlhMLecWdm3uRqvyNFufC8xi" 
+                                   placeholder="e.g. 6Lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
                                    style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
                             <button type="button" onclick="togglePasswordVisibility('recaptchaSecretInput', this)" 
                                     style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">

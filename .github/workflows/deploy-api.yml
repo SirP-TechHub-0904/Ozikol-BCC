@@ -1,6 +1,6 @@
 # ===================================================================
 # CI/CD Workflow: Deploy Ozikol-BCC Backend API
-# Target: https://api-ozikol.ozikol.cloud & *.ozikol.cloud/api/ (VPS Port 5000)
+# Target: https://api.ozikol.cloud (Native systemd Service on Port 5000)
 # ===================================================================
 
 name: Deploy Ozikol API
@@ -33,16 +33,10 @@ jobs:
         run: |
           dotnet publish src/Ozikol-BCC.Api/Ozikol-BCC.Api.csproj -c Release -o ./publish-api
 
-      # Build Docker image for API only
-      - name: Build Docker image (API only)
+      - name: Package API Archive
         run: |
-          docker build -f Dockerfile.api -t ozikol/api:latest .
+          tar -czf publish-api.tar.gz -C ./publish-api .
 
-      # Export image to tarball
-      - name: Export image
-        run: docker save ozikol/api:latest -o ozikol-api.tar
-
-      # Transfer tarball to VPS using native OpenSSH (Zero external downloads, No 403 errors)
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -52,32 +46,21 @@ jobs:
           PORT="${PORT:-22}"
           ssh-keyscan -p "$PORT" -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: SCP image tarball to VPS
+      - name: SCP Archive to VPS
         run: |
           PORT="${{ secrets.VPS_PORT }}"
           PORT="${PORT:-22}"
-          scp -i ~/.ssh/deploy_key -P "$PORT" ozikol-api.tar ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/ozikol-api.tar
+          scp -i ~/.ssh/deploy_key -P "$PORT" publish-api.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/publish-api.tar.gz
 
-      # Deploy on VPS: stop old container, load new image, run new container
       - name: Deploy on VPS
         run: |
           PORT="${{ secrets.VPS_PORT }}"
           PORT="${PORT:-22}"
           ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            if [ -f /tmp/ozikol-api.tar ]; then
-              echo "Loading ozikol-api image..."
-              docker rm -f ozikol-api || true
-              docker load -i /tmp/ozikol-api.tar
-              docker run -d --name ozikol-api \
-                --restart unless-stopped \
-                --network ozikol-network \
-                --env-file /opt/ozikol/.env \
-                -p 127.0.0.1:5000:8080 \
-                ozikol/api:latest dotnet Ozikol-BCC.Api.dll
-              rm -f /tmp/ozikol-api.tar
-              echo "ozikol-api deployed successfully."
-            else
-              echo "Skipping ozikol-api deployment: /tmp/ozikol-api.tar not found or is a directory."
-              rm -rf /tmp/ozikol-api.tar || true
-            fi
+            mkdir -p /var/www/ozikol-api
+            tar -xzf /tmp/publish-api.tar.gz -C /var/www/ozikol-api/
+            rm -f /tmp/publish-api.tar.gz
+            systemctl restart ozikol-api
+            sleep 2
+            systemctl is-active --quiet ozikol-api && echo "ozikol-api deployed successfully and active." || (journalctl -u ozikol-api -n 20 --no-pager && exit 1)
           EOF

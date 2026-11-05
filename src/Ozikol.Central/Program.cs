@@ -176,10 +176,27 @@ var masterConnectionString = builder.Configuration["TenantConfiguration:Connecti
         "CRITICAL CONFIGURATION ERROR: Master database connection string is not configured. " +
         "Please specify 'TenantConfiguration:ConnectionString' or 'ConnectionStrings:DefaultConnection' in your .env file, appsettings.json, or environment variables.");
 
+// Ensure tcp: protocol is explicitly enforced for remote hosts/IPs to avoid Linux SSRP UDP browser lookups (skip for local Windows named instances like JSS\SQLEXPRESS)
+if (!masterConnectionString.Contains('\\') &&
+    !masterConnectionString.Contains("(localdb)", StringComparison.OrdinalIgnoreCase) &&
+    !masterConnectionString.Contains("Server=tcp:", StringComparison.OrdinalIgnoreCase) &&
+    masterConnectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase))
+{
+    masterConnectionString = System.Text.RegularExpressions.Regex.Replace(
+        masterConnectionString,
+        @"Server=(?!tcp:)",
+        "Server=tcp:",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+}
+
 // 5. Register MasterCatalogDbContext
 builder.Services.AddDbContext<MasterCatalogDbContext>(options =>
-    options.UseSqlServer(masterConnectionString)
-           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+    options.UseSqlServer(masterConnectionString, sqlOpts =>
+    {
+        sqlOpts.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+        sqlOpts.CommandTimeout(60);
+    })
+    .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // 6. Central Platform Identity Configuration
 builder.Services.AddIdentity<CentralUser, CentralRole>(options =>
@@ -534,7 +551,7 @@ catch (Exception ex)
     logger?.LogWarning(ex, "Tenant connection string auto-encryption startup check encountered a non-blocking issue.");
 }
 
-// 7. Dynamic Central Master Platform Settings verification & automatic secrets repair
+// 7. Dynamic Central Master Platform Settings verification
 try
 {
     using var platformScope = app.Services.CreateScope();
@@ -542,8 +559,6 @@ try
     if (masterDb != null)
     {
         var logger = platformScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        await Ozikol.Central.Services.MasterPlatformCredentialsSeeder.SeedOrRepairPlatformSecretsAsync(masterDb, app.Configuration, logger);
-
         var platformSettings = await masterDb.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
         if (platformSettings != null)
         {

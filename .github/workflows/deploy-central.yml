@@ -1,6 +1,6 @@
 # ===================================================================
 # CI/CD Workflow: Deploy Ozikol Central Governance Dashboard
-# Target: https://ozikol.cloud (VPS Port 5001)
+# Target: https://ozikol.cloud (Native systemd Service on Port 5001)
 # ===================================================================
 
 name: Deploy Ozikol Central
@@ -32,16 +32,10 @@ jobs:
         run: |
           dotnet publish src/Ozikol.Central/Ozikol.Central.csproj -c Release -o ./publish-central
 
-      # Build Docker image for Central only
-      - name: Build Docker image (Central only)
+      - name: Package Central Archive
         run: |
-          docker build -f Dockerfile.central -t ozikol/central:latest .
+          tar -czf publish-central.tar.gz -C ./publish-central .
 
-      # Export image to tarball
-      - name: Export image
-        run: docker save ozikol/central:latest -o ozikol-central.tar
-
-      # Transfer tarball to VPS using native OpenSSH (Zero external downloads, No 403 errors)
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -51,32 +45,21 @@ jobs:
           PORT="${PORT:-22}"
           ssh-keyscan -p "$PORT" -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: SCP image tarball to VPS
+      - name: SCP Archive to VPS
         run: |
           PORT="${{ secrets.VPS_PORT }}"
           PORT="${PORT:-22}"
-          scp -i ~/.ssh/deploy_key -P "$PORT" ozikol-central.tar ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/ozikol-central.tar
+          scp -i ~/.ssh/deploy_key -P "$PORT" publish-central.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/publish-central.tar.gz
 
-      # Deploy on VPS: stop old container, load new image, run new container
       - name: Deploy on VPS
         run: |
           PORT="${{ secrets.VPS_PORT }}"
           PORT="${PORT:-22}"
           ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            if [ -f /tmp/ozikol-central.tar ]; then
-              echo "Loading ozikol-central image..."
-              docker rm -f ozikol-central || true
-              docker load -i /tmp/ozikol-central.tar
-              docker run -d --name ozikol-central \
-                --restart unless-stopped \
-                --network ozikol-network \
-                --env-file /opt/ozikol/.env \
-                -p 127.0.0.1:5001:8080 \
-                ozikol/central:latest dotnet Ozikol.Central.dll
-              rm -f /tmp/ozikol-central.tar
-              echo "ozikol-central deployed successfully."
-            else
-              echo "Skipping ozikol-central deployment: /tmp/ozikol-central.tar not found or is a directory."
-              rm -rf /tmp/ozikol-central.tar || true
-            fi
+            mkdir -p /var/www/ozikol-central
+            tar -xzf /tmp/publish-central.tar.gz -C /var/www/ozikol-central/
+            rm -f /tmp/publish-central.tar.gz
+            systemctl restart ozikol-central
+            sleep 2
+            systemctl is-active --quiet ozikol-central && echo "ozikol-central deployed successfully and active." || (journalctl -u ozikol-central -n 20 --no-pager && exit 1)
           EOF
