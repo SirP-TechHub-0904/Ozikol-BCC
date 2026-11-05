@@ -12,6 +12,7 @@ on:
       - 'src/Ozikol.Central/**'
       - 'src/Ozikol.MasterDomain/**'
       - 'src/Ozikol.MasterPersistence.EF.MasterSQL/**'
+      - '.github/workflows/deploy-central.yml'
   workflow_dispatch:
 
 jobs:
