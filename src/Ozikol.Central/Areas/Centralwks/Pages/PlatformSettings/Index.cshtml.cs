@@ -133,6 +133,42 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [MaxLength(255)]
             public string? CloudflareTurnstileSiteKey { get; set; }
 
+            /// <summary>Gets or sets Google reCAPTCHA v2 Checkbox ("I'm not a robot") Site Key.</summary>
+            [MaxLength(255)]
+            public string? GoogleReCaptchaSiteKey { get; set; }
+
+            /// <summary>Gets or sets Google reCAPTCHA v2 Checkbox Secret Key.</summary>
+            [MaxLength(255)]
+            public string? GoogleReCaptchaSecretKey { get; set; }
+
+            /// <summary>Gets or sets Transactional Email Provider (e.g. "Postmark", "Mailcow", "SMTP").</summary>
+            [MaxLength(50)]
+            public string EmailProvider { get; set; } = "Postmark";
+
+            /// <summary>Gets or sets Postmark Server API Token.</summary>
+            [MaxLength(255)]
+            public string? PostmarkServerToken { get; set; }
+
+            /// <summary>Gets or sets default sender email for Postmark dispatches.</summary>
+            [MaxLength(150)]
+            public string? PostmarkDefaultFrom { get; set; }
+
+            /// <summary>Gets or sets default sender display name for transactional emails.</summary>
+            [MaxLength(150)]
+            public string EmailFromName { get; set; } = "Ozikol Cloud Security";
+
+            /// <summary>Gets or sets OneSignal REST API Key for server push notifications.</summary>
+            [MaxLength(255)]
+            public string? OneSignalRestApiKey { get; set; }
+
+            /// <summary>Gets or sets base URL for AI Gateway microservice.</summary>
+            [MaxLength(500)]
+            public string? AiGatewayUrl { get; set; }
+
+            /// <summary>Gets or sets base URL for HTML Sections Extractor engine.</summary>
+            [MaxLength(500)]
+            public string? HtmlExtractorApiUrl { get; set; }
+
             /// <summary>Gets or sets Master platform Cloudinary Cloud Name.</summary>
             [MaxLength(255)]
             public string? CloudinaryCloudName { get; set; }
@@ -283,6 +319,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 SentryDsn = settings.SentryDsn,
                 OneSignalAppId = settings.OneSignalAppId,
                 CloudflareTurnstileSiteKey = settings.CloudflareTurnstileSiteKey,
+                GoogleReCaptchaSiteKey = settings.GoogleReCaptchaSiteKey,
+                GoogleReCaptchaSecretKey = settings.GoogleReCaptchaSecretKey,
+                EmailProvider = !string.IsNullOrWhiteSpace(settings.EmailProvider) ? settings.EmailProvider : "Postmark",
+                PostmarkServerToken = settings.PostmarkServerToken,
+                PostmarkDefaultFrom = settings.PostmarkDefaultFrom,
+                EmailFromName = !string.IsNullOrWhiteSpace(settings.EmailFromName) ? settings.EmailFromName : "Ozikol Cloud Security",
+                OneSignalRestApiKey = settings.OneSignalRestApiKey,
+                AiGatewayUrl = settings.AiGatewayUrl,
+                HtmlExtractorApiUrl = settings.HtmlExtractorApiUrl,
                 CloudinaryCloudName = settings.CloudinaryCloudName,
                 CloudinaryApiKey = settings.CloudinaryApiKey,
                 CloudinaryApiSecret = settings.CloudinaryApiSecret,
@@ -353,6 +398,27 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.SentryDsn = Input.SentryDsn?.Trim();
             settings.OneSignalAppId = Input.OneSignalAppId?.Trim();
             settings.CloudflareTurnstileSiteKey = Input.CloudflareTurnstileSiteKey?.Trim();
+            settings.GoogleReCaptchaSiteKey = Input.GoogleReCaptchaSiteKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.GoogleReCaptchaSecretKey))
+            {
+                settings.GoogleReCaptchaSecretKey = Input.GoogleReCaptchaSecretKey.Trim();
+            }
+
+            settings.EmailProvider = string.IsNullOrWhiteSpace(Input.EmailProvider) ? "Postmark" : Input.EmailProvider.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.PostmarkServerToken))
+            {
+                settings.PostmarkServerToken = Input.PostmarkServerToken.Trim();
+            }
+            settings.PostmarkDefaultFrom = Input.PostmarkDefaultFrom?.Trim();
+            settings.EmailFromName = string.IsNullOrWhiteSpace(Input.EmailFromName) ? "Ozikol Cloud Security" : Input.EmailFromName.Trim();
+
+            if (!string.IsNullOrWhiteSpace(Input.OneSignalRestApiKey))
+            {
+                settings.OneSignalRestApiKey = Input.OneSignalRestApiKey.Trim();
+            }
+
+            settings.AiGatewayUrl = Input.AiGatewayUrl?.Trim();
+            settings.HtmlExtractorApiUrl = Input.HtmlExtractorApiUrl?.Trim();
             settings.CloudinaryCloudName = Input.CloudinaryCloudName?.Trim();
             settings.CloudinaryApiKey = Input.CloudinaryApiKey?.Trim();
 

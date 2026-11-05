@@ -84,7 +84,20 @@ public class CentralEmailService : ICentralEmailService
             return false;
         }
 
-        var effectiveProvider = provider ?? "Mailcow";
+        var effectiveProvider = provider ?? "Postmark";
+        try
+        {
+            var platformSetting = await _masterCatalogDbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+            if (provider == null && platformSetting != null && !string.IsNullOrWhiteSpace(platformSetting.EmailProvider))
+            {
+                effectiveProvider = platformSetting.EmailProvider;
+            }
+        }
+        catch
+        {
+            // Graceful fallback if MasterPlatformSettings is transiently unreachable
+        }
+
         var log = new MasterEmailLog
         {
             Id = Guid.NewGuid(),
@@ -98,7 +111,7 @@ public class CentralEmailService : ICentralEmailService
 
         try
         {
-            if (string.Equals(provider, "Postmark", StringComparison.OrdinalIgnoreCase) && _postmarkEmailService != null)
+            if (string.Equals(effectiveProvider, "Postmark", StringComparison.OrdinalIgnoreCase) && _postmarkEmailService != null)
             {
                 _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Postmark...", subject, toEmail);
 

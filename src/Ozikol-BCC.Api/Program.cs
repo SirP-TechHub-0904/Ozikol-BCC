@@ -61,6 +61,8 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
             builder.Services.AddPostmarkEmailServices(builder.Configuration);
+            builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.EmailServices.Postmark.Configuration.PostmarkOptions>, Ozikol_BCC.Api.Services.MasterPlatformPostmarkPostConfigure>();
+            builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudinarySettings>, Ozikol_BCC.Api.Services.MasterPlatformCloudinaryPostConfigure>();
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
                 ?? builder.Configuration.GetConnectionString("DefaultConnection") 

@@ -308,15 +308,15 @@
             </div>
         </div>
 
-        @* ── Section 6: Client Telemetry & Security Protection Keys ── *@
+        @* ── Section 6: Client Telemetry, Push & Bot Protection Keys ── *@
         <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
                 <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); color: #4f46e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <span class="material-symbols-outlined" style="font-size: 22px;">security</span>
                 </div>
                 <div>
-                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Client Telemetry &amp; Bot Protection Keys</h2>
-                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Dynamic keys passed securely to Flutter and web clients on startup for telemetry and spam prevention.</p>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Client Telemetry, Push &amp; Bot Protection Keys</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Dynamic keys passed securely to Flutter and web clients on startup for telemetry, push alerts, and anti-bot verification.</p>
                 </div>
             </div>
 
@@ -342,14 +342,184 @@
                         <span asp-validation-for="Input.OneSignalAppId" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
                     </div>
 
-                    <div style="grid-column: 1 / -1;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.OneSignalRestApiKey" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                OneSignal REST API Key
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.OneSignalRestApiKey))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Configured
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.OneSignalRestApiKey" value="@Model.Input.OneSignalRestApiKey" id="oneSignalSecretInput" type="password" class="form-control" 
+                                   placeholder="e.g. os_rest_..." 
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('oneSignalSecretInput', this)" 
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Used server-side by Central &amp; API dispatchers to send push notifications.</span>
+                        <span asp-validation-for="Input.OneSignalRestApiKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.GoogleReCaptchaSiteKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Google reCAPTCHA v2 Site Key ("I'm not a robot")
+                        </label>
+                        <input asp-for="Input.GoogleReCaptchaSiteKey" class="form-control" placeholder="e.g. 6LdBsb8tAAAAAPuXWg5SLjjbPVZd0_-v1w4WbK6H" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Checkbox verification widget public site key.</span>
+                        <span asp-validation-for="Input.GoogleReCaptchaSiteKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.GoogleReCaptchaSecretKey" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Google reCAPTCHA v2 Secret Key
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.GoogleReCaptchaSecretKey))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Configured
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.GoogleReCaptchaSecretKey" value="@Model.Input.GoogleReCaptchaSecretKey" id="recaptchaSecretInput" type="password" class="form-control" 
+                                   placeholder="e.g. 6LdBsb8tAAAAAJ2JJlhMLecWdm3uRqvyNFufC8xi" 
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('recaptchaSecretInput', this)" 
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Backend token verification secret key with Google.</span>
+                        <span asp-validation-for="Input.GoogleReCaptchaSecretKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
                         <label asp-for="Input.CloudflareTurnstileSiteKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
                             Cloudflare Turnstile Site Key (Public)
                         </label>
                         <input asp-for="Input.CloudflareTurnstileSiteKey" class="form-control" placeholder="e.g. 0x4AAAAAA..." 
                                style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
-                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Invisible CAPTCHA/bot protection applied on registration and login.</span>
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Invisible bot protection applied on registration and login.</span>
                         <span asp-validation-for="Input.CloudflareTurnstileSiteKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 6.5: Transactional Email Infrastructure (Postmark / Mailcow / SMTP) ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">forward_to_inbox</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Central Transactional Email Service (Postmark / Mailcow / SMTP)</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Outbound email engine powering workspace provisioning receipts, two-factor auth codes, password resets, and critical alerts.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.EmailProvider" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Email Dispatch Provider
+                        </label>
+                        <select asp-for="Input.EmailProvider" class="form-select" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);">
+                            <option value="Postmark">Postmark (High Deliverability Cloud API)</option>
+                            <option value="Mailcow">Mailcow (Self-Hosted Postfix/Dovecot SMTP)</option>
+                            <option value="SMTP">Standard Custom SMTP Gateway</option>
+                        </select>
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Primary engine for transactional system notices.</span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.PostmarkServerToken" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Postmark Server API Token
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.PostmarkServerToken))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Configured
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.PostmarkServerToken" value="@Model.Input.PostmarkServerToken" id="postmarkTokenInput" type="password" class="form-control" 
+                                   placeholder="e.g. 00000000-0000-0000-0000-000000000000" 
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('postmarkTokenInput', this)" 
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.PostmarkServerToken" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.PostmarkDefaultFrom" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Postmark Default Sender Email
+                        </label>
+                        <input asp-for="Input.PostmarkDefaultFrom" class="form-control" placeholder="notifications@@ozikol.cloud" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Must be a verified sender signature or confirmed domain in Postmark.</span>
+                        <span asp-validation-for="Input.PostmarkDefaultFrom" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.EmailFromName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Email Sender Display Name
+                        </label>
+                        <input asp-for="Input.EmailFromName" class="form-control" placeholder="e.g. Ozikol Cloud Security" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Display name shown in user mailboxes next to sender address.</span>
+                        <span asp-validation-for="Input.EmailFromName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 6.6: AI Gateway & Sections Extractor Microservices ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); color: #9333ea; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">psychology</span>
+                </div>
+                <div>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">AI Gateway &amp; Sections Extractor Engine</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Microservices powering Ozi AI Studio assistant, automated website section extraction, and modular DOM synthesis.</p>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.AiGatewayUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            AI Gateway Base URL
+                        </label>
+                        <input asp-for="Input.AiGatewayUrl" class="form-control" placeholder="https://ai.ozikol.cloud" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Central intelligence router connecting Gemini 2.5 Flash, DeepSeek, and Ollama.</span>
+                        <span asp-validation-for="Input.AiGatewayUrl" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.HtmlExtractorApiUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            HTML Sections Extractor API URL
+                        </label>
+                        <input asp-for="Input.HtmlExtractorApiUrl" class="form-control" placeholder="https://ai.ozikol.cloud" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Microservice parsing websites into modular navbar, hero, body, and footer components.</span>
+                        <span asp-validation-for="Input.HtmlExtractorApiUrl" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
                     </div>
                 </div>
             </div>
