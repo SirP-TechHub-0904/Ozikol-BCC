@@ -3149,6 +3149,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
+                    b.Property<string>("AiGatewayUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("BankDepositAccountName")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -3215,6 +3219,20 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("DefaultTrialDays")
                         .HasColumnType("int");
 
+                    b.Property<string>("EmailFromName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasDefaultValue("Ozikol Cloud Security");
+
+                    b.Property<string>("EmailProvider")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Postmark");
+
                     b.Property<bool>("EnableAdminNotifications")
                         .HasColumnType("bit");
 
@@ -3244,6 +3262,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("FlutterwaveWebhookSecret")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("GoogleReCaptchaSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("GoogleReCaptchaSiteKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("HtmlExtractorApiUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsMaintenanceMode")
                         .HasColumnType("bit");
@@ -3275,6 +3305,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("OneSignalRestApiKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("PartnerAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
@@ -3294,6 +3328,14 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PostmarkDefaultFrom")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PostmarkServerToken")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("SentryDsn")
                         .HasMaxLength(500)

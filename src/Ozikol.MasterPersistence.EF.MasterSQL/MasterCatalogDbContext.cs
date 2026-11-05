@@ -704,6 +704,15 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.StripeWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.CloudinaryApiSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.MongoLogsConnectionString).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.GoogleReCaptchaSiteKey).HasMaxLength(255);
+            entity.Property(e => e.GoogleReCaptchaSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.EmailProvider).HasMaxLength(50).HasDefaultValue("Postmark");
+            entity.Property(e => e.PostmarkServerToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.PostmarkDefaultFrom).HasMaxLength(150);
+            entity.Property(e => e.EmailFromName).HasMaxLength(150).HasDefaultValue("Ozikol Cloud Security");
+            entity.Property(e => e.OneSignalRestApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.AiGatewayUrl).HasMaxLength(500);
+            entity.Property(e => e.HtmlExtractorApiUrl).HasMaxLength(500);
         });
 
         modelBuilder.Entity<MasterHelpdeskArticle>(entity =>

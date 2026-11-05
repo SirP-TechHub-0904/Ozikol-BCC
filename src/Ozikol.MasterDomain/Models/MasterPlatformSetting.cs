@@ -169,6 +169,64 @@ namespace Ozikol.MasterDomain.Models
         public string? CloudflareTurnstileSiteKey { get; set; }
 
         /// <summary>
+        /// Gets or sets the Google reCAPTCHA v2 Checkbox ("I'm not a robot") public Site Key.
+        /// </summary>
+        [MaxLength(255)]
+        public string? GoogleReCaptchaSiteKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Google reCAPTCHA v2 Checkbox Secret Key.
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(255)]
+        public string? GoogleReCaptchaSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the transactional email service provider name (e.g. "Postmark", "Mailcow", "SMTP").
+        /// Defaults to "Postmark".
+        /// </summary>
+        [MaxLength(50)]
+        public string EmailProvider { get; set; } = "Postmark";
+
+        /// <summary>
+        /// Gets or sets the Postmark Server API Token used for transactional system emails.
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PostmarkServerToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the verified default sender email address for Postmark dispatches (e.g. "notifications@ozikol.cloud").
+        /// </summary>
+        [MaxLength(150)]
+        public string? PostmarkDefaultFrom { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default sender display name for transactional emails (e.g. "Ozikol Cloud Security").
+        /// </summary>
+        [MaxLength(150)]
+        public string EmailFromName { get; set; } = "Ozikol Cloud Security";
+
+        /// <summary>
+        /// Gets or sets the OneSignal REST API Key used for server-side push notifications.
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(255)]
+        public string? OneSignalRestApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the base URL for the Ozi AI Gateway and intelligence microservice.
+        /// </summary>
+        [MaxLength(500)]
+        public string? AiGatewayUrl { get; set; }
+
+        /// <summary>
+        /// Gets or sets the base URL for the HTML sections extractor engine.
+        /// </summary>
+        [MaxLength(500)]
+        public string? HtmlExtractorApiUrl { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether global platform maintenance mode is engaged.
         /// </summary>
         public bool IsMaintenanceMode { get; set; } = false;

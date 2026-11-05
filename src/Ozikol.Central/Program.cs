@@ -68,6 +68,8 @@ builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(
 
 // Register Dedicated Cloudinary Media Services
 Ozikol_BCC.CloudinaryServices.DependencyInjection.AddCloudinaryServices(builder.Services, builder.Configuration);
+builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.EmailServices.Postmark.Configuration.PostmarkOptions>, Ozikol.Central.Services.MasterPlatformPostmarkPostConfigure>();
+builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudinarySettings>, Ozikol.Central.Services.MasterPlatformCloudinaryPostConfigure>();
 
 // Configure Antiforgery Header to allow seamless AJAX submissions across Razor Pages
 builder.Services.AddAntiforgery(options =>

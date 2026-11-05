@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -21,6 +22,7 @@ public class GoogleRecaptchaService : IRecaptchaService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GoogleRecaptchaService> _logger;
+    private readonly IServiceProvider? _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GoogleRecaptchaService"/> class.
@@ -28,24 +30,45 @@ public class GoogleRecaptchaService : IRecaptchaService
     /// <param name="httpClient">Shared HTTP client instance for remote API calls.</param>
     /// <param name="configuration">Application configuration provider.</param>
     /// <param name="logger">Logger provider.</param>
+    /// <param name="serviceProvider">Optional service provider for resolving MasterPlatformSettings dynamically.</param>
     public GoogleRecaptchaService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<GoogleRecaptchaService> logger)
+        ILogger<GoogleRecaptchaService> logger,
+        IServiceProvider? serviceProvider = null)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _serviceProvider = serviceProvider;
     }
 
     /// <summary>
     /// Gets the public Google reCAPTCHA site key for client widget rendering.
-    /// Resolves from .env, appsettings, and system environment variables, defaulting to standard test keys if not configured.
+    /// Dynamically resolves from MasterPlatformSettings in the Central Master DB with .env/appsettings fallback.
     /// </summary>
     public string SiteKey
     {
         get
         {
+            if (_serviceProvider != null)
+            {
+                try
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var masterDb = scope.ServiceProvider.GetService<Ozikol.MasterPersistence.EF.MasterSQL.MasterCatalogDbContext>();
+                    var dbKey = masterDb?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1)?.GoogleReCaptchaSiteKey;
+                    if (!string.IsNullOrWhiteSpace(dbKey))
+                    {
+                        return dbKey.Trim();
+                    }
+                }
+                catch
+                {
+                    // Graceful fallback on DB initialization
+                }
+            }
+
             var key = _configuration["GoogleReCaptcha:SiteKey"]
                 ?? _configuration["GoogleRecaptcha:SiteKey"]
                 ?? _configuration["GoogleReCaptcha__SiteKey"]
@@ -54,19 +77,36 @@ public class GoogleRecaptchaService : IRecaptchaService
                 ?? Environment.GetEnvironmentVariable("RECAPTCHA_SITE_KEY");
 
             var resolved = !string.IsNullOrWhiteSpace(key) ? key.Trim() : StandardTestSiteKey;
-            _logger.LogInformation("Google reCAPTCHA resolved SiteKey: {SiteKeyPrefix}...", resolved.Length >= 8 ? resolved.Substring(0, 8) : resolved);
             return resolved;
         }
     }
 
     /// <summary>
     /// Gets the private Google reCAPTCHA secret key for backend verification.
-    /// Resolves from .env, appsettings, and system environment variables, defaulting to standard test keys if not configured.
+    /// Dynamically resolves from MasterPlatformSettings in the Central Master DB with .env/appsettings fallback.
     /// </summary>
     private string SecretKey
     {
         get
         {
+            if (_serviceProvider != null)
+            {
+                try
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var masterDb = scope.ServiceProvider.GetService<Ozikol.MasterPersistence.EF.MasterSQL.MasterCatalogDbContext>();
+                    var dbSecret = masterDb?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1)?.GoogleReCaptchaSecretKey;
+                    if (!string.IsNullOrWhiteSpace(dbSecret))
+                    {
+                        return dbSecret.Trim();
+                    }
+                }
+                catch
+                {
+                    // Graceful fallback on DB initialization
+                }
+            }
+
             var secret = _configuration["GoogleReCaptcha:SecretKey"]
                 ?? _configuration["GoogleRecaptcha:SecretKey"]
                 ?? _configuration["GoogleReCaptcha__SecretKey"]
