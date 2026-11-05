@@ -96,15 +96,27 @@ namespace Ozikol.Central.Services
                     {
                         if (!string.IsNullOrWhiteSpace(settings.CloudinaryCloudName))
                         {
-                            options.CloudName = OzikolDataCipher.DecryptIfNeeded(settings.CloudinaryCloudName)?.Trim() ?? string.Empty;
+                            var val = OzikolDataCipher.DecryptIfNeeded(settings.CloudinaryCloudName)?.Trim() ?? string.Empty;
+                            if (!val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                            {
+                                options.CloudName = val;
+                            }
                         }
                         if (!string.IsNullOrWhiteSpace(settings.CloudinaryApiKey))
                         {
-                            options.ApiKey = OzikolDataCipher.DecryptIfNeeded(settings.CloudinaryApiKey)?.Trim() ?? string.Empty;
+                            var val = OzikolDataCipher.DecryptIfNeeded(settings.CloudinaryApiKey)?.Trim() ?? string.Empty;
+                            if (!val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                            {
+                                options.ApiKey = val;
+                            }
                         }
                         if (!string.IsNullOrWhiteSpace(settings.CloudinaryApiSecret))
                         {
-                            options.ApiSecret = OzikolDataCipher.DecryptIfNeeded(settings.CloudinaryApiSecret)?.Trim() ?? string.Empty;
+                            var val = OzikolDataCipher.DecryptIfNeeded(settings.CloudinaryApiSecret)?.Trim() ?? string.Empty;
+                            if (!val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                            {
+                                options.ApiSecret = val;
+                            }
                         }
                     }
                 }
