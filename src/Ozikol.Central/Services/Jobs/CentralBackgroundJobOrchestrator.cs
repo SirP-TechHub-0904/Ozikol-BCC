@@ -44,7 +44,14 @@ namespace Ozikol.Central.Services.Jobs
             _logger.LogInformation("🚀 [BackgroundJobs] Central Background Job Orchestrator started.");
 
             // Step 1: Ensure baseline canonical jobs exist in Master DB
-            await EnsureBaselineJobsSeededAsync(stoppingToken);
+            try
+            {
+                await EnsureBaselineJobsSeededAsync(stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ [BackgroundJobs] Initial baseline job seeding encountered a transient connection issue; will continue and retry in scheduler loop.");
+            }
 
             // Main recurring scheduler loop
             while (!stoppingToken.IsCancellationRequested)

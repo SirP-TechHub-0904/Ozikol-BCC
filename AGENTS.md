@@ -409,3 +409,12 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Typing or deep-linking to an unsubscribed feature route (e.g. `/workspace/stations`) must be blocked by `FeatureGuard` and redirect to `/feature-unavailable` showing the unavailable advisory.
 * **Full Specification Reference**: See `.agents/rules/07-sidebar-navigation-hierarchy.md`.
 
+
+
+---
+
+## 25. Fast Code-Fix Mode & User-Led Build Verification (Mandatory)
+* **Straight-to-the-Point Code Fixes (Zero Unrequested Builds/Deployments)**: When the user says "do this" or "fix this", the agent MUST go straight to the code and modify the relevant source files directly in seconds. Do not initiate local compilations (`dotnet build`, `dotnet publish`, `ng build`), test suites, or background tasks unless the user explicitly requests them.
+* **Strict Prohibition on VPS SSH / Remote Access Without Permission**: The agent must NEVER communicate with, connect to, or execute commands against the VPS via SSH (`ssh`, `scp`, `rsync`, or remote shells) without the user's **explicit, written permission** in the current conversation.
+* **User-Led Compilation & Verification**: The user compiles, runs, and tests the project on their own machine at their own pace.
+* **Instant Error Resolution**: If the user encounters any compiler errors, warnings, runtime exceptions, or linter failures and provides the log or screenshot, the agent must immediately analyze the root cause and provide the exact fix without delay.

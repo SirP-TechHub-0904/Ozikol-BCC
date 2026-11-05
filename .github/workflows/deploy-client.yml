@@ -1,6 +1,6 @@
 # ===================================================================
 # CI/CD Workflow: Deploy Ozikol Multi-Tenant Angular Client
-# Target: https://*.ozikol.cloud (Served statically via Nginx)
+# Target: https://app.ozikol.cloud & *.ozikol.cloud (Native Nginx Static Host)
 # ===================================================================
 
 name: Deploy Angular Client
@@ -10,6 +10,7 @@ on:
     branches: [ master ]
     paths:
       - 'src/Ozikol-BCC.Client/**'
+      - '.github/workflows/deploy-client.yml'
 
   workflow_dispatch:
 
@@ -21,7 +22,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Setup Node.js 20 on the GitHub Actions runner
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -29,17 +29,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'src/Ozikol-BCC.Client/package-lock.json'
 
-      # Install dependencies, build, and normalize dist folder
       - name: Install & Build Angular Production
         run: |
           cd src/Ozikol-BCC.Client
           npm ci
           npm run build -- --configuration production
           
-          # Create normalized publish directory at repository root
           mkdir -p ../../publish-client
           
-          # Copy compiled output regardless of Angular's casing/browser folder
           if [ -d "dist/Ozikol-BCC.Client/browser" ]; then
             cp -r dist/Ozikol-BCC.Client/browser/* ../../publish-client/
           elif [ -d "dist/Ozikol-BCC.Client" ]; then
@@ -48,30 +45,45 @@ jobs:
             cp -r dist/ozikol-bcc-client/browser/* ../../publish-client/
           elif [ -d "dist/ozikol-bcc-client" ]; then
             cp -r dist/ozikol-bcc-client/* ../../publish-client/
+          elif [ -d "dist/ozikol-bcc.client/browser" ]; then
+            cp -r dist/ozikol-bcc.client/browser/* ../../publish-client/
+          elif [ -d "dist/ozikol-bcc.client" ]; then
+            cp -r dist/ozikol-bcc.client/* ../../publish-client/
           else
             cp -r dist/*/* ../../publish-client/
           fi
           
-          # List files to verify index.html is ready
           ls -la ../../publish-client/
 
-      # Sync the normalized static distribution files directly to Nginx web root
-      - name: Sync Angular Dist to VPS
-        uses: easingthemes/ssh-deploy@main
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.VPS_HOST }}
-          REMOTE_USER: ${{ secrets.VPS_USER }}
-          SOURCE: "publish-client/"
-          TARGET: "/var/www/client"
+      - name: Package Client Archive
+        run: |
+          tar -czf publish-client.tar.gz -C ./publish-client .
 
-      # Ensure Nginx (www-data) has read access to the HTML/CSS/JS files//
-      - name: Set Permissions
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            chown -R www-data:www-data /var/www/client
-            chmod -R 755 /var/www/client
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          ssh-keyscan -p "$PORT" -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: SCP Archive to VPS
+        run: |
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          scp -i ~/.ssh/deploy_key -P "$PORT" publish-client.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/publish-client.tar.gz
+
+      - name: Deploy on VPS
+        run: |
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            mkdir -p /var/www/ozikol-client
+            tar -xzf /tmp/publish-client.tar.gz -C /var/www/ozikol-client/
+            rm -f /tmp/publish-client.tar.gz
+            chown -R www-data:www-data /var/www/ozikol-client
+            chmod -R 755 /var/www/ozikol-client
+            systemctl reload nginx
+            echo "ozikol-client deployed successfully and Nginx reloaded."
+          EOF

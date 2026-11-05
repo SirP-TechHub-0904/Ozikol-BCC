@@ -14,6 +14,7 @@ using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Infrastructure.TenantSupport;
+using Ozikol.MasterDomain.Security;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -102,9 +103,9 @@ namespace Ozikol_BCC.Api.Controllers
                     !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
                     !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
                 {
-                    customCloud = config.CustomCloudinaryCloudName;
-                    customKey = config.CustomCloudinaryApiKey;
-                    customSecret = config.CustomCloudinaryApiSecret;
+                    customCloud = config.CustomCloudinaryCloudName.Trim();
+                    customKey = OzikolDataCipher.DecryptIfNeeded(config.CustomCloudinaryApiKey)?.Trim();
+                    customSecret = OzikolDataCipher.DecryptIfNeeded(config.CustomCloudinaryApiSecret)?.Trim();
                 }
 
                 var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(
@@ -375,22 +376,11 @@ namespace Ozikol_BCC.Api.Controllers
             site.WebsiteTitle = dto.WebsiteTitle;
             site.SiteTitle = dto.WebsiteTitle;
             site.DashboardTitle = dto.DashboardTitle;
-            site.LogoUrl = dto.CompanyLogoUrl;
-            site.CompanyLogoUrl = dto.CompanyLogoUrl;
-            site.LogoKey = dto.CompanyLogoKey;
-            site.CompanyLogoKey = dto.CompanyLogoKey;
-            site.WhiteLogoUrl = dto.CompanyWhiteLogoUrl;
-            site.CompanyWhiteLogoUrl = dto.CompanyWhiteLogoUrl;
-            site.WhiteLogoKey = dto.CompanyWhiteLogoKey;
-            site.CompanyWhiteLogoKey = dto.CompanyWhiteLogoKey;
-            site.FaviconUrl = dto.CompanyIconUrl;
-            site.CompanyIconUrl = dto.CompanyIconUrl;
-            site.FaviconKey = dto.CompanyIconKey;
-            site.CompanyIconKey = dto.CompanyIconKey;
-            site.ReloaderIconUrl = dto.ReloaderIconUrl;
-            site.ReloaderIconKey = dto.ReloaderIconKey;
-            site.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
-            site.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
+            ApplySanitizedImage(dto.CompanyLogoUrl, dto.CompanyLogoKey, (u, k) => { site.CompanyLogoUrl = u; site.LogoUrl = u; site.CompanyLogoKey = k; site.LogoKey = k; });
+            ApplySanitizedImage(dto.CompanyWhiteLogoUrl, dto.CompanyWhiteLogoKey, (u, k) => { site.CompanyWhiteLogoUrl = u; site.WhiteLogoUrl = u; site.CompanyWhiteLogoKey = k; site.WhiteLogoKey = k; });
+            ApplySanitizedImage(dto.CompanyIconUrl, dto.CompanyIconKey, (u, k) => { site.CompanyIconUrl = u; site.FaviconUrl = u; site.CompanyIconKey = k; site.FaviconKey = k; });
+            ApplySanitizedImage(dto.ReloaderIconUrl, dto.ReloaderIconKey, (u, k) => { site.ReloaderIconUrl = u; site.ReloaderIconKey = k; });
+            ApplySanitizedImage(dto.LoginBackgroundImageUrl, dto.LoginBackgroundImageKey, (u, k) => { site.LoginBackgroundImageUrl = u; site.LoginBackgroundImageKey = k; });
             site.LoginLayout = !string.IsNullOrWhiteSpace(dto.LoginLayout) ? dto.LoginLayout : "centered";
             site.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
             site.UseWhiteLogoInLogin = dto.UseWhiteLogoInLogin;
@@ -1060,6 +1050,44 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Computes organization abbreviation from company name.
         /// </summary>
+        /// <summary>
+        /// Applies an image URL update safely. If valid URL, persists it. If null/empty, clears it.
+        /// If raw base64 data URI (un-uploaded fallback), preserves the existing database image.
+        /// </summary>
+        private static void ApplySanitizedImage(string? incomingUrl, string? incomingKey, Action<string?, string?> assign)
+        {
+            if (string.IsNullOrWhiteSpace(incomingUrl))
+            {
+                assign(null, null);
+                return;
+            }
+
+            var trimmed = incomingUrl.Trim();
+            if (trimmed.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) || trimmed.Length > 500)
+            {
+                // Raw base64 from a failed client upload; preserve the currently persisted database image
+                return;
+            }
+
+            assign(trimmed, incomingKey);
+        }
+
+        /// <summary>
+        /// Sanitizes and validates image URLs to prevent SQL Server string truncation crashes (e.g. from raw base64 data URIs).
+        /// </summary>
+        /// <param name="url">The image URL or data string to inspect.</param>
+        /// <returns>A clean URL string or null if invalid or oversized.</returns>
+        private static string? SanitizeImageUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var trimmed = url.Trim();
+            if (trimmed.Length > 500 || trimmed.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            return trimmed;
+        }
+
         private static string ComputeAbbreviation(string? name)
         {
             if (string.IsNullOrWhiteSpace(name)) return "ORG";

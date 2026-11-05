@@ -89,11 +89,11 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                     }
                 }
 
-                var finalSecret = !string.IsNullOrWhiteSpace(dbSecret)
+                var finalSecret = !string.IsNullOrWhiteSpace(dbSecret) && !dbSecret.StartsWith("enc:v1:", StringComparison.Ordinal)
                     ? dbSecret
                     : (_configuration["Paystack:SecretKey"]?.Trim() ?? string.Empty);
 
-                var finalPublic = !string.IsNullOrWhiteSpace(dbPublic)
+                var finalPublic = !string.IsNullOrWhiteSpace(dbPublic) && !dbPublic.StartsWith("enc:v1:", StringComparison.Ordinal)
                     ? dbPublic
                     : (_configuration["Paystack:PublicKey"]?.Trim() ?? string.Empty);
 
@@ -132,11 +132,11 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                     }
                 }
 
-                var finalSecret = !string.IsNullOrWhiteSpace(tenantSecret)
+                var finalSecret = !string.IsNullOrWhiteSpace(tenantSecret) && !tenantSecret.StartsWith("enc:v1:", StringComparison.Ordinal)
                     ? tenantSecret
                     : (_configuration["Paystack:SecretKey"]?.Trim() ?? string.Empty);
 
-                var finalPublic = !string.IsNullOrWhiteSpace(tenantPublic)
+                var finalPublic = !string.IsNullOrWhiteSpace(tenantPublic) && !tenantPublic.StartsWith("enc:v1:", StringComparison.Ordinal)
                     ? tenantPublic
                     : (_configuration["Paystack:PublicKey"]?.Trim() ?? string.Empty);
 

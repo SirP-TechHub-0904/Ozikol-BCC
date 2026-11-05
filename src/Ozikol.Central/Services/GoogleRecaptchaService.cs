@@ -5,19 +5,18 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Ozikol.Central.Services;
 
 /// <summary>
 /// Production implementation of Google reCAPTCHA v2 / v3 verification service.
-/// Queries the Google siteverify API endpoint with resilient fallback for local development environments.
+/// Queries the Google siteverify API endpoint resolving credentials purely from database or environment.
 /// </summary>
 public class GoogleRecaptchaService : IRecaptchaService
 {
     private const string GoogleVerifyEndpoint = "https://www.google.com/recaptcha/api/siteverify";
-    private const string StandardTestSiteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
-    private const string StandardTestSecretKey = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe";
 
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
@@ -60,7 +59,11 @@ public class GoogleRecaptchaService : IRecaptchaService
                     var dbKey = masterDb?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1)?.GoogleReCaptchaSiteKey;
                     if (!string.IsNullOrWhiteSpace(dbKey))
                     {
-                        return dbKey.Trim();
+                        var decrypted = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(dbKey)?.Trim();
+                        if (!string.IsNullOrWhiteSpace(decrypted) && !decrypted.StartsWith(Ozikol.MasterDomain.Security.OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                        {
+                            return decrypted;
+                        }
                     }
                 }
                 catch
@@ -76,8 +79,7 @@ public class GoogleRecaptchaService : IRecaptchaService
                 ?? Environment.GetEnvironmentVariable("GoogleReCaptcha__SiteKey")
                 ?? Environment.GetEnvironmentVariable("RECAPTCHA_SITE_KEY");
 
-            var resolved = !string.IsNullOrWhiteSpace(key) ? key.Trim() : StandardTestSiteKey;
-            return resolved;
+            return !string.IsNullOrWhiteSpace(key) ? key.Trim() : string.Empty;
         }
     }
 
@@ -98,7 +100,11 @@ public class GoogleRecaptchaService : IRecaptchaService
                     var dbSecret = masterDb?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1)?.GoogleReCaptchaSecretKey;
                     if (!string.IsNullOrWhiteSpace(dbSecret))
                     {
-                        return dbSecret.Trim();
+                        var decrypted = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(dbSecret)?.Trim();
+                        if (!string.IsNullOrWhiteSpace(decrypted) && !decrypted.StartsWith(Ozikol.MasterDomain.Security.OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                        {
+                            return decrypted;
+                        }
                     }
                 }
                 catch
@@ -114,33 +120,30 @@ public class GoogleRecaptchaService : IRecaptchaService
                 ?? Environment.GetEnvironmentVariable("GoogleReCaptcha__SecretKey")
                 ?? Environment.GetEnvironmentVariable("RECAPTCHA_SECRET_KEY");
 
-            return !string.IsNullOrWhiteSpace(secret) ? secret.Trim() : StandardTestSecretKey;
+            return !string.IsNullOrWhiteSpace(secret) ? secret.Trim() : string.Empty;
         }
     }
 
     /// <summary>
     /// Validates the token returned by the Google reCAPTCHA widget by calling the Google verification endpoint.
-    /// Logs detailed diagnostics to aid troubleshooting in development and production environments.
     /// </summary>
     /// <param name="recaptchaResponse">The response token string from the g-recaptcha-response form parameter.</param>
     /// <param name="remoteIp">Optional client remote IP address.</param>
-    /// <returns>True if verification succeeds or passes development mock; otherwise false.</returns>
+    /// <returns>True if verification succeeds; otherwise false.</returns>
     public async Task<bool> ValidateTokenAsync(string? recaptchaResponse, string? remoteIp = null)
     {
         _logger.LogInformation("reCAPTCHA validation initiated for client IP: {RemoteIp}. Token length: {TokenLength}", remoteIp ?? "unknown", recaptchaResponse?.Length ?? 0);
 
-        // 1. If response is completely missing and not running with test keys, reject immediately
         if (string.IsNullOrWhiteSpace(recaptchaResponse))
         {
             _logger.LogWarning("reCAPTCHA response token is empty or null from IP: {RemoteIp}.", remoteIp ?? "unknown");
+            return false;
+        }
 
-            // Allow dev bypass if running purely locally with test key and response omitted
-            if (SecretKey == StandardTestSecretKey)
-            {
-                _logger.LogInformation("Running with standard test secret key; allowing bypass for empty token in development.");
-                return true;
-            }
-
+        var activeSecret = SecretKey;
+        if (string.IsNullOrWhiteSpace(activeSecret))
+        {
+            _logger.LogError("reCAPTCHA secret key is not configured in database or environment variables.");
             return false;
         }
 
@@ -148,11 +151,17 @@ public class GoogleRecaptchaService : IRecaptchaService
         {
             var parameters = new List<KeyValuePair<string, string>>
             {
-                new("secret", SecretKey),
+                new("secret", activeSecret),
                 new("response", recaptchaResponse)
             };
 
-            if (!string.IsNullOrWhiteSpace(remoteIp))
+            // Only forward client remote IP if it is an external public address
+            if (!string.IsNullOrWhiteSpace(remoteIp)
+                && !remoteIp.StartsWith("127.", StringComparison.Ordinal)
+                && !remoteIp.StartsWith("10.", StringComparison.Ordinal)
+                && !remoteIp.StartsWith("172.", StringComparison.Ordinal)
+                && !remoteIp.StartsWith("192.168.", StringComparison.Ordinal)
+                && remoteIp != "::1")
             {
                 parameters.Add(new("remoteip", remoteIp));
             }
@@ -166,7 +175,7 @@ public class GoogleRecaptchaService : IRecaptchaService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("reCAPTCHA endpoint returned non-success HTTP status {StatusCode}.", response.StatusCode);
-                return SecretKey == StandardTestSecretKey;
+                return false;
             }
 
             using var doc = JsonDocument.Parse(json);
@@ -178,12 +187,12 @@ public class GoogleRecaptchaService : IRecaptchaService
             }
 
             _logger.LogWarning("reCAPTCHA verification FAILED. Response: {ResponseJson}", json);
-            return SecretKey == StandardTestSecretKey;
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception encountered while verifying Google reCAPTCHA token.");
-            return SecretKey == StandardTestSecretKey;
+            return false;
         }
     }
 }

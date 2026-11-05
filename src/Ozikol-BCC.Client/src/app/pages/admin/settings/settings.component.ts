@@ -3487,7 +3487,7 @@ export class SettingsComponent implements OnInit {
           };
         }
       },
-      error: () => {}
+      error: (err: any) => {}
     });
   }
 
@@ -3539,7 +3539,7 @@ export class SettingsComponent implements OnInit {
           }
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.customDomainInput = this.customDomain;
       }
     });
@@ -3649,7 +3649,7 @@ export class SettingsComponent implements OnInit {
           }
         }
       },
-      error: () => {}
+      error: (err: any) => {}
     });
   }
 
@@ -3771,9 +3771,9 @@ export class SettingsComponent implements OnInit {
           this.onSaveBrandSettings();
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.uploadingAsset[assetKey] = false;
-        this.toast.warning('Image loaded locally. Click "Save Brand" to persist.');
+        this.toast.error(err?.error?.message || 'Failed to upload branding asset to cloud. Please try again.');
       }
     });
   }
@@ -3845,7 +3845,7 @@ export class SettingsComponent implements OnInit {
           }
         }
       },
-      error: () => {}
+      error: (err: any) => {}
     });
   }
 
@@ -3908,7 +3908,7 @@ export class SettingsComponent implements OnInit {
           this.appearance.secondaryColor = res.data.secondaryColor || '#1f6bff';
         }
       },
-      error: () => {}
+      error: (err: any) => {}
     });
   }
 
@@ -3944,7 +3944,7 @@ export class SettingsComponent implements OnInit {
           }
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.loadingTemplates = false;
         this.toast.error('Failed to load message templates.');
       }
@@ -4191,7 +4191,7 @@ export class SettingsComponent implements OnInit {
           this.store = { ...this.store, ...res.data };
         }
       },
-      error: () => {}
+      error: (err: any) => {}
     });
   }
 
