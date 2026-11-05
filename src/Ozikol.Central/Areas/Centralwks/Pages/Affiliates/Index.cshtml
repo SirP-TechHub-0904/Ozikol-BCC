@@ -12,10 +12,10 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/affiliates/payouts" class="btn-admin btn-admin-secondary">
-            <span>💸</span> Payouts Queue (@Model.TotalPendingBalance.ToString("C0"))
+            <span class="material-symbols-outlined" style="font-size: 16px;">payments</span> Payouts Queue (@Model.TotalPendingBalance.ToString("C0"))
         </a>
         <a href="/centralwks/affiliates/create" class="btn-admin btn-admin-primary">
-            <span>+</span> Register Partner
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Register Partner
         </a>
     </div>
 </div>
@@ -30,28 +30,36 @@
 @* ── Affiliate Financial Metrics ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🤝</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">handshake</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Partners</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">💰</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">monetization_on</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Lifetime Commissions</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalGrossCommissions.ToString("N2")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">hourglass_top</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Pending Payouts</span>
             <span class="stat-value" style="font-size: 22px; color: #f59e0b;">$@Model.TotalPendingBalance.ToString("N2")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Paid to Date</span>
             <span class="stat-value" style="font-size: 22px;">$@Model.TotalPaidOut.ToString("N2")</span>
@@ -64,10 +72,10 @@
     <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 240px;">
             <input type="text" name="Search" value="@Model.Search" placeholder="Search by partner code, full name, email, or channel..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+                   class="form-control" />
         </div>
         <div style="min-width: 150px;">
-            <select name="Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
+            <select name="Status" class="form-select">
                 <option value="">All Statuses</option>
                 <option value="Active" selected="@(Model.Status == "Active")">Active</option>
                 <option value="UnderReview" selected="@(Model.Status == "UnderReview")">Under Review</option>
@@ -75,7 +83,7 @@
             </select>
         </div>
         <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">
-            <span>🔍</span> Filter
+            <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span> Filter
         </button>
         @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Status))
         {
@@ -158,15 +166,15 @@
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; gap: 6px;">
                                     <a href="/centralwks/affiliates/details/@p.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="View Partner Profile">
-                                        👁️
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                                     </a>
                                     <a href="/centralwks/affiliates/edit/@p.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Edit Partner">
-                                        ✏️
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
                                     </a>
                                     <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@p.Id" style="display: inline;">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="@(isSuspended ? "Activate" : "Suspend")">
-                                            @(isSuspended ? "▶️" : "⏸️")
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">@(isSuspended ? "play_arrow" : "pause")</span>
                                         </button>
                                     </form>
                                 </div>
@@ -178,7 +186,9 @@
                 {
                     <tr>
                         <td colspan="9" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                            <div style="font-size: 32px; margin-bottom: 8px;">🤝</div>
+                            <div style="font-size: 32px; margin-bottom: 8px;">
+                                <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-muted);">handshake</span>
+                            </div>
                             <div style="font-size: 16px; font-weight: 500; color: #fff;">No Affiliate Partners Found</div>
                             <div style="font-size: 13px; margin-top: 4px;">Register a partner or adjust search criteria.</div>
                         </td>

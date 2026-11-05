@@ -33,27 +33,27 @@
     <meta name="author" content="Ozikol Technologies Ltd" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://ozikol.cloud@(Context.Request.Path)" />
-    <meta name="theme-color" content="#e5173f" />
+    <meta name="theme-color" content="#0050e5" />
 
     <!-- Open Graph / Social Previews -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ozikol" />
     <meta property="og:title" content="@(ViewData["Title"] ?? "Ozikol") | Unified Business Cloud Platform" />
-    <meta property="og:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with 37 modular cloud tools across 9 enterprise suites." />
-    <meta property="og:image" content="https://ozikol.cloud/images/ozikol-red.png" />
+    <meta property="og:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with @CurrencyService.GetActiveFeaturesCount() modular cloud tools across @CurrencyService.GetActiveSuitesCount() enterprise suites." />
+    <meta property="og:image" content="https://ozikol.cloud/images/ozikol.png" />
     <meta property="og:url" content="https://ozikol.cloud@(Context.Request.Path)" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@@ozikol" />
     <meta name="twitter:title" content="@(ViewData["Title"] ?? "Ozikol") | Unified Business Cloud Platform" />
-    <meta name="twitter:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with 37 modular cloud tools across 9 enterprise suites." />
-    <meta name="twitter:image" content="https://ozikol.cloud/images/ozikol-red.png" />
+    <meta name="twitter:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with @CurrencyService.GetActiveFeaturesCount() modular cloud tools across @CurrencyService.GetActiveSuitesCount() enterprise suites." />
+    <meta name="twitter:image" content="https://ozikol.cloud/images/ozikol.png" />
 
     <!-- Favicon & Brand Icons -->
-    <link rel="icon" type="image/png" href="/images/oz-logo-red.png" />
-    <link rel="shortcut icon" type="image/png" href="/images/oz-logo-red.png" />
-    <link rel="apple-touch-icon" href="/images/oz-logo-red.png" />
+    <link rel="icon" type="image/png" href="/images/oz-logo.png" />
+    <link rel="shortcut icon" type="image/png" href="/images/oz-logo.png" />
+    <link rel="apple-touch-icon" href="/images/oz-logo.png" />
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
@@ -73,7 +73,7 @@
                 
     <a class="logo mega-menu__logo-wrap" href="/" aria-label="Ozikol Home">
         <img class="mega-menu__logo-img"
-             src="/images/ozikol-red.png"
+             src="/images/ozikol.png"
              alt="Ozikol"
              width="116"
              height="26"
@@ -100,494 +100,46 @@
             </button>
                 <div class="mega-menu__mid-items-group">
                     <div class="mega-menu__nav-title">@SharedLocalizer["Suites_Title"]</div>
-                        
-                        <!-- People, Community & Collaboration -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_People_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_People_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_People_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/community-messenger">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_Messenger_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Messenger_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/committees">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_Committees_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Committees_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/alumni-directory">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_Alumni_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Alumni_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/whistleblowing-feedback">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_Whistleblowing_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Whistleblowing_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Workforce, Rota & Scheduling -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Workforce_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Workforce_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Workforce_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/staff-rota">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_StaffRota_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_StaffRota_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/shift-swaps-leave">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_ShiftSwaps_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_ShiftSwaps_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/attendance-tracking">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_Attendance_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Attendance_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/appointment-booking">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_Appointments_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_Appointments_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Reports, Forms & Analytics -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Reports_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Reports_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Reports_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/interval-reporting">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_IntervalReporting_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_IntervalReporting_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/form-builder">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_FormBuilder_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_FormBuilder_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/survey-analytics">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_SurveyAnalytics_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_SurveyAnalytics_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Events & Training Management -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Events_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Events_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Events_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/event-ticketing">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_EventTicketing_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_EventTicketing_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/speaker-sessions">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_SpeakerSessions_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_SpeakerSessions_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/attendee-management">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_AttendeeManagement_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_AttendeeManagement_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Finance & Commercial Revenue -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Finance_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Finance_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Finance_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/invoicing-dues">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_InvoicingDues_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_InvoicingDues_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/store-ecommerce">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_StoreEcommerce_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_StoreEcommerce_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/proposal-pipeline">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_ProposalPipeline_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_ProposalPipeline_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/grant-ledger">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_GrantLedger_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_GrantLedger_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Operations & Workflows -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Operations_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Operations_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Operations_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/recruitment-hiring">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_RecruitmentHiring_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_RecruitmentHiring_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/elections-evoting">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_ElectionsEvoting_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_ElectionsEvoting_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/equipment-fleet">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_EquipmentFleet_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_EquipmentFleet_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/company-assets">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_CompanyAssets_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_CompanyAssets_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/project-task-tracking">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_ProjectTask_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_ProjectTask_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Communication, AI & Support -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Communication_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Communication_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Communication_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/ai-smart-assist">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_AiSmartAssist_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_AiSmartAssist_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/mass-communication">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_MassCommunication_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_MassCommunication_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/helpdesk-support">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_HelpdeskSupport_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_HelpdeskSupport_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/live-chat">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_LiveChat_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_LiveChat_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/social-media-manager">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_SocialMediaManager_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_SocialMediaManager_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/bio-link-tree">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_BioLinkHub_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_BioLinkHub_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                        <!-- Compliance, Learning & Certification -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Suite_Compliance_Nav"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Compliance_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Compliance_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-    <span>@SharedLocalizer["Menu_Close"]</span>
-</button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/document-management">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_DocumentManagement_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_DocumentManagement_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/learning-management">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_LearningManagement_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_LearningManagement_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/certificate-verification">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_CertificateVerification_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_CertificateVerification_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/visitor-gate-management">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_VisitorGate_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_VisitorGate_Desc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-
-                        <!-- Suite 09: Demographics & Civic Census -->
+                        @foreach (var suite in CurrencyService.GetActiveSuitesWithFeatures())
+                        {
                         <div class="mega-menu__link-wrap">
                             <button class="mega-menu__link js-megaMenuBottomLevelOpen">
-                                @SharedLocalizer["Suite_Demographics_Nav"]
+                                @suite.Name
                             </button>
-                                <div class="mega-menu-sub js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Suite_Demographics_Title"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Suite_Demographics_Desc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            <span>@SharedLocalizer["Menu_Close"]</span>
-                                        </button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/community-census">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_CommunityCensus_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_CommunityCensus_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/field-surveyor">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_FieldSurveyor_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_FieldSurveyor_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/resident-id-cards">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_ResidentIdCards_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_ResidentIdCards_Desc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/demographic-analytics">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Feat_DemographicAnalytics_Title"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Feat_DemographicAnalytics_Desc"]</div>
-                                                </a>
-                                            </article>
+                            <div class="mega-menu-sub js-megaMenuSub container-padding-right--lg">
+                                <div class="mega-menu-sub__inner">
+                                    <div class="mega-menu-sub__header">
+                                        <div class="mega-menu-sub__title">@suite.MenuTitle</div>
+                                        <div class="mega-menu-sub__description rte">
+                                            <p>@suite.Description</p>
                                         </div>
                                     </div>
                                 </div>
-                        </div>
-                        <!-- Life Events & Digital Publications -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    Life Events & Publications
-                                </button>
-                                <div class="mega-menu-sub js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">Life Events & Digital Publications</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>Digital funeral memorials, wedding celebration portals with in-app live camera capture, and PDF flipbook magazine publishing.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            <span>@SharedLocalizer["Menu_Close"]</span>
-                                        </button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
+                                <div class="mega-menu-sub__content">
+                                    <button class="mega-menu-sub__close js-megaMenuClose">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>@SharedLocalizer["Menu_Close"]</span>
+                                    </button>
+                                    <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
+                                        @foreach (var feat in suite.Features)
+                                        {
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/digital-memorials-tributes">
-                                                    <div class="mega-menu-text-link__title">Digital Memorials & Funeral Tributes</div>
-                                                    <div class="mega-menu-text-link__description">Burial portals, virtual candles, YouTube streaming & PDF booklets.</div>
+                                                <a href="/features/@feat.PublicSlug">
+                                                    <div class="mega-menu-text-link__title">@feat.Name</div>
+                                                    <div class="mega-menu-text-link__description">@feat.ShortSummary</div>
                                                 </a>
                                             </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/wedding-celebration-portals">
-                                                    <div class="mega-menu-text-link__title">Weddings & Celebration Portals</div>
-                                                    <div class="mega-menu-text-link__description">Digital invites, order of service & in-app live camera photo snapping.</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/features/digital-brochures-magazines">
-                                                    <div class="mega-menu-text-link__title">Digital Brochures & Magazine Publishing</div>
-                                                    <div class="mega-menu-text-link__description">Interactive flipbooks, souvenir brochures & PDF exports.</div>
-                                                </a>
-                                            </article>
-                                        </div>
+                                        }
                                     </div>
                                 </div>
+                            </div>
                         </div>
-
+                        }
                 </div>
                 <div class="mega-menu__mid-items-group">
                     <div class="mega-menu__nav-title">@SharedLocalizer["Catalog_Title"]</div>
                         <div class="mega-menu__link-wrap">
-                            <a href='/features' class='mega-menu__link mega-menu__link--highlight'>@SharedLocalizer["Catalog_ExploreAll"]</a>
+                            <a href='/features' class='mega-menu__link mega-menu__link--highlight'>@SharedLocalizer["Catalog_ExploreAll", CurrencyService.GetActiveFeaturesCount()]</a>
                         </div>
                 </div>
         </div>
@@ -800,6 +352,17 @@
                     <div class="oz-nav-dropdown-card__desc">@SharedLocalizer["Support_Certifications_Sub"]</div>
                 </div>
             </a>
+
+            <!-- 5. Promotional Voucher Program -->
+            <a href="/@currentCulture/vouchers/apply" class="oz-nav-dropdown-card" role="menuitem">
+                <div class="oz-nav-dropdown-card__icon oz-icon-violet" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"></rect><path d="M12 8v13"></path><path d="M19 12v7"></path><path d="M5 12v7"></path><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path></svg>
+                </div>
+                <div class="oz-nav-dropdown-card__body">
+                    <div class="oz-nav-dropdown-card__title">@SharedLocalizer["Support_Tab_Vouchers"]</div>
+                    <div class="oz-nav-dropdown-card__desc">@SharedLocalizer["Support_Vouchers_Sub"]</div>
+                </div>
+            </a>
         </div>
     </div>
 </li></ul>
@@ -839,9 +402,6 @@
                         </div>
                     </div>
 
-                    <a href="/Centralwks/Login" class="nav-login-link">
-                        @SharedLocalizer["Nav_SignIn"]
-                    </a>
                     <a href="/@currentCulture/auth/get-started" class="btn-get-started">
                         @SharedLocalizer["Nav_GetStarted"]
                     </a>
@@ -891,7 +451,7 @@
                         <li><a href="/features/community-messenger">@SharedLocalizer["Footer_CommunityMessenger"]</a></li>
                         <li><a href="/features/equipment-fleet">@SharedLocalizer["Footer_EquipmentFleet"]</a></li>
                         <li><a href="/features/visitor-gate-management">@SharedLocalizer["Footer_VisitorSecurity"]</a></li>
-                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub"]</a></li>
+                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub", CurrencyService.GetActiveFeaturesCount()]</a></li>
                     </ul>
                 </div>
 
@@ -925,6 +485,7 @@
                         <li><a href="/@currentCulture/support/knowledge-base">@SharedLocalizer["Support_Tab_Articles"]</a></li>
                         <li><a href="/@currentCulture/support/contact">@SharedLocalizer["Support_Tab_Contact"]</a></li>
                         <li><a href="/@currentCulture/support/certifications">@SharedLocalizer["Support_Tab_Certifications"]</a></li>
+                        <li><a href="/@currentCulture/vouchers/apply">@SharedLocalizer["Support_Tab_Vouchers"]</a></li>
                     </ul>
                 </div>
 
@@ -936,6 +497,7 @@
                         <li><a href="/about-us/leadership">@SharedLocalizer["Footer_Leadership"]</a></li>
                         <li><a href="/about-us/culture">@SharedLocalizer["Footer_Culture"]</a></li>
                         <li><a href="/careers">@SharedLocalizer["Footer_Careers"]</a></li>
+                        <li><a href="/@currentCulture/news">News &amp; Press</a></li>
                     </ul>
                 </div>
             </div>

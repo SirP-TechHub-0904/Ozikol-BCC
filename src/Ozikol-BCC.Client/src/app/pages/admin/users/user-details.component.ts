@@ -5,26 +5,28 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 @Component({
   selector: 'app-user-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="user-details-page" *ngIf="user">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="360° MEMBER COMMAND CENTER"
+        [eyebrow]="'user_details.header_eyebrow' | translate:'360° MEMBER COMMAND CENTER'"
         icon="account_circle"
-        [title]="user.fullName || 'Member Details'"
-        [subtitle]="'Member ID: ' + (user.memberId || 'N/A') + ' • ' + (user.designation || 'Member') + ' • ' + (user.categoryName || 'Unassigned Category')"
+        [title]="user.fullName || ('user_details.header_title' | translate:'Member Details')"
+        [subtitle]="'Member ID: ' + sanitizeId(user.memberId || 'N/A') + ' • ' + (user.designation || 'Member') + ' • ' + (user.categoryName || ('user_details.spec_category' | translate:'Unassigned Category'))"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
 
       <!-- Main 360 Grid -->
       <div class="dossier-grid">
-        <!-- LEFT COLUMN: Profile Summary, Notes, Danger Zone -->
+        <!-- LEFT COLUMN: Profile Summary, Role & Permissions, Notes, Danger Zone -->
         <div class="dossier-col-left">
           <!-- 1. Profile Summary Card -->
           <div class="dossier-card">
@@ -39,20 +41,20 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <span class="user-email-text" style="margin-bottom: 0;">{{ user.email }}</span>
                   <span class="verify-badge" [class.badge-confirmed]="user.emailConfirmed" [class.badge-unconfirmed]="!user.emailConfirmed">
                     <span class="material-symbols-outlined">{{ user.emailConfirmed ? 'verified' : 'mark_email_unread' }}</span>
-                    <span>{{ user.emailConfirmed ? 'Email Verified' : 'Email Unverified' }}</span>
+                    <span>{{ user.emailConfirmed ? ('directory.email_verified' | translate:'Email Verified') : ('directory.email_unverified' | translate:'Email Unverified') }}</span>
                   </span>
                   <button *ngIf="!user.emailConfirmed" type="button" class="btn-verify-chip" (click)="openOtpModal('email')">
                     <span class="material-symbols-outlined">key</span>
-                    <span>Verify via OTP</span>
+                    <span>{{ 'user_details.verify_otp' | translate:'Verify via OTP' }}</span>
                   </button>
                 </div>
 
                 <div class="hero-badges">
                   <span class="cat-pill" [style.background]="(user.categoryColor || '#0050e5') + '15'" [style.color]="user.categoryColor || '#0050e5'">
                     <span class="material-symbols-outlined">{{ user.categoryIcon || 'category' }}</span>
-                    <span>{{ user.categoryName || 'Unassigned' }}</span>
+                    <span>{{ user.categoryName || ('directory.unassigned' | translate:'Unassigned') }}</span>
                   </span>
-                  <span class="role-pill">{{ user.roles?.join(', ') || 'Member' }}</span>
+                  <span class="role-pill">{{ user.roles?.join(', ') || ('user_create.role_member' | translate:'Member') }}</span>
                   <span class="status-pill" [class.active]="user.userStatus === 'Active'">{{ user.userStatus }}</span>
                 </div>
               </div>
@@ -60,44 +62,140 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
             <div class="details-list">
               <div class="detail-item">
-                <span class="item-label">Phone Number</span>
+                <span class="item-label">{{ 'user_details.spec_phone' | translate:'Phone Number' }}</span>
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-                  <span class="item-value">{{ user.phoneNumber || 'Not provided' }}</span>
+                  <span class="item-value">{{ user.phoneNumber || ('user_details.not_provided' | translate:'Not provided') }}</span>
                   <span *ngIf="user.phoneNumber" class="verify-badge" [class.badge-confirmed]="user.phoneNumberConfirmed" [class.badge-unconfirmed]="!user.phoneNumberConfirmed">
                     <span class="material-symbols-outlined">{{ user.phoneNumberConfirmed ? 'verified' : 'sms_failed' }}</span>
-                    <span>{{ user.phoneNumberConfirmed ? 'Verified' : 'Unverified' }}</span>
+                    <span>{{ user.phoneNumberConfirmed ? ('directory.phone_verified' | translate:'Verified') : ('directory.phone_unverified' | translate:'Unverified') }}</span>
                   </span>
                   <button *ngIf="user.phoneNumber && !user.phoneNumberConfirmed" type="button" class="btn-verify-chip" (click)="openOtpModal('phone')">
                     <span class="material-symbols-outlined">sms</span>
-                    <span>Verify</span>
+                    <span>{{ 'user_details.verify' | translate:'Verify' }}</span>
                   </button>
                 </div>
               </div>
               <div class="detail-item">
-                <span class="item-label">Designation / Title</span>
-                <span class="item-value">{{ user.designation || 'Member' }}</span>
+                <span class="item-label">{{ 'user_details.spec_designation' | translate:'Designation / Title' }}</span>
+                <span class="item-value">{{ user.designation || ('user_create.role_member' | translate:'Member') }}</span>
               </div>
               <div class="detail-item">
-                <span class="item-label">Join Date</span>
+                <span class="item-label">{{ 'user_details.spec_joined' | translate:'Join Date' }}</span>
                 <span class="item-value">{{ user.joinDate ? (user.joinDate | date:'mediumDate') : 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="item-label">Registration Source</span>
+                <span class="item-label">{{ 'user_details.reg_source' | translate:'Registration Source' }}</span>
                 <span class="item-value">{{ user.registrationSource || 'System' }}</span>
               </div>
               <div class="detail-item">
-                <span class="item-label">Must Change Password</span>
+                <span class="item-label">{{ 'user_details.must_change_pwd' | translate:'Must Change Password' }}</span>
                 <span class="item-value" [style.color]="user.mustChangePassword ? '#f59e0b' : '#10b981'">
-                  <strong>{{ user.mustChangePassword ? 'Yes (Temporary Active)' : 'No (Permanent Set)' }}</strong>
+                  <strong>{{ user.mustChangePassword ? ('user_details.yes_temp' | translate:'Yes (Temporary Active)') : ('user_details.no_perm' | translate:'No (Permanent Set)') }}</strong>
                 </span>
               </div>
             </div>
 
             <div class="card-action-footer">
-              <a [routerLink]="['/admin/users/edit', userId]" class="btn btn-outline btn-full">
+              <a [routerLink]="['/users/console/edit', userId]" class="btn btn-outline btn-full">
                 <span class="material-symbols-outlined">edit</span>
-                <span>Edit Profile Information</span>
+                <span>{{ 'user_details.btn_edit_profile' | translate:'Edit Profile Information' }}</span>
               </a>
+            </div>
+          </div>
+
+          <!-- 1.4 Role & Workspace Permissions Card -->
+          <div class="dossier-card">
+            <div class="card-header" style="justify-content: space-between;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span class="material-symbols-outlined header-icon">admin_panel_settings</span>
+                <div>
+                  <h3>{{ 'user_details.roles_title' | translate:'Role & Workspace Permissions' }}</h3>
+                  <p>{{ 'user_details.roles_subtitle' | translate:'Platform access tier, security scope & administrative capabilities' }}</p>
+                </div>
+              </div>
+              <a
+                *ngIf="!isRootSuperAdmin"
+                [routerLink]="['/users/console/permissions', userId]"
+                class="btn-permission-action"
+                [title]="'user_details.roles_subtitle' | translate:'Platform access tier, security scope & administrative capabilities'"
+              >
+                <span class="material-symbols-outlined icon-shield">admin_panel_settings</span>
+                <span class="btn-text">{{ 'user_details.update_permission' | translate:'Update Permission' }}</span>
+                <span class="material-symbols-outlined icon-arrow">arrow_forward</span>
+              </a>
+            </div>
+
+            <div class="card-body">
+              <!-- View Mode -->
+              <div *ngIf="!isEditingRole" class="permission-view-mode">
+                <div class="role-display-row">
+                  <div class="role-badge-large" [class.badge-admin]="isCurrentRoleAdmin" [class.badge-super]="isRootSuperAdmin">
+                    <span class="material-symbols-outlined">{{ getRoleIcon(currentRole) }}</span>
+                    <span>{{ currentRole }}</span>
+                  </div>
+                  <span *ngIf="isRootSuperAdmin" class="locked-root-pill">
+                    <span class="material-symbols-outlined">lock</span>
+                    {{ 'user_details.locked_root_role' | translate:'Locked Root Role' }}
+                  </span>
+                </div>
+
+                <p class="role-desc-text">{{ getRoleDescription(currentRole) }}</p>
+
+                <!-- Scoped Feature Badges if Feature Editor -->
+                <div *ngIf="currentRole === 'Feature Editor'" class="feature-scope-box">
+                  <span class="feature-scope-label">{{ 'user_details.assigned_modular_scope' | translate:'Assigned Modular Capability Scope:' }}</span>
+                  <div class="scope-badges-list">
+                    <span class="scope-pill">
+                      <span class="material-symbols-outlined">tune</span>
+                      {{ user.assignedFeatureArea || 'User Directory (Default)' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div *ngIf="isRootSuperAdmin" class="root-notice-box">
+                  <span class="material-symbols-outlined">shield</span>
+                  <span>{{ 'user_details.superadmin_reserved_note' | translate:'SuperAdmin is strictly reserved for the root workspace account and cannot be modified.' }}</span>
+                </div>
+              </div>
+
+              <!-- Edit Mode Form -->
+              <div *ngIf="isEditingRole" class="permission-edit-form">
+                <div class="form-group-role">
+                  <label class="role-input-label">{{ 'user_details.system_access_role' | translate:'System Access Role *' }}</label>
+                  <select [(ngModel)]="selectedRole" (change)="onRoleSelectionChange()" class="role-select-box">
+                    <option value="Member">Member (Standard Portal Access)</option>
+                    <option value="Admin">Admin (Full Administrative Access)</option>
+                    <option value="Global Editor">Global Editor (Tenant-Wide Content & Entities)</option>
+                    <option value="Feature Editor">Feature Editor (Scoped Modular Capability)</option>
+                    <option value="Read Only">Read Only (Inspection & Audit Telemetry)</option>
+                  </select>
+                </div>
+
+                <!-- Feature Area Scope (Visible only when Feature Editor is selected) -->
+                <div *ngIf="selectedRole === 'Feature Editor'" class="form-group-role" style="margin-top: 12px;">
+                  <label class="role-input-label">{{ 'user_details.assigned_modular_scope' | translate:'Assigned Capability Scope *' }}</label>
+                  <select [(ngModel)]="selectedFeatureArea" class="role-select-box">
+                    <option value="UserManager">User Directory & Categories</option>
+                    <option value="ContentManager">Website Pages & Blog Management</option>
+                    <option value="CrmManager">CRM & Member Relationship Center</option>
+                    <option value="BillingManager">Invoicing & Plan Subscriptions</option>
+                    <option value="StoreManager">Product Catalog & Orders</option>
+                    <option value="EventsManager">Event Schedules & Registrations</option>
+                    <option value="FormsManager">Custom Intake & Survey Forms</option>
+                  </select>
+                </div>
+
+                <div class="role-action-buttons" style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px;">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="cancelRoleEditor()" [disabled]="isSavingRole">
+                    {{ 'user_details.btn_cancel' | translate:'Cancel' }}
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" (click)="saveRolePermission()" [disabled]="isSavingRole">
+                    <span class="material-symbols-outlined" *ngIf="!isSavingRole">check_circle</span>
+                    <span class="material-symbols-outlined spinner" *ngIf="isSavingRole">progress_activity</span>
+                    <span>{{ isSavingRole ? ('user_details.updating' | translate:'Updating...') : ('user_details.save_permission' | translate:'Save Permission') }}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -106,18 +204,18 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="card-header">
               <span class="material-symbols-outlined header-icon">sticky_note_2</span>
               <div>
-                <h3>Confidential Admin Notes</h3>
-                <p>Private administrative records & logs</p>
+                <h3>{{ 'user_details.notes_title' | translate:'Confidential Admin Notes' }}</h3>
+                <p>{{ 'user_details.notes_subtitle' | translate:'Private administrative records & logs' }}</p>
               </div>
             </div>
 
             <div class="card-body">
               <!-- Add Note Form -->
               <div class="add-note-box">
-                <textarea rows="3" [(ngModel)]="newNoteText" placeholder="Add a confidential administrative note..."></textarea>
+                <textarea rows="3" [(ngModel)]="newNoteText" [placeholder]="'user_details.field_notes_ph' | translate:'Add a confidential administrative note...'"></textarea>
                 <button type="button" class="btn btn-primary btn-sm" (click)="addAdminNote()" [disabled]="isPostingNote || !newNoteText.trim()">
                   <span class="material-symbols-outlined">add_comment</span>
-                  <span>Post Note</span>
+                  <span>{{ 'user_details.post_note' | translate:'Post Note' }}</span>
                 </button>
               </div>
 
@@ -131,7 +229,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <div class="note-body">{{ n.note }}</div>
                 </div>
                 <div class="empty-note" *ngIf="!user.notes?.length">
-                  No administrative notes posted yet.
+                  {{ 'user_details.no_notes' | translate:'No administrative notes posted yet.' }}
                 </div>
               </div>
             </div>
@@ -142,28 +240,28 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="card-header bg-danger-light">
               <span class="material-symbols-outlined text-danger">warning</span>
               <div>
-                <h3 class="text-danger">Account Access & Danger Zone</h3>
-                <p>Restrict or permanently remove member account</p>
+                <h3 class="text-danger">{{ 'user_details.danger_title' | translate:'Account Access & Danger Zone' }}</h3>
+                <p>{{ 'user_details.danger_subtitle' | translate:'Restrict or permanently remove member account' }}</p>
               </div>
             </div>
             <div class="card-body danger-actions">
               <div class="danger-row">
                 <div>
-                  <strong>{{ user.userStatus === 'Active' ? 'Suspend Account' : 'Reactivate Account' }}</strong>
-                  <p>{{ user.userStatus === 'Active' ? 'Temporarily revoke workspace access' : 'Restore full access to member portal' }}</p>
+                  <strong>{{ user.userStatus === 'Active' ? ('user_details.suspend_account' | translate:'Suspend Account') : ('user_details.reactivate_account' | translate:'Reactivate Account') }}</strong>
+                  <p>{{ user.userStatus === 'Active' ? ('user_details.suspend_desc' | translate:'Temporarily revoke workspace access') : ('user_details.reactivate_desc' | translate:'Restore full access to member portal') }}</p>
                 </div>
                 <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus()">
-                  {{ user.userStatus === 'Active' ? 'Suspend' : 'Reactivate' }}
+                  {{ user.userStatus === 'Active' ? ('user_details.suspend' | translate:'Suspend') : ('user_details.reactivate' | translate:'Reactivate') }}
                 </button>
               </div>
 
               <div class="danger-row" style="border-top:1px solid #fee2e2; padding-top:14px;">
                 <div>
-                  <strong class="text-danger">Delete Member Account</strong>
-                  <p>Permanently remove profile, roles, and records</p>
+                  <strong class="text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
+                  <p>{{ 'user_details.delete_desc' | translate:'Permanently remove profile, roles, and records' }}</p>
                 </div>
                 <a [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
-                  Delete User
+                  {{ 'user_details.delete_user' | translate:'Delete User' }}
                 </a>
               </div>
             </div>
@@ -178,13 +276,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <div style="display:flex; align-items:center; gap:12px;">
                 <span class="material-symbols-outlined header-icon">monitoring</span>
                 <div>
-                  <h3>Performance Scorecards & KPI History</h3>
-                  <p>Evaluation records, period metrics, and feedback</p>
+                  <h3>{{ 'user_details.kpi_title' | translate:'Performance Scorecards & KPI History' }}</h3>
+                  <p>{{ 'user_details.kpi_subtitle' | translate:'Evaluation records, period metrics, and feedback' }}</p>
                 </div>
               </div>
-              <a [routerLink]="['/admin/users/kpi/grade', userId]" class="btn btn-primary btn-sm">
+              <a [routerLink]="['/users/console/kpi/grade', userId]" class="btn btn-primary btn-sm">
                 <span class="material-symbols-outlined">assignment_turned_in</span>
-                <span>Grade Member</span>
+                <span>{{ 'user_details.btn_grade_kpi' | translate:'Grade Member' }}</span>
               </a>
             </div>
 
@@ -193,11 +291,11 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <table class="mini-table">
                   <thead>
                     <tr>
-                      <th>Metric</th>
-                      <th>Period</th>
-                      <th>Score</th>
-                      <th>Remarks</th>
-                      <th>Date</th>
+                      <th>{{ 'user_details.col_metric' | translate:'Metric' }}</th>
+                      <th>{{ 'user_details.col_period' | translate:'Period' }}</th>
+                      <th>{{ 'user_details.col_score' | translate:'Score' }}</th>
+                      <th>{{ 'user_details.col_remarks' | translate:'Remarks' }}</th>
+                      <th>{{ 'user_details.col_date' | translate:'Date' }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -209,7 +307,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                       <td class="date-cell">{{ k.recordedDate | date:'shortDate' }}</td>
                     </tr>
                     <tr *ngIf="!user.kpiScores?.length">
-                      <td colspan="5" class="empty-cell">No KPI evaluations recorded yet for this member.</td>
+                      <td colspan="5" class="empty-cell">{{ 'user_details.kpi_no_evals' | translate:'No KPI evaluations recorded yet for this member.' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -222,8 +320,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="card-header">
               <span class="material-symbols-outlined header-icon">security</span>
               <div>
-                <h3>Forensic Audit Trail & Security Logs</h3>
-                <p>Immutable log of authentication, password changes, and admin updates</p>
+                <h3>{{ 'user_details.audit_title' | translate:'Forensic Audit Trail & Security Logs' }}</h3>
+                <p>{{ 'user_details.audit_subtitle' | translate:'Immutable log of authentication, password changes, and admin updates' }}</p>
               </div>
             </div>
 
@@ -240,18 +338,18 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     <div class="log-meta" *ngIf="l.ipAddress">IP: {{ l.ipAddress }} • By: {{ l.performedByFullName || 'System' }}</div>
                   </div>
                 </div>
-                <div *ngIf="!user.logs?.length" class="empty-cell">No activity logs recorded.</div>
+                <div *ngIf="!user.logs?.length" class="empty-cell">{{ 'user_details.no_logs' | translate:'No activity logs recorded.' }}</div>
               </div>
             </div>
           </div>
 
-          <!-- 3. 6-Digit OTP Security & Password Provisioning Card (Moved to Bottom) -->
+          <!-- 3. 6-Digit OTP Security & Credentials Card (Moved to Bottom) -->
           <div class="dossier-card">
             <div class="card-header">
               <span class="material-symbols-outlined header-icon">key</span>
               <div>
-                <h3>6-Digit OTP Security & Credentials</h3>
-                <p>Generate one-time passcodes or reset passwords directly</p>
+                <h3>{{ 'user_details.otp_title' | translate:'6-Digit OTP Security & Credentials' }}</h3>
+                <p>{{ 'user_details.otp_subtitle' | translate:'Generate one-time passcodes or reset passwords directly' }}</p>
               </div>
             </div>
 
@@ -259,40 +357,40 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <!-- OTP Generation Section -->
               <div class="otp-action-panel">
                 <div class="otp-desc">
-                  <strong>6-Digit One-Time Activation Passcode (OTP)</strong>
-                  <p>Generate a secure 6-digit code valid for 15 minutes. Automatically queues to the member's email & SMS, or share directly.</p>
+                  <strong>{{ 'user_details.otp_section_title' | translate:'6-Digit One-Time Activation Passcode (OTP)' }}</strong>
+                  <p>{{ 'user_details.otp_section_desc' | translate:'Generate a secure 6-digit code valid for 15 minutes. Automatically queues to the member\'s email & SMS, or share directly.' }}</p>
                 </div>
 
                 <button type="button" class="btn btn-primary" (click)="generateOtp()" [disabled]="isGeneratingOtp">
                   <span class="material-symbols-outlined">pin</span>
-                  <span>{{ isGeneratingOtp ? 'Generating Code...' : 'Generate 6-Digit Reset OTP' }}</span>
+                  <span>{{ isGeneratingOtp ? ('user_details.generating_code' | translate:'Generating Code...') : ('user_details.btn_generate_otp' | translate:'Generate 6-Digit Reset OTP') }}</span>
                 </button>
               </div>
 
               <!-- Active Generated OTP Display -->
               <div class="generated-otp-display" *ngIf="activeOtp">
-                <div class="otp-badge-title">ACTIVE 6-DIGIT RECOVERY CODE (EXPIRES IN {{ activeOtpExpiry }} MIN)</div>
+                <div class="otp-badge-title">{{ 'user_details.active_code_title' | translate:'ACTIVE 6-DIGIT RECOVERY CODE (EXPIRES IN' }} {{ activeOtpExpiry }} {{ 'user_details.min_close' | translate:'MIN)' }}</div>
                 <div class="otp-code-box">
                   <span class="otp-number">{{ activeOtp }}</span>
                   <button type="button" class="btn-copy-otp" (click)="copyOtp(activeOtp)">
                     <span class="material-symbols-outlined">content_copy</span>
-                    <span>Copy OTP</span>
+                    <span>{{ 'user_details.copy_otp' | translate:'Copy OTP' }}</span>
                   </button>
                 </div>
-                <div class="otp-sub-hint">Dispatched to <strong>{{ user.email }}</strong> {{ user.phoneNumber ? 'and ' + user.phoneNumber : '' }}</div>
+                <div class="otp-sub-hint">{{ 'user_details.dispatched_to' | translate:'Dispatched to' }} <strong>{{ user.email }}</strong> {{ user.phoneNumber ? (('user_details.and' | translate:'and') + ' ' + user.phoneNumber) : '' }}</div>
               </div>
 
               <!-- Direct Temporary Password Setter -->
               <div class="direct-reset-box" style="margin-top: 18px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:8px;">Set New Password Directly (Admin Override)</label>
+                <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:8px;">{{ 'user_details.admin_override_title' | translate:'Set New Password Directly (Admin Override)' }}</label>
                 <div style="display:flex; gap:8px;">
                   <input type="text" [(ngModel)]="directNewPassword" placeholder="e.g. TempPass@2026" style="flex:1;" />
-                  <button type="button" class="btn btn-outline btn-sm" (click)="generateDirectRandomPassword()">Generate</button>
-                  <button type="button" class="btn btn-primary btn-sm" (click)="applyDirectPassword()" [disabled]="!directNewPassword.trim()">Apply</button>
+                  <button type="button" class="btn btn-outline btn-sm" (click)="generateDirectRandomPassword()">{{ 'user_details.generate' | translate:'Generate' }}</button>
+                  <button type="button" class="btn btn-primary btn-sm" (click)="applyDirectPassword()" [disabled]="!directNewPassword.trim()">{{ 'user_details.apply' | translate:'Apply' }}</button>
                 </div>
                 <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;">
                   <input type="checkbox" [(ngModel)]="sendEmailOnPasswordReset" />
-                  <span>Email temporary password & first-time sign in instructions to <strong>{{ user.email }}</strong></span>
+                  <span>{{ 'user_details.email_temp_pwd_desc' | translate:'Email temporary password & first-time sign in instructions to' }} <strong>{{ user.email }}</strong></span>
                 </label>
               </div>
             </div>
@@ -307,7 +405,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="otp-header-title">
               <span class="material-symbols-outlined modal-icon">{{ otpModalType === 'email' ? 'mark_email_read' : 'sms' }}</span>
               <div>
-                <h3>{{ otpModalType === 'email' ? 'Verify Email Address' : 'Verify Mobile Phone' }}</h3>
+                <h3>{{ otpModalType === 'email' ? ('user_details.verify_email' | translate:'Verify Email Address') : ('user_details.verify_phone' | translate:'Verify Mobile Phone') }}</h3>
                 <p>{{ otpModalType === 'email' ? user.email : user.phoneNumber }}</p>
               </div>
             </div>
@@ -318,7 +416,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
           <div class="otp-modal-body">
             <p class="otp-instruction">
-              Enter the 6-digit verification code sent to <strong>{{ otpModalType === 'email' ? user.email : user.phoneNumber }}</strong> to confirm identity.
+              {{ 'user_details.enter_otp_instruction' | translate:'Enter the 6-digit verification code sent to' }} <strong>{{ otpModalType === 'email' ? user.email : user.phoneNumber }}</strong> {{ 'user_details.to_confirm_id' | translate:'to confirm identity.' }}
             </p>
 
             <!-- 6 PIN Boxes -->
@@ -342,7 +440,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="otp-status-row">
               <div class="otp-timer">
                 <span class="material-symbols-outlined">schedule</span>
-                <span>Code expires in <strong>{{ formatCountdown(modalCountdownSeconds) }}</strong></span>
+                <span>{{ 'user_details.code_expires_in' | translate:'Code expires in' }} <strong>{{ formatCountdown(modalCountdownSeconds) }}</strong></span>
               </div>
               <button
                 type="button"
@@ -350,22 +448,22 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 [disabled]="resendCooldown > 0 || isSendingOtp"
                 (click)="resendCurrentOtp()"
               >
-                {{ resendCooldown > 0 ? 'Resend in ' + resendCooldown + 's' : (isSendingOtp ? 'Sending...' : 'Resend Code') }}
+                {{ resendCooldown > 0 ? (('user_details.resend_in' | translate:'Resend in') + ' ' + resendCooldown + 's') : (isSendingOtp ? ('user_details.sending' | translate:'Sending...') : ('user_details.resend_code' | translate:'Resend Code')) }}
               </button>
             </div>
 
             <!-- Admin Bypass Toggle Option -->
             <div class="admin-bypass-bar">
-              <span>Admin Override:</span>
+              <span>{{ 'user_details.admin_override' | translate:'Admin Override:' }}</span>
               <button type="button" class="btn-bypass-verify" (click)="quickAdminVerify(otpModalType, true)">
                 <span class="material-symbols-outlined">verified</span>
-                <span>Mark Verified Directly</span>
+                <span>{{ 'user_details.mark_verified_directly' | translate:'Mark Verified Directly' }}</span>
               </button>
             </div>
           </div>
 
           <div class="otp-modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeOtpModal()">Cancel</button>
+            <button type="button" class="btn btn-outline" (click)="closeOtpModal()">{{ 'user_details.btn_cancel' | translate:'Cancel' }}</button>
             <button
               type="button"
               class="btn btn-primary"
@@ -373,7 +471,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               [disabled]="isVerifyingOtp || getEnteredOtp().length !== 6"
             >
               <span class="material-symbols-outlined" *ngIf="!isVerifyingOtp">check_circle</span>
-              <span>{{ isVerifyingOtp ? 'Verifying...' : 'Confirm & Verify' }}</span>
+              <span>{{ isVerifyingOtp ? ('user_details.verifying' | translate:'Verifying...') : ('user_details.confirm_verify' | translate:'Confirm & Verify') }}</span>
             </button>
           </div>
         </div>
@@ -509,10 +607,76 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn-sm { height: 32px; padding: 0 12px; font-size: 11px; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { background: #0050e5 !important; color: #ffffff !important; opacity: 0.65; cursor: not-allowed; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
     .btn-danger { background: #dc2626; color: #ffffff; }
     .btn-danger:hover { background: #b91c1c; }
+
+    /* Role & Permissions Card */
+    .btn-permission-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef2f2 100%);
+      border: 1.5px solid #f87171;
+      border-radius: 9999px;
+      color: #991b1b;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.12);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-permission-action:hover {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: #ef4444;
+      color: #7f1d1d;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.22);
+      transform: translateY(-1px);
+    }
+    .btn-permission-action .icon-shield {
+      font-size: 17px;
+      color: #dc2626;
+    }
+    .btn-permission-action .btn-text {
+      letter-spacing: 0.01em;
+    }
+    .btn-permission-action .icon-arrow {
+      font-size: 15px;
+      color: #dc2626;
+      transition: transform 0.15s ease;
+    }
+    .btn-permission-action:hover .icon-arrow {
+      transform: translateX(3px);
+    }
+    .permission-view-mode { display: flex; flex-direction: column; gap: 10px; }
+    .role-display-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .role-badge-large { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .role-badge-large .material-symbols-outlined { font-size: 18px; }
+    .role-badge-large.badge-admin { background: #eff6ff; color: #0050e5; border-color: #93c5fd; }
+    .role-badge-large.badge-super { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .locked-root-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #b45309; background: #fffbeb; padding: 4px 8px; border-radius: 6px; border: 1px solid #fde68a; }
+    .locked-root-pill .material-symbols-outlined { font-size: 13px; }
+    .role-desc-text { font-size: 12.5px; color: #475569; margin: 0; line-height: 1.5; }
+    .feature-scope-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .feature-scope-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; }
+    .scope-badges-list { display: flex; gap: 6px; flex-wrap: wrap; }
+    .scope-pill { display: inline-flex; align-items: center; gap: 4px; background: #eff6ff; color: #0050e5; font-size: 11.5px; font-weight: 700; padding: 2px 10px; border-radius: 9999px; border: 1px solid #dbeafe; }
+    .scope-pill .material-symbols-outlined { font-size: 13px; }
+    .root-notice-box { display: flex; align-items: center; gap: 8px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #92400e; }
+    .root-notice-box .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
+    .form-group-role { display: flex; flex-direction: column; gap: 6px; }
+    .role-input-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; }
+    .role-select-box { height: 40px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; width: 100%; transition: border-color 0.15s; }
+    .role-select-box:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
 })
 export class UserDetailsComponent implements OnInit {
@@ -544,36 +708,138 @@ export class UserDetailsComponent implements OnInit {
   newNoteText = '';
   isPostingNote = false;
 
-  headerButtons: PageHeaderButton[] = [];
+  // Role & Permissions Management State
+  isEditingRole = false;
+  selectedRole = 'Member';
+  selectedFeatureArea = 'UserManager';
+  isSavingRole = false;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('user_details.btn_edit_profile', 'Edit Profile'),
+        icon: 'edit',
+        isPrimary: true,
+        routerLink: `/users/console/edit/${this.userId}`
+      },
+      {
+        text: this.translationService.translate('user_details.btn_back', 'Back to List'),
+        icon: 'arrow_back',
+        isPrimary: false,
+        routerLink: '/users/console/list'
+      }
+    ];
+  }
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private translationService: TranslationService
   ) {}
+
+  get currentRole(): string {
+    if (!this.user?.roles || this.user.roles.length === 0) return 'Member';
+    return this.user.roles[0];
+  }
+
+  get isCurrentRoleAdmin(): boolean {
+    return this.currentRole === 'Admin' || this.currentRole === 'SuperAdmin';
+  }
+
+  get isRootSuperAdmin(): boolean {
+    return this.currentRole === 'SuperAdmin';
+  }
+
+  getRoleIcon(role: string): string {
+    switch (role) {
+      case 'SuperAdmin': return 'military_tech';
+      case 'Admin': return 'admin_panel_settings';
+      case 'Global Editor': return 'edit_document';
+      case 'Feature Editor': return 'auto_stories';
+      case 'Read Only': return 'visibility';
+      default: return 'person';
+    }
+  }
+
+  getRoleDescription(role: string): string {
+    switch (role) {
+      case 'SuperAdmin':
+        return 'Highest level root authority with permanent, unrestricted control over master tenant configurations, key pools, and licensing.';
+      case 'Admin':
+        return 'Full workspace administrative access across user accounts, organization settings, templates, communications, and audit telemetry.';
+      case 'Global Editor':
+        return 'Broad content and operational privileges to create, edit, and publish tenant entities, website content, forms, and categories.';
+      case 'Feature Editor':
+        return 'Specialized management access restricted strictly to your workspace assigned modular capability scope.';
+      case 'Read Only':
+        return 'Inspection and audit view privileges across directory listings and reports without permission to modify system records.';
+      default:
+        return 'Standard membership access for directory self-service, workspace dashboard, personal profile, and designated portal modules.';
+    }
+  }
+
+  openRoleEditor(): void {
+    this.selectedRole = this.currentRole === 'SuperAdmin' ? 'Admin' : this.currentRole;
+    this.selectedFeatureArea = this.user?.assignedFeatureArea || 'UserManager';
+    this.isEditingRole = true;
+  }
+
+  cancelRoleEditor(): void {
+    this.isEditingRole = false;
+  }
+
+  onRoleSelectionChange(): void {
+    if (this.selectedRole === 'Feature Editor' && !this.selectedFeatureArea) {
+      this.selectedFeatureArea = 'UserManager';
+    }
+  }
+
+  saveRolePermission(): void {
+    if (!this.userId) return;
+    if (this.selectedRole === 'SuperAdmin') {
+      this.toast.error('The SuperAdmin role cannot be assigned.');
+      return;
+    }
+
+    this.isSavingRole = true;
+    const payload = {
+      userId: this.userId,
+      roleName: this.selectedRole,
+      featureArea: this.selectedRole === 'Feature Editor' ? this.selectedFeatureArea : null
+    };
+
+    this.api.post<any>('IdentityApi/roles/assign', payload).subscribe({
+      next: () => {
+        this.isSavingRole = false;
+        this.isEditingRole = false;
+        this.toast.success(`Role & permissions updated to '${this.selectedRole}' successfully!`);
+        if (this.user) {
+          this.user.roles = [this.selectedRole];
+          if (this.selectedRole === 'Feature Editor') {
+            this.user.assignedFeatureArea = this.selectedFeatureArea;
+          }
+        }
+      },
+      error: (err) => {
+        this.isSavingRole = false;
+        this.toast.error(err?.error?.message || 'Failed to update user role & permissions.');
+      }
+    });
+  }
+
+  sanitizeId(id: string): string {
+    if (!id) return '';
+    return id.replace(/[-]{2,}/g, '-').replace(/[/]{2,}/g, '/').replace(/[_]{2,}/g, '_');
+  }
 
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.userId) {
-      this.router.navigate(['/admin/users/list']);
+      this.router.navigate(['/users/console/list']);
       return;
     }
-
-    this.headerButtons = [
-      {
-        text: 'Edit Profile',
-        icon: 'edit',
-        isPrimary: true,
-        routerLink: `/admin/users/edit/${this.userId}`
-      },
-      {
-        text: 'Back to List',
-        icon: 'arrow_back',
-        isPrimary: false,
-        routerLink: '/admin/users/list'
-      }
-    ];
 
     this.loadDossier();
   }
@@ -584,11 +850,18 @@ export class UserDetailsComponent implements OnInit {
       next: (res) => {
         this.isLoading = false;
         this.user = res.data;
+        if (this.user) {
+          // Ensure suffix is attached to the full name if present and not already suffixed
+          const suffix = this.user.suffix;
+          if (suffix && !this.user.fullName?.toLowerCase().includes(suffix.toLowerCase())) {
+            this.user.fullName = `${this.user.fullName}, ${suffix}`.trim();
+          }
+        }
       },
       error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load member dossier.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       }
     });
   }
@@ -884,7 +1157,7 @@ export class UserDetailsComponent implements OnInit {
     this.api.delete<any>(`UsersApi/${this.userId}`).subscribe({
       next: () => {
         this.toast.success('Member account deleted permanently.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to delete member.');
@@ -894,11 +1167,18 @@ export class UserDetailsComponent implements OnInit {
 
   getInitials(name: string): string {
     if (!name) return 'U';
-    const parts = name.trim().split(' ');
+    // Clean out comma and suffix if present (e.g. "Dr. First Last, mni" -> "Dr. First Last")
+    const cleanName = name.split(',')[0].trim();
+    const parts = cleanName.split(/\s+/).filter(p => p.length > 0);
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      const titles = ['mr', 'mr.', 'mrs', 'mrs.', 'ms', 'ms.', 'dr', 'dr.', 'prof', 'prof.', 'chief', 'engr', 'engr.', 'barr', 'barr.', 'rev', 'rev.', 'pastor', 'hon', 'hon.'];
+      let firstIndex = 0;
+      if (titles.includes(parts[0].toLowerCase()) && parts.length >= 3) {
+        firstIndex = 1;
+      }
+      return (parts[firstIndex][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return cleanName.substring(0, 2).toUpperCase();
   }
 
   getGradient(name: string): string {

@@ -2,180 +2,216 @@
 @model Ozikol.Central.Areas.Centralwks.Pages.Features.DetailsModel
 @{
     ViewData["Title"] = Model.Feature.Name;
-    ViewData["BreadcrumbSection"] = "Features";
+    ViewData["BreadcrumbSection"] = "Platform Core";
 }
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <h1 class="admin-title">@Model.Feature.Name</h1>
-            @if (Model.Feature.IsActive)
-            {
-                <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
-            }
-            else
-            {
-                <span class="badge badge-danger"><span class="badge-dot"></span> Inactive</span>
-            }
-            @if (Model.Feature.IsCompulsory)
-            {
-                <span class="badge badge-indigo">Compulsory Core</span>
-            }
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; color: var(--admin-primary);">
+                <span class="material-symbols-outlined" style="font-size: 26px;">@(string.IsNullOrEmpty(Model.Feature.Icon) ? "extension" : Model.Feature.Icon)</span>
+            </div>
+            <div>
+                <h1 class="admin-title" style="margin: 0; font-size: 22px;">@Model.Feature.Name</h1>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+                    <span class="badge badge-neutral" style="font-size: 11.5px;">@Model.Feature.Category</span>
+                    <code style="font-size: 11.5px; padding: 2px 6px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: 4px; color: var(--admin-info);">@Model.Feature.FeatureCode</code>
+                    @if (Model.Feature.IsInBeta)
+                    {
+                        <span class="badge badge-warning" style="font-size: 11px;"><span class="badge-dot" style="background-color: var(--admin-warning);"></span> Under Maintenance</span>
+                    }
+                    else if (Model.Feature.IsActive)
+                    {
+                        <span class="badge badge-success" style="font-size: 11px;"><span class="badge-dot" style="background-color: var(--admin-success);"></span> Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-danger" style="font-size: 11px;"><span class="badge-dot" style="background-color: var(--admin-danger);"></span> Inactive</span>
+                    }
+                </div>
+            </div>
         </div>
-        <p class="admin-subtitle">Code: <code>@Model.Feature.FeatureCode</code> • Category: <strong>@Model.Feature.Category</strong></p>
     </div>
     <div class="admin-actions">
+        <a href="/centralwks/features" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            Back to Features
+        </a>
         <a href="/centralwks/features/edit?id=@Model.Id" class="btn-admin btn-admin-secondary">
-            <span>✏️</span> Edit
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+            Edit Feature &amp; Pricing
         </a>
         <form method="post" asp-page-handler="ToggleStatus" style="display: inline; margin: 0;">
             @Html.AntiForgeryToken()
-            <button type="submit" class="btn-admin @(Model.Feature.IsActive ? "btn-admin-danger" : "btn-admin-primary")" onclick="return confirm('Toggle status?');">
+            <button type="submit" class="btn-admin @(Model.Feature.IsActive ? "btn-admin-danger" : "btn-admin-primary")" onclick="return confirm('Toggle status for @Model.Feature.Name?');">
+                <span class="material-symbols-outlined" style="font-size: 16px;">@(Model.Feature.IsActive ? "block" : "check_circle")</span>
                 @(Model.Feature.IsActive ? "Deactivate" : "Activate")
             </button>
         </form>
     </div>
 </div>
 
-@* ── Specs & Pricing Grid ── *@
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
-    <div class="admin-card" style="margin: 0;">
-        <div class="admin-card-header" style="padding: 14px 20px;">
-            <h3 class="admin-card-title" style="font-size: 14px;">⚡ Technical Details</h3>
-        </div>
-        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
-            <div>
-                <span style="color: var(--admin-text-dim);">Workspace Route:</span>
-                <div style="font-weight: 600; color: var(--admin-info);">@(Model.Feature.RoutePrefix ?? "None")</div>
-            </div>
-            <div>
-                <span style="color: var(--admin-text-dim);">Icon:</span>
-                <div>@(Model.Feature.Icon ?? "Default")</div>
-            </div>
-            <div>
-                <span style="color: var(--admin-text-dim);">Description:</span>
-                <div style="color: var(--admin-text-muted);">@(Model.Feature.Description ?? "No description provided.")</div>
-            </div>
-        </div>
-    </div>
+@* ── Dynamic Pricing & Specifications Grid ── *@
+<div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; margin-bottom: 24px;">
 
+    @* ── Pricing Matrix Card ── *@
     <div class="admin-card" style="margin: 0;">
-        <div class="admin-card-header" style="padding: 14px 20px;">
-            <h3 class="admin-card-title" style="font-size: 14px;">💰 Pricing Matrix</h3>
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-success);">payments</span>
+                <h2 class="admin-card-title" style="font-size: 15px;">Pricing &amp; Commercial Terms</h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-primary);">location_on</span>
+                <span>Detected: <strong>@Model.ActiveCurrency.DisplayName (@Model.ResolvedCurrency)</strong></span>
+            </div>
         </div>
-        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
-            <div>
-                <span style="color: var(--admin-text-dim);">Billing Model:</span>
-                <div style="font-weight: 600;">@Model.Feature.BillingType</div>
-            </div>
-            <div>
-                <span style="color: var(--admin-text-dim);">Monthly / Quarterly / Yearly:</span>
-                <div style="font-weight: 600; color: var(--admin-success);">
-                    $@Model.Feature.MonthlyPrice.ToString("N2") / $@Model.Feature.QuarterlyPrice.ToString("N2") / $@Model.Feature.YearlyPrice.ToString("N2")
-                </div>
-            </div>
-            @if (Model.Feature.IsMetered)
+        <div class="admin-card-body" style="padding: 20px;">
+            @if (Model.IsFreeIncluded)
             {
-                <div>
-                    <span style="color: var(--admin-text-dim);">Metered Usage:</span>
-                    <div style="color: var(--admin-warning);">
-                        +$@Model.Feature.MeterUnitPrice.ToString("0.0000") per @Model.Feature.MeterBlockSize @Model.Feature.MeterUnitName
+                <div style="padding: 24px; background: rgba(34, 197, 94, 0.08); border: 1px dashed var(--admin-success); border-radius: var(--radius-md); text-align: center;">
+                    <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(34, 197, 94, 0.15); color: var(--admin-success); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">verified</span>
                     </div>
+                    <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-success); margin: 0 0 4px;">Included Free with Base Platform License</h3>
+                    <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0;">
+                        This capability is part of the complimentary platform tier. Activated automatically for all subscribed tenants at no charge ($0 / ₦0 / £0).
+                    </p>
                 </div>
             }
-        </div>
-    </div>
-
-    <div class="admin-card" style="margin: 0;">
-        <div class="admin-card-header" style="padding: 14px 20px;">
-            <h3 class="admin-card-title" style="font-size: 14px;">👥 Fleet Adoption</h3>
-        </div>
-        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
-            <div>
-                <span style="color: var(--admin-text-dim);">Active Subscribed Tenants:</span>
-                <div style="font-weight: 700; color: var(--admin-text); font-size: 20px;">
-                    @Model.Subscriptions.Count(s => s.IsActive)
-                </div>
-            </div>
-            <div>
-                <span style="color: var(--admin-text-dim);">Total Subscriptions (incl. expired):</span>
-                <div>@Model.Subscriptions.Count</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ── Subscribed Tenants Table ── *@
-<div class="admin-card">
-    <div class="admin-card-header">
-        <h2 class="admin-card-title">🏢 Tenants Subscribed to @Model.Feature.Name</h2>
-    </div>
-    <div class="table-responsive">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Organization</th>
-                    <th>Subdomain Key</th>
-                    <th>Cadence</th>
-                    <th>Price Charged</th>
-                    <th>Activated UTC</th>
-                    <th>Expires UTC</th>
-                    <th>Status</th>
-                    <th style="text-align: right;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.Subscriptions.Any())
+            else
+            {
+                @if (Model.IsMonthlyBilled)
                 {
-                    @foreach (var sub in Model.Subscriptions)
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        @* Monthly Rate *@
+                        <div style="padding: 16px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md);">
+                            <div style="font-size: 11.5px; color: var(--admin-text-dim); text-transform: uppercase; font-weight: 600; letter-spacing: 0.03em;">Monthly Billing Rate</div>
+                            <div style="font-size: 24px; font-weight: 800; color: var(--admin-text); margin-top: 6px;">
+                                @Model.FormattedMonthlyPrice
+                                <span style="font-size: 13px; font-weight: 400; color: var(--admin-text-muted);">/ month</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 4px;">
+                                Base rate: $@Model.Feature.MonthlyPrice.ToString("N2") USD / mo
+                            </div>
+                        </div>
+
+                        @* Yearly Rate with Discount *@
+                        <div style="padding: 16px; background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); position: relative; overflow: hidden;">
+                            @if (Model.AnnualDiscountPercentage > 0)
+                            {
+                                <div style="position: absolute; top: 10px; right: 10px;">
+                                    <span class="badge badge-success" style="font-size: 11px; font-weight: 700;">Save @Model.AnnualDiscountPercentage%</span>
+                                </div>
+                            }
+                            <div style="font-size: 11.5px; color: var(--admin-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.03em;">Yearly Billing Rate</div>
+                            <div style="font-size: 24px; font-weight: 800; color: var(--admin-primary); margin-top: 6px;">
+                                @Model.FormattedYearlyPrice
+                                <span style="font-size: 13px; font-weight: 400; color: var(--admin-text-muted);">/ year</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: var(--admin-success); margin-top: 4px; font-weight: 600;">
+                                @if (Model.AnnualDiscountPercentage > 0)
+                                {
+                                    <span>Saves @Model.FormattedAnnualSavings vs monthly</span>
+                                }
+                                else
+                                {
+                                    <span>Base rate: $@Model.Feature.YearlyPrice.ToString("N2") USD / yr</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Quarterly Reference *@
+                    @if (Model.Feature.QuarterlyPrice > 0)
                     {
-                        <tr>
-                            <td>
-                                <strong style="color: var(--admin-text);">@(sub.MasterTenantCatalog?.OrganizationName ?? "Tenant")</strong>
-                            </td>
-                            <td>
-                                <code>@(sub.MasterTenantCatalog?.TenantKey ?? "—")</code>
-                            </td>
-                            <td>@sub.DurationType</td>
-                            <td>
-                                @if (sub.CustomPriceOverride.HasValue)
-                                {
-                                    <span>$@sub.CustomPriceOverride.Value.ToString("N2") <small>(Override)</small></span>
-                                }
-                                else
-                                {
-                                    <span>$@sub.RecurringPrice.ToString("N2")</span>
-                                }
-                            </td>
-                            <td style="font-size: 12px; color: var(--admin-text-muted);">@sub.StartsAtUtc.ToString("MMM dd, yyyy")</td>
-                            <td style="font-size: 12px; color: var(--admin-text-muted);">@sub.ExpiresAtUtc.ToString("MMM dd, yyyy")</td>
-                            <td>
-                                @if (sub.IsActive)
-                                {
-                                    <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-danger"><span class="badge-dot"></span> @sub.Status</span>
-                                }
-                            </td>
-                            <td style="text-align: right;">
-                                <a href="/centralwks/tenants/details?id=@sub.MasterTenantCatalogId" class="btn-admin btn-admin-secondary btn-admin-sm">
-                                    View Tenant →
-                                </a>
-                            </td>
-                        </tr>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--admin-bg-surface-elevated); border-radius: var(--radius-sm); border: 1px solid var(--admin-border); margin-bottom: 14px; font-size: 12.5px;">
+                            <span style="color: var(--admin-text-muted);">Quarterly Billing Option (~10% discount):</span>
+                            <span style="font-weight: 700; color: var(--admin-text);">@Model.FormattedQuarterlyPrice <span style="font-weight: 400; font-size: 11px; color: var(--admin-text-muted);">/ quarter ($@Model.Feature.QuarterlyPrice.ToString("N2") USD)</span></span>
+                        </div>
                     }
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 28px; color: var(--admin-text-muted);">
-                            No tenants currently subscribed to this capability.
-                        </td>
-                    </tr>
+                    @* Yearly Only Feature *@
+                    <div style="padding: 20px; background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); margin-bottom: 16px; position: relative;">
+                        <div style="font-size: 11.5px; color: var(--admin-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.03em;">Subscription Cadence: Yearly Fixed Price</div>
+                        <div style="font-size: 28px; font-weight: 800; color: var(--admin-text); margin-top: 6px;">
+                            @Model.FormattedYearlyPrice
+                            <span style="font-size: 14px; font-weight: 400; color: var(--admin-text-muted);">/ year</span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--admin-text-dim); margin-top: 4px;">
+                            Base USD Rate: <strong>$@Model.Feature.YearlyPrice.ToString("N2") USD / year</strong> (Monthly billing disabled)
+                        </div>
+                    </div>
                 }
-            </tbody>
-        </table>
+
+                @* Metered Unit Charge *@
+                @if (Model.Feature.IsMetered)
+                {
+                    <div style="padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-md); margin-top: 10px;">
+                        <div style="display: flex; align-items: center; gap: 6px; color: var(--admin-warning); font-weight: 700; font-size: 13px; margin-bottom: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">speed</span>
+                            Metered Pay-As-You-Go Overages
+                        </div>
+                        <div style="font-size: 13px; color: var(--admin-text);">
+                            <strong>+@Model.FormattedMeterUnitPrice</strong> per <strong>@Model.Feature.MeterBlockSize @(Model.Feature.MeterUnitName ?? "unit")</strong>
+                            <span style="font-size: 11.5px; color: var(--admin-text-dim);">($@Model.Feature.MeterUnitPrice.ToString("0.0000") USD)</span>
+                        </div>
+                        @if (Model.Feature.IncludedFreeUnits > 0)
+                        {
+                            <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">
+                                Includes <strong>@Model.Feature.IncludedFreeUnits.ToString("N0") free units</strong> per billing month before overage rates apply.
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    @* ── Technical Specifications Card ── *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-info);">info</span>
+                <h2 class="admin-card-title" style="font-size: 15px;">Feature Specifications</h2>
+            </div>
+        </div>
+        <div class="admin-card-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim); font-size: 11.5px; text-transform: uppercase; font-weight: 600;">Description</span>
+                <div style="color: var(--admin-text); margin-top: 4px; line-height: 1.5;">
+                    @(string.IsNullOrEmpty(Model.Feature.Description) ? "No detailed description provided." : Model.Feature.Description)
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--admin-border); padding-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 11.5px; text-transform: uppercase; font-weight: 600;">Feature Suite</span>
+                    <div style="font-weight: 600; color: var(--admin-text); margin-top: 2px;">@Model.Feature.Category</div>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 11.5px; text-transform: uppercase; font-weight: 600;">Billing Model</span>
+                    <div style="font-weight: 600; color: var(--admin-text); margin-top: 2px;">@Model.Feature.BillingType</div>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--admin-border); padding-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 11.5px; text-transform: uppercase; font-weight: 600;">Sort Order</span>
+                    <div style="font-weight: 600; color: var(--admin-text); margin-top: 2px;">
+                        #@Model.Feature.SortOrder
+                    </div>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 11.5px; text-transform: uppercase; font-weight: 600;">Status</span>
+                    <div style="font-weight: 600; color: var(--admin-text); margin-top: 2px;">
+                        @(Model.Feature.IsInBeta ? "Under Maintenance" : (Model.Feature.IsActive ? "Active" : "Inactive"))
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+

@@ -361,3 +361,41 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Temporary scratch and build verify folders
+scratch/
+.build_verify/
+
+
+# Hardened Public Repo Ignore Rules (.env secrets & build/scratch clutter)
+.verify-build/
+.system_scratch/
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+/*.dll
+/*.pdb
+/*.exe
+/appsettings*.json
+/web.config
+/cs/
+/de/
+/en/
+/es/
+/fr/
+/it/
+/ja/
+/ko/
+/pl/
+/pt-BR/
+/ru/
+/tr/
+/zh-Hans/
+/zh-Hant/
+/runtimes/
+
+.secrets/
+*.ini

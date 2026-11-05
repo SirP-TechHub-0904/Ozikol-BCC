@@ -89,6 +89,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
                     ? $"{cleanCode} ({Input.CurrencySymbol.Trim()})" 
                     : Input.PillLabel.Trim(),
                 RateFromUsd = Input.RateFromUsd,
+                VatPercentage = Input.VatPercentage.HasValue && Input.VatPercentage.Value > 0m ? Math.Round(Math.Min(100m, Input.VatPercentage.Value), 2) : 0m,
                 IsBaseCurrency = Input.IsBaseCurrency,
                 IsActive = Input.IsActive,
                 SortOrder = Input.SortOrder,
@@ -157,6 +158,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             [Range(0.000001, 10000000.0, ErrorMessage = "Rate must be greater than zero.")]
             [Display(Name = "Exchange Rate from USD")]
             public decimal RateFromUsd { get; set; } = 1.0m;
+
+            /// <summary>
+            /// Optional Value Added Tax (VAT) percentage applied to billing invoices in this currency.
+            /// </summary>
+            [Range(0.0, 100.0, ErrorMessage = "VAT percentage must be between 0 and 100.")]
+            [Display(Name = "VAT Percentage (%)")]
+            public decimal? VatPercentage { get; set; }
 
             /// <summary>
             /// Indicates whether this currency is the global base pricing reference.

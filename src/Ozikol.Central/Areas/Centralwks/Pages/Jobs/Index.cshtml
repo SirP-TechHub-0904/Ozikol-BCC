@@ -1,0 +1,357 @@
+@page "/centralwks/jobs"
+@model Ozikol.Central.Areas.Centralwks.Pages.Jobs.IndexModel
+@{
+    ViewData["Title"] = "Background Jobs Command Center";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 28px; color: var(--admin-primary);">schedule</span>
+            Background Jobs Command Center
+        </h1>
+        <p class="admin-subtitle">Orchestrate, monitor, trigger, and inspect background automation tasks across Central and Tenant environments.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/jobs/create" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+            Add Background Job
+        </a>
+    </div>
+</div>
+
+@* ── KPI Summary Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px; gap: 16px;">
+    <div class="stat-card" style="padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Registered Jobs</span>
+            <div class="stat-icon-wrapper" style="width: 36px; height: 36px; background: rgba(99, 102, 241, 0.15); color: #6366f1;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">layers</span>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size: 26px;">@Model.TotalJobsCount</div>
+        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">@Model.ActiveJobsCount active / scheduled</div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Central System Jobs</span>
+            <div class="stat-icon-wrapper" style="width: 36px; height: 36px; background: rgba(37, 99, 235, 0.15); color: #2563eb;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">hub</span>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size: 26px; color: #2563eb;">@Model.CentralJobsCount</div>
+        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">Platform-wide workers</div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Tenant Project Jobs</span>
+            <div class="stat-icon-wrapper" style="width: 36px; height: 36px; background: rgba(5, 150, 105, 0.15); color: #059669;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">apartment</span>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size: 26px; color: #059669;">@Model.TenantJobsCount</div>
+        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">Client tenant tasks</div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Runs in Last 24h</span>
+            <div class="stat-icon-wrapper" style="width: 36px; height: 36px; background: rgba(2, 132, 199, 0.15); color: #0284c7;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">history</span>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size: 26px;">@Model.Executions24hCount</div>
+        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">Automated executions</div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">24h Failure Count</span>
+            <div class="stat-icon-wrapper" style="width: 36px; height: 36px; background: @(Model.Failed24hCount > 0 ? "rgba(220, 38, 38, 0.15)" : "rgba(16, 185, 129, 0.15)"); color: @(Model.Failed24hCount > 0 ? "#dc2626" : "#10b981");">
+                <span class="material-symbols-outlined" style="font-size: 20px;">
+                    @(Model.Failed24hCount > 0 ? "error" : "check_circle")
+                </span>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size: 26px; color: @(Model.Failed24hCount > 0 ? "#dc2626" : "#10b981");">@Model.Failed24hCount</div>
+        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">@(Model.Failed24hCount == 0 ? "All runs healthy" : "Requires attention")</div>
+    </div>
+</div>
+
+@* ── Filters & Tabs ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+        @* Scope Tabs *@
+        <div style="display: inline-flex; gap: 6px; padding: 4px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); flex-wrap: wrap;">
+            <a href="/centralwks/jobs?scopeFilter=all&statusFilter=@Model.StatusFilter&query=@Model.Query" 
+               class="btn-admin @(Model.ScopeFilter == "all" ? "btn-admin-primary" : "btn-admin-secondary")" 
+               style="font-size: 12.5px; padding: 6px 14px; text-decoration: none; border: none;">
+                All Jobs (@Model.TotalJobsCount)
+            </a>
+            <a href="/centralwks/jobs?scopeFilter=central&statusFilter=@Model.StatusFilter&query=@Model.Query" 
+               class="btn-admin @(Model.ScopeFilter == "central" ? "btn-admin-primary" : "btn-admin-secondary")" 
+               style="font-size: 12.5px; padding: 6px 14px; text-decoration: none; border: none;">
+                Central System Jobs (@Model.CentralJobsCount)
+            </a>
+            <a href="/centralwks/jobs?scopeFilter=tenant&statusFilter=@Model.StatusFilter&query=@Model.Query" 
+               class="btn-admin @(Model.ScopeFilter == "tenant" ? "btn-admin-primary" : "btn-admin-secondary")" 
+               style="font-size: 12.5px; padding: 6px 14px; text-decoration: none; border: none;">
+                Tenant Project Jobs (@Model.TenantJobsCount)
+            </a>
+        </div>
+
+        @* Search & Status Filter Form *@
+        <form method="get" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0;">
+            <input type="hidden" name="scopeFilter" value="@Model.ScopeFilter" />
+            
+            <select name="statusFilter" onchange="this.form.submit()" class="form-select" style="font-size: 12.5px; padding: 7px 12px; border-radius: var(--radius-md); background: var(--admin-bg-surface); color: var(--admin-text); border: 1px solid var(--admin-border); font-weight: 600;">
+                <option value="all" selected="@(Model.StatusFilter == "all")">All Statuses</option>
+                <option value="active" selected="@(Model.StatusFilter == "active")">Active Only</option>
+                <option value="paused" selected="@(Model.StatusFilter == "paused")">Paused Only</option>
+                <option value="failed" selected="@(Model.StatusFilter == "failed")">Failed Only</option>
+            </select>
+
+            <div style="position: relative;">
+                <input type="text" name="query" value="@Model.Query" placeholder="Search by job name, key..." class="form-control"
+                       style="font-size: 12.5px; padding: 7px 12px 7px 34px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); width: 220px;" />
+                <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--admin-text-muted);">search</span>
+            </div>
+
+            <button type="submit" class="btn-admin btn-admin-secondary" style="font-size: 12.5px; padding: 7px 16px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_list</span>
+                Filter
+            </button>
+            @if (!string.IsNullOrWhiteSpace(Model.Query) || Model.StatusFilter != "all" || Model.ScopeFilter != "all")
+            {
+                <a href="/centralwks/jobs" class="btn-admin btn-admin-secondary" style="padding: 7px 10px; font-size: 12.5px;" title="Clear filters">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                </a>
+            }
+        </form>
+    </div>
+</div>
+
+@* ── Jobs Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+    @if (Model.Jobs.Count == 0)
+    {
+        <div style="text-align: center; padding: 56px 24px;">
+            <div style="width: 56px; height: 56px; margin: 0 auto 16px; border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined" style="font-size: 28px;">hourglass_empty</span>
+            </div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin: 0 0 6px 0;">No Background Jobs Found</h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 20px;">No background jobs match the selected filter criteria.</p>
+            <a href="/centralwks/jobs/create" class="btn-admin btn-admin-primary" style="font-size: 13px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+                Register New Job
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="admin-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: var(--admin-bg-surface-elevated); border-bottom: 1px solid var(--admin-border); font-size: 12px; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 14px 18px;">Job / Key</th>
+                        <th style="padding: 14px 18px;">Scope &amp; Target</th>
+                        <th style="padding: 14px 18px;">Schedule</th>
+                        <th style="padding: 14px 18px;">Last Run &amp; Duration</th>
+                        <th style="padding: 14px 18px;">Next Run</th>
+                        <th style="padding: 14px 18px; text-align: center;">Status</th>
+                        <th style="padding: 14px 18px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: 13px; color: var(--admin-text);">
+                    @foreach (var job in Model.Jobs)
+                    {
+                        var isTenantScope = job.Scope == Ozikol.MasterDomain.Models.BackgroundJobScope.Tenant;
+                        var isPaused = !job.IsEnabled || job.Status == Ozikol.MasterDomain.Models.BackgroundJobStatus.Paused;
+                        var isRunning = job.Status == Ozikol.MasterDomain.Models.BackgroundJobStatus.Running;
+                        var isFailed = job.Status == Ozikol.MasterDomain.Models.BackgroundJobStatus.Failed;
+
+                        <tr style="border-bottom: 1px solid var(--admin-border); transition: var(--transition);">
+                            @* Job Name & Key *@
+                            <td style="padding: 16px 18px;">
+                                <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;">
+                                    <a href="/centralwks/jobs/details?jobId=@job.Id" style="color: var(--admin-text); text-decoration: none;">
+                                        @job.Name
+                                    </a>
+                                </div>
+                                <div style="font-size: 11px; font-family: monospace; color: var(--admin-text-muted); margin-top: 2px;">@job.JobKey</div>
+                                @if (!string.IsNullOrWhiteSpace(job.Description))
+                                {
+                                    <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@job.Description">
+                                        @job.Description
+                                    </div>
+                                }
+                            </td>
+
+                            @* Scope & Target *@
+                            <td style="padding: 16px 18px;">
+                                @if (isTenantScope)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #059669; background: rgba(5, 150, 105, 0.12); border: 1px solid rgba(5, 150, 105, 0.25); padding: 3px 8px; border-radius: 6px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">apartment</span>
+                                        Tenant Job
+                                    </span>
+                                    <div style="font-size: 12px; color: var(--admin-text); margin-top: 4px; font-weight: 600;">
+                                        @(job.TargetTenantCatalog != null ? job.TargetTenantCatalog.OrganizationName : "All Active Tenants")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.25); padding: 3px 8px; border-radius: 6px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">hub</span>
+                                        Central Platform
+                                    </span>
+                                    <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">@job.Category</div>
+                                }
+                            </td>
+
+                            @* Schedule *@
+                            <td style="padding: 16px 18px;">
+                                <div style="font-weight: 600; color: var(--admin-text); font-size: 12.5px;">
+                                    @if (!string.IsNullOrWhiteSpace(job.ScheduleCron))
+                                    {
+                                        <span>Cron: <code>@job.ScheduleCron</code></span>
+                                    }
+                                    else if (job.IntervalSeconds >= 86400)
+                                    {
+                                        <span>Daily (@(job.IntervalSeconds / 86400)d)</span>
+                                    }
+                                    else if (job.IntervalSeconds >= 3600)
+                                    {
+                                        <span>Every @(job.IntervalSeconds / 3600) hr@(job.IntervalSeconds >= 7200 ? "s" : "")</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Every @(job.IntervalSeconds / 60) min@(job.IntervalSeconds >= 120 ? "s" : "")</span>
+                                    }
+                                </div>
+                                <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 2px;">
+                                    @(job.IsEnabled ? "Automated" : "Manual Only")
+                                </div>
+                            </td>
+
+                            @* Last Run & Duration *@
+                            <td style="padding: 16px 18px;">
+                                @if (job.LastRunUtc.HasValue)
+                                {
+                                    <div style="font-weight: 600; color: var(--admin-text); font-size: 12px;">
+                                        @job.LastRunUtc.Value.ToString("MMM dd, yyyy HH:mm") UTC
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
+                                        <span style="font-size: 11px; font-family: monospace; color: var(--admin-text-muted); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); padding: 1px 6px; border-radius: 4px;">
+                                            @(job.LastDurationMs)ms
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(job.LastResultSummary))
+                                        {
+                                            <span style="font-size: 11.5px; color: var(--admin-text-muted); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@job.LastResultSummary">
+                                                @job.LastResultSummary
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 12px; color: var(--admin-text-muted); font-style: italic;">Never executed</span>
+                                }
+                            </td>
+
+                            @* Next Run *@
+                            <td style="padding: 16px 18px;">
+                                @if (job.IsEnabled && job.NextRunUtc.HasValue)
+                                {
+                                    var remaining = job.NextRunUtc.Value - DateTime.UtcNow;
+                                    <div style="font-size: 12.5px; font-weight: 600; color: var(--admin-text);">
+                                        @job.NextRunUtc.Value.ToString("MMM dd HH:mm") UTC
+                                    </div>
+                                    <div style="font-size: 11px; color: @(remaining.TotalSeconds < 0 ? "var(--admin-danger)" : "#2563eb"); font-weight: 600; margin-top: 2px;">
+                                        @(remaining.TotalSeconds <= 0 ? "Due now" : $"in {(int)remaining.TotalMinutes}m")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 12px; color: var(--admin-text-muted);">—</span>
+                                }
+                            </td>
+
+                            @* Status Badge *@
+                            <td style="padding: 16px 18px; text-align: center;">
+                                @if (isRunning)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.3); padding: 4px 10px; border-radius: 9999px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px; animation: spin 1.5s linear infinite;">sync</span>
+                                        Running
+                                    </span>
+                                }
+                                else if (isFailed)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--admin-danger); background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.3); padding: 4px 10px; border-radius: 9999px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">error</span>
+                                        Failed
+                                    </span>
+                                }
+                                else if (isPaused)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #d97706; background: rgba(217, 119, 6, 0.12); border: 1px solid rgba(217, 119, 6, 0.3); padding: 4px 10px; border-radius: 9999px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">pause_circle</span>
+                                        Paused
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #059669; background: rgba(5, 150, 105, 0.12); border: 1px solid rgba(5, 150, 105, 0.3); padding: 4px 10px; border-radius: 9999px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                                        Active
+                                    </span>
+                                }
+                            </td>
+
+                            @* Actions *@
+                            <td style="padding: 16px 18px; text-align: right;">
+                                <div style="display: inline-flex; align-items: center; gap: 8px;">
+                                    @* Run Now Form *@
+                                    <form method="post" asp-page-handler="RunNow" style="margin: 0;">
+                                        <input type="hidden" name="id" value="@job.Id" />
+                                        <button type="submit" class="btn-admin btn-admin-primary" title="Trigger immediate execution" style="padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span>
+                                            Run Now
+                                        </button>
+                                    </form>
+
+                                    @* Pause / Resume Form *@
+                                    <form method="post" asp-page-handler="ToggleState" style="margin: 0;">
+                                        <input type="hidden" name="id" value="@job.Id" />
+                                        <input type="hidden" name="enable" value="@(!job.IsEnabled ? "true" : "false")" />
+                                        <button type="submit" class="btn-admin btn-admin-secondary" title="@(job.IsEnabled ? "Pause automated schedule" : "Resume automated schedule")" style="padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center;">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: @(job.IsEnabled ? "#d97706" : "#059669");">
+                                                @(job.IsEnabled ? "pause" : "play_arrow")
+                                            </span>
+                                        </button>
+                                    </form>
+
+                                    @* Details link *@
+                                    <a href="/centralwks/jobs/details?jobId=@job.Id" class="btn-admin btn-admin-secondary" title="View execution logs & history" style="padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center; text-decoration: none;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-muted);">history</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>

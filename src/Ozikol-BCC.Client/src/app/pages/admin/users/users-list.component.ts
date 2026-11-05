@@ -6,19 +6,21 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ExportService, ExportColumn } from '../../../core/services/export.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 @Component({
   selector: 'app-users-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="users-list-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="USER MANAGEMENT & DIRECTORY"
+        [eyebrow]="'directory.eyebrow' | translate:'USER MANAGEMENT & DIRECTORY'"
         icon="groups"
-        title="Member Directory & Register"
-        subtitle="Search, filter, paginate, and export official membership rolls across organizational category tiers."
+        [title]="'directory.title' | translate:'Member Directory & Register'"
+        [subtitle]="'directory.description' | translate:'Search, filter, paginate, and export official membership rolls across organizational category tiers.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -28,14 +30,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <div class="filter-grid-row">
           <!-- 1. Search Box -->
           <div class="filter-group">
-            <label>Search Members</label>
+            <label>{{ 'directory.search_members' | translate:'Search Members' }}</label>
             <div class="search-input-wrap">
               <span class="material-symbols-outlined search-icon">search</span>
               <input
                 type="text"
                 [(ngModel)]="searchQuery"
                 (ngModelChange)="applyFilters()"
-                placeholder="Search by name, email, ID, or category..."
+                [placeholder]="'directory.search_placeholder' | translate:'Search by name, email, ID, or category...'"
               />
               <button *ngIf="searchQuery" (click)="searchQuery=''; applyFilters()" class="clear-btn">
                 <span class="material-symbols-outlined">close</span>
@@ -45,41 +47,41 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
           <!-- 2. Category Filter -->
           <div class="filter-group">
-            <label>Category Tier</label>
+            <label>{{ 'directory.category_tier' | translate:'Category Tier' }}</label>
             <select [(ngModel)]="selectedCategoryFilter" (change)="applyFilters()">
-              <option value="">All Categories</option>
+              <option value="">{{ 'directory.all_categories' | translate:'All Categories' }}</option>
               <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
             </select>
           </div>
 
           <!-- 3. Role Filter -->
           <div class="filter-group">
-            <label>Assigned Role</label>
+            <label>{{ 'directory.assigned_role' | translate:'Assigned Role' }}</label>
             <select [(ngModel)]="selectedRoleFilter" (change)="applyFilters()">
-              <option value="All">All Roles</option>
-              <option value="SuperAdmin">SuperAdmin</option>
+              <option value="All">{{ 'directory.all_roles' | translate:'All Roles' }}</option>
               <option value="Admin">Admin</option>
-              <option value="Editor">Editor</option>
-              <option value="Moderator">Moderator</option>
+              <option value="Global Editor">Global Editor</option>
+              <option value="Feature Editor">Feature Editor</option>
+              <option value="Read Only">Read Only</option>
               <option value="Member">Member</option>
             </select>
           </div>
 
           <!-- 4. Status Filter -->
           <div class="filter-group">
-            <label>Account Status</label>
+            <label>{{ 'directory.account_status' | translate:'Account Status' }}</label>
             <select [(ngModel)]="selectedStatusFilter" (change)="applyFilters()">
-              <option value="All">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Suspended">Suspended</option>
+              <option value="All">{{ 'directory.all_statuses' | translate:'All Statuses' }}</option>
+              <option value="Active">{{ 'user_cat.badge_active' | translate:'Active' }}</option>
+              <option value="Suspended">{{ 'dashboard.suspended' | translate:'Suspended' }}</option>
             </select>
           </div>
 
           <!-- 5. Reset Button -->
           <div class="filter-group reset-group">
-            <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()" title="Reset Filters">
+            <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()" [title]="'directory.reset' | translate:'Reset'">
               <span class="material-symbols-outlined">restart_alt</span>
-              <span>Reset</span>
+              <span>{{ 'directory.reset' | translate:'Reset' }}</span>
             </button>
           </div>
         </div>
@@ -87,30 +89,30 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <!-- Quick Info & Export Actions -->
         <div class="export-row">
           <div class="export-info">
-            <span>Showing <strong>{{ paginatedUsers.length }}</strong> of <strong>{{ filteredUsers.length }}</strong> filtered members (Total: {{ users.length }})</span>
+            <span>{{ 'directory.showing' | translate:'Showing' }} <strong>{{ paginatedUsers.length }}</strong> {{ 'directory.of' | translate:'of' }} <strong>{{ filteredUsers.length }}</strong> {{ 'directory.filtered_members' | translate:'filtered members (Total:' }} {{ users.length }})</span>
           </div>
 
           <div class="export-buttons">
-            <button type="button" class="btn-export" (click)="exportPdf()" title="Export PDF Document">
+            <button type="button" class="btn-export" (click)="exportPdf()" [title]="'directory.export_pdf' | translate:'Export PDF Document'">
               <span class="material-symbols-outlined">picture_as_pdf</span>
-              <span>PDF</span>
+              <span>{{ 'directory.export_pdf' | translate:'PDF' }}</span>
             </button>
 
-            <button type="button" class="btn-export" (click)="exportExcel()" title="Export Excel Spreadsheet">
+            <button type="button" class="btn-export" (click)="exportExcel()" [title]="'directory.export_excel' | translate:'Export Excel Spreadsheet'">
               <span class="material-symbols-outlined">table_view</span>
-              <span>Excel</span>
+              <span>{{ 'directory.export_excel' | translate:'Excel' }}</span>
             </button>
 
-            <button type="button" class="btn-export" (click)="exportWord()" title="Export Word Document">
+            <button type="button" class="btn-export" (click)="exportWord()" [title]="'directory.export_word' | translate:'Export Word Document'">
               <span class="material-symbols-outlined">description</span>
-              <span>Word</span>
+              <span>{{ 'directory.export_word' | translate:'Word' }}</span>
             </button>
 
             <!-- Category Export Menu -->
             <div class="category-export-dropdown">
               <button type="button" class="btn-export" (click)="showCategoryExportMenu = !showCategoryExportMenu">
                 <span class="material-symbols-outlined">category</span>
-                <span>Export Category</span>
+                <span>{{ 'directory.export_category' | translate:'Export Category' }}</span>
                 <span class="material-symbols-outlined">expand_more</span>
               </button>
               <div class="dropdown-menu" *ngIf="showCategoryExportMenu" (mouseleave)="showCategoryExportMenu = false">
@@ -119,7 +121,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <span>{{ cat.name }}</span>
                 </a>
                 <a href="javascript:void(0)" *ngIf="categories.length === 0" style="color:#94a3b8; font-size:12px;">
-                  No categories created
+                  {{ 'directory.no_categories_created' | translate:'No categories created' }}
                 </a>
               </div>
             </div>
@@ -134,20 +136,41 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <tr>
               <th (click)="sortBy('fullName')">
                 <div class="th-content">
-                  <span>Member & Contact</span>
-                  <span class="material-symbols-outlined sort-icon">unfold_more</span>
+                  <span>{{ 'directory.col_name' | translate:'Member Name' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('fullName') }}</span>
                 </div>
               </th>
-              <th (click)="sortBy('memberId')">
+              <th (click)="sortBy('email')">
                 <div class="th-content">
-                  <span>Member ID</span>
-                  <span class="material-symbols-outlined sort-icon">unfold_more</span>
+                  <span>{{ 'directory.col_email' | translate:'Email Address' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('email') }}</span>
                 </div>
               </th>
-              <th>Category Tier</th>
-              <th>Assigned Role</th>
-              <th>Status</th>
-              <th style="text-align:right; width:160px;">Actions</th>
+              <th (click)="sortBy('memberId')" style="width: 140px;">
+                <div class="th-content">
+                  <span>{{ 'directory.col_member_id' | translate:'Member ID' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('memberId') }}</span>
+                </div>
+              </th>
+              <th (click)="sortBy('categoryName')">
+                <div class="th-content">
+                  <span>{{ 'directory.col_category' | translate:'Category' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('categoryName') }}</span>
+                </div>
+              </th>
+              <th (click)="sortBy('roles')" style="width: 130px;">
+                <div class="th-content">
+                  <span>{{ 'directory.col_role' | translate:'Role' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('roles') }}</span>
+                </div>
+              </th>
+              <th (click)="sortBy('userStatus')" style="width: 110px;">
+                <div class="th-content">
+                  <span>{{ 'directory.col_status' | translate:'Status' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('userStatus') }}</span>
+                </div>
+              </th>
+              <th style="text-align:right; width:160px;">{{ 'directory.col_actions' | translate:'Actions' }}</th>
             </tr>
           </thead>
           <tbody>
@@ -160,40 +183,49 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     <span *ngIf="!u.avatarUrl">{{ getInitials(u.fullName) }}</span>
                   </div>
                   <div class="member-info">
-                    <div class="member-name">{{ u.fullName || 'Unnamed Member' }}</div>
-                    <div class="member-email" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                      <span>{{ u.email }}</span>
-                      <span class="material-symbols-outlined" [title]="u.emailConfirmed ? 'Email Verified' : 'Email Unverified (Pending)'" [style.color]="u.emailConfirmed ? '#16a34a' : '#f59e0b'" style="font-size: 13px;">
-                        {{ u.emailConfirmed ? 'verified' : 'mark_email_unread' }}
-                      </span>
-                      <span *ngIf="u.phoneNumber" class="material-symbols-outlined" [title]="u.phoneNumberConfirmed ? 'Phone Verified' : 'Phone Unverified'" [style.color]="u.phoneNumberConfirmed ? '#16a34a' : '#94a3b8'" style="font-size: 13px;">
-                        {{ u.phoneNumberConfirmed ? 'sms' : 'phone_missed' }}
-                      </span>
-                    </div>
+                    <div class="member-name">{{ u.fullName || ('directory.unnamed_member' | translate:'Unnamed Member') }}</div>
                     <div class="member-designation" *ngIf="u.designation">{{ u.designation }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Email Address & Phone -->
+              <td>
+                <div class="email-cell">
+                  <div class="email-text-row">
+                    <span class="email-address">{{ u.email }}</span>
+                    <span class="material-symbols-outlined verify-icon" [title]="u.emailConfirmed ? ('directory.email_verified' | translate:'Email Verified') : ('directory.email_unverified' | translate:'Email Unverified (Pending)')" [style.color]="u.emailConfirmed ? '#16a34a' : '#f59e0b'">
+                      {{ u.emailConfirmed ? 'verified' : 'mark_email_unread' }}
+                    </span>
+                  </div>
+                  <div class="phone-sub-row" *ngIf="u.phoneNumber">
+                    <span class="phone-text">{{ u.phoneNumber }}</span>
+                    <span class="material-symbols-outlined verify-icon" [title]="u.phoneNumberConfirmed ? ('directory.phone_verified' | translate:'Phone Verified') : ('directory.phone_unverified' | translate:'Phone Unverified')" [style.color]="u.phoneNumberConfirmed ? '#16a34a' : '#94a3b8'">
+                      {{ u.phoneNumberConfirmed ? 'sms' : 'phone_missed' }}
+                    </span>
                   </div>
                 </div>
               </td>
 
               <!-- Member ID -->
               <td>
-                <span class="member-id-pill">{{ u.memberId || 'CC-2026-' + u.id.substring(0,4).toUpperCase() }}</span>
+                <span class="member-id-pill">{{ sanitizeId(u.memberId || 'CC-2026-' + u.id.substring(0,4).toUpperCase()) }}</span>
               </td>
 
               <!-- Category Tier -->
               <td>
                 <span class="category-badge" *ngIf="u.bcpUserCategoryId && u.categoryName" [style.background]="(u.categoryColor || '#0050e5') + '15'" [style.color]="u.categoryColor || '#0050e5'" [style.border-color]="(u.categoryColor || '#0050e5') + '35'">
-                  <span class="material-symbols-outlined badge-icon">{{ u.categoryIcon || 'category' }}</span>
+                  <span class="material-symbols-outlined badge-icon">{{ u.categoryIcon || 'folder_shared' }}</span>
                   <span>{{ u.categoryName }}</span>
                 </span>
                 <span class="unassigned-badge" *ngIf="!u.bcpUserCategoryId || !u.categoryName">
-                  <span>Unassigned</span>
+                  <span>{{ 'directory.unassigned' | translate:'Unassigned' }}</span>
                 </span>
               </td>
 
               <!-- Role -->
               <td>
-                <span class="role-pill" [class.role-admin]="u.roles?.includes('SuperAdmin') || u.roles?.includes('Admin')">
+                <span class="role-pill" [class.role-admin]="u.roles?.includes('Admin')">
                   {{ u.roles?.join(', ') || 'Member' }}
                 </span>
               </td>
@@ -206,29 +238,26 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </span>
               </td>
 
-              <!-- Clean Actions (Details & Edit) -->
+              <!-- Clean Actions (Details & Edit - Delete button removed) -->
               <td style="text-align:right;">
                 <div class="row-actions-group">
-                  <a [routerLink]="['/users/console/details', u.id]" class="btn-action btn-details" title="View Member Dossier">
+                  <a [routerLink]="['/users/console/details', u.id]" class="btn-action btn-details" [title]="'directory.view_dossier' | translate:'View Member Dossier'">
                     <span class="material-symbols-outlined">visibility</span>
-                    <span>Details</span>
+                    <span>{{ 'directory.details' | translate:'Details' }}</span>
                   </a>
-                  <a [routerLink]="['/users/console/edit', u.id]" class="btn-action btn-edit" title="Edit Member Profile">
+                  <a [routerLink]="['/users/console/edit', u.id]" class="btn-action btn-edit" [title]="'directory.edit' | translate:'Edit Member Profile'">
                     <span class="material-symbols-outlined">edit</span>
-                    <span>Edit</span>
-                  </a>
-                  <a [routerLink]="['/users/console/delete', u.id]" class="btn-action btn-delete" title="Delete Member Account">
-                    <span class="material-symbols-outlined">delete</span>
+                    <span>{{ 'directory.edit' | translate:'Edit' }}</span>
                   </a>
                 </div>
               </td>
             </tr>
 
             <tr *ngIf="paginatedUsers.length === 0">
-              <td colspan="6" class="empty-table-cell">
+              <td colspan="7" class="empty-table-cell">
                 <span class="material-symbols-outlined empty-icon">person_search</span>
-                <p>No members found matching your search or filters.</p>
-                <button type="button" class="btn btn-outline btn-sm" (click)="resetFilters()">Clear Filters</button>
+                <p>{{ 'directory.no_members_found' | translate:'No members found matching your search or filters.' }}</p>
+                <button type="button" class="btn btn-outline btn-sm" (click)="resetFilters()">{{ 'directory.clear_filters' | translate:'Clear Filters' }}</button>
               </td>
             </tr>
           </tbody>
@@ -237,14 +266,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <!-- Built-In Pagination Toolbar -->
         <div class="pagination-footer" *ngIf="filteredUsers.length > 0">
           <div class="page-size-selector">
-            <span>Show</span>
+            <span>{{ 'directory.show' | translate:'Show' }}</span>
             <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
               <option [value]="10">10</option>
               <option [value]="25">25</option>
               <option [value]="50">50</option>
               <option [value]="100">100</option>
             </select>
-            <span>entries per page</span>
+            <span>{{ 'directory.entries_per_page' | translate:'entries per page' }}</span>
           </div>
 
           <div class="pagination-controls">
@@ -329,8 +358,16 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .avatar-img { width: 100%; height: 100%; object-fit: cover; }
     .member-info { display: flex; flex-direction: column; }
     .member-name { font-weight: 700; color: #0f172a; }
-    .member-email { font-size: 12px; color: #64748b; }
     .member-designation { font-size: 11px; color: #0050e5; font-weight: 600; margin-top: 1px; }
+
+    /* Email Cell */
+    .email-cell { display: flex; flex-direction: column; gap: 2px; }
+    .email-text-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .email-address { font-size: 12.5px; color: #334155; font-weight: 500; }
+    .verify-icon { font-size: 14px; }
+    .phone-sub-row { display: flex; align-items: center; gap: 4px; }
+    .phone-text { font-size: 11px; color: #64748b; font-family: monospace; }
+
     .member-id-pill { font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; color: #475569; font-weight: 600; }
 
     .category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
@@ -351,7 +388,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .row-actions-group { display: flex; gap: 6px; justify-content: flex-end; }
     .btn-action { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all 0.15s ease; }
     .btn-details { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
-    .btn-details:hover { background: #0050e5; color: #ffffff; }
+    .btn-details:hover { background: #0050e5; color: #ffffff !important; }
+    .btn-details:hover span { color: #ffffff !important; }
     .btn-edit { background: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
     .btn-edit:hover { background: #f8fafc; color: #0f172a; border-color: #94a3b8; }
 
@@ -362,7 +400,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .pagination-controls { display: flex; gap: 4px; align-items: center; }
     .page-btn { min-width: 32px; height: 32px; padding: 0 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
     .page-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
-    .page-btn.active { background: #0050e5; color: #ffffff; border-color: #0050e5; }
+    .page-btn.active { background: #0050e5; color: #ffffff !important; border-color: #0050e5; }
     .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .empty-table-cell { text-align: center; padding: 40px 20px; color: #64748b; }
     .empty-icon { font-size: 40px; color: #cbd5e1; margin-bottom: 8px; display: block; }
@@ -390,20 +428,29 @@ export class UsersListComponent implements OnInit {
   totalPages = 1;
   totalPagesArray: number[] = [];
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Add Member',
-      icon: 'person_add',
-      isPrimary: true,
-      routerLink: '/admin/users/create'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('directory.registration_form_builder', 'Registration Form Builder'),
+        icon: 'dynamic_form',
+        isPrimary: false,
+        routerLink: '/users/console/registration-form'
+      },
+      {
+        text: this.translationService.translate('directory.add_member', 'Add Member'),
+        icon: 'person_add',
+        isPrimary: true,
+        routerLink: '/users/console/create'
+      }
+    ];
+  }
 
   constructor(
     private route: ActivatedRoute,
     private api: ApiService,
     private toast: ToastService,
-    private exportService: ExportService
+    private exportService: ExportService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -433,7 +480,8 @@ export class UsersListComponent implements OnInit {
     this.api.get<any>('UsersApi').subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.users = res.data || [];
+        // Strictly filter out any root SuperAdmin user account from appearing in user list
+        this.users = (res.data || []).filter((u: any) => !u.roles?.includes('SuperAdmin'));
         this.applyFilters();
       },
       error: (err) => {
@@ -483,13 +531,20 @@ export class UsersListComponent implements OnInit {
       list = list.filter(u => u.userStatus === this.selectedStatusFilter);
     }
 
-    // Sort
+    // Comprehensive Column Sorting
     list.sort((a, b) => {
-      let valA = a[this.sortColumn] || '';
-      let valB = b[this.sortColumn] || '';
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-      return this.sortAsc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+      let valA: any = a[this.sortColumn];
+      let valB: any = b[this.sortColumn];
+
+      if (this.sortColumn === 'roles') {
+        valA = Array.isArray(a.roles) ? a.roles.join(', ') : (a.roles || '');
+        valB = Array.isArray(b.roles) ? b.roles.join(', ') : (b.roles || '');
+      }
+
+      valA = (valA ?? '').toString().toLowerCase();
+      valB = (valB ?? '').toString().toLowerCase();
+
+      return this.sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
 
     this.filteredUsers = list;
@@ -505,6 +560,11 @@ export class UsersListComponent implements OnInit {
       this.sortAsc = true;
     }
     this.applyFilters();
+  }
+
+  getSortIcon(col: string): string {
+    if (this.sortColumn !== col) return 'unfold_more';
+    return this.sortAsc ? 'arrow_upward' : 'arrow_downward';
   }
 
   resetFilters(): void {
@@ -534,6 +594,11 @@ export class UsersListComponent implements OnInit {
     this.updatePagination();
   }
 
+  sanitizeId(id: string): string {
+    if (!id) return '';
+    return id.replace(/[-]{2,}/g, '-').replace(/[/]{2,}/g, '/').replace(/[_]{2,}/g, '_');
+  }
+
   // Export Columns Definition
   private getExportColumns(): ExportColumn[] {
     return [
@@ -552,7 +617,7 @@ export class UsersListComponent implements OnInit {
   exportPdf(): void {
     this.exportService.printReport(
       'Official Member Directory Register',
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       this.filteredUsers,
       this.searchQuery ? `Search: "${this.searchQuery}"` : undefined
@@ -572,7 +637,7 @@ export class UsersListComponent implements OnInit {
     this.exportService.exportToWord(
       `Member_Register_${new Date().toISOString().substring(0,10)}`,
       'Official Member Directory Register',
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       this.filteredUsers
     );
@@ -584,7 +649,7 @@ export class UsersListComponent implements OnInit {
     const categoryMembers = this.users.filter(u => u.bcpUserCategoryId === cat.id);
     this.exportService.printReport(
       `Member Register - ${cat.name}`,
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       categoryMembers,
       `Category: ${cat.name}`

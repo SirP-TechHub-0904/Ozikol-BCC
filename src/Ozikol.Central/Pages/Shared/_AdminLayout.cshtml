@@ -2,7 +2,7 @@
     _AdminLayout.cshtml — Main Master Layout for the Ozikol Central Admin Console
    ───────────────────────────────────────────────────────────────────────────── *@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,9 +11,9 @@
     <!-- Fonts & Core Console Styling -->
     <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
-    <link rel="icon" type="image/png" href="/images/oz-logo-red.png" />
-    <link rel="shortcut icon" type="image/png" href="/images/oz-logo-red.png" />
-    <meta name="theme-color" content="#0b0f19" />
+    <link rel="icon" type="image/png" href="/images/oz-logo.png" />
+    <link rel="shortcut icon" type="image/png" href="/images/oz-logo.png" />
+    <meta name="theme-color" content="#f8fafc" />
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -24,12 +24,12 @@
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         @* ── Main Content Wrapper ── *@
-        <div class="admin-content-wrapper">
+        <div class="admin-content-wrapper" id="adminContentWrapper">
             @* ── Topbar ── *@
             <header class="admin-topbar">
                 <div class="topbar-left">
                     <button class="topbar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle navigation">
-                        ☰
+                        <span class="material-symbols-outlined">menu</span>
                     </button>
                     <nav class="topbar-breadcrumb" aria-label="Breadcrumb">
                         <a href="/centralwks/dashboard">Console</a>
@@ -47,14 +47,241 @@
                 </div>
 
                 <div class="topbar-right">
+@inject Ozikol.Central.Services.Notifications.ICentralNotificationService NotificationService
+@inject Microsoft.AspNetCore.Identity.UserManager<Ozikol.MasterDomain.Models.CentralUser> UserManager
+@inject Ozikol.MasterPersistence.EF.MasterSQL.MasterCatalogDbContext MasterDb
+@{
+    var topbarUserId = UserManager.GetUserId(User);
+    var topbarUnreadCount = 0;
+    IList<Ozikol.MasterDomain.Models.MasterNotification> topbarRecentNotifs = new List<Ozikol.MasterDomain.Models.MasterNotification>();
+    if (!string.IsNullOrEmpty(topbarUserId))
+    {
+        try
+        {
+            var topbarUserRoles = User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+            topbarUnreadCount = await NotificationService.GetUnreadCountAsync(topbarUserId, topbarUserRoles);
+            topbarRecentNotifs = await NotificationService.GetRecentNotificationsAsync(topbarUserId, topbarUserRoles, 5);
+        }
+        catch { }
+    }
+
+    List<Ozikol.MasterDomain.Models.MasterCurrencyRate> topbarCurrencies = new();
+    try
+    {
+        topbarCurrencies = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(MasterDb.MasterCurrencyRates)
+            .Where(c => c.IsActive)
+            .OrderByDescending(c => c.IsBaseCurrency)
+            .ThenBy(c => c.SortOrder)
+            .ThenBy(c => c.CurrencyCode)
+            .ToList();
+    }
+    catch { }
+
+    if (!topbarCurrencies.Any())
+    {
+        topbarCurrencies = new List<Ozikol.MasterDomain.Models.MasterCurrencyRate>
+        {
+            new() { CurrencyCode = "USD", CurrencySymbol = "$", DisplayName = "US Dollar", RateFromUsd = 1.0000m, IsBaseCurrency = true, IsActive = true },
+            new() { CurrencyCode = "NGN", CurrencySymbol = "₦", DisplayName = "Nigerian Naira", RateFromUsd = 1350.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "GBP", CurrencySymbol = "£", DisplayName = "British Pound", RateFromUsd = 0.8000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "EUR", CurrencySymbol = "€", DisplayName = "Euro", RateFromUsd = 0.9200m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "GHS", CurrencySymbol = "GH₵", DisplayName = "Ghanaian Cedi", RateFromUsd = 14.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "KES", CurrencySymbol = "KSh", DisplayName = "Kenyan Shilling", RateFromUsd = 130.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "ZAR", CurrencySymbol = "R", DisplayName = "South African Rand", RateFromUsd = 18.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "CAD", CurrencySymbol = "CA$", DisplayName = "Canadian Dollar", RateFromUsd = 1.3600m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "AED", CurrencySymbol = "AED", DisplayName = "UAE Dirham", RateFromUsd = 3.6700m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "INR", CurrencySymbol = "₹", DisplayName = "Indian Rupee", RateFromUsd = 84.0000m, IsBaseCurrency = false, IsActive = true }
+        };
+    }
+
+    string configuredDefaultCurrencyCode = "USD";
+    try
+    {
+        var platformSettingsRow = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(MasterDb.MasterPlatformSettings)
+            .FirstOrDefault(s => s.Id == 1);
+        if (!string.IsNullOrWhiteSpace(platformSettingsRow?.DefaultCurrencyCode))
+        {
+            configuredDefaultCurrencyCode = platformSettingsRow.DefaultCurrencyCode.Trim().ToUpperInvariant();
+        }
+    }
+    catch { }
+
+    var baseTopbarCurr = topbarCurrencies.FirstOrDefault(c => c.CurrencyCode.Equals(configuredDefaultCurrencyCode, StringComparison.OrdinalIgnoreCase))
+                         ?? topbarCurrencies.FirstOrDefault(c => c.IsBaseCurrency)
+                         ?? topbarCurrencies.First();
+    var forcedSwitchCode = TempData["SwitchCentralCurrencyCode"]?.ToString();
+}
+
                     <div class="topbar-search">
+                        <span class="search-icon">
+                            <span class="material-symbols-outlined">search</span>
+                        </span>
                         <input type="text" placeholder="Quick search... (Press /)" aria-label="Search" />
-                        <span class="search-icon">🔍</span>
+                    </div>
+
+                    @* ── Topbar System Currency Switcher & Live Converter ── *@
+                    <div class="topbar-currency" style="position: relative;">
+                        <button type="button" id="topbarCurrencyBtn" onclick="toggleTopbarCurrencyMenu(event)" title="System Currency &amp; Live Exchange Rate Converter"
+                                style="height: 36px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-bg-surface-elevated, #f8fafc); color: var(--admin-text, #0f172a); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <span class="material-symbols-outlined" style="font-size: 16px; color: #0050E5;">currency_exchange</span>
+                            <span id="topbarActiveCurrencyLabel">@baseTopbarCurr.CurrencyCode (@baseTopbarCurr.CurrencySymbol)</span>
+                            <span class="material-symbols-outlined" style="font-size: 15px; color: #64748b;">expand_more</span>
+                        </button>
+
+                        <div id="topbarCurrencyMenu" style="display: none; position: absolute; right: 0; top: calc(100% + 10px); width: 320px; background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16); z-index: 1060; overflow: hidden;">
+                            <div style="padding: 12px 16px; border-bottom: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-bg-surface-elevated, #f8fafc); display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-size: 12.5px; font-weight: 800; color: var(--admin-text, #0f172a); display: flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 17px; color: #0050E5;">currency_exchange</span>
+                                    Display Currency &amp; FX Converter
+                                </div>
+                                <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: #eff6ff; color: #0050E5;">Base: USD ($)</span>
+                            </div>
+
+                            @* Currency Selector List *@
+                            <div style="max-height: 210px; overflow-y: auto; padding: 6px;">
+                                @foreach (var c in topbarCurrencies)
+                                {
+                                    <button type="button"
+                                            class="topbar-curr-item"
+                                            data-code="@c.CurrencyCode"
+                                            data-symbol="@c.CurrencySymbol"
+                                            data-rate="@c.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)"
+                                            onclick="selectTopbarCurrency('@c.CurrencyCode', '@Html.Raw(c.CurrencySymbol.Replace("'", "\\'"))', @c.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))"
+                                            style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border: none; background: transparent; border-radius: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="width: 28px; height: 28px; border-radius: 7px; background: #eff6ff; color: #0050E5; font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; justify-content: center;">@c.CurrencySymbol</span>
+                                            <div>
+                                                <div style="font-size: 12.5px; font-weight: 700; color: var(--admin-text, #0f172a);">
+                                                    @c.CurrencyCode — @c.DisplayName
+                                                </div>
+                                                <div style="font-size: 11px; color: #64748b;">
+                                                    @(c.IsBaseCurrency ? "Default Base Currency (1.00 USD)" : $"1 USD ($) = {c.CurrencySymbol}{c.RateFromUsd:N2} {c.CurrencyCode}")
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (c.IsBaseCurrency)
+                                        {
+                                            <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #d97706;">DEFAULT</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+
+                            @* Quick USD <-> Currency Calculator *@
+                            <div style="padding: 12px 14px; border-top: 1px solid var(--admin-border, #e2e8f0); background: #f8fafc;">
+                                <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">Quick Converter (to Selected Currency)</div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="flex: 1; position: relative;">
+                                        <span style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: #64748b;">$</span>
+                                        <input type="number" id="topbarConvUsdInput" value="10" min="0" step="1" oninput="updateTopbarQuickConverter()"
+                                               style="width: 100%; height: 32px; padding: 0 8px 0 22px; border-radius: 7px; border: 1px solid #cbd5e1; font-size: 12.5px; font-weight: 700; box-sizing: border-box;" />
+                                    </div>
+                                    <span style="color: #64748b; font-weight: 700;">=</span>
+                                    <div id="topbarConvResultBox" style="flex: 1.2; height: 32px; padding: 0 10px; border-radius: 7px; background: #eff6ff; border: 1px solid #bfdbfe; color: #0050E5; font-size: 12.5px; font-weight: 800; display: flex; align-items: center; justify-content: flex-end; overflow: hidden; white-space: nowrap;">
+                                        $10.00 USD
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="padding: 10px 14px; border-top: 1px solid var(--admin-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
+                                <a href="/centralwks/currencies" style="font-size: 12px; font-weight: 700; color: #0050E5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">settings</span>
+                                    Manage Currencies
+                                </a>
+                                <a href="/centralwks/currencies/create" style="font-size: 12px; font-weight: 700; color: #059669; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">add</span>
+                                    Add Currency
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark/light theme" aria-label="Toggle Theme">
-                        🌓
+                        <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                     </button>
+
+                    <div class="topbar-notifications" style="position: relative;">
+                        <button class="theme-toggle-btn" id="notificationsDropdownBtn" title="Platform Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" style="position: relative; cursor: pointer;">
+                            <span class="material-symbols-outlined">notifications</span>
+                            @if (topbarUnreadCount > 0)
+                            {
+                                <span style="position: absolute; top: 4px; right: 4px; min-width: 17px; height: 17px; padding: 0 4px; background: var(--admin-primary); color: #ffffff; border-radius: 9999px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--admin-bg-surface); line-height: 1;">
+                                    @(topbarUnreadCount > 9 ? "9+" : topbarUnreadCount.ToString())
+                                </span>
+                            }
+                        </button>
+                        <div class="notifications-menu-dropdown" id="notificationsDropdownMenu" role="menu" style="display: none; position: absolute; right: -60px; top: calc(100% + 10px); width: 360px; max-width: 90vw; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); z-index: 1050; overflow: hidden;">
+                            <div style="padding: 14px 18px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
+                                <div style="font-size: 13.5px; font-weight: 700; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-primary);">notifications</span>
+                                    Notifications
+                                    @if (topbarUnreadCount > 0)
+                                    {
+                                        <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9999px; background: var(--admin-primary); color: #fff;">@topbarUnreadCount new</span>
+                                    }
+                                </div>
+                                <a href="/centralwks/notifications" style="font-size: 11.5px; font-weight: 600; color: var(--admin-primary); text-decoration: none;">View All</a>
+                            </div>
+
+                            <div style="max-height: 320px; overflow-y: auto;">
+                                @if (!topbarRecentNotifs.Any())
+                                {
+                                    <div style="text-align: center; padding: 32px 16px; color: var(--admin-text-muted); font-size: 12.5px;">
+                                        <span class="material-symbols-outlined" style="font-size: 28px; display: block; margin-bottom: 6px; color: var(--admin-text-dim);">notifications_none</span>
+                                        No recent notifications
+                                    </div>
+                                }
+                                else
+                                {
+                                    @foreach (var item in topbarRecentNotifs)
+                                    {
+                                        var targetUrl = !string.IsNullOrWhiteSpace(item.ActionUrl) 
+                                            ? $"/centralwks/notifications?handler=Route&id={item.Id}" 
+                                            : "/centralwks/notifications";
+                                        
+                                        var iconBg = item.Severity switch
+                                        {
+                                            "Danger" => "rgba(220, 38, 38, 0.12)",
+                                            "Warning" => "rgba(217, 119, 6, 0.12)",
+                                            "Success" => "rgba(5, 150, 105, 0.12)",
+                                            _ => "rgba(37, 99, 235, 0.12)"
+                                        };
+                                        var iconCol = item.Severity switch
+                                        {
+                                            "Danger" => "var(--admin-danger)",
+                                            "Warning" => "#d97706",
+                                            "Success" => "#059669",
+                                            _ => "#2563eb"
+                                        };
+
+                                        <a href="@targetUrl" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; text-decoration: none; border-bottom: 1px solid var(--admin-border); background: @(!item.IsRead ? "var(--admin-bg-surface-elevated)" : "transparent"); transition: background 0.15s ease;">
+                                            <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: @iconBg; color: @iconCol; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                                <span class="material-symbols-outlined" style="font-size: 18px;">@item.Icon</span>
+                                            </div>
+                                            <div style="flex: 1; min-width: 0;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px;">
+                                                    <span style="font-size: 11px; font-weight: 700; color: var(--admin-primary); text-transform: uppercase;">@item.Category</span>
+                                                    <span style="font-size: 10.5px; color: var(--admin-text-dim);">@item.CreatedUtc.ToString("HH:mm") UTC</span>
+                                                </div>
+                                                <div style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">@Html.Raw(item.Title)</div>
+                                                <div style="font-size: 11.5px; color: var(--admin-text-muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@item.Message</div>
+                                            </div>
+                                        </a>
+                                    }
+                                }
+                            </div>
+
+                            <div style="padding: 10px 16px; background: var(--admin-bg-surface-elevated); border-top: 1px solid var(--admin-border); display: flex; justify-content: space-between; align-items: center;">
+                                <a href="/centralwks/notifications/compose" style="font-size: 12px; font-weight: 600; color: var(--admin-primary); text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">campaign</span>
+                                    Broadcast Alert
+                                </a>
+                                <a href="/centralwks/notifications" style="font-size: 12px; color: var(--admin-text-muted); text-decoration: none;">
+                                    Notification Center &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="topbar-user">
                         <button class="user-badge" id="userBadgeBtn" aria-haspopup="true" aria-expanded="false">
@@ -65,16 +292,23 @@
                                 <span class="user-name">@(User.Identity?.Name ?? "Administrator")</span>
                                 <span class="user-role">Super Admin</span>
                             </div>
+                            <span class="material-symbols-outlined user-chevron">expand_more</span>
                         </button>
                         <div class="user-menu-dropdown" role="menu">
-                            <a href="/centralwks/users" role="menuitem">👤 User Accounts</a>
-                            <a href="/centralwks/platform-settings" role="menuitem">⚙️ Platform Settings</a>
-                            <a href="/centralwks/audit-log" role="menuitem">📝 Audit Trail</a>
+                            <a href="/centralwks/profile" role="menuitem">
+                                <span class="material-symbols-outlined">person</span>
+                                My Profile &amp; Security
+                            </a>
+                            <a href="/centralwks/notifications" role="menuitem">
+                                <span class="material-symbols-outlined">notifications</span>
+                                Notifications
+                            </a>
                             <div class="user-menu-divider"></div>
                             <form method="post" action="/centralwks/logout" style="margin:0;">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" role="menuitem" style="color: var(--admin-danger);">
-                                    🚪 Sign Out
+                                <button type="submit" role="menuitem" class="signout-btn">
+                                    <span class="material-symbols-outlined">logout</span>
+                                    Sign Out
                                 </button>
                             </form>
                         </div>
@@ -88,29 +322,41 @@
                 @if (TempData["Success"] != null)
                 {
                     <div class="admin-alert admin-alert-success" role="alert">
-                        <span>✓ @TempData["Success"]</span>
-                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                        <span class="material-symbols-outlined alert-icon">check_circle</span>
+                        <span class="alert-message">@TempData["Success"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
                 }
                 @if (TempData["Error"] != null)
                 {
                     <div class="admin-alert admin-alert-danger" role="alert">
-                        <span>⚠ @TempData["Error"]</span>
-                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                        <span class="material-symbols-outlined alert-icon">cancel</span>
+                        <span class="alert-message">@TempData["Error"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
                 }
                 @if (TempData["Warning"] != null)
                 {
                     <div class="admin-alert admin-alert-warning" role="alert">
-                        <span>⚠ @TempData["Warning"]</span>
-                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                        <span class="material-symbols-outlined alert-icon">warning</span>
+                        <span class="alert-message">@TempData["Warning"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
                 }
                 @if (TempData["Info"] != null)
                 {
                     <div class="admin-alert admin-alert-info" role="alert">
-                        <span>ℹ @TempData["Info"]</span>
-                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                        <span class="material-symbols-outlined alert-icon">info</span>
+                        <span class="alert-message">@TempData["Info"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
                 }
 
@@ -121,6 +367,277 @@
 
     <!-- Scripts -->
     <script src="~/js/admin.js" asp-append-version="true"></script>
+
+    @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+    @{
+        var oneSignalAppId = Configuration["ONESIGNAL_APP_ID"]
+                          ?? Configuration["OneSignal__AppId"]
+                          ?? Configuration["OneSignal:AppId"]
+                          ?? Environment.GetEnvironmentVariable("ONESIGNAL_APP_ID");
+    }
+
+    @if (!string.IsNullOrWhiteSpace(oneSignalAppId) && oneSignalAppId != "your-onesignal-app-id-here")
+    {
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+        <script>
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(async function(OneSignal) {
+                await OneSignal.init({
+                    appId: "@oneSignalAppId",
+                    autoRegister: false, // Prevents aggressive auto-popup on page load
+                    notifyButton: {
+                        enable: false // We use our custom UI buttons instead
+                    }
+                });
+
+                @if (!string.IsNullOrEmpty(topbarUserId))
+                {
+                    <text>
+                    // Synchronize the logged-in operator user ID with OneSignal
+                    await OneSignal.login("@topbarUserId");
+                    </text>
+                }
+
+                // Dispatches custom event whenever push permission state changes
+                OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
+                    window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: permission } }));
+                });
+            });
+
+            // Global Push Helper for Profile and Notifications Pages with OneSignal
+            window.OzikolPush = {
+                async isSupported() {
+                    return ('Notification' in window);
+                },
+                async getPermission() {
+                    if (!('Notification' in window)) return 'unsupported';
+                    return Notification.permission; // 'default', 'granted', 'denied'
+                },
+                async enablePush() {
+                    if (!('Notification' in window)) {
+                        alert('Your browser does not support desktop push notifications.');
+                        return 'unsupported';
+                    }
+                    try {
+                        if (window.OneSignalDeferred) {
+                            return new Promise((resolve) => {
+                                window.OneSignalDeferred.push(async function(OneSignal) {
+                                    try {
+                                        await OneSignal.Notifications.requestPermission();
+                                        const perm = Notification.permission;
+                                        window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                                        resolve(perm);
+                                    } catch (err) {
+                                        console.warn('OneSignal request error, falling back to browser prompt:', err);
+                                        const perm = await Notification.requestPermission();
+                                        window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                                        resolve(perm);
+                                    }
+                                });
+                            });
+                        } else {
+                            const perm = await Notification.requestPermission();
+                            window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                            return perm;
+                        }
+                    } catch (err) {
+                        console.error('Push opt-in error:', err);
+                        return 'denied';
+                    }
+                },
+                async sendTestNotification() {
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try {
+                            new Notification('Ozikol Central Operations', {
+                                body: 'Push notification engine is operational on this workstation.',
+                                icon: '/favicon.ico'
+                            });
+                            return true;
+                        } catch (err) {
+                            console.error('Test notification error:', err);
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            };
+        </script>
+    }
+    else
+    {
+        <script>
+            // Global Push Helper for Profile and Notifications Pages (Direct Native Web Notifications)
+            window.OzikolPush = {
+                async isSupported() {
+                    return ('Notification' in window);
+                },
+                async getPermission() {
+                    if (!('Notification' in window)) return 'unsupported';
+                    return Notification.permission; // 'default', 'granted', 'denied'
+                },
+                async enablePush() {
+                    if (!('Notification' in window)) {
+                        alert('Your browser does not support desktop push notifications.');
+                        return 'unsupported';
+                    }
+                    try {
+                        const perm = await Notification.requestPermission();
+                        window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                        if (perm === 'granted') {
+                            try {
+                                new Notification('Ozikol Central Operations', {
+                                    body: 'Desktop push notifications enabled successfully for your workstation.',
+                                    icon: '/favicon.ico'
+                                });
+                            } catch (e) {
+                                console.warn('Native notification spawn note:', e);
+                            }
+                        }
+                        return perm;
+                    } catch (err) {
+                        console.error('Native push permission error:', err);
+                        return 'denied';
+                    }
+                },
+                async sendTestNotification() {
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try {
+                            new Notification('Ozikol Central Operations Test', {
+                                body: 'Live push notification test successful! Your workstation is connected.',
+                                icon: '/favicon.ico'
+                            });
+                            return true;
+                        } catch (err) {
+                            console.error('Test notification error:', err);
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            };
+        </script>
+    }
+
+    <!-- Global Professional Confirmation & Action Modal -->
+    <div id="ozConfirmModalBackdrop" class="oz-modal-backdrop" style="display: none;">
+        <div class="oz-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ozConfirmModalTitle">
+            <div class="oz-modal-header">
+                <div id="ozConfirmModalIconContainer" class="oz-modal-icon-badge danger">
+                    <span id="ozConfirmModalIcon" class="material-symbols-outlined">delete_forever</span>
+                </div>
+                <div style="flex: 1;">
+                    <h3 id="ozConfirmModalTitle" class="oz-modal-title">Confirm Action</h3>
+                    <p id="ozConfirmModalMessage" class="oz-modal-message">Are you sure you want to proceed with this operation?</p>
+                </div>
+            </div>
+            <div class="oz-modal-actions">
+                <button type="button" id="ozConfirmModalCancelBtn" class="oz-modal-btn oz-modal-btn-cancel">Cancel</button>
+                <button type="button" id="ozConfirmModalProceedBtn" class="oz-modal-btn oz-modal-btn-danger">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Floating Toast Notification Container -->
+    <div id="ozToastContainer" class="oz-toast-container" aria-live="polite"></div>
+
+    <script>
+        (function () {
+            const serverDefaultCode = '@baseTopbarCurr.CurrencyCode';
+            const serverDefaultSymbol = '@Html.Raw(baseTopbarCurr.CurrencySymbol.Replace("'", "\\'"))';
+            const serverDefaultRate = parseFloat('@baseTopbarCurr.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)') || 1;
+            const forcedSwitch = '@(forcedSwitchCode ?? "")';
+
+            // If Default System Currency was just updated in Settings or Manage Currencies, sync browser state immediately
+            const prevServerDefault = localStorage.getItem('ozikol_central_server_default_code');
+            if (forcedSwitch || prevServerDefault !== serverDefaultCode) {
+                localStorage.setItem('ozikol_central_server_default_code', serverDefaultCode);
+                localStorage.setItem('ozikol_central_curr_code', serverDefaultCode);
+                localStorage.setItem('ozikol_central_curr_symbol', serverDefaultSymbol);
+                localStorage.setItem('ozikol_central_curr_rate', String(serverDefaultRate));
+            }
+
+            window.OzikolCurrencyState = {
+                code: localStorage.getItem('ozikol_central_curr_code') || serverDefaultCode,
+                symbol: localStorage.getItem('ozikol_central_curr_symbol') || serverDefaultSymbol,
+                rate: parseFloat(localStorage.getItem('ozikol_central_curr_rate') || String(serverDefaultRate)) || 1
+            };
+
+            window.toggleTopbarCurrencyMenu = function (e) {
+                e.stopPropagation();
+                const menu = document.getElementById('topbarCurrencyMenu');
+                if (!menu) return;
+                menu.style.display = (menu.style.display === 'none' || !menu.style.display) ? 'block' : 'none';
+                window.updateTopbarQuickConverter();
+            };
+
+            window.updateTopbarQuickConverter = function () {
+                const input = document.getElementById('topbarConvUsdInput');
+                const out = document.getElementById('topbarConvResultBox');
+                if (!input || !out) return;
+                const usd = parseFloat(input.value) || 0;
+                const st = window.OzikolCurrencyState;
+                const converted = usd * (st.rate || 1);
+                out.textContent = st.symbol + converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + st.code;
+            };
+
+            window.selectTopbarCurrency = function (code, symbol, rate) {
+                window.OzikolCurrencyState = { code: code, symbol: symbol, rate: parseFloat(rate) || 1 };
+                localStorage.setItem('ozikol_central_curr_code', code);
+                localStorage.setItem('ozikol_central_curr_symbol', symbol);
+                localStorage.setItem('ozikol_central_curr_rate', String(window.OzikolCurrencyState.rate));
+
+                const lbl = document.getElementById('topbarActiveCurrencyLabel');
+                if (lbl) lbl.textContent = code + ' (' + symbol + ')';
+
+                window.updateTopbarQuickConverter();
+                window.applyCentralCurrencyConversion();
+            };
+
+            window.applyCentralCurrencyConversion = function () {
+                const st = window.OzikolCurrencyState;
+                const lbl = document.getElementById('topbarActiveCurrencyLabel');
+                if (lbl) lbl.textContent = st.code + ' (' + st.symbol + ')';
+
+                // Highlight selected currency button in dropdown
+                document.querySelectorAll('.topbar-curr-item').forEach(btn => {
+                    const isMatch = btn.getAttribute('data-code') === st.code;
+                    btn.style.background = isMatch ? '#eff6ff' : 'transparent';
+                });
+
+                // Convert elements marked with data-usd-amount
+                document.querySelectorAll('[data-usd-amount]').forEach(el => {
+                    const usd = parseFloat(el.getAttribute('data-usd-amount'));
+                    if (isNaN(usd)) return;
+                    const suffix = el.getAttribute('data-usd-suffix') || '';
+                    if (st.code === 'USD' || Math.abs(st.rate - 1) < 0.0001) {
+                        el.textContent = '$' + usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
+                    } else {
+                        const conv = usd * st.rate;
+                        el.textContent = st.symbol + conv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix + ' ($' + usd.toFixed(2) + ')';
+                    }
+                });
+            };
+
+            document.addEventListener('click', function (e) {
+                const menu = document.getElementById('topbarCurrencyMenu');
+                if (menu && !menu.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // Sync with latest rate from server if matching currency exists in DOM
+                const matchBtn = document.querySelector('.topbar-curr-item[data-code="' + window.OzikolCurrencyState.code + '"]');
+                if (matchBtn) {
+                    window.OzikolCurrencyState.symbol = matchBtn.getAttribute('data-symbol') || window.OzikolCurrencyState.symbol;
+                    window.OzikolCurrencyState.rate = parseFloat(matchBtn.getAttribute('data-rate')) || 1;
+                }
+                window.updateTopbarQuickConverter();
+                window.applyCentralCurrencyConversion();
+            });
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

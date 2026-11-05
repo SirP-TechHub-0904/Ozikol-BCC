@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../../../core/services/api.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 Chart.register(...registerables);
@@ -10,15 +12,15 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-identity',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="SECURITY & GOVERNANCE"
+        [eyebrow]="'identity.dashboard.eyebrow' | translate:'SECURITY & GOVERNANCE'"
         icon="admin_panel_settings"
-        title="Identity & Access Administration"
-        subtitle="Role-Based Access Control (RBAC), user invitation tokens, login security audit, and policy controls."
+        [title]="'identity.dashboard.title' | translate:'Identity & Access Administration'"
+        [subtitle]="'identity.dashboard.subtitle' | translate:'Role-Based Access Control (RBAC), user invitation tokens, login security audit, and policy controls.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -27,34 +29,34 @@ Chart.register(...registerables);
       <div class="feature-toolbar">
         <button type="button" class="feature-tab" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
           <span class="material-symbols-outlined tab-icon">space_dashboard</span>
-          <span>Identity Dashboard</span>
+          <span>{{ 'nav.identity_dashboard' | translate:'Identity Dashboard' }}</span>
         </button>
 
         <button type="button" class="feature-tab" [class.active]="activeTab === 'roles'" (click)="setTab('roles')">
           <span class="material-symbols-outlined tab-icon">shield_person</span>
-          <span>Roles & Scopes</span>
+          <span>{{ 'identity.roles.title' | translate:'Roles & Scopes' }}</span>
           <span class="badge-pill" style="background:rgba(0,80,229,0.15); color:#0050e5; margin-left:6px;">{{ roles.length }}</span>
         </button>
 
         <button type="button" class="feature-tab" [class.active]="activeTab === 'permissions'" (click)="setTab('permissions')">
           <span class="material-symbols-outlined tab-icon">checklist</span>
-          <span>Permission Matrix</span>
+          <span>{{ 'identity.roles.tab_authority' | translate:'Permission Matrix' }}</span>
         </button>
 
         <button type="button" class="feature-tab" [class.active]="activeTab === 'invitations'" (click)="setTab('invitations')">
           <span class="material-symbols-outlined tab-icon">mail</span>
-          <span>User Invitations</span>
+          <span>{{ 'identity.invitations.title' | translate:'User Invitations' }}</span>
           <span class="badge-pill" style="background:rgba(0,80,229,0.15); color:#0050e5; margin-left:6px;">{{ invitations.length }}</span>
         </button>
 
         <button type="button" class="feature-tab" [class.active]="activeTab === 'audit'" (click)="setTab('audit')">
           <span class="material-symbols-outlined tab-icon">history</span>
-          <span>Login Audit Logs</span>
+          <span>{{ 'identity.audit.title' | translate:'Login Audit Logs' }}</span>
         </button>
 
         <button type="button" class="feature-tab" [class.active]="activeTab === 'policies'" (click)="setTab('policies')">
           <span class="material-symbols-outlined tab-icon">policy</span>
-          <span>Security Policies</span>
+          <span>{{ 'identity.policies.title' | translate:'Security Policies' }}</span>
         </button>
       </div>
 
@@ -433,21 +435,26 @@ export class IdentityComponent implements OnInit, AfterViewInit {
   inviteEmail = '';
   inviteRole = 'Member';
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Invite User',
-      icon: 'send',
-      isPrimary: true,
-      action: () => { this.showInviteModal = true; }
-    },
-    {
-      text: 'Refresh',
-      icon: 'refresh',
-      action: () => { this.loadData(); }
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('identity.invitations.btn_send_invite', 'Invite User'),
+        icon: 'send',
+        isPrimary: true,
+        action: () => { this.showInviteModal = true; }
+      },
+      {
+        text: this.translationService.translate('btn.refresh', 'Refresh'),
+        icon: 'refresh',
+        action: () => { this.loadData(); }
+      }
+    ];
+  }
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private translationService: TranslationService
+  ) {}
 
   ngOnInit(): void {
     this.loadData();

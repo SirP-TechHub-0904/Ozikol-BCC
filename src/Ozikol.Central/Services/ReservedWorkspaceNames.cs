@@ -27,11 +27,14 @@ public static class ReservedWorkspaceNames
         "prod", "production", "sandbox",
 
         // 4. Platform Branding & Corporate Hubs
-        "ozikol", "ozikol-bcc", "ozikolcloud", "ozikol-cloud", "support", "help",
-        "helpdesk", "docs", "documentation", "legal", "terms", "privacy", "compliance",
-        "about", "contact", "marketplace", "store", "shop",
+        "ozikol", "ozikol-bcc", "ozikolcloud", "ozikol-cloud", "ozi", "ozi-ai", "oziai",
+        "support", "help", "helpdesk", "docs", "documentation", "legal", "terms",
+        "privacy", "compliance", "about", "contact", "marketplace", "store", "shop",
 
-        // 5. System Tokens & Loopbacks
+        // 5. AI Engines & Autonomous Agents
+        "ai", "copilot", "assistant", "agent", "agents", "bot", "bots", "llm", "chat", "smart",
+
+        // 6. System Tokens & Loopbacks
         "localhost", "127", "local", "null", "undefined", "default", "public",
         "private", "static", "assets", "media", "www", "web", "app"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);

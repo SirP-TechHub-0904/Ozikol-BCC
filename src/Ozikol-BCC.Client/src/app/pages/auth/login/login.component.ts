@@ -3,22 +3,45 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { TenantStateService } from '../../../core/services/tenant-state.service';
+import { MultiWorkspaceService } from '../../../core/services/multi-workspace.service';
+import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="login-container">
-      <div class="login-card">
+      <!-- Dedicated Workspace Not Found State -->
+      <div class="login-card" *ngIf="workspaceNotFound" style="text-align: center; padding: 48px 32px;">
+        <div class="brand-avatar" style="margin: 0 auto 18px; width: 64px; height: 64px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 18px; display: flex; align-items: center; justify-content: center;">
+          <span class="material-symbols-outlined" style="font-size: 32px; color: #dc2626;">domain_disabled</span>
+        </div>
+        <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">{{ 'auth.workspace_not_found' | translate:'Workspace not found.' }}</h2>
+      </div>
+
+      <!-- Standard Login Card -->
+      <div class="login-card" *ngIf="!workspaceNotFound">
         <!-- Logo & Header -->
         <div class="card-header">
-          <div class="brand-avatar">
-            <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-main" />
-            <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">lock</span>
+          <!-- Official Brand Logo if uploaded, or Brand Name if logo is null -->
+          <div class="brand-identity-row">
+            <img 
+              *ngIf="brandLogoUrl && !logoLoadFailed" 
+              [src]="brandLogoUrl" 
+              [alt]="brandCompanyName || 'Workspace'" 
+              class="brand-logo-top" 
+              (error)="logoLoadFailed = true"
+            />
+            <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+              {{ brandCompanyName || 'Workspace' }}
+            </span>
           </div>
-          <h2 class="title">Sign In to Workspace</h2>
-          <p class="subtitle">Enter your credentials to access your organization portal.</p>
+
+          <h2 class="title">{{ loginTitle || ('auth.sign_in' | translate:'Sign In') }}</h2>
+          <p class="subtitle" *ngIf="loginNote">{{ loginNote }}</p>
         </div>
 
         <!-- Alert Error Banner -->
@@ -30,7 +53,7 @@ import { ApiService } from '../../../core/services/api.service';
         <!-- Form -->
         <form (ngSubmit)="onLogin()" method="post" action="javascript:void(0);" class="login-form">
           <div class="form-group">
-            <label for="email">Email Address</label>
+            <label for="email">{{ 'auth.email_address' | translate:'Email Address' }}</label>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">mail</span>
               <input
@@ -47,8 +70,8 @@ import { ApiService } from '../../../core/services/api.service';
 
           <div class="form-group">
             <div class="label-row">
-              <label for="password">Password</label>
-              <a routerLink="/reset-password" class="forgot-link">Forgot password?</a>
+              <label for="password">{{ 'auth.password' | translate:'Password' }}</label>
+              <a routerLink="/auth/reset-password" class="forgot-link">{{ 'auth.forgot_password' | translate:'Forgot password?' }}</a>
             </div>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">key</span>
@@ -78,22 +101,22 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="remember-row">
             <label class="remember-label">
               <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
-              <span>Remember this device</span>
+              <span>{{ 'auth.remember_device' | translate:'Remember this device' }}</span>
             </label>
           </div>
 
           <button type="submit" [disabled]="loading" class="btn-submit">
             <span *ngIf="loading" class="spinner"></span>
             <span *ngIf="!loading" class="material-symbols-outlined">login</span>
-            <span>{{ loading ? 'Authenticating...' : 'Sign In to Dashboard' }}</span>
+            <span>{{ loading ? ('auth.authenticating' | translate:'Authenticating...') : (loginButtonText || ('auth.sign_in' | translate:'Sign In')) }}</span>
           </button>
         </form>
 
         <div class="card-footer">
-          <p class="signup-prompt">Need a new account? <a routerLink="/register" class="register-link">Register here</a></p>
+          <p class="signup-prompt" *ngIf="allowPublicRegistration">{{ 'auth.need_new_account' | translate:'Need a new account?' }} <a routerLink="/auth/register" class="register-link">{{ 'auth.register_here' | translate:'Register here' }}</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
-            Back to Public Website
+            {{ 'auth.return_to_home' | translate:'Return to Home' }}
           </a>
         </div>
       </div>
@@ -102,12 +125,24 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="modal-backdrop" *ngIf="showForceChangeModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
-            <div class="force-modal-avatar">
-              <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-img" />
-              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">shield_person</span>
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
             </div>
-            <h3 class="force-modal-title">Temporary Password Detected</h3>
-            <p class="force-modal-subtitle">For your security, please update your temporary credentials to a permanent password before accessing the portal.</p>
+            <div class="force-modal-avatar">
+              <span class="material-symbols-outlined">lock_reset</span>
+            </div>
+            <h3 class="force-modal-title">{{ 'auth.temporary_pwd_detected' | translate:'Temporary Password Detected' }}</h3>
+            <p class="force-modal-subtitle">{{ 'auth.temporary_pwd_notice' | translate:'For your security, please update your temporary credentials to a permanent password before accessing the portal.' }}</p>
           </div>
 
           <div *ngIf="forceChangeError" class="force-error-banner">
@@ -117,10 +152,10 @@ import { ApiService } from '../../../core/services/api.service';
 
           <form (ngSubmit)="onForceChangePassword()" class="force-modal-form">
             <div class="force-form-group">
-              <label class="force-label">New Permanent Password *</label>
+              <label class="force-label">{{ 'auth.new_permanent_password' | translate:'New Permanent Password *' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">key</span>
-                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="newPermanentPassword" name="newPermanentPassword" placeholder="Enter new permanent password" required />
+                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="newPermanentPassword" name="newPermanentPassword" [placeholder]="'auth.enter_new_perm_pwd' | translate:'Enter new permanent password'" required />
                 <button type="button" class="force-toggle-pwd-btn" (click)="showNewPassword = !showNewPassword">
                   <span class="material-symbols-outlined">{{ showNewPassword ? 'visibility_off' : 'visibility' }}</span>
                 </button>
@@ -129,47 +164,47 @@ import { ApiService } from '../../../core/services/api.service';
 
             <!-- Live Password Complexity Checklist -->
             <div class="password-rules-box">
-              <span class="rules-box-title">Password Complexity Requirements:</span>
+              <span class="rules-box-title">{{ 'auth.pwd_complexity_reqs' | translate:'Password Complexity Requirements:' }}</span>
               <div class="rules-list">
                 <div class="rule-chip" [class.rule-passed]="newPermanentPassword.length >= 8">
                   <span class="material-symbols-outlined rule-icon">{{ newPermanentPassword.length >= 8 ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>8+ Chars</span>
+                  <span>{{ 'auth.eight_plus_chars' | translate:'8+ Chars' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasUpperCase()">
                   <span class="material-symbols-outlined rule-icon">{{ hasUpperCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Uppercase (A-Z)</span>
+                  <span>{{ 'auth.uppercase' | translate:'Uppercase (A-Z)' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasLowerCase()">
                   <span class="material-symbols-outlined rule-icon">{{ hasLowerCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Lowercase (a-z)</span>
+                  <span>{{ 'auth.lowercase' | translate:'Lowercase (a-z)' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasNumber()">
                   <span class="material-symbols-outlined rule-icon">{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Number (0-9)</span>
+                  <span>{{ 'auth.number' | translate:'Number (0-9)' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasSpecial()">
                   <span class="material-symbols-outlined rule-icon">{{ hasSpecial() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Special (!&#64;#$...)</span>
+                  <span>{{ 'auth.special_char' | translate:'Special (!@#$...)' }}</span>
                 </div>
               </div>
             </div>
 
             <div class="force-form-group">
-              <label class="force-label">Confirm Permanent Password *</label>
+              <label class="force-label">{{ 'auth.confirm_permanent_password' | translate:'Confirm Permanent Password *' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">check_circle</span>
-                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="confirmPermanentPassword" name="confirmPermanentPassword" placeholder="Confirm new permanent password" required />
+                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="confirmPermanentPassword" name="confirmPermanentPassword" [placeholder]="'auth.confirm_new_perm_pwd' | translate:'Confirm new permanent password'" required />
               </div>
               <div *ngIf="confirmPermanentPassword && newPermanentPassword !== confirmPermanentPassword" class="password-mismatch-hint">
                 <span class="material-symbols-outlined" style="font-size:14px;">warning</span>
-                <span>Passwords do not match</span>
+                <span>{{ 'auth.passwords_do_not_match' | translate:'Passwords do not match' }}</span>
               </div>
             </div>
 
             <button type="submit" [disabled]="forceChangeLoading || !isPasswordValid()" class="force-btn-submit">
               <span *ngIf="forceChangeLoading" class="spinner"></span>
               <span *ngIf="!forceChangeLoading" class="material-symbols-outlined">verified_user</span>
-              <span>{{ forceChangeLoading ? 'Updating Password...' : 'Save & Enter Dashboard' }}</span>
+              <span>{{ forceChangeLoading ? ('auth.updating_password' | translate:'Updating Password...') : ('auth.save_enter_dashboard' | translate:'Save & Enter Dashboard') }}</span>
             </button>
           </form>
         </div>
@@ -179,11 +214,24 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="modal-backdrop" *ngIf="showOtpVerifyModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar">
               <span class="material-symbols-outlined">mark_email_unread</span>
             </div>
-            <h3 class="force-modal-title">Verify Email Address</h3>
-            <p class="force-modal-subtitle">A 6-digit verification OTP code was sent to <strong>{{ email }}</strong>. Enter the code below to verify your account.</p>
+            <h3 class="force-modal-title">{{ 'auth.verify_email_address' | translate:'Verify Email Address' }}</h3>
+            <p class="force-modal-subtitle">{{ 'auth.six_digit_otp_sent_to' | translate:'A 6-digit verification OTP code was sent to' }} <strong>{{ email }}</strong>. {{ 'auth.enter_code_below' | translate:'Enter the code below to verify your account.' }}</p>
           </div>
 
           <div *ngIf="otpError" class="force-error-banner">
@@ -193,7 +241,7 @@ import { ApiService } from '../../../core/services/api.service';
 
           <form (ngSubmit)="onVerifyOtp()" class="force-modal-form">
             <div class="force-form-group">
-              <label class="force-label">6-Digit Verification Code</label>
+              <label class="force-label">{{ 'auth.six_digit_verification_code' | translate:'6-Digit Verification Code' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">pin</span>
                 <input type="text" maxlength="6" [(ngModel)]="otpCode" name="otpCode" placeholder="123456" style="letter-spacing:4px; font-size:18px; font-weight:700; text-align:center;" required />
@@ -203,7 +251,7 @@ import { ApiService } from '../../../core/services/api.service';
             <button type="submit" [disabled]="otpLoading || otpCode.length < 6" class="force-btn-submit">
               <span *ngIf="otpLoading" class="spinner"></span>
               <span *ngIf="!otpLoading" class="material-symbols-outlined">check</span>
-              <span>{{ otpLoading ? 'Verifying...' : 'Verify & Continue' }}</span>
+              <span>{{ otpLoading ? ('auth.verifying' | translate:'Verifying...') : ('auth.verify_and_continue' | translate:'Verify & Continue') }}</span>
             </button>
 
             <button 
@@ -215,8 +263,8 @@ import { ApiService } from '../../../core/services/api.service';
             >
               <span *ngIf="otpResendLoading" class="spinner" style="width:14px; height:14px; border-width:2px;"></span>
               <span *ngIf="!otpResendLoading" class="material-symbols-outlined" style="font-size:16px;">autorenew</span>
-              <span *ngIf="otpResendCountdown > 0">Resend Code in {{ otpResendCountdown }}s</span>
-              <span *ngIf="otpResendCountdown === 0 && !otpResendLoading">Didn't receive code? Resend Code</span>
+              <span *ngIf="otpResendCountdown > 0">{{ 'auth.resend_code_in' | translate:'Resend Code in' }} {{ otpResendCountdown }}s</span>
+              <span *ngIf="otpResendCountdown === 0 && !otpResendLoading">{{ 'auth.didnt_receive_code' | translate:"Didn't receive code? Resend Code" }}</span>
             </button>
 
             <button 
@@ -226,7 +274,7 @@ import { ApiService } from '../../../core/services/api.service';
               style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; background: #f8fafc; color: #475569; border: 1.5px solid #cbd5e1; cursor: pointer; transition: all 0.2s ease; margin-top: 6px; box-sizing: border-box;"
             >
               <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">arrow_back</span>
-              <span>Back to Login</span>
+              <span>{{ 'auth.back_to_login' | translate:'Back to Login' }}</span>
             </button>
           </form>
         </div>
@@ -236,12 +284,25 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="modal-backdrop" *ngIf="showMfaModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar" style="background:#0050e5; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
               <span class="material-symbols-outlined" style="color:#fff; font-size:28px;">security</span>
             </div>
-            <h3 class="force-modal-title" style="margin-top: 10px;">Two-Factor Verification</h3>
+            <h3 class="force-modal-title" style="margin-top: 10px;">{{ 'auth.two_factor_verification' | translate:'Two-Factor Verification' }}</h3>
             <p class="force-modal-subtitle">
-              Your account requires MFA. Enter the verification code from your <strong>{{ mfaProviderLabel }}</strong>.
+              {{ 'auth.account_requires_mfa' | translate:'Your account requires MFA. Enter the verification code from your' }} <strong>{{ mfaProviderLabel }}</strong>.
             </p>
           </div>
 
@@ -257,15 +318,15 @@ import { ApiService } from '../../../core/services/api.service';
 
           <form (ngSubmit)="onVerifyLoginMfa()" class="force-modal-form">
             <div class="force-form-group">
-              <label class="force-label">Verification Code / Backup Recovery Key</label>
+              <label class="force-label">{{ 'auth.verification_code_or_backup' | translate:'Verification Code / Backup Recovery Key' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">pin</span>
                 <input 
                   type="text" 
                   [(ngModel)]="mfaCode" 
                   name="mfaCode" 
-                  placeholder="123456" 
-                  style="letter-spacing:4px; font-size:18px; font-weight:700; text-align:center;" 
+                  [placeholder]="'auth.code_or_backup_placeholder' | translate:'6-digit code or backup key'" 
+                  style="letter-spacing:2px; font-size:16px; font-weight:700; text-align:center;" 
                   required 
                 />
               </div>
@@ -275,18 +336,19 @@ import { ApiService } from '../../../core/services/api.service';
             <div class="remember-row" style="margin-bottom:16px; display: flex; align-items: center;">
               <label class="remember-label" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8; cursor: pointer;">
                 <input type="checkbox" [(ngModel)]="trustThisDevice" name="trustThisDevice" />
-                <span>Trust this device for 30 days</span>
+                <span>{{ 'auth.trust_device_thirty_days' | translate:'Trust this device for 30 days' }}</span>
               </label>
             </div>
 
-            <button type="submit" [disabled]="mfaLoading || mfaCode.length < 6" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
+            <button type="submit" [disabled]="mfaLoading || !mfaCode || mfaCode.trim().length < 4" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
               <span *ngIf="mfaLoading" class="spinner"></span>
               <span *ngIf="!mfaLoading" class="material-symbols-outlined">verified_user</span>
-              <span>{{ mfaLoading ? 'Verifying...' : 'Verify & Sign In' }}</span>
+              <span>{{ mfaLoading ? ('auth.verifying' | translate:'Verifying...') : ('auth.verify_and_sign_in' | translate:'Verify & Sign In') }}</span>
             </button>
 
-            <!-- 60-Second Cooldown Resend for SMS / Email -->
+            <!-- 60-Second Cooldown Resend for SMS / Email Only -->
             <button 
+              *ngIf="canResendMfaCode()"
               type="button" 
               class="btn-resend-otp" 
               (click)="onResendLoginMfa()" 
@@ -295,9 +357,14 @@ import { ApiService } from '../../../core/services/api.service';
             >
               <span *ngIf="mfaResendLoading" class="spinner" style="width:14px; height:14px; border-width:2px;"></span>
               <span *ngIf="!mfaResendLoading" class="material-symbols-outlined" style="font-size:16px;">autorenew</span>
-              <span *ngIf="mfaResendCountdown > 0">Resend Code in {{ mfaResendCountdown }}s</span>
-              <span *ngIf="mfaResendCountdown === 0 && !mfaResendLoading">Didn't receive code? Resend Code</span>
+              <span *ngIf="mfaResendCountdown > 0">{{ 'auth.resend_code_in' | translate:'Resend Code in' }} {{ mfaResendCountdown }}s</span>
+              <span *ngIf="mfaResendCountdown === 0 && !mfaResendLoading">{{ 'auth.didnt_receive_code' | translate:"Didn't receive code? Resend Code" }}</span>
             </button>
+
+            <!-- Tip for TOTP / Authenticator App Users -->
+            <p *ngIf="!canResendMfaCode()" style="margin: 4px auto 10px auto; font-size: 12px; color: #64748b; text-align: center; line-height: 1.4;">
+              {{ 'auth.totp_rotate_tip' | translate:'Codes rotate automatically every 30 seconds in your app. You can also enter one of your single-use backup recovery keys.' }}
+            </p>
 
             <button 
               type="button" 
@@ -306,7 +373,7 @@ import { ApiService } from '../../../core/services/api.service';
               style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; background: #f8fafc; color: #475569; border: 1.5px solid #cbd5e1; cursor: pointer; transition: all 0.2s ease; margin-top: 4px; box-sizing: border-box;"
             >
               <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">arrow_back</span>
-              <span>Back to Login</span>
+              <span>{{ 'auth.back_to_login' | translate:'Back to Login' }}</span>
             </button>
           </form>
         </div>
@@ -315,30 +382,21 @@ import { ApiService } from '../../../core/services/api.service';
   `,
   styles: [`
     .login-container {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      min-height: 100vh;
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 10%, #1e293b 0%, #0f172a 100%);
-      padding: 24px;
-      font-family: 'Roboto', 'Inter', sans-serif;
       box-sizing: border-box;
-      overflow-y: auto;
-      z-index: 100;
+      padding: 0;
     }
     .login-card {
-      background: rgba(30, 41, 59, 0.85);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 20px;
-      padding: 40px;
+      padding: 36px 32px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-      color: #f8fafc;
+      box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      color: #0f172a;
       box-sizing: border-box;
     }
     .card-header {
@@ -346,60 +404,84 @@ import { ApiService } from '../../../core/services/api.service';
       flex-direction: column;
       align-items: center;
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       width: 100%;
+    }
+    .brand-identity-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .brand-logo-top {
+      max-height: 48px;
+      max-width: 220px;
+      object-fit: contain;
+    }
+    .brand-company-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
     }
     .brand-avatar {
       width: 58px;
       height: 58px;
       border-radius: 16px;
-      background: linear-gradient(135deg, #0050e5, #38bdf8);
+      background: #eff6ff;
+      border: 1.5px solid #dbeafe;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
-      box-shadow: 0 8px 22px rgba(0, 80, 229, 0.35);
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.08);
+      overflow: hidden;
     }
-    .brand-avatar span {
+    .brand-avatar span.material-symbols-outlined {
       font-size: 28px;
-      color: #fff;
+      color: #0050e5;
+    }
+    .brand-initials {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0050e5;
+      letter-spacing: -0.02em;
     }
     .brand-logo-main {
       max-width: 44px;
       max-height: 44px;
       object-fit: contain;
-      border-radius: 10px;
     }
     .title {
       font-size: 22px;
       font-weight: 800;
-      color: #ffffff;
+      color: #0f172a;
       margin: 0 0 6px;
       text-align: center;
     }
     .subtitle {
-      font-size: 13px;
-      color: #94a3b8;
+      font-size: 13.5px;
+      color: #64748b;
       margin: 0;
       text-align: center;
       line-height: 1.45;
     }
     .error-banner {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
-      padding: 12px 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 11px 14px;
       border-radius: 10px;
       font-size: 13px;
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     .login-form {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
     .form-group {
       display: flex;
@@ -414,13 +496,13 @@ import { ApiService } from '../../../core/services/api.service';
     .form-group label {
       font-size: 11.5px;
       font-weight: 700;
-      color: #cbd5e1;
+      color: #475569;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .forgot-link {
-      font-size: 11.5px;
-      color: #38bdf8;
+      font-size: 12px;
+      color: #0050e5;
       text-decoration: none;
       font-weight: 600;
     }
@@ -430,14 +512,14 @@ import { ApiService } from '../../../core/services/api.service';
     .remember-row {
       display: flex;
       align-items: center;
-      margin-top: -4px;
+      margin-top: -2px;
     }
     .remember-label {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12.5px;
-      color: #94a3b8;
+      font-size: 13px;
+      color: #475569;
       cursor: pointer;
       user-select: none;
     }
@@ -449,42 +531,44 @@ import { ApiService } from '../../../core/services/api.service';
     .input-icon {
       position: absolute;
       left: 14px;
-      color: #64748b;
+      color: #94a3b8;
       font-size: 20px;
       pointer-events: none;
     }
     .input-wrapper input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
       border-radius: 10px;
       padding: 12px 42px 12px 44px;
-      color: #ffffff;
+      color: #0f172a;
       font-size: 14px;
+      font-weight: 500;
       outline: none;
       box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s ease;
     }
     .input-wrapper input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      background: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
     }
     .toggle-pwd-btn {
       position: absolute;
       right: 12px;
       background: none;
       border: none;
-      color: #64748b;
+      color: #94a3b8;
       cursor: pointer;
       display: flex;
       align-items: center;
       padding: 4px;
     }
     .toggle-pwd-btn:hover {
-      color: #cbd5e1;
+      color: #0050e5;
     }
     .btn-submit {
-      margin-top: 8px;
+      margin-top: 6px;
       background: linear-gradient(135deg, #0050e5, #1f6bff);
       color: #ffffff;
       border: none;
@@ -498,14 +582,14 @@ import { ApiService } from '../../../core/services/api.service';
       justify-content: center;
       gap: 8px;
       transition: all 0.2s;
-      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.35);
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
     }
     .btn-submit:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45);
+      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
     }
     .btn-submit:disabled {
-      opacity: 0.7;
+      opacity: 0.65;
       cursor: not-allowed;
     }
     .spinner {
@@ -518,22 +602,22 @@ import { ApiService } from '../../../core/services/api.service';
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .card-footer {
-      margin-top: 24px;
+      margin-top: 20px;
       text-align: center;
     }
-    .signup-prompt { font-size: 13px; color: #94a3b8; margin: 0 0 10px; }
-    .register-link { color: #38bdf8; text-decoration: none; font-weight: 600; }
+    .signup-prompt { font-size: 13px; color: #64748b; margin: 0 0 10px; }
+    .register-link { color: #0050e5; text-decoration: none; font-weight: 700; }
     .register-link:hover { text-decoration: underline; }
     .back-link {
       color: #64748b;
-      font-size: 12.5px;
+      font-size: 13px;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: color 0.2s;
+      transition: color 0.15s;
     }
-    .back-link:hover { color: #cbd5e1; }
+    .back-link:hover { color: #0050e5; }
 
     /* Modal Backdrop */
     .modal-backdrop {
@@ -802,10 +886,21 @@ export class LoginComponent implements OnInit {
   showPassword = false;
   loading = false;
   errorMessage = '';
+  workspaceNotFound = false;
+  allowPublicRegistration = true;
 
-  // Brand Logo & Name
+  // Brand Logo, Icon & Name
   brandLogoUrl = '';
+  brandIconUrl = '';
   brandCompanyName = '';
+  brandInitials = '';
+  logoLoadFailed = false;
+
+  // Auth Settings & Dynamic Copy
+  loginTitle = '';
+  loginNote = '';
+  loginButtonText = 'Sign In';
+  loginNoteFooter = '';
 
   // Forced Password Change State
   showForceChangeModal = false;
@@ -828,6 +923,7 @@ export class LoginComponent implements OnInit {
   showMfaModal = false;
   mfaCode = '';
   mfaUserId = '';
+  mfaProvider = '';
   mfaProviderLabel = '';
   trustThisDevice = false;
   mfaLoading = false;
@@ -840,7 +936,9 @@ export class LoginComponent implements OnInit {
   constructor(
     private api: ApiService, 
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private tenantState: TenantStateService,
+    private multiWorkspace: MultiWorkspaceService
   ) {}
 
   ngOnInit(): void {
@@ -862,14 +960,27 @@ export class LoginComponent implements OnInit {
     // Load Brand Identity if available
     this.api.get<any>('SettingsApi/brand').subscribe({
       next: (res) => {
-        if (res?.data?.companyLogoUrl) {
-          this.brandLogoUrl = res.data.companyLogoUrl;
-        }
-        if (res?.data?.companyName) {
-          this.brandCompanyName = res.data.companyName;
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+          const rawIcon = res.data.companyIconUrl;
+          this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : (this.brandLogoUrl || '');
+          this.brandInitials = res.data.companyNameAbbreviation || (this.brandCompanyName ? this.brandCompanyName.substring(0, 2).toUpperCase() : '');
+          if (res.data.allowPublicRegistration !== undefined) {
+            this.allowPublicRegistration = res.data.allowPublicRegistration;
+          }
+          this.loginTitle = res.data.loginTitle || '';
+          this.loginNote = res.data.loginNote || '';
+          this.loginButtonText = res.data.loginButtonText || 'Sign In';
+          this.loginNoteFooter = res.data.loginNoteFooter || '';
         }
       },
-      error: () => {}
+      error: (err) => {
+        if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
+          this.workspaceNotFound = true;
+          this.tenantState.setTenantNotFound(true);
+        }
+      }
     });
   }
 
@@ -921,17 +1032,29 @@ export class LoginComponent implements OnInit {
         // Check for MFA requirement
         if (res?.data?.requiresMfa) {
           this.mfaUserId = res.data.userId;
-          this.mfaProviderLabel = this.getFriendlyMfaProvider(res.data.mfaProvider);
+          this.mfaProvider = res.data.mfaProvider || '';
+          this.mfaProviderLabel = this.getFriendlyMfaProvider(this.mfaProvider);
           this.mfaCode = '';
           this.mfaError = '';
           this.mfaSuccessMessage = '';
           this.showMfaModal = true;
-          this.startMfaCountdown();
+          if (this.canResendMfaCode()) {
+            this.startMfaCountdown();
+          }
           return;
         }
 
         if (res?.data?.token) {
           this.storeLoginSession(res.data);
+
+          // Check if user has incomplete registration onboarding stages to finish
+          if (res.data.requiresOnboarding) {
+            const resumeStep = res.data.onboardingStep || 2;
+            this.router.navigate(['/auth/register'], {
+              queryParams: { resume: 'true', step: resumeStep }
+            });
+            return;
+          }
 
           if (res.data.mustChangePassword) {
             this.showForceChangeModal = true;
@@ -944,6 +1067,12 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
+        if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
+          this.workspaceNotFound = true;
+          this.tenantState.setTenantNotFound(true);
+          return;
+        }
+
         // If unconfirmed email required by policy (403), open OTP verification dialog
         if (err.status === 403) {
           this.showOtpVerifyModal = true;
@@ -967,8 +1096,13 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  canResendMfaCode(): boolean {
+    const p = (this.mfaProvider || '').toLowerCase();
+    return p === 'email' || p === 'sms';
+  }
+
   onVerifyLoginMfa(): void {
-    if (!this.mfaCode || this.mfaCode.length < 6) return;
+    if (!this.mfaCode || this.mfaCode.trim().length < 4) return;
 
     this.mfaLoading = true;
     this.mfaError = '';
@@ -1013,6 +1147,7 @@ export class LoginComponent implements OnInit {
     this.mfaError = '';
     this.mfaSuccessMessage = '';
     this.mfaUserId = '';
+    this.mfaProvider = '';
     this.loading = false;
     if (this.mfaResendInterval) {
       clearInterval(this.mfaResendInterval);
@@ -1034,7 +1169,7 @@ export class LoginComponent implements OnInit {
   }
 
   onResendLoginMfa(): void {
-    if (!this.mfaUserId || this.mfaResendLoading || this.mfaResendCountdown > 0) return;
+    if (!this.canResendMfaCode() || !this.mfaUserId || this.mfaResendLoading || this.mfaResendCountdown > 0) return;
     this.mfaResendLoading = true;
     this.mfaError = '';
     this.mfaSuccessMessage = '';
@@ -1073,6 +1208,15 @@ export class LoginComponent implements OnInit {
     if (data.roles && Array.isArray(data.roles)) {
       localStorage.setItem('user_roles', JSON.stringify(data.roles));
     }
+    this.multiWorkspace.saveSession({
+      tenantKey: data.tenantKey || localStorage.getItem('tenant_key') || '',
+      token: data.token,
+      fullName: data.fullName,
+      email: data.email,
+      roles: data.roles,
+      organizationName: this.brandCompanyName,
+      brandLogoUrl: this.brandLogoUrl
+    });
     this.promptBrowserSavePassword();
   }
 
@@ -1093,26 +1237,28 @@ export class LoginComponent implements OnInit {
   }
 
   private navigateAfterLogin(): void {
-    const rolesJson = localStorage.getItem('user_roles');
-    let isAdmin = false;
-    if (rolesJson) {
-      try {
-        const roles: string[] = JSON.parse(rolesJson);
-        isAdmin = roles.some(r => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'].includes(r.toLowerCase()));
-      } catch {}
-    }
-
+    const userRoles = getStoredUserRoles();
     const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-    // Only navigate to returnUrl if it's a specific deep link, not the generic workspace URL
-    if (returnUrl && typeof returnUrl === 'string' && !returnUrl.startsWith('/auth') && !returnUrl.includes('login') && !returnUrl.includes('access-denied') && returnUrl !== '/dashboard/workspace' && returnUrl !== '/') {
-      this.router.navigateByUrl(returnUrl);
-    } else {
-      if (isAdmin) {
-        this.router.navigate(['/dashboard/console']);
-      } else {
-        this.router.navigate(['/dashboard/workspace']);
+
+    // Only navigate to returnUrl if it's a specific authorized deep link
+    if (
+      returnUrl && 
+      typeof returnUrl === 'string' && 
+      !returnUrl.startsWith('/auth') && 
+      !returnUrl.includes('login') && 
+      !returnUrl.includes('access-denied') && 
+      returnUrl !== '/dashboard/workspace' && 
+      returnUrl !== '/'
+    ) {
+      if (canAccessRoute(undefined, returnUrl, userRoles)) {
+        this.router.navigateByUrl(returnUrl);
+        return;
       }
     }
+
+    // Role-tailored target dashboard
+    const targetDashboard = getReturnUrlForRole(userRoles);
+    this.router.navigate([targetDashboard]);
   }
 
   onForceChangePassword(): void {

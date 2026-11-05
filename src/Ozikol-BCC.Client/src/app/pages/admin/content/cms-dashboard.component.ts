@@ -21,6 +21,10 @@ import { ApiService } from '../../../core/services/api.service';
           <p class="subtitle">Real-time statistics, traffic density analytics, device breakdown, and web structure monitoring.</p>
         </div>
         <div class="header-actions">
+          <a [href]="liveWebsiteUrl" target="_blank" class="btn btn-outline visit-site-btn" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Open live public website in new tab'">
+            <span class="material-symbols-outlined">open_in_new</span>
+            <span>Visit Website</span>
+          </a>
           <a routerLink="/admin/content/pages" class="btn btn-primary">
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Web Page</span>
@@ -32,26 +36,73 @@ import { ApiService } from '../../../core/services/api.service';
         </div>
       </div>
 
-      <!-- 1. Clickable Metric Cards Grid -->
+      <!-- 1. Clickable 5 Comprehensive Smart Cards Grid -->
       <div class="metrics-grid">
-        <!-- Card 1: Web Pages -->
-        <div class="metric-card clickable" (click)="navigateTo('/admin/content/pages')">
+        <!-- Card 1: Web Pages & Sections Engine (Combined) -->
+        <div class="metric-card clickable" (click)="navigateTo('/content/console/pages')">
           <div class="card-top">
             <div class="card-icon bg-blue">
-              <span class="material-symbols-outlined">description</span>
+              <span class="material-symbols-outlined">layers</span>
             </div>
-            <span class="card-chip chip-blue">Live Pages</span>
+            <span class="card-chip chip-blue">Pages &amp; Sections</span>
           </div>
           <div class="card-value">{{ metrics?.totalPages || 0 }}</div>
           <div class="card-label">Total Web Pages</div>
           <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedPages || 0 }} Published</span>
-            <span class="text-amber"><span class="dot bg-amber"></span> {{ metrics?.unpublishedPages || 0 }} Drafts</span>
+            <div class="breakdown-row">
+              <span class="text-teal"><span class="dot bg-teal"></span> <strong>{{ metrics?.totalSections || 0 }}</strong> Sections</span>
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.activeSections || 0 }}</strong> Active</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">home</span> <strong>{{ metrics?.homeSections || 0 }}</strong> On Home Page</span>
+            </div>
           </div>
         </div>
 
-        <!-- Card 2: Categories -->
-        <div class="metric-card clickable" (click)="navigateTo('/admin/content/categories')">
+        <!-- Card 2: Publication & Lifecycle -->
+        <div class="metric-card clickable" (click)="navigateTo('/content/console/pages')">
+          <div class="card-top">
+            <div class="card-icon bg-green">
+              <span class="material-symbols-outlined">published_with_changes</span>
+            </div>
+            <span class="card-chip chip-teal">Page Lifecycle</span>
+          </div>
+          <div class="card-value">{{ metrics?.publishedPages || 0 }}</div>
+          <div class="card-label">Published Web Pages</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-amber"><span class="dot bg-amber"></span> <strong>{{ metrics?.draftPages || 0 }}</strong> Drafts</span>
+              <span class="text-muted"><span class="dot bg-muted"></span> <strong>{{ metrics?.unpublishedPages || 0 }}</strong> Hidden</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">gavel</span> {{ metrics?.legalAndSecurityPages || 0 }} Legal &amp; Security</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Interactive Forms & Submissions -->
+        <div class="metric-card clickable" (click)="navigateTo('/content/console/forms')">
+          <div class="card-top">
+            <div class="card-icon bg-teal">
+              <span class="material-symbols-outlined">dynamic_form</span>
+            </div>
+            <span class="card-chip chip-teal">Forms &amp; Leads</span>
+          </div>
+          <div class="card-value">{{ metrics?.totalForms || 0 }}</div>
+          <div class="card-label">Dynamic Interactive Forms</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ metrics?.totalSubmissions || 0 }}</strong> Submissions</span>
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.newSubmissions || 0 }}</strong> New Leads</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">inbox</span> <strong>{{ metrics?.activeForms || 0 }}</strong> Live &amp; Accepting Submissions</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Menu Categories & Navigation -->
+        <div class="metric-card clickable" (click)="navigateTo('/content/console/categories')">
           <div class="card-top">
             <div class="card-icon bg-purple">
               <span class="material-symbols-outlined">folder_open</span>
@@ -61,54 +112,39 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="card-value">{{ metrics?.totalCategories || 0 }}</div>
           <div class="card-label">Menu Categories</div>
           <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedCategories || 0 }} Published</span>
-            <span class="text-muted"><span class="dot bg-muted"></span> {{ metrics?.unpublishedCategories || 0 }} Hidden</span>
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ metrics?.publishedCategories || 0 }}</strong> Published</span>
+              <span class="text-muted"><span class="dot bg-muted"></span> <strong>{{ metrics?.unpublishedCategories || 0 }}</strong> Hidden</span>
+            </div>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">menu</span> {{ metrics?.topMenuItems || 0 }} Top • {{ metrics?.dropdownItems || 0 }} Dropdown • {{ metrics?.footerLinks || 0 }} Footer</span>
+            </div>
           </div>
         </div>
 
-        <!-- Card 3: Hero Sliders -->
-        <div class="metric-card clickable" (click)="navigateTo('/admin/content/sliders')">
+        <!-- Card 5: Content Health & Alerts -->
+        <div class="metric-card clickable" (click)="openDiagnosticModal()" [title]="(metrics?.emptyPagesCount || 0) > 0 ? 'Click to inspect ' + metrics?.emptyPagesCount + ' content issues' : 'Click to inspect content health status'">
           <div class="card-top">
-            <div class="card-icon bg-amber">
-              <span class="material-symbols-outlined">view_carousel</span>
+            <div class="card-icon" [class.bg-amber]="(metrics?.emptyPagesCount || 0) > 0" [class.bg-green]="(metrics?.emptyPagesCount || 0) === 0">
+              <span class="material-symbols-outlined">{{ (metrics?.emptyPagesCount || 0) > 0 ? 'warning' : 'verified' }}</span>
             </div>
-            <span class="card-chip chip-amber">Carousels</span>
+            <span class="card-chip" [class.chip-amber]="(metrics?.emptyPagesCount || 0) > 0" [class.chip-teal]="(metrics?.emptyPagesCount || 0) === 0">
+              {{ (metrics?.emptyPagesCount || 0) > 0 ? 'Alert' : 'Optimal' }}
+            </span>
           </div>
-          <div class="card-value">{{ metrics?.totalSliders || 0 }}</div>
-          <div class="card-label">Hero Sliders</div>
+          <div class="card-value">{{ (metrics?.emptyPagesCount || 0) > 0 ? metrics?.emptyPagesCount + ' Issues' : 'All Clear' }}</div>
+          <div class="card-label">Content Health &amp; Alerts</div>
           <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedSliders || 0 }} Active</span>
-          </div>
-        </div>
-
-        <!-- Card 4: FAQs -->
-        <div class="metric-card clickable" (click)="navigateTo('/admin/content/faqs')">
-          <div class="card-top">
-            <div class="card-icon bg-teal">
-              <span class="material-symbols-outlined">quiz</span>
+            <div class="breakdown-row">
+              <span [class.text-rose]="(metrics?.emptyPagesCount || 0) > 0" [class.text-green]="(metrics?.emptyPagesCount || 0) === 0">
+                <span class="dot" [class.bg-rose]="(metrics?.emptyPagesCount || 0) > 0" [class.bg-green]="(metrics?.emptyPagesCount || 0) === 0"></span>
+                <strong>{{ metrics?.emptyPagesCount || 0 }}</strong> Layout Issues
+              </span>
+              <span class="text-green"><span class="dot bg-green"></span> 100% Valid Slugs</span>
             </div>
-            <span class="card-chip chip-teal">Knowledge</span>
-          </div>
-          <div class="card-value">{{ metrics?.totalFaqs || 0 }}</div>
-          <div class="card-label">FAQs & Answers</div>
-          <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> {{ metrics?.publishedFaqs || 0 }} Active</span>
-            <span class="text-blue">{{ metrics?.totalFaqCategories || 0 }} Categories</span>
-          </div>
-        </div>
-
-        <!-- Card 5: Template Engine -->
-        <div class="metric-card">
-          <div class="card-top">
-            <div class="card-icon bg-rose">
-              <span class="material-symbols-outlined">palette</span>
+            <div class="breakdown-sub">
+              <span class="sub-badge"><span class="material-symbols-outlined">verified_user</span> System URLs Excluded</span>
             </div>
-            <span class="card-chip chip-rose">Theme Engine</span>
-          </div>
-          <div class="card-value" style="font-size: 18px; margin-top: 6px;">{{ metrics?.templateName || 'Enterprise Pro' }}</div>
-          <div class="card-label">Active Website Theme</div>
-          <div class="card-breakdown">
-            <span class="text-green"><span class="dot bg-green"></span> CSS Tokens Loaded</span>
           </div>
         </div>
       </div>
@@ -184,7 +220,7 @@ import { ApiService } from '../../../core/services/api.service';
               <h3>Most Visited Web Pages</h3>
               <p class="card-sub">Top ranked pages by cumulative user views.</p>
             </div>
-            <a routerLink="/admin/content/pages" class="link-btn">View All Pages &rarr;</a>
+            <a routerLink="/content/console/pages" class="link-btn">View All Pages &rarr;</a>
           </div>
 
           <div class="table-responsive">
@@ -202,7 +238,7 @@ import { ApiService } from '../../../core/services/api.service';
               <tbody>
                 <tr *ngFor="let p of mostVisitedPages">
                   <td><strong>{{ p.title }}</strong></td>
-                  <td><code>/{{ p.slug }}</code></td>
+                  <td><code>{{ formatSlug(p.slug) }}</code></td>
                   <td><span class="badge-cat">{{ p.category }}</span></td>
                   <td><span class="badge-views">{{ p.views }} visits</span></td>
                   <td>
@@ -211,7 +247,10 @@ import { ApiService } from '../../../core/services/api.service';
                     </span>
                   </td>
                   <td>
-                    <a [routerLink]="['/admin/content/pages/edit', p.id]" class="btn-action-sm">Edit</a>
+                    <a [routerLink]="['/content/console/pages/edit', p.id]" class="btn-action-sm">
+                      <span class="material-symbols-outlined btn-sm-icon">edit</span>
+                      <span>Edit</span>
+                    </a>
                   </td>
                 </tr>
                 <tr *ngIf="mostVisitedPages.length === 0">
@@ -226,7 +265,7 @@ import { ApiService } from '../../../core/services/api.service';
         <div class="analytics-card flex-1">
           <div class="card-header-bar">
             <div>
-              <h3>Health & Route Alerts</h3>
+              <h3>Health &amp; Route Alerts</h3>
               <p class="card-sub">Pages requiring review or layout configuration.</p>
             </div>
           </div>
@@ -237,15 +276,82 @@ import { ApiService } from '../../../core/services/api.service';
                 <span class="material-symbols-outlined text-amber">warning</span>
               </div>
               <div class="alert-content">
-                <div class="alert-title">{{ item.title }} (<code>/{{ item.slug }}</code>)</div>
+                <div class="alert-title">{{ item.title }} (<code>{{ formatSlug(item.slug) }}</code>)</div>
                 <div class="alert-desc">{{ item.issue }}</div>
               </div>
-              <a [routerLink]="['/admin/content/pages/edit', item.id]" class="btn-resolve">Fix Page</a>
+              <a [routerLink]="['/content/console/pages/edit', item.id]" class="btn-resolve">
+                <span class="material-symbols-outlined btn-sm-icon">tune</span>
+                <span>Fix Page</span>
+              </a>
             </div>
             <div class="alert-clean" *ngIf="brokenPages.length === 0">
               <span class="material-symbols-outlined text-green">check_circle</span>
               <p>All web pages have valid slugs and published sections!</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Health Diagnostic Modal / Issues Inspector -->
+      <div class="modal-backdrop" *ngIf="showDiagnosticModal" (click)="closeDiagnosticModal()">
+        <div class="diagnostic-modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-amber">health_and_safety</span>
+              <div>
+                <h3>Content Health Diagnostic Inspector</h3>
+                <p class="modal-subtitle">Real-time scan of published web pages and layout section integrity.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="closeDiagnosticModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Healthy State -->
+            <div class="diagnostic-clean-box" *ngIf="brokenPages.length === 0">
+              <span class="material-symbols-outlined text-green-large">verified</span>
+              <h4>100% Optimal Content Health</h4>
+              <p>All published content pages have valid URL routes and active layout sections attached. System and direct routing URLs are excluded.</p>
+            </div>
+
+            <!-- Issues List -->
+            <div class="issues-list" *ngIf="brokenPages.length > 0">
+              <div class="issue-summary-banner">
+                <span class="material-symbols-outlined text-amber">warning</span>
+                <span>Found <strong>{{ brokenPages.length }} page(s)</strong> requiring attention. Fix them below to ensure optimal SEO and visitor experience.</span>
+              </div>
+
+              <div class="issue-card" *ngFor="let page of brokenPages">
+                <div class="issue-card-content">
+                  <div class="issue-title-row">
+                    <strong>{{ page.title }}</strong>
+                    <code class="slug-tag">/{{ page.slug }}</code>
+                  </div>
+                  <div class="issue-description">
+                    <span class="material-symbols-outlined issue-icon">info</span>
+                    <span>{{ page.issue }}</span>
+                  </div>
+                </div>
+                <div class="issue-actions">
+                  <a [routerLink]="['/content/console/pages/details', page.id]" (click)="closeDiagnosticModal()" class="btn-sm btn-sections" title="Add Sections">
+                    <span class="material-symbols-outlined">layers</span>
+                    <span>Sections</span>
+                  </a>
+                  <a [routerLink]="['/content/console/pages/edit', page.id]" (click)="closeDiagnosticModal()" class="btn-sm btn-edit" title="Edit Settings">
+                    <span class="material-symbols-outlined">edit</span>
+                    <span>Edit</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeDiagnosticModal()">Close</button>
+            <a routerLink="/content/console/pages" (click)="closeDiagnosticModal()" class="btn btn-primary">
+              <span class="material-symbols-outlined">description</span>
+              <span>View All Pages</span>
+            </a>
           </div>
         </div>
       </div>
@@ -302,6 +408,17 @@ import { ApiService } from '../../../core/services/api.service';
     .btn-primary:hover { background: #003ebd; transform: translateY(-1px); }
     .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; }
+    .visit-site-btn {
+      color: #0050e5;
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .visit-site-btn:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #003ebd;
+      transform: translateY(-1px);
+    }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -382,22 +499,62 @@ import { ApiService } from '../../../core/services/api.service';
     .chip-teal { background: #f0fdf4; color: #15803d; }
     .chip-rose { background: #fff1f2; color: #be123c; }
 
-    .card-value { font-size: 30px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); }
+    .card-value { font-size: 28px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); line-height: 1.2; }
+    .theme-name-value {
+      font-size: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 4px;
+    }
     .card-label { font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 12px; }
     .card-breakdown {
       display: flex;
-      gap: 12px;
+      flex-direction: column;
+      gap: 6px;
       font-size: 12px;
       font-weight: 600;
       border-top: 1px solid #f1f5f9;
       padding-top: 10px;
     }
+    .breakdown-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .breakdown-sub {
+      display: flex;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .sub-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sub-badge .material-symbols-outlined { font-size: 14px; color: #0050e5; }
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
     .bg-green { background: #22c55e; }
     .bg-amber { background: #f59e0b; }
+    .bg-rose { background: #e11d48; }
     .bg-muted { background: #94a3b8; }
+    .bg-blue { background: #0050e5; }
     .text-green { color: #16a34a; }
     .text-amber { color: #d97706; }
+    .text-rose { color: #e11d48; }
     .text-blue { color: #0050e5; }
     .text-muted { color: #64748b; }
 
@@ -542,15 +699,28 @@ import { ApiService } from '../../../core/services/api.service';
     .status-pill.published { background: #dcfce7; color: #15803d; }
     .status-pill.draft { background: #fef3c7; color: #b45309; }
     .btn-action-sm {
-      padding: 4px 10px;
-      background: #f1f5f9;
-      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      height: 32px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
-      color: #0050e5;
+      color: #1d4ed8;
       text-decoration: none;
+      transition: all 0.15s ease;
     }
-    .btn-action-sm:hover { background: #0050e5; color: #fff; }
+    .btn-action-sm:hover {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #1d4ed8;
+    }
+    .btn-sm-icon {
+      font-size: 16px;
+    }
     .link-btn { font-size: 13px; color: #0050e5; text-decoration: none; font-weight: 600; }
     .link-btn:hover { text-decoration: underline; }
 
@@ -568,13 +738,21 @@ import { ApiService } from '../../../core/services/api.service';
     .alert-title { font-size: 13px; font-weight: 700; color: #92400e; }
     .alert-desc { font-size: 12px; color: #b45309; }
     .btn-resolve {
-      padding: 6px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      height: 34px;
       background: #d97706;
-      color: #fff;
+      color: #ffffff;
       font-size: 12px;
       font-weight: 600;
-      border-radius: 6px;
+      border-radius: 8px;
       text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .btn-resolve:hover {
+      background: #b45309;
     }
     .alert-clean {
       display: flex;
@@ -588,10 +766,221 @@ import { ApiService } from '../../../core/services/api.service';
       font-size: 13px;
       font-weight: 600;
     }
+
+    /* Diagnostic Modal & Inspector Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.15s ease-out;
+    }
+    .diagnostic-modal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-title-group h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .modal-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0;
+    }
+    .btn-close {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      line-height: 1;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .btn-close:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+    .modal-body {
+      padding: 20px 24px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .diagnostic-clean-box {
+      text-align: center;
+      padding: 40px 20px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+    }
+    .text-green-large {
+      font-size: 54px;
+      color: #16a34a;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .diagnostic-clean-box h4 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #15803d;
+      margin: 0 0 6px;
+    }
+    .diagnostic-clean-box p {
+      font-size: 13px;
+      color: #166534;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .issues-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .issue-summary-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #92400e;
+    }
+    .issue-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .issue-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .issue-card-content { flex: 1; }
+    .issue-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .issue-title-row strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .slug-tag {
+      font-size: 12px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-weight: 600;
+    }
+    .issue-description {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #b45309;
+    }
+    .issue-icon {
+      font-size: 16px;
+      color: #d97706;
+    }
+    .issue-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-sections {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .btn-sections:hover {
+      background: #1d4ed8;
+      color: #ffffff;
+    }
+    .btn-edit {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-edit:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+    }
   `]
 })
 export class CmsDashboardComponent implements OnInit {
   loading = false;
+  showDiagnosticModal = false;
   selectedRange = '24h';
   metrics: any = null;
   histogram: any[] = [];
@@ -600,10 +989,73 @@ export class CmsDashboardComponent implements OnInit {
   deviceStats: any[] = [];
   browserStats: any[] = [];
 
+  customDomain: string = localStorage.getItem('tenant_custom_domain') || '';
+  primaryDomain: string = localStorage.getItem('tenant_primary_domain') || '';
+  websiteUrl: string = localStorage.getItem('tenant_website_url') || '';
+
+  get hasCustomDomain(): boolean {
+    return !!(this.customDomain && this.customDomain.trim());
+  }
+
+  formatDomainUrl(domainOrUrl: string): string {
+    if (!domainOrUrl) return '';
+    const trimmed = domainOrUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    const isLocal = trimmed.includes('localhost') || trimmed.includes('127.0.0.1');
+    return `${isLocal ? 'http://' : 'https://'}${trimmed}`;
+  }
+
+  get liveWebsiteUrl(): string {
+    if (this.hasCustomDomain) {
+      return this.formatDomainUrl(this.customDomain);
+    }
+    if (this.websiteUrl && this.websiteUrl.trim()) {
+      return this.formatDomainUrl(this.websiteUrl);
+    }
+    if (this.primaryDomain && this.primaryDomain.trim()) {
+      return this.formatDomainUrl(this.primaryDomain);
+    }
+    return window.location.origin;
+  }
+
   constructor(private api: ApiService, private router: Router) {}
 
   ngOnInit(): void {
     this.loadStats();
+    this.resolveTenantDomain();
+
+    // Listen for real-time domain updates from the Settings page
+    window.addEventListener('tenant_domain_updated', (e: any) => {
+      if (e?.detail) {
+        this.customDomain = e.detail.customDomain || '';
+      }
+    });
+  }
+
+  resolveTenantDomain(): void {
+    this.api.get<any>('DashboardApi/metrics').subscribe({
+      next: (res) => {
+        if (res?.data?.masterTenantInfo) {
+          this.customDomain = res.data.masterTenantInfo.customDomain || '';
+          this.primaryDomain = res.data.masterTenantInfo.primaryDomain || '';
+          this.websiteUrl = res.data.masterTenantInfo.websiteUrl || '';
+          if (this.customDomain) {
+            localStorage.setItem('tenant_custom_domain', this.customDomain);
+          } else {
+            localStorage.removeItem('tenant_custom_domain');
+          }
+          if (this.primaryDomain) {
+            localStorage.setItem('tenant_primary_domain', this.primaryDomain);
+          }
+          if (this.websiteUrl) {
+            localStorage.setItem('tenant_website_url', this.websiteUrl);
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadStats(): void {
@@ -645,5 +1097,19 @@ export class CmsDashboardComponent implements OnInit {
 
   navigateTo(url: string): void {
     this.router.navigateByUrl(url);
+  }
+
+  openDiagnosticModal(): void {
+    this.showDiagnosticModal = true;
+  }
+
+  closeDiagnosticModal(): void {
+    this.showDiagnosticModal = false;
+  }
+
+  formatSlug(slug: string): string {
+    if (!slug) return '/';
+    const trimmed = slug.trim();
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   }
 }

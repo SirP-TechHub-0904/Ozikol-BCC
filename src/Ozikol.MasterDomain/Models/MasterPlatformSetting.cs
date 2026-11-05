@@ -87,6 +87,26 @@ namespace Ozikol.MasterDomain.Models
         public bool EnableTicketAutoClose { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the default number of free trial days granted to new organization workspaces (e.g. 14, 15, 30, 40, 60, 90).
+        /// Defaults to 14 days.
+        /// </summary>
+        public int DefaultTrialDays { get; set; } = 14;
+
+        /// <summary>
+        /// Gets or sets the global default system display 3-letter currency code (e.g. "USD", "NGN", "GBP")
+        /// shown across all amount places on the Central website and used as the fallback currency.
+        /// </summary>
+        [MaxLength(10)]
+        public string DefaultCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Gets or sets the 3-letter ISO currency code used as the Default Exchange Rate Base (1.0000).
+        /// Defaults to "USD" (US Dollar). All other currencies store their exchange rate relative to 1.00 of this currency.
+        /// </summary>
+        [MaxLength(10)]
+        public string DefaultExchangeRateCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
         /// Gets or sets the comma-separated list of support inquiry categories available on the public contact form and enterprise inquiries.
         /// Defaults to "Support, Sales, Billing, Partnership, Enterprise, General".
         /// </summary>
@@ -111,6 +131,190 @@ namespace Ozikol.MasterDomain.Models
                                         .ToList();
             }
         }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary Cloud Name used as the global default for media, assets, and templates.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryCloudName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Key.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Secret.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets the OneSignal App ID used for mobile and desktop push notifications.
+        /// </summary>
+        [MaxLength(255)]
+        public string? OneSignalAppId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Sentry DSN used for client crash reporting on web, mobile, and desktop.
+        /// </summary>
+        [MaxLength(500)]
+        public string? SentryDsn { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Cloudflare Turnstile public Site Key for client-side bot verification.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareTurnstileSiteKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether global platform maintenance mode is engaged.
+        /// </summary>
+        public bool IsMaintenanceMode { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the maintenance message displayed to users when maintenance mode is active.
+        /// </summary>
+        [MaxLength(500)]
+        public string? MaintenanceMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the minimum supported mobile and desktop client application version (e.g. "1.0.0").
+        /// </summary>
+        [MaxLength(50)]
+        public string MinimumAppVersion { get; set; } = "1.0.0";
+
+        /// <summary>
+        /// Gets or sets the MongoDB connection string used strictly for central system logs and telemetry.
+        /// Resolved dynamically from the Master Catalog database so no secrets are stored on client apps.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? MongoLogsConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the MongoDB database name dedicated to central logs (e.g., "OzikolLogsDb").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsDatabaseName { get; set; } = "OzikolLogsDb";
+
+        /// <summary>
+        /// Gets or sets the primary MongoDB collection name for central system events (e.g., "central_system_logs").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsCollectionName { get; set; } = "central_system_logs";
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the Central platform Paystack payment gateway is enabled
+        /// for tenant workspace subscriptions, capability renewals, and add-on checkouts.
+        /// </summary>
+        public bool EnablePaystack { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the Central platform Paystack Public Key (e.g., "pk_live_..." or "pk_test_...")
+        /// used by Paystack Inline Checkout when tenants pay Ozikol Central for subscriptions and renewals.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PaystackPublicKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Paystack Secret Key (e.g., "sk_live_..." or "sk_test_...")
+        /// resolved strictly server-side from MasterCatalogDbContext and never exposed to client payloads.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PaystackSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Paystack Webhook Secret used to validate HMAC-SHA512 signatures
+        /// on incoming central webhook events (/api/paystack-webhook/central). Falls back to PaystackSecretKey when blank.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PaystackWebhookSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the Central platform Flutterwave payment gateway is enabled
+        /// for tenant workspace subscriptions, capability renewals, and add-on checkouts.
+        /// </summary>
+        public bool EnableFlutterwave { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the Central platform Flutterwave Public Key (e.g., "FLWPUBK_LIVE-..." or "FLWPUBK_TEST-...").
+        /// </summary>
+        [MaxLength(255)]
+        public string? FlutterwavePublicKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Flutterwave Secret Key (e.g., "FLWSECK_LIVE-..." or "FLWSECK_TEST-...")
+        /// resolved strictly server-side from MasterCatalogDbContext.
+        /// </summary>
+        [MaxLength(255)]
+        public string? FlutterwaveSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Flutterwave Webhook Secret Hash used to validate incoming webhook callbacks.
+        /// </summary>
+        [MaxLength(255)]
+        public string? FlutterwaveWebhookSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the Central platform Stripe payment gateway is enabled
+        /// for international card and wallet settlements on tenant invoices.
+        /// </summary>
+        public bool EnableStripe { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the Central platform Stripe Publishable Key (e.g., "pk_live_..." or "pk_test_...").
+        /// </summary>
+        [MaxLength(255)]
+        public string? StripePublishableKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Stripe Secret Key (e.g., "sk_live_..." or "sk_test_...")
+        /// resolved strictly server-side from MasterCatalogDbContext.
+        /// </summary>
+        [MaxLength(255)]
+        public string? StripeSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Stripe Webhook Signing Secret (e.g., "whsec_...").
+        /// </summary>
+        [MaxLength(255)]
+        public string? StripeWebhookSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Direct Bank Deposit / Wire Transfer is enabled on Central invoices.
+        /// </summary>
+        public bool EnableBankDeposit { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the beneficiary bank institution name for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(150)]
+        public string? BankDepositBankName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the beneficiary corporate account name for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(150)]
+        public string? BankDepositAccountName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the beneficiary bank account number or IBAN for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(100)]
+        public string? BankDepositAccountNumber { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional routing number, sort code, or SWIFT/BIC code for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(100)]
+        public string? BankDepositSortCodeOrSwift { get; set; }
+
+        /// <summary>
+        /// Gets or sets custom payment narration or verification instructions displayed to tenants when paying via Direct Bank Deposit.
+        /// </summary>
+        [MaxLength(500)]
+        public string? BankDepositInstructions { get; set; }
 
         /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.

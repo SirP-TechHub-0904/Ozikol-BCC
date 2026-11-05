@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Ozikol.Central.Services;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol.Central.Pages
 {
@@ -37,11 +39,11 @@ namespace Ozikol.Central.Pages
         public string WorkspaceSlug { get; set; } = string.Empty;
 
         /// <summary>
-        /// Corporate or work email address for workspace ownership.
+        /// Administrator email address for workspace ownership and root account authentication.
         /// </summary>
-        [Required(ErrorMessage = "Please enter your work email address.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid work email address.")]
-        [Display(Name = "Work Email")]
+        [Required(ErrorMessage = "Please enter your admin email address.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        [Display(Name = "Admin Email Address")]
         [MaxLength(256)]
         public string WorkEmail { get; set; } = string.Empty;
 
@@ -74,16 +76,28 @@ namespace Ozikol.Central.Pages
         [Display(Name = "Referral Code")]
         [MaxLength(100)]
         public string? ReferralCode { get; set; }
+
+        /// <summary>
+        /// Whether to automatically provision the turnkey default website suite.
+        /// </summary>
+        public bool SeedDefaultWebsite { get; set; } = true;
     }
 
     /// <summary>
     /// PageModel orchestrating new organization onboarding, sovereign workspace provisioning, and live address verification.
+    /// Integrates dynamic multi-currency regional pricing, configurable trial periods, and Google reCAPTCHA verification.
     /// </summary>
+    [IgnoreAntiforgeryToken]
     public class GetStartedModel : PageModel
     {
         private readonly ITenantOnboardingService _onboardingService;
         private readonly ICentralEmailService _emailService;
+        private readonly MasterCatalogDbContext _dbContext;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly IRecaptchaService _recaptchaService;
+        private readonly ICurrencyService _currencyService;
+        private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
+        private readonly Microsoft.Extensions.Options.IOptions<PricingSettings> _pricingSettings;
         private readonly ILogger<GetStartedModel> _logger;
 
         /// <summary>
@@ -91,18 +105,33 @@ namespace Ozikol.Central.Pages
         /// </summary>
         /// <param name="onboardingService">The workspace onboarding service.</param>
         /// <param name="emailService">Transactional email service for setup confirmation.</param>
+        /// <param name="dbContext">Central master catalog database context for loading feature plans.</param>
         /// <param name="cache">Memory cache used to store one-time setup summaries.</param>
+        /// <param name="recaptchaService">Google reCAPTCHA verification service.</param>
+        /// <param name="currencyService">Dynamic location-based currency and pricing service.</param>
+        /// <param name="emailValidationService">Email format and disposable domain verification service.</param>
+        /// <param name="pricingSettings">Configured pricing options provider.</param>
         /// <param name="logger">Application logger instance.</param>
         public GetStartedModel(
             ITenantOnboardingService onboardingService,
             ICentralEmailService emailService,
+            MasterCatalogDbContext dbContext,
             Microsoft.Extensions.Caching.Memory.IMemoryCache cache,
+            IRecaptchaService recaptchaService,
+            ICurrencyService currencyService,
+            Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
+            Microsoft.Extensions.Options.IOptions<PricingSettings> pricingSettings,
             ILogger<GetStartedModel> logger)
         {
-            _onboardingService = onboardingService;
-            _emailService = emailService;
-            _cache = cache;
-            _logger = logger;
+            _onboardingService = onboardingService ?? throw new ArgumentNullException(nameof(onboardingService));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
+            _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
+            _emailValidationService = emailValidationService ?? throw new ArgumentNullException(nameof(emailValidationService));
+            _pricingSettings = pricingSettings ?? throw new ArgumentNullException(nameof(pricingSettings));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -110,6 +139,31 @@ namespace Ozikol.Central.Pages
         /// </summary>
         [BindProperty]
         public GetStartedInputModel Input { get; set; } = new();
+
+        /// <summary>
+        /// All active platform features, shown display-only in Step 2 (no billing or selection).
+        /// </summary>
+        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> AllFeatures { get; set; } = new();
+
+        /// <summary>
+        /// Gets the public Google reCAPTCHA site key for widget rendering.
+        /// </summary>
+        public string RecaptchaSiteKey => _recaptchaService.SiteKey;
+
+        /// <summary>
+        /// Gets or sets the number of free trial days granted when registering without a coupon.
+        /// </summary>
+        public int TrialDays { get; set; } = 14;
+
+        /// <summary>
+        /// Gets or sets the 3-letter ISO currency code resolved for the current user (e.g. USD, NGN, GBP, EUR).
+        /// </summary>
+        public string ActiveCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Gets or sets the visual currency symbol for the current user (e.g. $, ₦, £, €).
+        /// </summary>
+        public string ActiveCurrencySymbol { get; set; } = "$";
 
         /// <summary>
         /// User-friendly error message if onboarding or validation encounters an issue.
@@ -138,7 +192,7 @@ namespace Ozikol.Central.Pages
         /// <param name="email">Optional pre-filled email from social identity.</param>
         /// <param name="name">Optional pre-filled full name from social identity.</param>
         /// <param name="org">Optional pre-filled organization name.</param>
-        public void OnGet(string? refCode = null, string? email = null, string? name = null, string? org = null)
+        public async Task OnGetAsync(string? refCode = null, string? email = null, string? name = null, string? org = null)
         {
             if (!string.IsNullOrWhiteSpace(refCode))
             {
@@ -160,6 +214,79 @@ namespace Ozikol.Central.Pages
                 Input.OrganizationName = org.Trim();
                 Input.WorkspaceSlug = SanitizeSlug(org);
             }
+
+            await LoadCatalogFeaturesAsync();
+        }
+
+        private async Task LoadCatalogFeaturesAsync()
+        {
+            // 1. Resolve user's localized currency (kept for downstream services; not shown on this page)
+            ActiveCurrencyCode = _currencyService.ResolveCurrencyCodeFromRequest(HttpContext, null);
+            ActiveCurrencySymbol = _currencyService.ResolveCurrency(ActiveCurrencyCode).Symbol;
+
+            // 2. Resolve default trial days from MasterPlatformSettings table or fallback configuration
+            try
+            {
+                var platformSetting = await _dbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync();
+                TrialDays = platformSetting?.DefaultTrialDays ?? _pricingSettings.Value.DefaultTrialDays;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not query MasterPlatformSettings for trial days; using default config.");
+                TrialDays = _pricingSettings.Value.DefaultTrialDays;
+            }
+
+            if (TrialDays <= 0)
+            {
+                TrialDays = 14;
+            }
+
+            // 3. Query all catalog features (without publish or active restriction, matching the solutions mega-menu showcase)
+            List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> rawFeatures;
+            try
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Include(f => f.Suite)
+                    .ToListAsync();
+            }
+            catch
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .ToListAsync();
+            }
+
+            // Display-only list aligned with MasterFeatureSuites.SortOrder and MasterFeatureCatalogs.SortOrder
+            AllFeatures = rawFeatures
+                .OrderBy(f => f.Suite?.SortOrder ?? GetSuiteOrder(f.Category))
+                .ThenBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Resolves the canonical sequence index for a given suite name matching the CentralWorks catalog.
+        /// </summary>
+        /// <param name="category">The suite or category name.</param>
+        /// <returns>Zero-based canonical sequence index, or 500 if unrecognized.</returns>
+        public static int GetSuiteOrder(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return 999;
+            var idx = Array.FindIndex(Ozikol.Central.Areas.Centralwks.Pages.Features.IndexModel.CanonicalSuites,
+                s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? idx : 500;
+        }
+
+        /// <summary>
+        /// Resolves the canonical single-letter designation (A-K) for a given suite name.
+        /// </summary>
+        /// <param name="category">The suite or category name.</param>
+        /// <returns>Suite character ('A'-'K'), or '•' if unrecognized.</returns>
+        public static char GetSuiteLetter(string? category)
+        {
+            var idx = GetSuiteOrder(category);
+            return (idx >= 0 && idx < 26) ? (char)('A' + idx) : '•';
         }
 
         /// <summary>
@@ -215,9 +342,27 @@ namespace Ozikol.Central.Pages
                 Input.WorkspaceSlug = SanitizeSlug(Input.OrganizationName);
             }
 
+            // 1. Verify Google reCAPTCHA
+            var recaptchaResponse = Request.Form["g-recaptcha-response"].ToString();
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaResponse, clientIp);
+            if (!isCaptchaValid)
+            {
+                ModelState.AddModelError(string.Empty, "Security verification failed. Please complete the reCAPTCHA challenge and try again.");
+                ErrorMessage = "Security verification failed. Please complete the reCAPTCHA challenge and try again.";
+                return await ReturnValidationFailureAsync();
+            }
+
+            if (!_emailValidationService.IsValidEmail(Input.WorkEmail, out var emailError))
+            {
+                ModelState.AddModelError(nameof(Input.WorkEmail), emailError ?? "Please provide a valid work email address.");
+                ErrorMessage = emailError ?? "Please provide a valid work email address.";
+                return await ReturnValidationFailureAsync();
+            }
+
             if (!ModelState.IsValid)
             {
-                return ReturnValidationFailure();
+                return await ReturnValidationFailureAsync();
             }
 
             // Verify slug is not reserved
@@ -225,7 +370,7 @@ namespace Ozikol.Central.Pages
             {
                 ModelState.AddModelError(nameof(Input.WorkspaceSlug), "This workspace address is reserved by the system. Please choose another address.");
                 ErrorMessage = "The workspace address you selected is reserved by the system. Please choose another address.";
-                return ReturnValidationFailure();
+                return await ReturnValidationFailureAsync();
             }
 
             // Verify slug availability
@@ -234,7 +379,7 @@ namespace Ozikol.Central.Pages
             {
                 ModelState.AddModelError(nameof(Input.WorkspaceSlug), "This workspace address is already registered. Please choose another address.");
                 ErrorMessage = "The workspace address you selected is already taken. Please choose another address.";
-                return ReturnValidationFailure();
+                return await ReturnValidationFailureAsync();
             }
 
             // Validate partner code if provided
@@ -245,7 +390,7 @@ namespace Ozikol.Central.Pages
                 {
                     ModelState.AddModelError(nameof(Input.ReferralCode), "The referral code provided is invalid or inactive.");
                     ErrorMessage = "The referral code is invalid or inactive. You can leave it blank to proceed.";
-                    return ReturnValidationFailure();
+                    return await ReturnValidationFailureAsync();
                 }
             }
 
@@ -264,7 +409,9 @@ namespace Ozikol.Central.Pages
                 AdminPassword = Input.Password,
                 PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber) ? null : Input.PhoneNumber.Trim(),
                 ReferredBy = string.IsNullOrWhiteSpace(Input.ReferralCode) ? null : Input.ReferralCode.Trim(),
-                Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim()
+                Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim(),
+                TrialDays = TrialDays > 0 ? TrialDays : 14,
+                SeedDefaultWebsite = false // Modal prompt decides immediately after migrations!
             };
 
             _logger.LogInformation("Initializing sovereign workspace registration for [{WorkspaceSlug}] - {OrgName}", Input.WorkspaceSlug, Input.OrganizationName);
@@ -275,7 +422,7 @@ namespace Ozikol.Central.Pages
             {
                 _logger.LogWarning("Workspace registration failed for [{WorkspaceSlug}]: {Message}", Input.WorkspaceSlug, result.Message);
                 ErrorMessage = result.Message;
-                return ReturnValidationFailure();
+                return await ReturnValidationFailureAsync();
             }
 
             _logger.LogInformation("Successfully provisioned sovereign workspace [{WorkspaceSlug}]. Target portal: {RedirectUrl}", Input.WorkspaceSlug, result.RedirectUrl);
@@ -319,6 +466,8 @@ namespace Ozikol.Central.Pages
                 {
                     success = true,
                     redirectUrl = oneTimeDetailsUrl,
+                    tenantKey = result.TenantKey,
+                    orgName = Input.OrganizationName,
                     message = SuccessMessage
                 });
             }
@@ -327,7 +476,7 @@ namespace Ozikol.Central.Pages
             return Redirect(oneTimeDetailsUrl);
         }
 
-        private IActionResult ReturnValidationFailure()
+        private async Task<IActionResult> ReturnValidationFailureAsync()
         {
             if (IsAjaxRequest())
             {
@@ -343,6 +492,7 @@ namespace Ozikol.Central.Pages
                 });
             }
 
+            await LoadCatalogFeaturesAsync();
             return Page();
         }
 
@@ -369,6 +519,63 @@ namespace Ozikol.Central.Pages
             }
 
             return result.Trim('-');
+        }
+
+        /// <summary>
+        /// AJAX handler: Seeds the turnkey default website suite for the newly provisioned tenant.
+        /// </summary>
+        /// <param name="tenantKey">The tenant identifier passed via query string.</param>
+        /// <param name="orgName">The optional organization name passed via query string.</param>
+        /// <param name="formTenantKey">The optional tenant identifier passed via form body.</param>
+        /// <param name="formOrgName">The optional organization name passed via form body.</param>
+        /// <returns>JSON result indicating outcome and message.</returns>
+        public async Task<IActionResult> OnPostSeedDefaultsAsync(
+            [FromQuery] string? tenantKey = null,
+            [FromQuery] string? orgName = null,
+            [FromForm] string? formTenantKey = null,
+            [FromForm] string? formOrgName = null)
+        {
+            var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
+            var effectiveOrg = (!string.IsNullOrWhiteSpace(orgName) ? orgName : formOrgName)?.Trim();
+
+            _logger.LogInformation("==================================================================");
+            _logger.LogInformation("📥 [Central OnPostSeedDefaultsAsync] Request received. TenantKey: '{TenantKey}', OrgName: '{OrgName}'", effectiveKey, effectiveOrg);
+
+            if (string.IsNullOrWhiteSpace(effectiveKey))
+            {
+                _logger.LogWarning("❌ [Central OnPostSeedDefaultsAsync] Tenant key is missing from both query and form!");
+                return new JsonResult(new { success = false, message = "Missing tenant key." });
+            }
+
+            _logger.LogInformation("🌱 [Central Seeding] Dispatching SeedTenantDefaultWebsiteAsync for [{TenantKey}]...", effectiveKey);
+            var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(effectiveKey, effectiveOrg);
+            _logger.LogInformation("🎯 [Central Seeding] Finished for [{TenantKey}]. Result: {Success}", effectiveKey, success ? "SUCCESS (Turnkey suite active)" : "FAILED");
+            _logger.LogInformation("==================================================================");
+
+            return new JsonResult(new { success = success, message = success ? "Default website seeded successfully!" : "Failed to seed default website." });
+        }
+
+        /// <summary>
+        /// AJAX handler: Skips default website seeding and marks tenant in blank canvas mode.
+        /// </summary>
+        /// <param name="tenantKey">The tenant identifier passed via query string.</param>
+        /// <param name="formTenantKey">The optional tenant identifier passed via form body.</param>
+        /// <returns>JSON result indicating outcome and message.</returns>
+        public async Task<IActionResult> OnPostSkipDefaultsAsync(
+            [FromQuery] string? tenantKey = null,
+            [FromForm] string? formTenantKey = null)
+        {
+            var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
+
+            if (string.IsNullOrWhiteSpace(effectiveKey))
+            {
+                _logger.LogWarning("OnPostSkipDefaultsAsync: Tenant key is missing.");
+                return new JsonResult(new { success = false, message = "Missing tenant key." });
+            }
+
+            _logger.LogInformation("⚪ Marking tenant [{TenantKey}] in blank canvas mode.", effectiveKey);
+            var success = await _onboardingService.SkipTenantDefaultWebsiteAsync(effectiveKey);
+            return new JsonResult(new { success = success, message = "Blank canvas initialized." });
         }
     }
 }

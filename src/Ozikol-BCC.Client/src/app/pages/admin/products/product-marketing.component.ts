@@ -557,7 +557,7 @@ export class ProductMarketingComponent implements OnInit {
       <div style="max-width:600px; margin:0 auto; font-family:Arial,sans-serif; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
         <div style="background:#0050e5; color:#ffffff; padding:20px; text-align:center;">
           <h1 style="margin:0; font-size:22px;">🚀 NEW RELEASE ANNOUNCEMENT</h1>
-          <p style="margin:4px 0 0; font-size:13px; opacity:0.9;">Available now in the Ozikol Store</p>
+          <p style="margin:4px 0 0; font-size:13px; opacity:0.9;">Available now in the Online Store</p>
         </div>
         <div style="padding:24px; text-align:center;">
           <img src="${p.coverImageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800'}" style="max-width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:16px;" />
@@ -565,7 +565,7 @@ export class ProductMarketingComponent implements OnInit {
           <p style="color:#64748b; font-size:14px; line-height:1.6; margin:0 0 16px;">${p.shortDescription || 'Experience the highest standard in digital performance and productivity.'}</p>
           <div style="font-size:26px; font-weight:bold; color:#0050e5; margin-bottom:18px;">${this.currencySymbol}${p.price}</div>
           <div>
-            <a href="http://localhost:4200/store" style="display:inline-block; background:#0050e5; color:#ffffff; padding:14px 28px; border-radius:8px; font-weight:bold; text-decoration:none; font-size:15px;">Get Instant Access →</a>
+            <a href="/store" style="display:inline-block; background:#0050e5; color:#ffffff; padding:14px 28px; border-radius:8px; font-weight:bold; text-decoration:none; font-size:15px;">Get Instant Access →</a>
           </div>
         </div>
       </div>

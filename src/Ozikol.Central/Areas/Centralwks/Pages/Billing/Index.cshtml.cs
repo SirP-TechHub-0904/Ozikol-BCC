@@ -49,7 +49,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
         /// Optional tenant filter.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int? TenantId { get; set; }
+        public Guid? TenantId { get; set; }
 
         /// <summary>
         /// 1-based page index.

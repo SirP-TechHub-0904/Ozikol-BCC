@@ -243,6 +243,25 @@ public class TenantProvisioningService : ITenantProvisioningService
             }
         }
 
+        // Register custom domain in Mailcow if present
+        if (!string.IsNullOrEmpty(tenant.CustomDomain))
+        {
+            try
+            {
+                var mailcow = _serviceProvider.GetService(typeof(Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService))
+                    as Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService;
+                if (mailcow != null)
+                {
+                    _logger.LogInformation("📧 [TenantProvisioning] Auto-provisioning custom domain '{Domain}' on Mailcow...", tenant.CustomDomain);
+                    await mailcow.EnsureDomainExistsAsync(tenant.CustomDomain, $"Workspace {tenant.TenantKey} Domain", cancellationToken);
+                }
+            }
+            catch (Exception mailcowEx)
+            {
+                _logger.LogWarning(mailcowEx, "⚠️ [TenantProvisioning] Non-blocking Mailcow registration warning for '{Domain}'", tenant.CustomDomain);
+            }
+        }
+
         return true;
     }
 
@@ -351,34 +370,40 @@ END";
                 }
             }
 
-            // 3. Seed ConfigSetting (Website Title, Company Name)
-            if (!await dbContext.ConfigSettings.AnyAsync(cancellationToken))
+            // 3. Seed MisWebsiteSetting (Brand Name, Website Title, Default Controls)
+            if (!await dbContext.MisWebsiteSettings.AnyAsync(cancellationToken))
             {
-                dbContext.ConfigSettings.Add(new ConfigSetting
+                dbContext.MisWebsiteSettings.Add(new MisWebsiteSetting
                 {
                     Id = Guid.NewGuid(),
-                    CompanyName = request.OrganizationName,
-                    CompanyIconUrl = "/favicon.ico",
-                    WebsiteTitle = request.OrganizationName,
-                    DashboardTitle = $"{request.OrganizationName} Command Center",
-                    TemplateLayoutKey = "standard",
-                    ProductTitle = "Online Store",
-                    ShowProductsInMenu = true,
-                    ShowProductsInFooter = true,
-                    ActivateProductsInHome = false,
-                    CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    BrandName = request.OrganizationName,
+                    SiteTitle = request.OrganizationName,
+                    Tagline = $"{request.OrganizationName} Sovereign Platform",
+                    CopyrightNotice = $"© {DateTime.UtcNow.Year} {request.OrganizationName}. All rights reserved.",
+                    EnableComingSoon = false,
+                    RemovePlatformWatermark = false
                 });
             }
 
-            // 4. Seed BcpSetting
-            if (!await dbContext.BcpSettings.AnyAsync(cancellationToken))
+            // 4. Seed MisConfigurationSetting (Currency, Quotas, Gateways)
+            if (!await dbContext.MisConfigurationSettings.AnyAsync(cancellationToken))
             {
-                dbContext.BcpSettings.Add(new BcpSetting
+                dbContext.MisConfigurationSettings.Add(new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
                     CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    CurrencySymbol = "$",
+                    EnableSms = true,
+                    EmailProvider = "Mailcow",
+                    SmtpHost = "mail.ozikol.cloud",
+                    SmtpPort = 587,
+                    SmtpUsername = "noreply@ozikol.cloud",
+                    SmtpEnableSsl = true,
+                    SenderEmail = $"noreply@{request.TenantKey?.ToLowerInvariant() ?? "workspace"}.ozikol.cloud",
+                    SenderName = request.OrganizationName,
+                    MaximumUsers = 1000,
+                    SessionTimeoutMinutes = 120,
+                    EnableListDownload = true
                 });
             }
 
@@ -448,44 +473,44 @@ END";
                 dbContext.WebPages.AddRange(homePage, aboutPage, servicesPage, requestServicePage, contactPage);
             }
 
-            // 6. Seed Default Hero Slider
-            if (!await dbContext.Sliders.AnyAsync(cancellationToken))
-            {
-                dbContext.Sliders.Add(new Slider
-                {
-                    Id = Guid.NewGuid(),
-                    Title = $"Welcome to {request.OrganizationName}",
-                    Text = "Modern workspace management, member governance, and dynamic digital experience.",
-                    ButtonText = "Get Started",
-                    ButtonLink = "/auth/login",
-                    Show = true,
-                    SortOrder = 1
-                });
-            }
-
-            // 7. Seed Default Page Sections
+            // 6. Seed Starter Page Sections attached to the Home Page
             if (!await dbContext.PageSections.AnyAsync(cancellationToken))
             {
+                var home = await dbContext.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home", cancellationToken);
+                var targetPageId = home?.Id ?? Guid.NewGuid();
+
                 dbContext.PageSections.AddRange(
                     new PageSection
                     {
                         Id = Guid.NewGuid(),
-                        Title = $"About {request.OrganizationName}",
-                        MiniTitle = "Who We Are",
-                        Description = $"{request.OrganizationName} provides modern community and organizational management.",
-                        ShowInHome = true,
-                        HomePageSortOrder = 1,
-                        TemplateKey = "_About"
+                        WebPageId = targetPageId,
+                        Title = $"Welcome to {request.OrganizationName}",
+                        MiniTitle = "Enterprise Solutions",
+                        Description = "Modern workspace management, member governance, and dynamic digital experience.",
+                        ButtonText = "Get Started",
+                        ButtonLink = "/auth/login",
+                        PageSortOrder = 1,
+                        TemplateKey = "Hero_CorporateSplit"
                     },
                     new PageSection
                     {
                         Id = Guid.NewGuid(),
+                        WebPageId = targetPageId,
+                        Title = $"About {request.OrganizationName}",
+                        MiniTitle = "Who We Are",
+                        Description = $"{request.OrganizationName} provides modern community and organizational management.",
+                        PageSortOrder = 2,
+                        TemplateKey = "Body_MissionSplit"
+                    },
+                    new PageSection
+                    {
+                        Id = Guid.NewGuid(),
+                        WebPageId = targetPageId,
                         Title = "Our Services & Features",
                         MiniTitle = "What We Do",
                         Description = "Explore the full suite of services and modules available on our platform.",
-                        ShowInHome = true,
-                        HomePageSortOrder = 2,
-                        TemplateKey = "_Service"
+                        PageSortOrder = 3,
+                        TemplateKey = "Body_FeatureGrid3"
                     }
                 );
             }

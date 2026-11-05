@@ -3,19 +3,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-identity-policies',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-page">
       <app-page-header
-        eyebrow="SECURITY STANDARDS"
+        [eyebrow]="'identity.policy.eyebrow' | translate:'SECURITY STANDARDS'"
         icon="policy"
-        title="Global Security Policies"
-        subtitle="Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options."
+        [title]="'identity.policy.title' | translate:'Global Security Policies'"
+        [subtitle]="'identity.policy.subtitle' | translate:'Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -26,13 +28,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           <div class="widget-head">
             <div class="widget-title-wrap">
               <span class="material-symbols-outlined text-blue">password</span>
-              <h2 class="widget-title">Password Complexity Controls</h2>
+              <h2 class="widget-title">{{ 'identity.policy.pwd_controls' | translate:'Password Complexity Controls' }}</h2>
             </div>
           </div>
           <div class="widget-body">
             <div class="form-container">
               <div class="form-group">
-                <label class="form-label">Minimum Character Length</label>
+                <label class="form-label">{{ 'identity.policy.min_length' | translate:'Minimum Character Length' }}</label>
                 <input
                   type="number"
                   min="6"
@@ -45,8 +47,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <!-- Switches List -->
               <div class="switch-item">
                 <div class="switch-label-wrap">
-                  <span class="switch-title">Require Uppercase Letter</span>
-                  <span class="switch-desc">At least one uppercase character (A-Z) in the password.</span>
+                  <span class="switch-title">{{ 'identity.policy.req_upper' | translate:'Require Uppercase Letter' }}</span>
+                  <span class="switch-desc">{{ 'identity.policy.req_upper_desc' | translate:'At least one uppercase character (A-Z) in the password.' }}</span>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="passwordPolicy.requireUppercase" />
@@ -56,8 +58,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="switch-item">
                 <div class="switch-label-wrap">
-                  <span class="switch-title">Require Lowercase Letter</span>
-                  <span class="switch-desc">At least one lowercase character (a-z) in the password.</span>
+                  <span class="switch-title">{{ 'identity.policy.req_lower' | translate:'Require Lowercase Letter' }}</span>
+                  <span class="switch-desc">{{ 'identity.policy.req_lower_desc' | translate:'At least one lowercase character (a-z) in the password.' }}</span>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="passwordPolicy.requireLowercase" />
@@ -67,8 +69,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="switch-item">
                 <div class="switch-label-wrap">
-                  <span class="switch-title">Require Numeric Digit</span>
-                  <span class="switch-desc">At least one number (0-9) in the password.</span>
+                  <span class="switch-title">{{ 'identity.policy.req_digit' | translate:'Require Numeric Digit' }}</span>
+                  <span class="switch-desc">{{ 'identity.policy.req_digit_desc' | translate:'At least one number (0-9) in the password.' }}</span>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="passwordPolicy.requireDigit" />
@@ -78,8 +80,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="switch-item">
                 <div class="switch-label-wrap">
-                  <span class="switch-title">Require Non-Alphanumeric Symbol</span>
-                  <span class="switch-desc">At least one special character (e.g. &#64;, #, $, %) in the password.</span>
+                  <span class="switch-title">{{ 'identity.policy.req_symbol' | translate:'Require Non-Alphanumeric Symbol' }}</span>
+                  <span class="switch-desc">{{ 'identity.policy.req_symbol_desc' | translate:'At least one special character (e.g. @, #, $, %) in the password.' }}</span>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="passwordPolicy.requireNonAlphanumeric" />
@@ -89,7 +91,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="form-group-2row" style="margin-top: 16px;">
                 <div class="form-group">
-                  <label class="form-label">Max Login Attempts Lockout</label>
+                  <label class="form-label">{{ 'identity.policy.max_attempts' | translate:'Max Login Attempts Lockout' }}</label>
                   <input
                     type="number"
                     min="3"
@@ -99,7 +101,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Lockout Duration (Minutes)</label>
+                  <label class="form-label">{{ 'identity.policy.lockout_duration' | translate:'Lockout Duration (Minutes)' }}</label>
                   <input
                     type="number"
                     min="5"
@@ -113,7 +115,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <div style="display:flex; justify-content:flex-end; margin-top:24px;">
                 <button type="button" class="btn btn-primary" (click)="savePasswordPolicy()" [disabled]="isSavingPassword">
                   <span class="material-symbols-outlined" *ngIf="!isSavingPassword">save</span>
-                  <span>{{ isSavingPassword ? 'Saving...' : 'Save Password Policy' }}</span>
+                  <span>{{ isSavingPassword ? ('identity.policy.saving' | translate:'Saving...') : ('identity.policy.btn_save_pwd' | translate:'Save Password Policy') }}</span>
                 </button>
               </div>
             </div>
@@ -125,15 +127,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           <div class="widget-head">
             <div class="widget-title-wrap">
               <span class="material-symbols-outlined text-purple">phonelink_lock</span>
-              <h2 class="widget-title">Multi-Factor Authentication (MFA)</h2>
+              <h2 class="widget-title">{{ 'identity.policy.mfa_title' | translate:'Multi-Factor Authentication (MFA)' }}</h2>
             </div>
           </div>
           <div class="widget-body">
             <div class="form-container">
               <div class="switch-item">
                 <div class="switch-label-wrap">
-                  <span class="switch-title">Enforce MFA Globally</span>
-                  <span class="switch-desc">Every platform user is required to set up and verify through MFA before accessing workspaces.</span>
+                  <span class="switch-title">{{ 'identity.policy.enforce_mfa_global' | translate:'Enforce MFA Globally' }}</span>
+                  <span class="switch-desc">{{ 'identity.policy.enforce_mfa_global_desc' | translate:'Every platform user is required to set up and verify through MFA before accessing workspaces.' }}</span>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="mfaPolicy.enforceMfaForAllUsers" />
@@ -143,8 +145,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="switch-item">
                 <div class="switch-label-wrap">
-                  <span class="switch-title">Enforce MFA for Administrators</span>
-                  <span class="switch-desc">Requires users in Admin or SuperAdmin groups to perform verification challenges.</span>
+                  <span class="switch-title">{{ 'identity.policy.enforce_mfa_admins' | translate:'Enforce MFA for Administrators' }}</span>
+                  <span class="switch-desc">{{ 'identity.policy.enforce_mfa_admins_desc' | translate:'Requires users in Admin or SuperAdmin groups to perform verification challenges.' }}</span>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="mfaPolicy.enforceMfaForAdmins" />
@@ -153,7 +155,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </div>
 
               <!-- Available Methods Display (Informational) -->
-              <h4 class="info-title" style="margin-top:24px; margin-bottom:12px;">Allowed Methods Matrix</h4>
+              <h4 class="info-title" style="margin-top:24px; margin-bottom:12px;">{{ 'identity.policy.allowed_methods' | translate:'Allowed Methods Matrix' }}</h4>
               <div class="allowed-methods-list">
                 <div class="method-badge" *ngFor="let method of mfaPolicy.allowedMethods">
                   <span class="material-symbols-outlined" style="font-size:16px;">gpp_good</span>
@@ -164,7 +166,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <div style="display:flex; justify-content:flex-end; margin-top:36px;">
                 <button type="button" class="btn btn-primary" (click)="saveMfaPolicy()" [disabled]="isSavingMfa">
                   <span class="material-symbols-outlined" *ngIf="!isSavingMfa">save</span>
-                  <span>{{ isSavingMfa ? 'Saving...' : 'Save MFA Policy' }}</span>
+                  <span>{{ isSavingMfa ? ('identity.policy.saving' | translate:'Saving...') : ('identity.policy.btn_save_mfa' | translate:'Save MFA Policy') }}</span>
                 </button>
               </div>
             </div>
@@ -374,15 +376,21 @@ export class IdentityPoliciesComponent implements OnInit {
     allowedMethods: [] as string[]
   };
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Reset Settings',
-      icon: 'refresh',
-      action: () => { this.loadPolicies(); }
-    }
-  ];
+  constructor(
+    private api: ApiService,
+    private toast: ToastService,
+    private translationService: TranslationService
+  ) {}
 
-  constructor(private api: ApiService, private toast: ToastService) {}
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('identity.policy.btn_reset', 'Reset Settings'),
+        icon: 'refresh',
+        action: () => { this.loadPolicies(); }
+      }
+    ];
+  }
 
   ngOnInit(): void {
     this.loadPolicies();

@@ -6,6 +6,26 @@ import { ResetPasswordComponent } from './pages/auth/reset-password/reset-passwo
 import { AccessDeniedComponent } from './pages/auth/access-denied/access-denied.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 
+// Committees & Sub-Groups Suite (Feature #1: bcp-committees)
+import { CommitteesAdminDashboardComponent } from './pages/admin/committees/committees-admin-dashboard.component';
+import { CommitteesManageComponent } from './pages/admin/committees/committees-manage.component';
+import { CommitteesFormsComponent } from './pages/admin/committees/committees-forms.component';
+import { CommitteesRegistrationsComponent } from './pages/admin/committees/committees-registrations.component';
+import { CommitteesReportsAdminComponent } from './pages/admin/committees/committees-reports-admin.component';
+import { CommitteesSettingsComponent } from './pages/admin/committees/committees-settings.component';
+import { CommitteesMemberHubComponent } from './pages/workspace/committees/committees-member-hub.component';
+import { CommitteesDiscoverComponent } from './pages/workspace/committees/committees-discover.component';
+import { CommitteesMemberDetailComponent } from './pages/workspace/committees/committees-member-detail.component';
+import { CommitteesReportComposerComponent } from './pages/workspace/committees/committees-report-composer.component';
+import { CommitteesCloudVaultComponent } from './pages/workspace/committees/committees-cloud-vault.component';
+
+// Workforce Rota & Attendance Suite (bcp-staff-rota & bcp-attendance-tracking)
+import { WorkforceScheduleComponent } from './pages/admin/workforce/workforce-schedule.component';
+import { WorkforceSitesComponent } from './pages/admin/workforce/workforce-sites.component';
+import { WorkforceAttendanceLiveComponent } from './pages/admin/workforce/workforce-attendance-live.component';
+import { WorkforceMyShiftsComponent } from './pages/workspace/workforce/workforce-my-shifts.component';
+import { WorkforceClockComponent } from './pages/workspace/workforce/workforce-clock.component';
+
 // Dashboards
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
 import { WorkspaceDashboardComponent } from './pages/workspace/workspace-dashboard.component';
@@ -35,20 +55,28 @@ import { KpiMetricEditComponent } from './pages/admin/users/kpi-metric-edit.comp
 import { KpiGradeComponent } from './pages/admin/users/kpi-grade.component';
 import { UserActivityComponent } from './pages/admin/users/user-activity.component';
 import { NotificationsManagementComponent } from './pages/admin/users/notifications-management.component';
+import { RegistrationFormBuilderComponent } from './pages/admin/users/registration-form-builder.component';
+import { AuthPageSetupComponent } from './pages/admin/users/auth-page-setup.component';
+import { UserSettingsComponent } from './pages/admin/users/user-settings.component';
 import { WorkspaceNotificationsComponent } from './pages/workspace/workspace-notifications.component';
 
 import { IdentityDashboardComponent } from './pages/admin/identity/identity-dashboard.component';
 import { IdentityRolesComponent } from './pages/admin/identity/identity-roles.component';
 import { IdentityInvitationsComponent } from './pages/admin/identity/identity-invitations.component';
+import { IdentityInvitationCreateComponent } from './pages/admin/identity/identity-invitation-create.component';
 import { IdentityAuditLogsComponent } from './pages/admin/identity/identity-audit-logs.component';
 import { IdentityPoliciesComponent } from './pages/admin/identity/identity-policies.component';
+import { IdentityAccountComponent } from './pages/admin/identity/identity-account.component';
 import { GroupsComponent } from './pages/admin/groups/groups.component';
 import { SettingsComponent } from './pages/admin/settings/settings.component';
+import { CustomDomainComponent } from './pages/admin/settings/custom-domain.component';
 
 import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.component';
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
 import { MyTemplatesComponent } from './pages/admin/content/templates/my-templates.component';
-import { CreateCustomTemplateComponent } from './pages/admin/content/templates/create-custom-template.component';
+import { TemplateVisualsComponent } from './pages/admin/content/templates/template-visuals.component';
+import { ImportWebsiteTemplateComponent } from './pages/admin/content/templates/import-website-template.component';
+import { TemplateMaintenanceComponent } from './pages/admin/content/templates/template-maintenance.component';
 import { FormsListComponent } from './pages/admin/content/forms/forms-list.component';
 import { FormBuilderComponent } from './pages/admin/content/forms/form-builder.component';
 import { FormSubmissionsComponent } from './pages/admin/content/forms/form-submissions.component';
@@ -64,11 +92,6 @@ import { PageSectionEditComponent } from './pages/admin/content/page-section-edi
 import { PageSectionDeleteComponent } from './pages/admin/content/page-section-delete.component';
 import { PageSectionListEditComponent } from './pages/admin/content/page-section-list-edit.component';
 import { PageSectionListDeleteComponent } from './pages/admin/content/page-section-list-delete.component';
-import { SlidersComponent } from './pages/admin/content/sliders.component';
-import { SliderEditComponent } from './pages/admin/content/slider-edit.component';
-import { FaqsComponent } from './pages/admin/content/faqs.component';
-import { FaqEditComponent } from './pages/admin/content/faq-edit.component';
-import { FaqDeleteComponent } from './pages/admin/content/faq-delete.component';
 import { BlogsManagementComponent } from './pages/admin/cms/blogs-management.component';
 import { BlogCategoriesManagementComponent } from './pages/admin/cms/blog-categories-management.component';
 import { BlogCategoryDeleteComponent } from './pages/admin/cms/blog-category-delete.component';
@@ -78,7 +101,6 @@ import { UserDeleteComponent } from './pages/admin/users/user-delete.component';
 import { UserCategoryDeleteComponent } from './pages/admin/users/user-category-delete.component';
 import { KpiMetricDeleteComponent } from './pages/admin/users/kpi-metric-delete.component';
 import { WebPageDeleteComponent } from './pages/admin/content/web-page-delete.component';
-import { SliderDeleteComponent } from './pages/admin/content/slider-delete.component';
 
 // Commerce Studio & Storefront Components
 import { ProductsListComponent } from './pages/admin/products/products-list.component';
@@ -94,6 +116,10 @@ import { ProductOrdersComponent } from './pages/admin/products/product-orders.co
 import { ProductTransactionsComponent } from './pages/admin/products/product-transactions.component';
 import { ProductOrderDetailsComponent } from './pages/admin/products/product-order-details.component';
 
+// Suite 13: Billing & Subscriptions Console
+import { BillingConsoleComponent } from './pages/admin/billing/billing-console.component';
+import { WorkstationsConsoleComponent } from './pages/admin/workstations/workstations-console.component';
+
 // Public Storefront
 import { StoreCatalogComponent } from './pages/store/store-catalog.component';
 import { StoreProductDetailsComponent } from './pages/store/store-product-details.component';
@@ -101,17 +127,49 @@ import { StoreCartComponent } from './pages/store/store-cart.component';
 import { StoreCheckoutComponent } from './pages/store/store-checkout.component';
 
 import { authGuard } from './core/guards/auth.guard';
+import { featureGuard } from './core/guards/feature.guard';
+import { FeatureUnavailableComponent } from './pages/auth/feature-unavailable/feature-unavailable.component';
+
+import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 
 export const routes: Routes = [
-  // Public & Authentication
-  { path: '', component: LandingComponent },
-  { path: 'auth/login', component: LoginComponent },
-  { path: 'login', redirectTo: 'auth/login' },
+  // Public Landing
+  { path: '', component: LandingComponent, pathMatch: 'full' },
+
+  // Unified Authentication Shell & Flows (Login, Password Reset, Access Denied) - Dedicated Split-Screen
+  {
+    path: 'auth',
+    component: AuthLayoutComponent,
+    children: [
+      { path: '', redirectTo: 'login', pathMatch: 'full' },
+      { path: 'login', component: LoginComponent },
+      { path: 'reset-password', component: ResetPasswordComponent },
+      { path: 'forgot-password', component: ResetPasswordComponent },
+      { path: 'access-denied', component: AccessDeniedComponent },
+      { path: 'feature-unavailable', component: FeatureUnavailableComponent },
+      { path: 'feature-not-available', redirectTo: 'feature-unavailable', pathMatch: 'full' },
+      { path: 'register', redirectTo: '/register', pathMatch: 'full' }
+    ]
+  },
+
+  // Dedicated Standalone Member Onboarding & Registration Suite (Full-Width Viewport, Outside AuthLayout)
   { path: 'register', component: RegisterComponent },
-  { path: 'auth/register', component: RegisterComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
-  { path: 'auth/reset-password', component: ResetPasswordComponent },
-  { path: 'access-denied', component: AccessDeniedComponent },
+  { path: 'join', component: RegisterComponent },
+  { path: 'apply', component: RegisterComponent },
+  { path: 'enroll', component: RegisterComponent },
+  { path: 'get-started', component: RegisterComponent },
+  { path: 'onboarding', component: RegisterComponent },
+  { path: 'signup', component: RegisterComponent },
+  { path: 'auth/:customSlug', component: RegisterComponent },
+  { path: 'join-committee', component: LandingComponent },
+  { path: 'join-committee/:tenantSlug', component: LandingComponent },
+  { path: 'join-committee/:tenantSlug/:groupSlug', component: LandingComponent },
+  { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
+  { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
+  { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
+  { path: 'access-denied', redirectTo: 'auth/access-denied', pathMatch: 'full' },
+  { path: 'feature-unavailable', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
+  { path: 'feature-not-available', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
 
   // Public Storefront & Commerce Catalog
   { path: 'store', component: StoreCatalogComponent },
@@ -124,32 +182,66 @@ export const routes: Routes = [
     path: '',
     component: AdminLayoutComponent,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       // 1. Unified Dashboards
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'CmsManager'] } },
+      { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager', 'CmsManager'] } },
       { path: 'dashboard/workspace', component: WorkspaceDashboardComponent },
+      { path: 'dashboard/mxmails', loadComponent: () => import('./pages/admin/mxmails/mxmails.component').then(m => m.MxMailsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'admin/dashboard/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
+      { path: 'admin/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
+      { path: 'mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
+      { path: 'dashboard/mxsms', loadComponent: () => import('./pages/admin/mxsms/mxsms.component').then(m => m.MxSmsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'admin/dashboard/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
+      { path: 'admin/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
+      { path: 'mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
 
-      // 2. User Management Suite: Console (Admin)
-      { path: 'users/console', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/dashboard', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/list', component: UsersListComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/create', component: UserCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/details/:id', component: UserDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/edit/:id', component: UserEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/delete/:id', component: UserDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories', component: UserCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories/create', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories/edit/:id', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories/delete/:id', component: UserCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi', component: UserKpiComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/metrics/create', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/metrics/edit/:id', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/metrics/delete/:id', component: KpiMetricDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      // 2. User Management Suite: Console (Admin & User Manager)
+      { path: 'users/console', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/dashboard', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/list', component: UsersListComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/create', component: UserCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/details/:id', component: UserDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/details/:id/permissions', loadComponent: () => import('./pages/admin/users/user-permissions.component').then(m => m.UserPermissionsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/permissions/:id', loadComponent: () => import('./pages/admin/users/user-permissions.component').then(m => m.UserPermissionsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/edit/:id', component: UserEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/delete/:id', component: UserDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories', component: UserCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories/create', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories/edit/:id', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories/delete/:id', component: UserCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi', component: UserKpiComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/metrics/create', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/metrics/edit/:id', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/metrics/delete/:id', component: KpiMetricDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/auth-setup', component: AuthPageSetupComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+
+      // Backward-Compatibility Aliases for Admin Users Suite
+      { path: 'admin/users', redirectTo: 'users/console/list', pathMatch: 'full' },
+      { path: 'admin/users/dashboard', redirectTo: 'users/console/dashboard', pathMatch: 'full' },
+      { path: 'admin/users/list', redirectTo: 'users/console/list', pathMatch: 'full' },
+      { path: 'admin/users/create', redirectTo: 'users/console/create', pathMatch: 'full' },
+      { path: 'admin/users/details/:id', redirectTo: 'users/console/details/:id' },
+      { path: 'admin/users/edit/:id', redirectTo: 'users/console/edit/:id' },
+      { path: 'admin/users/delete/:id', redirectTo: 'users/console/delete/:id' },
+      { path: 'admin/users/categories', redirectTo: 'users/console/categories', pathMatch: 'full' },
+      { path: 'admin/users/categories/create', redirectTo: 'users/console/categories/create', pathMatch: 'full' },
+      { path: 'admin/users/categories/edit/:id', redirectTo: 'users/console/categories/edit/:id' },
+      { path: 'admin/users/categories/delete/:id', redirectTo: 'users/console/categories/delete/:id' },
+      { path: 'admin/users/kpi', redirectTo: 'users/console/kpi', pathMatch: 'full' },
+      { path: 'admin/users/kpi/metrics/create', redirectTo: 'users/console/kpi/metrics/create', pathMatch: 'full' },
+      { path: 'admin/users/kpi/metrics/edit/:id', redirectTo: 'users/console/kpi/metrics/edit/:id' },
+      { path: 'admin/users/kpi/metrics/delete/:id', redirectTo: 'users/console/kpi/metrics/delete/:id' },
+      { path: 'admin/users/kpi/grade/:userId', redirectTo: 'users/console/kpi/grade/:userId' },
+      { path: 'admin/users/activity', redirectTo: 'users/console/activity', pathMatch: 'full' },
+      { path: 'admin/users/settings', redirectTo: 'users/console/settings', pathMatch: 'full' },
+      { path: 'admin/users/notifications', redirectTo: 'users/console/notifications', pathMatch: 'full' },
 
       // 2. User Management Suite: Workspace (Member Self-Service)
       { path: 'users/workspace', component: WorkspaceDashboardComponent },
@@ -157,6 +249,7 @@ export const routes: Routes = [
       { path: 'users/workspace/profile', component: WorkspaceProfileComponent },
       { path: 'users/workspace/kpi', component: WorkspaceKpiComponent },
       { path: 'users/workspace/security', component: WorkspaceSecurityComponent },
+      { path: 'users/workspace/account', component: IdentityAccountComponent },
       { path: 'users/workspace/notifications', component: WorkspaceNotificationsComponent },
       { path: 'users/workspace/purchases', component: WorkspacePurchasesComponent },
       { path: 'users/workspace/activity', component: WorkspaceDashboardComponent },
@@ -169,27 +262,70 @@ export const routes: Routes = [
       { path: 'users/workspace/alumni/cohorts', component: AlumniCohortsComponent },
       { path: 'users/workspace/profile/biography', component: BiographyEditComponent },
 
-      { path: 'admin/messenger', component: GroupsChatComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'admin/alumni', component: AlumniNetworkComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'admin/messenger', component: GroupsChatComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'], feature: 'bcp-community-messenger', featureName: 'Community Messenger & Team Chat' } },
+      { path: 'admin/alumni', component: AlumniNetworkComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'], feature: 'bcp-alumni-directory', featureName: 'Alumni Network & Directory' } },
       { path: 'admin/alumni/bio/:id', component: AlumniBioPageComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'admin/alumni/cohorts', component: AlumniCohortsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
 
       { path: 'notifications', redirectTo: 'users/workspace/notifications', pathMatch: 'full' },
 
       // 3. Groups & Channels
-      { path: 'groups/console', component: GroupsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      // 3. Committees & Sub-Groups Suite (bcp-committees)
+      // Admin Console Routes
+      { path: 'committees/console', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
+      { path: 'committees/console/dashboard', component: CommitteesAdminDashboardComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/manage', component: CommitteesManageComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/manage/:id', component: CommitteesManageComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/forms', component: CommitteesFormsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/registrations', component: CommitteesRegistrationsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/reports', component: CommitteesReportsAdminComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/console/settings', component: CommitteesSettingsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+
+      // Member Workspace Routes
+      { path: 'committees/workspace', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
+      { path: 'committees/workspace/my', component: CommitteesMemberHubComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/discover', component: CommitteesDiscoverComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/view/:id', component: CommitteesMemberDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/reports/compose', component: CommitteesReportComposerComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+      { path: 'committees/workspace/cloud-links', component: CommitteesCloudVaultComponent, canActivate: [featureGuard], data: { feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
+
+      // 4. Staff Rota & Shift Management (bcp-staff-rota) + Attendance (bcp-attendance-tracking)
+      // Admin Console Routes
+      { path: 'workforce/console', redirectTo: 'workforce/console/schedule', pathMatch: 'full' },
+      { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/sites', component: WorkforceSitesComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'attendance/console', redirectTo: 'attendance/console/live', pathMatch: 'full' },
+      { path: 'attendance/console/live', component: WorkforceAttendanceLiveComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },
+
+      // Member Workspace Routes
+      { path: 'workforce/workspace', redirectTo: 'workforce/workspace/my-shifts', pathMatch: 'full' },
+      { path: 'workforce/workspace/my-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'attendance/workspace', redirectTo: 'attendance/workspace/clock', pathMatch: 'full' },
+      { path: 'attendance/workspace/clock', component: WorkforceClockComponent, canActivate: [featureGuard], data: { feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },
+
+      // Legacy Aliases
+      { path: 'groups/console', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
+      { path: 'groups/workspace', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
+      { path: 'groups', redirectTo: 'committees/console/dashboard', pathMatch: 'full' },
       { path: 'groups/workspace', component: GroupsDirectoryComponent },
       { path: 'groups', component: GroupsComponent },
 
       // 4. Configuration & Identity (Console Only)
       { path: 'settings/console', component: SettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'settings/console/custom-domain', component: CustomDomainComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'settings/custom-domain', redirectTo: 'settings/console/custom-domain', pathMatch: 'full' },
+      { path: 'admin/custom-domain', redirectTo: 'settings/console/custom-domain', pathMatch: 'full' },
       { path: 'settings', component: SettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console', component: IdentityDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/dashboard', component: IdentityDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/roles', component: IdentityRolesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/invitations', component: IdentityInvitationsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'identity/console/invitations/create', component: IdentityInvitationCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/audit-logs', component: IdentityAuditLogsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'identity/console/error-codes', loadComponent: () => import('./pages/admin/identity/identity-error-codes.component').then(m => m.IdentityErrorCodesComponent), data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'admin/identity/error-codes', redirectTo: 'identity/console/error-codes', pathMatch: 'full' },
       { path: 'identity/console/policies', component: IdentityPoliciesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'identity/console/account', component: IdentityAccountComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity', redirectTo: 'identity/console/dashboard', pathMatch: 'full' },
 
       // 5. CMS Studio Suite, Manage Forms, My Templates, & UI Marketplace (Console Only)
@@ -198,17 +334,25 @@ export const routes: Routes = [
       { path: 'content/console/forms/edit/:id', component: FormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/forms/:formKey/submissions', component: FormSubmissionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
-      { path: 'content/console/templates/create', component: CreateCustomTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/import', component: ImportWebsiteTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/create', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
+      { path: 'content/console/templates/visuals', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/visuals/:id', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'templates/visuals', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
+      { path: 'templates/visuals/:id', redirectTo: 'content/console/templates/visuals/:id' },
+      { path: 'content/console/templates/maintenance', component: TemplateMaintenanceComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates', component: MyTemplatesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/templates', redirectTo: 'content/console/templates', pathMatch: 'full' },
       { path: 'content/console/marketplace', component: MarketplaceComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/marketplace', redirectTo: 'content/console/marketplace', pathMatch: 'full' },
       { path: 'content/console', component: CmsDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages', component: WebPagesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/pages/create', component: WebPageEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages/details/:id', component: WebPageDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages/edit/:id', component: WebPageEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages/delete/:id', component: WebPageDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/categories', component: WebCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/categories/create', component: WebCategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/categories/edit/:id', component: WebCategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/categories/delete/:id', component: WebCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections', component: PageSectionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
@@ -217,13 +361,6 @@ export const routes: Routes = [
       { path: 'content/console/sections/delete/:id', component: PageSectionDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections/lists/edit/:id', component: PageSectionListEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections/lists/delete/:id', component: PageSectionListDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders', component: SlidersComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders/edit/:id', component: SliderEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders/delete/:id', component: SliderDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs', component: FaqsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs/edit/:id', component: FaqEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs/delete/:id', component: FaqDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faq-categories/delete/:id', component: FaqDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs', component: BlogsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/create', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/edit/:id', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
@@ -246,7 +383,27 @@ export const routes: Routes = [
       { path: 'products/console/orders/details/:id', component: ProductOrderDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
       { path: 'products/console/transactions', component: ProductTransactionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
 
-      // 7. Backwards Compatibility Redirects for legacy /admin routes
+      // 7. Suite 13: Billing, Features & Subscriptions (Console Only)
+      { path: 'billing/features', component: BillingConsoleComponent, data: { tab: 'features', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/subscriptions', component: BillingConsoleComponent, data: { tab: 'subscriptions', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/invoices/:id', component: BillingConsoleComponent, data: { tab: 'invoice-detail', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/paymentmethod', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
+      { path: 'billing/payment-methods', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
+      { path: 'billing/plans', redirectTo: 'billing/features', pathMatch: 'full' },
+      { path: 'billing/console', redirectTo: 'billing/features', pathMatch: 'full' },
+      { path: 'billing/invoices', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
+      { path: 'billing', redirectTo: 'billing/features', pathMatch: 'full' },
+
+      // Feature Not Available / Subscription Required In-Shell Route
+      { path: 'feature-unavailable', component: FeatureUnavailableComponent },
+      { path: 'feature-not-available', redirectTo: 'feature-unavailable', pathMatch: 'full' },
+
+      // Suite 11: Workstation Supervisor & Application Gatekeeper (bcp-workspace)
+      { path: 'workspace/stations', component: WorkstationsConsoleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin'], feature: 'bcp-workspace', featureName: 'Workspace (Desktop only)' } },
+      { path: 'admin/workspace/stations', redirectTo: 'workspace/stations', pathMatch: 'full' },
+      { path: 'admin/workspace', redirectTo: 'workspace/stations', pathMatch: 'full' },
+
+      // 8. Backwards Compatibility Redirects for legacy /admin routes
       { path: 'admin/products', redirectTo: 'products/console', pathMatch: 'full' },
       { path: 'admin/dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
       { path: 'admin/users/dashboard', redirectTo: 'users/console/dashboard', pathMatch: 'full' },
@@ -255,16 +412,30 @@ export const routes: Routes = [
       { path: 'admin/users/details/:id', redirectTo: 'users/console/details/:id', pathMatch: 'full' },
       { path: 'admin/users/edit/:id', redirectTo: 'users/console/edit/:id', pathMatch: 'full' },
       { path: 'admin/users/categories', redirectTo: 'users/console/categories', pathMatch: 'full' },
+      { path: 'admin/users/registration-form', redirectTo: 'users/console/registration-form', pathMatch: 'full' },
+      { path: 'admin/users/settings', redirectTo: 'users/console/settings', pathMatch: 'full' },
       { path: 'admin/users/kpi', redirectTo: 'users/console/kpi', pathMatch: 'full' },
       { path: 'admin/users/activity', redirectTo: 'users/console/activity', pathMatch: 'full' },
       { path: 'admin/groups', redirectTo: 'groups/console', pathMatch: 'full' },
       { path: 'admin/settings', redirectTo: 'settings/console', pathMatch: 'full' },
+      { path: 'admin/content/pages/create', redirectTo: 'content/console/pages/create', pathMatch: 'full' },
+      { path: 'admin/content/pages/edit/:id', redirectTo: 'content/console/pages/edit/:id' },
+      { path: 'admin/content/pages', redirectTo: 'content/console/pages', pathMatch: 'full' },
+      { path: 'admin/content/categories/create', redirectTo: 'content/console/categories/create', pathMatch: 'full' },
+      { path: 'admin/content/categories/edit/:id', redirectTo: 'content/console/categories/edit/:id' },
+      { path: 'admin/content/categories', redirectTo: 'content/console/categories', pathMatch: 'full' },
+      { path: 'admin/content/sections', redirectTo: 'content/console/sections', pathMatch: 'full' },
       { path: 'admin/content', redirectTo: 'content/console', pathMatch: 'full' },
       { path: 'admin', redirectTo: 'dashboard/console', pathMatch: 'full' },
       { path: 'portal', redirectTo: 'dashboard/workspace', pathMatch: 'full' },
       { path: 'portal/dashboard', redirectTo: 'dashboard/workspace', pathMatch: 'full' }
     ]
   },
+  // Dynamic Public Website Content Routes
+  { path: 'page/:slug', component: LandingComponent },
+  { path: 'blog', component: LandingComponent },
+  { path: 'blog/:id', component: LandingComponent },
+  { path: ':slug', component: LandingComponent },
   {
     path: '**',
     redirectTo: ''

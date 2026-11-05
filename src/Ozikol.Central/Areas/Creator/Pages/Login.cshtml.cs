@@ -16,6 +16,7 @@ namespace Ozikol.Central.Areas.Creator.Pages
     {
         private readonly SignInManager<CentralUser> _signInManager;
         private readonly UserManager<CentralUser> _userManager;
+        private readonly Ozikol.Central.Services.IRecaptchaService _recaptchaService;
         private readonly ILogger<LoginModel> _logger;
 
         /// <summary>
@@ -23,16 +24,24 @@ namespace Ozikol.Central.Areas.Creator.Pages
         /// </summary>
         /// <param name="signInManager">Identity sign-in manager for CentralUser accounts.</param>
         /// <param name="userManager">Identity user manager for CentralUser accounts.</param>
+        /// <param name="recaptchaService">reCAPTCHA verification service.</param>
         /// <param name="logger">Logging facility for creator studio security diagnostics.</param>
         public LoginModel(
             SignInManager<CentralUser> signInManager,
             UserManager<CentralUser> userManager,
+            Ozikol.Central.Services.IRecaptchaService recaptchaService,
             ILogger<LoginModel> logger)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _recaptchaService = recaptchaService;
             _logger = logger;
         }
+
+        /// <summary>
+        /// Gets the public Google reCAPTCHA site key for widget rendering.
+        /// </summary>
+        public string RecaptchaSiteKey => _recaptchaService.SiteKey;
 
         /// <summary>
         /// Creator registered email address.
@@ -101,6 +110,20 @@ namespace Ozikol.Central.Areas.Creator.Pages
             }
 
             var cleanEmail = Email.Trim().ToLowerInvariant();
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // 1. Verify Google reCAPTCHA
+            var recaptchaResponse = Request.Form["g-recaptcha-response"].ToString();
+            _logger.LogInformation("Template Creator Sign-In attempt for '{Email}' from IP {ClientIp}. Verifying reCAPTCHA...", cleanEmail, clientIp);
+
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaResponse, clientIp);
+            if (!isCaptchaValid)
+            {
+                _logger.LogWarning("Creator login rejected: Google reCAPTCHA verification failed for '{Email}' from IP {ClientIp}.", cleanEmail, clientIp);
+                ErrorMessage = "Security verification failed. Please complete the reCAPTCHA challenge.";
+                return Page();
+            }
+
             var user = await _userManager.FindByEmailAsync(cleanEmail);
 
             if (user == null || !user.IsActive)

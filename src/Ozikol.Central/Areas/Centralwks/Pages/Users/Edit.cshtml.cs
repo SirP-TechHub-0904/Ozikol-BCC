@@ -14,9 +14,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
 {
     /// <summary>
     /// Page model for editing an existing operator's profile, role assignments, or resetting their credentials in Centralwks.
+    /// Supports multi-role assignment and organizational department categorization.
     /// </summary>
     public class EditModel : PageModel
     {
+        private const string RootAdminEmail = "superadmin@ozikol.cloud";
         private readonly UserManager<CentralUser> _userManager;
         private readonly RoleManager<CentralRole> _roleManager;
         private readonly ILogger<EditModel> _logger;
@@ -35,6 +37,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <summary>
+        /// View model representing an available role with metadata.
+        /// </summary>
+        public class RoleOptionViewModel
+        {
+            /// <summary>Gets or sets role name.</summary>
+            public string Name { get; set; } = string.Empty;
+
+            /// <summary>Gets or sets role description.</summary>
+            public string Description { get; set; } = string.Empty;
+
+            /// <summary>Gets or sets whether this role is currently assigned.</summary>
+            public bool IsSelected { get; set; }
         }
 
         /// <summary>
@@ -57,7 +74,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         /// <summary>
         /// Gets or sets available roles for selection.
         /// </summary>
-        public IList<string> AvailableRoles { get; set; } = new List<string>();
+        public IList<RoleOptionViewModel> AvailableRoles { get; set; } = new List<RoleOptionViewModel>();
+
+        /// <summary>
+        /// Standard departments list across the central platform.
+        /// </summary>
+        public static readonly string[] DepartmentOptions = new[]
+        {
+            "Administration",
+            "Engineering & Architecture",
+            "Cloud Operations & SRE",
+            "Security & Compliance",
+            "Customer Success & Support",
+            "Billing & Finance",
+            "Commercial & Partnerships"
+        };
 
         /// <summary>
         /// Input model for modifying an operator account.
@@ -86,14 +117,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
 
             /// <summary>Gets or sets organizational department.</summary>
             [MaxLength(100)]
-            public string? Department { get; set; }
+            public string? Department { get; set; } = "Administration";
 
-            /// <summary>Gets or sets selected primary role.</summary>
-            [Required(ErrorMessage = "Please assign a role.")]
-            public string SelectedRole { get; set; } = string.Empty;
+            /// <summary>Gets or sets assigned roles list.</summary>
+            public List<string> SelectedRoles { get; set; } = new List<string>();
 
             /// <summary>Gets or sets whether account is active.</summary>
             public bool IsActive { get; set; }
+
+            /// <summary>Gets or sets whether Two-Factor Authentication (2FA) is enforced.</summary>
+            public bool TwoFactorEnabled { get; set; }
 
             /// <summary>Gets or sets optional new password to reset credentials.</summary>
             [StringLength(100, MinimumLength = 8, ErrorMessage = "New password must be at least 8 characters long.")]
@@ -109,7 +142,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         public async Task<IActionResult> OnGetAsync(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
+            if (user == null || user.Email == RootAdminEmail || user.UserName == RootAdminEmail)
             {
                 return NotFound();
             }
@@ -117,13 +150,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             Id = id;
             UserName = user.UserName ?? string.Empty;
 
-            AvailableRoles = await _roleManager.Roles
-                .Select(r => r.Name!)
-                .Where(r => r != null)
-                .OrderBy(r => r)
-                .ToListAsync();
-
-            var currentRoles = await _userManager.GetRolesAsync(user);
+            var currentRoles = (await _userManager.GetRolesAsync(user)).ToList();
 
             Input = new UserEditModel
             {
@@ -131,10 +158,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
                 LastName = user.LastName,
                 Email = user.Email ?? string.Empty,
                 PhoneNumber = user.PhoneNumber,
-                Department = user.Department,
-                SelectedRole = currentRoles.FirstOrDefault() ?? "Admin",
-                IsActive = user.IsActive
+                Department = user.Department ?? "Administration",
+                SelectedRoles = currentRoles,
+                IsActive = user.IsActive,
+                TwoFactorEnabled = user.TwoFactorEnabled
             };
+
+            await LoadAvailableRolesAsync(currentRoles);
 
             return Page();
         }
@@ -146,19 +176,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
         /// <returns>Redirect to details or page on validation error.</returns>
         public async Task<IActionResult> OnPostAsync(string id)
         {
-            AvailableRoles = await _roleManager.Roles
-                .Select(r => r.Name!)
-                .Where(r => r != null)
-                .OrderBy(r => r)
-                .ToListAsync();
+            // Disallow assigning SuperAdmin to operators
+            if (Input.SelectedRoles != null)
+            {
+                Input.SelectedRoles = Input.SelectedRoles.Where(r => !r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            if (Input.SelectedRoles == null || !Input.SelectedRoles.Any())
+            {
+                ModelState.AddModelError("Input.SelectedRoles", "Please assign at least one administrative security role.");
+            }
 
             if (!ModelState.IsValid)
             {
+                await LoadAvailableRolesAsync(Input.SelectedRoles ?? new List<string>());
                 return Page();
             }
 
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
+            if (user == null || user.Email == RootAdminEmail || user.UserName == RootAdminEmail)
             {
                 return NotFound();
             }
@@ -172,6 +208,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             if (emailCollision)
             {
                 ModelState.AddModelError("Input.Email", "Another user account already uses this email address.");
+                await LoadAvailableRolesAsync(Input.SelectedRoles ?? new List<string>());
                 return Page();
             }
 
@@ -181,6 +218,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             user.PhoneNumber = Input.PhoneNumber?.Trim();
             user.Department = Input.Department?.Trim();
             user.IsActive = Input.IsActive;
+            user.TwoFactorEnabled = Input.TwoFactorEnabled;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
@@ -189,20 +227,35 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
                 {
                     ModelState.AddModelError(string.Empty, err.Description);
                 }
+                await LoadAvailableRolesAsync(Input.SelectedRoles ?? new List<string>());
                 return Page();
             }
 
-            // Sync role assignment
+            // Sync role assignments
             var currentRoles = await _userManager.GetRolesAsync(user);
-            if (!currentRoles.Contains(Input.SelectedRole))
+            var desiredRoles = Input.SelectedRoles ?? new List<string>();
+
+            var rolesToRemove = currentRoles.Except(desiredRoles).ToList();
+            var rolesToAdd = desiredRoles.Except(currentRoles).ToList();
+
+            if (rolesToRemove.Any())
             {
-                if (currentRoles.Any())
+                await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            }
+
+            if (rolesToAdd.Any())
+            {
+                var validRolesToAdd = new List<string>();
+                foreach (var r in rolesToAdd)
                 {
-                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                    if (await _roleManager.RoleExistsAsync(r))
+                    {
+                        validRolesToAdd.Add(r);
+                    }
                 }
-                if (await _roleManager.RoleExistsAsync(Input.SelectedRole))
+                if (validRolesToAdd.Any())
                 {
-                    await _userManager.AddToRoleAsync(user, Input.SelectedRole);
+                    await _userManager.AddToRolesAsync(user, validRolesToAdd);
                 }
             }
 
@@ -217,15 +270,32 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
                     {
                         ModelState.AddModelError(string.Empty, err.Description);
                     }
+                    await LoadAvailableRolesAsync(desiredRoles);
                     return Page();
                 }
                 _logger.LogInformation("Central operator reset password for user {UserId} ({UserName})", id, user.UserName);
             }
 
-            _logger.LogInformation("Central operator updated user {UserId} ({UserName})", id, user.UserName);
+            _logger.LogInformation("Central operator updated user {UserId} ({UserName}) with roles: {Roles}", id, user.UserName, string.Join(", ", desiredRoles));
             TempData["StatusMessage"] = $"Operator '{user.UserName}' updated successfully.";
 
             return RedirectToPage("/Users/Details", new { id });
+        }
+
+        private async Task LoadAvailableRolesAsync(List<string> selectedRoles)
+        {
+            // SuperAdmin is strictly reserved for the root sovereign seed account; exclude from operator assignment
+            var roles = await _roleManager.Roles
+                .Where(r => r.Name != "SuperAdmin")
+                .OrderBy(r => r.Name)
+                .ToListAsync();
+
+            AvailableRoles = roles.Select(r => new RoleOptionViewModel
+            {
+                Name = r.Name ?? string.Empty,
+                Description = string.IsNullOrEmpty(r.Description) ? "Standard security role" : r.Description,
+                IsSelected = selectedRoles != null && selectedRoles.Contains(r.Name ?? string.Empty)
+            }).ToList();
         }
     }
 }

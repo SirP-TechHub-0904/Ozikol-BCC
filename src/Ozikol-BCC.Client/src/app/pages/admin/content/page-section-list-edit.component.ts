@@ -103,19 +103,19 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Card 3: Media Uploads (Cloudinary) -->
+          <!-- Card 3: Media Uploads -->
           <div class="cms-card">
             <div class="card-header-bar">
               <div>
                 <h3>Media Image & Video Assets</h3>
-                <p class="card-sub">Upload image assets directly via Cloudinary.</p>
+                <p class="card-sub">Upload image assets or enter media URL.</p>
               </div>
             </div>
             <div class="form-grid">
               <div class="form-group full-width">
                 <label>IMAGE URL</label>
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="item.imageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="item.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/icon.svg">
                   <label class="btn-upload" [class.uploading]="uploading">
                     <input type="file" (change)="uploadImage($event)" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>
@@ -132,13 +132,13 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="form-group">
-                <label>CLOUDINARY IMAGE KEY</label>
-                <input type="text" [(ngModel)]="item.imageKey" class="form-control" placeholder="bcp-cms/items/item_01">
+                <label>MEDIA ASSET KEY</label>
+                <input type="text" [(ngModel)]="item.imageKey" class="form-control" placeholder="e.g. assets/items/item_01">
               </div>
 
               <div class="form-group">
                 <label>VIDEO URL</label>
-                <input type="text" [(ngModel)]="item.videoUrl" class="form-control" placeholder="Direct video file URL">
+                <input type="text" [(ngModel)]="item.videoUrl" class="form-control" placeholder="e.g. https://yourdomain.com/video.mp4">
               </div>
             </div>
           </div>

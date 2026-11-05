@@ -37,7 +37,7 @@ public interface ITenantProvisioningService
 
 public class TenantCatalogDto
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string TenantKey { get; set; } = null!;
     public string OrganizationName { get; set; } = null!;
     public string PrimaryDomain { get; set; } = null!;

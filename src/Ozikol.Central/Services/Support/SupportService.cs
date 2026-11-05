@@ -518,9 +518,8 @@ namespace Ozikol.Central.Services.Support
                     Icon = "icon-workforce",
                     Features = new List<FeatureSupportItemViewModel>
                     {
-                        new() { FeatureCode = "staff-rota", Name = "Staff Rota Planning", Route = "/features/staff-rota" },
-                        new() { FeatureCode = "shift-swaps-leave", Name = "Shift Swaps & Leave", Route = "/features/shift-swaps-leave" },
-                        new() { FeatureCode = "attendance-tracking", Name = "Attendance & Clock-In", Route = "/features/attendance-tracking" },
+                        new() { FeatureCode = "staff-rota", Name = "Staff Rota & Shift Management", Route = "/features/staff-rota" },
+                        new() { FeatureCode = "attendance-tracking", Name = "Attendance & Live Duty", Route = "/features/attendance-tracking" },
                         new() { FeatureCode = "appointment-booking", Name = "Appointment Booking", Route = "/features/appointment-booking" }
                     }
                 },
@@ -766,7 +765,7 @@ namespace Ozikol.Central.Services.Support
                 {
                     Id = Guid.NewGuid(),
                     SuiteCode = "suite-workforce",
-                    FeatureCode = "shift-swaps-leave",
+                    FeatureCode = "staff-rota",
                     Title = "Processing Peer-to-Peer Shift Swaps and Annual Leave Approvals",
                     Slug = "processing-shift-swaps-and-leave-approvals",
                     Summary = "Understand how employees request shift trades, how the manager authorization workflow operates, and how leave balances sync.",
@@ -938,7 +937,7 @@ namespace Ozikol.Central.Services.Support
                 {
                     Id = Guid.NewGuid(),
                     SuiteCode = "suite-workforce",
-                    FeatureCode = "shift-swaps-leave",
+                    FeatureCode = "staff-rota",
                     Title = "Shift Swaps & Leave: Mobile Approvals Walkthrough",
                     Description = "Watch a live demonstration of an employee requesting a shift swap on iOS/Android and the supervisor approving it in real-time.",
                     YouTubeVideoId = "dQw4w9WgXcQ",

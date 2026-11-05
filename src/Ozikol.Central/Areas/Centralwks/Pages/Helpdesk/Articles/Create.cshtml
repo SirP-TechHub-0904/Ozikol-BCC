@@ -21,8 +21,7 @@
             <label asp-for="Input.Title" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                 Article Title <span style="color: #f87171;">*</span>
             </label>
-            <input asp-for="Input.Title" id="articleTitleInput" placeholder="e.g. Configuring Distributed Warehouse Multi-Hop Routing" 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 15px; font-weight: 500;" />
+            <input asp-for="Input.Title" id="articleTitleInput" placeholder="e.g. Configuring Distributed Warehouse Multi-Hop Routing" class="form-control" style="font-size: 15px; font-weight: 500;" />
             <span asp-validation-for="Input.Title" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -31,12 +30,11 @@
                 <label asp-for="Input.Slug" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     URL Permalink Slug <span style="color: #f87171;">*</span>
                 </label>
-                <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden;">
-                    <span style="padding: 10px 12px; color: var(--admin-text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.03); border-right: 1px solid rgba(255, 255, 255, 0.06); font-family: monospace;">
+                <div style="display: flex; align-items: center; border: 1px solid var(--admin-border); border-radius: 8px; overflow: hidden; background: var(--admin-bg-surface);">
+                    <span style="padding: 10px 12px; color: var(--admin-text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.03); border-right: 1px solid var(--admin-border); font-family: monospace;">
                         /help/
                     </span>
-                    <input asp-for="Input.Slug" id="articleSlugInput" placeholder="warehouse-multi-hop-routing" 
-                           class="form-control" style="flex: 1; background: transparent; border: none; padding: 10px 14px; color: #93c5fd; font-size: 13px; font-family: monospace;" />
+                    <input asp-for="Input.Slug" id="articleSlugInput" placeholder="e.g. warehouse-multi-hop-routing" class="form-control" style="flex: 1; border: none; background: transparent; padding: 10px 14px; color: #93c5fd; font-size: 13px; font-family: monospace;" />
                 </div>
                 <span asp-validation-for="Input.Slug" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
@@ -45,7 +43,7 @@
                 <label asp-for="Input.SuiteCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Enterprise Suite <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.SuiteCode" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.SuiteCode" class="form-select">
                     <option value="suite-operations">Operations & Logistics (suite-operations)</option>
                     <option value="suite-inventory">Multi-Warehouse Inventory (suite-inventory)</option>
                     <option value="suite-pos">Retail Point of Sale (suite-pos)</option>
@@ -63,15 +61,14 @@
                 <label asp-for="Input.FeatureCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Feature Code (Optional)
                 </label>
-                <input asp-for="Input.FeatureCode" class="form-control" placeholder="e.g. staff-rota" 
-                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                <input asp-for="Input.FeatureCode" class="form-control" placeholder="e.g. staff-rota" />
             </div>
 
             <div>
                 <label asp-for="Input.Category" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Category <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.Category" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.Category" class="form-select">
                     <option value="Getting Started">Getting Started</option>
                     <option value="Configuration">Configuration</option>
                     <option value="Troubleshooting">Troubleshooting</option>
@@ -84,7 +81,7 @@
                 <label asp-for="Input.Culture" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Language <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.Culture" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.Culture" class="form-select">
                     <option value="en">English (en)</option>
                     <option value="fr">French (fr)</option>
                     <option value="es">Spanish (es)</option>
@@ -96,8 +93,7 @@
                 <label asp-for="Input.EstimatedReadMinutes" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Read Minutes
                 </label>
-                <input asp-for="Input.EstimatedReadMinutes" type="number" min="1" max="60" class="form-control" 
-                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                <input asp-for="Input.EstimatedReadMinutes" type="number" min="1" max="60" class="form-control" />
             </div>
         </div>
 
@@ -105,8 +101,7 @@
             <label asp-for="Input.Summary" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                 Summary / Card Excerpt <span style="color: #f87171;">*</span>
             </label>
-            <textarea asp-for="Input.Summary" rows="3" placeholder="Brief 1-2 sentence overview appearing in helpdesk search results and category indices..." 
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            <textarea asp-for="Input.Summary" rows="3" placeholder="Brief 1-2 sentence overview appearing in helpdesk search results and category indices..." class="form-control" style="resize: vertical;"></textarea>
             <span asp-validation-for="Input.Summary" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -114,8 +109,7 @@
             <label asp-for="Input.ContentHtml" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                 Article Body (HTML) <span style="color: #f87171;">*</span>
             </label>
-            <textarea asp-for="Input.ContentHtml" rows="14" placeholder="Full knowledge base article content in HTML format..." 
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 14px; color: #e2e8f0; font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
+            <textarea asp-for="Input.ContentHtml" rows="14" placeholder="Full knowledge base article content in HTML format..." class="form-control" style="font-family: monospace; font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
             <span asp-validation-for="Input.ContentHtml" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -128,7 +122,10 @@
 
         <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <a href="/centralwks/helpdesk/articles" class="btn-admin btn-admin-secondary">Cancel</a>
-            <button type="submit" class="btn-admin btn-admin-primary">Publish Guide</button>
+            <button type="submit" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                Publish Guide
+            </button>
         </div>
     </form>
 </div>

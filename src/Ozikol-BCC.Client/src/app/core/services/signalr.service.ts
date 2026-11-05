@@ -59,6 +59,21 @@ export class SignalRService {
   private permissionUpdatedSubject = new Subject<{ userId: string, email?: string, isAdmin: boolean, timestamp: string }>();
   public permissionUpdated$ = this.permissionUpdatedSubject.asObservable();
 
+  private brandUpdatedSubject = new Subject<{ companyName: string, companyLogoUrl: string, companyIconUrl: string, companyWhiteLogoUrl?: string, primaryColor?: string, secondaryColor?: string, updatedAtUtc: string }>();
+  public brandUpdated$ = this.brandUpdatedSubject.asObservable();
+
+  private aliasesUpdatedSubject = new Subject<any>();
+  public aliasesUpdated$ = this.aliasesUpdatedSubject.asObservable();
+
+  private sessionRevokedSubject = new Subject<{ userId: string, terminatedSessionIds: string[], terminatedJwtIds: string[], timestamp: string }>();
+  public sessionRevoked$ = this.sessionRevokedSubject.asObservable();
+
+  /// <summary>
+  /// Subject and observable emitted when Central or tenant billing updates feature availability, pricing, or active subscriptions.
+  /// </summary>
+  private billingUpdatedSubject = new Subject<any>();
+  public billingUpdated$ = this.billingUpdatedSubject.asObservable();
+
   private connectionStatusSubject = new Subject<boolean>();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
@@ -72,7 +87,9 @@ export class SignalRService {
     }
 
     // Resolve API origin correctly from environment configuration
-    const apiOrigin = environment.apiUrl.replace(/\/api\/?$/, '');
+    const apiOrigin = environment.apiUrl.startsWith('http')
+      ? environment.apiUrl.replace(/\/api\/?$/, '')
+      : (typeof window !== 'undefined' ? `${window.location.origin}${environment.apiUrl.replace(/\/api\/?$/, '')}` : '');
     const tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain') || '';
     const hubUrl = `${apiOrigin}/hubs/group-chat?tenant=${encodeURIComponent(tenantKey)}`;
 
@@ -147,6 +164,30 @@ export class SignalRService {
     this.hubConnection.on('UserPermissionsUpdated', (data: { userId: string, email?: string, isAdmin: boolean, timestamp: string }) => {
       console.log('[SignalR] Real-time UserPermissionsUpdated event received:', data);
       this.permissionUpdatedSubject.next(data);
+    });
+
+    // 9. Real-time Tenant Brand Identity Update
+    this.hubConnection.on('TenantBrandUpdated', (data: any) => {
+      console.log('[SignalR] Real-time TenantBrandUpdated event received:', data);
+      this.brandUpdatedSubject.next(data);
+    });
+
+    // 10. Real-time Terminology Aliases Update
+    this.hubConnection.on('TenantAliasesUpdated', (data: any) => {
+      console.log('[SignalR] Real-time TenantAliasesUpdated event received:', data);
+      this.aliasesUpdatedSubject.next(data);
+    });
+
+    // 11. Real-time Session Revocation & Disconnect
+    this.hubConnection.on('SessionRevoked', (data: { userId: string, terminatedSessionIds: string[], terminatedJwtIds: string[], timestamp: string }) => {
+      console.log('[SignalR] Real-time SessionRevoked event received:', data);
+      this.sessionRevokedSubject.next(data);
+    });
+
+    // 12. Real-time Billing & Feature Catalog Sync Update
+    this.hubConnection.on('BillingUpdated', (data: any) => {
+      console.log('[SignalR] Real-time BillingUpdated event received:', data);
+      this.billingUpdatedSubject.next(data);
     });
   }
 

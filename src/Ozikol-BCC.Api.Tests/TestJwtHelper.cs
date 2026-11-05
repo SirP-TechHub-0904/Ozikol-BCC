@@ -10,7 +10,9 @@ namespace Ozikol_BCC.Api.Tests
     {
         public static string GenerateTestJwtToken()
         {
-            var jwtKey = "OzikolBCC_b8f4e2a91c6d3f7e0b5a8c2d4f9e1a3b5c7d9e0f2a4b6c8d0e2f4a6b8c0d2e4f";
+            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key")
+                ?? Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? "OzikolBCC_b8f4e2a91c6d3f7e0b5a8c2d4f9e1a3b5c7d9e0f2a4b6c8d0e2f4a6b8c0d2e4f";
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

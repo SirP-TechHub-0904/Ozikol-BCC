@@ -2,120 +2,67 @@
 @model Ozikol.Central.Pages.GetStartedModel
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = SharedLocalizer["Auth_GetStarted_Title"];
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    ViewData["Title"] = "Get Started — Provision Your Organization Workspace";
 }
 
-<div class="auth-page-wrapper">
-    <div class="auth-card auth-card--wide">
-        @if (Model.IsProvisioned)
-        {
-            <!-- Provisioned Success State -->
-            <div style="text-align: center; padding: 20px 10px;">
-                <div style="width: 68px; height: 68px; border-radius: 50%; background: #ecfdf5; color: #059669; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-                    <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+<div class="auth-page-wrapper" style="max-width: 960px; margin: 0 auto; padding: 40px 20px;">
+    <div class="auth-card auth-card--wide" style="max-width: 900px; padding: 36px 40px; border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.06); background: #ffffff;">
+
+        @* Step Indicator Header *@
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 28px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="stepBadge1" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; color: var(--ozikol-primary); background: rgba(59, 130, 246, 0.1); padding: 6px 14px; border-radius: 20px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">1</span>
+                    Organization Details
                 </div>
-                <h1 class="auth-title" style="color: #065f46;">@SharedLocalizer["Auth_Setup_ReadyBadge"]</h1>
-                <p class="auth-subtitle" style="margin-bottom: 24px;">
-                    @SharedLocalizer["Auth_Setup_ReadyDesc"]
-                </p>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; text-align: left;">
-                    <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">@SharedLocalizer["Auth_Setup_WebsiteLabel"]</div>
-                    <div style="font-size: 15px; font-weight: 700; color: #0f172a; word-break: break-all;">@Model.ProvisionedRedirectUrl</div>
-                </div>
-                <a href="@Model.ProvisionedRedirectUrl" class="btn-auth-submit" style="display: block; text-decoration: none; text-align: center; line-height: 24px;">
-                    @SharedLocalizer["Auth_Setup_LaunchBtn"] &rarr;
-                </a>
-                <div style="font-size: 12.5px; color: #94a3b8; margin-top: 14px;">
-                    Redirecting automatically in <span id="redirectCountdown">3</span>s...
+                <div style="width: 40px; height: 2px; background: #e2e8f0;" id="stepDivider"></div>
+                <div id="stepBadge2" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; color: #94a3b8; background: #f8fafc; padding: 6px 14px; border-radius: 20px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span>
+                    Your Features
                 </div>
             </div>
-            <script>
-                let sec = 3;
-                const timer = setInterval(() => {
-                    sec--;
-                    const el = document.getElementById('redirectCountdown');
-                    if (el) el.innerText = sec;
-                    if (sec <= 0) {
-                        clearInterval(timer);
-                        window.location.href = '@Model.ProvisionedRedirectUrl';
-                    }
-                }, 1000);
-            </script>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>@Model.ErrorMessage</span>
+            </div>
         }
-        else
-        {
-            <div class="auth-header">
-                <h1 class="auth-title">@SharedLocalizer["Auth_GetStarted_Heading"]</h1>
-                <p class="auth-subtitle">@SharedLocalizer["Auth_GetStarted_Subtitle"]</p>
-            </div>
 
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <span>@Model.ErrorMessage</span>
+        <form id="onboardingForm" method="post" onsubmit="handleOnboardingSubmit(event)">
+            
+            @* ── STEP 1: Organization & Root Admin Details ── *@
+            <div id="step1Container">
+                <div class="auth-header" style="text-align: left; margin-bottom: 24px;">
+                    <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 6px;">Setup Your Organization Workspace</h1>
+                    <p class="auth-subtitle" style="margin: 0; color: #64748b;">Enter your organization details and root administrator credentials.</p>
                 </div>
-            }
 
-            <div class="social-login-stack">
-                <!-- Google Workspace -->
-                <button type="button" class="btn-social" onclick="fastTrackSocial('Google')">
-                    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
-                    <span>@SharedLocalizer["Auth_GetStarted_GoogleFastTrack"]</span>
-                </button>
-
-                <!-- Microsoft 365 -->
-                <button type="button" class="btn-social" onclick="fastTrackSocial('Microsoft')">
-                    <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
-                    <span>@SharedLocalizer["Auth_GetStarted_MicrosoftFastTrack"]</span>
-                </button>
-
-                <!-- Secondary options dropdown/toggle -->
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-social" style="flex: 1; padding: 8px 10px; font-size: 12.5px;" onclick="fastTrackSocial('GitHub')">
-                        <svg width="16" height="16" fill="#181717" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-                        <span>GitHub</span>
-                    </button>
-                    <button type="button" class="btn-social" style="flex: 1; padding: 8px 10px; font-size: 12.5px;" onclick="fastTrackSocial('LinkedIn')">
-                        <svg width="16" height="16" fill="#0A66C2" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
-                        <span>LinkedIn</span>
-                    </button>
-                    <button type="button" class="btn-social" style="flex: 1; padding: 8px 10px; font-size: 12.5px;" onclick="fastTrackSocial('Apple')">
-                        <svg width="16" height="16" fill="#000000" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.66-.8 1.1-1.92.98-3.04-.95.04-2.1.63-2.78 1.43-.6.69-1.12 1.83-1 2.93 1.06.08 2.14-.52 2.8-1.32z"/></svg>
-                        <span>Apple</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="auth-divider">
-                <div class="auth-divider__line"></div>
-                <span class="auth-divider__text">@SharedLocalizer["Auth_GetStarted_OrCorporate"]</span>
-                <div class="auth-divider__line"></div>
-            </div>
-
-            <form id="onboardingForm" method="post" onsubmit="handleOnboardingSubmit(event)">
                 <div class="form-grid-2">
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_FullName"]</label>
-                        <input asp-for="Input.FullName" id="inputFullName" required placeholder="e.g. Jane Doe" class="form-input" />
+                        <label class="form-label">Full Name <span style="color: #ef4444;">*</span></label>
+                        <input asp-for="Input.FullName" id="inputFullName" required placeholder="e.g. First Last" class="form-input" />
                         <span asp-validation-for="Input.FullName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_OrgName"]</label>
-                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="e.g. Acme Corporation" oninput="handleOrgNameInput(this.value)" class="form-input" />
+                        <label class="form-label">Organization / Business Name <span style="color: #ef4444;">*</span></label>
+                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="e.g. Your Organization Name" oninput="handleOrgNameInput(this.value)" class="form-input" />
                         <span asp-validation-for="Input.OrganizationName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                 </div>
 
-                <!-- Sovereign Workspace Address -->
-                <div class="form-group">
+                <!-- Workspace Subdomain Address -->
+                <div class="form-group" style="margin-top: 14px;">
                     <label class="form-label">
-                        @SharedLocalizer["Auth_GetStarted_WorkspaceAddress"]
-                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">@SharedLocalizer["Auth_GetStarted_SubdomainHint"]</span>
+                        Workspace Subdomain Address <span style="color: #ef4444;">*</span>
+                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">(Unique cloud workspace portal URL)</span>
                     </label>
                     <div style="display: flex; align-items: center; background: #fff; border: 1px solid var(--ozikol-border-hover); border-radius: 8px; overflow: hidden;">
                         <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-right: 1px solid #e2e8f0; font-weight: 600;">https://</span>
-                        <input asp-for="Input.WorkspaceSlug" id="inputWorkspaceSlug" required placeholder="acme" oninput="handleSlugInput(this.value)" style="flex: 1; border: none; padding: 11px 12px; font-size: 14px; font-weight: 700; color: var(--ozikol-primary); outline: none;" />
+                        <input asp-for="Input.WorkspaceSlug" id="inputWorkspaceSlug" required placeholder="e.g. mycompany" oninput="handleSlugInput(this.value)" style="flex: 1; border: none; padding: 11px 12px; font-size: 14px; font-weight: 700; color: var(--ozikol-primary); outline: none;" />
                         <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-left: 1px solid #e2e8f0; font-weight: 600;">.ozikol.cloud</span>
                     </div>
                     <div id="slugFeedback" style="font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 6px; color: #64748b;">
@@ -125,26 +72,26 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">@SharedLocalizer["Auth_GetStarted_WorkEmail"]</label>
-                    <input asp-for="Input.WorkEmail" id="inputWorkEmail" type="email" required placeholder="admin@company.com" class="form-input" />
+                    <label class="form-label">Root Administrator Email <span style="color: #ef4444;">*</span></label>
+                    <input asp-for="Input.WorkEmail" id="inputWorkEmail" type="email" required placeholder="name@company.com" class="form-input" />
                     <span asp-validation-for="Input.WorkEmail" class="text-danger" style="font-size: 12px;"></span>
                 </div>
 
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <label class="form-label" style="margin-bottom: 0;">@SharedLocalizer["Auth_GetStarted_Password"]</label>
-                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">@SharedLocalizer["Auth_Login_ShowPassword"]</button>
+                        <label class="form-label" style="margin-bottom: 0;">Master Password <span style="color: #ef4444;">*</span></label>
+                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">Show Password</button>
                     </div>
-                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="@SharedLocalizer["Auth_GetStarted_PasswordPlaceholder"]" oninput="updateStrength(this.value)" class="form-input" />
-                    <div class="strength-meter">
-                        <div id="strengthFill" class="strength-fill"></div>
+                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="Create a strong password" oninput="updateStrength(this.value)" class="form-input" />
+                    <div class="strength-meter" style="margin-top: 6px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                        <div id="strengthFill" style="height: 100%; width: 0; transition: width 0.3s ease, background 0.3s ease;"></div>
                     </div>
                     <span asp-validation-for="Input.Password" class="text-danger" style="font-size: 12px;"></span>
                 </div>
 
                 <div class="form-grid-2">
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_OrgSector"]</label>
+                        <label class="form-label">Industry / Organization Sector</label>
                         <select asp-for="Input.OrganizationType" class="form-select">
                             <option>Business & Enterprise</option>
                             <option>Non-Profit & Foundation</option>
@@ -155,56 +102,184 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_Phone"] <span style="font-weight: normal; color: #94a3b8;">(@SharedLocalizer["Auth_GetStarted_Optional"])</span></label>
-                        <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" class="form-input" />
+                        <label class="form-label">Phone Number <span style="font-weight: normal; color: #94a3b8;">(Optional)</span></label>
+                        <input asp-for="Input.PhoneNumber" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
                     </div>
                 </div>
 
-                <div style="margin-bottom: 18px;">
+                <div style="margin: 16px 0;">
                     <a href="javascript:void(0)" onclick="document.getElementById('refGroup').style.display = document.getElementById('refGroup').style.display === 'none' ? 'block' : 'none';" style="font-size: 12.5px; color: var(--ozikol-primary); text-decoration: none; font-weight: 600;">
-                        @SharedLocalizer["Auth_GetStarted_HaveReferral"]
+                        Have an Affiliate Referral Code?
                     </a>
-                    <div id="refGroup" style="display: none; margin-top: 8px;">
-                        <input asp-for="Input.ReferralCode" placeholder="Enter referral code (e.g. PARTNER2026)" class="form-input" />
+                    <div id="refGroup" style="display: @(string.IsNullOrEmpty(Model.Input.ReferralCode) ? "none" : "block"); margin-top: 8px;">
+                        <input asp-for="Input.ReferralCode" placeholder="e.g. REF-XXXX" class="form-input" />
                     </div>
                 </div>
 
-                <button type="submit" id="btnSubmit" class="btn-auth-submit">
-                    @SharedLocalizer["Auth_GetStarted_SubmitBtn"] &rarr;
-                </button>
-                <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 10px; line-height: 1.4;">
-                    @SharedLocalizer["Auth_GetStarted_TermsNotice"]
+                <!-- Google reCAPTCHA Verification Widget -->
+                <div class="oz-recaptcha-wrap" style="margin: 18px 0 10px; display: flex; justify-content: center;">
+                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey" data-callback="onRecaptchaSolved" data-expired-callback="onRecaptchaExpired" data-error-callback="onRecaptchaExpired"></div>
                 </div>
-            </form>
 
-            <div class="auth-footer">
-                @SharedLocalizer["Auth_GetStarted_AlreadyHaveAccount"] <a href="/auth/login">@SharedLocalizer["Auth_GetStarted_SignInLink"]</a>
+                <button type="button" onclick="goToStep2()" class="btn-auth-submit" style="margin-top: 10px; width: 100%; font-size: 15px; font-weight: 700; padding: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>Continue to Your Features</span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                </button>
             </div>
-        }
+
+            @* ── STEP 2: Your Features (display-only, no billing) ── *@
+            <div id="step2Container" style="display: none;">
+                <div class="auth-header" style="text-align: left; margin-bottom: 20px;">
+                    <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; color: var(--ozikol-primary); background: rgba(0, 80, 229, 0.08); padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">verified</span>
+                        <span>@Model.AllFeatures.Count Built-in Capabilities</span>
+                    </div>
+                    <h1 class="auth-title" style="font-size: 25px; font-weight: 900; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.4px;">Everything is included</h1>
+                    <p class="auth-subtitle" style="margin: 0; color: #475569; font-size: 14.5px; line-height: 1.5;">
+                        We have over <strong>@Model.AllFeatures.Count powerful features</strong> ready to support <span id="displayOrgName" style="font-weight: 800; color: #0f172a;">@(string.IsNullOrWhiteSpace(Model.Input.OrganizationName) ? "your organization" : Model.Input.OrganizationName)</span>.
+                    </p>
+                </div>
+
+                @* Standout, High-Trust "No Credit Card Required" Hero Banner *@
+                <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 40%, #eff6ff 100%); border: 2px solid #10b981; border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.16); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #10b981; color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); flex-shrink: 0;">
+                            <span class="material-symbols-outlined" style="font-size: 28px;">credit_card_off</span>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 900; color: #065f46; letter-spacing: -0.2px;">
+                                No Card Needed · Start Completely Free
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 500; color: #047857; margin-top: 3px;">
+                                Instant workspace setup with zero financial commitment or hidden charges.
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #065f46; background: rgba(16, 185, 129, 0.14); padding: 6px 12px; border-radius: 8px;">
+                            <span style="color: #059669; font-weight: 900;">✓</span> No Payment Details
+                        </div>
+                        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #065f46; background: rgba(16, 185, 129, 0.14); padding: 6px 12px; border-radius: 8px;">
+                            <span style="color: #059669; font-weight: 900;">✓</span> Instant Setup
+                        </div>
+                    </div>
+                </div>
+
+                @* All active and upcoming platform features grouped by suite: numbered, display-only *@
+                @{
+                    int featureSerialNo = 0;
+                    var featureGroups = Model.AllFeatures
+                        .GroupBy(f => f.Category)
+                        .OrderBy(g => GetStartedModel.GetSuiteOrder(g.Key));
+                }
+                <div style="max-height: 460px; overflow-y: auto; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; margin-bottom: 24px; display: flex; flex-direction: column; gap: 22px;">
+                    @foreach (var group in featureGroups)
+                    {
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px dashed #cbd5e1; color: #334155;">
+                                <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @GetStartedModel.GetSuiteLetter(group.Key)</span>
+                                <span>@group.Key</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                                @foreach (var feat in group.OrderBy(f => f.SortOrder).ThenBy(f => f.Name))
+                                {
+                                    featureSerialNo++;
+                                    <div style="display: flex; align-items: flex-start; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 10px;">
+                                        <span style="color: #10b981; font-weight: 800; margin-top: 1px;">✓</span>
+                                        <div>
+                                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                                <span style="font-size: 13px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</span>
+                                                @if (!feat.IsAvailableForUse)
+                                                {
+                                                    <span style="font-size: 9.5px; font-weight: 700; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;">Coming Soon</span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(feat.Description))
+                                            {
+                                                <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">@feat.Description</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* Navigation & Submission Buttons *@
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="goToStep1()" class="btn-auth-outline" style="flex: 1; padding: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #cbd5e1; color: #64748b; background: #fff; cursor: pointer;">
+                        &larr; Back
+                    </button>
+                    <button type="submit" id="btnSubmit" class="btn-auth-submit" style="flex: 2; padding: 14px; font-size: 15px; font-weight: 700; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span>
+                        <span id="submitBtnText">Start for free — No card needed</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hidden reCAPTCHA token backup: persists the verification token across step transitions -->
+            <input type="hidden" id="recaptchaTokenBackup" />
+        </form>
+
+        <div class="auth-footer" style="font-size: 13px; color: #64748b; text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
+            Already have an organization workspace? Log in directly via your dedicated company URL (e.g. <span style="font-weight: 600; color: #0f172a;">https://[company].ozikol.cloud</span>) or your linked domain.
+        </div>
     </div>
 </div>
 
 <!-- Enterprise Provisioning Progress Modal Overlay -->
-<div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border-radius: 16px; padding: 36px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center;">
-        <div style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">@SharedLocalizer["Auth_GetStarted_ModalTitle"]</h2>
-        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">@SharedLocalizer["Auth_GetStarted_ModalDesc"]</p>
+<div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 20px; padding: 36px 32px; max-width: 490px; width: 100%; box-shadow: 0 25px 60px -12px rgba(0,0,0,0.3); text-align: center; border: 1px solid rgba(226, 232, 240, 0.8);">
+        
+        <!-- Step A: Database & Environment Provisioning View -->
+        <div id="provisioningProgressView">
+            <div style="width: 56px; height: 56px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Setting Up Your Workspace</h2>
+            <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">Please wait while we provision your dedicated cloud environment...</p>
 
-        <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13.5px;">
-            <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
-                <span style="color: var(--ozikol-primary);">●</span> Validating sovereign workspace parameters...
-            </div>
-            <div id="step2" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
-                <span>○</span> Provisioning dedicated cloud environment...
-            </div>
-            <div id="step3" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
-                <span>○</span> Initializing organization modules & admin credentials...
-            </div>
-            <div id="step4" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
-                <span>○</span> Finalizing business command center...
+            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 14px; border: 1px solid #e2e8f0; font-size: 13.5px;">
+                <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
+                    <span style="color: var(--ozikol-primary);">●</span> Validating workspace parameters...
+                </div>
+                <div id="step2" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                    <span>○</span> Provisioning dedicated cloud environment...
+                </div>
+                <div id="step3" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                    <span>○</span> Initializing organization modules & admin credentials...
+                </div>
+                <div id="step4" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                    <span>○</span> Finalizing business command center...
+                </div>
             </div>
         </div>
+
+        <!-- Step B: Interactive Seed Default Website Choice View -->
+        <div id="seedChoiceView" style="display: none; text-align: center;">
+            <div style="width: 58px; height: 58px; border-radius: 18px; background: var(--ozikol-primary-subtle, rgba(0, 80, 229, 0.08)); border: 1.5px solid var(--ozikol-primary-border, rgba(0, 80, 229, 0.25)); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--ozikol-primary, #0050e5);">auto_awesome</span>
+            </div>
+            <h2 style="font-size: 21px; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.3px;">Initialize Default Website?</h2>
+            <p style="font-size: 13.5px; color: #64748b; margin: 0 auto 22px; line-height: 1.5; max-width: 400px;">
+                Would you like to seed turnkey website templates, interactive forms, and sample blogs? Your public URL will have live, working content right away.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" id="btnSeedYes" onclick="submitSeedChoice(true)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: var(--ozikol-primary, #0050e5); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px var(--ozikol-primary-glow, rgba(0, 80, 229, 0.35)); transition: all 0.2s;">
+                    <span class="material-symbols-outlined" style="font-size: 19px;">rocket_launch</span>
+                    <span>Yes, Seed Default Website (Recommended)</span>
+                </button>
+                <button type="button" id="btnSeedNo" onclick="submitSeedChoice(false)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+                    <span>No, Start with Blank Slate</span>
+                </button>
+            </div>
+
+            <div id="seedingProgressStatus" style="display: none; margin-top: 16px; font-size: 13px; color: var(--ozikol-primary, #0050e5); font-weight: 600; align-items: center; justify-content: center; gap: 8px;">
+                <div style="width: 14px; height: 14px; border: 2px solid var(--ozikol-primary, #0050e5); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                <span id="seedingProgressMsg">Applying turnkey website suite...</span>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -212,10 +287,104 @@
 @@keyframes spin {
     to { transform: rotate(360deg); }
 }
+#btnSeedYes:hover {
+    background: var(--ozikol-primary-hover, #003db3) !important;
+    box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45) !important;
+}
+#btnSeedNo:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+.feature-checkbox-label:hover {
+    border-color: var(--ozikol-primary) !important;
+    background: #f0f7ff !important;
+}
 </style>
 
 <script>
+let savedRecaptchaToken = ''; // Stores reCAPTCHA token from Step 1 for use in Step 2 submission
 let slugDebounceTimer = null;
+
+// reCAPTCHA tokens are single-use and expire ~2 minutes after being issued by Google.
+// Track the live token so a stale or already-consumed token is never submitted to the server.
+const RECAPTCHA_TOKEN_TTL_MS = 110 * 1000; // Refresh slightly before Google's 120s hard expiry
+let recaptchaIssuedAt = 0;
+
+/** Widget callback: records the freshly issued token and its issue time. */
+function onRecaptchaSolved(token) {
+    savedRecaptchaToken = token || '';
+    recaptchaIssuedAt = Date.now();
+}
+
+/** Widget callback: discards the token once Google expires it or the widget errors. */
+function onRecaptchaExpired() {
+    savedRecaptchaToken = '';
+    recaptchaIssuedAt = 0;
+}
+
+/** True when a saved token exists and is still inside its validity window. */
+function hasFreshRecaptchaToken() {
+    return !!savedRecaptchaToken && (Date.now() - recaptchaIssuedAt) < RECAPTCHA_TOKEN_TTL_MS;
+}
+
+/** Clears the consumed token, resets the widget and returns the user to Step 1 to re-verify. */
+function returnToStep1ForRecaptcha() {
+    onRecaptchaExpired();
+    if (window.grecaptcha) { try { grecaptcha.reset(); } catch (_) { } }
+    document.getElementById('step2Container').style.display = 'none';
+    document.getElementById('step1Container').style.display = 'block';
+}
+
+function goToStep2() {
+    const fullName = document.getElementById('inputFullName');
+    const orgName = document.getElementById('inputOrgName');
+    const slug = document.getElementById('inputWorkspaceSlug');
+    const email = document.getElementById('inputWorkEmail');
+    const pwd = document.getElementById('regPassword');
+
+    if (!fullName.value.trim() || !orgName.value.trim() || !slug.value.trim() || !email.value.trim() || !pwd.value) {
+        alert('Please fill in all required fields (Full Name, Organization, Address, Email, Password) to proceed.');
+        return;
+    }
+
+    // Preserve reCAPTCHA token before hiding Step 1 container (tokens expire after ~2 min)
+    const recaptchaEl = document.querySelector('#step1Container [name="g-recaptcha-response"]');
+    if (recaptchaEl && recaptchaEl.value) {
+        savedRecaptchaToken = recaptchaEl.value;
+        const backup = document.getElementById('recaptchaTokenBackup');
+        if (backup) backup.value = recaptchaEl.value;
+    }
+
+    document.getElementById('step1Container').style.display = 'none';
+    document.getElementById('step2Container').style.display = 'block';
+
+    document.getElementById('stepBadge1').style.color = '#10b981';
+    document.getElementById('stepBadge1').style.background = '#ecfdf5';
+    document.getElementById('stepBadge1').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">✓</span> Organization Details';
+
+    document.getElementById('stepBadge2').style.color = 'var(--ozikol-primary)';
+    document.getElementById('stepBadge2').style.background = 'rgba(59, 130, 246, 0.1)';
+    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Your Features';
+
+    const displayEl = document.getElementById('displayOrgName');
+    if (displayEl && orgName) {
+        displayEl.textContent = orgName.value.trim() || 'your organization';
+    }
+}
+
+function goToStep1() {
+    document.getElementById('step2Container').style.display = 'none';
+    document.getElementById('step1Container').style.display = 'block';
+
+    document.getElementById('stepBadge1').style.color = 'var(--ozikol-primary)';
+    document.getElementById('stepBadge1').style.background = 'rgba(59, 130, 246, 0.1)';
+    document.getElementById('stepBadge1').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">1</span> Organization Details';
+
+    document.getElementById('stepBadge2').style.color = '#94a3b8';
+    document.getElementById('stepBadge2').style.background = '#f8fafc';
+    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Your Features';
+}
 
 function handleOrgNameInput(val) {
     const slugInput = document.getElementById('inputWorkspaceSlug');
@@ -228,6 +397,10 @@ function handleOrgNameInput(val) {
         slugInput.value = clean;
         checkSlugAvailability(clean);
     }
+    const displayEl = document.getElementById('displayOrgName');
+    if (displayEl) {
+        displayEl.textContent = val.trim() || 'your organization';
+    }
 }
 
 function handleSlugInput(val) {
@@ -236,33 +409,11 @@ function handleSlugInput(val) {
     checkSlugAvailability(val);
 }
 
-const RESERVED_SLUGS = new Set([
-    'admin', 'administrator', 'superadmin', 'supadmin', 'root', 'sysadmin', 'system',
-    'manager', 'moderator', 'security', 'host', 'master', 'central', 'portal',
-    'console', 'dashboard', 'api', 'apis', 'gateway', 'graphql', 'rest', 'webhook',
-    'webhooks', 'cdn', 'dns', 'ns', 'ns1', 'ns2', 'mail', 'email', 'smtp', 'imap',
-    'pop', 'ftp', 'ssh', 'ssl', 'cert', 'certs', 'status', 'health', 'monitor', 'ping',
-    'metrics', 'auth', 'oauth', 'sso', 'login', 'signin', 'signup', 'logout', 'register',
-    'onboarding', 'account', 'accounts', 'billing', 'pay', 'payment', 'payments',
-    'checkout', 'cart', 'internal', 'dev', 'development', 'staging', 'test', 'prod',
-    'production', 'sandbox', 'ozikol', 'ozikol-bcc', 'ozikolcloud', 'ozikol-cloud',
-    'support', 'help', 'helpdesk', 'docs', 'documentation', 'legal', 'terms', 'privacy',
-    'compliance', 'about', 'contact', 'marketplace', 'store', 'shop', 'localhost',
-    '127', 'local', 'null', 'undefined', 'default', 'public', 'private', 'static',
-    'assets', 'media', 'www', 'web', 'app'
-]);
-
 function checkSlugAvailability(slug) {
     clearTimeout(slugDebounceTimer);
     const feedback = document.getElementById('slugFeedback');
     if (!slug || slug.length < 3) {
         feedback.innerHTML = '<span style="color: #64748b;">Enter at least 3 characters.</span>';
-        return;
-    }
-
-    const clean = slug.toLowerCase().trim();
-    if (RESERVED_SLUGS.has(clean)) {
-        feedback.innerHTML = '<span style="color: #ef4444; font-weight: 600;">✗ This workspace address is reserved by the system and cannot be used.</span>';
         return;
     }
 
@@ -309,33 +460,18 @@ function togglePasswordVisibility(fieldId, btn) {
     }
 }
 
-function fastTrackSocial(provider) {
-    const name = prompt(`Fast-track with ${provider}:\nEnter your full name:`, "Jane Doe");
-    if (!name) return;
-    const email = prompt(`Enter your ${provider} corporate email:`, "jane@acmecorp.com");
-    if (!email) return;
-
-    document.getElementById('inputFullName').value = name;
-    document.getElementById('inputWorkEmail').value = email;
-
-    // Suggest organization from email domain
-    const domainPart = email.split('@@')[1]?.split('.')[0];
-    if (domainPart && domainPart !== 'gmail' && domainPart !== 'outlook' && domainPart !== 'hotmail') {
-        const orgSuggestion = domainPart.charAt(0).toUpperCase() + domainPart.slice(1);
-        document.getElementById('inputOrgName').value = orgSuggestion;
-        handleOrgNameInput(orgSuggestion);
-    }
-
-    document.getElementById('regPassword').focus();
-    alert(`✓ Verified ${provider} identity for ${name} (${email}). Please enter an administrator password to complete workspace setup.`);
-}
-
 async function handleOnboardingSubmit(e) {
     e.preventDefault();
     const form = document.getElementById('onboardingForm');
     const modal = document.getElementById('provisioningModal');
 
-    // Show interactive provisioning modal
+    // Guard: the token must be fresh. Otherwise Google rejects it with "timeout-or-duplicate".
+    if (!hasFreshRecaptchaToken()) {
+        returnToStep1ForRecaptcha();
+        alert('Your security verification expired. Please tick "I\'m not a robot" again, then continue.');
+        return;
+    }
+
     modal.style.display = 'flex';
 
     setTimeout(() => {
@@ -350,6 +486,12 @@ async function handleOnboardingSubmit(e) {
 
     try {
         const formData = new FormData(form);
+
+        // Explicitly include the reCAPTCHA token (widget is inside hidden Step 1 container)
+        if (savedRecaptchaToken) {
+            formData.set('g-recaptcha-response', savedRecaptchaToken);
+        }
+
         const resp = await fetch(form.action || window.location.pathname, {
             method: 'POST',
             body: formData,
@@ -361,27 +503,118 @@ async function handleOnboardingSubmit(e) {
 
         const result = await resp.json();
 
-        if (result.success) {
-            const step4 = document.getElementById('step4');
-            if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready! Launching portal...'; }
+        // The token is single-use: it is consumed by this request whether or not setup succeeded.
+        onRecaptchaExpired();
+        if (!result.success && window.grecaptcha) { try { grecaptcha.reset(); } catch (_) { } }
 
-            // Clear credentials from DOM immediately so Chromium credential manager does not prompt to save
+        if (result.success) {
+            // Store onboarding result for subsequent seed choice
+            pendingOnboardingResult = result;
+
+            const step4 = document.getElementById('step4');
+            if (step4) {
+                step4.style.color = '#10b981';
+                step4.style.fontWeight = '700';
+                step4.innerHTML = '<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px; vertical-align: middle;">check_circle</span> Workspace & Migrations Ready!';
+            }
+
             const regPwd = document.getElementById('regPassword');
             if (regPwd) {
                 regPwd.value = '';
             }
-            form.reset();
 
+            // Immediately switch to the interactive seed choice view after migrations finish
             setTimeout(() => {
-                window.location.href = result.redirectUrl;
-            }, 800);
+                const progressView = document.getElementById('provisioningProgressView');
+                const choiceView = document.getElementById('seedChoiceView');
+                if (progressView) progressView.style.display = 'none';
+                if (choiceView) choiceView.style.display = 'block';
+            }, 600);
         } else {
             modal.style.display = 'none';
-            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
+            // Any failure consumed the token, so the user must re-verify before retrying.
+            returnToStep1ForRecaptcha();
+            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.') + '\n\nPlease tick "I\'m not a robot" again before retrying.');
         }
     } catch (err) {
-        // Fallback standard submit if AJAX fetch fails
         form.submit();
     }
 }
+
+let pendingOnboardingResult = null;
+
+async function submitSeedChoice(seedDefaults) {
+    const btnYes = document.getElementById('btnSeedYes');
+    const btnNo = document.getElementById('btnSeedNo');
+    const statusNotice = document.getElementById('seedingProgressStatus');
+    const msgEl = document.getElementById('seedingProgressMsg');
+
+    if (btnYes) btnYes.disabled = true;
+    if (btnNo) btnNo.disabled = true;
+    if (statusNotice) statusNotice.style.display = 'inline-flex';
+    if (msgEl) {
+        msgEl.textContent = seedDefaults
+            ? 'Applying turnkey website templates, pages & sections...'
+            : 'Configuring blank canvas workspace...';
+    }
+
+    const tenantKey = pendingOnboardingResult?.tenantKey || '';
+    const orgName = pendingOnboardingResult?.orgName || '';
+    const redirectUrl = pendingOnboardingResult?.redirectUrl || '/';
+
+    const handler = seedDefaults ? 'SeedDefaults' : 'SkipDefaults';
+    const pageUrl = window.location.pathname.replace(/\/$/, '');
+    const postUrl = `${pageUrl}?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+
+    try {
+        const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenEl ? tokenEl.value : '';
+
+        const formData = new FormData();
+        formData.append('tenantKey', tenantKey);
+        formData.append('orgName', orgName);
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        let resp = await fetch(postUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'RequestVerificationToken': token,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!resp.ok) {
+            const fallbackUrl = `/Auth/GetStarted?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+            resp = await fetch(fallbackUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'RequestVerificationToken': token,
+                    'Accept': 'application/json'
+                }
+            });
+        }
+
+        if (resp && resp.ok) {
+            const data = await resp.json();
+            console.log('Seed choice outcome:', data);
+        } else {
+            console.warn('Seed choice response status:', resp ? resp.status : 'No response');
+        }
+    } catch (e) {
+        console.warn('Seeding request notice:', e);
+    }
+
+    // Now proceed directly to the finish page
+    window.location.href = redirectUrl;
+}
 </script>
+
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+}

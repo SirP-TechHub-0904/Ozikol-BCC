@@ -25,35 +25,45 @@
 @* ── Pipeline Metrics ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">📋</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Applications</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">⏳</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">hourglass_top</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">New Submissions</span>
             <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.SubmittedCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">🔍</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">search</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Under Review</span>
             <span class="stat-value" style="font-size: 22px; color: #93c5fd;">@Model.UnderReviewCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">🎤</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">mic</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Interviews</span>
             <span class="stat-value" style="font-size: 22px; color: #c084fc;">@Model.InterviewCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🎉</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">celebration</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Hired</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.HiredCount</span>
@@ -66,11 +76,11 @@
     <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
         <div style="flex: 1; min-width: 220px;">
             <input type="text" name="search" value="@Model.Search" placeholder="Search applicant, email, city, or reference code..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+                   class="form-control" />
         </div>
 
         <div style="min-width: 200px;">
-            <select name="jobId" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="jobId" class="form-select">
                 <option value="">All Job Openings</option>
                 @foreach (var job in Model.AvailableOpenings)
                 {
@@ -80,7 +90,7 @@
         </div>
 
         <div style="min-width: 150px;">
-            <select name="statusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="statusFilter" class="form-select">
                 <option value="">All Review Stages</option>
                 <option value="Submitted" selected="@(Model.StatusFilter == "Submitted" ? "selected" : null)">Submitted (New)</option>
                 <option value="UnderReview" selected="@(Model.StatusFilter == "UnderReview" ? "selected" : null)">Under Review</option>
@@ -152,8 +162,8 @@
                         <td style="padding: 14px 14px; text-align: center;">
                             @if (!string.IsNullOrEmpty(app.CvUrl))
                             {
-                                <a href="@app.CvUrl" target="_blank" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 11px; text-decoration: none;">
-                                    📄 PDF
+                                <a href="@app.CvUrl" target="_blank" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">picture_as_pdf</span> PDF
                                 </a>
                             }
                             else

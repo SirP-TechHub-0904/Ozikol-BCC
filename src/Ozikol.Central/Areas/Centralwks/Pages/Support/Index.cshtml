@@ -8,11 +8,11 @@
 <div class="admin-page-header">
     <div class="admin-title-group">
         <h1 class="admin-title">Support & Customer Inquiries</h1>
-        <p class="admin-subtitle">Enterprise triage desk, customer inquiries, partner requests, and communication audit trail across all sovereign tenants.</p>
+        <p class="admin-subtitle">Enterprise triage desk, customer inquiries, partner requests, and communication audit trail across all tenants.</p>
     </div>
     <div class="admin-actions">
         <a href="/centralwks/support/faqs" class="btn-admin btn-admin-secondary">
-            <span>❓</span> Knowledge Base FAQs
+            <span class="material-symbols-outlined" style="font-size: 16px;">help</span> Knowledge Base FAQs
         </a>
     </div>
 </div>
@@ -27,35 +27,45 @@
 @* ── Ticket Metrics ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🎫</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">confirmation_number</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Inquiries</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">🆕</div>
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">mark_email_unread</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">New / Unassigned</span>
             <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.NewCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #60a5fa;">⏳</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.2); color: #60a5fa;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">pending</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">In Progress</span>
             <span class="stat-value" style="font-size: 22px; color: #60a5fa;">@Model.InProgressCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Resolved</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ResolvedCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(148, 163, 184, 0.2); color: #94a3b8;">🔒</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(148, 163, 184, 0.2); color: #94a3b8;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">lock</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Closed</span>
             <span class="stat-value" style="font-size: 22px; color: #94a3b8;">@Model.ClosedCount</span>
@@ -68,10 +78,10 @@
     <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 240px;">
             <input type="text" name="Search" value="@Model.Search" placeholder="Search reference, customer name, email, organization, or subject..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+                   class="form-control" />
         </div>
         <div style="width: 160px;">
-            <select name="StatusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="StatusFilter" class="form-select">
                 <option value="All" selected="@(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "All")">All Statuses</option>
                 <option value="New" selected="@(Model.StatusFilter == "New")">New</option>
                 <option value="InProgress" selected="@(Model.StatusFilter == "InProgress")">In Progress</option>
@@ -80,7 +90,7 @@
             </select>
         </div>
         <div style="width: 160px;">
-            <select name="InquiryTypeFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="InquiryTypeFilter" class="form-select">
                 <option value="All" selected="@(string.IsNullOrEmpty(Model.InquiryTypeFilter) || Model.InquiryTypeFilter == "All")">All Categories</option>
                 <option value="Support" selected="@(Model.InquiryTypeFilter == "Support")">Support</option>
                 <option value="Sales" selected="@(Model.InquiryTypeFilter == "Sales")">Sales</option>
@@ -90,8 +100,8 @@
             </select>
         </div>
         <div>
-            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
-                <span>🔍</span> Filter
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">search</span> Filter
             </button>
             @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.StatusFilter) && Model.StatusFilter != "All") || (!string.IsNullOrEmpty(Model.InquiryTypeFilter) && Model.InquiryTypeFilter != "All"))
             {
@@ -112,7 +122,7 @@
     @if (!Model.Inquiries.Any())
     {
         <div style="padding: 48px; text-align: center; color: var(--admin-text-muted);">
-            <span style="font-size: 40px; display: block; margin-bottom: 12px;">📭</span>
+            <span class="material-symbols-outlined" style="font-size: 40px; display: block; margin-bottom: 12px; color: var(--admin-text-dim);">mark_email_unread</span>
             <p style="font-size: 14px; margin: 0;">No support tickets match the selected criteria.</p>
         </div>
     }
@@ -163,7 +173,9 @@
                                 <div style="font-size: 11px; color: var(--admin-text-muted);">@ticket.Email</div>
                                 @if (!string.IsNullOrEmpty(ticket.Organization))
                                 {
-                                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">🏢 @ticket.Organization</div>
+                                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">corporate_fare</span> @ticket.Organization
+                                    </div>
                                 }
                             </td>
                             <td style="padding: 14px 14px;">
@@ -178,7 +190,7 @@
                             </td>
                             <td style="padding: 14px 14px;">
                                 <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--admin-text-muted);">
-                                    💬 @ticket.ReplyCount
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">chat</span> @ticket.ReplyCount
                                 </span>
                             </td>
                             <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted);">

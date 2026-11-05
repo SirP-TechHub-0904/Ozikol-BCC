@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,27 @@ import { ApiService } from '../../core/services/api.service';
         <div>
           <h1 class="page-title">My Profile & Dossier</h1>
           <p class="page-sub">Manage your personal information, security credentials, contact details, and organization dossier.</p>
+        </div>
+      </div>
+
+      <!-- Global Alert Banner if either Email or Phone is Unverified -->
+      <div *ngIf="!model.emailConfirmed || !model.phoneNumberConfirmed" class="global-unverified-alert">
+        <div class="alert-icon-col">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div class="alert-content-col">
+          <strong>Security Action Required:</strong>
+          <span>
+            <ng-container *ngIf="!model.emailConfirmed && !model.phoneNumberConfirmed">
+              Both your primary email address and mobile phone number are unverified. Please verify both below to unlock self-service recovery and official workspace notifications.
+            </ng-container>
+            <ng-container *ngIf="!model.emailConfirmed && model.phoneNumberConfirmed">
+              Your primary email address is unverified. Verification is required to receive critical security broadcasts and enable self-service password reset.
+            </ng-container>
+            <ng-container *ngIf="model.emailConfirmed && !model.phoneNumberConfirmed">
+              Your mobile phone number is unverified. Verification enables instant SMS dispatch and 2FA recovery channels.
+            </ng-container>
+          </span>
         </div>
       </div>
 
@@ -38,11 +59,11 @@ import { ApiService } from '../../core/services/api.service';
           <div class="dossier-pills-list">
             <div class="dossier-pill member-id">
               <span class="material-symbols-outlined">badge</span>
-              <span>{{ model.memberId || 'CC-2026-0099' }}</span>
+              <span>ID: {{ model.memberId || 'CC-2026-0099' }}</span>
             </div>
-            <div class="dossier-pill category">
-              <span class="material-symbols-outlined">category</span>
-              <span>{{ model.categoryName || 'Standard Member' }}</span>
+            <div class="dossier-pill category" [style.border-color]="model.categoryColor">
+              <span class="material-symbols-outlined" [style.color]="model.categoryColor">category</span>
+              <span>Category: {{ model.categoryName || 'Standard Member' }}</span>
             </div>
             <div class="dossier-pill join-date">
               <span class="material-symbols-outlined">event</span>
@@ -50,8 +71,47 @@ import { ApiService } from '../../core/services/api.service';
             </div>
             <div class="dossier-pill status-active">
               <span class="material-symbols-outlined">verified</span>
-              <span>{{ model.userStatus || 'Active Member' }}</span>
+              <span>Status: {{ model.userStatus || 'Active Member' }}</span>
             </div>
+            <div *ngFor="let role of model.roles" class="dossier-pill role-pill">
+              <span class="material-symbols-outlined">shield</span>
+              <span>Role: {{ role }}</span>
+            </div>
+          </div>
+
+          <!-- Security Health Score Box -->
+          <div class="security-health-box">
+            <div class="health-header">
+              <span class="health-title">Security Health</span>
+              <span class="health-percent" [class.full]="getSecurityScore() === 100">{{ getSecurityScore() }}%</span>
+            </div>
+            <div class="health-bar-track">
+              <div class="health-bar-fill" [style.width.%]="getSecurityScore()" [class.full]="getSecurityScore() === 100"></div>
+            </div>
+            <div class="health-checklist">
+              <div class="check-item" [class.done]="model.emailConfirmed">
+                <span class="material-symbols-outlined">{{ model.emailConfirmed ? 'check_circle' : 'cancel' }}</span>
+                <span>Email {{ model.emailConfirmed ? 'Verified' : 'Unverified' }}</span>
+              </div>
+              <div class="check-item" [class.done]="model.phoneNumberConfirmed">
+                <span class="material-symbols-outlined">{{ model.phoneNumberConfirmed ? 'check_circle' : 'cancel' }}</span>
+                <span>Phone {{ model.phoneNumberConfirmed ? 'Verified' : 'Unverified' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Actions -->
+          <div class="dossier-actions-list">
+            <a routerLink="/users/workspace/profile/biography" class="dossier-nav-btn">
+              <span class="material-symbols-outlined">description</span>
+              <span>My CV & Biography</span>
+              <span class="material-symbols-outlined arrow">chevron_right</span>
+            </a>
+            <a routerLink="/identity/console/account" class="dossier-nav-btn">
+              <span class="material-symbols-outlined">security</span>
+              <span>Manage Security & 2FA</span>
+              <span class="material-symbols-outlined arrow">chevron_right</span>
+            </a>
           </div>
 
           <div *ngIf="avatarSuccessMsg" class="avatar-msg success">{{ avatarSuccessMsg }}</div>
@@ -84,13 +144,15 @@ import { ApiService } from '../../core/services/api.service';
                     <option value="Engr">Engr</option>
                     <option value="Chief">Chief</option>
                     <option value="Barr">Barr</option>
+                    <option value="Rev">Rev</option>
+                    <option value="Pastor">Pastor</option>
                   </select>
                 </div>
 
                 <!-- First Name -->
                 <div class="form-group">
                   <label>First Name <span class="req">*</span></label>
-                  <input type="text" [(ngModel)]="model.firstName" name="firstName" required class="form-input" />
+                  <input type="text" [(ngModel)]="model.firstName" name="firstName" required placeholder="e.g. First Name" class="form-input" />
                 </div>
 
                 <!-- Middle Name -->
@@ -102,7 +164,7 @@ import { ApiService } from '../../core/services/api.service';
                 <!-- Last Name -->
                 <div class="form-group">
                   <label>Last Name <span class="req">*</span></label>
-                  <input type="text" [(ngModel)]="model.lastName" name="lastName" required class="form-input" />
+                  <input type="text" [(ngModel)]="model.lastName" name="lastName" required placeholder="e.g. Last Name" class="form-input" />
                 </div>
 
                 <!-- Date of Birth -->
@@ -114,20 +176,13 @@ import { ApiService } from '../../core/services/api.service';
                 <!-- Gender -->
                 <div class="form-group">
                   <label>Gender</label>
-                  <div class="gender-radio-group">
-                    <label class="gender-label" [class.checked]="model.gender === 'Male' || model.gender === '1'">
-                      <input type="radio" [(ngModel)]="model.gender" name="gender" value="Male" />
-                      <span>Male</span>
-                    </label>
-                    <label class="gender-label" [class.checked]="model.gender === 'Female' || model.gender === '2'">
-                      <input type="radio" [(ngModel)]="model.gender" name="gender" value="Female" />
-                      <span>Female</span>
-                    </label>
-                    <label class="gender-label" [class.checked]="model.gender === 'Other' || model.gender === '0'">
-                      <input type="radio" [(ngModel)]="model.gender" name="gender" value="Other" />
-                      <span>Other</span>
-                    </label>
-                  </div>
+                  <select [(ngModel)]="model.gender" name="gender" class="form-input">
+                    <option value="">-- Select Gender --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
                 </div>
 
                 <!-- Professional Designation -->
@@ -148,47 +203,106 @@ import { ApiService } from '../../core/services/api.service';
             </form>
           </div>
 
-          <!-- CARD 2: Verified Email Address Management (With OTP Flow) -->
+          <!-- CARD 2: Primary Email Address (Dynamic Verification & Change Engine) -->
           <div class="form-card">
             <div class="card-header">
               <div class="head-title">
                 <span class="material-symbols-outlined text-blue">mail</span>
                 <h3>Primary Email Address</h3>
               </div>
-              <span class="status-badge verified">
+              <span *ngIf="model.emailConfirmed" class="status-badge verified">
                 <span class="material-symbols-outlined">check_circle</span>
                 Verified Email
+              </span>
+              <span *ngIf="!model.emailConfirmed" class="status-badge unverified">
+                <span class="material-symbols-outlined">warning</span>
+                Unverified Email
               </span>
             </div>
 
             <div class="contact-card-body">
-              <div class="current-contact-row" *ngIf="!emailChangeMode">
+              <!-- Current Email Display Row -->
+              <div class="current-contact-row" *ngIf="!emailChangeMode && !emailVerifyMode">
                 <div class="contact-val">
                   <span class="material-symbols-outlined">alternate_email</span>
                   <strong>{{ model.email }}</strong>
                 </div>
-                <button type="button" class="btn-outline" (click)="startEmailChange()">
-                  <span class="material-symbols-outlined">edit</span>
-                  <span>Change Email</span>
+                <div class="contact-actions-wrap">
+                  <button *ngIf="!model.emailConfirmed" type="button" class="btn-verify-highlight" (click)="startEmailVerify()">
+                    <span class="material-symbols-outlined">mark_email_read</span>
+                    <span>Verify Email Now</span>
+                  </button>
+                  <button type="button" class="btn-outline" (click)="startEmailChange()">
+                    <span class="material-symbols-outlined">edit</span>
+                    <span>Change Email</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Unverified Warning Banner -->
+              <div *ngIf="!model.emailConfirmed && !emailVerifyMode && !emailChangeMode" class="unverified-alert-banner">
+                <span class="material-symbols-outlined alert-icon">warning</span>
+                <div class="unverified-text">
+                  <strong>Verification Required:</strong> Your primary email address is unverified. Confirm your email to receive security alerts and enable self-service password recovery.
+                </div>
+                <button type="button" class="btn-primary btn-sm" (click)="startEmailVerify()">
+                  Verify Email
                 </button>
               </div>
 
-              <!-- OTP Verification Flow for Email -->
+              <!-- IN-PLACE VERIFICATION FLOW: For Current Unconfirmed Email -->
+              <div class="otp-flow-box" *ngIf="emailVerifyMode">
+                <div class="otp-flow-header">
+                  <h4>Verify Primary Email</h4>
+                  <button type="button" class="btn-close" (click)="emailVerifyMode = false">✕</button>
+                </div>
+                <p class="otp-desc">
+                  A 6-digit verification code will be sent to <strong>{{ model.email }}</strong>. Enter the code below to complete verification.
+                </p>
+
+                <div class="otp-inputs-grid" *ngIf="emailVerifyOtpSent">
+                  <div class="form-group">
+                    <label>Enter 6-Digit Verification Code</label>
+                    <input type="text" [(ngModel)]="emailVerifyCode" maxlength="6" placeholder="e.g. 123456" class="form-input code-input" />
+                  </div>
+                </div>
+
+                <div class="otp-actions-row">
+                  <button *ngIf="!emailVerifyOtpSent" type="button" class="btn-primary" [disabled]="sendingVerifyEmailOtp" (click)="requestCurrentEmailOtp()">
+                    <span class="material-symbols-outlined">{{ sendingVerifyEmailOtp ? 'hourglass_top' : 'send' }}</span>
+                    <span>{{ sendingVerifyEmailOtp ? 'Sending Code...' : 'Send Verification Code' }}</span>
+                  </button>
+
+                  <button *ngIf="emailVerifyOtpSent" type="button" class="btn-success" [disabled]="confirmingVerifyEmail || !emailVerifyCode" (click)="confirmCurrentEmailVerification()">
+                    <span class="material-symbols-outlined">{{ confirmingVerifyEmail ? 'hourglass_top' : 'verified' }}</span>
+                    <span>{{ confirmingVerifyEmail ? 'Verifying...' : 'Confirm & Verify Email' }}</span>
+                  </button>
+
+                  <button *ngIf="emailVerifyOtpSent" type="button" class="btn-text" [disabled]="resendEmailCountdown > 0" (click)="requestCurrentEmailOtp()">
+                    {{ resendEmailCountdown > 0 ? 'Resend code in ' + resendEmailCountdown + 's' : 'Resend Code' }}
+                  </button>
+                </div>
+
+                <div *ngIf="emailVerifySuccessMsg" class="banner-msg success">{{ emailVerifySuccessMsg }}</div>
+                <div *ngIf="emailVerifyErrorMsg" class="banner-msg error">{{ emailVerifyErrorMsg }}</div>
+              </div>
+
+              <!-- CHANGE EMAIL FLOW: For Updating to a New Email Address -->
               <div class="otp-flow-box" *ngIf="emailChangeMode">
                 <div class="otp-flow-header">
                   <h4>Change Email Address</h4>
                   <button type="button" class="btn-close" (click)="emailChangeMode = false">✕</button>
                 </div>
-                <p class="otp-desc">Enter your new email address. A 6-digit verification code will be sent to complete the change.</p>
+                <p class="otp-desc">Enter your new email address. A 6-digit verification code will be sent to confirm the change.</p>
 
                 <div class="otp-inputs-grid">
                   <div class="form-group">
                     <label>New Email Address</label>
-                    <input type="email" [(ngModel)]="newEmail" [disabled]="emailOtpSent" placeholder="new.email@example.com" class="form-input" />
+                    <input type="email" [(ngModel)]="newEmail" [disabled]="emailOtpSent" placeholder="name@company.com" class="form-input" />
                   </div>
                   <div class="form-group" *ngIf="emailOtpSent">
                     <label>Enter 6-Digit Verification Code</label>
-                    <input type="text" [(ngModel)]="emailOtpCode" maxlength="6" placeholder="123456" class="form-input code-input" />
+                    <input type="text" [(ngModel)]="emailOtpCode" maxlength="6" placeholder="e.g. 123456" class="form-input code-input" />
                   </div>
                 </div>
 
@@ -214,47 +328,106 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </div>
 
-          <!-- CARD 3: Verified Phone Number Management (With SMS OTP Flow) -->
+          <!-- CARD 3: Mobile Phone Number (Dynamic SMS Verification & Change Engine) -->
           <div class="form-card">
             <div class="card-header">
               <div class="head-title">
                 <span class="material-symbols-outlined text-green">call</span>
-                <h3>Verified Phone Number</h3>
+                <h3>Mobile Phone Number</h3>
               </div>
-              <span class="status-badge verified">
+              <span *ngIf="model.phoneNumberConfirmed" class="status-badge verified">
                 <span class="material-symbols-outlined">check_circle</span>
                 Verified Phone
+              </span>
+              <span *ngIf="!model.phoneNumberConfirmed" class="status-badge unverified">
+                <span class="material-symbols-outlined">warning</span>
+                Unverified Phone
               </span>
             </div>
 
             <div class="contact-card-body">
-              <div class="current-contact-row" *ngIf="!phoneChangeMode">
+              <!-- Current Phone Display Row -->
+              <div class="current-contact-row" *ngIf="!phoneChangeMode && !phoneVerifyMode">
                 <div class="contact-val">
                   <span class="material-symbols-outlined">phone_iphone</span>
-                  <strong>{{ model.phoneNumber || '+234-801-234-5678' }}</strong>
+                  <strong>{{ model.phoneNumber || 'No phone number provided' }}</strong>
                 </div>
-                <button type="button" class="btn-outline" (click)="startPhoneChange()">
-                  <span class="material-symbols-outlined">edit</span>
-                  <span>Update Phone</span>
+                <div class="contact-actions-wrap">
+                  <button *ngIf="!model.phoneNumberConfirmed && model.phoneNumber" type="button" class="btn-verify-highlight" (click)="startPhoneVerify()">
+                    <span class="material-symbols-outlined">sms</span>
+                    <span>Verify Phone via SMS</span>
+                  </button>
+                  <button type="button" class="btn-outline" (click)="startPhoneChange()">
+                    <span class="material-symbols-outlined">edit</span>
+                    <span>{{ model.phoneNumber ? 'Update Phone' : 'Add Phone Number' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Unverified Phone Warning Banner -->
+              <div *ngIf="!model.phoneNumberConfirmed && model.phoneNumber && !phoneVerifyMode && !phoneChangeMode" class="unverified-alert-banner">
+                <span class="material-symbols-outlined alert-icon">warning</span>
+                <div class="unverified-text">
+                  <strong>Verification Required:</strong> Your mobile phone number is unverified. Complete verification to receive urgent SMS security alerts and enable SMS OTP authentication.
+                </div>
+                <button type="button" class="btn-primary btn-sm" (click)="startPhoneVerify()">
+                  Verify Phone
                 </button>
               </div>
 
-              <!-- SMS OTP Verification Flow for Phone -->
+              <!-- IN-PLACE VERIFICATION FLOW: For Current Unconfirmed Phone -->
+              <div class="otp-flow-box" *ngIf="phoneVerifyMode">
+                <div class="otp-flow-header">
+                  <h4>Verify Mobile Phone</h4>
+                  <button type="button" class="btn-close" (click)="phoneVerifyMode = false">✕</button>
+                </div>
+                <p class="otp-desc">
+                  A 6-digit SMS verification code will be sent to <strong>{{ model.phoneNumber }}</strong>. Standard carrier message rates may apply.
+                </p>
+
+                <div class="otp-inputs-grid" *ngIf="phoneVerifyOtpSent">
+                  <div class="form-group">
+                    <label>Enter 6-Digit SMS Code</label>
+                    <input type="text" [(ngModel)]="phoneVerifyCode" maxlength="6" placeholder="e.g. 123456" class="form-input code-input" />
+                  </div>
+                </div>
+
+                <div class="otp-actions-row">
+                  <button *ngIf="!phoneVerifyOtpSent" type="button" class="btn-primary" [disabled]="sendingVerifyPhoneOtp" (click)="requestCurrentPhoneOtp()">
+                    <span class="material-symbols-outlined">{{ sendingVerifyPhoneOtp ? 'hourglass_top' : 'sms' }}</span>
+                    <span>{{ sendingVerifyPhoneOtp ? 'Sending SMS...' : 'Send SMS Verification Code' }}</span>
+                  </button>
+
+                  <button *ngIf="phoneVerifyOtpSent" type="button" class="btn-success" [disabled]="confirmingVerifyPhone || !phoneVerifyCode" (click)="confirmCurrentPhoneVerification()">
+                    <span class="material-symbols-outlined">{{ confirmingVerifyPhone ? 'hourglass_top' : 'verified' }}</span>
+                    <span>{{ confirmingVerifyPhone ? 'Verifying...' : 'Confirm & Verify Phone' }}</span>
+                  </button>
+
+                  <button *ngIf="phoneVerifyOtpSent" type="button" class="btn-text" [disabled]="resendPhoneCountdown > 0" (click)="requestCurrentPhoneOtp()">
+                    {{ resendPhoneCountdown > 0 ? 'Resend SMS in ' + resendPhoneCountdown + 's' : 'Resend SMS' }}
+                  </button>
+                </div>
+
+                <div *ngIf="phoneVerifySuccessMsg" class="banner-msg success">{{ phoneVerifySuccessMsg }}</div>
+                <div *ngIf="phoneVerifyErrorMsg" class="banner-msg error">{{ phoneVerifyErrorMsg }}</div>
+              </div>
+
+              <!-- CHANGE PHONE FLOW: For Updating to a New Phone Number -->
               <div class="otp-flow-box" *ngIf="phoneChangeMode">
                 <div class="otp-flow-header">
-                  <h4>Update Verified Phone Number</h4>
+                  <h4>Update Mobile Phone</h4>
                   <button type="button" class="btn-close" (click)="phoneChangeMode = false">✕</button>
                 </div>
-                <p class="otp-desc">Enter your international phone number. A 6-digit SMS verification code will be dispatched to confirm.</p>
+                <p class="otp-desc">Enter your international phone number. A 6-digit SMS code will be dispatched to confirm.</p>
 
                 <div class="otp-inputs-grid">
                   <div class="form-group">
-                    <label>New Phone Number (e.g. +234...)</label>
-                    <input type="tel" [(ngModel)]="newPhone" [disabled]="phoneOtpSent" placeholder="+2348012345678" class="form-input" />
+                    <label>New Phone Number (e.g. +0 (000) 000-0000)</label>
+                    <input type="tel" [(ngModel)]="newPhone" [disabled]="phoneOtpSent" placeholder="e.g. +1 (555) 000-0000" class="form-input" />
                   </div>
                   <div class="form-group" *ngIf="phoneOtpSent">
                     <label>Enter 6-Digit SMS Code</label>
-                    <input type="text" [(ngModel)]="phoneOtpCode" maxlength="6" placeholder="123456" class="form-input code-input" />
+                    <input type="text" [(ngModel)]="phoneOtpCode" maxlength="6" placeholder="e.g. 123456" class="form-input code-input" />
                   </div>
                 </div>
 
@@ -293,49 +466,75 @@ import { ApiService } from '../../core/services/api.service';
     .page-title { font-size: 22px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0 0 4px; }
     .page-sub { font-size: 13px; color: #64748b; margin: 0; }
 
+    /* Global Unverified Alert Banner */
+    .global-unverified-alert {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      border-radius: 12px;
+      color: #92400e;
+    }
+    .global-unverified-alert .alert-icon-col span {
+      font-size: 24px;
+      color: #f59e0b;
+    }
+    .global-unverified-alert .alert-content-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .profile-layout {
       display: grid;
-      grid-template-columns: 290px 1fr;
+      grid-template-columns: 310px 1fr;
       gap: 24px;
       align-items: start;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .profile-layout { grid-template-columns: 1fr; }
     }
 
-    /* Avatar Card */
+    /* Left Avatar Card */
     .avatar-card {
       background: var(--md-sys-color-surface, #ffffff);
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
       border-radius: 16px;
-      padding: 30px 20px;
-      text-align: center;
+      padding: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .avatar-circle-wrap {
       position: relative;
       margin-bottom: 16px;
     }
     .avatar-circle {
-      width: 100px;
-      height: 100px;
-      border-radius: 30px;
-      background: linear-gradient(135deg, #0050e5, #38bdf8);
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0050e5, #3b82f6);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 24px rgba(0, 80, 229, 0.35);
       overflow: hidden;
+      border: 4px solid #ffffff;
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.25);
     }
     .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-    .avatar-initials { font-size: 34px; font-weight: 800; color: #ffffff; }
+    .avatar-initials { font-size: 32px; font-weight: 800; color: #ffffff; letter-spacing: 1px; }
+
     .avatar-upload-btn {
       position: absolute;
-      bottom: -4px;
-      right: -4px;
+      bottom: 0;
+      right: 0;
       width: 34px;
       height: 34px;
       border-radius: 50%;
@@ -346,42 +545,125 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0, 80, 229, 0.4);
-      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, background 0.2s;
     }
-    .avatar-upload-btn:hover { background: #003dbb; transform: scale(1.1); }
+    .avatar-upload-btn:hover:not(:disabled) { transform: scale(1.08); background: #003db3; }
     .avatar-upload-btn span { font-size: 18px; }
 
-    .user-fullname { font-size: 17px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0 0 4px; }
-    .user-role-label { font-size: 12px; color: #64748b; margin: 0 0 16px; }
+    .user-fullname { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+    .user-role-label { font-size: 13px; color: #64748b; margin: 0 0 16px; }
 
     .dossier-pills-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
       width: 100%;
+      margin-bottom: 20px;
     }
     .dossier-pill {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
+      gap: 10px;
+      padding: 9px 14px;
       border-radius: 10px;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 12.5px;
+      font-weight: 600;
       text-align: left;
     }
-    .dossier-pill span.material-symbols-outlined { font-size: 16px; }
-    .dossier-pill.member-id { background: rgba(0, 80, 229, 0.1); color: #0050e5; }
-    .dossier-pill.category { background: rgba(168, 85, 247, 0.1); color: #9333ea; }
-    .dossier-pill.join-date { background: #f1f5f9; color: #475569; }
-    .dossier-pill.status-active { background: rgba(34, 197, 94, 0.1); color: #16a34a; }
+    .dossier-pill span.material-symbols-outlined { font-size: 18px; }
+    .dossier-pill.member-id { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .dossier-pill.category { background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
+    .dossier-pill.join-date { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .dossier-pill.status-active { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .dossier-pill.role-pill { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 
-    .avatar-msg { font-size: 12px; font-weight: 700; margin-top: 10px; }
-    .avatar-msg.success { color: #16a34a; }
-    .avatar-msg.error { color: #ef4444; }
+    /* Security Health Box */
+    .security-health-box {
+      width: 100%;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+    .health-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .health-title { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .health-percent { font-size: 13px; font-weight: 800; color: #f59e0b; }
+    .health-percent.full { color: #16a34a; }
 
-    /* Cards Column */
+    .health-bar-track {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .health-bar-fill {
+      height: 100%;
+      background: #f59e0b;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+    .health-bar-fill.full { background: #16a34a; }
+
+    .health-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .check-item span.material-symbols-outlined { font-size: 16px; color: #cbd5e1; }
+    .check-item.done { color: #16a34a; font-weight: 600; }
+    .check-item.done span.material-symbols-outlined { color: #16a34a; }
+
+    /* Quick Dossier Actions */
+    .dossier-actions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+    .dossier-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .dossier-nav-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .dossier-nav-btn .arrow { margin-left: auto; font-size: 18px; color: #94a3b8; }
+
+    .avatar-msg {
+      margin-top: 10px;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .avatar-msg.success { background: #f0fdf4; color: #16a34a; }
+    .avatar-msg.error { background: #fef2f2; color: #dc2626; }
+
+    /* Right Column Cards */
     .cards-column {
       display: flex;
       flex-direction: column;
@@ -391,130 +673,262 @@ import { ApiService } from '../../core/services/api.service';
       background: var(--md-sys-color-surface, #ffffff);
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
       border-radius: 16px;
-      padding: 24px 28px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
-      border-bottom: 1px solid var(--md-sys-color-outline, #e2e8f0);
       padding-bottom: 14px;
+      border-bottom: 1px solid #f1f5f9;
     }
     .head-title {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
+    .head-title span { font-size: 22px; }
     .head-title h3 { font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; }
-    .head-title span.material-symbols-outlined { font-size: 22px; }
+    .text-primary { color: #0050e5; }
+    .text-blue { color: #0284c7; }
+    .text-green { color: #16a34a; }
 
-    .status-badge.verified {
+    .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      background: rgba(34, 197, 94, 0.12);
-      color: #16a34a;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 11.5px;
+      gap: 6px;
+      font-size: 12px;
       font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
     }
-    .status-badge.verified span { font-size: 14px; }
+    .status-badge span { font-size: 16px; }
+    .status-badge.verified { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .status-badge.unverified { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
     }
-    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
     .form-group.full-width { grid-column: 1 / -1; }
     .form-group label {
-      font-size: 12px;
+      display: block;
+      font-size: 12.5px;
       font-weight: 700;
       color: #334155;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      margin-bottom: 6px;
     }
-    .form-group label .req { color: #ef4444; }
+    .req { color: #ef4444; }
+
     .form-input {
-      padding: 10px 14px;
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
       font-size: 13.5px;
       color: #0f172a;
-      background: #f8fafc;
-      outline: none;
-      transition: all 0.2s;
-    }
-    .form-input:focus {
-      border-color: #0050e5;
       background: #ffffff;
-      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
     }
-    .code-input {
-      letter-spacing: 4px;
-      font-size: 18px;
+    .form-input:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1); }
+    .form-input.code-input {
+      font-family: monospace;
+      font-size: 20px;
       font-weight: 800;
+      letter-spacing: 4px;
       text-align: center;
     }
 
-    /* Gender Radio */
     .gender-radio-group {
       display: flex;
       gap: 8px;
+      height: 42px;
     }
     .gender-label {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 9px;
       border: 1px solid #cbd5e1;
-      background: #f8fafc;
       border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      color: #475569;
       cursor: pointer;
       transition: all 0.2s;
     }
     .gender-label input { display: none; }
     .gender-label.checked {
+      background: #eff6ff;
       border-color: #0050e5;
-      background: rgba(0, 80, 229, 0.08);
       color: #0050e5;
     }
 
-    /* Contact Details Rows */
+    .form-actions {
+      margin-top: 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 20px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover:not(:disabled) { background: #003db3; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-primary.btn-sm { height: 34px; padding: 0 14px; font-size: 12.5px; }
+
+    .btn-success {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 20px;
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+    .btn-success:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
+
+    .btn-verify-highlight {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      background: #f59e0b;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+      transition: background 0.2s;
+    }
+    .btn-verify-highlight:hover { background: #d97706; }
+
+    .btn-text {
+      background: none;
+      border: none;
+      color: #0050e5;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .btn-text:disabled { color: #94a3b8; text-decoration: none; cursor: not-allowed; }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .btn-close:hover { color: #0f172a; }
+
+    .banner-msg {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 6px;
+    }
+    .banner-msg.success { background: #ecfdf5; color: #059669; }
+    .banner-msg.error { background: #fef2f2; color: #dc2626; }
+
+    /* Contact Card Styles */
+    .contact-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
     .current-contact-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 16px;
+      padding: 14px 18px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
+      border-radius: 12px;
     }
     .contact-val {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 14px;
+      gap: 12px;
+      font-size: 15px;
       color: #0f172a;
     }
-    .contact-val span.material-symbols-outlined { color: #64748b; font-size: 20px; }
+    .contact-val span { font-size: 20px; color: #64748b; }
+    .contact-actions-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .unverified-alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      color: #92400e;
+    }
+    .alert-icon { font-size: 22px; color: #f59e0b; flex-shrink: 0; }
+    .unverified-text { font-size: 13px; line-height: 1.4; flex: 1; }
 
     /* OTP Flow Box */
     .otp-flow-box {
       background: #f8fafc;
-      border: 1px solid #0050e5;
+      border: 1px solid #cbd5e1;
       border-radius: 12px;
-      padding: 18px 20px;
-      position: relative;
+      padding: 20px;
     }
     .otp-flow-header {
       display: flex;
@@ -522,98 +936,26 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       margin-bottom: 6px;
     }
-    .otp-flow-header h4 { margin: 0; font-size: 14px; font-weight: 800; color: #0050e5; }
-    .btn-close {
-      background: none;
-      border: none;
-      font-size: 16px;
-      color: #64748b;
-      cursor: pointer;
-    }
-    .otp-desc { font-size: 12px; color: #64748b; margin: 0 0 14px; }
+    .otp-flow-header h4 { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }
+    .otp-desc { font-size: 13px; color: #475569; margin: 0 0 16px; line-height: 1.45; }
     .otp-inputs-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 14px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
     }
-    @media (max-width: 640px) { .otp-inputs-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) {
+      .otp-inputs-grid { grid-template-columns: 1fr; }
+    }
     .otp-actions-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+      flex-wrap: wrap;
     }
-
-    /* Buttons & Banners */
-    .form-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      border-top: 1px solid #e2e8f0;
-      padding-top: 16px;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #0050e5, #1f6bff);
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.35);
-      transition: all 0.2s;
-    }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
-    .btn-success {
-      background: linear-gradient(135deg, #16a34a, #22c55e);
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-outline {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #0f172a;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-    .btn-outline:hover { border-color: #0050e5; color: #0050e5; }
-    .btn-text {
-      background: none;
-      border: none;
-      color: #0050e5;
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: underline;
-    }
-    .banner-msg { font-size: 13px; font-weight: 700; margin-top: 6px; }
-    .banner-msg.success { color: #16a34a; }
-    .banner-msg.error { color: #ef4444; }
-    .text-primary { color: #0050e5; }
-    .text-blue { color: #0284c7; }
-    .text-green { color: #16a34a; }
   `]
 })
-export class WorkspaceProfileComponent implements OnInit {
+export class WorkspaceProfileComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef;
 
   model: any = {
@@ -622,15 +964,19 @@ export class WorkspaceProfileComponent implements OnInit {
     middleName: '',
     lastName: '',
     email: localStorage.getItem('user_email') || '',
+    emailConfirmed: false,
     phoneNumber: '',
+    phoneNumberConfirmed: false,
     dateOfBirth: '',
     gender: 'Male',
     designation: '',
     avatarUrl: '',
     memberId: 'CC-2026-0099',
     categoryName: 'Standard Member',
+    categoryColor: '#0050e5',
     joinDate: '',
-    userStatus: 'Active Member'
+    userStatus: 'Active Member',
+    roles: []
   };
 
   uploadingAvatar = false;
@@ -640,6 +986,28 @@ export class WorkspaceProfileComponent implements OnInit {
   savingPersonal = false;
   personalSuccessMsg = '';
   personalErrorMsg = '';
+
+  // In-Place Email Verification State
+  emailVerifyMode = false;
+  emailVerifyOtpSent = false;
+  emailVerifyCode = '';
+  sendingVerifyEmailOtp = false;
+  confirmingVerifyEmail = false;
+  emailVerifySuccessMsg = '';
+  emailVerifyErrorMsg = '';
+  resendEmailCountdown = 0;
+  private emailTimer: any;
+
+  // In-Place Phone Verification State
+  phoneVerifyMode = false;
+  phoneVerifyOtpSent = false;
+  phoneVerifyCode = '';
+  sendingVerifyPhoneOtp = false;
+  confirmingVerifyPhone = false;
+  phoneVerifySuccessMsg = '';
+  phoneVerifyErrorMsg = '';
+  resendPhoneCountdown = 0;
+  private phoneTimer: any;
 
   // Email Change State
   emailChangeMode = false;
@@ -667,6 +1035,11 @@ export class WorkspaceProfileComponent implements OnInit {
     this.loadProfile();
   }
 
+  ngOnDestroy(): void {
+    if (this.emailTimer) clearInterval(this.emailTimer);
+    if (this.phoneTimer) clearInterval(this.phoneTimer);
+  }
+
   loadProfile(): void {
     this.api.get<any>('PortalUsersApi/me').subscribe({
       next: (res) => {
@@ -674,15 +1047,18 @@ export class WorkspaceProfileComponent implements OnInit {
           this.model = {
             ...this.model,
             ...res.data,
+            emailConfirmed: !!res.data.emailConfirmed,
+            phoneNumberConfirmed: !!res.data.phoneNumberConfirmed,
+            roles: res.data.roles || [],
             dateOfBirth: res.data.dateOfBirth ? res.data.dateOfBirth.split('T')[0] : ''
           };
         }
       },
       error: () => {
-        const cachedName = localStorage.getItem('user_name') || 'Peter Onwuka';
+        const cachedName = localStorage.getItem('user_name') || 'Member';
         const parts = cachedName.split(' ');
-        this.model.firstName = parts[0] || 'Peter';
-        this.model.lastName = parts.slice(1).join(' ') || 'Onwuka';
+        this.model.firstName = parts[0] || 'Member';
+        this.model.lastName = parts.slice(1).join(' ') || '';
       }
     });
   }
@@ -691,6 +1067,13 @@ export class WorkspaceProfileComponent implements OnInit {
     const f = this.model.firstName ? this.model.firstName[0] : '';
     const l = this.model.lastName ? this.model.lastName[0] : '';
     return (f + l).toUpperCase() || 'MB';
+  }
+
+  getSecurityScore(): number {
+    let score = 50;
+    if (this.model.emailConfirmed) score += 25;
+    if (this.model.phoneNumberConfirmed) score += 25;
+    return score;
   }
 
   // 1. Avatar Upload (Cloudinary)
@@ -753,9 +1136,144 @@ export class WorkspaceProfileComponent implements OnInit {
     });
   }
 
-  // 3. Email Change Flow
+  // 3. Email In-Place Verification Flow
+  startEmailVerify(): void {
+    this.emailVerifyMode = true;
+    this.emailChangeMode = false;
+    this.emailVerifyCode = '';
+    this.emailVerifySuccessMsg = '';
+    this.emailVerifyErrorMsg = '';
+    if (!this.emailVerifyOtpSent) {
+      this.requestCurrentEmailOtp();
+    }
+  }
+
+  requestCurrentEmailOtp(): void {
+    this.sendingVerifyEmailOtp = true;
+    this.emailVerifySuccessMsg = '';
+    this.emailVerifyErrorMsg = '';
+
+    this.api.post<any>('PortalUsersApi/request-email-verification', {}).subscribe({
+      next: (res) => {
+        this.sendingVerifyEmailOtp = false;
+        this.emailVerifyOtpSent = true;
+        this.emailVerifySuccessMsg = res?.message || '6-digit verification code sent to your email!';
+        this.startEmailCountdown(res?.data?.retryAfterSeconds || 60);
+      },
+      error: (err) => {
+        this.sendingVerifyEmailOtp = false;
+        this.emailVerifyErrorMsg = err?.error?.message || 'Failed to send verification code.';
+      }
+    });
+  }
+
+  confirmCurrentEmailVerification(): void {
+    if (!this.emailVerifyCode) return;
+    this.confirmingVerifyEmail = true;
+    this.emailVerifySuccessMsg = '';
+    this.emailVerifyErrorMsg = '';
+
+    this.api.post<any>('PortalUsersApi/confirm-email-verification', {
+      otpCode: this.emailVerifyCode.trim()
+    }).subscribe({
+      next: (res) => {
+        this.confirmingVerifyEmail = false;
+        this.model.emailConfirmed = true;
+        this.emailVerifySuccessMsg = 'Email verified successfully!';
+        setTimeout(() => {
+          this.emailVerifyMode = false;
+          this.emailVerifySuccessMsg = '';
+        }, 2500);
+      },
+      error: (err) => {
+        this.confirmingVerifyEmail = false;
+        this.emailVerifyErrorMsg = err?.error?.message || 'Invalid or expired verification code.';
+      }
+    });
+  }
+
+  private startEmailCountdown(seconds: number): void {
+    this.resendEmailCountdown = seconds;
+    if (this.emailTimer) clearInterval(this.emailTimer);
+    this.emailTimer = setInterval(() => {
+      this.resendEmailCountdown--;
+      if (this.resendEmailCountdown <= 0) {
+        clearInterval(this.emailTimer);
+      }
+    }, 1000);
+  }
+
+  // 4. Phone In-Place Verification Flow
+  startPhoneVerify(): void {
+    this.phoneVerifyMode = true;
+    this.phoneChangeMode = false;
+    this.phoneVerifyCode = '';
+    this.phoneVerifySuccessMsg = '';
+    this.phoneVerifyErrorMsg = '';
+    if (!this.phoneVerifyOtpSent) {
+      this.requestCurrentPhoneOtp();
+    }
+  }
+
+  requestCurrentPhoneOtp(): void {
+    this.sendingVerifyPhoneOtp = true;
+    this.phoneVerifySuccessMsg = '';
+    this.phoneVerifyErrorMsg = '';
+
+    this.api.post<any>('PortalUsersApi/request-phone-verification', {}).subscribe({
+      next: (res) => {
+        this.sendingVerifyPhoneOtp = false;
+        this.phoneVerifyOtpSent = true;
+        this.phoneVerifySuccessMsg = res?.message || '6-digit SMS verification code sent!';
+        this.startPhoneCountdown(res?.data?.retryAfterSeconds || 60);
+      },
+      error: (err) => {
+        this.sendingVerifyPhoneOtp = false;
+        this.phoneVerifyErrorMsg = err?.error?.message || 'Failed to send SMS verification code.';
+      }
+    });
+  }
+
+  confirmCurrentPhoneVerification(): void {
+    if (!this.phoneVerifyCode) return;
+    this.confirmingVerifyPhone = true;
+    this.phoneVerifySuccessMsg = '';
+    this.phoneVerifyErrorMsg = '';
+
+    this.api.post<any>('PortalUsersApi/confirm-phone-verification', {
+      otpCode: this.phoneVerifyCode.trim()
+    }).subscribe({
+      next: (res) => {
+        this.confirmingVerifyPhone = false;
+        this.model.phoneNumberConfirmed = true;
+        this.phoneVerifySuccessMsg = 'Mobile phone verified successfully!';
+        setTimeout(() => {
+          this.phoneVerifyMode = false;
+          this.phoneVerifySuccessMsg = '';
+        }, 2500);
+      },
+      error: (err) => {
+        this.confirmingVerifyPhone = false;
+        this.phoneVerifyErrorMsg = err?.error?.message || 'Invalid or expired SMS code.';
+      }
+    });
+  }
+
+  private startPhoneCountdown(seconds: number): void {
+    this.resendPhoneCountdown = seconds;
+    if (this.phoneTimer) clearInterval(this.phoneTimer);
+    this.phoneTimer = setInterval(() => {
+      this.resendPhoneCountdown--;
+      if (this.resendPhoneCountdown <= 0) {
+        clearInterval(this.phoneTimer);
+      }
+    }, 1000);
+  }
+
+  // 5. Change Email Flow (to New Address)
   startEmailChange(): void {
     this.emailChangeMode = true;
+    this.emailVerifyMode = false;
     this.newEmail = '';
     this.emailOtpSent = false;
     this.emailOtpCode = '';
@@ -769,7 +1287,7 @@ export class WorkspaceProfileComponent implements OnInit {
     this.emailSuccessMsg = '';
     this.emailErrorMsg = '';
 
-    this.api.post<any>('PortalUsersApi/request-email-change-otp', { newEmail: this.newEmail }).subscribe({
+    this.api.post<any>('PortalUsersApi/request-email-change-otp', { newEmail: this.newEmail.trim() }).subscribe({
       next: (res) => {
         this.sendingEmailOtp = false;
         this.emailOtpSent = true;
@@ -789,17 +1307,18 @@ export class WorkspaceProfileComponent implements OnInit {
     this.emailErrorMsg = '';
 
     this.api.post<any>('PortalUsersApi/confirm-email-change', {
-      newEmail: this.newEmail,
-      otp: this.emailOtpCode
+      newEmail: this.newEmail.trim(),
+      otp: this.emailOtpCode.trim()
     }).subscribe({
       next: (res) => {
         this.confirmingEmail = false;
-        this.model.email = this.newEmail;
+        this.model.email = this.newEmail.trim();
+        this.model.emailConfirmed = true;
         this.emailSuccessMsg = 'Email address verified and updated!';
         setTimeout(() => {
           this.emailChangeMode = false;
           this.emailSuccessMsg = '';
-        }, 3000);
+        }, 2500);
       },
       error: (err) => {
         this.confirmingEmail = false;
@@ -808,9 +1327,10 @@ export class WorkspaceProfileComponent implements OnInit {
     });
   }
 
-  // 4. Phone Number Change Flow
+  // 6. Change Phone Flow (to New Number)
   startPhoneChange(): void {
     this.phoneChangeMode = true;
+    this.phoneVerifyMode = false;
     this.newPhone = '';
     this.phoneOtpSent = false;
     this.phoneOtpCode = '';
@@ -824,7 +1344,7 @@ export class WorkspaceProfileComponent implements OnInit {
     this.phoneSuccessMsg = '';
     this.phoneErrorMsg = '';
 
-    this.api.post<any>('PortalUsersApi/request-phone-change-otp', { newPhoneNumber: this.newPhone }).subscribe({
+    this.api.post<any>('PortalUsersApi/request-phone-change-otp', { newPhoneNumber: this.newPhone.trim() }).subscribe({
       next: (res) => {
         this.sendingPhoneOtp = false;
         this.phoneOtpSent = true;
@@ -844,17 +1364,18 @@ export class WorkspaceProfileComponent implements OnInit {
     this.phoneErrorMsg = '';
 
     this.api.post<any>('PortalUsersApi/confirm-phone-change', {
-      newPhoneNumber: this.newPhone,
-      otp: this.phoneOtpCode
+      newPhoneNumber: this.newPhone.trim(),
+      otp: this.phoneOtpCode.trim()
     }).subscribe({
       next: (res) => {
         this.confirmingPhone = false;
-        this.model.phoneNumber = this.newPhone;
+        this.model.phoneNumber = this.newPhone.trim();
+        this.model.phoneNumberConfirmed = true;
         this.phoneSuccessMsg = 'Phone number verified and updated!';
         setTimeout(() => {
           this.phoneChangeMode = false;
           this.phoneSuccessMsg = '';
-        }, 3000);
+        }, 2500);
       },
       error: (err) => {
         this.confirmingPhone = false;

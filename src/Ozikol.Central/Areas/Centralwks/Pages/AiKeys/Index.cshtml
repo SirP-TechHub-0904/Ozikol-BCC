@@ -1,0 +1,561 @@
+@page "/centralwks/ai-keys"
+@model Ozikol.Central.Areas.Centralwks.Pages.AiKeys.IndexModel
+@{
+    ViewData["Title"] = "AI Key Pool & Telemetry Hub";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-container" style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-primary, #e11d48);">psychology</span>
+                <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
+                    Google Gemini Key Pool &amp; Telemetry Hub
+                </h1>
+            </div>
+            <p style="color: #64748b; font-size: 14px; margin: 4px 0 0 0;">
+                Manage rotating free Google Gemini API keys (1,500 reqs/day per key), monitor live quota consumption, and review execution latency.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" onclick="openLogsModal()" class="action-btn-hover" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; transition: all 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b;">receipt_long</span>
+                <span>Request Telemetry Logs</span>
+            </button>
+            <button type="button" onclick="openAddKeyModal()" class="action-btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: 8px; border: none; background: var(--admin-primary, #e11d48); color: #ffffff; cursor: pointer; box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25); transition: all 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+                <span>Register New API Key</span>
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        var isError = Model.StatusMessageType == "danger" || Model.StatusMessageType == "error";
+        <div style="background: @(isError ? "#fef2f2" : "#ecfdf5"); border-left: 4px solid @(isError ? "#ef4444" : "#10b981"); padding: 14px 18px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; color: @(isError ? "#991b1b" : "#065f46"); font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">@(isError ? "error" : "check_circle")</span>
+            <span>@Model.StatusMessage</span>
+        </div>
+    }
+
+    <!-- Stat Metric Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <!-- Card 1: Active Key Pool -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Active Key Pool</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">key</span>
+                    </div>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.ActiveKeys
+                    <span style="font-size: 14px; font-weight: 600; color: #64748b;">/ @Model.Summary.TotalKeys Total</span>
+                </div>
+            </div>
+            <div style="margin-top: 14px; font-size: 12.5px; font-weight: 600;">
+                @if (Model.Summary.CoolingDownKeys > 0)
+                {
+                    <span style="color: #d97706; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">warning</span> @Model.Summary.CoolingDownKeys in Cooldown
+                    </span>
+                }
+                else
+                {
+                    <span style="color: #059669; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span> All keys operational
+                    </span>
+                }
+            </div>
+        </div>
+
+        <!-- Card 2: Daily Capacity -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Daily Request Capacity</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">speed</span>
+                    </div>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.TotalDailyCapacity.ToString("N0")
+                    <span style="font-size: 13.5px; font-weight: 600; color: #64748b;">reqs/day</span>
+                </div>
+            </div>
+            <div style="margin-top: 14px; font-size: 12.5px; color: #64748b;">
+                Free tier quota pool
+            </div>
+        </div>
+
+        <!-- Card 3: Today's Requests -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Today's Requests</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">trending_up</span>
+                    </div>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.TotalRequestsToday.ToString("N0")
+                    <span style="font-size: 13.5px; font-weight: 600; color: #64748b;">
+                        @if (Model.Summary.TotalDailyCapacity > 0)
+                        {
+                            @($"({((double)Model.Summary.TotalRequestsToday / Model.Summary.TotalDailyCapacity * 100):F1}%)")
+                        }
+                    </span>
+                </div>
+            </div>
+            <div style="margin-top: 14px;">
+                <div style="width: 100%; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden;">
+                    <div style="width: @(Model.Summary.TotalDailyCapacity > 0 ? Math.Min(100, (double)Model.Summary.TotalRequestsToday / Model.Summary.TotalDailyCapacity * 100) : 0)%; height: 100%; background: #0284c7; border-radius: 99px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Avg Latency -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Avg Latency (7 Days)</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(168, 85, 247, 0.12); color: #9333ea; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">timer</span>
+                    </div>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.AverageLatencyMs
+                    <span style="font-size: 13.5px; font-weight: 600; color: #64748b;">ms</span>
+                </div>
+            </div>
+            <div style="margin-top: 14px; font-size: 12.5px; color: #64748b;">
+                @Model.Summary.TotalLifetimeRequests.ToString("N0") lifetime AI calls
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Registry Table Card -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #fafafa;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 22px; color: var(--admin-primary, #e11d48);">vpn_key</span>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0;">Active Key Pool Registry</h2>
+                    <p style="font-size: 12.5px; color: #64748b; margin: 2px 0 0 0;">Configured API keys participating in the least-used round-robin rotation engine.</p>
+                </div>
+            </div>
+            <span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 4px 12px; font-size: 12px; font-weight: 700; border-radius: 99px;">
+                @Model.Summary.Keys.Count Registered
+            </span>
+        </div>
+
+        <div style="overflow-x: auto; width: 100%;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 12px 20px; font-weight: 700;">Provider</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Alias &amp; Identifier</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Masked Key</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Today's Quota</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Lifetime</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Status</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Last Used</th>
+                        <th style="padding: 12px 20px; font-weight: 700; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Summary.Keys.Any())
+                    {
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 56px 20px; color: #64748b;">
+                                <span class="material-symbols-outlined" style="font-size: 48px; opacity: 0.3; display: block; margin-bottom: 8px; color: #64748b;">vpn_key_off</span>
+                                <div style="font-weight: 800; font-size: 15px; color: #0f172a; margin-bottom: 4px;">No API Keys Registered</div>
+                                <div style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">Add Google Gemini free tier API keys to the rotation pool to enable automated key failover.</div>
+                                <button type="button" onclick="openAddKeyModal()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--admin-primary, #e11d48); color: #ffffff; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+                                    <span>Register New API Key</span>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var key in Model.Summary.Keys)
+                    {
+                        var maskedKey = key.ApiKey.Length > 10 ? key.ApiKey.Substring(0, 6) + "••••••••" + key.ApiKey.Substring(key.ApiKey.Length - 4) : "••••••••";
+                        var isCooling = key.RateLimitCooldownUntilUtc.HasValue && key.RateLimitCooldownUntilUtc.Value > DateTime.UtcNow;
+                        var isExhausted = key.TodayRequestsCount >= key.DailyQuotaLimit;
+
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+                            <td style="padding: 14px 20px;">
+                                @if (key.Provider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">smart_toy</span> DeepSeek (Paid Failover)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">auto_awesome</span> Google Gemini (Free Pool)
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 14px 20px;">
+                                <div style="font-weight: 700; color: #0f172a;">@key.KeyAlias</div>
+                                <div style="font-size: 11.5px; font-family: monospace; color: #94a3b8;">ID: @key.Id.ToString().Substring(0, 8)...</div>
+                            </td>
+                            <td style="padding: 14px 20px;">
+                                <code style="font-size: 12px; font-family: monospace; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">@maskedKey</code>
+                            </td>
+                            <td style="padding: 14px 20px; min-width: 170px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="flex-grow: 1; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden;">
+                                        <div style="width: @Math.Min(100, (double)key.TodayRequestsCount / key.DailyQuotaLimit * 100)%; height: 100%; background: @(isExhausted ? "#ef4444" : "#10b981");"></div>
+                                    </div>
+                                    <span style="font-size: 12px; font-weight: 700; color: #0f172a; white-space: nowrap;">@key.TodayRequestsCount / @key.DailyQuotaLimit</span>
+                                </div>
+                            </td>
+                            <td style="padding: 14px 20px;">
+                                <span style="font-size: 13px; color: #475569; font-weight: 600;">@key.TotalRequestsCount.ToString("N0") reqs</span>
+                            </td>
+                            <td style="padding: 14px 20px;">
+                                @if (!key.IsActive)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">
+                                        Disabled
+                                    </span>
+                                }
+                                else if (isCooling)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">schedule</span> Cooldown (@Math.Ceiling((key.RateLimitCooldownUntilUtc!.Value - DateTime.UtcNow).TotalSeconds)s)
+                                    </span>
+                                }
+                                else if (isExhausted)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">
+                                        Quota Full
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> Ready
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 14px 20px; font-size: 12.5px; color: #64748b;">
+                                @(key.LastUsedAtUtc.HasValue ? key.LastUsedAtUtc.Value.ToString("dd MMM, HH:mm UTC") : "Never")
+                            </td>
+                            <td style="padding: 14px 20px; text-align: right;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <form method="post" asp-page-handler="ToggleActive" asp-route-id="@key.Id" style="display: inline;">
+                                        <button type="submit" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; cursor: pointer; display: inline-flex; align-items: center;" title="@(key.IsActive ? "Pause Key" : "Activate Key")">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: @(key.IsActive ? "#d97706" : "#059669");">@(key.IsActive ? "pause" : "play_arrow")</span>
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="DeleteKey" asp-route-id="@key.Id" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete @key.KeyAlias from the pool?');">
+                                        <button type="submit" style="padding: 6px 10px; border: 1px solid #fecaca; border-radius: 6px; background: #fff5f5; cursor: pointer; display: inline-flex; align-items: center;" title="Delete Key">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: #dc2626;">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 1: REGISTER NEW API KEY MODAL (OVERLAY)                  -->
+<!-- ============================================================== -->
+<div id="addKeyModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 520px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <form method="post" asp-page-handler="AddKey" id="addKeyForm">
+            @Html.AntiForgeryToken()
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(225, 29, 72, 0.12); color: var(--admin-primary, #e11d48); display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">vpn_key</span>
+                    </div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Register AI Provider Key</h3>
+                </div>
+                <button type="button" onclick="closeAddKeyModal();" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='transparent'; this.style.color='#64748b;'">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+                </button>
+            </div>
+
+            <div style="padding: 24px;">
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        AI Provider <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select asp-for="Input.Provider" id="inputProvider" onchange="onProviderChanged(this.value)" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box; background: #ffffff; font-weight: 600;">
+                        <option value="Gemini">Google Gemini (Free Rotation Pool - 1,500 reqs/day)</option>
+                        <option value="DeepSeek">DeepSeek (Paid Failover Backup)</option>
+                    </select>
+                    <div id="providerHintText" style="font-size: 12px; color: #64748b; margin-top: 4px;">Google Gemini free tier keys rotate automatically under round-robin distribution.</div>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        Key Alias / Label <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input asp-for="Input.KeyAlias" id="inputKeyAlias" placeholder="e.g. Gemini Free Pool #1" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box;" required />
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Friendly name to identify this key in metrics.</div>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        API Key Secret <span style="color: #ef4444;">*</span>
+                    </label>
+                    <div style="display: flex; gap: 6px;">
+                        <input asp-for="Input.ApiKey" id="inputApiKey" type="password" placeholder="e.g. AIzaSyD-xxxxxxxxxxxxxx" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: monospace; font-size: 13px; box-sizing: border-box;" required />
+                        <button type="button" onclick="togglePasswordVisibility()" style="padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #475569; cursor: pointer; display: flex; align-items: center;">
+                            <span class="material-symbols-outlined" id="eyeIcon" style="font-size: 18px;">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 18px;" id="quotaContainer">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        Daily Quota Limit <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input asp-for="Input.DailyQuotaLimit" id="inputDailyQuota" type="number" value="1500" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box;" required />
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Max daily requests allocated for this key (defaults: 1,500 for Gemini Free, 50,000 for DeepSeek Paid).</div>
+                </div>
+
+                <!-- Pre-flight Test Area -->
+                <div style="padding: 14px 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <div>
+                            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">Pre-flight Verification</div>
+                            <div style="font-size: 12px; color: #64748b;" id="testResultText">Test authentication before adding to the pool.</div>
+                        </div>
+                        <button type="button" id="btnTestConn" onclick="testKeyConnection()" style="padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">cable</span>
+                            <span>Test Key</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid #e2e8f0; padding: 16px 24px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeAddKeyModal();" style="padding: 9px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 9px 20px; border: none; border-radius: 8px; background: var(--admin-primary, #e11d48); color: #ffffff; font-weight: 800; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                    <span>Register to Pool</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 2: TELEMETRY REQUEST LOGS MODAL (OVERLAY)                -->
+<!-- ============================================================== -->
+<div id="logsModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 900px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">receipt_long</span>
+                </div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Recent AI Request Telemetry (Last 50)</h3>
+            </div>
+            <button type="button" onclick="closeLogsModal();" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='transparent'; this.style.color='#64748b;'">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <div style="padding: 0; max-height: 500px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; font-family: monospace; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 11.5px; text-transform: uppercase;">
+                        <th style="padding: 10px 16px; font-weight: 700;">Timestamp (UTC)</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Key Alias</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Action / Endpoint</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Latency</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Status</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Tokens</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.RecentLogs.Any())
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px 16px; color: #64748b;">
+                                No telemetry logs recorded yet.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var log in Model.RecentLogs)
+                    {
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 10px 16px; color: #64748b;">@log.RequestTimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td style="padding: 10px 16px; font-weight: 700; color: #0f172a;">@(log.MasterAiApiKey?.KeyAlias ?? "Local/Deleted")</td>
+                            <td style="padding: 10px 16px;"><span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">@log.ActionName</span></td>
+                            <td style="padding: 10px 16px; color: #0f172a; font-weight: 600;">@log.ResponseTimeMs ms</td>
+                            <td style="padding: 10px 16px;">
+                                @if (log.StatusCode == 200)
+                                {
+                                    <span style="color: #047857; font-weight: 800;">200 OK</span>
+                                }
+                                else if (log.StatusCode == 429)
+                                {
+                                    <span style="color: #b45309; font-weight: 800;">429 Rate Limited</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #b91c1c; font-weight: 800;">@log.StatusCode Error</span>
+                                }
+                            </td>
+                            <td style="padding: 10px 16px; color: #64748b;">@(log.PromptTokens.HasValue ? $"{log.PromptTokens}+{log.CompletionTokens}" : "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding: 14px 24px; background: #f8fafc; display: flex; justify-content: flex-end;">
+            <button type="button" onclick="closeLogsModal();" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes modalPop {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    .action-btn-hover:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+    }
+    .action-btn-primary:hover {
+        opacity: 0.92;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35) !important;
+    }
+</style>
+
+<script>
+    function openAddKeyModal() {
+        var el = document.getElementById('addKeyModal');
+        if (el) el.style.display = 'flex';
+    }
+
+    function closeAddKeyModal() {
+        var el = document.getElementById('addKeyModal');
+        if (el) el.style.display = 'none';
+    }
+
+    function openLogsModal() {
+        var el = document.getElementById('logsModal');
+        if (el) el.style.display = 'flex';
+    }
+
+    function closeLogsModal() {
+        var el = document.getElementById('logsModal');
+        if (el) el.style.display = 'none';
+    }
+
+    function onProviderChanged(provider) {
+        var aliasInput = document.getElementById('inputKeyAlias');
+        var apiKeyInput = document.getElementById('inputApiKey');
+        var quotaInput = document.getElementById('inputDailyQuota');
+        var hintText = document.getElementById('providerHintText');
+
+        if (provider === 'DeepSeek') {
+            if (aliasInput) aliasInput.placeholder = 'e.g. DeepSeek Master Paid Key';
+            if (apiKeyInput) apiKeyInput.placeholder = 'e.g. sk-xxxxxxxxxxxxxxxxxxxxxxxx';
+            if (quotaInput) quotaInput.value = '50000';
+            if (hintText) hintText.textContent = 'Single paid DeepSeek key used as immediate failover when Gemini free pool is rate-limited.';
+        } else {
+            if (aliasInput) aliasInput.placeholder = 'e.g. Gemini Free Pool #1';
+            if (apiKeyInput) apiKeyInput.placeholder = 'e.g. AIzaSyD-xxxxxxxxxxxxxx';
+            if (quotaInput) quotaInput.value = '1500';
+            if (hintText) hintText.textContent = 'Google Gemini free tier keys rotate automatically under round-robin distribution (1,500 reqs/day).';
+        }
+    }
+
+    // Escape key listener to close modals
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            closeAddKeyModal();
+            closeLogsModal();
+        }
+    });
+
+    function togglePasswordVisibility() {
+        const input = document.getElementById('inputApiKey');
+        const icon = document.getElementById('eyeIcon');
+        if (!input || !icon) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            icon.textContent = 'visibility';
+        }
+    }
+
+    async function testKeyConnection() {
+        const providerEl = document.getElementById('inputProvider');
+        const apiKeyEl = document.getElementById('inputApiKey');
+        const resultText = document.getElementById('testResultText');
+        const btn = document.getElementById('btnTestConn');
+
+        const provider = providerEl ? providerEl.value : 'Gemini';
+        const apiKey = apiKeyEl ? apiKeyEl.value : '';
+
+        if (!apiKey || apiKey.trim() === '') {
+            if (resultText) resultText.innerHTML = '<span style="color: #ef4444; font-weight: 700;">Please enter an API key first.</span>';
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Testing...';
+        }
+        if (resultText) resultText.innerHTML = '<span style="color: #64748b;">Verifying credentials with provider...</span>';
+
+        try {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            const response = await fetch('?handler=TestConnection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ provider: provider, apiKey: apiKey })
+            });
+
+            const data = await response.json();
+            if (resultText) {
+                if (data.success) {
+                    resultText.innerHTML = `<span style="color: #059669; font-weight: 700;">${data.message}</span>`;
+                } else {
+                    resultText.innerHTML = `<span style="color: #ef4444; font-weight: 700;">${data.message}</span>`;
+                }
+            }
+        } catch (err) {
+            if (resultText) resultText.innerHTML = `<span style="color: #ef4444; font-weight: 700;">Failed to connect: ${err.message}</span>`;
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">cable</span> <span>Test Key</span>';
+            }
+        }
+    }
+</script>

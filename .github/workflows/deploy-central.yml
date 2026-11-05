@@ -6,17 +6,12 @@
 name: Deploy Ozikol Central
 
 on:
-  # Trigger automatically when code is pushed to the 'master' branch
   push:
     branches: [ master ]
-    # PATH FILTERING: Only run this workflow if files in Central or its dependencies changed.
-    # If someone only edits Angular or Python, this workflow will NOT run (saving time & resources).
     paths:
       - 'src/Ozikol.Central/**'
       - 'src/Ozikol.MasterDomain/**'
       - 'src/Ozikol.MasterPersistence.EF.MasterSQL/**'
-
-  # MANUAL TRIGGER: Allows you to click "Run workflow" from GitHub's Actions tab anytime
   workflow_dispatch:
 
 jobs:
@@ -24,51 +19,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Pull the latest source code from GitHub into the runner
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Install .NET 9 SDK on GitHub's fast cloud servers (so your VPS doesn't have to build it)
       - name: Setup .NET 9 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Step 3: Compile and publish Central in Release mode into a local publish folder
       - name: Publish Ozikol Central
         run: |
           dotnet publish src/Ozikol.Central/Ozikol.Central.csproj -c Release -o ./publish-central
 
-      # Step 4: Transfer the compiled binaries to the VPS via SSH / Rsync
-      - name: Sync Files to VPS (Preserving .env)
-        uses: easingthemes/ssh-deploy@main
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.VPS_HOST }}
-          REMOTE_USER: ${{ secrets.VPS_USER }}
-          SOURCE: "publish-central/"
-          TARGET: "/var/www/central"
-          # CRITICAL: Exclude .env so your production database secrets on the server are NEVER overwritten!
-          EXCLUDE: ".env, .env.*"
+      # Build Docker image for Central only
+      - name: Build Docker image (Central only)
+        run: |
+          docker build -f Dockerfile.central -t ozikol/central:latest .
 
-      # Step 5: Execute remote commands on the VPS: secure permissions & restart service
-      - name: Set Permissions & Restart Central Service
+      # Export image to tarball
+      - name: Export image
+        run: docker save ozikol/central:latest -o ozikol-central.tar
+
+      # Transfer tarball to VPS
+      - name: SCP image tarball to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "ozikol-central.tar"
+          target: "/tmp/ozikol-central.tar"
+
+      # Deploy on VPS: stop old container, load new image, run new container
+      - name: Deploy Central on VPS
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
           script: |
-            # Set ownership so www-data (Nginx/systemd user) owns the project
-            chown -R www-data:www-data /var/www/central
-            chmod -R 755 /var/www/central
-            
-            # Keep production .env strictly private (read-only by owner)
-            chmod 600 /var/www/central/.env
-            
-            # Enable auto-start on boot & restart the systemd service to load new DLLs
-            systemctl enable ozikol-central.service
-            systemctl restart ozikol-central.service
-            
-            # Output live status to GitHub Actions console for verification
-            systemctl status ozikol-central.service --no-pager
+            # Stop old container (ignore if not present)
+            docker rm -f ozikol-central || true
+
+            # Load the new image
+            docker load -i /tmp/ozikol-central.tar
+
+            # Run the Central container
+            docker run -d --name ozikol-central \
+              -p 127.0.0.1:5001:8080 \
+              ozikol/central:latest dotnet Ozikol.Central.dll
+
+            # Clean up tar file
+            rm -f /tmp/ozikol-central.tar

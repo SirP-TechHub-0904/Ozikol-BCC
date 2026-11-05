@@ -4,6 +4,10 @@
     ViewData["Title"] = SharedLocalizer["Partner_Reg_Page_Title"];
 }
 
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+}
+
 <div class="oz-corp-page">
     <!-- Hero Header -->
     <section class="oz-corp-banner">
@@ -148,14 +152,14 @@
                                     <label asp-for="Input.FullName" class="oz-partner-label">
                                         @SharedLocalizer["Partner_Field_FullName"] <span class="oz-partner-req">*</span>
                                     </label>
-                                    <input asp-for="Input.FullName" class="oz-partner-input" placeholder="e.g. Alexander Vance" required />
+                                    <input asp-for="Input.FullName" class="oz-partner-input" placeholder="Full Name" required />
                                     <span asp-validation-for="Input.FullName" class="oz-partner-field-error"></span>
                                 </div>
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.Email" class="oz-partner-label">
                                         @SharedLocalizer["Partner_Field_Email"] <span class="oz-partner-req">*</span>
                                     </label>
-                                    <input asp-for="Input.Email" type="email" class="oz-partner-input" placeholder="alexander@agency.com" required />
+                                    <input asp-for="Input.Email" type="email" class="oz-partner-input" placeholder="name@company.com" required />
                                     <span asp-validation-for="Input.Email" class="oz-partner-field-error"></span>
                                 </div>
                             </div>
@@ -165,14 +169,14 @@
                                     <label asp-for="Input.PhoneNumber" class="oz-partner-label">
                                         @SharedLocalizer["Partner_Field_Phone"]
                                     </label>
-                                    <input asp-for="Input.PhoneNumber" type="tel" class="oz-partner-input" placeholder="+1 (555) 019-2834" />
+                                    <input asp-for="Input.PhoneNumber" type="tel" class="oz-partner-input" placeholder="Phone Number" />
                                     <span asp-validation-for="Input.PhoneNumber" class="oz-partner-field-error"></span>
                                 </div>
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.OrganizationOrAgency" class="oz-partner-label">
                                         @SharedLocalizer["Partner_Field_Organization"]
                                     </label>
-                                    <input asp-for="Input.OrganizationOrAgency" class="oz-partner-input" placeholder="e.g. Vance Digital Consultants" />
+                                    <input asp-for="Input.OrganizationOrAgency" class="oz-partner-input" placeholder="Business or Organization Name" />
                                     <span asp-validation-for="Input.OrganizationOrAgency" class="oz-partner-field-error"></span>
                                 </div>
                             </div>
@@ -182,14 +186,14 @@
                                     <label asp-for="Input.WebsiteOrChannel" class="oz-partner-label">
                                         @SharedLocalizer["Partner_Field_Website"]
                                     </label>
-                                    <input asp-for="Input.WebsiteOrChannel" class="oz-partner-input" placeholder="https://www.yourdomain.com" />
+                                    <input asp-for="Input.WebsiteOrChannel" class="oz-partner-input" placeholder="https://yourdomain.com" />
                                     <span asp-validation-for="Input.WebsiteOrChannel" class="oz-partner-field-error"></span>
                                 </div>
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.RequestedPartnerCode" class="oz-partner-label">
                                         @SharedLocalizer["Partner_Field_Code"]
                                     </label>
-                                    <input asp-for="Input.RequestedPartnerCode" class="oz-partner-input oz-partner-input--code" placeholder="e.g. VANCE-TECH" maxlength="25" />
+                                    <input asp-for="Input.RequestedPartnerCode" class="oz-partner-input oz-partner-input--code" placeholder="PARTNER-CODE" maxlength="25" />
                                     <div class="oz-partner-hint">@SharedLocalizer["Partner_Field_CodeHint"]</div>
                                     <span asp-validation-for="Input.RequestedPartnerCode" class="oz-partner-field-error"></span>
                                 </div>
@@ -213,6 +217,11 @@
                                 </span>
                             </label>
                             <span asp-validation-for="Input.AgreeToTerms" class="oz-partner-field-error"></span>
+
+                            <!-- Google reCAPTCHA Verification Widget -->
+                            <div class="oz-recaptcha-wrap" style="margin: 18px 0;">
+                                <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                            </div>
 
                             <div class="oz-partner-submit-wrap">
                                 <button type="submit" class="oz-btn-primary-hero oz-partner-submit-btn">

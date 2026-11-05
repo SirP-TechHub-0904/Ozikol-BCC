@@ -91,7 +91,7 @@
             </div>
 
             <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-top: 20px; margin-bottom: 10px;">Cover Letter & Introduction</h3>
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 18px; line-height: 1.7; color: #cbd5e1; font-size: 14px; white-space: pre-wrap;">
+            <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 18px; line-height: 1.7; color: #cbd5e1; font-size: 14px; white-space: pre-wrap;">
                 @Model.Application.CoverLetter
             </div>
         </div>
@@ -111,8 +111,8 @@
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Application.CvUrl))
                     {
-                        <a href="@Model.Application.CvUrl" target="_blank" class="btn-admin btn-admin-primary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; display: inline-block;">
-                            📥 Download CV
+                        <a href="@Model.Application.CvUrl" target="_blank" class="btn-admin btn-admin-primary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Download CV
                         </a>
                     }
                 </div>
@@ -127,8 +127,8 @@
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Application.PassportUrl))
                     {
-                        <a href="@Model.Application.PassportUrl" target="_blank" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; display: inline-block;">
-                            🔍 View Identification
+                        <a href="@Model.Application.PassportUrl" target="_blank" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span> View Identification
                         </a>
                     }
                 </div>
@@ -146,7 +146,7 @@
                     <label asp-for="Input.Status" style="display: block; font-size: 12px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Pipeline Stage <span style="color: #f87171;">*</span>
                     </label>
-                    <select asp-for="Input.Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    <select asp-for="Input.Status" class="form-select">
                         <option value="Submitted">Submitted (New)</option>
                         <option value="UnderReview">Under Review</option>
                         <option value="InterviewScheduled">Interview Scheduled</option>
@@ -160,7 +160,7 @@
                         Recruiter Review Notes
                     </label>
                     <textarea asp-for="Input.ReviewNotes" rows="5" placeholder="Record interview notes, technical screening feedback, compensation expectations..." 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                              class="form-control"></textarea>
                 </div>
 
                 <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%;">

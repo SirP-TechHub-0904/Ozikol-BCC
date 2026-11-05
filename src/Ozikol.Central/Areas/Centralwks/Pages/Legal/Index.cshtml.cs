@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
+using Ozikol.MasterPersistence.EF.MasterSQL.Seeding;
+
 namespace Ozikol.Central.Areas.Centralwks.Pages.Legal
 {
     /// <summary>
@@ -85,6 +87,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Legal
         /// </summary>
         public async Task OnGetAsync()
         {
+            if (!await _context.MasterLegalDocuments.AnyAsync())
+            {
+                await MasterCatalogDataSeeder.SeedLegalDocumentsAsync(_context);
+            }
+
             TotalCount = await _context.MasterLegalDocuments.CountAsync();
             PublishedCount = await _context.MasterLegalDocuments.CountAsync(d => d.IsPublished);
 

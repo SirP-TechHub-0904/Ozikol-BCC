@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Infrastructure.Services.Email;
 
 namespace Ozikol.Central.Services;
 
@@ -8,6 +9,14 @@ public interface ICentralEmailService
 {
     Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? provider = null, CancellationToken cancellationToken = default);
     Task<bool> SendTwoFactorCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Dispatches a secure 6-digit one-time passcode (OTP) email for administrator password recovery.
+    /// </summary>
+    /// <param name="toEmail">The recipient administrator work email.</param>
+    /// <param name="code">The 6-digit numeric verification OTP.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if queued/sent successfully; false otherwise.</returns>
+    Task<bool> SendPasswordResetOtpEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default);
     Task<bool> SendWelcomeWorkspaceEmailAsync(string toEmail, string organizationName, string domainUrl, CancellationToken cancellationToken = default);
     Task SendSupportInquiryDualAsync(MasterSupportInquiry inquiry, CancellationToken cancellationToken = default);
     Task SendTicketReplyDualAsync(MasterSupportInquiry inquiry, MasterTicketReply reply, CancellationToken cancellationToken = default);
@@ -16,6 +25,12 @@ public interface ICentralEmailService
     Task SendJobApplicationDualAsync(MasterJobApplication application, string openingTitle, CancellationToken cancellationToken = default);
     Task SendExamBookingDualAsync(string candidateName, string candidateEmail, string examTitle, string bookingRef, CancellationToken cancellationToken = default);
     Task SendNewsletterSubscriptionAsync(string email, CancellationToken cancellationToken = default);
+    Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default);
+    Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Dispatches an official platform operator invitation email containing account details, assigned roles, and secure password activation link.
+    /// </summary>
+    Task<bool> SendOperatorInvitationEmailAsync(string toEmail, string fullName, string userName, string department, IList<string> roles, string setupUrl, CancellationToken cancellationToken = default);
 }
 
 public class CentralEmailService : ICentralEmailService
@@ -23,58 +38,167 @@ public class CentralEmailService : ICentralEmailService
     private readonly MasterCatalogDbContext _masterCatalogDbContext;
     private readonly ILogger<CentralEmailService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
+    private readonly ISmtpEmailDispatcher _smtpEmailDispatcher;
+    private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? _postmarkEmailService;
 
     public CentralEmailService(
         MasterCatalogDbContext masterCatalogDbContext,
         ILogger<CentralEmailService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
+        ISmtpEmailDispatcher smtpEmailDispatcher,
+        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? postmarkEmailService = null)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
         _logger = logger;
         _configuration = configuration;
+        _emailValidationService = emailValidationService;
+        _smtpEmailDispatcher = smtpEmailDispatcher;
+        _postmarkEmailService = postmarkEmailService;
     }
 
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? provider = null, CancellationToken cancellationToken = default)
     {
+        // Safety Gate: Reject malformed emails, single-letter TLDs (e.g. .j), and disposable test emails from queueing into database audit logs
+        if (!_emailValidationService.IsValidEmail(toEmail, out var validationError))
+        {
+            _logger.LogWarning("⚠️ [CentralEmailService] Dropped email dispatch to invalid/test address '{Recipient}': {Error}", toEmail, validationError);
+            return false;
+        }
+
+        var effectiveProvider = provider ?? "Mailcow";
         var log = new MasterEmailLog
         {
+            Id = Guid.NewGuid(),
             RecipientEmail = toEmail,
             Subject = subject,
             BodyHtml = htmlBody,
-            Provider = provider,
+            Provider = effectiveProvider,
             SentAtUtc = DateTime.UtcNow,
             Status = "NotSent"
         };
 
         try
         {
-            _logger.LogInformation("📧 [CentralEmailService] Queued email '{Subject}' to [{Recipient}] with status 'NotSent'", subject, toEmail);
-            
-            // Record in Master DB pool with Status 'NotSent'
-            _masterCatalogDbContext.MasterEmailLogs.Add(log);
-            await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
-            return true;
+            if (string.Equals(provider, "Postmark", StringComparison.OrdinalIgnoreCase) && _postmarkEmailService != null)
+            {
+                _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Postmark...", subject, toEmail);
+
+                var response = await _postmarkEmailService.SendHtmlEmailAsync(
+                    to: toEmail,
+                    subject: subject,
+                    htmlBody: htmlBody,
+                    tag: "central-transactional");
+
+                if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+                {
+                    log.Status = "Sent";
+                    log.ErrorMessage = null;
+                    _logger.LogInformation("✅ [CentralEmailService] Postmark successfully delivered email to [{Recipient}] (MessageID: {MessageId})", toEmail, response.MessageID);
+                }
+                else
+                {
+                    log.Status = "Failed";
+                    log.ErrorMessage = response.Message ?? "Postmark delivery status returned non-success.";
+                    _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}", toEmail, response.Message);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Mailcow SMTP...", subject, toEmail);
+
+                var delivered = await _smtpEmailDispatcher.SendEmailAsync(
+                    toEmail: toEmail,
+                    subject: subject,
+                    htmlBody: htmlBody,
+                    fromEmail: "noreply@ozikol.cloud",
+                    fromName: "Ozikol Business Command Center",
+                    isCentralPlatformEmail: true,
+                    cancellationToken: cancellationToken);
+
+                if (delivered)
+                {
+                    log.Status = "Sent";
+                    log.ErrorMessage = null;
+                    _logger.LogInformation("✅ [CentralEmailService] Mailcow successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
+                }
+                else
+                {
+                    log.Status = "Failed";
+                    log.ErrorMessage = "Mailcow SMTP delivery returned failure. Check Mailcow and network telemetry.";
+                    _logger.LogWarning("⚠️ [CentralEmailService] Mailcow delivery failed for [{Recipient}].", toEmail);
+                }
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to record email to pool for {Recipient}", toEmail);
-            return false;
+            log.Status = "Failed";
+            log.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "❌ [CentralEmailService] Exception during email delivery for {Recipient}", toEmail);
         }
+        finally
+        {
+            try
+            {
+                _masterCatalogDbContext.MasterEmailLogs.Add(log);
+                await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception dbEx)
+            {
+                _logger.LogError(dbEx, "Failed to persist MasterEmailLog for {Recipient}", toEmail);
+            }
+        }
+
+        return log.Status == "Sent";
     }
 
     public async Task<bool> SendTwoFactorCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default)
     {
-        var subject = $"Your Ozikol Central 2FA Security Code: {code}";
+        var subject = $"Your Ozikol 2FA Verification Code: {code}";
         var body = $@"
-            <div style='font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; background: #0f172a; color: #ffffff; padding: 24px; border-radius: 12px;'>
-                <div style='text-align: center; margin-bottom: 20px;'>
-                    <h2 style='color: #38bdf8; margin: 0;'>Ozikol Central Console</h2>
-                    <p style='color: #94a3b8; font-size: 13px;'>Platform Operator 2-Factor Authentication</p>
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Security</h2>
+                    <p style='color: #64748b; font-size: 13.5px; margin: 4px 0 0;'>Platform Operator 2-Factor Authentication</p>
                 </div>
-                <div style='background: #1e293b; padding: 20px; border-radius: 8px; text-align: center;'>
-                    <p style='margin: 0 0 10px 0; color: #cbd5e1; font-size: 14px;'>Enter the following 6-digit verification code to complete your login:</p>
-                    <div style='font-size: 32px; font-weight: 800; color: #38bdf8; letter-spacing: 6px; font-family: monospace;'>{code}</div>
-                    <p style='color: #64748b; font-size: 12px; margin: 10px 0 0 0;'>This code expires in 10 minutes. Do not share this code with anyone.</p>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; text-align: center;'>
+                    <p style='margin: 0 0 12px; color: #334155; font-size: 14px;'>Enter the following 6-digit verification code to complete your sign-in:</p>
+                    <div style='font-size: 34px; font-weight: 800; color: #0050e5; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
+                    <p style='color: #94a3b8; font-size: 12px; margin: 12px 0 0;'>This code expires in 10 minutes. Never share this code with anyone.</p>
+                </div>
+                <div style='margin-top: 24px; text-align: center; font-size: 11.5px; color: #94a3b8;'>
+                    If you did not initiate this sign-in attempt, please contact your security administrator immediately.
+                </div>
+            </div>
+        ";
+
+        return await SendEmailAsync(toEmail, subject, body, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Dispatches a secure 6-digit one-time passcode (OTP) email for administrator password recovery.
+    /// </summary>
+    /// <param name="toEmail">The recipient administrator work email.</param>
+    /// <param name="code">The 6-digit numeric verification OTP.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if queued/sent successfully; false otherwise.</returns>
+    public async Task<bool> SendPasswordResetOtpEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default)
+    {
+        var subject = $"Your Ozikol Password Reset Code: {code}";
+        var body = $@"
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Security</h2>
+                    <p style='color: #64748b; font-size: 13.5px; margin: 4px 0 0;'>Operator Password Recovery</p>
+                </div>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; text-align: center;'>
+                    <p style='margin: 0 0 12px; color: #334155; font-size: 14px;'>Use the following 6-digit code to reset your platform operator password:</p>
+                    <div style='font-size: 34px; font-weight: 800; color: #0050e5; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
+                    <p style='color: #94a3b8; font-size: 12px; margin: 12px 0 0;'>This one-time code expires in 15 minutes.</p>
+                </div>
+                <div style='margin-top: 24px; text-align: center; font-size: 11.5px; color: #94a3b8;'>
+                    If you did not request a password reset, you can safely disregard this email. Your password will remain unchanged.
                 </div>
             </div>
         ";
@@ -94,6 +218,9 @@ public class CentralEmailService : ICentralEmailService
     {
         var subject = $"Welcome to Ozikol: Sovereign Workspace for {organizationName} is Ready!";
         var loginUrl = $"https://{domainUrl}/auth/login";
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+        var voucherUrl = $"{baseUrl.TrimEnd('/')}/en/vouchers/apply";
+
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
@@ -117,9 +244,23 @@ public class CentralEmailService : ICentralEmailService
                         <div style='font-size: 14px; color: #0f172a; margin-top: 2px; font-family: monospace;'>{toEmail}</div>
                     </div>
                 </div>
-                <div style='background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 24px; line-height: 1.5;'>
+                <div style='background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 20px; line-height: 1.5;'>
                     <strong>Important Security Note:</strong> For maximum security and independence, client organizations log in directly through their dedicated website link. Bookmark your portal URL for all future team access.
                 </div>
+                
+                <!-- Promotional 1-Year Free Voucher Callout -->
+                <div style='background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 8px; padding: 18px; margin-bottom: 24px; text-align: center;'>
+                    <div style='font-size: 15px; font-weight: 700; color: #92400e; margin-bottom: 4px;'>
+                        Want 100% Free Access for 1 Full Year?
+                    </div>
+                    <p style='color: #b45309; font-size: 13px; margin: 0 0 12px 0; line-height: 1.4;'>
+                        Complete our community eligibility verification tasks and receive a 100% discount promotional voucher for your workspace.
+                    </p>
+                    <a href='{voucherUrl}' style='display: inline-block; background: #d97706; color: #ffffff; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; text-decoration: none;'>
+                        Apply for Free 1-Year Voucher &rarr;
+                    </a>
+                </div>
+
                 <div style='text-align: center;'>
                     <a href='{loginUrl}' style='display: inline-block; background: #0f172a; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;'>Launch Command Center &rarr;</a>
                 </div>
@@ -170,7 +311,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.SupportAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.SupportAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Staff Alert] New Ticket #{inquiry.ReferenceNumber} - {inquiry.Subject} ({inquiry.Organization})";
@@ -222,7 +363,7 @@ public class CentralEmailService : ICentralEmailService
             var settings = await GetPlatformSettingAsync(cancellationToken);
             if (settings.EnableAdminNotifications)
             {
-                var adminEmails = ParseEmailPool(settings.SupportAdminEmails);
+                var adminEmails = ResolveAdminEmails(settings.SupportAdminEmails);
                 if (adminEmails.Count > 0)
                 {
                     var subject = $"[Customer Reply] Ticket #{inquiry.ReferenceNumber} - {reply.SenderName}";
@@ -265,7 +406,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.PartnerAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.PartnerAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Partner Alert] New Partner Application: {partner.FullName} (#{partner.PartnerCode})";
@@ -308,7 +449,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.CreatorAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.CreatorAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Creator Alert] New Creator Application: {application.FullName} ({application.Specialization})";
@@ -351,7 +492,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.CareersAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.CareersAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Talent Alert] New Candidate for {openingTitle}: {application.FullName}";
@@ -402,7 +543,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.CertificationAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.CertificationAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Academy Alert] New Exam Booking: {candidateName} ({examTitle})";
@@ -434,6 +575,137 @@ public class CentralEmailService : ICentralEmailService
         ";
         await SendEmailAsync(email, subject, body, null, cancellationToken);
     }
+
+    /// <summary>
+    /// Dispatches dual confirmation emails when a promotional voucher application is submitted:
+    /// a branded receipt to the applicant and notifications to the central partner/support administrator pool.
+    /// </summary>
+    /// <param name="app">The submitted voucher application entity.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    public async Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetPlatformSettingAsync(cancellationToken);
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+
+        // 1. Applicant Confirmation Receipt
+        var applicantSubject = $"[Voucher Application #{app.ReferenceNumber}] We have received your request for {app.OrganizationName}";
+        var applicantBody = $@"
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='margin-bottom: 24px;'>
+                    <span style='background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;'>APPLICATION #{app.ReferenceNumber}</span>
+                    <h2 style='color: #0f172a; margin: 12px 0 6px 0; font-size: 22px; font-weight: 800;'>Promotional Voucher Request Received</h2>
+                    <p style='color: #64748b; font-size: 14px; margin: 0;'>Hello {app.FullName}, thank you for completing our community engagement eligibility steps.</p>
+                </div>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px;'>
+                    <div style='margin-bottom: 10px;'><strong style='color: #475569; font-size: 12px; text-transform: uppercase;'>Organization:</strong> <div style='color: #0f172a; font-size: 15px; font-weight: 700;'>{app.OrganizationName}</div></div>
+                    <div style='margin-bottom: 10px;'><strong style='color: #475569; font-size: 12px; text-transform: uppercase;'>Target Workspace:</strong> <div style='color: #0284c7; font-size: 14px; font-weight: 600;'>{app.WorkspaceSlug}.ozikol.cloud</div></div>
+                    <div style='margin-bottom: 10px;'><strong style='color: #475569; font-size: 12px; text-transform: uppercase;'>Status:</strong> <div style='color: #d97706; font-size: 14px; font-weight: 700;'>Under Verification Review</div></div>
+                </div>
+                <p style='color: #334155; font-size: 14px; line-height: 1.6;'>
+                    Our partnership team is verifying your submitted social media handles. Once approved, you will receive an official email containing your unique 100% discount promotional voucher code.
+                </p>
+                <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />
+                <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
+                    {settings.PlatformName} Cloud Security &bull; Sovereign Business Operating Systems
+                </p>
+            </div>
+        ";
+
+        await SendEmailAsync(app.WorkEmail, applicantSubject, applicantBody, null, cancellationToken);
+
+        // 2. Admin Pool Notification
+        if (settings.EnableAdminNotifications)
+        {
+            var adminPool = ResolveAdminEmails(settings.PartnerAdminEmails ?? settings.SupportAdminEmails);
+            if (adminPool.Any())
+            {
+                var adminSubject = $"[New Voucher Application] #{app.ReferenceNumber} - {app.OrganizationName}";
+                var adminUrl = $"{baseUrl.TrimEnd('/')}/centralwks/voucher-applications";
+                var adminBody = $@"
+                    <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                        <h3 style='margin: 0 0 16px 0; font-size: 18px; color: #0f172a;'>New 1-Year Voucher Application</h3>
+                        <p style='font-size: 14px; color: #334155; margin: 0 0 16px 0;'>A new organization has submitted proof of social engagement for voucher eligibility.</p>
+                        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13.5px; line-height: 1.6;'>
+                            <div><strong>Reference:</strong> {app.ReferenceNumber}</div>
+                            <div><strong>Applicant:</strong> {app.FullName} ({app.WorkEmail})</div>
+                            <div><strong>Organization:</strong> {app.OrganizationName}</div>
+                            <div><strong>X / Twitter:</strong> {app.TwitterHandle ?? "N/A"}</div>
+                            <div><strong>LinkedIn:</strong> {app.LinkedInProfile ?? "N/A"}</div>
+                            <div><strong>YouTube:</strong> {app.YouTubeHandle ?? "N/A"}</div>
+                            <div><strong>Snapchat:</strong> {app.SnapchatHandle ?? "N/A"}</div>
+                        </div>
+                        <div style='margin-top: 20px; text-align: center;'>
+                            <a href='{adminUrl}' style='display: inline-block; background: #0f172a; color: #ffffff; padding: 10px 22px; border-radius: 6px; font-size: 13.5px; font-weight: 700; text-decoration: none;'>Review & Issue Voucher &rarr;</a>
+                        </div>
+                    </div>
+                ";
+
+                await SendToAdminPoolAsync(adminPool, adminSubject, adminBody, cancellationToken);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dispatches the official voucher approval email containing the unique coupon code, duration, granted feature scope, discount percentage, and 1-click activation link.
+    /// </summary>
+    /// <param name="app">The approved voucher application.</param>
+    /// <param name="couponCode">The generated promo coupon code.</param>
+    /// <param name="durationDays">Number of access days granted (e.g. 365).</param>
+    /// <param name="featuresSummary">Human-readable summary of features included.</param>
+    /// <param name="discountPercentage">The percentage discount granted (e.g. 100.00%, 50.00%, 30.00%).</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if delivered; false otherwise.</returns>
+    public async Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetPlatformSettingAsync(cancellationToken);
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+        var activationUrl = $"{baseUrl.TrimEnd('/')}/auth/get-started?coupon={Uri.EscapeDataString(couponCode)}";
+
+        var durationLabel = durationDays >= 365 ? "1 Full Year (365 Days)" : $"{durationDays} Days";
+        var featuresLabel = string.IsNullOrWhiteSpace(featuresSummary) ? "All Platform Capabilities (Full Suite)" : featuresSummary;
+        var discountLabel = discountPercentage >= 100.00m ? "100% Free" : $"{discountPercentage:G29}% OFF";
+
+        var subject = $"Congratulations! Your Ozikol Promotional Voucher [{couponCode}] ({discountLabel}) is Ready!";
+        var body = $@"
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <span style='background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 14px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px;'>VOUCHER APPROVED &bull; {discountLabel}</span>
+                    <h2 style='color: #0f172a; margin: 12px 0 6px 0; font-size: 24px; font-weight: 800;'>Your Promotional Voucher is Ready!</h2>
+                    <p style='color: #64748b; font-size: 14px; margin: 0;'>Congratulations {app.FullName}! Your community verification has been approved for <strong>{app.OrganizationName}</strong>.</p>
+                </div>
+
+                <div style='background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #10b981; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;'>
+                    <div style='font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 1px;'>Your {discountLabel} Voucher Code:</div>
+                    <div style='font-size: 32px; font-weight: 900; color: #047857; letter-spacing: 4px; font-family: monospace; padding: 10px 0;'>{couponCode}</div>
+                    <div style='display: flex; justify-content: center; gap: 16px; margin-top: 10px; font-size: 13px; color: #065f46; font-weight: 600; flex-wrap: wrap;'>
+                        <span>🏷 <strong>Discount:</strong> {discountLabel}</span>
+                        <span>⏱ <strong>Duration:</strong> {durationLabel}</span>
+                        <span>✨ <strong>Scope:</strong> {featuresLabel}</span>
+                    </div>
+                </div>
+
+                <div style='text-align: center; margin-bottom: 28px;'>
+                    <a href='{activationUrl}' style='display: inline-block; background: #10b981; color: #ffffff; padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);'>
+                        Activate Workspace with Voucher &rarr;
+                    </a>
+                    <div style='font-size: 12px; color: #64748b; margin-top: 8px;'>Clicking will open setup with voucher code pre-applied.</div>
+                </div>
+
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13px; color: #475569; line-height: 1.5;'>
+                    <strong>How to Redeem:</strong> If you are setting up manually, enter code <code>{couponCode}</code> at Step 2 (Features & Promo) of the Get Started onboarding flow.
+                </div>
+
+                <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />
+                <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
+                    {settings.PlatformName} Cloud Security &bull; Sovereign Business Operating Systems
+                </p>
+            </div>
+        ";
+
+        return await SendEmailAsync(app.WorkEmail, subject, body, null, cancellationToken);
+    }
+
+
 
     private async Task<MasterPlatformSetting> GetPlatformSettingAsync(CancellationToken cancellationToken)
     {
@@ -491,11 +763,91 @@ public class CentralEmailService : ICentralEmailService
         return list;
     }
 
-    private async Task SendToAdminPoolAsync(List<string> adminEmails, string subject, string body, CancellationToken cancellationToken)
+    private List<string> ResolveAdminEmails(string? specificPool)
     {
-        foreach (var email in adminEmails)
+        var emails = ParseEmailPool(specificPool);
+        if (emails.Count == 0)
         {
-            await SendEmailAsync(email, subject, body, null, cancellationToken);
+            var fallback = _configuration["POSTMARK_ADMIN_EMAIL"]
+                        ?? _configuration["Postmark:AdminEmail"]
+                        ?? _configuration["ErrorAlertSettings:RecipientEmails"]
+                        ?? _configuration["EmailSettings:AdminEmail"];
+
+            emails = ParseEmailPool(fallback);
         }
+        return emails;
+    }
+
+    private async Task SendToAdminPoolAsync(List<string> adminEmails, string subject, string htmlBody, CancellationToken cancellationToken)
+    {
+        if (adminEmails == null || adminEmails.Count == 0) return;
+        foreach (var adminEmail in adminEmails)
+        {
+            try
+            {
+                await SendEmailAsync(adminEmail, subject, htmlBody, provider: null, cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to deliver administrative notification to {Email}", adminEmail);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendOperatorInvitationEmailAsync(
+        string toEmail,
+        string fullName,
+        string userName,
+        string department,
+        IList<string> roles,
+        string setupUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = "Welcome to Ozikol Central — Activate Your Operator Account";
+        var rolesHtml = string.Join(" ", roles.Select(r => 
+            $"<span style='display:inline-block; padding:3px 10px; margin:2px; background:#ede9fe; color:#6d28d9; border-radius:4px; font-size:12px; font-weight:bold;'>{r}</span>"));
+
+        var htmlBody = $@"
+            <div style='font-family: Arial, -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h1 style='color: #4f46e5; font-size: 24px; margin: 0;'>Ozikol Central Command</h1>
+                    <p style='color: #64748b; font-size: 14px; margin: 4px 0 0 0;'>Administrative Operator Onboarding</p>
+                </div>
+
+                <div style='background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);'>
+                    <h2 style='font-size: 18px; color: #0f172a; margin-top: 0;'>Hello {fullName},</h2>
+                    <p style='font-size: 14px; color: #475569; line-height: 1.6;'>
+                        An administrative operator account has been created for you on <strong>Ozikol Central</strong>. To activate your account and establish your secret login password, please use the secure link below:
+                    </p>
+
+                    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;'>
+                        <div style='margin-bottom: 8px;'><strong style='color: #334155; font-size: 13px;'>Username:</strong> <code style='color: #4f46e5; background: #e0e7ff; padding: 2px 6px; border-radius: 4px;'>{userName}</code></div>
+                        <div style='margin-bottom: 8px;'><strong style='color: #334155; font-size: 13px;'>Work Email:</strong> <span style='color: #334155;'>{toEmail}</span></div>
+                        <div style='margin-bottom: 8px;'><strong style='color: #334155; font-size: 13px;'>Department:</strong> <span style='color: #334155;'>{department}</span></div>
+                        <div><strong style='color: #334155; font-size: 13px;'>Assigned Roles:</strong><div style='margin-top: 4px;'>{rolesHtml}</div></div>
+                    </div>
+
+                    <div style='text-align: center; margin: 28px 0;'>
+                        <a href='{setupUrl}' style='display: inline-block; padding: 14px 28px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);'>
+                            Set Up Password &amp; Activate Account &rarr;
+                        </a>
+                    </div>
+
+                    <p style='font-size: 12px; color: #94a3b8; line-height: 1.5; margin-bottom: 6px;'>
+                        If the button above does not work, copy and paste this link into your browser:
+                    </p>
+                    <div style='background: #f1f5f9; padding: 10px; border-radius: 6px; word-break: break-all; font-family: monospace; font-size: 11.5px; color: #475569;'>
+                        {setupUrl}
+                    </div>
+                </div>
+
+                <div style='text-align: center; margin-top: 24px; color: #94a3b8; font-size: 12px;'>
+                    <p style='margin: 0;'>This activation link is unique to your account and valid for 24 hours.</p>
+                    <p style='margin: 4px 0 0 0;'>&copy; {DateTime.UtcNow.Year} Ozikol Central Management Suite. All rights reserved.</p>
+                </div>
+            </div>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody, provider: null, cancellationToken: cancellationToken);
     }
 }

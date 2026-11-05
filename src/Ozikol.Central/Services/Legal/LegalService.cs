@@ -7,12 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol.MasterPersistence.EF.MasterSQL.Seeding;
 
 namespace Ozikol.Central.Services.Legal
 {
     /// <summary>
     /// Implementation of <see cref="ILegalService"/> providing database-backed retrieval of legal documents
-    /// with culture fallback and optimized read-only queries.
+    /// with culture fallback, automated baseline seeding, and optimized read-only queries.
     /// </summary>
     public class LegalService : ILegalService
     {
@@ -43,6 +44,8 @@ namespace Ozikol.Central.Services.Legal
             {
                 return null;
             }
+
+            await EnsureSeedDataAsync(cancellationToken);
 
             var normalizedSlug = slug.Trim().ToLowerInvariant();
             var targetCulture = string.IsNullOrWhiteSpace(culture) ? "en" : culture.Trim().ToLowerInvariant();
@@ -96,6 +99,8 @@ namespace Ozikol.Central.Services.Legal
         /// <returns>A read-only list of published legal documents ordered by sort order.</returns>
         public async Task<IReadOnlyList<MasterLegalDocument>> GetPublishedDocumentsAsync(string? category = null, string culture = "en", CancellationToken cancellationToken = default)
         {
+            await EnsureSeedDataAsync(cancellationToken);
+
             var targetCulture = string.IsNullOrWhiteSpace(culture) ? "en" : culture.Trim().ToLowerInvariant();
 
             try
@@ -122,6 +127,24 @@ namespace Ozikol.Central.Services.Legal
             {
                 _logger.LogError(ex, "Failed to retrieve published legal documents for category '{Category}'.", category);
                 return Array.Empty<MasterLegalDocument>();
+            }
+        }
+
+        /// <summary>
+        /// Ensures that baseline official legal documents exist in the master database if the table is unpopulated.
+        /// </summary>
+        private async Task EnsureSeedDataAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (!await _dbContext.MasterLegalDocuments.AnyAsync(cancellationToken))
+                {
+                    await MasterCatalogDataSeeder.SeedLegalDocumentsAsync(_dbContext, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Notice during automatic legal documents seed check.");
             }
         }
     }

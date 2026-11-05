@@ -273,6 +273,8 @@ namespace Ozikol_BCC.Domain.Enum
             [Description("BeforeFooter")]
             BeforeFooter = 6,
 
+            [Description("AfterFooter")]
+            AfterFooter = 7,
         }
         public enum DOBStatus
         {
@@ -432,6 +434,25 @@ namespace Ozikol_BCC.Domain.Enum
             Menu = 3,
             [Description("Footer")]
             Footer = 4,
+        }
+
+        /// <summary>
+        /// Defines explicit horizontal zone or tier positioning of a page or category in website navigation menus.
+        /// Grouped first by MenuPosition, then sorted by SortOrder within that group.
+        /// </summary>
+        public enum MenuPosition
+        {
+            [Description("First / Left Zone")]
+            First = 1,
+
+            [Description("Middle / Center Zone")]
+            Middle = 2,
+
+            [Description("Last / Right Zone")]
+            Last = 3,
+
+            [Description("Top Utility Bar")]
+            Top = 4
         }
         public enum AttendanceStatus
         {
@@ -604,6 +625,19 @@ namespace Ozikol_BCC.Domain.Enum
 
             [Description("Read Only")]
             Readonly = 3,
+        }
+
+        /// <summary>
+        /// Categorizes user authority roles into broad system & organization governance
+        /// or modular capability feature authorities.
+        /// </summary>
+        public enum RoleGroup
+        {
+            [Description("System & Organization Governance")]
+            System = 1,
+
+            [Description("Modular Feature Authority")]
+            Feature = 2
         }
 
         /// <summary>
@@ -1083,9 +1117,125 @@ namespace Ozikol_BCC.Domain.Enum
         /// </summary>
         public enum BcpMessageChannel
         {
+            /// <summary>
+            /// Transactional email channel.
+            /// </summary>
             Email = 0,
+
+            /// <summary>
+            /// Carrier SMS text alert channel.
+            /// </summary>
             Sms = 1,
-            InAppNotification = 2
+
+            /// <summary>
+            /// In-app notification feed and real-time socket channel.
+            /// </summary>
+            InAppNotification = 2,
+
+            /// <summary>
+            /// Native mobile and desktop push notification channel (OneSignal / FCM).
+            /// </summary>
+            Push = 3,
+
+            /// <summary>
+            /// Transactional WhatsApp message channel.
+            /// </summary>
+            WhatsApp = 4
+        }
+
+        /// <summary>
+        /// Canonical 6-tier platform notification and alert severity hierarchy across web, mobile, desktop, and transactional channels.
+        /// </summary>
+        public enum NotificationSeverity
+        {
+            /// <summary>
+            /// Critical system errors, database sync failures, payment crashes.
+            /// Standard Color Token: #F06548 (Crimson), Icon: error_outline.
+            /// </summary>
+            Error = 1,
+
+            /// <summary>
+            /// Business operation failed, payment declined, verification expired.
+            /// Standard Color Token: #F7B84B (Amber), Icon: warning_amber.
+            /// </summary>
+            Failed = 2,
+
+            /// <summary>
+            /// Warning severity alias for failed/degraded security operations.
+            /// </summary>
+            Warning = 2,
+
+            /// <summary>
+            /// Operation completed successfully, subscription renewed, member verified.
+            /// Standard Color Token: #0AB39C (Teal), Icon: check_circle.
+            /// </summary>
+            Success = 3,
+
+            /// <summary>
+            /// New modular capability or add-on released or unlocked for the workspace.
+            /// Standard Color Token: #38BDF8 (Sky), Icon: auto_awesome.
+            /// </summary>
+            NewFeature = 4,
+
+            /// <summary>
+            /// Policy revision, system notice, sprint updates, team announcements.
+            /// Standard Color Token: #1F6BFF (Royal Blue), Icon: info_outline.
+            /// </summary>
+            Update = 5,
+
+            /// <summary>
+            /// Info severity alias for informational updates and system notices.
+            /// </summary>
+            Info = 5,
+
+            /// <summary>
+            /// Scheduled maintenance window, server upgrade, cold-start advisories.
+            /// Standard Color Token: #9333EA (Purple), Icon: build_circle.
+            /// </summary>
+            Maintenance = 6
+        }
+
+        /// <summary>
+        /// Bit-flag delivery channels supported by the central notification and messaging dispatcher.
+        /// Enables multi-channel combinations (e.g. InApp | Push | Email).
+        /// </summary>
+        [Flags]
+        public enum NotificationChannels
+        {
+            /// <summary>
+            /// No delivery channel selected.
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            /// In-app real-time notification feed stored in database and streamed via SignalR.
+            /// </summary>
+            InApp = 1,
+
+            /// <summary>
+            /// Native mobile and desktop push notification (e.g., OneSignal or FCM).
+            /// </summary>
+            Push = 2,
+
+            /// <summary>
+            /// Transactional email dispatched through the Postmark email suite.
+            /// </summary>
+            Email = 4,
+
+            /// <summary>
+            /// Direct SMS text alert sent through the carrier SMS gateway.
+            /// </summary>
+            Sms = 8,
+
+            /// <summary>
+            /// Transactional WhatsApp message or webhook notification.
+            /// </summary>
+            WhatsApp = 16,
+
+            /// <summary>
+            /// Broadcast across all supported delivery channels simultaneously.
+            /// </summary>
+            All = InApp | Push | Email | Sms | WhatsApp
         }
 
         /// <summary>

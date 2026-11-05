@@ -598,7 +598,7 @@ Chart.register(...registerables);
               </select>
             </div>
 
-            <!-- Password Provisioning -->
+            <!-- Security & Password Credentials -->
             <div class="form-section-divider">
               <span>Security & Password Credentials</span>
             </div>
@@ -1345,7 +1345,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   exportPdf(): void {
     this.exportService.printReport(
       'Official Member Directory Register',
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       this.filteredUsers,
       this.searchQuery ? `Search: "${this.searchQuery}"` : undefined
@@ -1365,7 +1365,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     this.exportService.exportToWord(
       `Member_Register_${new Date().toISOString().substring(0,10)}`,
       'Official Member Directory Register',
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       this.filteredUsers
     );
@@ -1377,7 +1377,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     const categoryMembers = this.users.filter(u => u.bcpUserCategoryId === cat.id);
     this.exportService.printReport(
       `Member Register - ${cat.name}`,
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       categoryMembers,
       `Category: ${cat.name}`

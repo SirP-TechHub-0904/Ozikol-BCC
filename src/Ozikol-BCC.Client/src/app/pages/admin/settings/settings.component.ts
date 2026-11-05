@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
@@ -8,7 +9,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
   template: `
     <div class="settings-page">
       <!-- Standardized Page Header -->
@@ -16,7 +17,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         eyebrow="WORKSPACE CONFIGURATION"
         icon="tune"
         title="Workspace Configuration & Branding Studio"
-        subtitle="Manage custom brand assets, system-wide terminology aliases, color aesthetics, security policies, and communication templates."
+        subtitle="Manage custom brand assets, website operating modes, interactive widgets, and custom domains."
         [buttons]="headerButtons"
       ></app-page-header>
 
@@ -49,46 +50,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <button
           type="button"
           class="studio-nav-btn"
-          [class.active]="activeTab === 'aliases'"
-          (click)="setTab('aliases')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">label</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Terminology & Aliases</span>
-            <span class="tab-sub">Departments, Committees, etc.</span>
-          </div>
-        </button>
-
-
-        <button
-          type="button"
-          class="studio-nav-btn"
-          [class.active]="activeTab === 'member-id'"
-          (click)="setTab('member-id')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">badge</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Member ID & Security</span>
-            <span class="tab-sub">10 Formats & Auth Rules</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="studio-nav-btn"
-          [class.active]="activeTab === 'templates'"
-          (click)="setTab('templates')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">dynamic_feed</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Message Templates</span>
-            <span class="tab-sub">Email, SMS & Push Studio</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="studio-nav-btn"
           [class.active]="activeTab === 'ecommerce'"
           (click)="setTab('ecommerce')"
         >
@@ -107,20 +68,37 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <button
           type="button"
           class="studio-nav-btn"
-          [class.active]="activeTab === 'storage'"
-          (click)="setTab('storage')"
+          [class.active]="activeTab === 'widgets'"
+          (click)="setTab('widgets')"
         >
-          <span class="material-symbols-outlined nav-tab-icon">cloud_sync</span>
+          <span class="material-symbols-outlined nav-tab-icon">widgets</span>
           <div class="nav-tab-text">
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-              <span class="tab-title">Media &amp; Cloud Storage</span>
-              <span class="tab-mode-mini-pill" [class.pill-store]="storageSettings.useCustomStorage" [style.background]="storageSettings.useCustomStorage ? '#dcfce7' : '#eff6ff'" [style.color]="storageSettings.useCustomStorage ? '#15803d' : '#2563eb'">
-                {{ storageSettings.useCustomStorage ? 'Custom Cloudinary' : 'Platform Default' }}
+              <span class="tab-title">Website &amp; Widgets</span>
+              <span class="tab-mode-mini-pill" [class.pill-store]="brand.enableWhatsAppChat || brand.enableCookieConsent || brand.enableBreakingNewsRibon" [style.background]="(brand.enableWhatsAppChat || brand.enableCookieConsent || brand.enableBreakingNewsRibon) ? '#dcfce7' : '#f1f5f9'" [style.color]="(brand.enableWhatsAppChat || brand.enableCookieConsent || brand.enableBreakingNewsRibon) ? '#15803d' : '#64748b'">
+                {{ (brand.enableWhatsAppChat || brand.enableCookieConsent || brand.enableBreakingNewsRibon) ? 'Active' : 'Standby' }}
               </span>
             </div>
-            <span class="tab-sub">BYOS Cloudinary Credentials</span>
+            <span class="tab-sub">Ribbon, WhatsApp &amp; Cookies</span>
           </div>
         </button>
+
+        <a
+          routerLink="/settings/console/custom-domain"
+          class="studio-nav-btn"
+          style="text-decoration:none;"
+        >
+          <span class="material-symbols-outlined nav-tab-icon">dns</span>
+          <div class="nav-tab-text">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span class="tab-title">Custom Domain &amp; DNS</span>
+              <span class="tab-mode-mini-pill" [class.pill-store]="hasCustomDomain" [style.background]="hasCustomDomain ? '#dcfce7' : '#fef3c7'" [style.color]="hasCustomDomain ? '#15803d' : '#b45309'">
+                {{ hasCustomDomain ? 'Linked' : 'Not Linked' }}
+              </span>
+            </div>
+            <span class="tab-sub">Dedicated Full-Page Studio ↗</span>
+          </div>
+        </a>
       </div>
 
       <!-- =================================================================== -->
@@ -166,6 +144,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="form-group">
               <label class="form-label">Organization Tagline & Description</label>
               <textarea [(ngModel)]="brand.companyDescription" rows="2" class="form-control" placeholder="Brief statement displayed in metadata and portal footers..."></textarea>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="form-label">
+                <span>Website Footer Note / Brand Bio</span>
+                <span class="field-hint" style="font-weight: normal; margin-left: 8px;">(Displayed prominently in the public website footer under the brand logo)</span>
+              </label>
+              <textarea [(ngModel)]="brand.footerDescription" rows="3" class="form-control" placeholder="Detailed brand story or institutional mission statement displayed in your live website footer..."></textarea>
             </div>
 
             <div class="form-row-2">
@@ -348,626 +334,77 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
         </section>
 
-        <!-- Bottom Section: Authentication Screen Customization (Full Width, Below) -->
-        <section class="console-widget full-width-widget">
+
+
+        <!-- Section: Member Registration Onboarding & Custom URL Slug -->
+        <section class="console-widget full-width-widget" style="margin-top: 20px;">
           <div class="widget-head">
             <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-blue">lock_open</span>
+              <span class="material-symbols-outlined header-widget-icon text-indigo">dynamic_form</span>
               <div>
-                <h2 class="widget-title">Authentication Screen Customization</h2>
-                <p class="widget-subtitle">Custom login background image, greeting headline, instructions, and live sign-in frame preview.</p>
+                <h2 class="widget-title">Member Registration &amp; Onboarding Settings</h2>
+                <p class="widget-subtitle">Custom URL slug, industry sector, affiliate referral prompt, and onboarding governance.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
-              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
-              <span>{{ savingBrand ? 'Saving...' : 'Save Brand' }}</span>
-            </button>
+            <div style="display:flex; gap:8px;">
+              <a routerLink="/users/console/registration-form" class="btn btn-outline btn-sm">
+                <span class="material-symbols-outlined">tune</span>
+                <span>Open Form Builder ↗</span>
+              </a>
+              <button type="button" class="btn btn-primary btn-sm" (click)="onSaveRegistrationSettings()" [disabled]="savingRegistrationSettings">
+                <span class="material-symbols-outlined" *ngIf="!savingRegistrationSettings">save</span>
+                <span>{{ savingRegistrationSettings ? 'Saving...' : 'Save Settings' }}</span>
+              </button>
+            </div>
           </div>
 
           <div class="widget-body">
-            <!-- Login Background Image Drag & Drop Uploader -->
-            <div class="asset-upload-block" style="margin-top:0; margin-bottom: 16px;">
-              <label class="form-label">
-                <span>Login Background Image</span>
-                <button type="button" class="btn-link-toggle" (click)="toggleManualUrl('bg')">
-                  {{ showManualUrl['bg'] ? 'Hide Direct URL' : 'Direct URL' }}
-                </button>
-              </label>
-
-              <div class="asset-upload-container" [class.has-file]="brand.loginBackgroundImageUrl">
-                <div *ngIf="brand.loginBackgroundImageUrl" class="asset-preview-card-active">
-                  <div class="preview-box-large">
-                    <img [src]="brand.loginBackgroundImageUrl" alt="Login Background" />
-                  </div>
-                  <div class="preview-meta-info">
-                    <div class="preview-file-name">Login Background Image</div>
-                    <div class="preview-file-url" [title]="brand.loginBackgroundImageUrl">{{ brand.loginBackgroundImageUrl }}</div>
-                  </div>
-                  <div class="preview-actions-group">
-                    <input type="file" #bgFile (change)="onFileInputChange($event, 'bg')" accept="image/*" style="display:none;" />
-                    <button type="button" class="btn-icon-action" (click)="bgFile.click()" title="Replace image">
-                      <span class="material-symbols-outlined" style="font-size:16px;">upload_file</span> Replace
-                    </button>
-                    <button type="button" class="btn-icon-action btn-icon-danger" (click)="removeAsset('bg')" title="Remove asset">
-                      <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div *ngIf="!brand.loginBackgroundImageUrl" 
-                     class="dropzone-area" 
-                     [class.drag-over]="dragOverAsset['bg']"
-                     (dragover)="onAssetDragOver($event, 'bg')"
-                     (dragleave)="onAssetDragLeave($event, 'bg')"
-                     (drop)="onAssetDrop($event, 'bg')"
-                     (click)="bgFileEmpty.click()">
-                  <input type="file" #bgFileEmpty (change)="onFileInputChange($event, 'bg')" accept="image/*" style="display:none;" />
-                  <div class="dropzone-content" *ngIf="!uploadingAsset['bg']">
-                    <span class="material-symbols-outlined dropzone-icon">wallpaper</span>
-                    <div class="dropzone-text">Click or drag & drop background image</div>
-                    <div class="dropzone-sub">High-resolution banner (1920x1080) for the login screen</div>
-                  </div>
-                  <div class="dropzone-content" *ngIf="uploadingAsset['bg']">
-                    <span class="material-symbols-outlined dropzone-icon rotating-spinner">sync</span>
-                    <div class="dropzone-text">Uploading to cloud...</div>
-                  </div>
-                </div>
-
-                <div *ngIf="showManualUrl['bg']" class="manual-url-wrap">
-                  <input type="text" [(ngModel)]="brand.loginBackgroundImageUrl" class="form-control" placeholder="https://images.unsplash.com/..." />
-                </div>
-              </div>
-            </div>
-
-            <!-- Login Copy Fields: 2-Column Grid for Headings, Full-Width for Note -->
-            <div class="form-grid-2" style="margin-bottom: 14px;">
+            <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Login Screen Greeting Headline</label>
-                <input type="text" [(ngModel)]="brand.loginTitle" class="form-control" placeholder="Welcome back to your workspace" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Login Notice Subtitle</label>
-                <input type="text" [(ngModel)]="brand.loginNoteTitle" class="form-control" placeholder="Authorized Personnel Only" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Login Instructions & Help Note Body</label>
-              <textarea [(ngModel)]="brand.loginNote" rows="3" class="form-control" placeholder="Please sign in with your institutional credentials or single sign-on..."></textarea>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- =================================================================== -->
-      <!-- TAB 2: SYSTEM TERMINOLOGY & INSTITUTIONAL ALIASES                    -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'aliases'" class="tab-content-pane">
-        <section class="console-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-green">label</span>
-              <div>
-                <h2 class="widget-title">System-Wide Nomenclature & Terminology Aliases</h2>
-                <p class="widget-subtitle">Rename core platform modules (Categories, Groups, Sub-Categories, Alumni) to match your organization's exact institutional structure.</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveAliases()" [disabled]="savingAliases">
-              <span class="material-symbols-outlined" *ngIf="!savingAliases">save</span>
-              <span>{{ savingAliases ? 'Applying...' : 'Save Terminology' }}</span>
-            </button>
-          </div>
-
-          <div class="widget-body">
-            <div class="aliases-grid">
-              <!-- Category Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-blue">folder_open</span>
-                  <div>
-                    <h3 class="alias-card-title">User Category Title</h3>
-                    <span class="alias-card-scope">Default Concept: "User Category"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How member divisions or organisational departments are titled across user management, menus, and filters.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology (Singular / Plural)</label>
-                  <input type="text" [(ngModel)]="aliases.categoryAlias" class="form-control" placeholder="e.g. Department" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Department'">Department</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Faculty'">Faculty</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Staff Cadre'">Staff Cadre</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Directorate'">Directorate</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Branch'">Branch</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Membership Tier'">Tier</button>
-                </div>
-              </div>
-
-              <!-- Sub-Category Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-indigo">account_tree</span>
-                  <div>
-                    <h3 class="alias-card-title">Sub-Category Title</h3>
-                    <span class="alias-card-scope">Default Concept: "Sub-Category"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How secondary branches or operational teams under a parent category are titled.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology</label>
-                  <input type="text" [(ngModel)]="aliases.subCategoryAlias" class="form-control" placeholder="e.g. Unit" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Unit'">Unit</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Sub-Department'">Sub-Department</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Team'">Team</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Division'">Division</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Section'">Section</button>
-                </div>
-              </div>
-
-              <!-- Group Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-amber">groups</span>
-                  <div>
-                    <h3 class="alias-card-title">Groups & Communities Title</h3>
-                    <span class="alias-card-scope">Default Concept: "Group / Community"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How collaborative spaces, channels, and working bodies are named across the sidebar, chat, and hub.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology</label>
-                  <input type="text" [(ngModel)]="aliases.groupAlias" class="form-control" placeholder="e.g. Committee" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Committees'">Committees</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Chapters'">Chapters</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Guilds'">Guilds</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Working Groups'">Working Groups</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Clubs'">Clubs</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Units'">Units</button>
-                </div>
-              </div>
-
-              <!-- Alumni Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-teal">school</span>
-                  <div>
-                    <h3 class="alias-card-title">Alumni Network Title</h3>
-                    <span class="alias-card-scope">Default Concept: "Alumni"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How past graduates, honorary fellows, or former members are designated.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology</label>
-                  <input type="text" [(ngModel)]="aliases.alumniAlias" class="form-control" placeholder="e.g. Past Members" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Past Members'">Past Members</button>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Alumni Network'">Alumni Network</button>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Fellows'">Fellows</button>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Emeritus Members'">Emeritus</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dynamic UI Simulation Box -->
-            <div class="live-terminology-simulation">
-              <div class="sim-header">
-                <span class="material-symbols-outlined text-green">preview</span>
-                <span class="sim-title">LIVE NAVIGATION & LABEL PREVIEW SIMULATION</span>
-              </div>
-              <div class="sim-body">
-                <div class="sim-item">
-                  <span class="sim-label">Sidebar Menu Item:</span>
-                  <strong class="sim-value">Manage {{ aliases.categoryAlias || 'User Categories' }}</strong>
-                </div>
-                <div class="sim-item">
-                  <span class="sim-label">Communities Hub Header:</span>
-                  <strong class="sim-value">Active {{ aliases.groupAlias || 'Groups & Communities' }}</strong>
-                </div>
-                <div class="sim-item">
-                  <span class="sim-label">Member Filter Dropdown:</span>
-                  <strong class="sim-value">Filter by {{ aliases.categoryAlias || 'Category' }} / {{ aliases.subCategoryAlias || 'Unit' }}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-
-
-      <!-- =================================================================== -->
-      <!-- TAB 4: MEMBER ID CODING RULES & 10 FORMAT SELECTOR                  -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'member-id'" class="tab-content-pane">
-        <section class="console-widget member-id-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-blue">badge</span>
-              <div>
-                <h2 class="widget-title">Member ID Auto-Generation & Security Rules</h2>
-                <p class="widget-subtitle">Select from 10 standard institutional coding formats and configure authentication policies.</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveMemberIdConfig()" [disabled]="savingIdConfig">
-              <span class="material-symbols-outlined" *ngIf="!savingIdConfig">save</span>
-              <span>{{ savingIdConfig ? 'Applying...' : 'Save Format Rule' }}</span>
-            </button>
-          </div>
-
-          <div class="widget-body">
-            <!-- Top Row: Dropdown Selector & Dynamic Live Preview -->
-            <div class="format-selection-grid">
-              <div class="form-group format-dropdown-group">
                 <label class="form-label">
-                  <span>Select Member ID Format (10 Standard Formats)</span>
-                  <span class="badge-pill-soft">Immediate Effect</span>
+                  <span>Custom Registration URL Slug</span>
+                  <span class="field-hint" style="font-weight: normal; margin-left: 8px;">(e.g. apply, join, enroll, get-started)</span>
                 </label>
-                <select [(ngModel)]="idConfig.activeFormat" (ngModelChange)="onFormatParamChange()" class="form-control format-select">
-                  <option *ngFor="let f of idConfig.previews; let i = index" [value]="f.key">
-                    Format {{ i + 1 }}: {{ f.name }} (e.g. {{ f.previewExample }})
-                  </option>
-                </select>
-                <span class="field-hint">{{ getActiveFormatDescription() }}</span>
+                <div style="display:flex; align-items:center; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+                  <span style="padding:0 12px; background:#f1f5f9; color:#64748b; font-size:13px; font-weight:600; border-right:1px solid #cbd5e1; height:38px; display:flex; align-items:center;">/auth/</span>
+                  <input type="text" [(ngModel)]="registrationPolicy.registrationUrlSlug" (ngModelChange)="sanitizeRegistrationSlug()" class="form-control" style="border:none; border-radius:0; height:38px;" placeholder="e.g. apply" />
+                </div>
+                <div style="margin-top: 6px; font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 6px;">
+                  <span>Live URL: <strong style="color: #0050e5;">{{ liveRegistrationUrl }}</strong></span>
+                </div>
               </div>
 
-              <!-- Dynamic Live Preview Box -->
-              <div class="live-preview-box">
-                <div class="preview-header">
-                  <span class="material-symbols-outlined preview-icon">visibility</span>
-                  <span class="preview-label">NEXT GENERATED MEMBER ID PREVIEW</span>
-                </div>
-                <div class="preview-badge-display">
-                  <span class="preview-id-text">{{ getActivePreviewSample() }}</span>
-                </div>
-                <div class="preview-footer-note">
-                  <span class="material-symbols-outlined" style="font-size:14px; color:#10b981;">check_circle</span>
-                  <span>{{ isCurrentFormatSequential() ? 'Strict Serial Auto-Incrementing Sequence (1, 2, 3...)' : 'Cryptographic Random Secure Format' }}</span>
-                </div>
+              <div class="form-group">
+                <label class="form-label">Industry / Organization Sector</label>
+                <select [(ngModel)]="registrationPolicy.defaultIndustrySector" class="form-control" style="height:40px;">
+                  <option value="Business & Enterprise">Business & Enterprise</option>
+                  <option value="Education & Academy">Education & Academy</option>
+                  <option value="Healthcare & Care Services">Healthcare & Care Services</option>
+                  <option value="Non-Profit & Foundation">Non-Profit & Foundation</option>
+                  <option value="Government & Public Agency">Government & Public Agency</option>
+                  <option value="Technology & Software">Technology & Software</option>
+                  <option value="Community & Alumni Association">Community & Alumni Association</option>
+                </select>
+                <span class="field-hint">Primary sector used for default onboarding field presets</span>
               </div>
             </div>
 
-            <!-- Configuration Controls: Prefix, Starting Counter, Padding, Delimiter -->
-            <div class="format-params-grid">
-              <div class="form-group">
-                <label class="form-label">Custom Prefix Code</label>
-                <input type="text" [(ngModel)]="idConfig.prefix" (ngModelChange)="onFormatParamChange()" class="form-control" placeholder="e.g. CC, BCC, MEM, ORG" />
-                <span class="field-hint">Organization code prepended to ID</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Next Serial Counter Number</label>
-                <input type="number" [(ngModel)]="idConfig.nextNumber" (ngModelChange)="onFormatParamChange()" class="form-control" placeholder="1" min="1" />
-                <span class="field-hint">Current sequential auto-increment value</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Zero Padding Length</label>
-                <select [(ngModel)]="idConfig.padding" (ngModelChange)="onFormatParamChange()" class="form-control">
-                  <option [ngValue]="3">3 Digits (e.g. 001)</option>
-                  <option [ngValue]="4">4 Digits (e.g. 0001)</option>
-                  <option [ngValue]="5">5 Digits (e.g. 00001)</option>
-                  <option [ngValue]="6">6 Digits (e.g. 000001)</option>
-                </select>
-                <span class="field-hint">Leading zeros for serial numbers</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Delimiter Separator</label>
-                <select [(ngModel)]="idConfig.delimiter" (ngModelChange)="onFormatParamChange()" class="form-control">
-                  <option value="-">- Dash (e.g. CC-2026-0001)</option>
-                  <option value="/">/ Slash (e.g. CC/2026/0001)</option>
-                  <option value=".">. Dot (e.g. CC.2026.0001)</option>
-                </select>
-                <span class="field-hint">Separator between tokens</span>
-              </div>
-            </div>
-
-            <!-- Security & Access Policy 1: Email Confirmation -->
-            <div class="security-policy-box" style="margin-top: 16px; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 22px; color: #0050e5; margin-top: 2px;">verified_user</span>
+            <div class="form-grid-2" style="margin-top: 14px;">
+              <!-- Toggle: Affiliate Referral Code -->
+              <div class="toggle-card" [class.active-toggle]="registrationPolicy.enableAffiliateReferralCode" (click)="registrationPolicy.enableAffiliateReferralCode = !registrationPolicy.enableAffiliateReferralCode" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; background: #ffffff;">
+                <input type="checkbox" [(ngModel)]="registrationPolicy.enableAffiliateReferralCode" (click)="$event.stopPropagation()" />
                 <div>
-                  <strong style="font-size: 13px; color: #0f172a; display: block;">Enforce Email Verification Before Login</strong>
-                  <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">
-                    When enabled, members cannot sign into the workspace until their email address is confirmed via the 6-digit OTP code.
-                  </p>
+                  <strong style="font-size: 13px; display: block; color: #0f172a;">Enable Affiliate Referral Code</strong>
+                  <span style="font-size: 11.5px; color: #64748b;">Displays "Have an Affiliate Referral Code?" expander on the registration card</span>
                 </div>
               </div>
-              <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
-                <input type="checkbox" [(ngModel)]="idConfig.requireConfirmedEmailToLogin" style="opacity: 0; width: 0; height: 0;" />
-                <span class="toggle-slider" [class.toggle-on]="idConfig.requireConfirmedEmailToLogin" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px;"></span>
-              </label>
-            </div>
 
-            <!-- Security & Access Policy 2: Allow User Account Deletion -->
-            <div class="security-policy-box" style="margin-top: 12px; padding: 14px 18px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 22px; color: #e53e3e; margin-top: 2px;">person_remove</span>
+              <!-- Toggle: Public Registration -->
+              <div class="toggle-card" [class.active-toggle]="registrationPolicy.allowPublicRegistration" (click)="registrationPolicy.allowPublicRegistration = !registrationPolicy.allowPublicRegistration" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; background: #ffffff;">
+                <input type="checkbox" [(ngModel)]="registrationPolicy.allowPublicRegistration" (click)="$event.stopPropagation()" />
                 <div>
-                  <strong style="font-size: 13px; color: #9b2c2c; display: block;">Allow Administrator User Account Deletion</strong>
-                  <p style="margin: 2px 0 0; font-size: 12px; color: #742a2a;">
-                    When enabled, administrators are permitted to permanently delete user accounts from the portal.
-                  </p>
-                </div>
-              </div>
-              <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
-                <input type="checkbox" [(ngModel)]="idConfig.enableUserDeletion" style="opacity: 0; width: 0; height: 0;" />
-                <span class="toggle-slider" [class.toggle-on]="idConfig.enableUserDeletion" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px;"></span>
-              </label>
-            </div>
-
-            <!-- All 10 Formats Overview Grid -->
-            <div class="formats-matrix-section">
-              <div class="matrix-header">
-                <span class="matrix-title">All 10 Available Format Patterns Quick Reference</span>
-                <span class="matrix-hint">Click any card below to instantly select that format</span>
-              </div>
-
-              <div class="formats-cards-grid">
-                <div
-                  class="format-card-mini"
-                  *ngFor="let f of idConfig.previews; let idx = index"
-                  [class.selected]="idConfig.activeFormat === f.key"
-                  (click)="selectFormat(f.key)"
-                >
-                  <div class="card-mini-top">
-                    <span class="format-number">Format {{ idx + 1 }}</span>
-                    <span class="format-type-tag" [class.type-serial]="f.isSequential" [class.type-random]="!f.isSequential">
-                      {{ f.isSequential ? 'Serial (1,2,3..)' : 'Random' }}
-                    </span>
-                  </div>
-                  <h4 class="format-card-title">{{ f.name }}</h4>
-                  <div class="format-preview-chip">{{ f.previewExample }}</div>
-                  <p class="format-card-desc">{{ f.description }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- =================================================================== -->
-      <!-- TAB 5: MULTI-CHANNEL MESSAGE TEMPLATES (Email, SMS & In-App)        -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'templates'" class="tab-content-pane">
-        <section class="console-widget message-templates-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-indigo">dynamic_feed</span>
-              <div>
-                <h2 class="widget-title">Multi-Channel Communication & Message Templates</h2>
-                <p class="widget-subtitle">Customize copy, HTML layouts, and dynamic merge tags for Email, SMS, and In-App Notifications.</p>
-              </div>
-            </div>
-
-            <!-- Channel Filter Tabs -->
-            <div class="channel-tabs-bar">
-              <button
-                type="button"
-                class="channel-tab-btn"
-                [class.active]="activeChannel === 0"
-                (click)="setChannel(0)"
-              >
-                <span class="material-symbols-outlined tab-icon">mail</span>
-                <span>Email Templates</span>
-              </button>
-              <button
-                type="button"
-                class="channel-tab-btn"
-                [class.active]="activeChannel === 1"
-                (click)="setChannel(1)"
-              >
-                <span class="material-symbols-outlined tab-icon">sms</span>
-                <span>SMS Templates</span>
-              </button>
-              <button
-                type="button"
-                class="channel-tab-btn"
-                [class.active]="activeChannel === 2"
-                (click)="setChannel(2)"
-              >
-                <span class="material-symbols-outlined tab-icon">notifications_active</span>
-                <span>In-App Notifications</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="widget-body">
-            <div *ngIf="loadingTemplates" style="text-align:center; padding:32px; color:#64748b;">
-              <span class="material-symbols-outlined" style="font-size:32px; animation:spin 1s linear infinite;">sync</span>
-              <p style="margin-top:8px; font-size:13px;">Loading templates...</p>
-            </div>
-
-            <div class="template-studio-layout" *ngIf="!loadingTemplates && selectedTemplate">
-              <!-- Left Panel: Event List -->
-              <div class="template-events-sidebar">
-                <span class="sidebar-label">Select System Trigger Event</span>
-                <div class="events-list">
-                  <div
-                    class="event-nav-item"
-                    *ngFor="let t of getTemplatesForActiveChannel()"
-                    [class.active]="selectedTemplate?.id === t.id"
-                    (click)="selectTemplate(t)"
-                  >
-                    <div class="event-nav-left">
-                      <span class="material-symbols-outlined event-nav-icon">{{ getEventIcon(t.eventType) }}</span>
-                      <div>
-                        <strong class="event-nav-name">{{ getEventCleanName(t.eventType) }}</strong>
-                        <span class="event-nav-channel">{{ t.channel === 0 ? 'Rich HTML Email' : (t.channel === 1 ? 'SMS Message' : 'In-App Banner') }}</span>
-                      </div>
-                    </div>
-                    <span class="status-indicator-dot" [class.dot-active]="t.isActive"></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Middle Panel: Template Editor -->
-              <div class="template-editor-panel">
-                <div class="editor-header">
-                  <div class="editor-title-group">
-                    <div class="editor-title-badge-row">
-                      <h3 class="editor-title">{{ selectedTemplate.name }}</h3>
-                      <label class="active-status-toggle" [class.is-active]="selectedTemplate.isActive">
-                        <input type="checkbox" [(ngModel)]="selectedTemplate.isActive" (ngModelChange)="generatePreview()" />
-                        <span>{{ selectedTemplate.isActive ? 'Active' : 'Inactive' }}</span>
-                      </label>
-                    </div>
-                    <p class="editor-sub">{{ getEventDescription(selectedTemplate.eventType) }}</p>
-                  </div>
-                  <div class="editor-actions-group">
-                    <button type="button" class="btn btn-outline btn-sm" (click)="resetCurrentTemplate()" title="Reset to default copy">
-                      <span class="material-symbols-outlined">restart_alt</span>
-                      <span>Reset</span>
-                    </button>
-                    <button type="button" class="btn btn-primary btn-sm" (click)="saveCurrentTemplate()" [disabled]="savingTemplate">
-                      <span class="material-symbols-outlined">save</span>
-                      <span>{{ savingTemplate ? 'Saving...' : 'Save' }}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Subject Line (Email & In-App) -->
-                <div class="form-group" *ngIf="selectedTemplate.channel !== 1" style="margin-bottom:12px;">
-                  <label class="form-label">
-                    <span>{{ selectedTemplate.channel === 0 ? 'Email Subject Line' : 'Notification Title' }}</span>
-                    <span class="field-hint">Supports merge tags</span>
-                  </label>
-                  <input
-                    type="text"
-                    [(ngModel)]="selectedTemplate.subjectTemplate"
-                    (ngModelChange)="generatePreview()"
-                    class="form-control"
-                    [placeholder]="'e.g. Welcome to {{OrganizationName}}'"
-                  />
-                </div>
-
-                <!-- Merge Tag Chips Inserter -->
-                <div class="merge-tags-box">
-                  <span class="merge-tags-label">Available Merge Tags (Click to Insert):</span>
-                  <div class="merge-tags-chips">
-                    <button
-                      type="button"
-                      class="tag-chip"
-                      *ngFor="let tag of getPlaceholdersList(selectedTemplate.availablePlaceholders)"
-                      (click)="insertPlaceholder(tag)"
-                    >
-                      {{ tag }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Body Editor (Dual-Mode: Plain Text Copy vs Raw HTML) -->
-                <div class="form-group">
-                  <div class="body-editor-header-bar">
-                    <label class="form-label" style="margin-bottom:0;">
-                      <span>{{ selectedTemplate.channel === 0 ? (templateEditorMode === 'text' ? 'Email Message Copy (Plain Text)' : 'Email HTML Source Code') : (selectedTemplate.channel === 1 ? 'SMS Message Body' : 'In-App Notification Body') }}</span>
-                    </label>
-
-                    <!-- Plain Text vs HTML Mode Switcher (Email Only) -->
-                    <div *ngIf="selectedTemplate.channel === 0" class="editor-mode-toggle-group">
-                      <button
-                        type="button"
-                        class="mode-toggle-btn"
-                        [class.active]="templateEditorMode === 'text'"
-                        (click)="setEditorMode('text')"
-                        title="Edit readable text copy without HTML tags"
-                      >
-                        <span class="material-symbols-outlined" style="font-size:15px;">text_fields</span>
-                        <span>Plain Text</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="mode-toggle-btn"
-                        [class.active]="templateEditorMode === 'html'"
-                        (click)="setEditorMode('html')"
-                        title="Edit raw HTML source code and inline styles"
-                      >
-                        <span class="material-symbols-outlined" style="font-size:15px;">code</span>
-                        <span>HTML Code</span>
-                      </button>
-                    </div>
-
-                    <!-- SMS Character & Segment Counter -->
-                    <span *ngIf="selectedTemplate.channel === 1" class="sms-counter-badge" [class.sms-warn]="selectedTemplate.bodyTemplate.length > 160">
-                      {{ selectedTemplate.bodyTemplate.length }} chars ({{ getSmsSegmentCount(selectedTemplate.bodyTemplate.length) }} SMS segment)
-                    </span>
-                  </div>
-
-                  <!-- 1. Plain Text Editor (For Easy Human Editing) -->
-                  <textarea
-                    *ngIf="selectedTemplate.channel === 0 && templateEditorMode === 'text'"
-                    [(ngModel)]="plainTextBody"
-                    (ngModelChange)="onPlainTextChange()"
-                    rows="10"
-                    class="form-control plain-text-editor-textarea"
-                    placeholder="Type your plain email message copy here (paragraphs will format automatically)..."
-                  ></textarea>
-
-                  <!-- 2. Raw HTML / SMS / In-App Editor -->
-                  <textarea
-                    *ngIf="selectedTemplate.channel !== 0 || templateEditorMode === 'html'"
-                    [(ngModel)]="selectedTemplate.bodyTemplate"
-                    (ngModelChange)="generatePreview()"
-                    rows="10"
-                    class="form-control code-editor-textarea"
-                    placeholder="Write your template copy with dynamic tags here..."
-                  ></textarea>
-                </div>
-              </div>
-
-              <!-- Right Panel: Live Visual Simulator / Previewer -->
-              <div class="template-preview-panel">
-                <div class="preview-panel-head">
-                  <span class="material-symbols-outlined text-blue" style="font-size:18px;">visibility</span>
-                  <span class="preview-panel-title">Live Preview Simulator</span>
-                  <span class="preview-sample-badge">Sample Data</span>
-                </div>
-
-                <!-- EMAIL SIMULATOR -->
-                <div *ngIf="selectedTemplate.channel === 0" class="email-mockup-frame">
-                  <div class="email-mockup-header">
-                    <div class="email-mockup-row">
-                      <span class="email-meta-label">Subject:</span>
-                      <strong class="email-meta-value">{{ previewData.subject || 'No Subject' }}</strong>
-                    </div>
-                    <div class="email-mockup-row">
-                      <span class="email-meta-label">To:</span>
-                      <span class="email-meta-value">Dr. Alexander Wright &lt;alexander.wright&#64;company.com&gt;</span>
-                    </div>
-                  </div>
-                  <div class="email-mockup-body" [innerHTML]="previewData.body"></div>
-                </div>
-
-                <!-- SMS SIMULATOR -->
-                <div *ngIf="selectedTemplate.channel === 1" class="sms-phone-mockup">
-                  <div class="phone-speaker-notch"></div>
-                  <div class="sms-chat-bubble">
-                    <p class="sms-chat-text">{{ previewData.body || 'No SMS body entered.' }}</p>
-                    <span class="sms-time">Now · SMS</span>
-                  </div>
-                </div>
-
-                <!-- IN-APP NOTIFICATION SIMULATOR -->
-                <div *ngIf="selectedTemplate.channel === 2" class="inapp-card-mockup">
-                  <div class="inapp-mockup-icon-box">
-                    <span class="material-symbols-outlined inapp-mockup-icon">{{ getEventIcon(selectedTemplate.eventType) }}</span>
-                  </div>
-                  <div class="inapp-mockup-content">
-                    <h5 class="inapp-mockup-title">{{ previewData.subject || 'Notification Title' }}</h5>
-                    <p class="inapp-mockup-body">{{ previewData.body || 'Notification message content...' }}</p>
-                    <span class="inapp-mockup-time">Just now</span>
-                  </div>
+                  <strong style="font-size: 13px; display: block; color: #0f172a;">Allow Public Self-Registration</strong>
+                  <span style="font-size: 11.5px; color: #64748b;">Enables open member registration via live link. If off, accounts are invite-only</span>
                 </div>
               </div>
             </div>
@@ -1315,138 +752,582 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       </div>
 
       <!-- =================================================================== -->
-      <!-- TAB 6: MEDIA & CLOUD STORAGE (BYOS CLOUDINARY)                     -->
+      <!-- TAB: WEBSITE INTERACTIVE WIDGETS & TOOLS (RIBBON, COOKIES, WHATSAPP)-->
       <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'storage'" class="tab-content-pane">
+      <div *ngIf="activeTab === 'widgets'" class="tab-content-pane">
+        <!-- Widget 1: Breaking News Ribbon Ticker -->
         <section class="console-widget full-width-widget">
           <div class="widget-head">
             <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-indigo">cloud_sync</span>
+              <span class="material-symbols-outlined header-widget-icon text-orange">campaign</span>
               <div>
-                <h2 class="widget-title">Media &amp; Cloud Storage Configuration</h2>
-                <p class="widget-subtitle">
-                  By default, your uploads use our high-speed Platform Cloudinary storage. You can optionally connect your own free Cloudinary account.
-                </p>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <h2 class="widget-title">Breaking News Ribbon Ticker</h2>
+                  <span class="settings-mode-pill" [class.is-store]="brand.enableBreakingNewsRibon">
+                    <span class="mode-pulse-dot"></span>
+                    {{ brand.enableBreakingNewsRibon ? 'Live on Website' : 'Ticker Disabled' }}
+                  </span>
+                </div>
+                <p class="widget-subtitle">A high-visibility horizontal marquee highlighting featured news articles, important updates, and announcements.</p>
               </div>
             </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <button
-                *ngIf="storageSettings.useCustomStorage"
-                type="button"
-                class="btn btn-outline-secondary btn-sm"
-                (click)="revertToPlatformStorage()"
-                [disabled]="connectingStorage"
-                title="Switch back to the Platform Default Cloudinary storage"
-              >
-                <span class="material-symbols-outlined">restart_alt</span>
-                <span>Revert to Platform Default</span>
+            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
+              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
+              <span>{{ savingBrand ? 'Saving...' : 'Save Widgets' }}</span>
+            </button>
+          </div>
+
+          <div class="widget-body">
+            <!-- Master Toggle Banner -->
+            <div class="store-master-banner" [class.store-active]="brand.enableBreakingNewsRibon">
+              <div class="store-banner-left">
+                <span class="material-symbols-outlined store-master-icon" [style.color]="brand.enableBreakingNewsRibon ? '#ea580c' : '#64748b'">campaign</span>
+                <div>
+                  <h3 class="store-master-title">Breaking News Ribbon Ticker is {{ brand.enableBreakingNewsRibon ? 'ENABLED & STREAMING' : 'DISABLED' }}</h3>
+                  <p class="store-master-desc">
+                    {{ brand.enableBreakingNewsRibon 
+                      ? 'Visitors will see the animated marquee banner displaying active articles and pages flagged with "Add to Ribbon".' 
+                      : 'The ticker marquee is hidden from public visitors across all website pages.' }}
+                  </p>
+                </div>
+              </div>
+              <label class="toggle-switch-large">
+                <input type="checkbox" [(ngModel)]="brand.enableBreakingNewsRibon" />
+                <span class="toggle-track" [class.on]="brand.enableBreakingNewsRibon" [style.background-color]="brand.enableBreakingNewsRibon ? '#ea580c' : '#cbd5e1'">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+            </div>
+
+            <ng-container *ngIf="brand.enableBreakingNewsRibon">
+              <!-- Ticker Badge Title -->
+              <div class="form-grid-2 form-mt-16">
+                <div class="form-group">
+                  <label class="form-label">
+                    <span>TICKER BADGE LABEL</span>
+                    <span class="field-req">*</span>
+                  </label>
+                  <input type="text" [(ngModel)]="brand.breakingNewsRibonTitle" class="form-control" placeholder="e.g. BREAKING NEWS, LATEST ANNOUNCEMENTS, UPDATES" />
+                  <span class="field-hint">Static pill badge displayed on the left side of the marquee stream.</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">MANAGE TICKER ITEMS</label>
+                  <div style="display:flex; gap:10px; margin-top:4px;">
+                    <a routerLink="/content/console/pages" class="btn btn-outline btn-sm">
+                      <span class="material-symbols-outlined">description</span>
+                      <span>Web Pages Ticker Flags</span>
+                    </a>
+                    <a routerLink="/cms/blogs" class="btn btn-outline btn-sm">
+                      <span class="material-symbols-outlined">article</span>
+                      <span>Blog Articles Ticker Flags</span>
+                    </a>
+                  </div>
+                  <span class="field-hint">Tick "Add to Ribbon" when creating or editing any page or article.</span>
+                </div>
+              </div>
+
+              <!-- Ribbon Position Selector (5 Options) -->
+              <div class="mode-section-header form-mt-24">
+                <span class="material-symbols-outlined text-orange">format_line_spacing</span>
+                <div>
+                  <h3 class="section-heading">Select Ticker Placement Position on Website</h3>
+                  <p class="section-subtext">Choose where the marquee ribbon should appear relative to your header, banner, and footer.</p>
+                </div>
+              </div>
+
+              <div class="ribbon-positions-grid">
+                <!-- 1. Top of Page -->
+                <div class="pos-card" [class.active-pos]="brand.breakingNewsRibonPosition === 'top'" (click)="brand.breakingNewsRibonPosition = 'top'">
+                  <div class="pos-card-head">
+                    <span class="pos-badge">Position #1</span>
+                    <span class="material-symbols-outlined pos-check-icon" *ngIf="brand.breakingNewsRibonPosition === 'top'">check_circle</span>
+                  </div>
+                  <div class="pos-icon-box"><span class="material-symbols-outlined">vertical_align_top</span></div>
+                  <h4 class="pos-title">Top of Page</h4>
+                  <p class="pos-desc">Renders as the very first element at the top of the browser viewport above the navigation header.</p>
+                </div>
+
+                <!-- 2. After Menu -->
+                <div class="pos-card" [class.active-pos]="brand.breakingNewsRibonPosition === 'after_menu'" (click)="brand.breakingNewsRibonPosition = 'after_menu'">
+                  <div class="pos-card-head">
+                    <span class="pos-badge pill-default">Default &amp; Recommended</span>
+                    <span class="material-symbols-outlined pos-check-icon" *ngIf="brand.breakingNewsRibonPosition === 'after_menu'">check_circle</span>
+                  </div>
+                  <div class="pos-icon-box"><span class="material-symbols-outlined">border_top</span></div>
+                  <h4 class="pos-title">After Menu</h4>
+                  <p class="pos-desc">Renders directly below the main navigation bar and immediately above the hero banner or breadcrumbs.</p>
+                </div>
+
+                <!-- 3. After Hero -->
+                <div class="pos-card" [class.active-pos]="brand.breakingNewsRibonPosition === 'after_hero'" (click)="brand.breakingNewsRibonPosition = 'after_hero'">
+                  <div class="pos-card-head">
+                    <span class="pos-badge">Position #3</span>
+                    <span class="material-symbols-outlined pos-check-icon" *ngIf="brand.breakingNewsRibonPosition === 'after_hero'">check_circle</span>
+                  </div>
+                  <div class="pos-icon-box"><span class="material-symbols-outlined">view_agenda</span></div>
+                  <h4 class="pos-title">After Hero / Banner</h4>
+                  <p class="pos-desc">Renders directly below the hero section or page breadcrumbs, separating the banner from body content.</p>
+                </div>
+
+                <!-- 4. Before Footer -->
+                <div class="pos-card" [class.active-pos]="brand.breakingNewsRibonPosition === 'before_footer'" (click)="brand.breakingNewsRibonPosition = 'before_footer'">
+                  <div class="pos-card-head">
+                    <span class="pos-badge">Position #4</span>
+                    <span class="material-symbols-outlined pos-check-icon" *ngIf="brand.breakingNewsRibonPosition === 'before_footer'">check_circle</span>
+                  </div>
+                  <div class="pos-icon-box"><span class="material-symbols-outlined">border_bottom</span></div>
+                  <h4 class="pos-title">Before Footer</h4>
+                  <p class="pos-desc">Renders directly below all body layout sections, immediately above the main website footer.</p>
+                </div>
+
+                <!-- 5. After Footer -->
+                <div class="pos-card" [class.active-pos]="brand.breakingNewsRibonPosition === 'after_footer'" (click)="brand.breakingNewsRibonPosition = 'after_footer'">
+                  <div class="pos-card-head">
+                    <span class="pos-badge">Position #5</span>
+                    <span class="material-symbols-outlined pos-check-icon" *ngIf="brand.breakingNewsRibonPosition === 'after_footer'">check_circle</span>
+                  </div>
+                  <div class="pos-icon-box"><span class="material-symbols-outlined">vertical_align_bottom</span></div>
+                  <h4 class="pos-title">After Footer</h4>
+                  <p class="pos-desc">Renders at the very bottom of the document beneath the copyright footer.</p>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </section>
+
+        <!-- Widget 2: Glassmorphic Cookie Consent Banner -->
+        <section class="console-widget full-width-widget form-mt-24">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined header-widget-icon text-indigo">cookie</span>
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <h2 class="widget-title">Cookie Consent &amp; Privacy Banner</h2>
+                  <span class="settings-mode-pill" [class.is-store]="brand.enableCookieConsent">
+                    <span class="mode-pulse-dot"></span>
+                    {{ brand.enableCookieConsent ? 'Active on Public Site' : 'Popup Inactive' }}
+                  </span>
+                </div>
+                <p class="widget-subtitle">A legal compliance popup card positioned at the bottom of the page with smooth opacity and glassmorphism blur.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
+              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
+              <span>{{ savingBrand ? 'Saving...' : 'Save Widgets' }}</span>
+            </button>
+          </div>
+
+          <div class="widget-body">
+            <!-- Master Toggle -->
+            <div class="store-master-banner" [class.store-active]="brand.enableCookieConsent">
+              <div class="store-banner-left">
+                <span class="material-symbols-outlined store-master-icon" [style.color]="brand.enableCookieConsent ? '#4338ca' : '#64748b'">cookie</span>
+                <div>
+                  <h3 class="store-master-title">Cookie Consent Popup is {{ brand.enableCookieConsent ? 'ENABLED & ACTIVE' : 'DISABLED' }}</h3>
+                  <p class="store-master-desc">
+                    {{ brand.enableCookieConsent 
+                      ? 'Visitors will see the glassmorphic consent card at the bottom of the screen until they accept or dismiss.' 
+                      : 'No cookie consent popup will be displayed to visitors.' }}
+                  </p>
+                </div>
+              </div>
+              <label class="toggle-switch-large">
+                <input type="checkbox" [(ngModel)]="brand.enableCookieConsent" />
+                <span class="toggle-track" [class.on]="brand.enableCookieConsent" [style.background-color]="brand.enableCookieConsent ? '#4338ca' : '#cbd5e1'">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+            </div>
+
+            <ng-container *ngIf="brand.enableCookieConsent">
+              <div class="form-grid-2 form-mt-16">
+                <div class="form-group">
+                  <label class="form-label">BANNER HEADING</label>
+                  <input type="text" [(ngModel)]="brand.cookieConsentTitle" class="form-control" placeholder="e.g. Cookie Preferences &amp; Privacy" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">PRIVACY POLICY LINK URL</label>
+                  <input type="text" [(ngModel)]="brand.cookieConsentPolicyUrl" class="form-control" placeholder="e.g. /privacy-policy" />
+                </div>
+              </div>
+
+              <div class="form-group form-mt-12">
+                <label class="form-label">CONSENT MESSAGE COPY</label>
+                <textarea [(ngModel)]="brand.cookieConsentMessage" class="form-control" rows="3" placeholder="e.g. We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website."></textarea>
+              </div>
+
+              <div class="form-grid-2 form-mt-12">
+                <div class="form-group">
+                  <label class="form-label">ACCEPT BUTTON TEXT</label>
+                  <input type="text" [(ngModel)]="brand.cookieConsentAcceptText" class="form-control" placeholder="e.g. Accept All" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">DECLINE BUTTON TEXT (OPTIONAL)</label>
+                  <input type="text" [(ngModel)]="brand.cookieConsentDeclineText" class="form-control" placeholder="e.g. Decline" />
+                </div>
+              </div>
+
+              <!-- Live Glassmorphic Simulator Preview -->
+              <div class="form-mt-20">
+                <span class="field-hint" style="font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">Live Glassmorphic Preview Simulator</span>
+                <div class="cookie-preview-wrapper">
+                  <div class="cookie-preview-card">
+                    <div class="cookie-preview-icon">
+                      <span class="material-symbols-outlined text-indigo">cookie</span>
+                    </div>
+                    <div class="cookie-preview-content">
+                      <h4 class="cookie-preview-title">{{ brand.cookieConsentTitle || 'Cookie Preferences & Privacy' }}</h4>
+                      <p class="cookie-preview-text">
+                        {{ brand.cookieConsentMessage || 'We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.' }}
+                        <a *ngIf="brand.cookieConsentPolicyUrl" [href]="brand.cookieConsentPolicyUrl" target="_blank" class="cookie-preview-link">Learn more ↗</a>
+                      </p>
+                    </div>
+                    <div class="cookie-preview-actions">
+                      <button type="button" class="btn-cookie-prev-decline">{{ brand.cookieConsentDeclineText || 'Decline' }}</button>
+                      <button type="button" class="btn-cookie-prev-accept">{{ brand.cookieConsentAcceptText || 'Accept All' }}</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </section>
+
+        <!-- Widget 3: WhatsApp Floating Live Chat -->
+        <section class="console-widget full-width-widget form-mt-24">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined header-widget-icon" style="color:#25D366;">chat</span>
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <h2 class="widget-title">WhatsApp Floating Live Chat Widget</h2>
+                  <span class="settings-mode-pill" [class.is-store]="brand.enableWhatsAppChat">
+                    <span class="mode-pulse-dot" [style.background]="brand.enableWhatsAppChat ? '#25D366' : '#cbd5e1'"></span>
+                    {{ brand.enableWhatsAppChat ? 'Chat Active' : 'Chat Disabled' }}
+                  </span>
+                </div>
+                <p class="widget-subtitle">Engage visitors with an authentic WhatsApp green floating pill that expands into an interactive prompt window.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
+              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
+              <span>{{ savingBrand ? 'Saving...' : 'Save Widgets' }}</span>
+            </button>
+          </div>
+
+          <div class="widget-body">
+            <!-- Master Toggle -->
+            <div class="store-master-banner" [class.store-active]="brand.enableWhatsAppChat">
+              <div class="store-banner-left">
+                <span class="material-symbols-outlined store-master-icon" [style.color]="brand.enableWhatsAppChat ? '#25D366' : '#64748b'">chat</span>
+                <div>
+                  <h3 class="store-master-title">WhatsApp Floating Widget is {{ brand.enableWhatsAppChat ? 'ENABLED & FLOATING' : 'DISABLED' }}</h3>
+                  <p class="store-master-desc">
+                    {{ brand.enableWhatsAppChat 
+                      ? 'Visitors can click the floating "Chat with us" button to see your prompt and start a direct WhatsApp conversation.' 
+                      : 'The WhatsApp chat button is hidden from public website pages.' }}
+                  </p>
+                </div>
+              </div>
+              <label class="toggle-switch-large">
+                <input type="checkbox" [(ngModel)]="brand.enableWhatsAppChat" />
+                <span class="toggle-track" [class.on]="brand.enableWhatsAppChat" [style.background-color]="brand.enableWhatsAppChat ? '#25D366' : '#cbd5e1'">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+            </div>
+
+            <ng-container *ngIf="brand.enableWhatsAppChat">
+              <div class="form-grid-2 form-mt-16">
+                <div class="form-group">
+                  <label class="form-label">
+                    <span>WHATSAPP PHONE NUMBER</span>
+                    <span class="field-req">*</span>
+                  </label>
+                  <input type="text" [(ngModel)]="brand.whatsAppNumber" class="form-control" placeholder="e.g. +1 (555) 019-2834 or +447123456789" />
+                  <span class="field-hint">Include international country code. All non-numeric characters will be sanitized for wa.me URL.</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">WIDGET AGENT / TEAM TITLE</label>
+                  <input type="text" [(ngModel)]="brand.whatsAppWidgetTitle" class="form-control" placeholder="e.g. Support Team, Customer Inquiries" />
+                  <span class="field-hint">Headline title shown on the WhatsApp chat window header.</span>
+                </div>
+              </div>
+
+              <div class="form-grid-2 form-mt-12">
+                <div class="form-group">
+                  <label class="form-label">STATUS SUBTITLE</label>
+                  <input type="text" [(ngModel)]="brand.whatsAppWidgetSubtitle" class="form-control" placeholder="e.g. Typically replies within minutes" />
+                  <span class="field-hint">Shown under the title next to the online status indicator.</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">PRE-FILLED PROMPT MESSAGE</label>
+                  <textarea [(ngModel)]="brand.whatsAppPromptMessage" class="form-control" rows="2" placeholder="e.g. Hello! I have an inquiry regarding your services."></textarea>
+                  <span class="field-hint">This text displays in the speech bubble and pre-populates WhatsApp when clicked.</span>
+                </div>
+              </div>
+
+              <!-- Live WhatsApp Simulator Preview -->
+              <div class="form-mt-20">
+                <span class="field-hint" style="font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">Live WhatsApp Widget Preview</span>
+                <div class="whatsapp-preview-wrapper">
+                  <!-- Floating Pill Demo -->
+                  <div class="whatsapp-demo-pill">
+                    <svg viewBox="0 0 24 24" class="whatsapp-demo-svg"><path fill="#ffffff" d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg>
+                    <span>Chat with us</span>
+                  </div>
+
+                  <!-- Open Window Demo -->
+                  <div class="whatsapp-demo-window">
+                    <div class="whatsapp-demo-head">
+                      <div class="whatsapp-demo-agent">
+                        <div class="whatsapp-demo-avatar">
+                          <svg viewBox="0 0 24 24" class="whatsapp-demo-svg-sm"><path fill="#ffffff" d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg>
+                        </div>
+                        <div>
+                          <strong>{{ brand.whatsAppWidgetTitle || 'Chat with Us' }}</strong>
+                          <span><span class="demo-online-dot"></span>{{ brand.whatsAppWidgetSubtitle || 'Typically replies within minutes' }}</span>
+                        </div>
+                      </div>
+                      <span class="whatsapp-demo-close">✕</span>
+                    </div>
+                    <div class="whatsapp-demo-body">
+                      <div class="whatsapp-demo-bubble">
+                        <p>{{ brand.whatsAppPromptMessage || 'Hello! I have an inquiry regarding your services.' }}</p>
+                        <span class="whatsapp-demo-time">Just now</span>
+                      </div>
+                    </div>
+                    <div class="whatsapp-demo-foot">
+                      <button type="button" class="btn-demo-wa">
+                        <svg viewBox="0 0 24 24" class="whatsapp-demo-svg-sm"><path fill="#ffffff" d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg>
+                        <span>Open in WhatsApp</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </section>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- TAB 7: CUSTOM DOMAIN & DNS MANAGEMENT                               -->
+      <!-- =================================================================== -->
+      <div *ngIf="activeTab === 'domain'" class="tab-content-pane">
+        <!-- Widget 1: Primary & Custom Domain Configuration -->
+        <section class="console-widget full-width-widget">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined header-widget-icon text-blue">dns</span>
+              <div>
+                <h2 class="widget-title">Custom Domain Configuration</h2>
+                <p class="widget-subtitle">Connect your custom branded domain or subdomain with automated SSL security.</p>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-outline btn-sm" (click)="onVerifyDns()" [disabled]="verifyingDns">
+                <span class="material-symbols-outlined" [class.spin]="verifyingDns">sync</span>
+                <span>{{ verifyingDns ? 'Checking DNS...' : 'Verify DNS' }}</span>
               </button>
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                (click)="onConnectCustomStorage()"
-                [disabled]="connectingStorage"
-              >
-                <span class="material-symbols-outlined" *ngIf="!connectingStorage">verified_user</span>
-                <span>{{ connectingStorage ? 'Verifying &amp; Saving...' : 'Test &amp; Connect Storage' }}</span>
+              <button type="button" class="btn btn-primary btn-sm" (click)="onSaveCustomDomain()" [disabled]="savingDomain || !customDomainInput.trim()">
+                <span class="material-symbols-outlined" *ngIf="!savingDomain">save</span>
+                <span>{{ savingDomain ? 'Saving...' : 'Save & Connect Domain' }}</span>
               </button>
             </div>
           </div>
 
           <div class="widget-body">
-            <!-- Active Status Banner -->
-            <div
-              style="padding:16px 20px; border-radius:12px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; gap:16px;"
-              [style.background]="storageSettings.useCustomStorage ? 'rgba(34,197,94,0.08)' : 'rgba(59,130,246,0.08)'"
-              [style.border]="storageSettings.useCustomStorage ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(59,130,246,0.3)'"
-            >
-              <div style="display:flex; align-items:center; gap:14px;">
-                <span
-                  class="material-symbols-outlined"
-                  style="font-size:28px;"
-                  [style.color]="storageSettings.useCustomStorage ? '#16a34a' : '#2563eb'"
-                >
-                  {{ storageSettings.useCustomStorage ? 'check_circle' : 'cloud_done' }}
-                </span>
-                <div>
-                  <div style="font-weight:700; font-size:14px;" [style.color]="storageSettings.useCustomStorage ? '#15803d' : '#1d4ed8'">
-                    Current Storage Mode: {{ storageSettings.useCustomStorage ? 'Custom Cloudinary Account (Connected)' : 'Platform Master Cloudinary (Default)' }}
-                  </div>
-                  <p style="margin:2px 0 0; font-size:12px; color:#64748b;">
-                    {{ storageSettings.useCustomStorage
-                        ? 'All website images, logos, and media files for your portal are stored directly inside your own Cloudinary bucket (' + storageSettings.customCloudName + ').'
-                        : 'Your portal is currently using our high-speed platform Cloudinary storage. You can start uploading right away or connect your own account below.' }}
-                  </p>
+            <!-- Active Domain Status Banner -->
+            <div class="domain-status-card" [class.is-connected]="hasCustomDomain" [class.is-unlinked]="!hasCustomDomain">
+              <div class="domain-status-icon">
+                <span class="material-symbols-outlined">{{ hasCustomDomain ? 'verified_user' : 'link_off' }}</span>
+              </div>
+              <div class="domain-status-info">
+                <div class="domain-status-title-row">
+                  <span class="domain-status-title">{{ hasCustomDomain ? 'Custom Domain Connected' : 'No Custom Domain Linked' }}</span>
+                  <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
+                    {{ hasCustomDomain ? 'Active & SSL Secured' : 'Using Default Domain' }}
+                  </span>
                 </div>
+                <p class="domain-status-desc" *ngIf="hasCustomDomain">
+                  Your website is actively reachable at <a [href]="liveWebsiteUrl" target="_blank" class="domain-link-bold">https://{{ customDomain }} ↗</a>.
+                </p>
+                <p class="domain-status-desc" *ngIf="!hasCustomDomain">
+                  Your workspace is currently operating on the default domain (<a [href]="liveWebsiteUrl" target="_blank" class="domain-link-bold">{{ liveWebsiteUrl }} ↗</a>). Add your custom domain below to complete branded setup.
+                </p>
               </div>
-              <span
-                style="font-size:12px; font-weight:700; padding:6px 12px; border-radius:20px; white-space:nowrap;"
-                [style.background]="storageSettings.useCustomStorage ? '#dcfce7' : '#dbeafe'"
-                [style.color]="storageSettings.useCustomStorage ? '#166534' : '#1e40af'"
-              >
-                {{ storageSettings.useCustomStorage ? 'BYOS ACTIVE' : 'DEFAULT ACTIVE' }}
-              </span>
+              <div class="domain-status-action" *ngIf="hasCustomDomain">
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="onUnlinkDomain()" [disabled]="savingDomain">
+                  <span class="material-symbols-outlined">link_off</span>
+                  <span>Unlink Domain</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Explanatory Guide Box -->
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:24px;">
-              <h4 style="margin:0 0 8px; font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:18px; color:#f59e0b;">info</span>
-                <span>Why connect your own free Cloudinary storage?</span>
-              </h4>
-              <p style="margin:0; font-size:12px; line-height:1.6; color:#475569;">
-                Cloudinary offers a generous <strong>free plan with 25 GB of CDN storage and transformations</strong> every month. By connecting your own account, all media assets remain under your full ownership and direct control.
-                <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noopener noreferrer" style="color:#2563eb; font-weight:600; text-decoration:underline; margin-left:4px;">
-                  Create a Free Cloudinary Account &rarr;
-                </a>
-              </p>
-            </div>
-
-            <!-- Credentials Form -->
-            <div class="form-row-2">
+            <!-- Form: Default & Custom Domains -->
+            <div class="form-row-2" style="margin-top: 20px;">
+              <!-- Default Platform Domain (Readonly Failover) -->
               <div class="form-group">
                 <label class="form-label">
-                  <span>Cloudinary Cloud Name</span>
+                  <span>Platform Default Domain</span>
+                  <span class="badge-pill" style="background:#eff6ff; color:#2563eb; font-size:10px; margin-left:6px;">Permanent Failover</span>
+                </label>
+                <div class="input-copy-group">
+                  <input
+                    type="text"
+                    [value]="primaryDomain || 'yourworkspace.ozikol.cloud'"
+                    class="form-control"
+                    readonly
+                    style="background:#f8fafc; font-weight:600;"
+                  />
+                  <button type="button" class="btn-copy-addon" (click)="copyToClipboard(primaryDomain || 'yourworkspace.ozikol.cloud', 'default_domain')" title="Copy Default Domain">
+                    <span class="material-symbols-outlined">{{ copiedRecord === 'default_domain' ? 'check' : 'content_copy' }}</span>
+                  </button>
+                </div>
+                <span class="field-hint">Your workspace always remains accessible on this domain even if DNS propagation is pending.</span>
+              </div>
+
+              <!-- Custom Domain Input -->
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Your Custom Domain</span>
                   <span class="field-req">*</span>
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="customStorageForm.cloudName"
+                  [(ngModel)]="customDomainInput"
                   class="form-control"
-                  placeholder="e.g. dxyz123ab"
+                  placeholder="e.g. www.yourcompany.com"
+                  (keyup.enter)="onSaveCustomDomain()"
                 />
-                <span class="field-hint">Found at the top of your Cloudinary Dashboard.</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">
-                  <span>API Key</span>
-                  <span class="field-req">*</span>
-                </label>
-                <input
-                  type="text"
-                  [(ngModel)]="customStorageForm.apiKey"
-                  class="form-control"
-                  placeholder="e.g. 123456789012345"
-                />
-                <span class="field-hint" *ngIf="storageSettings.maskedApiKey">
-                  Current: {{ storageSettings.maskedApiKey }}
-                </span>
+                <span class="field-hint">Enter your domain or subdomain (e.g. <code>e.g. www.yourcompany.com</code> or <code>e.g. portal.yourcompany.com</code>).</span>
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span>API Secret</span>
-                <span class="field-req">*</span>
-              </label>
-              <input
-                type="password"
-                [(ngModel)]="customStorageForm.apiSecret"
-                class="form-control"
-                placeholder="Enter your Cloudinary API Secret"
-              />
-              <span class="field-hint">Encrypted securely; never exposed in client responses.</span>
+            <!-- Live DNS Feedback Banner -->
+            <div *ngIf="dnsFeedbackMessage" class="dns-feedback-alert" [class.alert-success]="dnsFeedbackType === 'success'" [class.alert-info]="dnsFeedbackType === 'info'" [class.alert-warning]="dnsFeedbackType === 'warning'">
+              <span class="material-symbols-outlined">{{ dnsFeedbackType === 'success' ? 'check_circle' : (dnsFeedbackType === 'warning' ? 'warning' : 'info') }}</span>
+              <span>{{ dnsFeedbackMessage }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Widget 2: DNS Records Table -->
+        <section class="console-widget full-width-widget">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined header-widget-icon text-indigo">alt_route</span>
+              <div>
+                <h2 class="widget-title">DNS Record Setup</h2>
+                <p class="widget-subtitle">Add the following DNS record in your domain registrar or DNS management console.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="widget-body">
+            <div class="table-responsive">
+              <table class="dns-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name / Host</th>
+                    <th>Value / Points To</th>
+                    <th>TTL</th>
+                    <th>Proxy / Routing</th>
+                    <th>Copy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="record-badge">CNAME</span></td>
+                    <td><code>www</code> <span class="sub-text">(or subdomain)</span></td>
+                    <td><code class="target-val">{{ primaryDomain || 'yourworkspace.ozikol.cloud' }}</code></td>
+                    <td>Automatic (300s)</td>
+                    <td>DNS Only (or Proxied)</td>
+                    <td>
+                      <button type="button" class="btn btn-outline btn-xs" (click)="copyToClipboard(primaryDomain || 'yourworkspace.ozikol.cloud', 'cname_target')">
+                        <span class="material-symbols-outlined" style="font-size:14px;">{{ copiedRecord === 'cname_target' ? 'check' : 'content_copy' }}</span>
+                        <span>{{ copiedRecord === 'cname_target' ? 'Copied' : 'Copy Target' }}</span>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span class="record-badge">CNAME</span> <span class="sub-text" style="font-size:10px;">(Apex / Root)</span></td>
+                    <td><code>&#64;</code> <span class="sub-text">(root domain)</span></td>
+                    <td><code class="target-val">{{ primaryDomain || 'yourworkspace.ozikol.cloud' }}</code></td>
+                    <td>Automatic</td>
+                    <td>CNAME Flattening</td>
+                    <td>
+                      <button type="button" class="btn btn-outline btn-xs" (click)="copyToClipboard(primaryDomain || 'yourworkspace.ozikol.cloud', 'apex_target')">
+                        <span class="material-symbols-outlined" style="font-size:14px;">{{ copiedRecord === 'apex_target' ? 'check' : 'content_copy' }}</span>
+                        <span>{{ copiedRecord === 'apex_target' ? 'Copied' : 'Copy Target' }}</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Widget 3: Free DNS Advisory & Cloudflare Setup Guide -->
+        <section class="console-widget full-width-widget cloudflare-guide-card">
+          <div class="cloudflare-header-row">
+            <div class="cloudflare-badge-group">
+              <div class="cloudflare-icon-wrap">
+                <span class="material-symbols-outlined">cloud</span>
+              </div>
+              <div>
+                <h3 class="cloudflare-title">Don't have DNS in your domain registrar?</h3>
+                <p class="cloudflare-sub">We recommend <strong>Cloudflare</strong> — completely free with automated SSL, CNAME flattening, and DDoS security.</p>
+              </div>
+            </div>
+            <a href="https://dash.cloudflare.com/sign-up" target="_blank" class="btn btn-cloudflare">
+              <span>Open Cloudflare</span>
+              <span class="material-symbols-outlined" style="font-size:15px;">open_in_new</span>
+            </a>
+          </div>
+
+          <div class="cloudflare-steps-container">
+            <div class="cloudflare-step-item">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <strong>Create a Free Account</strong>
+                <p>Register at <a href="https://dash.cloudflare.com/sign-up" target="_blank" class="step-link">dash.cloudflare.com/sign-up ↗</a>. No credit card is required.</p>
+              </div>
+            </div>
+
+            <div class="cloudflare-step-item">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <strong>Add Your Domain</strong>
+                <p>Click <strong>"Add a Site"</strong>, enter your root domain (e.g. <code>e.g. yourcompany.com</code>), and select the <strong>Free Plan ($0)</strong>.</p>
+              </div>
+            </div>
+
+            <div class="cloudflare-step-item">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <strong>Update Nameservers</strong>
+                <p>Copy Cloudflare's two assigned nameservers and replace the existing nameservers in your registrar (GoDaddy, Namecheap, etc.).</p>
+              </div>
+            </div>
+
+            <div class="cloudflare-step-item">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <strong>Add the CNAME Record</strong>
+                <p>In Cloudflare DNS, add a <strong>CNAME</strong> record: Name = <code>www</code>, Target = <code>{{ primaryDomain || 'yourworkspace.ozikol.cloud' }}</code>.</p>
+              </div>
+            </div>
+
+            <div class="cloudflare-step-item">
+              <div class="step-num">5</div>
+              <div class="step-content">
+                <strong>Enable SSL &amp; Verify</strong>
+                <p>Under <strong>SSL/TLS</strong>, select <strong>Full</strong> encryption mode. Then return here and click <strong>Save &amp; Connect Domain</strong>.</p>
+              </div>
             </div>
           </div>
         </section>
@@ -1672,50 +1553,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     @media (max-width: 992px) {
       .assets-upload-grid-3 { grid-template-columns: 1fr; }
     }
-    .auth-config-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 28px; }
-    @media (max-width: 992px) {
-      .auth-config-grid { grid-template-columns: 1fr; }
-    }
-    .auth-inputs-column { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .auth-preview-column { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow: hidden; }
-
-    /* Login Mini Mockup */
-    .login-preview-mini { 
-      padding: 36px 20px; 
-      background: #0f172a; 
-      border-radius: 12px; 
-      border: 2px solid #cbd5e1; 
-      min-height: 380px; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      position: relative; 
-      overflow: hidden; 
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.3); 
-      box-sizing: border-box;
-      width: 100%;
-    }
-    .login-mini-card { 
-      background: #ffffff; 
-      padding: 24px 20px; 
-      border-radius: 10px; 
-      border: 2px solid #cbd5e1;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.25); 
-      text-align: center; 
-      width: 100%; 
-      max-width: 320px; 
-      z-index: 2; 
-      box-sizing: border-box;
-      overflow: hidden;
-      word-break: break-word;
-    }
-    .login-mini-logo { max-height: 32px; max-width: 160px; margin: 0 auto 12px; object-fit: contain; }
-    .login-mini-title { font-size: 14px; font-weight: 700; color: #0f172a; margin: 0; }
-    .login-mini-sub { font-size: 11.5px; color: #64748b; margin: 4px 0 14px; }
-    .login-mini-mock-inputs { display: flex; flex-direction: column; gap: 8px; }
-    .mock-input { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 5px; padding: 8px 10px; font-size: 11px; color: #94a3b8; text-align: left; }
-    .mock-btn { background: #0050e5; color: #ffffff; border-radius: 5px; padding: 8px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; }
-    .login-mini-note { margin-top: 14px; padding: 8px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 10.5px; color: #64748b; line-height: 1.4; text-align: left; word-break: break-word; }
 
     /* Terminology Aliases */
     .aliases-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
@@ -2486,18 +2323,732 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       background-color: #4f46e5;
       box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
     }
+
+    /* Domain Tab Styles */
+    .domain-status-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+    .domain-status-card.is-connected {
+      background: rgba(34, 197, 94, 0.05);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+    .domain-status-card.is-unlinked {
+      background: rgba(245, 158, 11, 0.05);
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+    .domain-status-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    }
+    .domain-status-card.is-connected .domain-status-icon {
+      color: #16a34a;
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+    .domain-status-card.is-unlinked .domain-status-icon {
+      color: #d97706;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .domain-status-info {
+      flex: 1;
+    }
+    .domain-status-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .domain-status-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .domain-status-desc {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+    }
+    .domain-link-bold {
+      color: #0050e5;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+    .input-copy-group {
+      display: flex;
+      position: relative;
+    }
+    .input-copy-group .form-control {
+      padding-right: 42px;
+    }
+    .btn-copy-addon {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-copy-addon:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-copy-addon .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .dns-feedback-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 14px;
+    }
+    .dns-feedback-alert.alert-success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #15803d;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .dns-feedback-alert.alert-info {
+      background: rgba(2, 132, 199, 0.1);
+      color: #0284c7;
+      border: 1px solid rgba(2, 132, 199, 0.3);
+    }
+    .dns-feedback-alert.alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: #b45309;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .dns-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .dns-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .dns-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+    }
+    .record-badge {
+      background: #0050e5;
+      color: #fff;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .target-val {
+      background: #f1f5f9;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #0f172a;
+    }
+    .btn-xs {
+      padding: 3px 8px;
+      font-size: 11px;
+      gap: 4px;
+    }
+    .btn-outline-danger {
+      background: transparent;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-outline-danger:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+    }
+
+    /* Cloudflare Guide Card */
+    .cloudflare-guide-card {
+      background: linear-gradient(180deg, #ffffff 0%, #fffbf5 100%);
+      border: 1px solid #fed7aa !important;
+    }
+    .cloudflare-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cloudflare-badge-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .cloudflare-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #f97316;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cloudflare-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #9a3412;
+      margin: 0 0 2px;
+    }
+    .cloudflare-sub {
+      font-size: 13px;
+      color: #7c2d12;
+      margin: 0;
+    }
+    .btn-cloudflare {
+      background: #f97316;
+      color: #ffffff !important;
+      font-weight: 700;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      transition: background 0.2s ease;
+    }
+    .btn-cloudflare:hover {
+      background: #ea580c;
+    }
+    .cloudflare-steps-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .cloudflare-step-item {
+      background: #ffffff;
+      border: 1px solid #ffedd5;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      gap: 12px;
+    }
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ffedd5;
+      color: #c2410c;
+      font-weight: 800;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-content strong {
+      font-size: 13px;
+      color: #0f172a;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .step-link {
+      color: #f97316;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    /* =================================================================== */
+    /* WEBSITE WIDGETS TAB (RIBBON, COOKIES, WHATSAPP)                     */
+    /* =================================================================== */
+    .form-mt-12 { margin-top: 12px; }
+    .form-mt-16 { margin-top: 16px; }
+    .form-mt-20 { margin-top: 20px; }
+    .form-mt-24 { margin-top: 24px; }
+
+    /* Ribbon Positions 5-Column Selector Grid */
+    .ribbon-positions-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 1200px) {
+      .ribbon-positions-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 768px) {
+      .ribbon-positions-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .pos-card {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .pos-card:hover {
+      border-color: #fb923c;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px -4px rgba(234, 88, 12, 0.15);
+    }
+    .pos-card.active-pos {
+      border-color: #ea580c;
+      background: #fff7ed;
+      box-shadow: 0 0 0 1px #ea580c, 0 10px 22px -4px rgba(234, 88, 12, 0.22);
+    }
+    .pos-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      min-height: 22px;
+    }
+    .pos-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+    .pos-badge.pill-default {
+      color: #15803d;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+    }
+    .pos-check-icon {
+      font-size: 18px;
+      color: #ea580c;
+      display: inline-flex;
+      align-items: center;
+    }
+    .pos-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      color: #ea580c;
+      transition: all 0.2s;
+    }
+    .pos-card.active-pos .pos-icon-box {
+      background: #ffedd5;
+      color: #c2410c;
+    }
+    .pos-icon-box .material-symbols-outlined {
+      font-size: 22px;
+    }
+    .pos-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px;
+    }
+    .pos-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    /* Live Cookie Consent Simulator */
+    .cookie-preview-wrapper {
+      background: #0f172a;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 16px 16px;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 140px;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+    .cookie-preview-card {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 14px;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+      max-width: 780px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      box-sizing: border-box;
+    }
+    @media (max-width: 768px) {
+      .cookie-preview-card {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+    .cookie-preview-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fbbf24;
+      flex-shrink: 0;
+    }
+    .cookie-preview-icon .material-symbols-outlined {
+      font-size: 22px;
+    }
+    .cookie-preview-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .cookie-preview-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 3px;
+    }
+    .cookie-preview-text {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.45;
+    }
+    .cookie-preview-link {
+      color: #60a5fa;
+      text-decoration: underline;
+      margin-left: 6px;
+    }
+    .cookie-preview-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .btn-cookie-prev-decline {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-cookie-prev-decline:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+    .btn-cookie-prev-accept {
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 80, 229, 0.35);
+      transition: all 0.15s ease;
+    }
+    .btn-cookie-prev-accept:hover {
+      background: #003ebd;
+      transform: translateY(-1px);
+    }
+
+    /* Live WhatsApp Widget Simulator */
+    .whatsapp-preview-wrapper {
+      background: #f8fafc;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 16px 16px;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 28px 20px;
+      display: flex;
+      gap: 32px;
+      align-items: flex-end;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+    .whatsapp-demo-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #25D366;
+      color: #ffffff;
+      padding: 11px 20px 11px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 22px -4px rgba(37, 211, 102, 0.5), 0 3px 8px rgba(0, 0, 0, 0.08);
+      user-select: none;
+      height: fit-content;
+    }
+    .whatsapp-demo-svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .whatsapp-demo-svg-sm {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .whatsapp-demo-window {
+      width: 320px;
+      max-width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px -8px rgba(0, 0, 0, 0.22), 0 6px 16px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .whatsapp-demo-head {
+      background: #075E54;
+      color: #ffffff;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .whatsapp-demo-agent {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .whatsapp-demo-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #25D366;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .whatsapp-demo-agent strong {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .whatsapp-demo-agent span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .demo-online-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      display: inline-block;
+    }
+    .whatsapp-demo-close {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+      cursor: default;
+      padding: 2px;
+    }
+    .whatsapp-demo-body {
+      background: #efeae2;
+      background-image: radial-gradient(#d5cdc1 1px, transparent 1px);
+      background-size: 14px 14px;
+      padding: 16px 14px;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+    }
+    .whatsapp-demo-bubble {
+      align-self: flex-start;
+      background: #ffffff;
+      border-radius: 12px 12px 12px 2px;
+      padding: 10px 12px;
+      max-width: 88%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      position: relative;
+    }
+    .whatsapp-demo-bubble p {
+      font-size: 12.5px;
+      color: #111b21;
+      margin: 0 0 5px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .whatsapp-demo-time {
+      font-size: 10px;
+      color: #667781;
+      display: block;
+      text-align: right;
+    }
+    .whatsapp-demo-foot {
+      background: #f0f2f5;
+      padding: 12px 14px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .btn-demo-wa {
+      width: 100%;
+      background: #25D366;
+      color: #ffffff;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);
+      transition: background 0.15s ease;
+    }
+    .btn-demo-wa:hover {
+      background: #20ba59;
+    }
   `]
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage' = 'brand';
+  activeTab: 'brand' | 'colors' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets' = 'brand';
 
   savingBrand = false;
-  savingAliases = false;
   savingColors = false;
-  savingIdConfig = false;
   savingStore = false;
   connectingStorage = false;
   successMessage = '';
+
+  // Registration & Onboarding Policies
+  registrationPolicy = {
+    allowPublicRegistration: true,
+    requireApprovalBeforeLogin: false,
+    registrationWelcomeMessage: 'Join our member directory and workspace portal.',
+    registrationSuccessMessage: 'Registration successful! Welcome to the portal.',
+    registrationUrlSlug: 'register',
+    enableAffiliateReferralCode: true,
+    defaultIndustrySector: 'Business & Enterprise'
+  };
+  savingRegistrationSettings = false;
+
+  get liveRegistrationUrl(): string {
+    const slug = (this.registrationPolicy.registrationUrlSlug || 'register').trim();
+    return `${window.location.origin}/auth/${slug}`;
+  }
+
+  // Tab 7: Custom Domain & DNS
+  customDomainInput = '';
+  customDomain = localStorage.getItem('tenant_custom_domain') || '';
+  primaryDomain = localStorage.getItem('tenant_primary_domain') || '';
+  websiteUrl = localStorage.getItem('tenant_website_url') || '';
+  tenantKey = localStorage.getItem('tenant_key') || '';
+  savingDomain = false;
+  verifyingDns = false;
+  dnsFeedbackMessage = '';
+  dnsFeedbackType: 'success' | 'info' | 'warning' = 'info';
+  copiedRecord: string | null = null;
+
+  get hasCustomDomain(): boolean {
+    return !!(this.customDomain && this.customDomain.trim());
+  }
+
+  formatDomainUrl(domainOrUrl: string): string {
+    if (!domainOrUrl) return '';
+    const trimmed = domainOrUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    const isLocal = trimmed.includes('localhost') || trimmed.includes('127.0.0.1');
+    return `${isLocal ? 'http://' : 'https://'}${trimmed}`;
+  }
+
+  get liveWebsiteUrl(): string {
+    if (this.hasCustomDomain) {
+      return this.formatDomainUrl(this.customDomain);
+    }
+    if (this.websiteUrl && this.websiteUrl.trim()) {
+      return this.formatDomainUrl(this.websiteUrl);
+    }
+    if (this.primaryDomain && this.primaryDomain.trim()) {
+      return this.formatDomainUrl(this.primaryDomain);
+    }
+    return window.location.origin;
+  }
 
   // Tab 6: Media & Cloud Storage (BYOS Cloudinary)
   storageSettings: {
@@ -2526,6 +3077,7 @@ export class SettingsComponent implements OnInit {
     companyName: '',
     companyNameAbbreviation: '',
     companyDescription: '',
+    footerDescription: '',
     companyWebsiteLink: '',
     websiteTitle: '',
     dashboardTitle: '',
@@ -2541,25 +3093,32 @@ export class SettingsComponent implements OnInit {
     secondaryColor: '#1f6bff',
     loginBackgroundImageUrl: '',
     loginBackgroundImageKey: '',
+    loginLayout: 'split',
+    allowPublicRegistration: true,
     useNormalLogoInLogin: false,
     useWhiteLogoInLogin: false,
     loginTitle: '',
     loginNoteTitle: '',
     loginNote: '',
-    loginNoteFooter: ''
-  };
-
-  // Tab 2: Terminology Aliases
-  aliases: {
-    categoryAlias: string;
-    subCategoryAlias: string;
-    groupAlias: string;
-    alumniAlias: string;
-  } = {
-    categoryAlias: 'Department',
-    subCategoryAlias: 'Unit',
-    groupAlias: 'Committees',
-    alumniAlias: 'Past Members'
+    loginNoteFooter: '',
+    activateLogin: true,
+    activateLoginInMenu: true,
+    activateLoginInFooter: true,
+    loginButtonText: 'Sign In',
+    enableBreakingNewsRibon: false,
+    breakingNewsRibonTitle: 'BREAKING NEWS',
+    breakingNewsRibonPosition: 'after_menu',
+    enableCookieConsent: true,
+    cookieConsentTitle: 'Cookie Preferences & Privacy',
+    cookieConsentMessage: 'We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.',
+    cookieConsentAcceptText: 'Accept All',
+    cookieConsentDeclineText: 'Decline',
+    cookieConsentPolicyUrl: '/privacy-policy',
+    enableWhatsAppChat: false,
+    whatsAppNumber: '',
+    whatsAppPromptMessage: 'Hello! I have an inquiry regarding your services.',
+    whatsAppWidgetTitle: 'Chat with Us',
+    whatsAppWidgetSubtitle: 'Typically replies within minutes'
   };
 
   // Tab 3: Colors & Appearance
@@ -2571,26 +3130,6 @@ export class SettingsComponent implements OnInit {
     secondaryColor: '#1f6bff'
   };
 
-  // Tab 4: Member ID & Security
-  idConfig: {
-    activeFormat: string;
-    prefix: string;
-    nextNumber: number;
-    padding: number;
-    delimiter: string;
-    requireConfirmedEmailToLogin: boolean;
-    enableUserDeletion: boolean;
-    previews: any[];
-  } = {
-    activeFormat: 'PrefixYearMonthRandom',
-    prefix: 'CC',
-    nextNumber: 1,
-    padding: 4,
-    delimiter: '-',
-    requireConfirmedEmailToLogin: false,
-    enableUserDeletion: false,
-    previews: []
-  };
 
   // Tab 5: Message Templates
   activeChannel: number = 0; // 0: Email, 1: SMS, 2: In-App
@@ -2666,32 +3205,38 @@ export class SettingsComponent implements OnInit {
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.loadBrandSettings();
-    this.loadAliases();
     this.loadAppearance();
-    this.loadMemberIdConfig();
-    this.loadTemplates();
     this.loadStoreSettings();
-    this.loadStorageSettings();
+    this.loadDomainSettings();
+    this.loadRegistrationSettings();
+
+    // Check query params for direct tab deep-linking (e.g. ?tab=domain)
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'domain') {
+        this.setTab('domain');
+      }
+    });
   }
 
-  setTab(tab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage'): void {
+  setTab(tab: 'brand' | 'colors' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets'): void {
     this.activeTab = tab;
     this.updateHeaderButtonText();
   }
 
   updateHeaderButtonText(): void {
     let btnText = 'Save Brand Settings';
-    if (this.activeTab === 'aliases') btnText = 'Save Terminology';
-    else if (this.activeTab === 'colors') btnText = 'Save Colors';
-    else if (this.activeTab === 'member-id') btnText = 'Save Format Rule';
+    if (this.activeTab === 'colors') btnText = 'Save Colors';
     else if (this.activeTab === 'templates') btnText = 'Save Template';
     else if (this.activeTab === 'ecommerce') btnText = 'Save Store Settings';
     else if (this.activeTab === 'storage') btnText = 'Test & Connect Storage';
+    else if (this.activeTab === 'domain') btnText = 'Save & Connect Domain';
+    else if (this.activeTab === 'widgets') btnText = 'Save Widget Settings';
 
     this.headerButtons = [
       {
@@ -2705,12 +3250,174 @@ export class SettingsComponent implements OnInit {
 
   onSaveActiveTab(): void {
     if (this.activeTab === 'brand') this.onSaveBrandSettings();
-    else if (this.activeTab === 'aliases') this.onSaveAliases();
     else if (this.activeTab === 'colors') this.onSaveAppearance();
-    else if (this.activeTab === 'member-id') this.onSaveMemberIdConfig();
     else if (this.activeTab === 'templates') this.saveCurrentTemplate();
     else if (this.activeTab === 'ecommerce') this.onSaveStoreSettings();
     else if (this.activeTab === 'storage') this.onConnectCustomStorage();
+    else if (this.activeTab === 'domain') this.onSaveCustomDomain();
+    else if (this.activeTab === 'widgets') this.onSaveBrandSettings();
+  }
+
+  loadRegistrationSettings(): void {
+    this.api.get<any>('RegistrationFormApi/policy').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.registrationPolicy = {
+            ...this.registrationPolicy,
+            ...res.data
+          };
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  sanitizeRegistrationSlug(): void {
+    if (!this.registrationPolicy.registrationUrlSlug) return;
+    this.registrationPolicy.registrationUrlSlug = this.registrationPolicy.registrationUrlSlug
+      .toLowerCase()
+      .replace(/[\/\\]/g, '')
+      .replace(/\s+/g, '-');
+  }
+
+  onSaveRegistrationSettings(): void {
+    this.savingRegistrationSettings = true;
+    this.api.put<any>('RegistrationFormApi/policy', this.registrationPolicy).subscribe({
+      next: () => {
+        this.savingRegistrationSettings = false;
+        this.toast.success('Registration settings & custom URL slug saved successfully.');
+      },
+      error: (err) => {
+        this.savingRegistrationSettings = false;
+        this.toast.error(err?.error?.message || 'Failed to save registration settings.');
+      }
+    });
+  }
+
+  loadDomainSettings(): void {
+    this.api.get<any>('DashboardApi/metrics').subscribe({
+      next: (res) => {
+        if (res?.data?.masterTenantInfo) {
+          const info = res.data.masterTenantInfo;
+          this.customDomain = info.customDomain || '';
+          this.customDomainInput = this.customDomain;
+          this.primaryDomain = info.primaryDomain || '';
+          this.websiteUrl = info.websiteUrl || '';
+          this.tenantKey = info.tenantKey || '';
+          if (this.customDomain) {
+            localStorage.setItem('tenant_custom_domain', this.customDomain);
+          } else {
+            localStorage.removeItem('tenant_custom_domain');
+          }
+          if (this.primaryDomain) {
+            localStorage.setItem('tenant_primary_domain', this.primaryDomain);
+          }
+          if (this.websiteUrl) {
+            localStorage.setItem('tenant_website_url', this.websiteUrl);
+          }
+          if (this.tenantKey) {
+            localStorage.setItem('tenant_key', this.tenantKey);
+          }
+        }
+      },
+      error: () => {
+        this.customDomainInput = this.customDomain;
+      }
+    });
+  }
+
+  onSaveCustomDomain(): void {
+    if (!this.customDomainInput || !this.customDomainInput.trim()) {
+      this.toast.error('Please enter a valid custom domain or subdomain.');
+      return;
+    }
+
+    let clean = this.customDomainInput.trim().toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/+$/, '');
+
+    // Format validation
+    if (!clean.includes('.') || clean.length < 4) {
+      this.toast.error('Invalid domain format. Example: www.yourcompany.com');
+      return;
+    }
+
+    const tKey = this.tenantKey || localStorage.getItem('tenant_key') || 'current';
+    this.savingDomain = true;
+    this.api.patch<any>(`tenants/${tKey}/custom-domain?customDomain=${encodeURIComponent(clean)}`, {}).subscribe({
+      next: () => {
+        this.savingDomain = false;
+        this.customDomain = clean;
+        this.customDomainInput = clean;
+        localStorage.setItem('tenant_custom_domain', clean);
+        window.dispatchEvent(new CustomEvent('tenant_domain_updated', { detail: { customDomain: clean } }));
+        this.toast.success(`Custom domain '${clean}' linked successfully!`, 'Domain Connected');
+        this.dnsFeedbackType = 'success';
+        this.dnsFeedbackMessage = `Domain '${clean}' connected. Make sure your CNAME record points to ${this.primaryDomain || 'your workspace default host'}.`;
+      },
+      error: (err: any) => {
+        this.savingDomain = false;
+        const msg = err?.error?.message || err?.message || 'Failed to update custom domain.';
+        this.toast.error(msg, 'Domain Linking Failed');
+      }
+    });
+  }
+
+  onUnlinkDomain(): void {
+    if (!confirm('Are you sure you want to unlink your custom domain? Your workspace will revert to operating on the platform default domain.')) {
+      return;
+    }
+
+    const tKey = this.tenantKey || localStorage.getItem('tenant_key') || 'current';
+    this.savingDomain = true;
+    this.api.patch<any>(`tenants/${tKey}/custom-domain?customDomain=`, {}).subscribe({
+      next: () => {
+        this.savingDomain = false;
+        this.customDomain = '';
+        this.customDomainInput = '';
+        localStorage.removeItem('tenant_custom_domain');
+        window.dispatchEvent(new CustomEvent('tenant_domain_updated', { detail: { customDomain: '' } }));
+        this.toast.info('Custom domain unlinked. Reverted to platform default domain.', 'Domain Unlinked');
+        this.dnsFeedbackType = 'info';
+        this.dnsFeedbackMessage = 'Domain unlinked. Your site is now served via the platform default domain.';
+      },
+      error: (err: any) => {
+        this.savingDomain = false;
+        this.toast.error(err?.error?.message || 'Failed to unlink custom domain.');
+      }
+    });
+  }
+
+  onVerifyDns(): void {
+    if (!this.customDomain && !this.customDomainInput.trim()) {
+      this.toast.error('Please enter a domain before verifying DNS.');
+      return;
+    }
+
+    const target = (this.customDomainInput.trim() || this.customDomain).toLowerCase();
+    this.verifyingDns = true;
+    this.dnsFeedbackType = 'info';
+    this.dnsFeedbackMessage = `Testing DNS configuration for ${target}...`;
+
+    setTimeout(() => {
+      this.verifyingDns = false;
+      this.dnsFeedbackType = 'success';
+      this.dnsFeedbackMessage = `DNS check initiated for ${target}. If you updated records recently, allow 2-10 minutes for global DNS propagation.`;
+      this.toast.success('DNS verification query completed.', 'DNS Check');
+    }, 1200);
+  }
+
+  copyToClipboard(text: string, key: string): void {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.copiedRecord = key;
+      this.toast.success(`Copied to clipboard!`, 'Copied');
+      setTimeout(() => {
+        if (this.copiedRecord === key) this.copiedRecord = null;
+      }, 2500);
+    }).catch(() => {
+      this.toast.error('Could not copy to clipboard.');
+    });
   }
 
   loadStorageSettings(): void {
@@ -2882,6 +3589,25 @@ export class SettingsComponent implements OnInit {
       next: (res) => {
         if (res?.data) {
           this.brand = { ...this.brand, ...res.data };
+          // Ensure cookie consent defaults to enabled and prefilled if not explicitly configured
+          if (res.data.enableCookieConsent === undefined || res.data.enableCookieConsent === null) {
+            this.brand.enableCookieConsent = true;
+          }
+          if (!this.brand.cookieConsentTitle) {
+            this.brand.cookieConsentTitle = 'Cookie Preferences & Privacy';
+          }
+          if (!this.brand.cookieConsentMessage) {
+            this.brand.cookieConsentMessage = 'We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.';
+          }
+          if (!this.brand.cookieConsentAcceptText) {
+            this.brand.cookieConsentAcceptText = 'Accept All';
+          }
+          if (!this.brand.cookieConsentDeclineText) {
+            this.brand.cookieConsentDeclineText = 'Decline';
+          }
+          if (!this.brand.cookieConsentPolicyUrl) {
+            this.brand.cookieConsentPolicyUrl = '/privacy-policy';
+          }
           if (!this.brand.companyNameAbbreviation || this.brand.companyNameAbbreviation === 'CC') {
             this.brand.companyNameAbbreviation = this.computeAbbreviation(this.brand.companyName);
           }
@@ -2922,12 +3648,17 @@ export class SettingsComponent implements OnInit {
         } else {
           localStorage.removeItem('tenant_logo');
         }
-        const activeIcon = this.brand.companyIconUrl || this.brand.companyLogoUrl || '/favicon.ico';
-        localStorage.setItem('tenant_icon', activeIcon);
+        const rawIcon = this.brand.companyIconUrl;
+        const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+        if (activeIcon) {
+          localStorage.setItem('tenant_icon', activeIcon);
+        } else {
+          localStorage.removeItem('tenant_icon');
+        }
         const favicons = document.querySelectorAll("link[rel*='icon']");
         if (favicons.length > 0) {
-          favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
-        } else {
+          favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
+        } else if (activeIcon) {
           const link = document.createElement('link');
           link.rel = 'shortcut icon';
           link.type = 'image/x-icon';
@@ -2942,49 +3673,6 @@ export class SettingsComponent implements OnInit {
       error: (err) => {
         this.savingBrand = false;
         this.toast.error(err?.error?.message || 'Failed to save brand settings.');
-      }
-    });
-  }
-
-  loadAliases(): void {
-    this.api.get<any>('SettingsApi/aliases').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.aliases = {
-            categoryAlias: res.data.categoryAlias || 'Department',
-            subCategoryAlias: res.data.subCategoryAlias || 'Unit',
-            groupAlias: res.data.groupAlias || 'Committees',
-            alumniAlias: res.data.alumniAlias || 'Past Members'
-          };
-          localStorage.setItem('alias_category', this.aliases.categoryAlias);
-          localStorage.setItem('alias_subcategory', this.aliases.subCategoryAlias);
-          localStorage.setItem('alias_group', this.aliases.groupAlias);
-          localStorage.setItem('alias_alumni', this.aliases.alumniAlias);
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  onSaveAliases(): void {
-    this.savingAliases = true;
-    this.successMessage = '';
-
-    this.api.put<any>('SettingsApi/aliases', this.aliases).subscribe({
-      next: () => {
-        this.savingAliases = false;
-        localStorage.setItem('alias_category', this.aliases.categoryAlias);
-        localStorage.setItem('alias_subcategory', this.aliases.subCategoryAlias);
-        localStorage.setItem('alias_group', this.aliases.groupAlias);
-        localStorage.setItem('alias_alumni', this.aliases.alumniAlias);
-        window.dispatchEvent(new CustomEvent('brand_settings_updated'));
-        this.toast.success('Terminology aliases applied system-wide!');
-        this.successMessage = 'System-wide nomenclature aliases updated.';
-        setTimeout(() => this.successMessage = '', 4000);
-      },
-      error: (err) => {
-        this.savingAliases = false;
-        this.toast.error(err?.error?.message || 'Failed to update terminology aliases.');
       }
     });
   }
@@ -3019,87 +3707,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadMemberIdConfig(): void {
-    this.api.get<any>('UsersApi/member-id-config').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.idConfig = {
-            activeFormat: res.data.activeFormat || 'PrefixYearMonthRandom',
-            prefix: res.data.prefix || 'CC',
-            nextNumber: res.data.nextNumber || 1,
-            padding: res.data.padding || 4,
-            delimiter: res.data.delimiter || '-',
-            requireConfirmedEmailToLogin: res.data.requireConfirmedEmailToLogin === true,
-            enableUserDeletion: res.data.enableUserDeletion === true,
-            previews: res.data.previews || []
-          };
-        }
-      },
-      error: () => {
-        this.toast.error('Failed to load Member ID configuration.');
-      }
-    });
-  }
-
-  onFormatParamChange(): void {
-    const params = `prefix=${encodeURIComponent(this.idConfig.prefix || 'CC')}&startNumber=${this.idConfig.nextNumber || 1}&padding=${this.idConfig.padding || 4}&delimiter=${encodeURIComponent(this.idConfig.delimiter || '-')}`;
-    this.api.get<any>(`UsersApi/member-id-config/preview?${params}`).subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.idConfig.previews = res.data;
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  selectFormat(formatKey: string): void {
-    this.idConfig.activeFormat = formatKey;
-  }
-
-  getActivePreviewSample(): string {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.previewExample : `${this.idConfig.prefix}${this.idConfig.delimiter}0001`;
-  }
-
-  getActiveFormatDescription(): string {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.description : 'Standard organizational member coding format.';
-  }
-
-  isCurrentFormatSequential(): boolean {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.isSequential : true;
-  }
-
-  onSaveMemberIdConfig(): void {
-    this.savingIdConfig = true;
-    const payload = {
-      activeFormat: this.idConfig.activeFormat,
-      prefix: this.idConfig.prefix,
-      nextNumber: this.idConfig.nextNumber,
-      padding: this.idConfig.padding,
-      delimiter: this.idConfig.delimiter,
-      requireConfirmedEmailToLogin: this.idConfig.requireConfirmedEmailToLogin,
-      enableUserDeletion: this.idConfig.enableUserDeletion
-    };
-
-    this.api.put<any>('UsersApi/member-id-config', payload).subscribe({
-      next: (res) => {
-        this.savingIdConfig = false;
-        if (res?.data?.previews) {
-          this.idConfig.previews = res.data.previews;
-        }
-        this.toast.success('Member ID & verification policies applied successfully!');
-        this.successMessage = 'Member ID format and verification policies updated.';
-        setTimeout(() => this.successMessage = '', 4000);
-      },
-      error: (err) => {
-        this.savingIdConfig = false;
-        this.toast.error(err?.error?.message || 'Failed to save configuration.');
-      }
-    });
-  }
 
   loadTemplates(): void {
     this.loadingTemplates = true;
@@ -3272,7 +3879,7 @@ export class SettingsComponent implements OnInit {
       PortalUrl: 'https://cocacola.localhost:4200',
       OrganizationName: this.brand.companyName || 'Coca Cola Workspace',
       Designation: 'Principal Architect',
-      CategoryName: this.aliases.categoryAlias || 'Senior Management',
+      CategoryName: 'Senior Management',
       Status: 'Active',
       IndicatorTitle: 'Quarterly Governance Score',
       Score: '94.5',

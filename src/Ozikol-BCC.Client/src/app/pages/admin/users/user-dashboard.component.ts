@@ -4,21 +4,23 @@ import { RouterModule } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../../../core/services/api.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-user-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="user-dashboard-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="USER MANAGEMENT & DIRECTORY"
+        [eyebrow]="'dashboard.eyebrow' | translate:'USER MANAGEMENT & DIRECTORY'"
         icon="groups"
-        title="Member Management & Directory Hub"
-        subtitle="Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs."
+        [title]="'dashboard.title' | translate:'Member Management & Directory Hub'"
+        [subtitle]="'dashboard.subtitle' | translate:'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -28,57 +30,57 @@ Chart.register(...registerables);
       <!-- =================================================================== -->
       <div class="row-1-metrics-grid">
         <!-- 1. Total Members -->
-        <a routerLink="/admin/users/list" class="stat-card clickable" title="View All Members in Directory">
+        <a routerLink="/users/console/list" class="stat-card clickable" [title]="'dashboard.view_all' | translate:'View All'">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-blue">
               <span class="material-symbols-outlined">groups</span>
             </div>
             <div class="stat-details">
-              <span class="stat-label">Total Members</span>
+              <span class="stat-label">{{ 'dashboard.total_members' | translate:'Total Members' }}</span>
               <div class="stat-value">{{ stats?.totalMembers || 0 }}</div>
-              <span class="stat-subtext">Registered Profiles • View All &rarr;</span>
+              <span class="stat-subtext">{{ 'dashboard.registered_profiles' | translate:'Registered Profiles' }} • {{ 'dashboard.view_all' | translate:'View All' }} &rarr;</span>
             </div>
           </div>
         </a>
 
         <!-- 2. Active Accounts -->
-        <a routerLink="/admin/users/list" [queryParams]="{ status: 'Active' }" class="stat-card clickable" title="Filter Active Members">
+        <a routerLink="/users/console/list" [queryParams]="{ status: 'Active' }" class="stat-card clickable" [title]="'dashboard.filter' | translate:'Filter'">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-green">
               <span class="material-symbols-outlined">verified_user</span>
             </div>
             <div class="stat-details">
-              <span class="stat-label">Active Accounts</span>
+              <span class="stat-label">{{ 'dashboard.active_accounts' | translate:'Active Accounts' }}</span>
               <div class="stat-value text-green">{{ stats?.activeMembers || 0 }}</div>
-              <span class="stat-subtext">Good Standing • Filter &rarr;</span>
+              <span class="stat-subtext">{{ 'dashboard.good_standing' | translate:'Good Standing' }} • {{ 'dashboard.filter' | translate:'Filter' }} &rarr;</span>
             </div>
           </div>
         </a>
 
         <!-- 3. Suspicious / Flagged Accounts -->
-        <a routerLink="/admin/users/list" [queryParams]="{ status: 'Suspicious' }" class="stat-card clickable" [class.card-alert]="(stats?.suspiciousAccounts || 0) > 0" title="Inspect Suspicious Accounts">
+        <a routerLink="/users/console/list" [queryParams]="{ status: 'Suspicious' }" class="stat-card clickable" [class.card-alert]="(stats?.suspiciousAccounts || 0) > 0" [title]="'dashboard.filter' | translate:'Filter'">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-rose">
               <span class="material-symbols-outlined">gpp_maybe</span>
             </div>
             <div class="stat-details">
-              <span class="stat-label">Suspicious / Flagged</span>
+              <span class="stat-label">{{ 'dashboard.suspicious_flagged' | translate:'Suspicious / Flagged' }}</span>
               <div class="stat-value text-rose">{{ stats?.suspiciousAccounts || 0 }}</div>
-              <span class="stat-subtext">Lockouts & Logins • Filter &rarr;</span>
+              <span class="stat-subtext">{{ 'dashboard.lockouts_logins' | translate:'Lockouts & Logins' }} • {{ 'dashboard.filter' | translate:'Filter' }} &rarr;</span>
             </div>
           </div>
         </a>
 
         <!-- 4. Suspended Accounts -->
-        <a routerLink="/admin/users/list" [queryParams]="{ status: 'Suspended' }" class="stat-card clickable" title="Filter Suspended Members">
+        <a routerLink="/users/console/list" [queryParams]="{ status: 'Suspended' }" class="stat-card clickable" [title]="'dashboard.filter' | translate:'Filter'">
           <div class="stat-top-row">
             <div class="stat-icon-box bg-amber">
               <span class="material-symbols-outlined">block</span>
             </div>
             <div class="stat-details">
-              <span class="stat-label">Suspended</span>
+              <span class="stat-label">{{ 'dashboard.suspended' | translate:'Suspended' }}</span>
               <div class="stat-value text-amber">{{ stats?.suspendedMembers || 0 }}</div>
-              <span class="stat-subtext">Access Restricted • Filter &rarr;</span>
+              <span class="stat-subtext">{{ 'dashboard.access_restricted' | translate:'Access Restricted' }} • {{ 'dashboard.filter' | translate:'Filter' }} &rarr;</span>
             </div>
           </div>
         </a>
@@ -92,10 +94,10 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Gender Demographic Distribution</h3>
-              <p class="panel-subtitle">Dual roster ratio • Blue (Left) & Pink (Right)</p>
+              <h3>{{ 'dashboard.gender_demographics' | translate:'Gender Demographic Distribution' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.gender_subtitle' | translate:'Dual roster ratio • Blue (Left) & Pink (Right)' }}</p>
             </div>
-            <span class="badge-pill-soft">100% Total Ratio</span>
+            <span class="badge-pill-soft">{{ 'dashboard.ratio_100' | translate:'100% Total Ratio' }}</span>
           </div>
 
           <div class="gender-widget-body">
@@ -103,19 +105,19 @@ Chart.register(...registerables);
               <div class="gender-side male-side">
                 <span class="gender-icon-pill bg-cyan-soft"><span class="material-symbols-outlined">male</span></span>
                 <div>
-                  <div class="gender-count-label">Male: <strong>{{ stats?.maleMembers || 0 }}</strong></div>
+                  <div class="gender-count-label">{{ 'dashboard.male' | translate:'Male' }}: <strong>{{ stats?.maleMembers || 0 }}</strong></div>
                   <div class="gender-percentage text-cyan">{{ getGenderSplit().malePercent }}%</div>
                 </div>
               </div>
 
               <div class="gender-mid-label">
                 <span class="material-symbols-outlined mid-icon">transgender</span>
-                <span>Roster Split</span>
+                <span>{{ 'dashboard.roster_split' | translate:'Roster Split' }}</span>
               </div>
 
               <div class="gender-side female-side">
                 <div style="text-align: right;">
-                  <div class="gender-count-label">Female: <strong>{{ stats?.femaleMembers || 0 }}</strong></div>
+                  <div class="gender-count-label">{{ 'dashboard.female' | translate:'Female' }}: <strong>{{ stats?.femaleMembers || 0 }}</strong></div>
                   <div class="gender-percentage text-pink">{{ getGenderSplit().femalePercent }}%</div>
                 </div>
                 <span class="gender-icon-pill bg-pink-soft"><span class="material-symbols-outlined">female</span></span>
@@ -125,13 +127,13 @@ Chart.register(...registerables);
             <!-- Dual 100% Meeting in the middle bar -->
             <div class="dual-progress-container">
               <div class="dual-progress-track">
-                <div class="dual-bar-male" [style.width.%]="getGenderSplit().malePercent" [title]="'Male: ' + (stats?.maleMembers || 0) + ' (' + getGenderSplit().malePercent + '%)'"></div>
-                <div class="dual-bar-female" [style.width.%]="getGenderSplit().femalePercent" [title]="'Female: ' + (stats?.femaleMembers || 0) + ' (' + getGenderSplit().femalePercent + '%)'"></div>
+                <div class="dual-bar-male" [style.width.%]="getGenderSplit().malePercent" [title]="('dashboard.male' | translate:'Male') + ': ' + (stats?.maleMembers || 0) + ' (' + getGenderSplit().malePercent + '%)'"></div>
+                <div class="dual-bar-female" [style.width.%]="getGenderSplit().femalePercent" [title]="('dashboard.female' | translate:'Female') + ': ' + (stats?.femaleMembers || 0) + ' (' + getGenderSplit().femalePercent + '%)'"></div>
               </div>
               <div class="dual-progress-footer">
-                <span>♂ Male {{ getGenderSplit().malePercent }}%</span>
-                <span class="middle-marker">100% Total Representation</span>
-                <span>Female {{ getGenderSplit().femalePercent }}% ♀</span>
+                <span>♂ {{ 'dashboard.male' | translate:'Male' }} {{ getGenderSplit().malePercent }}%</span>
+                <span class="middle-marker">{{ 'dashboard.total_representation' | translate:'100% Total Representation' }}</span>
+                <span>{{ 'dashboard.female' | translate:'Female' }} {{ getGenderSplit().femalePercent }}% ♀</span>
               </div>
             </div>
           </div>
@@ -141,25 +143,25 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Membership Plan & Capacity Quota</h3>
-              <p class="panel-subtitle">Tenant platform subscription and seat limit allocation</p>
+              <h3>{{ 'dashboard.membership_quota' | translate:'Membership Plan & Capacity Quota' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.membership_subtitle' | translate:'Tenant platform subscription and seat limit allocation' }}</p>
             </div>
-            <span class="badge-plan-tier">{{ stats?.planQuota?.planType || 'Starter' }} Tier</span>
+            <span class="badge-plan-tier">{{ stats?.planQuota?.planType || 'Starter' }} {{ 'dashboard.tier' | translate:'Tier' }}</span>
           </div>
 
           <div class="quota-widget-body">
             <div class="quota-top-row">
               <div class="quota-metric">
-                <span class="quota-label">Allocated Seats</span>
+                <span class="quota-label">{{ 'dashboard.allocated_seats' | translate:'Allocated Seats' }}</span>
                 <div class="quota-value">
                   <span>{{ stats?.planQuota?.usedSeats || 0 }}</span>
                   <span class="quota-max"> / {{ stats?.planQuota?.isUnlimited ? '∞' : (stats?.planQuota?.maximumUsers || 100) }}</span>
                 </div>
               </div>
               <div class="quota-remaining-box">
-                <span class="stat-label">Remaining Allowance</span>
+                <span class="stat-label">{{ 'dashboard.remaining_allowance' | translate:'Remaining Allowance' }}</span>
                 <div class="remaining-value text-green">
-                  {{ stats?.planQuota?.isUnlimited ? 'Unlimited Seats' : (stats?.planQuota?.remainingSeats + ' Seats Left') }}
+                  {{ stats?.planQuota?.isUnlimited ? ('dashboard.unlimited_seats' | translate:'Unlimited Seats') : (stats?.planQuota?.remainingSeats + ' ' + ('dashboard.seats_left' | translate:'Seats Left')) }}
                 </div>
               </div>
             </div>
@@ -170,8 +172,8 @@ Chart.register(...registerables);
                 <div class="quota-bar" [class.bg-green]="(stats?.planQuota?.seatUsagePercent || 0) < 80" [class.bg-amber]="(stats?.planQuota?.seatUsagePercent || 0) >= 80 && (stats?.planQuota?.seatUsagePercent || 0) < 95" [class.bg-rose]="(stats?.planQuota?.seatUsagePercent || 0) >= 95" [style.width.%]="stats?.planQuota?.isUnlimited ? 5 : (stats?.planQuota?.seatUsagePercent || 0)"></div>
               </div>
               <div class="quota-footer-row">
-                <span>{{ stats?.planQuota?.isUnlimited ? 'Enterprise Unlimited' : (stats?.planQuota?.seatUsagePercent + '% Capacity Used') }}</span>
-                <span class="quota-subtext">{{ stats?.planQuota?.isUnlimited ? 'Full Platform Unrestricted' : 'Hard Cap Enforced by Central Admin' }}</span>
+                <span>{{ stats?.planQuota?.isUnlimited ? ('dashboard.enterprise_unlimited' | translate:'Enterprise Unlimited') : (stats?.planQuota?.seatUsagePercent + ('dashboard.capacity_used' | translate:'% Capacity Used')) }}</span>
+                <span class="quota-subtext">{{ stats?.planQuota?.isUnlimited ? ('dashboard.unrestricted_platform' | translate:'Full Platform Unrestricted') : ('dashboard.hard_cap_enforced' | translate:'Hard Cap Enforced by Central Admin') }}</span>
               </div>
             </div>
           </div>
@@ -186,10 +188,10 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Member Registration & Growth Trend</h3>
-              <p class="panel-subtitle">6-month onboarding curve and profile acquisition velocity</p>
+              <h3>{{ 'dashboard.growth_trend' | translate:'Member Registration & Growth Trend' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.growth_subtitle' | translate:'6-month onboarding curve and profile acquisition velocity' }}</p>
             </div>
-            <span class="badge-pill-soft">Past 6 Months</span>
+            <span class="badge-pill-soft">{{ 'dashboard.past_6_months' | translate:'Past 6 Months' }}</span>
           </div>
           <div class="chart-canvas-container">
             <canvas #growthLineCanvas></canvas>
@@ -200,10 +202,10 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Best Performing Members (KPI Scorecards)</h3>
-              <p class="panel-subtitle">Performance evaluation comparison across top member profiles</p>
+              <h3>{{ 'dashboard.best_kpi_members' | translate:'Best Performing Members (KPI Scorecards)' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.best_kpi_subtitle' | translate:'Performance evaluation comparison across top member profiles' }}</p>
             </div>
-            <a routerLink="/admin/users/kpi" class="header-link">KPI Hub</a>
+            <a routerLink="/users/console/kpi" class="header-link">{{ 'dashboard.kpi_hub' | translate:'KPI Hub' }}</a>
           </div>
           <div class="chart-canvas-container">
             <canvas #kpiBarCanvas></canvas>
@@ -219,10 +221,10 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Top Performing Members (Leaderboard)</h3>
-              <p class="panel-subtitle">Highest average composite scores recorded in evaluations</p>
+              <h3>{{ 'dashboard.top_leaderboard' | translate:'Top Performing Members (Leaderboard)' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.top_leaderboard_subtitle' | translate:'Highest average composite scores recorded in evaluations' }}</p>
             </div>
-            <a routerLink="/admin/users/kpi" class="header-link">Full Leaderboard</a>
+            <a routerLink="/users/console/kpi" class="header-link">{{ 'dashboard.full_leaderboard' | translate:'Full Leaderboard' }}</a>
           </div>
 
           <div class="leaderboard-list">
@@ -236,18 +238,18 @@ Chart.register(...registerables);
               </div>
               <div class="score-badge-box">
                 <div class="score-number">{{ item.avgScore }}%</div>
-                <span class="period-tag">{{ item.latestPeriod || 'Current' }}</span>
+                <span class="period-tag">{{ item.latestPeriod || ('dashboard.current' | translate:'Current') }}</span>
               </div>
-              <a [routerLink]="['/admin/users/kpi/grade', item.profileId]" class="btn-grade-sm" title="Grade Member">
+              <a [routerLink]="['/users/console/kpi/grade', item.profileId]" class="btn-grade-sm" [title]="'dashboard.grade_member' | translate:'Grade Member'">
                 <span class="material-symbols-outlined">assignment_turned_in</span>
               </a>
             </div>
 
             <div *ngIf="!stats?.kpiStats?.leaderboard?.length" class="empty-cell" style="padding: 24px 0;">
               <span class="material-symbols-outlined" style="font-size: 32px; color: #cbd5e1; display:block; margin-bottom:6px;">military_tech</span>
-              No KPI evaluation scorecards submitted yet.
+              {{ 'dashboard.no_kpi_scorecards' | translate:'No KPI evaluation scorecards submitted yet.' }}
               <div style="margin-top: 8px;">
-                <a routerLink="/admin/users/kpi" class="btn-sm-details">Open KPI Hub</a>
+                <a routerLink="/users/console/kpi" class="btn-sm-details">{{ 'dashboard.open_kpi_hub' | translate:'Open KPI Hub' }}</a>
               </div>
             </div>
           </div>
@@ -257,35 +259,35 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>KPI Organizational Performance Health</h3>
-              <p class="panel-subtitle">Summary of active metric indicators and evaluation coverage</p>
+              <h3>{{ 'dashboard.kpi_health' | translate:'KPI Organizational Performance Health' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.kpi_health_subtitle' | translate:'Summary of active metric indicators and evaluation coverage' }}</p>
             </div>
-            <a routerLink="/admin/users/kpi/metrics/create" class="header-link">+ Add Metric</a>
+            <a routerLink="/users/console/kpi/metrics/create" class="header-link">{{ 'dashboard.add_metric' | translate:'+ Add Metric' }}</a>
           </div>
 
           <div class="kpi-health-grid">
             <div class="kpi-metric-box">
-              <span class="kpi-box-label">Avg Organization Score</span>
+              <span class="kpi-box-label">{{ 'dashboard.avg_org_score' | translate:'Avg Organization Score' }}</span>
               <div class="kpi-box-val text-blue">{{ stats?.kpiStats?.avgOrgScore || 0 }}%</div>
-              <span class="kpi-box-sub">Across All Evaluations</span>
+              <span class="kpi-box-sub">{{ 'dashboard.across_evaluations' | translate:'Across All Evaluations' }}</span>
             </div>
 
             <div class="kpi-metric-box">
-              <span class="kpi-box-label">Active KPI Indicators</span>
+              <span class="kpi-box-label">{{ 'dashboard.active_indicators' | translate:'Active KPI Indicators' }}</span>
               <div class="kpi-box-val">{{ stats?.kpiStats?.indicatorsCount || 0 }}</div>
-              <span class="kpi-box-sub">Configured Rubrics</span>
+              <span class="kpi-box-sub">{{ 'dashboard.configured_rubrics' | translate:'Configured Rubrics' }}</span>
             </div>
 
             <div class="kpi-metric-box">
-              <span class="kpi-box-label">Evaluated Headcount</span>
+              <span class="kpi-box-label">{{ 'dashboard.evaluated_headcount' | translate:'Evaluated Headcount' }}</span>
               <div class="kpi-box-val text-green">{{ stats?.kpiStats?.evaluatedMembersCount || 0 }}</div>
-              <span class="kpi-box-sub">Members Assessed</span>
+              <span class="kpi-box-sub">{{ 'dashboard.members_assessed' | translate:'Members Assessed' }}</span>
             </div>
 
             <div class="kpi-metric-box">
-              <span class="kpi-box-label">Total Scorecards</span>
+              <span class="kpi-box-label">{{ 'dashboard.total_scorecards' | translate:'Total Scorecards' }}</span>
               <div class="kpi-box-val text-purple">{{ stats?.kpiStats?.totalEvaluations || 0 }}</div>
-              <span class="kpi-box-sub">Historical Submissions</span>
+              <span class="kpi-box-sub">{{ 'dashboard.historical_submissions' | translate:'Historical Submissions' }}</span>
             </div>
           </div>
         </div>
@@ -299,43 +301,43 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Quick Action Center</h3>
-              <p class="panel-subtitle">Fast shortcuts for member administration</p>
+              <h3>{{ 'dashboard.quick_action_center' | translate:'Quick Action Center' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.quick_action_subtitle' | translate:'Fast shortcuts for member administration' }}</p>
             </div>
           </div>
           <div class="quick-actions-grid">
-            <a routerLink="/admin/users/create" class="action-tile">
+            <a routerLink="/users/console/create" class="action-tile">
               <div class="tile-icon bg-blue"><span class="material-symbols-outlined">person_add</span></div>
               <div class="tile-content">
-                <strong>Add New Member</strong>
-                <span>Provision an account with temporary credentials</span>
+                <strong>{{ 'dashboard.add_new_member' | translate:'Add New Member' }}</strong>
+                <span>{{ 'dashboard.add_member_desc' | translate:'Add a new member with temporary credentials' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
 
-            <a routerLink="/admin/users/categories/create" class="action-tile">
+            <a routerLink="/users/console/categories/create" class="action-tile">
               <div class="tile-icon bg-purple"><span class="material-symbols-outlined">add_circle</span></div>
               <div class="tile-content">
-                <strong>Create Category Tier</strong>
-                <span>Add department, faculty, or tier grouping</span>
+                <strong>{{ 'dashboard.create_category_tier' | translate:'Create Category Tier' }}</strong>
+                <span>{{ 'dashboard.create_category_desc' | translate:'Add department, faculty, or tier grouping' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
 
-            <a routerLink="/admin/users/list" class="action-tile">
+            <a routerLink="/users/console/list" class="action-tile">
               <div class="tile-icon bg-green"><span class="material-symbols-outlined">table_view</span></div>
               <div class="tile-content">
-                <strong>Export Member Directory</strong>
-                <span>Generate PDF, Excel, and Word registers</span>
+                <strong>{{ 'dashboard.export_directory' | translate:'Export Member Directory' }}</strong>
+                <span>{{ 'dashboard.export_directory_desc' | translate:'Generate PDF, Excel, and Word registers' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
 
-            <a routerLink="/admin/users/kpi" class="action-tile">
+            <a routerLink="/users/console/kpi" class="action-tile">
               <div class="tile-icon bg-indigo"><span class="material-symbols-outlined">monitoring</span></div>
               <div class="tile-content">
-                <strong>Evaluate KPI Scores</strong>
-                <span>Review leaderboards and batch grade scorecards</span>
+                <strong>{{ 'dashboard.evaluate_kpi' | translate:'Evaluate KPI Scores' }}</strong>
+                <span>{{ 'dashboard.evaluate_kpi_desc' | translate:'Review leaderboards and batch grade scorecards' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -346,27 +348,27 @@ Chart.register(...registerables);
         <div class="card-panel">
           <div class="panel-header">
             <div class="panel-title-wrap">
-              <h3>Recently Onboarded Members</h3>
-              <p class="panel-subtitle">Latest organizational accounts registered in tenant</p>
+              <h3>{{ 'dashboard.recently_onboarded' | translate:'Recently Onboarded Members' }}</h3>
+              <p class="panel-subtitle">{{ 'dashboard.recently_onboarded_subtitle' | translate:'Latest organizational accounts registered in tenant' }}</p>
             </div>
-            <a routerLink="/admin/users/list" class="header-link">View All</a>
+            <a routerLink="/users/console/list" class="header-link">{{ 'dashboard.view_all' | translate:'View All' }}</a>
           </div>
 
           <div class="table-responsive">
             <table class="mini-table">
               <thead>
                 <tr>
-                  <th>Member</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th style="text-align:right;">Action</th>
+                  <th>{{ 'dashboard.col_member' | translate:'Member' }}</th>
+                  <th>{{ 'dashboard.col_category' | translate:'Category' }}</th>
+                  <th>{{ 'dashboard.col_status' | translate:'Status' }}</th>
+                  <th style="text-align:right;">{{ 'dashboard.col_action' | translate:'Action' }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let m of stats?.recentRegistrations">
                   <td>
                     <div class="member-compact">
-                      <div class="member-name">{{ m.fullName || 'Unnamed' }}</div>
+                      <div class="member-name">{{ m.fullName || ('dashboard.unnamed' | translate:'Unnamed') }}</div>
                       <div class="member-email">{{ m.email }}</div>
                     </div>
                   </td>
@@ -381,11 +383,11 @@ Chart.register(...registerables);
                     </span>
                   </td>
                   <td style="text-align:right;">
-                    <a [routerLink]="['/admin/users/details', m.id]" class="btn-sm-details">Details</a>
+                    <a [routerLink]="['/users/console/details', m.id]" class="btn-sm-details">{{ 'dashboard.details' | translate:'Details' }}</a>
                   </td>
                 </tr>
                 <tr *ngIf="!stats?.recentRegistrations?.length">
-                  <td colspan="4" class="empty-cell">No organizational members registered yet.</td>
+                  <td colspan="4" class="empty-cell">{{ 'dashboard.no_members_registered' | translate:'No organizational members registered yet.' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -399,10 +401,10 @@ Chart.register(...registerables);
       <div class="card-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <h3>Recent Security & Forensic Audit Trail</h3>
-            <p class="panel-subtitle">Real-time authentication, password lifecycle, and permission logs</p>
+            <h3>{{ 'dashboard.security_audit_trail' | translate:'Recent Security & Forensic Audit Trail' }}</h3>
+            <p class="panel-subtitle">{{ 'dashboard.security_audit_subtitle' | translate:'Real-time authentication, password lifecycle, and permission logs' }}</p>
           </div>
-          <a routerLink="/admin/users/activity" class="header-link">Full Audit Logs</a>
+          <a routerLink="/users/console/activity" class="header-link">{{ 'dashboard.full_audit_logs' | translate:'Full Audit Logs' }}</a>
         </div>
 
         <div class="logs-stream-grid">
@@ -417,7 +419,7 @@ Chart.register(...registerables);
             </div>
           </div>
           <div *ngIf="!stats?.recentLogs?.length" class="empty-cell" style="padding:20px 0;">
-            No activity logs recorded yet.
+            {{ 'dashboard.no_activity_logs' | translate:'No activity logs recorded yet.' }}
           </div>
         </div>
       </div>
@@ -575,27 +577,32 @@ export class UserDashboardComponent implements OnInit, AfterViewInit {
   isLoading = false;
   stats: any = null;
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Add Member',
-      icon: 'person_add',
-      isPrimary: true,
-      routerLink: '/admin/users/create'
-    },
-    {
-      text: 'Directory Register',
-      icon: 'table_view',
-      isPrimary: false,
-      routerLink: '/admin/users/list'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('dashboard.add_member', 'Add Member'),
+        icon: 'person_add',
+        isPrimary: true,
+        routerLink: '/users/console/create'
+      },
+      {
+        text: this.translationService.translate('dashboard.directory_register', 'Directory Register'),
+        icon: 'table_view',
+        isPrimary: false,
+        routerLink: '/users/console/list'
+      }
+    ];
+  }
 
   @ViewChild('growthLineCanvas') growthCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('kpiBarCanvas') kpiBarCanvasRef!: ElementRef<HTMLCanvasElement>;
   private growthChart: Chart | null = null;
   private kpiBarChart: Chart | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private translationService: TranslationService
+  ) {}
 
   ngOnInit(): void {
     this.loadStats();

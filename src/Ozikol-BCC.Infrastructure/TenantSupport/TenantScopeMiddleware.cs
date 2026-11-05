@@ -24,7 +24,9 @@ public class TenantScopeMiddleware
             path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase))
+            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/tenants", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/setup", StringComparison.OrdinalIgnoreCase))
         {
             await _next(httpContext);
             return;
@@ -65,11 +67,11 @@ public class TenantScopeMiddleware
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("========================================================================");
-            Console.WriteLine($"[MASTER ROUTING ERROR] {method} {path}");
+            Console.WriteLine($"[ROUTING ERROR] {method} {path}");
             Console.WriteLine($"  * Incoming Host URL : {host}");
             Console.WriteLine($"  * Origin / Referer  : {(string.IsNullOrEmpty(origin) ? "(Direct)" : origin)}");
             Console.WriteLine($"  * Requested Target  : {targetLookup}");
-            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active tenant matching this domain/subdomain)");
+            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active workspace matching this domain/subdomain)");
             Console.WriteLine("========================================================================");
             Console.ResetColor();
 
@@ -78,11 +80,64 @@ public class TenantScopeMiddleware
             await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
             {
                 statusCode = 404,
-                error = "TenantNotFound",
-                message = $"The workspace '{targetLookup}' does not exist or has not been activated. Please check your domain or register a new workspace.",
+                error = "WorkspaceNotFound",
+                message = "Workspace could not be found.",
                 timestamp = DateTime.UtcNow
             }));
             return;
+        }
+
+        // 2b. Cross-Tenant JWT Spoofing Defense:
+        // If an authenticated user sends a JWT token issued for Tenant A (carrying a 'tenant_key' claim),
+        // prevent them from spoofing Origin, Referer, or X-Tenant-Key headers to execute authenticated actions against Tenant B's database.
+        // Exempt public authentication/workspace discovery routes (/api/auth/login, /api/auth/register, /api/auth/forgot-password, etc.)
+        // where a user may be logging into a new workspace while holding a stale token in memory.
+        bool isAuthBootstrapPath = path.StartsWith("/api/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/register", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/forgot", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/reset", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/request-otp", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/verify-login-mfa", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/resend-login-mfa", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/SettingsApi/brand", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/SetupApi/client-config", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAuthBootstrapPath && match != null && httpContext.User?.Identity?.IsAuthenticated == true)
+        {
+            var jwtTenantClaim = ExtractJwtTenantClaim(httpContext);
+            if (!string.IsNullOrWhiteSpace(jwtTenantClaim) && !IsSystemDomain(jwtTenantClaim))
+            {
+                CachedTenantEntry? jwtMatchedTenant = null;
+                if (tenantProvider is TenantProvider tpCheck)
+                {
+                    jwtMatchedTenant = TenantProvider.FindMatchingTenant(tpCheck.GetAllCachedTenants(), jwtTenantClaim);
+                }
+
+                var canonicalJwtTenantKey = jwtMatchedTenant?.TenantKey ?? jwtTenantClaim;
+                if (!string.Equals(canonicalJwtTenantKey, match.TenantKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("========================================================================");
+                    Console.WriteLine($"[SECURITY ALERT: CROSS-TENANT SPOOFING BLOCKED] {method} {path}");
+                    Console.WriteLine($"  * JWT Token Tenant  : {canonicalJwtTenantKey}");
+                    Console.WriteLine($"  * Requested Target  : {match.TenantKey} ({origin})");
+                    Console.WriteLine($"  * Result            : 403 FORBIDDEN (Cross-Tenant Access Denied)");
+                    Console.WriteLine("========================================================================");
+                    Console.ResetColor();
+
+                    httpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                    httpContext.Response.ContentType = "application/json";
+                    await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        statusCode = 403,
+                        error = "CrossTenantAccessDenied",
+                        message = "Your authentication session belongs to a different workspace. Please sign in to this workspace.",
+                        timestamp = DateTime.UtcNow
+                    }));
+                    return;
+                }
+            }
         }
 
         string tenantKey = match?.TenantKey ?? resolvedTenantKey ?? "(Default)";
@@ -163,7 +218,26 @@ public class TenantScopeMiddleware
 
     private static string? ExtractTenantIdentifier(HttpContext httpContext)
     {
-        // 1. Priority 1: Check explicit HTTP headers sent by Angular SPA (X-Tenant-Key or X-Tenant-Domain)
+        // 1. Priority 1: Check CORS Origin or Referer header (the browser's active URL/domain)
+        // If the browser is actively on a tenant subdomain/domain (e.g. cocacolanm.localhost), it MUST take precedence
+        // over any potentially stale localStorage headers sent by the client SPA.
+        string? originHeader = httpContext.Request.Headers["Origin"].ToString();
+        if (string.IsNullOrEmpty(originHeader))
+        {
+            originHeader = httpContext.Request.Headers["Referer"].ToString();
+        }
+
+        if (!string.IsNullOrEmpty(originHeader) && Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri))
+        {
+            string originHost = originUri.Authority; // e.g. "cocacolanm.localhost:4200" or "company.org"
+            var cleanOrigin = CleanIdentifier(originHost);
+            if (!string.IsNullOrEmpty(cleanOrigin))
+            {
+                return cleanOrigin;
+            }
+        }
+
+        // 2. Priority 2: Check explicit HTTP headers sent by Angular SPA (X-Tenant-Key or X-Tenant-Domain)
         if (httpContext.Request.Headers.TryGetValue("X-Tenant-Key", out var headerTenantKey) && !string.IsNullOrWhiteSpace(headerTenantKey))
         {
             return CleanIdentifier(headerTenantKey.ToString());
@@ -174,7 +248,20 @@ public class TenantScopeMiddleware
             return CleanIdentifier(headerTenantDomain.ToString());
         }
 
-        // 2. Priority 2: Check Authorization Bearer header or User claims for tenant_key
+        // 2b. Priority 2b: Check explicit query parameters (?tenantKey=... or ?tenant=...)
+        if (httpContext.Request.Query.TryGetValue("tenantKey", out var queryTenantKey) && !string.IsNullOrWhiteSpace(queryTenantKey))
+        {
+            var clean = CleanIdentifier(queryTenantKey.ToString());
+            if (!string.IsNullOrEmpty(clean)) return clean;
+        }
+
+        if (httpContext.Request.Query.TryGetValue("tenant", out var queryTenant) && !string.IsNullOrWhiteSpace(queryTenant))
+        {
+            var clean = CleanIdentifier(queryTenant.ToString());
+            if (!string.IsNullOrEmpty(clean)) return clean;
+        }
+
+        // 3. Priority 3: Check Authorization Bearer header or User claims for tenant_key
         string? authHeader = httpContext.Request.Headers["Authorization"].ToString();
         if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
@@ -220,29 +307,36 @@ public class TenantScopeMiddleware
             }
         }
 
-        // 3. Priority 3: Check CORS Origin or Referer header (Angular client domain)
-        string? originHeader = httpContext.Request.Headers["Origin"].ToString();
-        if (string.IsNullOrEmpty(originHeader))
-        {
-            originHeader = httpContext.Request.Headers["Referer"].ToString();
-        }
-
-        if (!string.IsNullOrEmpty(originHeader) && Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri))
-        {
-            string host = originUri.Authority; // e.g. "cocacola.localhost" or "localhost:4200"
-            var cleanOrigin = CleanIdentifier(host);
-            if (!string.IsNullOrEmpty(cleanOrigin))
-            {
-                return cleanOrigin;
-            }
-        }
-
         // 4. Priority 4: Fallback to HTTP Host header
         string hostHeader = httpContext.Request.Headers["Host"].ToString();
         var cleanHost = CleanIdentifier(hostHeader);
         if (!string.IsNullOrEmpty(cleanHost))
         {
             return cleanHost;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extracts the <c>tenant_key</c> claim specifically from the authenticated principal or Bearer JWT token
+    /// so cross-tenant spoofing between HTTP headers and the signed JWT can be detected and blocked.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <returns>The cleaned tenant key from the JWT claim, or null if not present.</returns>
+    private static string? ExtractJwtTenantClaim(HttpContext httpContext)
+    {
+        var user = httpContext.User;
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            var tenantClaim = user.FindFirst("tenant_key")?.Value
+                ?? user.FindFirst("TenantKey")?.Value
+                ?? user.FindFirst("tenant")?.Value;
+            var cleanClaim = CleanIdentifier(tenantClaim ?? string.Empty);
+            if (!string.IsNullOrEmpty(cleanClaim))
+            {
+                return cleanClaim;
+            }
         }
 
         return null;

@@ -12,7 +12,7 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/affiliates/edit/@Model.Partner.Id" class="btn-admin btn-admin-primary">
-            <span>✏️</span> Edit Partner
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Partner
         </a>
         <a href="/centralwks/affiliates" class="btn-admin btn-admin-secondary">
             <span>&larr;</span> Back to Partners
@@ -30,28 +30,36 @@
 @* ── Wallet & Performance Stats ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">💰</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">monetization_on</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Lifetime Earned</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.Partner.TotalEarned.ToString("N2")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">hourglass_top</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Pending Payout Balance</span>
             <span class="stat-value" style="font-size: 22px; color: #f59e0b;">$@Model.Partner.PendingBalance.ToString("N2")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Disbursed</span>
             <span class="stat-value" style="font-size: 22px;">$@Model.Partner.PaidBalance.ToString("N2")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px; font-size: 18px;">🏢</div>
+        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">domain</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Referred Tenants</span>
             <span class="stat-value" style="font-size: 22px;">@Model.ReferralCount</span>
@@ -65,7 +73,9 @@
         <div class="admin-card">
             <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">📋</div>
+                    <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">receipt_long</span>
+                    </div>
                     <div>
                         <h3 class="card-header-title">Referred Tenant Signups & Attributions</h3>
                         <p class="card-header-subtitle">Tenants who registered using partner code @Model.Partner.PartnerCode.</p>
@@ -151,7 +161,9 @@
                         {
                             <tr>
                                 <td colspan="7" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                                    <div style="font-size: 32px; margin-bottom: 8px;">🏢</div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">
+                                        <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-muted);">domain</span>
+                                    </div>
                                     <div style="font-size: 16px; font-weight: 500; color: #fff;">No Referrals Yet</div>
                                     <div style="font-size: 13px; margin-top: 4px;">Tenants registering with code @Model.Partner.PartnerCode will appear here automatically.</div>
                                 </td>
@@ -168,7 +180,9 @@
         @* Payout Settlement Card *@
         <div class="admin-card" style="margin-bottom: 24px;">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">💸</div>
+                <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">payments</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Commission Settlement</h3>
                     <p class="card-header-subtitle">Disburse pending partner earnings.</p>
@@ -187,8 +201,8 @@
                 {
                     <form method="post" asp-page-handler="SettlePayout" asp-route-id="@Model.Partner.Id" onsubmit="return confirm('Confirm payout disbursement of $@Model.Partner.PendingBalance.ToString("N2") to @Model.Partner.FullName?');">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center;">
-                            <span>💸</span> Settle & Disburse $@Model.Partner.PendingBalance.ToString("N2")
+                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">payments</span> Settle & Disburse $@Model.Partner.PendingBalance.ToString("N2")
                         </button>
                     </form>
                 }
@@ -204,7 +218,9 @@
         @* Referral Link Card *@
         <div class="admin-card" style="margin-bottom: 24px;">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🔗</div>
+                <div class="card-header-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">link</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Referral Link</h3>
                     <p class="card-header-subtitle">Assigned onboarding link.</p>
@@ -212,11 +228,11 @@
             </div>
 
             <div style="padding: 20px;">
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 13px; color: #38bdf8; word-break: break-all; margin-bottom: 12px;">
+                <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 13px; color: #38bdf8; word-break: break-all; margin-bottom: 12px;">
                     https://ozikol.com/?ref=@Model.Partner.PartnerCode
                 </div>
-                <button onclick="navigator.clipboard.writeText('https://ozikol.com/?ref=@Model.Partner.PartnerCode'); alert('Referral link copied to clipboard!');" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center;">
-                    📋 Copy Referral Link
+                <button onclick="navigator.clipboard.writeText('https://ozikol.com/?ref=@Model.Partner.PartnerCode'); alert('Referral link copied to clipboard!');" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">content_copy</span> Copy Referral Link
                 </button>
             </div>
         </div>
@@ -224,7 +240,9 @@
         @* Contact & Settlement Details *@
         <div class="admin-card">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🏦</div>
+                <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">account_balance</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Payout & Contact Data</h3>
                     <p class="card-header-subtitle">Partner instructions.</p>

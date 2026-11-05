@@ -1,0 +1,13 @@
+<section class="oz-stats-section {{ CustomClass }}">
+  <div class="oz-container">
+    <div class="oz-stats-grid">
+      {{#each PageSectionLists}}
+      <div class="oz-stat-card">
+        <span class="material-symbols-outlined oz-stat-icon">{{ Icon }}</span>
+        <h3 class="oz-stat-number">{{ Title }}</h3>
+        <p class="oz-stat-label">{{ Description }}</p>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>

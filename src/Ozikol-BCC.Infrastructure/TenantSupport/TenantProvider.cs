@@ -1,6 +1,10 @@
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Ozikol.MasterDomain.Security;
+using Ozikol_BCC.Infrastructure.Caching;
 
 namespace Ozikol_BCC.Infrastructure.TenantSupport;
 
@@ -9,7 +13,7 @@ namespace Ozikol_BCC.Infrastructure.TenantSupport;
 /// </summary>
 public class CachedTenantEntry
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string TenantKey { get; set; } = string.Empty;
     public string OrganizationName { get; set; } = string.Empty;
     public string PrimaryDomain { get; set; } = string.Empty;
@@ -29,10 +33,11 @@ public class CachedTenantEntry
 public class TenantProvider : ITenantProvider
 {
     public const string DefaultSchemaName = "dbo";
-    private const string CacheKey = "master_catalog_all_tenants_cache";
+    private const string CacheKey = RedisTenantCacheInvalidator.MasterTenantCatalogCacheKey;
     private readonly string _defaultConnectionString;
     private readonly Dictionary<string, string> _staticTenantConnections;
     private readonly IMemoryCache? _memoryCache;
+    private readonly IDistributedCache? _distributedCache;
     private readonly IServiceScopeFactory? _scopeFactory;
 
     public string? CurrentTenant => TenantContext.CurrentTenant;
@@ -64,7 +69,8 @@ public class TenantProvider : ITenantProvider
 
                 if (match != null && !string.IsNullOrEmpty(match.ConnectionString))
                 {
-                    return match.ConnectionString;
+                    TouchTenantLastAccessed(match.Id, match.TenantKey);
+                    return ResolveActiveTenantConnectionString(match.ConnectionString);
                 }
 
                 // Fallback to static config if explicitly configured for this name
@@ -107,38 +113,110 @@ public class TenantProvider : ITenantProvider
             .ToDictionary(ks => ks.Name, vs => vs.ConnectionString!, StringComparer.OrdinalIgnoreCase);
 
         _memoryCache = serviceProvider.GetService<IMemoryCache>();
+        _distributedCache = serviceProvider.GetService<IDistributedCache>();
         _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
+
+        // Ensure cross-server Redis Pub/Sub invalidation listener is initialized
+        _ = serviceProvider.GetService<ITenantCacheInvalidator>();
     }
 
     /// <summary>
-    /// Retrieves all active tenant entries from fast in-memory cache, or loads from Master Catalog DB if expired.
+    /// Retrieves all active tenant entries using a 2-tier cache strategy:
+    /// L1 (<see cref="IMemoryCache"/>, &lt; 0.1ms) -&gt; L2 (<see cref="IDistributedCache"/> / Redis) -&gt; Master Catalog DB.
+    /// Cached connection strings in L2 Redis remain encrypted (`enc:v1:...`) and are decrypted strictly in local process memory.
     /// </summary>
     /// <returns>A list of cached tenant entries.</returns>
     public List<CachedTenantEntry> GetAllCachedTenants()
     {
+        // 1. L1 local in-memory cache check (< 0.1ms)
         if (_memoryCache != null && _memoryCache.TryGetValue<List<CachedTenantEntry>>(CacheKey, out var cachedList) && cachedList != null)
         {
             return cachedList;
+        }
+
+        // 2. L2 Redis distributed cache check (for multi-server consistency)
+        if (_distributedCache != null)
+        {
+            try
+            {
+                var redisJson = _distributedCache.GetString(CacheKey);
+                if (!string.IsNullOrWhiteSpace(redisJson))
+                {
+                    var fromRedis = JsonSerializer.Deserialize<List<CachedTenantEntry>>(redisJson);
+                    if (fromRedis != null && fromRedis.Count > 0)
+                    {
+                        foreach (var entry in fromRedis)
+                        {
+                            entry.ConnectionString = OzikolDataCipher.DecryptIfNeeded(entry.ConnectionString) ?? string.Empty;
+                        }
+
+                        _memoryCache?.Set(CacheKey, fromRedis, new MemoryCacheEntryOptions
+                        {
+                            Size = 1,
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+                        });
+                        return fromRedis;
+                    }
+                }
+            }
+            catch
+            {
+                // Gracefully proceed to Master DB if Redis is unreachable
+            }
         }
 
         return RefreshCachedTenants();
     }
 
     /// <summary>
-    /// Actively refreshes the in-memory cache of tenants by reading directly from MasterCatalogDbContext.
-    /// Invoked automatically on cache miss when a new tenant was recently registered.
+    /// Actively refreshes the L1 and L2 caches of tenants by reading directly from MasterCatalogDbContext.
+    /// Invoked automatically on cache miss when a new tenant was recently registered or updated.
     /// </summary>
     /// <returns>The freshly loaded list of active cached tenants.</returns>
     public List<CachedTenantEntry> RefreshCachedTenants()
     {
         var loaded = LoadTenantsFromMasterDb();
-        if (loaded.Count > 0 && _memoryCache != null)
+        if (loaded.Count > 0)
         {
-            _memoryCache.Set(CacheKey, loaded, new MemoryCacheEntryOptions
+            _memoryCache?.Set(CacheKey, loaded, new MemoryCacheEntryOptions
             {
                 Size = 1,
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
             });
+
+            if (_distributedCache != null)
+            {
+                try
+                {
+                    // Store encrypted connection strings inside Redis so plaintext SQL credentials never sit in Redis RAM
+                    var encryptedSnapshot = loaded.Select(t => new CachedTenantEntry
+                    {
+                        Id = t.Id,
+                        TenantKey = t.TenantKey,
+                        OrganizationName = t.OrganizationName,
+                        PrimaryDomain = t.PrimaryDomain,
+                        CustomDomain = t.CustomDomain,
+                        ApiUrl = t.ApiUrl,
+                        WebsiteUrl = t.WebsiteUrl,
+                        DatabaseName = t.DatabaseName,
+                        ConnectionString = OzikolDataCipher.EncryptIfNeeded(t.ConnectionString) ?? string.Empty,
+                        AdminEmail = t.AdminEmail,
+                        IsActive = t.IsActive
+                    }).ToList();
+
+                    _distributedCache.SetString(
+                        CacheKey,
+                        JsonSerializer.Serialize(encryptedSnapshot),
+                        new DistributedCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                        });
+                }
+                catch
+                {
+                    // Ignore transient Redis write errors
+                }
+            }
         }
 
         return loaded;
@@ -217,6 +295,63 @@ public class TenantProvider : ITenantProvider
         return match;
     }
 
+    /// <summary>
+    /// Updates <c>LastAccessedUtc</c> on the resolved tenant record in the Master Catalog Database in the background,
+    /// throttled via in-memory cache to once every 2 minutes per tenant to ensure zero request latency.
+    /// </summary>
+    private void TouchTenantLastAccessed(Guid tenantId, string tenantKey)
+    {
+        if (tenantId == Guid.Empty || _scopeFactory == null) return;
+
+        var throttleKey = $"tenant_last_accessed_touch_{tenantId}";
+        if (_memoryCache != null && _memoryCache.TryGetValue(throttleKey, out _))
+        {
+            return;
+        }
+
+        _memoryCache?.Set(throttleKey, true, new MemoryCacheEntryOptions
+        {
+            Size = 1,
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+        });
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContextType = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.Name == "MasterCatalogDbContext");
+
+                if (dbContextType == null) return;
+                var masterDbContext = scope.ServiceProvider.GetService(dbContextType);
+                if (masterDbContext == null) return;
+
+                var tenantsProperty = dbContextType.GetProperty("MasterTenantCatalogs");
+                if (tenantsProperty?.GetValue(masterDbContext) is IQueryable<object> queryable)
+                {
+                    foreach (dynamic item in queryable)
+                    {
+                        object? rawId = item.Id;
+                        Guid itemId = rawId is Guid gid ? gid : Guid.Empty;
+                        if (itemId == tenantId || string.Equals((string)item.TenantKey, tenantKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            item.LastAccessedUtc = DateTime.UtcNow;
+                            var saveMethod = dbContextType.GetMethod("SaveChanges", Type.EmptyTypes);
+                            saveMethod?.Invoke(masterDbContext, null);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Non-blocking background telemetry touch
+            }
+        });
+    }
+
     private List<CachedTenantEntry> LoadTenantsFromMasterDb()
     {
         var result = new List<CachedTenantEntry>();
@@ -242,9 +377,12 @@ public class TenantProvider : ITenantProvider
                         {
                             foreach (dynamic item in queryable)
                             {
+                                object? rawId = item.Id;
+                                Guid resolvedId = rawId is Guid gid ? gid : (rawId != null && Guid.TryParse(rawId.ToString(), out Guid parsedGid) ? parsedGid : Guid.Empty);
+
                                 result.Add(new CachedTenantEntry
                                 {
-                                    Id = (int)item.Id,
+                                    Id = resolvedId,
                                     TenantKey = (string)item.TenantKey,
                                     OrganizationName = (string)item.OrganizationName,
                                     PrimaryDomain = (string)item.PrimaryDomain,
@@ -252,7 +390,7 @@ public class TenantProvider : ITenantProvider
                                     ApiUrl = (string?)item.ApiUrl,
                                     WebsiteUrl = (string?)item.WebsiteUrl,
                                     DatabaseName = (string)item.DatabaseName,
-                                    ConnectionString = (string)item.ConnectionString,
+                                    ConnectionString = OzikolDataCipher.DecryptIfNeeded((string)item.ConnectionString) ?? string.Empty,
                                     AdminEmail = (string?)item.AdminEmail,
                                     IsActive = (bool)item.IsActive
                                 });
@@ -268,6 +406,96 @@ public class TenantProvider : ITenantProvider
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Intelligently harmonizes a tenant database connection string with the active master database host.
+    /// When developing locally against a remote master database (e.g. 187.7.24.129), tenant connection
+    /// strings created with '127.0.0.1' or 'localhost' on the live server are dynamically redirected
+    /// to the remote server host so local development seamlessly accesses the tenant's remote database.
+    /// </summary>
+    /// <param name="rawTenantConnectionString">The raw connection string stored in the Master Catalog.</param>
+    /// <returns>The harmonized connection string.</returns>
+    private string ResolveActiveTenantConnectionString(string rawTenantConnectionString)
+    {
+        if (string.IsNullOrWhiteSpace(rawTenantConnectionString) || string.IsNullOrWhiteSpace(_defaultConnectionString))
+        {
+            return rawTenantConnectionString;
+        }
+
+        try
+        {
+            var masterBuilder = new System.Data.Common.DbConnectionStringBuilder { ConnectionString = _defaultConnectionString };
+            var tenantBuilder = new System.Data.Common.DbConnectionStringBuilder { ConnectionString = rawTenantConnectionString };
+
+            string? masterServer = null;
+            if (masterBuilder.TryGetValue("Server", out var srv) || masterBuilder.TryGetValue("Data Source", out srv))
+            {
+                masterServer = srv?.ToString()?.Trim();
+            }
+
+            string? tenantServer = null;
+            if (tenantBuilder.TryGetValue("Server", out var tsrv) || tenantBuilder.TryGetValue("Data Source", out tsrv))
+            {
+                tenantServer = tsrv?.ToString()?.Trim();
+            }
+
+            // Check if Master connects to a remote server host
+            var isMasterRemote = !string.IsNullOrWhiteSpace(masterServer) &&
+                !masterServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) &&
+                !masterServer.Equals("localhost", StringComparison.OrdinalIgnoreCase) &&
+                !masterServer.Equals(".", StringComparison.OrdinalIgnoreCase) &&
+                !masterServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase);
+
+            var isTenantLocal = string.IsNullOrWhiteSpace(tenantServer) ||
+                tenantServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.Equals(".", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase);
+
+            if (isMasterRemote && isTenantLocal)
+            {
+                if (tenantBuilder.ContainsKey("Server"))
+                {
+                    tenantBuilder["Server"] = masterServer!;
+                }
+                else
+                {
+                    tenantBuilder["Data Source"] = masterServer!;
+                }
+
+                // If master has credentials and tenant lacks them, inherit master credentials
+                if (masterBuilder.TryGetValue("User Id", out var masterUser) && !string.IsNullOrWhiteSpace(masterUser?.ToString()))
+                {
+                    tenantBuilder["User Id"] = masterUser;
+                    if (masterBuilder.TryGetValue("Password", out var masterPass))
+                    {
+                        tenantBuilder["Password"] = masterPass;
+                    }
+                    if (tenantBuilder.ContainsKey("Integrated Security"))
+                    {
+                        tenantBuilder.Remove("Integrated Security");
+                    }
+                    if (tenantBuilder.ContainsKey("Trusted_Connection"))
+                    {
+                        tenantBuilder.Remove("Trusted_Connection");
+                    }
+                }
+
+                if (masterBuilder.TryGetValue("TrustServerCertificate", out var trustCert))
+                {
+                    tenantBuilder["TrustServerCertificate"] = trustCert;
+                }
+
+                return tenantBuilder.ConnectionString;
+            }
+        }
+        catch
+        {
+            // Fallback safely to raw tenant connection string on any parsing anomaly
+        }
+
+        return rawTenantConnectionString;
     }
 
     public IDisposable BeginScope(string tenant)

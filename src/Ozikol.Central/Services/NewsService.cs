@@ -108,7 +108,7 @@ public class NewsService : INewsService
     }
 
     /// <inheritdoc />
-    public async Task<NewsArticle?> GetArticleBySlugAsync(string slug)
+    public async Task<NewsArticle?> GetArticleBySlugAsync(string slug, bool trackRead = true)
     {
         if (string.IsNullOrWhiteSpace(slug))
         {
@@ -123,7 +123,28 @@ public class NewsService : INewsService
             .Include(a => a.Category)
             .FirstOrDefaultAsync(a => a.Slug == normalizedSlug && a.IsPublished);
 
-        return entity != null ? MapToModel(entity) : null;
+        if (entity == null)
+        {
+            return null;
+        }
+
+        if (trackRead)
+        {
+            try
+            {
+                await _dbContext.MasterNewsArticles
+                    .Where(a => a.Id == entity.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(a => a.ReadCount, a => a.ReadCount + 1));
+
+                entity.ReadCount += 1;
+            }
+            catch
+            {
+                // Non-blocking read telemetry update
+            }
+        }
+
+        return MapToModel(entity);
     }
 
     /// <inheritdoc />
@@ -194,6 +215,7 @@ public class NewsService : INewsService
             PublishedAtUtc = entity.PublishedAtUtc,
             ReadTimeText = entity.ReadTimeText,
             IsFeatured = entity.IsFeatured,
+            ReadCount = entity.ReadCount,
             Tags = tags,
             CoverGradientClass = entity.CoverGradientClass
         };

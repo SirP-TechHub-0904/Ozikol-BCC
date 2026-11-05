@@ -22,7 +22,7 @@ namespace Ozikol.MasterDomain.Models
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [ForeignKey("MasterTenantCatalog")]
-        public int MasterTenantCatalogId { get; set; }
+        public Guid MasterTenantCatalogId { get; set; }
         public MasterTenantCatalog MasterTenantCatalog { get; set; } = null!;
 
         [ForeignKey("MasterFeatureCatalog")]
@@ -43,8 +43,43 @@ namespace Ozikol.MasterDomain.Models
         [MaxLength(30)]
         public string Status { get; set; } = "Active"; // Active, Suspended, Expired, Cancelled
 
+        /// <summary>
+        /// Optional tenant-specific override for the monthly base recurring price in USD when Custom Pricing is enabled.
+        /// Set to 0 when the capability is Yearly-Only for this tenant.
+        /// </summary>
         [Column(TypeName = "decimal(18,2)")]
         public decimal? CustomPriceOverride { get; set; }
+
+        /// <summary>
+        /// Optional tenant-specific override for the yearly recurring price in USD when Custom Pricing is enabled.
+        /// Supports custom annual discounts or Yearly-Only custom tenant pricing.
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? CustomYearlyPriceOverride { get; set; }
+
+        /// <summary>
+        /// Optional tenant-specific override for whether this capability is Available for Use (true)
+        /// or Coming Soon (false) for this tenant when UseCustomAvailability is enabled.
+        /// Null inherits from MasterFeatureCatalog.IsAvailableForUse.
+        /// </summary>
+        public bool? IsAvailableForUseOverride { get; set; }
+
+        /// <summary>
+        /// Optional tenant-specific override for the number of first-time free trial days before payment
+        /// when Custom Mode is active. Null inherits from <see cref="MasterFeatureCatalog.FreeTrialDays"/>.
+        /// </summary>
+        public int? CustomFreeTrialDaysOverride { get; set; }
+
+        /// <summary>
+        /// Indicates whether this tenant has already consumed their first-time free trial for this capability.
+        /// Once true, subsequent activations require payment unless reset by a Central administrator.
+        /// </summary>
+        public bool HasUsedFreeTrial { get; set; } = false;
+
+        /// <summary>
+        /// Indicates whether the current active subscription period is running as a free trial test period before payment.
+        /// </summary>
+        public bool IsTrialPeriod { get; set; } = false;
 
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
         public DateTime? LastRenewedUtc { get; set; }

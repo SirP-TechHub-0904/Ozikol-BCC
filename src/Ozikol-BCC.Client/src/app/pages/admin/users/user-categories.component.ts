@@ -5,178 +5,438 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
+/**
+ * Enterprise List Table component for managing tenant organizational categories and departments.
+ * Replaces the previous card grid layout per user requirement.
+ */
 @Component({
   selector: 'app-user-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="categories-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="ORGANIZATIONAL HIERARCHY"
-        icon="category"
-        title="User Categories"
-        subtitle="Manage organizational divisions, units, and member classification categories."
+        [eyebrow]="'user_cat.header_eyebrow' | translate:'ORGANIZATIONAL STRUCTURE'"
+        icon="corporate_fare"
+        [title]="'user_cat.header_title' | translate:'User Categories & Departments'"
+        [subtitle]="'user_cat.header_desc' | translate:'Manage organizational departments, business units, and member classification tiers in an enterprise table.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
 
-      <!-- Categories Grid -->
-      <div class="categories-grid" *ngIf="!isLoading">
-        <div class="category-card" *ngFor="let cat of categories">
-          <div class="card-top-bar" [style.background]="cat.colorCode || '#0050e5'"></div>
-          <div class="card-content">
-            <div class="cat-header-row">
-              <a routerLink="/admin/users/list" [queryParams]="{ category: cat.id }" class="cat-icon-box" [style.background]="(cat.colorCode || '#0050e5') + '15'" [style.color]="cat.colorCode || '#0050e5'" title="View all members in {{ cat.name }}">
-                <span class="material-symbols-outlined">{{ cat.icon || 'category' }}</span>
-              </a>
-              <a routerLink="/admin/users/list" [queryParams]="{ category: cat.id }" class="headcount-pill" title="View all members in {{ cat.name }}">
-                <strong>{{ cat.memberCount || 0 }}</strong> members
-              </a>
-            </div>
-
-            <h3 class="cat-title">
-              <a routerLink="/admin/users/list" [queryParams]="{ category: cat.id }" class="cat-title-link" title="View all members in {{ cat.name }}">
-                {{ cat.name }}
-              </a>
-            </h3>
-            <p class="cat-description">{{ cat.description || 'No description provided for this category.' }}</p>
-
-            <div class="cat-footer">
-              <div class="sort-badge">Order: {{ cat.sortOrder || 0 }}</div>
-              <div class="cat-actions">
-                <a [routerLink]="['/admin/users/list']" [queryParams]="{ category: cat.id }" class="btn-sm-action btn-sm-members" title="View members in this category">
-                  <span class="material-symbols-outlined">group</span>
-                </a>
-                <a [routerLink]="['/users/console/categories/edit', cat.id]" class="btn-sm-action btn-sm-edit" title="Edit category">
-                  <span class="material-symbols-outlined">edit</span>
-                </a>
-                <a [routerLink]="['/users/console/categories/delete', cat.id]" class="btn-sm-action btn-sm-delete" title="Delete category">
-                  <span class="material-symbols-outlined">delete</span>
-                </a>
-              </div>
-            </div>
-          </div>
+      <!-- Search & Summary Filter Toolbar -->
+      <div class="table-toolbar-card">
+        <div class="search-input-wrap">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="applyFilter()"
+            [placeholder]="'user_cat.search_ph' | translate:'Search categories or departments...'"
+          />
+          <button *ngIf="searchQuery" (click)="searchQuery=''; applyFilter()" class="clear-btn">
+            <span class="material-symbols-outlined">close</span>
+          </button>
         </div>
 
-        <div class="empty-categories" *ngIf="categories.length === 0">
-          <span class="material-symbols-outlined">category</span>
-          <h3>No User Categories</h3>
-          <p>Create your first user category to begin classifying members.</p>
-          <a routerLink="/users/console/categories/create" class="btn btn-primary btn-sm">
-            <span class="material-symbols-outlined">add</span> Create Category
-          </a>
+        <div class="toolbar-meta">
+          <span>{{ 'directory.showing' | translate:'Showing' }} <strong>{{ filteredCategories.length }}</strong> {{ 'directory.of' | translate:'of' }} <strong>{{ categories.length }}</strong> {{ 'directory.members_count' | translate:'categories' }}</span>
         </div>
+      </div>
+
+      <!-- Categories Enterprise List Table -->
+      <div class="table-container" *ngIf="!isLoading">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="min-width: 240px;">{{ 'user_cat.col_name' | translate:'Category / Department' }}</th>
+              <th style="width: 140px; text-align: center;">{{ 'user_cat.col_member_count' | translate:'Members' }}</th>
+              <th style="width: 120px; text-align: center;">{{ 'user_cat.col_code' | translate:'Sort Order' }}</th>
+              <th style="width: 150px; text-align: center;">{{ 'user_cat.col_status' | translate:'Status' }}</th>
+              <th style="width: 160px; text-align: right;">{{ 'user_cat.col_actions' | translate:'Actions' }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cat of filteredCategories">
+              <!-- Name & Description -->
+              <td>
+                <div class="category-info-cell">
+                  <div class="category-icon-box">
+                    <span class="material-symbols-outlined">folder_shared</span>
+                  </div>
+                  <div class="category-text">
+                    <a [routerLink]="['/users/console/categories/edit', cat.id]" class="cat-name-link">
+                      {{ cat.name }}
+                    </a>
+                    <div class="cat-description-text" *ngIf="cat.description">
+                      {{ cat.description }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Member Headcount -->
+              <td style="text-align: center;">
+                <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="headcount-badge" [title]="'user_cat.view_all_members' | translate:'View all members in this category'">
+                  <span class="material-symbols-outlined" style="font-size: 15px;">groups</span>
+                  <strong>{{ cat.memberCount || 0 }}</strong>
+                  <span>{{ (cat.memberCount === 1) ? ('user_cat.single_member' | translate:'member') : ('directory.members_count' | translate:'members') }}</span>
+                </a>
+              </td>
+
+              <!-- Sort Order -->
+              <td style="text-align: center;">
+                <span class="sort-order-pill">#{{ cat.sortOrder || 0 }}</span>
+              </td>
+
+              <!-- Publication Status -->
+              <td style="text-align: center;">
+                <span class="status-badge" [class.active-status]="cat.isActive !== false" [class.draft-status]="cat.isActive === false">
+                  <span class="status-dot"></span>
+                  <span>{{ (cat.isActive !== false) ? ('user_cat.badge_active' | translate:'Published') : ('user_cat.badge_inactive' | translate:'Unpublished') }}</span>
+                </span>
+              </td>
+
+              <!-- Action Buttons -->
+              <td style="text-align: right;">
+                <div class="row-actions-group">
+                  <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="btn-action btn-members" [title]="'user_cat.view_members' | translate:'View Category Members'">
+                    <span class="material-symbols-outlined">group</span>
+                    <span>{{ 'directory.members_count' | translate:'Members' }}</span>
+                  </a>
+                  <a [routerLink]="['/users/console/categories/edit', cat.id]" class="btn-action btn-edit" [title]="'user_cat.btn_edit' | translate:'Edit Category'">
+                    <span class="material-symbols-outlined">edit</span>
+                    <span>{{ 'user_cat.btn_edit' | translate:'Edit' }}</span>
+                  </a>
+                  <a [routerLink]="['/users/console/categories/delete', cat.id]" class="btn-action btn-delete" [title]="'user_cat.btn_delete' | translate:'Delete Category'">
+                    <span class="material-symbols-outlined">delete</span>
+                  </a>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty Table State -->
+            <tr *ngIf="filteredCategories.length === 0">
+              <td colspan="5" class="empty-table-cell">
+                <span class="material-symbols-outlined empty-icon">corporate_fare</span>
+                <p *ngIf="categories.length === 0">{{ 'user_cat.no_categories' | translate:'No user categories or departments have been configured yet.' }}</p>
+                <p *ngIf="categories.length > 0">{{ 'user_cat.no_matching' | translate:'No categories matching' }} "{{ searchQuery }}".</p>
+                <a *ngIf="categories.length === 0" routerLink="/users/console/categories/create" class="btn btn-primary btn-sm" style="margin-top: 8px;">
+                  <span class="material-symbols-outlined">add</span> {{ 'user_cat.btn_add_category' | translate:'Create First Category' }}
+                </a>
+                <button *ngIf="categories.length > 0" (click)="searchQuery=''; applyFilter()" class="btn btn-outline btn-sm" style="margin-top: 8px;">
+                  {{ 'directory.clear_filters' | translate:'Clear Search' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   `,
   styles: [`
-    .categories-page { display: flex; flex-direction: column; gap: 20px; }
-    .categories-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-    }
-    .category-card {
+    .categories-page { display: flex; flex-direction: column; gap: 18px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; width: 100%; }
+
+    /* Search Toolbar */
+    .table-toolbar-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-      transition: all 0.2s;
-    }
-    .category-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-    .card-top-bar { height: 6px; width: 100%; }
-    .card-content { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
-
-    .cat-header-row { display: flex; justify-content: space-between; align-items: center; }
-    .cat-icon-box {
-      width: 44px;
-      height: 44px;
       border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-    }
-    .cat-icon-box span { font-size: 24px; }
-    .headcount-pill {
-      font-size: 12px;
-      color: #64748b;
-      background: #f1f5f9;
-      padding: 4px 10px;
-      border-radius: 12px;
-      text-decoration: none;
-    }
-    .headcount-pill strong { color: #0f172a; }
-    .headcount-pill:hover { background: #e2e8f0; color: #0050e5; }
-
-    .cat-title { font-size: 16px; font-weight: 800; margin: 0; }
-    .cat-title-link { color: #0f172a; text-decoration: none; }
-    .cat-title-link:hover { color: #0050e5; }
-    .cat-description { font-size: 13px; color: #64748b; margin: 0; min-height: 38px; line-height: 1.4; }
-
-    .cat-footer {
+      padding: 14px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 12px;
-      margin-top: 6px;
+      gap: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-    .sort-badge { font-size: 11px; font-weight: 700; color: #94a3b8; background: #f8fafc; padding: 2px 8px; border-radius: 4px; border: 1px solid #e2e8f0; }
-    .cat-actions { display: flex; gap: 6px; }
-    .btn-sm-action {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+    @media (max-width: 640px) {
+      .table-toolbar-card { flex-direction: column; align-items: stretch; }
+    }
+    .search-input-wrap {
+      position: relative;
       display: flex;
       align-items: center;
-      justify-content: center;
-      border: 1px solid #e2e8f0;
-      background: #ffffff;
-      color: #64748b;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.15s;
+      flex: 1;
+      max-width: 420px;
     }
-    .btn-sm-action:hover { background: #f8fafc; color: #0f172a; }
-    .btn-sm-delete:hover { border-color: #ef4444; color: #ef4444; }
-
-    .empty-categories {
-      grid-column: 1 / -1;
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      font-size: 18px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .search-input-wrap input {
+      width: 100%;
+      height: 38px;
+      padding: 0 34px 0 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      background: #fafbfc;
+      color: #0f172a;
+      transition: all 0.15s ease;
+    }
+    .search-input-wrap input:focus {
       background: #ffffff;
-      border: 1px dashed #cbd5e1;
-      border-radius: 16px;
-      padding: 48px 24px;
-      text-align: center;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0,80,229,0.1);
+    }
+    .clear-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+    }
+    .clear-btn span { font-size: 16px; }
+    .toolbar-meta { font-size: 12px; color: #64748b; }
+    .toolbar-meta strong { color: #0f172a; }
+
+    /* Table Container */
+    .table-container {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    .data-table thead th {
+      background: #fafbfc;
+      padding: 12px 18px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    .data-table tbody td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      color: #334155;
+    }
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .data-table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    /* Category Cell */
+    .category-info-cell {
+      display: flex;
       align-items: center;
       gap: 12px;
     }
-    .empty-categories span { font-size: 48px; color: #94a3b8; }
-    .empty-categories h3 { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0; }
-    .empty-categories p { font-size: 13px; color: #64748b; margin: 0; }
+    .category-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(0,80,229,0.08);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .category-icon-box span { font-size: 20px; }
+    .category-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .cat-name-link {
+      font-weight: 700;
+      color: #0f172a;
+      text-decoration: none;
+      font-size: 13.5px;
+    }
+    .cat-name-link:hover {
+      color: #0050e5;
+    }
+    .cat-description-text {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.35;
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Headcount Badge */
+    .headcount-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 11.5px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .headcount-badge strong { color: #0050e5; font-weight: 700; }
+    .headcount-badge:hover {
+      background: #e0e7ff;
+      color: #0050e5;
+    }
+
+    /* Sort Order Pill */
+    .sort-order-pill {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 12px;
+      color: #64748b;
+      background: #f8fafc;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      display: inline-block;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .status-badge.active-status {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .status-badge.active-status .status-dot {
+      background: #16a34a;
+    }
+    .status-badge.draft-status {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+    .status-badge.draft-status .status-dot {
+      background: #94a3b8;
+    }
+
+    /* Actions Group */
+    .row-actions-group {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .btn-action {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-action span.material-symbols-outlined { font-size: 15px; }
+    .btn-action:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-members:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .btn-edit:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .btn-delete {
+      padding: 0 8px;
+    }
+    .btn-delete:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      background: #fef2f2;
+    }
+
+    /* Empty Table Cell */
+    .empty-table-cell {
+      padding: 48px 24px !important;
+      text-align: center;
+      color: #64748b;
+    }
+    .empty-icon { font-size: 44px; color: #cbd5e1; margin-bottom: 8px; }
+    .empty-table-cell p { margin: 0 0 10px; font-size: 13.5px; }
+
+    .btn { height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
+    .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
+    .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
+    .btn-primary { background: #0050e5; color: #ffffff; }
+    .btn-primary:hover { background: #0040b8; }
+    .btn-sm { height: 34px; padding: 0 12px; font-size: 12px; }
   `]
 })
 export class UserCategoriesComponent implements OnInit {
   isLoading = false;
   categories: any[] = [];
+  filteredCategories: any[] = [];
+  searchQuery = '';
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Create Category',
-      icon: 'add',
-      isPrimary: true,
-      routerLink: '/users/console/categories/create'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('directory.title', 'User Directory'),
+        icon: 'groups',
+        isPrimary: false,
+        routerLink: '/users/console/list'
+      },
+      {
+        text: this.translationService.translate('user_cat.btn_add_category', 'Create Category'),
+        icon: 'add',
+        isPrimary: true,
+        routerLink: '/users/console/categories/create'
+      }
+    ];
+  }
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -189,37 +449,24 @@ export class UserCategoriesComponent implements OnInit {
       next: (res) => {
         this.isLoading = false;
         this.categories = res.data || [];
+        this.applyFilter();
       },
       error: () => {
         this.isLoading = false;
-        this.toast.error('Failed to load categories.');
+        this.toast.error('Failed to load user categories.');
       }
     });
   }
 
-  async deleteCategory(cat: any): Promise<void> {
-    const confirmed = await this.toast.confirm(
-      'Delete User Category',
-      `You are about to permanently delete category '${cat.name}'.`,
-      'Delete Category',
-      'Cancel',
-      'danger',
-      cat.name,
-      [
-        'All members belonging to this category will be unassigned to Uncategorized.',
-        'This organizational category record cannot be recovered or restored.'
-      ]
+  applyFilter(): void {
+    if (!this.searchQuery.trim()) {
+      this.filteredCategories = [...this.categories];
+      return;
+    }
+    const q = this.searchQuery.toLowerCase().trim();
+    this.filteredCategories = this.categories.filter(c =>
+      c.name?.toLowerCase().includes(q) ||
+      c.description?.toLowerCase().includes(q)
     );
-    if (!confirmed) return;
-
-    this.api.delete<any>(`UsersApi/categories/${cat.id}`).subscribe({
-      next: () => {
-        this.toast.success(`Category '${cat.name}' deleted successfully.`);
-        this.loadCategories();
-      },
-      error: (err) => {
-        this.toast.error(err?.error?.message || 'Failed to delete category.');
-      }
-    });
   }
 }

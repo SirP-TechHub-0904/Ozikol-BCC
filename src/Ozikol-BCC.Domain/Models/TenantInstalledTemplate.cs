@@ -77,6 +77,12 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         public bool IsCustomized { get; set; } = false;
 
+        /// <summary>
+        /// Indicates whether this record is an out-of-the-box factory default asset (e.g. Corporate Suite).
+        /// Used to selectively refresh or purge factory blueprints without touching user-created or imported items.
+        /// </summary>
+        public bool IsDefault { get; set; } = false;
+
         public bool IsActive { get; set; } = true;
         public DateTime InstalledUtc { get; set; } = DateTime.UtcNow;
         public DateTime? LastUpdatedUtc { get; set; }

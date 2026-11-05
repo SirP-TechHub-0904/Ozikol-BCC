@@ -1,40 +1,56 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Domain.Models
 {
     /// <summary>
-    /// Represents a group of pages, typically used to build dropdown menus or footer categories.
+    /// Represents a category group of pages used to construct navbar dropdown menus and organized footer columns.
+    /// Supports recursive hierarchy (Parent Category -> Child Sub-Category).
     /// </summary>
+    [Table("PageCategories")]
     public class PageCategory
     {
         /// <summary>
-        /// Primary Key.
+        /// Unique primary key identifier for the page category.
         /// </summary>
-        public Guid Id { get; set; }
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
-        /// Name of the category (e.g., "About Us Menu").
+        /// Name of the category (e.g., "Services", "About Us", "Solutions").
         /// </summary>
-        public string? Title { get; set; }
+        [Required]
+        [MaxLength(150)]
+        [Display(Name = "Category Title")]
+        public string Title { get; set; } = string.Empty;
 
         /// <summary>
-        /// Navigation property for all WebPages inside this category.
+        /// Explicit positioning of this category dropdown in the navigation layout (First/Left, Middle/Center, Last/Right, or Top Utility Bar).
+        /// Navigation items are grouped first by MenuPosition, then sorted by MenuSortOrder within that group.
         /// </summary>
-        public ICollection<WebPage>? WebPages { get; set; }
+        [Display(Name = "Menu Zone Position")]
+        public MenuPosition MenuPosition { get; set; } = MenuPosition.Middle;
 
         /// <summary>
-        /// Toggle visibility for this category on the UI.
-        /// </summary>
-        public bool Publish { get; set; }
-
-        /// <summary>
-        /// Position in the navigation bar.
+        /// Position in the primary navigation header menu within its MenuPosition group.
         /// </summary>
         [Display(Name = "Menu Sort Order")]
-        public int MenuSortOrder { get; set; }
+        public int MenuSortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// Toggle visibility for this category on the public UI.
+        /// </summary>
+        public bool Publish { get; set; } = true;
+
+        /// <summary>
+        /// Toggle visibility as a dropdown menu in the website navigation header.
+        /// When true, this category and its attached child pages will render in the navbar.
+        /// </summary>
+        [Display(Name = "Show In Menu")]
+        public bool ShowInMenu { get; set; } = true;
 
         /// <summary>
         /// Toggle visibility as a column header in the website footer.
@@ -42,6 +58,12 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [Display(Name = "Show In Footer")]
         public bool ShowInFooter { get; set; } = true;
+
+        /// <summary>
+        /// Explicit sorting position of this category column within the website footer columns layout.
+        /// </summary>
+        [Display(Name = "Footer Sort Order")]
+        public int FooterSortOrder { get; set; } = 0;
 
         /// <summary>
         /// Custom display title to use when displayed as a footer column header.
@@ -52,13 +74,7 @@ namespace Ozikol_BCC.Domain.Models
         public string? FooterDisplayTitle { get; set; }
 
         /// <summary>
-        /// Determines where on the home page this category's children are sorted from.
-        /// </summary>
-        [Display(Name = "Home Sort From")]
-        public HomeSortFrom HomeSortFrom { get; set; }
-
-        /// <summary>
-        /// Optional: Allows creating cascading sub-dropdown menus (e.g., Parent Category -> Child Category).
+        /// Optional: Allows creating cascading sub-dropdown menus (Parent Category -> Child Category).
         /// </summary>
         [Display(Name = "Parent Category")]
         public Guid? ParentId { get; set; }
@@ -66,23 +82,41 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// Navigation property to the parent category.
         /// </summary>
+        [ForeignKey("ParentId")]
         public PageCategory? Parent { get; set; }
 
         /// <summary>
-        /// Navigation property for the sub-categories.
+        /// Navigation collection of child sub-categories.
         /// </summary>
-        public ICollection<PageCategory>? Children { get; set; }
+        public ICollection<PageCategory> Children { get; set; } = new List<PageCategory>();
 
         /// <summary>
-        /// Optional FontAwesome / Bootstrap icon class string (e.g. 'fa-solid fa-folder').
+        /// Navigation collection of all WebPages assigned to this category.
         /// </summary>
+        public ICollection<WebPage> WebPages { get; set; } = new List<WebPage>();
+
+        /// <summary>
+        /// Optional FontAwesome or Bootstrap icon class string (e.g. 'fa-solid fa-folder', 'bi bi-grid').
+        /// </summary>
+        [MaxLength(100)]
         public string? Icon { get; set; }
+
+        /// <summary>
+        /// Optional custom CSS class applied to this category's dropdown trigger or column container.
+        /// Injected into templates via {{ CustomClass }}.
+        /// </summary>
+        [MaxLength(200)]
+        [Display(Name = "Custom CSS Class")]
+        public string? CustomClass { get; set; }
 
         /// <summary>
         /// Category creation timestamp in UTC.
         /// </summary>
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Last updated timestamp in UTC.
+        /// </summary>
+        public DateTime? UpdatedAtUtc { get; set; }
     }
 }
-
-

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace Ozikol_BCC.Application.Services.Cloudinary
 {
     /// <summary>
-    /// Image storage abstraction for Cloudinary-backed uploads and deletes.
+    /// Image and document storage abstraction for Cloudinary-backed uploads and deletes.
     /// Supports platform master credentials by default, with optional per-tenant custom credentials.
     /// </summary>
     public interface ICloudinaryService
@@ -20,7 +20,17 @@ namespace Ozikol_BCC.Application.Services.Cloudinary
         Task<(string Url, string PublicId)> UploadImageWithPublicIdAsync(IFormFile file, string folderName = "templates", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null);
 
         /// <summary>
-        /// Deletes an image by public ID.
+        /// Uploads a raw document/file (e.g. PDF, DOCX, ZIP) to Cloudinary and returns the secure URL.
+        /// </summary>
+        Task<string> UploadRawDocumentAsync(IFormFile file, string folderName = "documents", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null);
+
+        /// <summary>
+        /// Uploads a raw document/file and returns both the secure URL and public ID.
+        /// </summary>
+        Task<(string Url, string PublicId)> UploadRawDocumentWithPublicIdAsync(IFormFile file, string folderName = "documents", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null);
+
+        /// <summary>
+        /// Deletes an asset by public ID.
         /// </summary>
         Task<bool> DeleteImageAsync(string publicId, string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null);
 

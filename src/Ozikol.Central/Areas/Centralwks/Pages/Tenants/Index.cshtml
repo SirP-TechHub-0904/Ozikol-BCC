@@ -1,77 +1,99 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Tenants.IndexModel
 @{
-    ViewData["Title"] = "Tenant Management";
+    ViewData["Title"] = "Tenant Suite";
     ViewData["BreadcrumbSection"] = "Platform Core";
 }
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Sovereign Tenant Fleet</h1>
-        <p class="admin-subtitle">Inspect, manage, and govern dedicated organization database instances across the platform.</p>
-    </div>
-    <div class="admin-actions">
-        <a href="/centralwks/tenants/create" class="btn-admin btn-admin-primary">
-            <span>+</span> Provision New Tenant
-        </a>
+        <h1 class="admin-title">Tenant Suite</h1>
+        <p class="admin-subtitle">Govern, inspect, and monitor organization workspace instances across the platform.</p>
     </div>
 </div>
 
-@* ── Fleet Summary Stat Cards ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">
-            🏢
+@* ── Suite Mini-Dashboard Metric Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">domain</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Total Fleet</span>
-            <span class="stat-value" style="font-size: 20px;">@(Model.ActiveCount + Model.SuspendedCount)</span>
+            <span class="stat-label">Total Suite</span>
+            <span class="stat-value">@Model.TotalSuiteCount.ToString("N0")</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">
-            ✓
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">check_circle</span>
         </div>
         <div class="stat-details">
             <span class="stat-label">Active Tenants</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-success);">@Model.ActiveCount</span>
+            <span class="stat-value" style="color: var(--admin-success);">@Model.ActiveCount.ToString("N0")</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">
-            ⏸
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">pause_circle</span>
         </div>
         <div class="stat-details">
             <span class="stat-label">Suspended</span>
-            <span class="stat-value" style="font-size: 20px; color: var(--admin-warning);">@Model.SuspendedCount</span>
+            <span class="stat-value" style="color: var(--admin-warning);">@Model.SuspendedCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-info">
+            <span class="material-symbols-outlined">trending_up</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">New This Week</span>
+            <span class="stat-value" style="color: var(--admin-info);">@Model.NewThisWeekCount.ToString("N0")</span>
         </div>
     </div>
 </div>
 
-@* ── Tenant Table Card ── *@
+@* ── Tenant Suite Data Table Card ── *@
 <div class="admin-card">
-    <div class="table-toolbar">
-        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center;">
-            <div class="table-search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" name="search" value="@Model.Search" placeholder="Search by name, key, domain, email..." />
+    <div class="table-toolbar" style="flex-wrap: wrap; gap: 14px;">
+        <form method="get" class="table-filters" style="flex: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div class="table-search-box" style="min-width: 260px; flex: 1;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search by name, key, domain, email... (Press /)" />
             </div>
 
-            <select name="status" class="form-select" style="width: 160px; padding: 8px 12px; font-size: 13px;">
-                <option value="">All Statuses</option>
+            <select name="status" class="form-select" style="width: 170px; padding: 8px 12px; font-size: 13px;">
+                <option value="all" selected="@(Model.Status == "all" || string.IsNullOrEmpty(Model.Status))">All Statuses</option>
                 <option value="active" selected="@(Model.Status == "active")">Active Only</option>
                 <option value="suspended" selected="@(Model.Status == "suspended")">Suspended Only</option>
+                <option value="deleted" selected="@(Model.Status == "deleted")">Deactivated (Soft Deleted)</option>
             </select>
 
-            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">Filter</button>
-            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Status))
+            <select name="pageSize" class="form-select" style="width: 130px; padding: 8px 12px; font-size: 13px;">
+                <option value="10" selected="@(Model.PageSize == 10)">10 per page</option>
+                <option value="25" selected="@(Model.PageSize == 25)">25 per page</option>
+                <option value="50" selected="@(Model.PageSize == 50)">50 per page</option>
+                <option value="100" selected="@(Model.PageSize == 100)">100 per page</option>
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
+                Filter
+            </button>
+
+            @if (!string.IsNullOrEmpty(Model.Search) || (Model.Status != "all" && !string.IsNullOrEmpty(Model.Status)) || Model.PageSize != 10)
             {
-                <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">Clear</a>
+                <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    Clear
+                </a>
             }
         </form>
 
-        <div style="font-size: 12.5px; color: var(--admin-text-muted);">
-            Showing @Model.Tenants.Count of @Model.TotalCount organizations
+        <div style="font-size: 12.5px; color: var(--admin-text-muted); display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">format_list_bulleted</span>
+            Showing @Model.Tenants.Count of @Model.TotalFilteredCount.ToString("N0") organizations
         </div>
     </div>
 
@@ -79,90 +101,152 @@
         <table class="admin-table">
             <thead>
                 <tr>
+                    <th style="width: 50px; text-align: center;">S/N</th>
                     <th>Organization</th>
-                    <th>Subdomain & Domain</th>
-                    <th>Database</th>
+                    <th>Domains &amp; URLs</th>
+                    <th>Currency</th>
                     <th>Modules</th>
                     <th>Status</th>
-                    <th>Provisioned</th>
+                    <th>Date Registered</th>
+                    <th>Last Accessed Website</th>
                     <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @if (Model.Tenants.Any())
                 {
-                    @foreach (var tenant in Model.Tenants)
+                    @for (int i = 0; i < Model.Tenants.Count; i++)
                     {
+                        var tenant = Model.Tenants[i];
+                        var sn = (Model.PageNumber - 1) * Model.PageSize + (i + 1);
+                        var isTenantSuspended = tenant.IsSuspended || !tenant.IsActive;
+                        var currCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                        var currSym = Model.CurrencySymbols.TryGetValue(currCode, out var sym) ? sym : "$";
                         <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@sn</span>
+                            </td>
                             <td>
                                 <div>
-                                    <strong style="color: var(--admin-text); font-size: 14px;">@tenant.OrganizationName</strong>
-                                    <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px;">
-                                        Key: <code style="color: var(--admin-primary);">@tenant.TenantKey</code>
+                                    <a href="/centralwks/tenants/details?id=@tenant.Id" style="font-weight: 600; color: var(--admin-text); text-decoration: none; font-size: 14px;" class="tenant-name-link">
+                                        @tenant.OrganizationName
+                                    </a>
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
+                                        <code style="font-size: 11px; padding: 2px 6px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm); color: var(--admin-primary); font-weight: 600;">
+                                             @tenant.TenantKey
+                                        </code>
                                         @if (!string.IsNullOrEmpty(tenant.AdminEmail))
                                         {
-                                            <span> • @tenant.AdminEmail</span>
+                                            <span style="font-size: 11.5px; color: var(--admin-text-dim);">• @tenant.AdminEmail</span>
                                         }
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <div style="font-size: 13px;">
-                                    <a href="https://@tenant.PrimaryDomain" target="_blank" style="color: var(--admin-info); text-decoration: none;">
-                                        @tenant.PrimaryDomain ↗
+                                <div>
+                                    <a href="https://@tenant.PrimaryDomain" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 13px; color: var(--admin-primary); text-decoration: none;">
+                                        @tenant.PrimaryDomain
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
                                     </a>
+                                    @if (!string.IsNullOrEmpty(tenant.CustomDomain))
+                                    {
+                                        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px; color: var(--admin-success);">verified</span>
+                                            @tenant.CustomDomain
+                                        </div>
+                                    }
                                 </div>
-                                @if (!string.IsNullOrEmpty(tenant.CustomDomain))
-                                {
-                                    <div style="font-size: 11.5px; color: var(--admin-text-muted);">
-                                        Custom: @tenant.CustomDomain
-                                    </div>
-                                }
                             </td>
                             <td>
-                                <span style="font-family: monospace; font-size: 12px; color: var(--admin-text-muted); background: var(--admin-bg-surface-elevated); padding: 3px 6px; border-radius: 4px;">
-                                    @tenant.DatabaseName
-                                </span>
+                                <a href="/centralwks/tenants/features?tenantId=@tenant.Id" title="Click to manage tenant currency &amp; features" style="text-decoration: none;">
+                                    <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; font-weight: 700; font-size: 11.5px; border: 1px solid rgba(14, 165, 233, 0.25);">
+                                        @currCode (@currSym)
+                                    </span>
+                                </a>
                             </td>
                             <td>
-                                <span class="badge badge-indigo">
+                                <span class="badge badge-info" style="font-size: 11.5px;">
+                                    <span class="material-symbols-outlined" style="font-size: 12px; margin-right: 3px;">toggle_on</span>
                                     @(tenant.FeatureSubscriptions?.Count(s => s.IsActive) ?? 0) Active
                                 </span>
                             </td>
                             <td>
-                                @if (tenant.IsActive)
+                                @if (tenant.IsDeleted)
                                 {
-                                    <span class="badge badge-success">
-                                        <span class="badge-dot"></span> Active
+                                    <span class="badge badge-danger">
+                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                        Deactivated
+                                    </span>
+                                }
+                                else if (isTenantSuspended)
+                                {
+                                    <span class="badge badge-warning" title="@(tenant.SuspensionReason ?? "Suspended")">
+                                        <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                                        Suspended
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-danger">
-                                        <span class="badge-dot"></span> Suspended
+                                    <span class="badge badge-success">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Active
                                     </span>
                                 }
                             </td>
-                            <td style="font-size: 12px; color: var(--admin-text-dim);">
-                                @tenant.CreatedUtc.ToString("MMM dd, yyyy")
+                            <td>
+                                <div style="font-size: 12.5px; color: var(--admin-text); font-weight: 500;">
+                                    @tenant.CreatedUtc.ToString("yyyy-MM-dd")
+                                </div>
+                                <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                    @tenant.CreatedUtc.ToString("HH:mm:ss") UTC
+                                </div>
+                            </td>
+                            <td>
+                                @if (tenant.LastAccessedUtc.HasValue)
+                                {
+                                    <div>
+                                        <span style="font-weight: 600; font-size: 12.5px; color: var(--admin-text);">@Model.GetRelativeTime(tenant.LastAccessedUtc)</span>
+                                        <div style="font-size: 11px; color: var(--admin-text-dim);">@tenant.LastAccessedUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-size: 11px; font-weight: 500;">
+                                        No visits recorded
+                                    </span>
+                                }
                             </td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                    <a href="/centralwks/tenants/details?id=@tenant.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View details">
-                                        Details
+                                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <a href="/centralwks/tenants/details?id=@tenant.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Full Details" aria-label="View Details">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                                     </a>
-                                    <a href="/centralwks/tenants/features?id=@tenant.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Manage feature subscriptions">
-                                        Modules
+                                    <a href="/centralwks/tenants/edit?id=@tenant.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Metadata" aria-label="Edit Metadata">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
                                     </a>
-                                    <a href="/centralwks/tenants/edit?id=@tenant.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit tenant profile">
-                                        Edit
-                                    </a>
-                                    <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@tenant.Id" style="display: inline; margin: 0;">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin @(tenant.IsActive ? "btn-admin-danger" : "btn-admin-primary") btn-admin-sm" onclick="return confirm('Are you sure you want to @(tenant.IsActive ? "suspend" : "activate") tenant @tenant.OrganizationName?');">
-                                            @(tenant.IsActive ? "Suspend" : "Activate")
-                                        </button>
-                                    </form>
+
+                                    @if (!tenant.IsDeleted)
+                                    {
+                                        @if (isTenantSuspended)
+                                        {
+                                            <form method="post" asp-page-handler="Reactivate" asp-route-id="@tenant.Id" style="display: inline; margin: 0;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="search" value="@Model.Search" />
+                                                <input type="hidden" name="status" value="@Model.Status" />
+                                                <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+                                                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-success);" title="Reactivate Tenant" aria-label="Reactivate Tenant" onclick="return confirm('Reactivate organization @tenant.OrganizationName?');">
+                                                    <span class="material-symbols-outlined" style="font-size: 16px;">play_circle</span>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-warning);" title="Suspend Tenant" aria-label="Suspend Tenant" onclick="openSuspendModal(@tenant.Id, '@tenant.OrganizationName.Replace("'", "\\'")');">
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">pause_circle</span>
+                                            </button>
+                                        }
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -171,13 +255,10 @@
                 else
                 {
                     <tr>
-                        <td colspan="7">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">🏢</div>
-                                <h3 class="empty-state-title">No Tenants Found</h3>
-                                <p class="empty-state-desc">No sovereign organization databases match your current search or filter query.</p>
-                                <a href="/centralwks/tenants/create" class="btn-admin btn-admin-primary btn-admin-sm">+ Provision First Tenant</a>
-                            </div>
+                        <td colspan="9" style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-text-dim); display: block; margin-bottom: 8px;">domain_disabled</span>
+                            <div style="font-weight: 600; font-size: 15px; color: var(--admin-text);">No organizations found</div>
+                            <div style="font-size: 13px; margin-top: 4px;">Try adjusting your search terms or status filters.</div>
                         </td>
                     </tr>
                 }
@@ -185,27 +266,112 @@
         </table>
     </div>
 
-    @* Pagination *@
+    @* ── Pagination Controls ── *@
     @if (Model.TotalPages > 1)
     {
-        <div class="admin-card-footer">
+        <div class="table-pagination" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--admin-border); flex-wrap: wrap; gap: 12px;">
             <div style="font-size: 12.5px; color: var(--admin-text-muted);">
-                Page @Model.PageNumber of @Model.TotalPages
+                Page <strong>@Model.PageNumber</strong> of <strong>@Model.TotalPages</strong>
             </div>
-            <ul class="admin-pagination">
-                <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
-                    <a class="page-link" href="?pageNumber=@(Model.PageNumber - 1)&search=@Model.Search&status=@Model.Status">‹ Previous</a>
-                </li>
+
+            <nav class="pagination-nav" aria-label="Tenant Pagination" style="display: flex; align-items: center; gap: 6px;">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="?pageNumber=1&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="First Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">first_page</span>
+                    </a>
+                    <a href="?pageNumber=@(Model.PageNumber - 1)&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="Previous Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">chevron_left</span>
+                    </a>
+                }
+
                 @for (int p = Math.Max(1, Model.PageNumber - 2); p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
                 {
-                    <li class="page-item @(p == Model.PageNumber ? "active" : "")">
-                        <a class="page-link" href="?pageNumber=@p&search=@Model.Search&status=@Model.Status">@p</a>
-                    </li>
+                    if (p == Model.PageNumber)
+                    {
+                        <span class="btn-admin btn-admin-primary btn-admin-sm" style="min-width: 32px; justify-content: center; font-weight: 700;">@p</span>
+                    }
+                    else
+                    {
+                        <a href="?pageNumber=@p&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" style="min-width: 32px; justify-content: center;">@p</a>
+                    }
                 }
-                <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
-                    <a class="page-link" href="?pageNumber=@(Model.PageNumber + 1)&search=@Model.Search&status=@Model.Status">Next ›</a>
-                </li>
-            </ul>
+
+                @if (Model.PageNumber < Model.TotalPages)
+                {
+                    <a href="?pageNumber=@(Model.PageNumber + 1)&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="Next Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+                    </a>
+                    <a href="?pageNumber=@Model.TotalPages&pageSize=@Model.PageSize&search=@Model.Search&status=@Model.Status" class="btn-admin btn-admin-secondary btn-admin-sm" title="Last Page">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">last_page</span>
+                    </a>
+                }
+            </nav>
         </div>
     }
 </div>
+
+@* ── Suspend Tenant Dialog Modal ── *@
+<div class="admin-modal-backdrop" id="suspendModalBackdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); z-index: 1100; align-items: center; justify-content: center;">
+    <div class="admin-modal-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); overflow: hidden;">
+        <div class="admin-modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; color: var(--admin-text);">
+                <span class="material-symbols-outlined" style="color: var(--admin-warning);">pause_circle</span>
+                Suspend Tenant Organization
+            </div>
+            <button type="button" class="btn-admin-icon" onclick="closeSuspendModal();" aria-label="Close dialog">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form method="post" asp-page-handler="Suspend" style="margin: 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="suspendTenantId" value="" />
+            <input type="hidden" name="search" value="@Model.Search" />
+            <input type="hidden" name="status" value="@Model.Status" />
+            <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+            <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+            <div class="admin-modal-body" style="padding: 20px;">
+                <p style="font-size: 13.5px; color: var(--admin-text-muted); margin-bottom: 14px;">
+                    Are you sure you want to suspend <strong id="suspendTenantName" style="color: var(--admin-text);"></strong>?
+                    Users attempting to access this workspace will receive a maintenance screen.
+                </p>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; font-size: 13px;">Suspension Reason (Logged to Audit Trail)</label>
+                    <input type="text" name="reason" class="form-control" placeholder="e.g. Billing delinquency, Terms violation, Maintenance" required />
+                </div>
+            </div>
+
+            <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeSuspendModal();">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">pause_circle</span>
+                    Confirm Suspension
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openSuspendModal(id, name) {
+            document.getElementById('suspendTenantId').value = id;
+            document.getElementById('suspendTenantName').textContent = name;
+            const modal = document.getElementById('suspendModalBackdrop');
+            modal.style.display = 'flex';
+        }
+
+        function closeSuspendModal() {
+            const modal = document.getElementById('suspendModalBackdrop');
+            modal.style.display = 'none';
+        }
+
+        document.getElementById('suspendModalBackdrop').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSuspendModal();
+            }
+        });
+    </script>
+}

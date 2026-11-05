@@ -1,0 +1,67 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Login2faModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Two-Factor Verification";
+    ViewData["CardTitle"] = "Two-Factor Authentication";
+}
+
+@section HeaderExtra {
+    <p class="auth-subtitle">
+        Enter the 6-digit verification code dispatched to: <br />
+        <strong>@Model.Email</strong>
+    </p>
+}
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert-box alert-success" role="alert">
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+            @Model.StatusMessage
+        </span>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert-box alert-danger" role="alert">
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+            @Model.ErrorMessage
+        </span>
+    </div>
+}
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Email" />
+    <input type="hidden" asp-for="RememberMe" />
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    <div class="form-group">
+        <label asp-for="Code" class="form-label" style="text-align: center;">6-Digit Security Code <span class="required">*</span></label>
+        <input asp-for="Code" class="form-control otp-control" placeholder="123456" maxlength="6" autocomplete="one-time-code" autofocus />
+        <span asp-validation-for="Code" class="field-validation-error"></span>
+    </div>
+
+    <button type="submit" class="btn-submit">
+        <span>Verify &amp; Sign In</span>
+        <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+    </button>
+</form>
+
+<form method="post" asp-page-handler="Resend" class="resend-section">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Email" />
+    <input type="hidden" asp-for="RememberMe" />
+    <input type="hidden" asp-for="ReturnUrl" />
+    <span style="font-size: 13px; color: #64748b;">Didn't receive the code?</span>
+    <button type="submit" class="btn-resend">Resend Security Code</button>
+</form>
+
+@section Footer {
+    <div class="auth-footer">
+        <a href="/centralwks/login">← Return to Sign In</a>
+    </div>
+}

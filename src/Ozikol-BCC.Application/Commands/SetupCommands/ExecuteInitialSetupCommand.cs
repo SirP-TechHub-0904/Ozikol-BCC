@@ -77,12 +77,15 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
 
             try
             {
-                // 1. Ensure Roles (SuperAdmin, Admin, User)
+                // 1. Ensure Standard System Roles (SuperAdmin, Admin, Global Editor, Feature Editor, Read Only, Member)
                 var roles = new (string Name, RoleCategory Category)[]
                 {
                     ("SuperAdmin", RoleCategory.BCP),
                     ("Admin", RoleCategory.Both),
-                    ("User", RoleCategory.BCP)
+                    ("Global Editor", RoleCategory.BCP),
+                    ("Feature Editor", RoleCategory.BCP),
+                    ("Read Only", RoleCategory.BCP),
+                    ("Member", RoleCategory.BCP)
                 };
 
                 foreach (var role in roles)
@@ -143,7 +146,10 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
 
         private string GenerateJwtToken(Profile user)
         {
-            var jwtKey = _configuration["Jwt:Key"] ?? "OzikolBCC_SuperSecretJwtEncryptionKey_2026_MustBe32BytesOrMore!";
+            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key")
+                ?? Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? _configuration["Jwt:Key"]
+                ?? throw new InvalidOperationException("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is missing. Configure 'Jwt__Key' in your .env file.");
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "Ozikol-BCC.Api";
             var jwtAudience = _configuration["Jwt:Audience"] ?? "Ozikol-BCC.Client";
 

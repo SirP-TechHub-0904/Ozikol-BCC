@@ -1,0 +1,20 @@
+{
+  "title": "Enterprise Architecture & Cloud Solutions",
+  "subTitle": "Discover our cloud migration, microservices, and enterprise consulting frameworks.",
+  "backgroundImageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+  "breadcrumbs": [
+    {
+      "title": "Home",
+      "url": "/"
+    },
+    {
+      "title": "Solutions",
+      "url": "/solutions"
+    },
+    {
+      "title": "Enterprise Architecture",
+      "url": "",
+      "isActive": true
+    }
+  ]
+}

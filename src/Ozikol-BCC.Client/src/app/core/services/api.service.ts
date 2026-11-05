@@ -11,16 +11,26 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  private getHeaders(body?: any): HttpHeaders {
-    const token = localStorage.getItem('access_token');
-    let tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain');
+  private getTenantKey(): string | null {
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    if (!tenantKey && hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
       const parts = hostname.split('.');
-      tenantKey = parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])
-        ? parts[0]
-        : hostname;
+      if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0].toLowerCase())) {
+        const subdomainTenant = parts[0].toLowerCase();
+        // Keep localStorage synchronized with active URL subdomain
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('tenant_key') !== subdomainTenant) {
+          localStorage.setItem('tenant_key', subdomainTenant);
+        }
+        return subdomainTenant;
+      }
     }
+    return typeof localStorage !== 'undefined' ? (localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain')) : null;
+  }
+
+  private getHeaders(body?: any): HttpHeaders {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const tenantKey = this.getTenantKey();
 
     let headers = new HttpHeaders();
 
@@ -44,14 +54,24 @@ export class ApiService {
   }
 
   private logRequest(method: string, url: string, payload?: any): void {
-    const domain = window.location.host;
-    const tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain') || '(Default Host Domain)';
+    const domain = typeof window !== 'undefined' ? window.location.host : '';
+    const tenantKey = this.getTenantKey() || '(Default Host Domain)';
     console.groupCollapsed(`%c[ANGULAR API ${method}] ${url}`, 'color: #0050e5; font-weight: bold;');
     console.log('%cBrowser Domain  :', 'font-weight:bold;', domain);
     console.log('%cResolved Tenant :', 'font-weight:bold; color:#16a34a;', tenantKey);
     console.log('%cAPI Endpoint    :', 'font-weight:bold;', url);
     if (payload) console.log('%cPayload Sent   :', 'font-weight:bold;', payload);
     console.groupEnd();
+  }
+
+  private buildUrl(path: string): string {
+    const base = (this.baseUrl || '').replace(/\/+$/, '');
+    let cleanPath = (path || '').replace(/^\/+/, '');
+    // Guard against accidental double 'api/' prefix when baseUrl already has '/api'
+    if (base.endsWith('/api') && cleanPath.startsWith('api/')) {
+      cleanPath = cleanPath.substring(4);
+    }
+    return `${base}/${cleanPath}`;
   }
 
   get<T>(path: string, params?: any): Observable<T> {
@@ -63,7 +83,7 @@ export class ApiService {
         }
       });
     }
-    const fullUrl = `${this.baseUrl}/${path}`;
+    const fullUrl = this.buildUrl(path);
     this.logRequest('GET', fullUrl, params);
     return this.http.get<T>(fullUrl, {
       headers: this.getHeaders(),
@@ -72,7 +92,7 @@ export class ApiService {
   }
 
   post<T>(path: string, body: any): Observable<T> {
-    const fullUrl = `${this.baseUrl}/${path}`;
+    const fullUrl = this.buildUrl(path);
     this.logRequest('POST', fullUrl, body);
     return this.http.post<T>(fullUrl, body, {
       headers: this.getHeaders(body)
@@ -80,18 +100,35 @@ export class ApiService {
   }
 
   put<T>(path: string, body: any): Observable<T> {
-    const fullUrl = `${this.baseUrl}/${path}`;
+    const fullUrl = this.buildUrl(path);
     this.logRequest('PUT', fullUrl, body);
     return this.http.put<T>(fullUrl, body, {
       headers: this.getHeaders(body)
     });
   }
 
-  delete<T>(path: string): Observable<T> {
-    const fullUrl = `${this.baseUrl}/${path}`;
-    this.logRequest('DELETE', fullUrl);
+  patch<T>(path: string, body?: any): Observable<T> {
+    const fullUrl = this.buildUrl(path);
+    this.logRequest('PATCH', fullUrl, body);
+    return this.http.patch<T>(fullUrl, body || {}, {
+      headers: this.getHeaders(body)
+    });
+  }
+
+  delete<T>(path: string, params?: any): Observable<T> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined) {
+          httpParams = httpParams.set(key, params[key]);
+        }
+      });
+    }
+    const fullUrl = this.buildUrl(path);
+    this.logRequest('DELETE', fullUrl, params);
     return this.http.delete<T>(fullUrl, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
+      params: httpParams
     });
   }
 }

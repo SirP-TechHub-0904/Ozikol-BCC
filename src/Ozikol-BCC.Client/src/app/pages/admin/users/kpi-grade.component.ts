@@ -87,12 +87,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="empty-state" *ngIf="indicators.length === 0">
               <span class="material-symbols-outlined">assignment_late</span>
               <p>No active KPI indicators available for grading.</p>
-              <a routerLink="/admin/users/kpi/metrics/create" class="btn btn-primary btn-sm">Create Indicator</a>
+              <a routerLink="/users/console/kpi/metrics/create" class="btn btn-primary btn-sm">Create Indicator</a>
             </div>
           </div>
 
           <div class="card-footer" *ngIf="indicators.length > 0">
-            <a [routerLink]="['/admin/users/details', userId]" class="btn btn-outline">Cancel</a>
+            <a [routerLink]="['/users/console/details', userId]" class="btn btn-outline">Cancel</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving">
               <span *ngIf="!isSaving" class="material-symbols-outlined">send</span>
               <span>{{ isSaving ? 'Submitting Scorecard...' : 'Submit Evaluation Scores' }}</span>
@@ -138,9 +138,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn-sm { height: 32px; padding: 0 12px; font-size: 11px; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class KpiGradeComponent implements OnInit {
@@ -166,7 +169,7 @@ export class KpiGradeComponent implements OnInit {
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('userId') || '';
     if (!this.userId) {
-      this.router.navigate(['/admin/users/list']);
+      this.router.navigate(['/users/console/list']);
       return;
     }
 
@@ -175,13 +178,13 @@ export class KpiGradeComponent implements OnInit {
         text: 'View Details',
         icon: 'visibility',
         isPrimary: false,
-        routerLink: `/admin/users/details/${this.userId}`
+        routerLink: `/users/console/details/${this.userId}`
       },
       {
         text: 'Back to KPI Hub',
         icon: 'arrow_back',
         isPrimary: false,
-        routerLink: '/admin/users/kpi'
+        routerLink: '/users/console/kpi'
       }
     ];
 
@@ -200,7 +203,7 @@ export class KpiGradeComponent implements OnInit {
       error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load member profile.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       }
     });
   }
@@ -277,7 +280,7 @@ export class KpiGradeComponent implements OnInit {
       next: () => {
         this.isSaving = false;
         this.toast.success(`Evaluation submitted successfully for ${this.user?.fullName} (${finalPeriod})!`);
-        this.router.navigate(['/admin/users/details', this.userId]);
+        this.router.navigate(['/users/console/details', this.userId]);
       },
       error: (err) => {
         this.isSaving = false;

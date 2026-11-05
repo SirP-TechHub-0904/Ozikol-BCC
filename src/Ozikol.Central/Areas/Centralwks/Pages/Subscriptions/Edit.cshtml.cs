@@ -123,6 +123,56 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         }
 
         /// <summary>
+        /// Handles HTTP POST requests to immediately set subscription expiration by a specific number of days from now.
+        /// Useful for testing 2-day warning thresholds, 30-day monthly cycles, 365-day annual terms, or immediate overdue status (-1 day).
+        /// </summary>
+        /// <param name="days">Number of days from UTC now to set expiration.</param>
+        /// <returns>Redirect back to subscription details with updated countdown.</returns>
+        public async Task<IActionResult> OnPostSetExpiryDaysAsync(int days)
+        {
+            var sub = await _dbContext.MasterTenantFeatureSubscriptions
+                .Include(s => s.MasterTenantCatalog)
+                .Include(s => s.MasterFeatureCatalog)
+                .FirstOrDefaultAsync(s => s.Id == Id);
+
+            if (sub == null)
+            {
+                TempData["Error"] = "Subscription record not found.";
+                return RedirectToPage("/Subscriptions/Index");
+            }
+
+            var newExpiry = DateTime.UtcNow.AddDays(days);
+            sub.ExpiresAtUtc = newExpiry;
+            if (days < 0)
+            {
+                sub.Status = "Expired";
+            }
+            else if (sub.Status == "Expired" || sub.Status == "Suspended")
+            {
+                sub.Status = "Active";
+                sub.IsActive = true;
+            }
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "SetSubscriptionExpiryDays",
+                EntityType = "Subscription",
+                EntityId = sub.Id.ToString(),
+                Summary = $"Subscription expiration for '{sub.MasterFeatureCatalog?.Name}' set to {days} days from now ({newExpiry:yyyy-MM-dd HH:mm:ss} UTC) for tenant '{sub.MasterTenantCatalog?.OrganizationName}'.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Expiration successfully set to {days} day(s) from now ({newExpiry:MMM dd, yyyy HH:mm} UTC).";
+            return RedirectToPage("/Subscriptions/Details", new { id = sub.Id });
+        }
+
+        /// <summary>
         /// Input binding model for editing.
         /// </summary>
         public class SubscriptionEditInputModel

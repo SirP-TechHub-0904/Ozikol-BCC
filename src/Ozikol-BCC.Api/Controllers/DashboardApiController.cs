@@ -10,7 +10,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,CmsManager,ContentManager,CommerceManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     [Tags("Admin Dashboard & Analytics")]
     public class DashboardApiController : ControllerBase
     {
@@ -40,7 +40,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         public class MasterTenantDetailsDto
         {
-            public int Id { get; set; }
+            public Guid Id { get; set; }
             public string TenantKey { get; set; } = string.Empty;
             public string OrganizationName { get; set; } = string.Empty;
             public string PrimaryDomain { get; set; } = string.Empty;
@@ -76,11 +76,45 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> GetMetrics()
         {
             var host = HttpContext.Request.Host.ToString();
+            var tenantKeyHeader = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            var tenantDomainHeader = HttpContext.Request.Headers["X-Tenant-Domain"].ToString()?.Trim();
+            var originHeader = HttpContext.Request.Headers["Origin"].ToString()?.Trim();
+            var refererHeader = HttpContext.Request.Headers["Referer"].ToString()?.Trim();
+
+            string? originHost = null;
+            if (!string.IsNullOrWhiteSpace(originHeader) && Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri))
+            {
+                originHost = originUri.Authority;
+            }
+            string? refererHost = null;
+            if (!string.IsNullOrWhiteSpace(refererHeader) && Uri.TryCreate(refererHeader, UriKind.Absolute, out var refererUri))
+            {
+                refererHost = refererUri.Authority;
+            }
+
+            // Extract candidate tenant key from domain if possible (e.g. "cocacolanm.localhost:4200" -> "cocacolanm")
+            string? hostSubdomain = null;
+            var testHost = originHost ?? refererHost ?? tenantDomainHeader ?? host;
+            if (!string.IsNullOrWhiteSpace(testHost))
+            {
+                var cleanHost = testHost.Split(':')[0];
+                var parts = cleanHost.Split('.');
+                if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0].ToLowerInvariant()))
+                {
+                    hostSubdomain = parts[0].ToLowerInvariant();
+                }
+            }
+
+            var candidateKey = !string.IsNullOrWhiteSpace(tenantKeyHeader) ? tenantKeyHeader : hostSubdomain;
             var dbName = _context.Database.GetDbConnection().Database ?? "TenantDatabase";
 
             // 1. Retrieve Complete Master Catalog Record
             var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
-                .FirstOrDefaultAsync(t => t.PrimaryDomain == host 
+                .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(candidateKey) && t.TenantKey == candidateKey)
+                                       || (!string.IsNullOrWhiteSpace(tenantDomainHeader) && (t.PrimaryDomain == tenantDomainHeader || t.CustomDomain == tenantDomainHeader))
+                                       || (!string.IsNullOrWhiteSpace(originHost) && (t.PrimaryDomain == originHost || t.CustomDomain == originHost))
+                                       || (!string.IsNullOrWhiteSpace(refererHost) && (t.PrimaryDomain == refererHost || t.CustomDomain == refererHost))
+                                       || t.PrimaryDomain == host 
                                        || t.CustomDomain == host 
                                        || (t.ApiUrl != null && t.ApiUrl.Contains(host))
                                        || (t.WebsiteUrl != null && t.WebsiteUrl.Contains(host))
@@ -90,6 +124,12 @@ namespace Ozikol_BCC.Api.Controllers
             MasterTenantDetailsDto? tenantDetails = null;
             if (masterTenant != null)
             {
+                if (!masterTenant.LastAccessedUtc.HasValue || (DateTime.UtcNow - masterTenant.LastAccessedUtc.Value).TotalMinutes >= 1)
+                {
+                    masterTenant.LastAccessedUtc = DateTime.UtcNow;
+                    await _masterCatalogDbContext.SaveChangesAsync();
+                }
+
                 tenantDetails = new MasterTenantDetailsDto
                 {
                     Id = masterTenant.Id,
@@ -110,14 +150,12 @@ namespace Ozikol_BCC.Api.Controllers
             var totalActiveMembers = await _context.Users.CountAsync(u => u.LockoutEnd == null || u.LockoutEnd <= DateTimeOffset.UtcNow);
             var totalGroups = await _context.BcpGroups.CountAsync();
             var totalPages = await _context.WebPages.CountAsync(p => p.Publish);
-            var totalSliders = await _context.Sliders.CountAsync(s => s.Show);
-            var totalFaqs = await _context.FAQs.CountAsync(f => f.Show);
+            var totalSliders = 0;
+            var totalFaqs = 0;
 
             // Fetch table contents for logging
             var pageTitles = await _context.WebPages.Select(p => p.Title).ToListAsync();
             var categoryTitles = await _context.PageCategories.Select(c => c.Title).ToListAsync();
-            var sliderTitles = await _context.Sliders.Select(s => s.Title).ToListAsync();
-            var faqTitles = await _context.FAQs.Select(f => f.Title).ToListAsync();
 
             // LOGGING TO CONSOLE
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -145,8 +183,6 @@ namespace Ozikol_BCC.Api.Controllers
             Console.WriteLine($"[TENANT DATABASE TABLE CONTENT RETRIEVED - {dbName}]:");
             Console.WriteLine($"  * WebPages ({pageTitles.Count}): [{string.Join(", ", pageTitles)}]");
             Console.WriteLine($"  * PageCategories ({categoryTitles.Count}): [{string.Join(", ", categoryTitles)}]");
-            Console.WriteLine($"  * Hero Sliders ({sliderTitles.Count}): [{string.Join(", ", sliderTitles)}]");
-            Console.WriteLine($"  * FAQs ({faqTitles.Count}): [{string.Join(", ", faqTitles)}]");
             Console.WriteLine($"  * Groups / Channels ({totalGroups})");
             Console.WriteLine($"  * Members ({totalMembers}) | Active: ({totalActiveMembers})");
             Console.WriteLine("========================================================================");
@@ -195,6 +231,89 @@ namespace Ozikol_BCC.Api.Controllers
             };
 
             return Ok(ApiResponse<DashboardMetricsDto>.SuccessResponse(metrics, $"Complete Master DB info & table data retrieved for '{host}'."));
+        }
+
+        /// <summary>
+        /// Request model for binding or updating tenant custom domain in Master Catalog.
+        /// </summary>
+        public class UpdateCustomDomainRequest
+        {
+            /// <summary>
+            /// Unique tenant key identifier.
+            /// </summary>
+            public string? TenantKey { get; set; }
+
+            /// <summary>
+            /// Custom domain (e.g. "www.company.com" or empty/null to unbind).
+            /// </summary>
+            public string? CustomDomain { get; set; }
+        }
+
+        /// <summary>
+        /// Updates, binds, or unlinks a custom domain for a tenant directly in the Master Catalog Database.
+        /// </summary>
+        /// <param name="request">Payload containing tenant key and desired custom domain.</param>
+        /// <returns>Updated master tenant info response.</returns>
+        [HttpPut("update-custom-domain")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,ReadOnly,Read Only")]
+        public async Task<IActionResult> UpdateCustomDomain([FromBody] UpdateCustomDomainRequest request)
+        {
+            var host = HttpContext.Request.Host.ToString();
+            var tenantKeyHeader = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            var candidateKey = !string.IsNullOrWhiteSpace(request.TenantKey) ? request.TenantKey.Trim() : tenantKeyHeader;
+
+            // Retrieve Master Catalog tenant
+            var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(candidateKey) && t.TenantKey == candidateKey)
+                                       || t.PrimaryDomain == host 
+                                       || t.CustomDomain == host);
+
+            if (masterTenant == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
+            }
+
+            // Sanitize custom domain
+            string? cleanDomain = null;
+            if (!string.IsNullOrWhiteSpace(request.CustomDomain))
+            {
+                cleanDomain = request.CustomDomain.Trim().ToLowerInvariant()
+                    .Replace("https://", string.Empty)
+                    .Replace("http://", string.Empty)
+                    .TrimEnd('/');
+            }
+
+            masterTenant.CustomDomain = cleanDomain;
+            if (!string.IsNullOrWhiteSpace(cleanDomain))
+            {
+                masterTenant.WebsiteUrl = $"https://{cleanDomain}";
+            }
+            else
+            {
+                masterTenant.WebsiteUrl = !string.IsNullOrWhiteSpace(masterTenant.PrimaryDomain)
+                    ? $"https://{masterTenant.PrimaryDomain}"
+                    : null;
+            }
+
+            masterTenant.LastAccessedUtc = DateTime.UtcNow;
+            await _masterCatalogDbContext.SaveChangesAsync();
+
+            var tenantDetails = new MasterTenantDetailsDto
+            {
+                Id = masterTenant.Id,
+                TenantKey = masterTenant.TenantKey,
+                OrganizationName = masterTenant.OrganizationName,
+                PrimaryDomain = masterTenant.PrimaryDomain,
+                CustomDomain = masterTenant.CustomDomain,
+                ApiUrl = masterTenant.ApiUrl,
+                WebsiteUrl = masterTenant.WebsiteUrl,
+                DatabaseName = masterTenant.DatabaseName,
+                AdminEmail = masterTenant.AdminEmail,
+                IsActive = masterTenant.IsActive,
+                CreatedUtc = masterTenant.CreatedUtc
+            };
+
+            return Ok(ApiResponse<MasterTenantDetailsDto>.SuccessResponse(tenantDetails, "Custom domain updated successfully."));
         }
     }
 }

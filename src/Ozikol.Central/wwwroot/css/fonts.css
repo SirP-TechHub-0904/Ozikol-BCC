@@ -4,6 +4,15 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700;800&display=swap');
 
+/* ── Material Symbols Outlined — self-hosted, no CDN dependency ── */
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    font-weight: 100 700;
+    font-display: block;
+    src: url('../fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
 :root {
     --font-family-sans: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-family-heading: var(--font-family-sans);
@@ -11,9 +20,13 @@
     --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
-/* Enforce uniform font across all HTML elements */
+/* Enforce uniform font across all HTML elements — exclude icon font elements */
 *, *::before, *::after {
     font-family: var(--font-family-sans);
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
 }
 
 html, body {

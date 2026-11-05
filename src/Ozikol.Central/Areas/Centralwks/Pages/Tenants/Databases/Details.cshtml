@@ -1,0 +1,821 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases.DetailsModel
+@{
+    ViewData["Title"] = $"{Model.Tenant.DatabaseName} — Database Deep Dive";
+    ViewData["BreadcrumbSection"] = "Databases";
+}
+
+<div class="admin-page-header" style="margin-bottom: 20px;">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 class="admin-title" style="margin: 0; font-family: monospace;">@Model.Tenant.DatabaseName</h1>
+            @if (Model.DeepDive.IsReachable)
+            {
+                <span class="badge badge-success" id="pingStatusBadge">
+                    <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                    Online @(Model.PingLatencyMs.HasValue ? $"({Model.PingLatencyMs}ms)" : "")
+                </span>
+            }
+            else
+            {
+                <span class="badge badge-danger">
+                    <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                    Unreachable
+                </span>
+            }
+
+            @if (Model.DeepDive.HasPendingMigrations)
+            {
+                <span class="badge badge-warning">
+                    <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                    @Model.DeepDive.PendingMigrations.Count Pending Migrations
+                </span>
+            }
+            else
+            {
+                <span class="badge badge-success">
+                    <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                    Schema Synced
+                </span>
+            }
+        </div>
+        <div class="admin-subtitle" style="margin-top: 8px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px;">
+            <div>
+                Assigned to: <strong style="color: var(--admin-text);">@Model.Tenant.OrganizationName</strong>
+            </div>
+            <div>
+                Tenant Key: <code style="color: var(--admin-primary); font-weight: 700; background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px;">@Model.Tenant.TenantKey</code>
+            </div>
+            <div>
+                Default Domain: 
+                <a href="https://@Model.Tenant.PrimaryDomain" target="_blank" style="font-weight: 600; color: var(--admin-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    @Model.Tenant.PrimaryDomain
+                    <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                </a>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Tenant.CustomDomain))
+            {
+                <div style="display: flex; align-items: center; gap: 4px; color: var(--admin-success); font-weight: 600;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">verified</span>
+                    @Model.Tenant.CustomDomain
+                </div>
+            }
+            <div style="color: var(--admin-text-muted);">
+                Host: <span>@Model.ServerHost</span>
+            </div>
+        </div>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn-admin btn-admin-secondary" onclick="testPingConnection('@Model.Tenant.TenantKey');" id="btnPingTest">
+            <span class="material-symbols-outlined" style="font-size: 16px;">network_ping</span>
+            Test Ping Connection
+        </button>
+
+        <a href="#sqlRepairRoom" class="btn-admin btn-admin-secondary" onclick="setTimeout(() => document.getElementById('sqlQueryInput')?.focus(), 100);">
+            <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
+            SQL Repair Room
+        </a>
+
+        <form method="post" asp-page-handler="OptimizeActivityLogs" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" onclick="return confirm('Purge activity logs older than 90 days and apply SQL Server PAGE data compression to [dbo].[BcpActivityLogs] on @Model.Tenant.DatabaseName?\n\nThis reclaims disk space immediately.');" title="Purge >90d logs and apply PAGE data compression">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">compress</span>
+                Optimize &amp; Compress Logs
+            </button>
+        </form>
+
+        @if (Model.DeepDive.HasPendingMigrations)
+        {
+            <form id="formMigrateNow" method="post" asp-page-handler="Migrate" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-primary" onclick="return confirm('Apply pending migrations to @Model.Tenant.DatabaseName?');">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">sync</span>
+                    Apply Pending Migrations (@Model.DeepDive.PendingMigrations.Count)
+                </button>
+            </form>
+        }
+
+        <a href="/centralwks/tenants/details?id=@Model.Tenant.Id" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
+            Tenant Center
+        </a>
+    </div>
+</div>
+
+@* ── Storage & Diagnostic Metric Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">storage</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Allocated Storage</span>
+            <span class="stat-value">@Model.DeepDive.FormattedTotalStorage</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-info">
+            <span class="material-symbols-outlined">table_chart</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Physical Tables</span>
+            <span class="stat-value">@Model.DeepDive.TotalTablesCount</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">dns</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Database Records</span>
+            <span class="stat-value">@Model.DeepDive.FormattedTotalRecords</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">sync</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Applied Migrations</span>
+            <span class="stat-value" style="font-size: 20px;">@Model.DeepDive.AppliedMigrations.Count</span>
+        </div>
+    </div>
+</div>
+
+@* ── Tenant Activity & Ingestion Telemetry Grid ── *@
+<div class="activity-card-grid">
+    @* Weekly Distribution Bar Chart *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14.5px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary);">calendar_view_week</span>
+                Days in a Week Volume (Activity Heatmap)
+            </div>
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <span class="badge badge-success">
+                    Peak: @Model.DeepDive.ActivityDistribution.PeakDay
+                </span>
+            }
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px;">
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <div class="weekday-bar-container">
+                    @foreach (var day in Model.DeepDive.ActivityDistribution.WeeklyDistribution)
+                    {
+                        var heightPct = Math.Max(day.Percentage, 4.0);
+                        <div class="weekday-bar-col" title="@day.DayName: @day.RecordCount.ToString("N0") records">
+                            <span class="weekday-bar-val">@(day.RecordCount > 0 ? day.RecordCount.ToString("N0") : "-")</span>
+                            <div class="weekday-bar-track">
+                                <div class="weekday-bar-fill @(day.IsPeak ? "is-peak" : "")" style="height: @(heightPct.ToString("F1"))%;"></div>
+                            </div>
+                            <span class="weekday-bar-label" style="@(day.IsPeak ? "color: var(--admin-primary); font-weight: 700;" : "")">@day.ShortName</span>
+                        </div>
+                    }
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--admin-text-dim);">
+                    <span>Tracked across @Model.DeepDive.ActivityDistribution.TrackedTablesCount tables</span>
+                    <span>Total Analyzed: <strong>@Model.DeepDive.ActivityDistribution.TotalAnalyzedRecords.ToString("N0")</strong> records</span>
+                </div>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 28px 12px; color: var(--admin-text-muted);">
+                    <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-text-dim); display: block; margin-bottom: 6px;">event_busy</span>
+                    <span style="font-size: 13px;">No timestamped record activity detected in this database yet.</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Hourly 24-Hour Time Distribution Bar Curve *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14.5px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-info);">schedule</span>
+                Time in a Day (24-Hour Peak Ingestion)
+            </div>
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <span class="badge badge-warning">
+                    Window: @Model.DeepDive.ActivityDistribution.PeakHourWindow
+                </span>
+            }
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px;">
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <div class="hour-timeline-container">
+                    @foreach (var hour in Model.DeepDive.ActivityDistribution.HourlyDistribution)
+                    {
+                        var heightPct = Math.Max(hour.Percentage, 3.0);
+                        <div class="hour-bar-col" title="@hour.Label UTC (@hour.DisplayLabel): @hour.RecordCount.ToString("N0") records">
+                            <div class="hour-bar-track">
+                                <div class="hour-bar-fill @(hour.IsPeak ? "is-peak" : "")" style="height: @(heightPct.ToString("F1"))%;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="hour-timeline-axis">
+                    <span>12 AM (00:00)</span>
+                    <span>6 AM</span>
+                    <span>12 PM (12:00)</span>
+                    <span>6 PM</span>
+                    <span>11 PM (23:00)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--admin-text-dim);">
+                    <span>Timeline (UTC Engine Time)</span>
+                    <span>Peak Window: <strong>@Model.DeepDive.ActivityDistribution.PeakHourWindow</strong></span>
+                </div>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 28px 12px; color: var(--admin-text-muted);">
+                    <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-text-dim); display: block; margin-bottom: 6px;">query_builder</span>
+                    <span style="font-size: 13px;">No hourly ingestion telemetry available.</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* ── SQL Query Console & Emergency Repair Room ── *@
+<div class="admin-card" id="sqlRepairRoom" style="margin-bottom: 24px; border-left: 4px solid var(--admin-primary);">
+    <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--admin-border);">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 22px;">terminal</span>
+                SQL Query Console &amp; Emergency Repair Room
+            </div>
+            <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                Directly execute diagnostics, schema repairs (e.g. dropping conflicting tables), or SQL inspection queries against <code>@Model.Tenant.DatabaseName</code>.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="badge badge-info" style="font-family: monospace;">
+                Database: @Model.Tenant.DatabaseName
+            </span>
+        </div>
+    </div>
+
+    <div class="admin-card-body" style="padding: 20px;">
+        @* AI Database Doctor Header Bar (Dynamic Diagnostics & Resolution) *@
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding: 12px 18px; background: linear-gradient(135deg, rgba(0, 80, 229, 0.06), rgba(99, 102, 241, 0.08)); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); display: flex; align-items: center; justify-content: center; color: #6366F1;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">auto_awesome</span>
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                        Gemini AI Database Doctor
+                        <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; font-size: 10px;">Gemini Flash</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">
+                        Intelligently inspects database schema discrepancies, explains root causes, and generates the exact T-SQL script to fix them.
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-admin btn-admin-primary" id="btnAiDiagnose" onclick="diagnoseWithGemini();" style="padding: 8px 18px; font-weight: 700; background: #6366F1; border-color: #6366F1;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">auto_awesome</span>
+                Diagnose Issue &amp; Generate Fix
+            </button>
+        </div>
+
+        @* ── AI Database Doctor Prescription Box ── *@
+        <div id="aiDoctorBox" style="display: none; margin-bottom: 16px; border: 1px solid #6366F1; border-radius: 8px; background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.02) 100%); padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #6366F1; font-size: 22px;">auto_awesome</span>
+                    <span style="font-weight: 700; font-size: 14.5px; color: var(--admin-text);">Gemini AI Database Doctor — Prescription</span>
+                    <span class="badge" id="aiDoctorKeyBadge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; font-size: 11px;">Gemini Flash</span>
+                </div>
+                <button type="button" onclick="document.getElementById('aiDoctorBox').style.display='none';" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 2px 8px; font-size: 11px;">
+                    ✕ Dismiss
+                </button>
+            </div>
+
+            <div id="aiDoctorLoading" style="display: none; padding: 18px 0; text-align: center;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: #6366F1; animation: spin 1s infinite linear; display: inline-block; margin-bottom: 6px;">sync</span>
+                <div style="font-size: 13.5px; font-weight: 600; color: var(--admin-text);">Gemini is analyzing SQL Server schema, table collisions, and migrations...</div>
+                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">Consulting Central Master Key Pool...</div>
+            </div>
+
+            <div id="aiDoctorContent" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Diagnosis</div>
+                    <div id="aiDoctorDiagnosis" style="font-size: 13.5px; line-height: 1.5; color: var(--admin-text); font-weight: 500;"></div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Explanation &amp; Root Cause</div>
+                    <div id="aiDoctorExplanation" style="font-size: 12.5px; line-height: 1.5; color: var(--admin-text-muted);"></div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11.5px; text-transform: uppercase; font-weight: 700; color: #6366F1; letter-spacing: 0.5px; margin-bottom: 4px;">Recommended T-SQL Script</div>
+                    <div style="position: relative;">
+                        <pre id="aiDoctorSqlCode" style="margin: 0; padding: 12px 14px; background: #0F172A; color: #38BDF8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px; border-radius: 6px; border: 1px solid #334155; overflow-x: auto; white-space: pre-wrap;"></pre>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="applyAiPrescription(false);" style="font-size: 12px; font-weight: 700;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">input</span>
+                        Copy Script into SQL Editor
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="applyAiPrescription(true);" style="font-size: 12px; color: var(--admin-primary); font-weight: 700;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span>
+                        Copy &amp; Execute Now
+                    </button>
+                    <span id="aiDoctorLatency" style="font-size: 11.5px; color: var(--admin-text-dim); margin-left: auto;"></span>
+                </div>
+            </div>
+        </div>
+
+        @* SQL Input Area *@
+        <div style="position: relative; margin-bottom: 12px;">
+            <textarea id="sqlQueryInput" rows="5" placeholder="Enter SQL query (e.g. DROP TABLE IF EXISTS [dbo].[BcpWorkstationActivityLogs]; or SELECT * FROM __EFMigrationsHistory;)" style="width: 100%; box-sizing: border-box; background: #0F172A; color: #38BDF8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; border: 1px solid #334155; border-radius: 8px; padding: 14px; resize: vertical; outline: none;"></textarea>
+        </div>
+
+        @* Action Buttons Row *@
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" id="btnExecuteSql" class="btn-admin btn-admin-primary" onclick="executeEmergencySql();" style="padding: 8px 18px; font-weight: 700;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span>
+                    Execute SQL Query
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="clearSqlQuery();">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">backspace</span>
+                    Clear
+                </button>
+            </div>
+            <div style="font-size: 12px; color: var(--admin-text-dim); display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-primary);">keyboard</span>
+                Tip: Press <kbd style="background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-border); font-family: monospace;">Ctrl</kbd> + <kbd style="background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-border); font-family: monospace;">Enter</kbd> to run
+            </div>
+        </div>
+
+        @* Execution Output & Results Container *@
+        <div id="sqlExecutionStatus" style="display: none; margin-bottom: 14px;"></div>
+        <div id="sqlResultsContainer" style="display: none; max-height: 420px; overflow: auto; border: 1px solid var(--admin-border); border-radius: 8px; background: var(--admin-bg-surface);">
+            <table class="admin-table" id="sqlResultsTable" style="margin: 0; font-size: 12.5px;">
+                <thead id="sqlResultsThead"></thead>
+                <tbody id="sqlResultsTbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* ── Main Deep Dive Grid ── *@
+<div style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+    @* Physical Tables Inspector Card *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">analytics</span>
+                    Physical Tables Inspector
+                </div>
+                <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                    Live breakdown of all SQL tables, active row counts, and physical storage footprints.
+                </p>
+            </div>
+            <div class="table-search-box" style="width: 260px;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input type="text" id="tableFilterInput" onkeyup="filterPhysicalTables();" placeholder="Filter tables by name..." />
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table" id="physicalTablesList">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">S/N</th>
+                        <th>Table Name</th>
+                        <th>Row / Record Count</th>
+                        <th>Allocated Storage (KB / MB)</th>
+                        <th style="width: 260px;">Storage Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.DeepDive.Tables.Any())
+                    {
+                        var maxBytes = Model.DeepDive.Tables.Max(t => t.UsedSpaceKb);
+                        if (maxBytes <= 0) maxBytes = 1;
+                        var orderedTables = Model.DeepDive.Tables.OrderByDescending(t => t.UsedSpaceKb).ToList();
+
+                        @for (int i = 0; i < orderedTables.Count; i++)
+                        {
+                            var table = orderedTables[i];
+                            var pct = (table.UsedSpaceKb / (double)maxBytes) * 100.0;
+                            var totalSharePct = Model.DeepDive.TotalStorageKb > 0 ? (table.UsedSpaceKb / (double)Model.DeepDive.TotalStorageKb) * 100.0 : 0.0;
+                            <tr class="table-row-item">
+                                <td style="text-align: center;">
+                                    <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">table_rows</span>
+                                        <code style="font-weight: 600; color: var(--admin-text); font-size: 13.5px;" class="table-name-text">@table.FullName</code>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>@table.FormattedRows</strong>
+                                </td>
+                                <td>
+                                    <span style="font-size: 13px; font-weight: 600; color: var(--admin-text);">@table.FormattedStorage</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="background: var(--admin-border); height: 8px; border-radius: 4px; overflow: hidden; flex: 1;">
+                                            <div style="background: var(--admin-primary); height: 100%; width: @(pct.ToString("F1"))%;"></div>
+                                        </div>
+                                        <span style="font-size: 11.5px; color: var(--admin-text-dim); min-width: 45px; text-align: right;">
+                                            @(totalSharePct.ToString("F1"))%
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted);">
+                                No physical user tables discovered in this database.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* Schema Migrations Timeline & Diagnostics Grid *@
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+        @* EF Core Migrations Timeline *@
+        <div class="admin-card" style="margin: 0;">
+            <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-success);">history_edu</span>
+                    Schema Migrations Timeline
+                </div>
+                <span class="badge badge-info">
+                    @Model.DeepDive.AppliedMigrations.Count Applied
+                </span>
+            </div>
+            <div class="admin-card-body" style="padding: 16px 20px; max-height: 380px; overflow-y: auto;">
+                @if (Model.DeepDive.PendingMigrations.Any())
+                {
+                    <div style="padding: 12px 14px; background: rgba(234, 179, 8, 0.1); border-left: 3px solid var(--admin-warning); border-radius: 4px; margin-bottom: 16px;">
+                        <span style="font-weight: 700; color: var(--admin-warning); font-size: 12.5px; display: block;">Pending Migrations Awaiting Execution:</span>
+                        <ul style="margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: var(--admin-text);">
+                            @foreach (var pending in Model.DeepDive.PendingMigrations)
+                            {
+                                <li><code>@pending</code></li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (Model.DeepDive.AppliedMigrations.Any())
+                {
+                    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                        @for (int i = Model.DeepDive.AppliedMigrations.Count - 1; i >= 0; i--)
+                        {
+                            var migration = Model.DeepDive.AppliedMigrations[i];
+                            <li style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--admin-bg-surface-elevated); border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-success);">check_circle</span>
+                                <code style="font-size: 12px; color: var(--admin-text); flex: 1;">@migration</code>
+                                <span style="font-size: 11px; color: var(--admin-text-dim);">#@(i + 1)</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div style="font-size: 13px; color: var(--admin-text-muted); text-align: center; padding: 20px;">
+                        No applied migration history found in <code>__EFMigrationsHistory</code>.
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Host & Database Instance Properties *@
+        <div class="admin-card" style="margin: 0;">
+            <div class="admin-card-header" style="padding: 16px 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">settings_ethernet</span>
+                    Instance Properties &amp; Host Connectivity
+                </div>
+            </div>
+            <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">MSSQL Server Host / Instance</span>
+                    <code style="font-weight: 600; color: var(--admin-text);">@Model.ServerHost</code>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Dedicated Database Name</span>
+                    <code style="font-weight: 600; color: var(--admin-primary);">@Model.Tenant.DatabaseName</code>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">DbContext Context Binding</span>
+                    <code>DashboardDbContext (Ozikol_BCC.Persistence.EF.SQL)</code>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Isolation Strategy</span>
+                    <span class="badge badge-success">Database-per-Tenant (Isolated MSSQL Database)</span>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Tenant Creation Date</span>
+                    <div>@Model.Tenant.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterPhysicalTables() {
+            const term = document.getElementById('tableFilterInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#physicalTablesList tbody .table-row-item');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('.table-name-text')?.textContent.toLowerCase() || '';
+                row.style.display = name.includes(term) ? '' : 'none';
+            });
+        }
+
+        function setSqlQuery(sql) {
+            const input = document.getElementById('sqlQueryInput');
+            if (input) {
+                input.value = sql;
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function clearSqlQuery() {
+            const input = document.getElementById('sqlQueryInput');
+            if (input) input.value = '';
+            document.getElementById('sqlExecutionStatus').style.display = 'none';
+            document.getElementById('sqlResultsContainer').style.display = 'none';
+        }
+
+        document.getElementById('sqlQueryInput')?.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                executeEmergencySql();
+            }
+        });
+
+        async function executeEmergencySql() {
+            const input = document.getElementById('sqlQueryInput');
+            const query = input?.value?.trim();
+            const statusDiv = document.getElementById('sqlExecutionStatus');
+            const resultsContainer = document.getElementById('sqlResultsContainer');
+            const thead = document.getElementById('sqlResultsThead');
+            const tbody = document.getElementById('sqlResultsTbody');
+            const btn = document.getElementById('btnExecuteSql');
+
+            if (!query) {
+                alert('Please enter a SQL statement to execute.');
+                input?.focus();
+                return;
+            }
+
+            const upper = query.toUpperCase();
+            if (upper.includes('DROP ') || upper.includes('TRUNCATE ') || upper.includes('DELETE FROM')) {
+                const confirmMsg = "⚠️ WARNING: You are executing a destructive SQL command on '@Model.Tenant.DatabaseName'.\n\nCommand:\n" + query + "\n\nDo you want to proceed?";
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+            }
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; animation: spin 1s infinite linear;">sync</span> Executing...';
+            btn.disabled = true;
+
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<div style="padding: 10px 14px; background: var(--admin-bg-surface-elevated); border-radius: 6px; font-size: 13px; color: var(--admin-text); display: flex; align-items: center; gap: 8px;"><span class="material-symbols-outlined" style="font-size: 16px; animation: spin 1s infinite linear; color: var(--admin-primary);">sync</span> Running query on database...</div>';
+            resultsContainer.style.display = 'none';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            try {
+                const response = await fetch('?handler=ExecuteQuery', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        tenantKey: '@Model.Tenant.TenantKey',
+                        sqlQuery: query
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const hasPendingMigrate = !!document.getElementById('formMigrateNow');
+                    statusDiv.innerHTML = `
+                        <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.12); border: 1px solid var(--admin-success); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-symbols-outlined" style="color: var(--admin-success); font-size: 20px;">check_circle</span>
+                                <span style="font-weight: 600; font-size: 13.5px; color: var(--admin-text);">${data.message}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px;">
+                                <span class="badge badge-success">Latency: ${data.executionTimeMs} ms</span>
+                                <span class="badge badge-secondary">Rows Affected: ${data.rowsAffected}</span>
+                                ${hasPendingMigrate ? '<button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="document.getElementById(\'formMigrateNow\').submit();" style="font-weight: 700; margin-left: 6px;"><span class="material-symbols-outlined" style="font-size: 15px;">sync</span> Apply Migrations Now</button>' : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    if (data.hasResultSet && data.columns && data.columns.length > 0) {
+                        // Render headers
+                        thead.innerHTML = '<tr>' + data.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+                        
+                        // Render rows
+                        if (data.rows && data.rows.length > 0) {
+                            tbody.innerHTML = data.rows.map(row => {
+                                return '<tr>' + row.map(cell => `<td style="font-family: monospace; font-size: 12px;">${cell === null || cell === 'NULL' ? '<span style="color: var(--admin-text-dim); font-style: italic;">NULL</span>' : cell}</td>`).join('') + '</tr>';
+                            }).join('');
+                        } else {
+                            tbody.innerHTML = `<tr><td colspan="${data.columns.length}" style="text-align: center; padding: 20px; color: var(--admin-text-muted);">No rows returned (0 records).</td></tr>`;
+                        }
+
+                        resultsContainer.style.display = 'block';
+                    } else {
+                        resultsContainer.style.display = 'none';
+                    }
+                } else {
+                    statusDiv.innerHTML = `
+                        <div style="padding: 12px 16px; background: rgba(239, 68, 68, 0.12); border: 1px solid var(--admin-danger); border-radius: 6px; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="material-symbols-outlined" style="color: var(--admin-danger); font-size: 20px; margin-top: 2px;">error</span>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-danger);">SQL Execution Error</div>
+                                    <div style="font-size: 12.5px; color: var(--admin-text); margin-top: 4px; font-family: monospace;">${data.message}</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-danger">Elapsed: ${data.executionTimeMs || 0} ms</span>
+                        </div>
+                    `;
+                    resultsContainer.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('SQL Execution failed', err);
+                statusDiv.innerHTML = `
+                    <div style="padding: 12px 16px; background: rgba(239, 68, 68, 0.12); border: 1px solid var(--admin-danger); border-radius: 6px; color: var(--admin-danger); font-size: 13px;">
+                        Network or server error executing SQL query: ${err.message || 'Unknown error'}
+                    </div>
+                `;
+                resultsContainer.style.display = 'none';
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        let currentAiRecommendedSql = '';
+
+        async function diagnoseWithGemini() {
+            const box = document.getElementById('aiDoctorBox');
+            const loading = document.getElementById('aiDoctorLoading');
+            const content = document.getElementById('aiDoctorContent');
+            const btn = document.getElementById('btnAiDiagnose');
+
+            box.style.display = 'block';
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; animation: spin 1s infinite linear;">sync</span> Consulting Gemini...';
+            btn.disabled = true;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            let queryError = document.getElementById('sqlExecutionStatus')?.innerText?.trim() || '';
+            const editorText = document.getElementById('sqlQueryInput')?.value?.trim() || '';
+            if (!queryError) {
+                const alertEl = document.querySelector('.alert-danger, [class*="alert-danger"], .admin-alert-danger, .admin-alert');
+                if (alertEl) queryError = alertEl.innerText.trim();
+            }
+            if (!queryError) {
+                queryError = '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(TempData["Error"]?.ToString() ?? ""))';
+            }
+
+            try {
+                const response = await fetch('?handler=AiDiagnose', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        tenantKey: '@Model.Tenant.TenantKey',
+                        errorMessage: queryError,
+                        userNotes: editorText
+                    })
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    content.style.display = 'block';
+                    document.getElementById('aiDoctorDiagnosis').innerText = data.diagnosis;
+                    document.getElementById('aiDoctorExplanation').innerText = data.explanation;
+                    document.getElementById('aiDoctorSqlCode').innerText = data.recommendedSql;
+                    currentAiRecommendedSql = data.recommendedSql;
+
+                    if (data.keyAliasUsed) {
+                        document.getElementById('aiDoctorKeyBadge').innerText = `${data.keyAliasUsed} (${data.latencyMs}ms)`;
+                    }
+                    if (data.latencyMs) {
+                        document.getElementById('aiDoctorLatency').innerText = `Generated in ${data.latencyMs} ms`;
+                    }
+                } else {
+                    content.style.display = 'block';
+                    document.getElementById('aiDoctorDiagnosis').innerHTML = `<span style="color: var(--admin-danger); font-weight: 700;">AI Diagnosis Failed:</span> ${data.message}`;
+                    document.getElementById('aiDoctorExplanation').innerText = 'Please ensure you have active Google Gemini API keys configured in /centralwks/aikeys.';
+                    document.getElementById('aiDoctorSqlCode').innerText = '-- No script generated';
+                    currentAiRecommendedSql = '';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                document.getElementById('aiDoctorDiagnosis').innerText = 'Network error connecting to Gemini AI Doctor: ' + err.message;
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function applyAiPrescription(executeNow) {
+            if (!currentAiRecommendedSql) {
+                alert('No recommended SQL to apply.');
+                return;
+            }
+            // Clean up any batch separators or redundant USE statements for direct ADO.NET execution
+            let cleanSql = currentAiRecommendedSql
+                .replace(/^\s*USE\s+\[?[a-zA-Z0-9_]+\]?\s*;?\s*(\r?\n)+/im, '')
+                .replace(/^\s*GO\s*$/gim, '')
+                .trim();
+
+            setSqlQuery(cleanSql || currentAiRecommendedSql);
+            if (executeNow) {
+                executeEmergencySql();
+            }
+        }
+
+        async function testPingConnection(tenantKey) {
+            const btn = document.getElementById('btnPingTest');
+            const badge = document.getElementById('pingStatusBadge');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px; animation: spin 1s infinite linear;">sync</span> Pinging...';
+            btn.disabled = true;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('tenantKey', tenantKey);
+
+            try {
+                const response = await fetch(`?handler=Ping&tenantKey=${tenantKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    if (badge) {
+                        badge.className = 'badge badge-success';
+                        badge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-success);"></span> Online (${data.latencyMs}ms)`;
+                    }
+                    alert(data.message);
+                } else {
+                    if (badge) {
+                        badge.className = 'badge badge-danger';
+                        badge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-danger);"></span> Unreachable`;
+                    }
+                    alert('Ping test failed: ' + data.message);
+                }
+            } catch (err) {
+                console.error('Ping test error', err);
+                alert('Ping connection test encountered an error.');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+}

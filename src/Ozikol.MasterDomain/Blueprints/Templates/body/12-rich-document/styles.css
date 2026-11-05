@@ -1,0 +1,67 @@
+.oz-document-section {
+  padding: 80px 24px;
+  background-color: var(--oz-bg-primary, #ffffff);
+  color: var(--oz-text-primary, #1e293b);
+  min-height: 50vh;
+}
+.oz-document-section .oz-container {
+  max-width: 860px;
+  margin: 0 auto;
+}
+.oz-document-header {
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--oz-border-color, #e2e8f0);
+  padding-bottom: 24px;
+}
+.oz-document-header .oz-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oz-primary, #0050e5);
+  background: rgba(0, 80, 229, 0.08);
+  border-radius: 9999px;
+  margin-bottom: 14px;
+}
+.oz-document-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--oz-text-primary, #0f172a);
+  margin: 0 0 10px;
+}
+.oz-document-subtitle {
+  font-size: 1rem;
+  color: var(--oz-text-muted, #64748b);
+  margin: 0;
+  line-height: 1.6;
+}
+.oz-document-body {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--oz-text-secondary, #334155);
+}
+.oz-document-body h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--oz-text-primary, #0f172a);
+  margin: 36px 0 14px;
+}
+.oz-document-body h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--oz-text-primary, #0f172a);
+  margin: 24px 0 10px;
+}
+.oz-document-body p {
+  margin: 0 0 18px;
+}
+.oz-document-body ul, .oz-document-body ol {
+  margin: 0 0 20px 24px;
+  padding: 0;
+}
+.oz-document-body li {
+  margin-bottom: 8px;
+}

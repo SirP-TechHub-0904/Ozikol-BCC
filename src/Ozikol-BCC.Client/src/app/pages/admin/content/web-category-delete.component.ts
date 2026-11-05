@@ -410,7 +410,7 @@ export class WebCategoryDeleteComponent implements OnInit {
 
   loadCategory(id: string): void {
     this.loading = true;
-    this.api.get<any>(`ContentApi/page-categories/${id}`).subscribe({
+    this.api.get<any>(`ContentApi/categories/${id}`).subscribe({
       next: (res) => {
         this.loading = false;
         if (res?.data) {
@@ -444,7 +444,7 @@ export class WebCategoryDeleteComponent implements OnInit {
     this.deleting = true;
     this.errorMsg = '';
 
-    this.api.delete<any>(`ContentApi/page-categories/${this.categoryId}`).subscribe({
+    this.api.delete<any>(`ContentApi/categories/${this.categoryId}?confirmationTitle=${encodeURIComponent(this.confirmationInput)}`).subscribe({
       next: () => {
         this.deleting = false;
         this.toast.success(`Web category '${this.category.title}' deleted successfully.`);

@@ -79,13 +79,60 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.News.Articles
         public int CategoriesCount { get; set; }
 
         /// <summary>
+        /// Gets or sets aggregate total article reads / reader impressions.
+        /// </summary>
+        public long TotalReadCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the current 1-based page number for pagination.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// Gets or sets the page size (number of articles per page).
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int PageSize { get; set; } = 10;
+
+        /// <summary>
+        /// Gets or sets total count of filtered articles matching query criteria.
+        /// </summary>
+        public int TotalFilteredCount { get; set; }
+
+        /// <summary>
+        /// Gets the total number of calculated pages.
+        /// </summary>
+        public int TotalPages => (int)Math.Ceiling(TotalFilteredCount / (double)Math.Max(1, PageSize));
+
+        /// <summary>
+        /// Gets whether a previous page exists.
+        /// </summary>
+        public bool HasPreviousPage => PageNumber > 1;
+
+        /// <summary>
+        /// Gets whether a next page exists.
+        /// </summary>
+        public bool HasNextPage => PageNumber < TotalPages;
+
+        /// <summary>
+        /// Gets the 1-based starting index for items shown on the current page.
+        /// </summary>
+        public int StartItemIndex => TotalFilteredCount == 0 ? 0 : ((PageNumber - 1) * PageSize) + 1;
+
+        /// <summary>
+        /// Gets the 1-based ending index for items shown on the current page.
+        /// </summary>
+        public int EndItemIndex => Math.Min(PageNumber * PageSize, TotalFilteredCount);
+
+        /// <summary>
         /// Gets or sets feedback or notification message for user action.
         /// </summary>
         [TempData]
         public string? StatusMessage { get; set; }
 
         /// <summary>
-        /// Handles HTTP GET requests to query and render editorial news articles.
+        /// Handles HTTP GET requests to query and render editorial news articles with server-side pagination.
         /// </summary>
         /// <returns>A task representing asynchronous execution.</returns>
         public async Task OnGetAsync()
@@ -94,6 +141,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.News.Articles
             PublishedCount = await _context.MasterNewsArticles.CountAsync(a => a.IsPublished);
             FeaturedCount = await _context.MasterNewsArticles.CountAsync(a => a.IsFeatured);
             CategoriesCount = await _context.MasterNewsCategories.CountAsync();
+            TotalReadCount = await _context.MasterNewsArticles.SumAsync(a => (long?)a.ReadCount) ?? 0;
 
             Categories = await _context.MasterNewsCategories
                 .AsNoTracking()
@@ -116,7 +164,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.News.Articles
 
             if (!string.IsNullOrWhiteSpace(CategoryFilter) && CategoryFilter != "All")
             {
-                query = query.Where(a => a.CategoryKey == CategoryFilter || a.Category.Slug == CategoryFilter);
+                query = query.Where(a => a.CategoryKey == CategoryFilter || (a.Category != null && a.Category.Slug == CategoryFilter));
             }
 
             if (!string.IsNullOrWhiteSpace(PublishFilter) && PublishFilter != "All")
@@ -125,8 +173,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.News.Articles
                 query = query.Where(a => a.IsPublished == isPublished);
             }
 
+            TotalFilteredCount = await query.CountAsync();
+
+            if (PageSize < 5) PageSize = 10;
+            if (PageSize > 100) PageSize = 100;
+
+            if (PageNumber < 1)
+            {
+                PageNumber = 1;
+            }
+
+            if (TotalPages > 0 && PageNumber > TotalPages)
+            {
+                PageNumber = TotalPages;
+            }
+
             Articles = await query
                 .OrderByDescending(a => a.PublishedAtUtc)
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
                 .ToListAsync();
         }
 
