@@ -38,7 +38,7 @@ def get_connection(conn_str: str):
     return pyodbc.connect(conn_str)
 
 def update_platform_settings(conn_str: str):
-    print(f"Connecting to database...")
+    print("Connecting to database...")
     conn = get_connection(conn_str)
     cursor = conn.cursor()
 
@@ -117,7 +117,7 @@ def update_platform_settings(conn_str: str):
 if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else "local"
     if target == "local":
-        conn_str = "Driver={ODBC Driver 18 for SQL Server};Server=(localdb)\\MSSQLLocalDB;Database=Ozikol_MasterCatalogDb;Trusted_Connection=yes;TrustServerCertificate=yes;"
+        conn_str = "Driver={ODBC Driver 18 for SQL Server};Server=JSS\\SQLEXPRESS;Database=Ozikol_MasterCatalogDb;Trusted_Connection=yes;TrustServerCertificate=yes;"
     elif target == "server_tunnel":
         conn_str = "Driver={ODBC Driver 18 for SQL Server};Server=127.0.0.1,1433;Database=Ozikol_MasterCatalogDb;UID=sa;PWD=OziBcc_Sql_2026_9031e1f64f1a79ca!;TrustServerCertificate=yes;"
     else:
