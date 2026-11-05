@@ -3548,6 +3548,8 @@ export class SettingsComponent implements OnInit {
             this.brand.loginBackgroundImageKey = key;
           }
           this.toast.success('Asset uploaded successfully!');
+          // Auto-persist uploaded asset into brand settings immediately so it never vanishes on page refresh
+          this.onSaveBrandSettings();
         }
       },
       error: () => {
@@ -3562,6 +3564,8 @@ export class SettingsComponent implements OnInit {
     else if (assetKey === 'whiteLogo') { this.brand.companyWhiteLogoUrl = ''; this.brand.companyWhiteLogoKey = ''; }
     else if (assetKey === 'icon') { this.brand.companyIconUrl = ''; this.brand.companyIconKey = ''; }
     else if (assetKey === 'bg') { this.brand.loginBackgroundImageUrl = ''; this.brand.loginBackgroundImageKey = ''; }
+    // Auto-persist asset removal so state stays synchronized with database
+    this.onSaveBrandSettings();
   }
 
   toggleManualUrl(assetKey: string): void {
