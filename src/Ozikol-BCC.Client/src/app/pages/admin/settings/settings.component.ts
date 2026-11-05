@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
@@ -115,10 +116,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <p class="widget-subtitle">Primary logo, white header logo, browser favicon icon, and identity copy.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
-              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
-              <span>{{ savingBrand ? 'Saving...' : 'Save Brand' }}</span>
-            </button>
+
           </div>
 
           <div class="widget-body">
@@ -351,10 +349,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <span class="material-symbols-outlined">tune</span>
                 <span>Open Form Builder ↗</span>
               </a>
-              <button type="button" class="btn btn-primary btn-sm" (click)="onSaveRegistrationSettings()" [disabled]="savingRegistrationSettings">
-                <span class="material-symbols-outlined" *ngIf="!savingRegistrationSettings">save</span>
-                <span>{{ savingRegistrationSettings ? 'Saving...' : 'Save Settings' }}</span>
-              </button>
+
             </div>
           </div>
 
@@ -431,10 +426,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <p class="widget-subtitle">Choose between a standard organization website layout or an e-commerce first storefront, and configure catalog options.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveStoreSettings()" [disabled]="savingStore">
-              <span class="material-symbols-outlined" *ngIf="!savingStore">save</span>
-              <span>{{ savingStore ? 'Saving...' : 'Save Configuration' }}</span>
-            </button>
+
           </div>
 
           <div class="widget-body">
@@ -771,10 +763,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <p class="widget-subtitle">A high-visibility horizontal marquee highlighting featured news articles, important updates, and announcements.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
-              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
-              <span>{{ savingBrand ? 'Saving...' : 'Save Widgets' }}</span>
-            </button>
+
           </div>
 
           <div class="widget-body">
@@ -911,10 +900,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <p class="widget-subtitle">A legal compliance popup card positioned at the bottom of the page with smooth opacity and glassmorphism blur.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
-              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
-              <span>{{ savingBrand ? 'Saving...' : 'Save Widgets' }}</span>
-            </button>
+
           </div>
 
           <div class="widget-body">
@@ -1009,10 +995,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <p class="widget-subtitle">Engage visitors with an authentic WhatsApp green floating pill that expands into an interactive prompt window.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveBrandSettings()" [disabled]="savingBrand">
-              <span class="material-symbols-outlined" *ngIf="!savingBrand">save</span>
-              <span>{{ savingBrand ? 'Saving...' : 'Save Widgets' }}</span>
-            </button>
+
           </div>
 
           <div class="widget-body">
@@ -1332,10 +1315,77 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
         </section>
       </div>
+      <!-- Single Master Sticky Save Bar -->
+      <div class="settings-floating-action-bar">
+        <div class="floating-bar-info">
+          <span class="material-symbols-outlined text-blue">verified</span>
+          <span>Configuring <strong>{{ getActiveTabLabel() }}</strong>. Single click saves all changes across this section.</span>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary btn-save-master"
+          (click)="onSaveActiveTab()"
+          [disabled]="isSavingCurrentTab"
+        >
+          <span class="material-symbols-outlined" *ngIf="!isSavingCurrentTab">save</span>
+          <span>{{ isSavingCurrentTab ? 'Saving Changes...' : 'Save Changes' }}</span>
+        </button>
+      </div>
     </div>
   `,
   styles: [`
-    .settings-page { padding: 0 0 40px; }
+    .settings-page { padding: 0 0 70px; }
+
+    /* Single Master Floating Save Bar */
+    .settings-floating-action-bar {
+      position: sticky;
+      bottom: 20px;
+      z-index: 100;
+      margin-top: 28px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+    }
+    .floating-bar-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #334155;
+      font-size: 13.5px;
+    }
+    .floating-bar-info .material-symbols-outlined {
+      color: #0050e5;
+      font-size: 20px;
+    }
+    .btn-save-master {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      font-weight: 600;
+      font-size: 13.5px;
+      border-radius: 9px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-save-master:hover:not(:disabled) {
+      background: #003fc4;
+      transform: translateY(-1px);
+    }
+    .btn-save-master:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
 
     /* Studio Navigation Tabs */
     .settings-studio-nav {
@@ -3229,33 +3279,202 @@ export class SettingsComponent implements OnInit {
     this.updateHeaderButtonText();
   }
 
+  getActiveTabLabel(): string {
+
+    if (this.activeTab === 'brand') return 'Brand & Onboarding';
+
+    if (this.activeTab === 'ecommerce') return 'Website Mode & Store';
+
+    if (this.activeTab === 'widgets') return 'Website & Widgets';
+
+    if (this.activeTab === 'colors') return 'Appearance & Colors';
+
+    if (this.activeTab === 'templates') return 'Theme & Templates';
+
+    if (this.activeTab === 'domain') return 'Custom Domain & DNS';
+
+    return 'Workspace Settings';
+
+  }
+
+
+
+  get isSavingCurrentTab(): boolean {
+
+    return this.savingBrand || this.savingRegistrationSettings || this.savingStore || this.savingColors || this.savingTemplate || this.savingDomain;
+
+  }
+
+
+
   updateHeaderButtonText(): void {
-    let btnText = 'Save Brand Settings';
-    if (this.activeTab === 'colors') btnText = 'Save Colors';
-    else if (this.activeTab === 'templates') btnText = 'Save Template';
-    else if (this.activeTab === 'ecommerce') btnText = 'Save Store Settings';
-    else if (this.activeTab === 'storage') btnText = 'Test & Connect Storage';
-    else if (this.activeTab === 'domain') btnText = 'Save & Connect Domain';
-    else if (this.activeTab === 'widgets') btnText = 'Save Widget Settings';
+
+    const isSaving = this.isSavingCurrentTab;
 
     this.headerButtons = [
+
       {
-        text: btnText,
+
+        text: isSaving ? 'Saving Changes...' : 'Save Changes',
+
         icon: 'save',
+
         isPrimary: true,
+
+        disabled: isSaving,
+
         action: () => { this.onSaveActiveTab(); }
+
       }
+
     ];
+
   }
 
   onSaveActiveTab(): void {
-    if (this.activeTab === 'brand') this.onSaveBrandSettings();
+
+    if (this.activeTab === 'brand') this.onSaveBrandAndRegistrationSettings();
+
     else if (this.activeTab === 'colors') this.onSaveAppearance();
+
     else if (this.activeTab === 'templates') this.saveCurrentTemplate();
+
     else if (this.activeTab === 'ecommerce') this.onSaveStoreSettings();
+
     else if (this.activeTab === 'storage') this.onConnectCustomStorage();
+
     else if (this.activeTab === 'domain') this.onSaveCustomDomain();
+
     else if (this.activeTab === 'widgets') this.onSaveBrandSettings();
+
+  }
+
+
+
+  onSaveBrandAndRegistrationSettings(showToast = true): void {
+
+    this.savingBrand = true;
+
+    this.savingRegistrationSettings = true;
+
+    this.successMessage = '';
+
+    this.updateHeaderButtonText();
+
+
+
+    if (!this.brand.companyNameAbbreviation || this.brand.companyNameAbbreviation === 'CC') {
+
+      this.brand.companyNameAbbreviation = this.computeAbbreviation(this.brand.companyName);
+
+    }
+
+
+
+    const brandReq = this.api.put<any>('SettingsApi/brand', this.brand);
+
+    const regReq = this.api.put<any>('RegistrationFormApi/policy', this.registrationPolicy);
+
+
+
+    forkJoin([brandReq, regReq]).subscribe({
+
+      next: () => {
+
+        this.savingBrand = false;
+
+        this.savingRegistrationSettings = false;
+
+        this.updateHeaderButtonText();
+
+
+
+        if (this.brand.companyNameAbbreviation) {
+
+          localStorage.setItem('tenant_abbreviation', this.brand.companyNameAbbreviation);
+
+        }
+
+        if (this.brand.companyName) {
+
+          localStorage.setItem('tenant_name', this.brand.companyName);
+
+        }
+
+        if (this.brand.companyLogoUrl) {
+
+          localStorage.setItem('tenant_logo', this.brand.companyLogoUrl);
+
+        } else {
+
+          localStorage.removeItem('tenant_logo');
+
+        }
+
+        const rawIcon = this.brand.companyIconUrl;
+
+        const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+
+        if (activeIcon) {
+
+          localStorage.setItem('tenant_icon', activeIcon);
+
+        } else {
+
+          localStorage.removeItem('tenant_icon');
+
+        }
+
+        const favicons = document.querySelectorAll("link[rel*='icon']");
+
+        if (favicons.length > 0) {
+
+          favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
+
+        } else if (activeIcon) {
+
+          const link = document.createElement('link');
+
+          link.rel = 'shortcut icon';
+
+          link.type = 'image/x-icon';
+
+          link.href = activeIcon;
+
+          document.head.appendChild(link);
+
+        }
+
+        window.dispatchEvent(new CustomEvent('brand_settings_updated'));
+
+
+
+        if (showToast) {
+
+          this.toast.success('Workspace settings and branding assets saved successfully!');
+
+          this.successMessage = 'Corporate visual assets & registration settings updated.';
+
+          setTimeout(() => this.successMessage = '', 4000);
+
+        }
+
+      },
+
+      error: (err) => {
+
+        this.savingBrand = false;
+
+        this.savingRegistrationSettings = false;
+
+        this.updateHeaderButtonText();
+
+        this.toast.error(err?.error?.message || 'Failed to save settings.');
+
+      }
+
+    });
+
   }
 
   loadRegistrationSettings(): void {
