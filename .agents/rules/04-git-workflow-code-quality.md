@@ -65,3 +65,11 @@
   * **macOS Desktop**: `macos/Runner/Info.plist`, `Base.lproj/MainMenu.xib`, and Swift AppDelegate configurations.
   * **Web**: `web/index.html` (meta tags, viewport, service worker scripts), manifest, and asset linkages.
 * **Zero Native Stubs**: Never assume platform code will be added "later", and never leave empty stub methods or placeholder comments where native configuration is required.
+
+---
+
+## 23. Fast Code-Fix Mode & User-Led Build Verification (Mandatory)
+* **Direct Fast Code Modifications**: Whenever the user reports an issue, bug, or requests code modifications, the agent MUST immediately inspect and apply the exact, production-ready code edits directly to the relevant source files in seconds.
+* **No Blocking Background Builds or Live SSH Deployments**: The agent must NEVER initiate long-running local compilation processes (`dotnet build`, `dotnet publish`, `ng build`, `flutter build`), test runners, or live VPS SSH transfers/container restarts during conversational turns unless the user explicitly asks for a build or remote deployment.
+* **User-Led Compilation & Verification**: The user compiles, runs, and tests the project on their own machine at their own pace.
+* **Instant Error Resolution**: If the user encounters any compiler errors, warnings, runtime exceptions, or linter failures and provides the log or screenshot, the agent must immediately analyze the root cause and provide the exact fix without delay.
