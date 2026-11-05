@@ -43,6 +43,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterFeatureCatalog> MasterFeatureCatalogs { get; set; } = null!;
     public DbSet<MasterTenantFeatureSubscription> MasterTenantFeatureSubscriptions { get; set; } = null!;
     public DbSet<MasterEmailLog> MasterEmailLogs { get; set; } = null!;
+    public DbSet<MasterEmailTemplate> MasterEmailTemplates { get; set; } = null!;
     public DbSet<MasterAffiliatePartner> MasterAffiliatePartners { get; set; } = null!;
     public DbSet<MasterAffiliateReferral> MasterAffiliateReferrals { get; set; } = null!;
     public DbSet<MasterCurrencyRate> MasterCurrencyRates { get; set; } = null!;
@@ -567,6 +568,12 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.RecipientEmail);
             entity.HasIndex(e => e.SentAtUtc);
             entity.HasIndex(e => e.Status);
+        });
+
+        modelBuilder.Entity<MasterEmailTemplate>(entity =>
+        {
+            entity.HasIndex(e => e.TemplateType).IsUnique();
+            entity.HasIndex(e => e.IsActive);
         });
 
         modelBuilder.Entity<MasterAffiliatePartner>(entity =>
