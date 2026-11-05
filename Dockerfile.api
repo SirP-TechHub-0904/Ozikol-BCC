@@ -1,0 +1,4 @@
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+WORKDIR /app
+COPY publish-api/ .
+ENTRYPOINT ["dotnet", "Ozikol-BCC.Api.dll"]
