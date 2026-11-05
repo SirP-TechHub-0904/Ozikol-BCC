@@ -61,7 +61,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          script: |
+          script: |\n            rm -rf /tmp/ozikol-central.tar   # safe-guard
             # Stop old container (ignore if not present)
             docker rm -f ozikol-api || true
 
