@@ -11,7 +11,7 @@ using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
-namespace Ozikol.Central.Pages.Marketplace;
+namespace Ozikol.Central.Pages.Marketplace; // CI trigger comment – no functional change
 
 /// <summary>
 /// Page model handling the Creator Partner Program explanation, application submission,

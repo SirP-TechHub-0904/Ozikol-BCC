@@ -1,4 +1,3 @@
-# Quick comment added for testing
 # ===================================================================
 # CI/CD Workflow: Deploy Ozikol-BCC Backend API
 # Target: https://api-ozikol.ozikol.cloud & *.ozikol.cloud/api/ (VPS Port 5000)
@@ -61,17 +60,19 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          script: |\n            rm -rf /tmp/ozikol-central.tar   # safe-guard
-            # Stop old container (ignore if not present)
-            docker rm -f ozikol-api || true
-
-            # Load the new image
-            docker load -i /tmp/ozikol-api.tar
-
-            # Run the API container
-            docker run -d --name ozikol-api \
-              -p 127.0.0.1:5000:8080 \
-              ozikol/api:latest dotnet Ozikol-BCC.Api.dll
-
-            # Clean up tar file
-            rm -f /tmp/ozikol-api.tar
+          script: |
+            # Check if tarball arrived as a regular file
+            if [ -f /tmp/ozikol-api.tar ]; then
+              echo "Loading ozikol-api image..."
+              docker rm -f ozikol-api || true
+              docker load -i /tmp/ozikol-api.tar
+              docker run -d --name ozikol-api \
+                --restart unless-stopped \
+                -p 127.0.0.1:5000:8080 \
+                ozikol/api:latest dotnet Ozikol-BCC.Api.dll
+              rm -f /tmp/ozikol-api.tar
+              echo "ozikol-api deployed successfully."
+            else
+              echo "Skipping ozikol-api deployment: /tmp/ozikol-api.tar not found or is a directory."
+              rm -rf /tmp/ozikol-api.tar || true
+            fi
