@@ -28,7 +28,8 @@ using Ozikol_BCC.Infrastructure.Caching;
 using StackExchange.Redis;
 using Ozikol_BCC.EmailServices.Postmark;
 
-namespace Ozikol_BCC.Api
+namespace Ozikol_BCC.Api // CI trigger comment – no functional change
+// trigger CI dummy comment
 {
     /// <summary>
     /// Entry point and host configuration for the Ozikol Business Command Center multi-tenant API.

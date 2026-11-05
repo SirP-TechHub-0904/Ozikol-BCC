@@ -60,16 +60,18 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            # Stop old container (ignore if not present)
-            docker rm -f ozikol-central || true
-
-            # Load the new image
-            docker load -i /tmp/ozikol-central.tar
-
-            # Run the Central container
-            docker run -d --name ozikol-central \
-              -p 127.0.0.1:5001:8080 \
-              ozikol/central:latest dotnet Ozikol.Central.dll
-
-            # Clean up tar file
-            rm -f /tmp/ozikol-central.tar
+            # Check if tarball arrived as a regular file
+            if [ -f /tmp/ozikol-central.tar ]; then
+              echo "Loading ozikol-central image..."
+              docker rm -f ozikol-central || true
+              docker load -i /tmp/ozikol-central.tar
+              docker run -d --name ozikol-central \
+                --restart unless-stopped \
+                -p 127.0.0.1:5001:8080 \
+                ozikol/central:latest dotnet Ozikol.Central.dll
+              rm -f /tmp/ozikol-central.tar
+              echo "ozikol-central deployed successfully."
+            else
+              echo "Skipping ozikol-central deployment: /tmp/ozikol-central.tar not found or is a directory."
+              rm -rf /tmp/ozikol-central.tar || true
+            fi
