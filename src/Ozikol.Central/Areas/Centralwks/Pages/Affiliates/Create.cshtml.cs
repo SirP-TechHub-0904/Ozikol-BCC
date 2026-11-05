@@ -25,7 +25,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Affiliates
         {
             _dbContext = dbContext;
         }
-
+//comment
         /// <summary>
         /// Form input model carrying new partner registration details.
         /// </summary>

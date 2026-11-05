@@ -14,7 +14,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class AiAssistApiController : ControllerBase
     {
         private readonly IMediator _mediator;
-
+//comment
         public AiAssistApiController(IMediator mediator)
         {
             _mediator = mediator;
