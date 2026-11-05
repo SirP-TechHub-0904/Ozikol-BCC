@@ -1,0 +1,257 @@
+@page "/centralwks/email-templates"
+@model Ozikol.Central.Areas.Centralwks.Pages.EmailTemplates.IndexModel
+@{
+    ViewData["Title"] = "Email Templates";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="font-size: 22px; font-weight: 700; color: var(--admin-text); margin: 0 0 6px 0;">Central Email Templates</h1>
+        <p class="admin-subtitle" style="font-size: 13.5px; color: var(--admin-text-muted); margin: 0;">Configure transactional onboarding and system email templates dispatched across the platform.</p>
+    </div>
+    <div class="admin-actions" style="display: flex; align-items: center; gap: 10px;">
+        @if (Model.ActiveTemplate?.UpdatedUtc != null)
+        {
+            <span style="font-size: 12px; color: var(--admin-text-muted); display: inline-flex; align-items: center; gap: 6px; background: var(--admin-bg-surface-elevated); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border);">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">update</span>
+                Last modified: <strong style="color: var(--admin-text);">@Model.ActiveTemplate.UpdatedUtc.Value.ToString("dd MMM yyyy, HH:mm") UTC</strong>
+            </span>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="admin-alert admin-alert-success" style="width: 100%; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: #059669;">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">check_circle</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.StatusMessage</div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="admin-alert admin-alert-danger" style="width: 100%; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #dc2626;">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">error</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.ErrorMessage</div>
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; width: 100%; align-items: start;">
+    
+    @* ── Left Column: Template Navigator ── *@
+    <div class="admin-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #0050e5;">mail</span>
+            <span style="font-size: 14px; font-weight: 600; color: var(--admin-text);">Templates Catalog</span>
+        </div>
+        <div style="padding: 12px;">
+            @foreach (var t in Model.Templates)
+            {
+                var isSelected = t.TemplateType == Model.SelectedType;
+                <a href="/centralwks/email-templates?type=@((int)t.TemplateType)" 
+                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: var(--radius-md); text-decoration: none; margin-bottom: 6px; transition: all 0.15s ease; background: @(isSelected ? "rgba(0, 80, 229, 0.08)" : "transparent"); border: 1px solid @(isSelected ? "#0050e5" : "transparent");">
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <span style="font-size: 13.5px; font-weight: 600; color: @(isSelected ? "#0050e5" : "var(--admin-text)");">@t.Name</span>
+                        <span style="font-size: 11px; color: var(--admin-text-muted); font-family: monospace;">@t.TemplateType</span>
+                    </div>
+                    @if (t.IsActive)
+                    {
+                        <span style="font-size: 11px; font-weight: 600; color: #059669; background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 9999px;">Active</span>
+                    }
+                    else
+                    {
+                        <span style="font-size: 11px; font-weight: 600; color: #64748b; background: rgba(100, 116, 139, 0.12); padding: 2px 8px; border-radius: 9999px;">Disabled</span>
+                    }
+                </a>
+            }
+        </div>
+        <div style="padding: 14px 18px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); font-size: 11.5px; color: var(--admin-text-muted); line-height: 1.4;">
+            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: text-bottom; color: #0050e5;">info</span>
+            New enum entries in <code style="color: #0050e5;">MasterEmailTemplateType</code> appear in this catalog automatically.
+        </div>
+    </div>
+
+    @* ── Right Column: Template Editor ── *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <form method="post" style="width: 100%;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Input.Id" />
+            <input type="hidden" asp-for="Input.TemplateType" />
+
+            <div class="admin-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+                
+                @* Card Header *@
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin: 0;">Edit @Model.ActiveTemplate?.Name</h2>
+                        <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Update template subject, rich HTML body, and dispatch availability.</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--admin-text);">
+                            <input type="checkbox" asp-for="Input.IsActive" style="width: 16px; height: 16px; accent-color: #0050e5;" />
+                            Active for automated dispatch
+                        </label>
+                    </div>
+                </div>
+
+                <div style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                    
+                    @* Template Name *@
+                    <div>
+                        <label asp-for="Input.Name" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Template Name <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <input type="text" asp-for="Input.Name" class="admin-form-input" placeholder="e.g. Welcome Email" 
+                               style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+                        <span asp-validation-for="Input.Name" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    @* Email Subject *@
+                    <div>
+                        <label asp-for="Input.Subject" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Subject Line <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <input type="text" asp-for="Input.Subject" id="templateSubjectInput" class="admin-form-input" placeholder="e.g. Welcome to Ozikol — {{businessname}}" 
+                               style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+                        <span asp-validation-for="Input.Subject" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    @* Dynamic Tokens Pill Bar *@
+                    <div style="background: rgba(0, 80, 229, 0.04); border: 1px dashed rgba(0, 80, 229, 0.3); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">token</span>
+                            <span style="font-size: 12.5px; font-weight: 600; color: var(--admin-text);">Available Placeholders:</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button type="button" onclick="insertToken('{{businessname}}')" 
+                                    style="background: #ffffff; border: 1px solid #cbd5e1; color: #0050e5; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-family: monospace; font-weight: 700; cursor: pointer; transition: all 0.15s ease;"
+                                    title="Click to insert {{businessname}} at cursor">
+                                {{businessname}}
+                            </button>
+                            <button type="button" onclick="insertToken('{{organizationname}}')" 
+                                    style="background: #ffffff; border: 1px solid #cbd5e1; color: #0050e5; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-family: monospace; font-weight: 700; cursor: pointer; transition: all 0.15s ease;"
+                                    title="Click to insert {{organizationname}} at cursor">
+                                {{organizationname}}
+                            </button>
+                        </div>
+                    </div>
+
+                    @* Body HTML Editor with Live Preview Toggle *@
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.BodyHtml" style="font-size: 13px; font-weight: 600; color: var(--admin-text);">
+                                HTML Email Body <span style="color: var(--admin-danger);">*</span>
+                            </label>
+                            <div style="display: inline-flex; border: 1px solid var(--admin-border); border-radius: 6px; overflow: hidden;">
+                                <button type="button" id="btnModeCode" onclick="switchMode('code')" 
+                                        style="padding: 4px 12px; font-size: 12px; font-weight: 600; background: #0050e5; color: #ffffff; border: none; cursor: pointer;">
+                                    Code Editor
+                                </button>
+                                <button type="button" id="btnModePreview" onclick="switchMode('preview')" 
+                                        style="padding: 4px 12px; font-size: 12px; font-weight: 600; background: var(--admin-bg-surface-elevated); color: var(--admin-text); border: none; cursor: pointer;">
+                                    Live Preview
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="codeEditorContainer">
+                            <textarea asp-for="Input.BodyHtml" id="templateBodyTextarea" rows="18" class="admin-form-input" 
+                                      placeholder="HTML markup with {{businessname}}..."
+                                      style="width: 100%; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: #0f172a; color: #f8fafc; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; line-height: 1.5; resize: vertical; tab-size: 4;"></textarea>
+                            <span asp-validation-for="Input.BodyHtml" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                        </div>
+
+                        <div id="previewContainer" style="display: none; border: 1px solid var(--admin-border); border-radius: var(--radius-md); overflow: hidden; background: #f1f5f9; padding: 20px;">
+                            <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 12px; font-size: 12.5px; color: #64748b; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <strong>Preview Simulation:</strong> <span id="previewSubjectText" style="color: #0f172a; font-weight: 600;"></span>
+                                </div>
+                                <span style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Sample: Acme Corporation</span>
+                            </div>
+                            <iframe id="previewIframe" style="width: 100%; min-height: 480px; border: none; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"></iframe>
+                        </div>
+                    </div>
+
+                </div>
+
+                @* Card Footer / Action Bar *@
+                <div style="padding: 16px 24px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+                    <button type="submit" 
+                            style="display: inline-flex; align-items: center; gap: 8px; background: #0050e5; color: #ffffff; border: none; padding: 10px 22px; border-radius: var(--radius-md); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background 0.15s ease;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                        Save Template
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+    function insertToken(token) {
+        var textarea = document.getElementById('templateBodyTextarea');
+        if (!textarea) return;
+
+        var start = textarea.selectionStart;
+        var end = textarea.selectionEnd;
+        var text = textarea.value;
+        textarea.value = text.substring(0, start) + token + text.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + token.length;
+        textarea.focus();
+    }
+
+    function switchMode(mode) {
+        var codeContainer = document.getElementById('codeEditorContainer');
+        var previewContainer = document.getElementById('previewContainer');
+        var btnCode = document.getElementById('btnModeCode');
+        var btnPreview = document.getElementById('btnModePreview');
+        var iframe = document.getElementById('previewIframe');
+        var textarea = document.getElementById('templateBodyTextarea');
+        var subjectInput = document.getElementById('templateSubjectInput');
+        var previewSubject = document.getElementById('previewSubjectText');
+
+        if (mode === 'preview') {
+            codeContainer.style.display = 'none';
+            previewContainer.style.display = 'block';
+            btnCode.style.background = 'var(--admin-bg-surface-elevated)';
+            btnCode.style.color = 'var(--admin-text)';
+            btnPreview.style.background = '#0050e5';
+            btnPreview.style.color = '#ffffff';
+
+            var sampleName = 'Acme Corporation';
+            var rawSubject = (subjectInput ? subjectInput.value : '') || '';
+            var simulatedSubject = rawSubject
+                .replace(/\{\{businessname\}\}/gi, sampleName)
+                .replace(/\{\{organizationname\}\}/gi, sampleName);
+            if (previewSubject) {
+                previewSubject.textContent = simulatedSubject;
+            }
+
+            var rawHtml = (textarea ? textarea.value : '') || '';
+            var simulatedHtml = rawHtml
+                .replace(/\{\{businessname\}\}/gi, sampleName)
+                .replace(/\{\{organizationname\}\}/gi, sampleName);
+
+            if (iframe) {
+                var doc = iframe.contentWindow || iframe.contentDocument;
+                if (doc.document) doc = doc.document;
+                doc.open();
+                doc.write(simulatedHtml);
+                doc.close();
+            }
+        } else {
+            codeContainer.style.display = 'block';
+            previewContainer.style.display = 'none';
+            btnCode.style.background = '#0050e5';
+            btnCode.style.color = '#ffffff';
+            btnPreview.style.background = 'var(--admin-bg-surface-elevated)';
+            btnPreview.style.color = 'var(--admin-text)';
+        }
+    }
+</script>
+

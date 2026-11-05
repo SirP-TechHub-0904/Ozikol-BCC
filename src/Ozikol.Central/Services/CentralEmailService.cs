@@ -17,6 +17,23 @@ public interface ICentralEmailService
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>True if queued/sent successfully; false otherwise.</returns>
     Task<bool> SendPasswordResetOtpEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Dispatches a welcoming email to the newly registered organization using the customizable WelcomeEmailTemplate.
+    /// </summary>
+    /// <param name="toEmail">The recipient administrator email address.</param>
+    /// <param name="organizationName">The display name of the tenant business organization.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if queued or sent successfully; false otherwise.</returns>
+    Task<bool> SendWelcomeEmailAsync(string toEmail, string organizationName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dispatches an official setup confirmation email to the administrator containing dedicated workspace details.
+    /// </summary>
+    /// <param name="toEmail">The administrator email address.</param>
+    /// <param name="organizationName">The display name of the organization.</param>
+    /// <param name="domainUrl">The primary workspace domain.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if delivered; false otherwise.</returns>
     Task<bool> SendWelcomeWorkspaceEmailAsync(string toEmail, string organizationName, string domainUrl, CancellationToken cancellationToken = default);
     Task SendSupportInquiryDualAsync(MasterSupportInquiry inquiry, CancellationToken cancellationToken = default);
     Task SendTicketReplyDualAsync(MasterSupportInquiry inquiry, MasterTicketReply reply, CancellationToken cancellationToken = default);
@@ -207,7 +224,79 @@ public class CentralEmailService : ICentralEmailService
     }
 
     /// <summary>
-    /// Dispatches an official setup confirmation email to the administrator containing dedicated sovereign workspace details.
+    /// Dispatches a welcoming email to the newly registered organization using the customizable WelcomeEmailTemplate.
+    /// </summary>
+    /// <param name="toEmail">The recipient administrator email address.</param>
+    /// <param name="organizationName">The display name of the tenant business organization.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if queued or sent successfully; false otherwise.</returns>
+    public async Task<bool> SendWelcomeEmailAsync(string toEmail, string organizationName, CancellationToken cancellationToken = default)
+    {
+        string subject;
+        string body;
+
+        try
+        {
+            var template = await _masterCatalogDbContext.MasterEmailTemplates
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TemplateType == Ozikol.MasterDomain.Enums.MasterEmailTemplateType.WelcomeEmailTemplate && t.IsActive, cancellationToken);
+
+            if (template != null)
+            {
+                subject = template.Subject
+                    .Replace("{{businessname}}", organizationName, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{organizationname}}", organizationName, StringComparison.OrdinalIgnoreCase);
+
+                body = template.BodyHtml
+                    .Replace("{{businessname}}", organizationName, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{organizationname}}", organizationName, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                subject = $"Welcome to Ozikol Business Command Center — {organizationName}";
+                body = $@"<div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 36px; border: 1px solid #e2e8f0; border-radius: 12px;"">
+    <div style=""text-align: center; margin-bottom: 28px;"">
+        <img src=""https://ozikol.cloud/assets/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
+        <h1 style=""color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 8px;"">Welcome to Ozikol, {organizationName}!</h1>
+        <p style=""color: #64748b; font-size: 14.5px; margin: 0;"">We are thrilled to welcome you to the Ozikol Business Command Center.</p>
+    </div>
+    <div style=""background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin-bottom: 24px; line-height: 1.6; font-size: 14.5px; color: #334155;"">
+        <p style=""margin-top: 0;"">Dear <strong>{organizationName}</strong>,</p>
+        <p>Thank you for choosing <strong>Ozikol Business Command Center</strong> to power your enterprise operations. Your workspace is configured to help your organization manage operations, team collaboration, finances, and multi-channel customer communications from one unified center.</p>
+        <p>You will shortly receive your workspace setup details with direct credentials and dedicated portal links to access your workspace anytime.</p>
+        <p style=""margin-bottom: 0;"">If you ever need guidance or have questions, our specialist support engineering team is always here to assist you.</p>
+    </div>
+    <div style=""text-align: center; margin-bottom: 28px;"">
+        <a href=""https://ozikol.cloud"" style=""display: inline-block; background: #0050e5; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;"">Explore Ozikol &rarr;</a>
+    </div>
+    <hr style=""border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px;"" />
+    <p style=""color: #94a3b8; font-size: 12px; text-align: center; margin: 0;"">
+        Ozikol Business Command Center &bull; Enterprise Operations Suite
+    </p>
+</div>";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load WelcomeEmailTemplate from database; falling back to default welcome email.");
+            subject = $"Welcome to Ozikol Business Command Center — {organizationName}";
+            body = $@"<div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 36px; border: 1px solid #e2e8f0; border-radius: 12px;"">
+    <div style=""text-align: center; margin-bottom: 28px;"">
+        <img src=""https://ozikol.cloud/assets/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
+        <h1 style=""color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 8px;"">Welcome to Ozikol, {organizationName}!</h1>
+    </div>
+    <div style=""background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin-bottom: 24px; line-height: 1.6; font-size: 14.5px; color: #334155;"">
+        <p style=""margin-top: 0;"">Dear <strong>{organizationName}</strong>,</p>
+        <p>Thank you for choosing <strong>Ozikol Business Command Center</strong> to power your enterprise operations.</p>
+    </div>
+</div>";
+        }
+
+        return await SendEmailAsync(toEmail, subject, body, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Dispatches an official setup confirmation email to the administrator containing dedicated workspace details.
     /// </summary>
     /// <param name="toEmail">The administrator email address.</param>
     /// <param name="organizationName">The display name of the organization.</param>
@@ -216,57 +305,40 @@ public class CentralEmailService : ICentralEmailService
     /// <returns>True if delivered; false otherwise.</returns>
     public async Task<bool> SendWelcomeWorkspaceEmailAsync(string toEmail, string organizationName, string domainUrl, CancellationToken cancellationToken = default)
     {
-        var subject = $"Welcome to Ozikol: Sovereign Workspace for {organizationName} is Ready!";
+        var subject = $"Welcome to Ozikol: Workspace for {organizationName} is Ready!";
         var loginUrl = $"https://{domainUrl}/auth/login";
-        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
-        var voucherUrl = $"{baseUrl.TrimEnd('/')}/en/vouchers/apply";
 
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
-                    <h2 style='color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;'>Your Sovereign Workspace is Ready!</h2>
+                    <img src='https://ozikol.cloud/assets/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 38px; margin-bottom: 16px;' />
+                    <h2 style='color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;'>Your Workspace is Ready!</h2>
                     <p style='color: #64748b; font-size: 14px; margin-top: 6px;'>Enterprise Cloud Environment Setup Confirmation</p>
                 </div>
                 <p style='color: #334155; font-size: 15px; line-height: 1.6;'>
-                    Congratulations! Your sovereign cloud environment for <strong>{organizationName}</strong> has been provisioned and initialized with your executive business suite.
+                    Congratulations! Your cloud environment for <strong>{organizationName}</strong> has been set up and is ready to use with your executive business suite.
                 </p>
                 <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 24px 0;'>
                     <div style='margin-bottom: 14px;'>
                         <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Dedicated Website URL:</div>
-                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='https://{domainUrl}' style='color: #0284c7; text-decoration: none;'>https://{domainUrl}</a></div>
+                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='https://{domainUrl}' style='color: #0050e5; text-decoration: none;'>https://{domainUrl}</a></div>
                     </div>
                     <div style='margin-bottom: 14px;'>
                         <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Administrator Login Portal:</div>
-                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='{loginUrl}' style='color: #0284c7; text-decoration: none;'>{loginUrl}</a></div>
+                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='{loginUrl}' style='color: #0050e5; text-decoration: none;'>{loginUrl}</a></div>
                     </div>
                     <div>
                         <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Administrator Account:</div>
                         <div style='font-size: 14px; color: #0f172a; margin-top: 2px; font-family: monospace;'>{toEmail}</div>
                     </div>
                 </div>
-                <div style='background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 20px; line-height: 1.5;'>
-                    <strong>Important Security Note:</strong> For maximum security and independence, client organizations log in directly through their dedicated website link. Bookmark your portal URL for all future team access.
-                </div>
-                
-                <!-- Promotional 1-Year Free Voucher Callout -->
-                <div style='background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 8px; padding: 18px; margin-bottom: 24px; text-align: center;'>
-                    <div style='font-size: 15px; font-weight: 700; color: #92400e; margin-bottom: 4px;'>
-                        Want 100% Free Access for 1 Full Year?
-                    </div>
-                    <p style='color: #b45309; font-size: 13px; margin: 0 0 12px 0; line-height: 1.4;'>
-                        Complete our community eligibility verification tasks and receive a 100% discount promotional voucher for your workspace.
-                    </p>
-                    <a href='{voucherUrl}' style='display: inline-block; background: #d97706; color: #ffffff; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; text-decoration: none;'>
-                        Apply for Free 1-Year Voucher &rarr;
-                    </a>
-                </div>
 
-                <div style='text-align: center;'>
-                    <a href='{loginUrl}' style='display: inline-block; background: #0f172a; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;'>Launch Command Center &rarr;</a>
+                <div style='text-align: center; margin-top: 24px;'>
+                    <a href='{loginUrl}' style='display: inline-block; background: #0050e5; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;'>Launch Command Center &rarr;</a>
                 </div>
                 <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;' />
                 <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
-                    Ozikol Cloud Security &bull; Sovereign Business Operating Systems
+                    Ozikol Business Command Center
                 </p>
             </div>
         ";
@@ -606,7 +678,7 @@ public class CentralEmailService : ICentralEmailService
                 </p>
                 <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />
                 <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
-                    {settings.PlatformName} Cloud Security &bull; Sovereign Business Operating Systems
+                    Ozikol Business Command Center
                 </p>
             </div>
         ";
@@ -697,7 +769,7 @@ public class CentralEmailService : ICentralEmailService
 
                 <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />
                 <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
-                    {settings.PlatformName} Cloud Security &bull; Sovereign Business Operating Systems
+                    Ozikol Business Command Center
                 </p>
             </div>
         ";

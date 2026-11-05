@@ -1543,6 +1543,48 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterEmailLogs");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterEmailTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BodyHtml")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("TemplateType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("TemplateType")
+                        .IsUnique();
+
+                    b.ToTable("MasterEmailTemplates");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureCatalog", b =>
                 {
                     b.Property<Guid>("Id")
