@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
@@ -28,7 +29,7 @@ public static class OzikolDataCipher
     /// <summary>
     /// Initializes the master encryption key from application configuration or environment variables.
     /// Recommended storage locations:
-    /// 1. Production VPS: OS/Service environment variable <c>Security__MasterEncryptionKey</c> or <c>OZIKOL_MASTER_ENCRYPTION_KEY</c>.
+    /// 1. Production VPS: OS/Service environment variable <c>Security__MasterEncryptionKey</c> or <c>OZIKOL_SECURITY_MASTER_ENCRYPTION_KEY</c>.
     /// 2. Cloud Production: AWS Secrets Manager / Azure Key Vault injected into environment configuration.
     /// 3. Local Development: <c>.env</c> file (<c>Security__MasterEncryptionKey</c>).
     /// </summary>
@@ -38,13 +39,15 @@ public static class OzikolDataCipher
         lock (KeyLock)
         {
             string? rawKey = configuration?["Security:MasterEncryptionKey"]
+                ?? configuration?["OZIKOL_SECURITY_MASTER_ENCRYPTION_KEY"]
                 ?? configuration?["OZIKOL_MASTER_ENCRYPTION_KEY"]
                 ?? Environment.GetEnvironmentVariable("Security__MasterEncryptionKey")
+                ?? Environment.GetEnvironmentVariable("OZIKOL_SECURITY_MASTER_ENCRYPTION_KEY")
                 ?? Environment.GetEnvironmentVariable("OZIKOL_MASTER_ENCRYPTION_KEY");
 
             if (string.IsNullOrWhiteSpace(rawKey))
             {
-                // Derive from JWT secret if explicitly present in environment to guarantee zero-breakage startup
+                // Derive from JWT secret if explicitly present in environment
                 rawKey = configuration?["Jwt:Key"]
                     ?? configuration?["Jwt:Secret"]
                     ?? Environment.GetEnvironmentVariable("Jwt__Key")
@@ -100,11 +103,12 @@ public static class OzikolDataCipher
 
     /// <summary>
     /// Decrypts a value prefixed with <c>enc:v1:</c> back into plaintext in memory.
-    /// If the value does not carry the <c>enc:v1:</c> prefix (e.g., legacy plaintext database row),
+    /// Supports both unified Base64 payloads and colon-separated (IV:Ciphertext:Tag) database formats.
+    /// If the value does not carry the <c>enc:v1:</c> prefix (e.g. legacy plaintext database row),
     /// returns the original string seamlessly so existing deployments never break.
     /// </summary>
     /// <param name="storedValue">The database value (either `enc:v1:...` ciphertext or legacy plaintext).</param>
-    /// <returns>The decrypted plaintext string.</returns>
+    /// <returns>The decrypted plaintext string, or null if the value is ciphertext that cannot be decrypted.</returns>
     public static string? DecryptIfNeeded(string? storedValue)
     {
         if (string.IsNullOrWhiteSpace(storedValue))
@@ -119,39 +123,123 @@ public static class OzikolDataCipher
 
         try
         {
-            var base64Payload = storedValue.Substring(CipherPrefix.Length);
-            var combined = Convert.FromBase64String(base64Payload);
+            var rawPayload = storedValue.Substring(CipherPrefix.Length).Trim();
+            byte[] nonce;
+            byte[] tag;
+            byte[] cipherBytes;
 
-            if (combined.Length < NonceSizeBytes + TagSizeBytes)
+            // Handle colon-separated format (enc:v1:{iv_b64}:{ct_b64}:{tag_b64})
+            if (rawPayload.Contains(':'))
             {
-                return storedValue;
+                var parts = rawPayload.Split(':');
+                if (parts.Length == 3)
+                {
+                    nonce = Convert.FromBase64String(parts[0]);
+                    cipherBytes = Convert.FromBase64String(parts[1]);
+                    tag = Convert.FromBase64String(parts[2]);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                // Standard combined binary payload [12-byte Nonce][16-byte Auth Tag][Ciphertext]
+                var combined = Convert.FromBase64String(rawPayload);
+                if (combined.Length < NonceSizeBytes + TagSizeBytes)
+                {
+                    return null;
+                }
+
+                nonce = new byte[NonceSizeBytes];
+                tag = new byte[TagSizeBytes];
+                var cipherLength = combined.Length - NonceSizeBytes - TagSizeBytes;
+                cipherBytes = new byte[cipherLength];
+
+                Buffer.BlockCopy(combined, 0, nonce, 0, NonceSizeBytes);
+                Buffer.BlockCopy(combined, NonceSizeBytes, tag, 0, TagSizeBytes);
+                Buffer.BlockCopy(combined, NonceSizeBytes + TagSizeBytes, cipherBytes, 0, cipherLength);
             }
 
-            var nonce = new byte[NonceSizeBytes];
-            var tag = new byte[TagSizeBytes];
-            var cipherLength = combined.Length - NonceSizeBytes - TagSizeBytes;
-            var cipherBytes = new byte[cipherLength];
-            var plainBytes = new byte[cipherLength];
+            var plainBytes = new byte[cipherBytes.Length];
 
-            Buffer.BlockCopy(combined, 0, nonce, 0, NonceSizeBytes);
-            Buffer.BlockCopy(combined, NonceSizeBytes, tag, 0, TagSizeBytes);
-            Buffer.BlockCopy(combined, NonceSizeBytes + TagSizeBytes, cipherBytes, 0, cipherLength);
+            // Try candidate keys in priority order
+            foreach (var candidateKey in GetCandidateKeys())
+            {
+                try
+                {
+                    using var aesGcm = new AesGcm(candidateKey, TagSizeBytes);
+                    aesGcm.Decrypt(nonce, cipherBytes, tag, plainBytes);
+                    return Encoding.UTF8.GetString(plainBytes);
+                }
+                catch (CryptographicException)
+                {
+                    // Candidate key did not match, try next candidate
+                }
+            }
 
-            var key = ResolveActiveKey();
-            using var aesGcm = new AesGcm(key, TagSizeBytes);
-            aesGcm.Decrypt(nonce, cipherBytes, tag, plainBytes);
-
-            return Encoding.UTF8.GetString(plainBytes);
-        }
-        catch (CryptographicException)
-        {
-            // If key rotation occurred or payload was corrupted, avoid crashing non-critical reads
-            return storedValue;
+            // Return null if all candidate keys fail so callers fall back cleanly to environment variables
+            return null;
         }
         catch (FormatException)
         {
-            return storedValue;
+            return null;
         }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Resolves the candidate AES-256 keys to attempt for decrypting stored values.
+    /// </summary>
+    /// <returns>A list of 32-byte key candidates.</returns>
+    private static List<byte[]> GetCandidateKeys()
+    {
+        var candidates = new List<byte[]>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        void AddCandidate(byte[]? keyBytes)
+        {
+            if (keyBytes == null || keyBytes.Length != KeySizeBytes) return;
+            var hex = Convert.ToHexString(keyBytes);
+            if (seen.Add(hex))
+            {
+                candidates.Add(keyBytes);
+            }
+        }
+
+        // 1. Initialized cached master key
+        if (_cachedMasterKey != null)
+        {
+            AddCandidate(_cachedMasterKey);
+        }
+
+        // 2. Discover potential key strings from environment
+        var rawKeyStrings = new[]
+        {
+            Environment.GetEnvironmentVariable("Security__MasterEncryptionKey"),
+            Environment.GetEnvironmentVariable("OZIKOL_SECURITY_MASTER_ENCRYPTION_KEY"),
+            Environment.GetEnvironmentVariable("OZIKOL_MASTER_ENCRYPTION_KEY"),
+            Environment.GetEnvironmentVariable("Jwt__Key"),
+            Environment.GetEnvironmentVariable("Jwt__Secret")
+        };
+
+        foreach (var raw in rawKeyStrings)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) continue;
+            var trimmed = raw.Trim();
+
+            // Salted HKDF/SHA-256 key derivation (standard C#)
+            AddCandidate(Derive256BitKey(trimmed));
+
+            // Direct SHA-256 key derivation (legacy/script fallback)
+            AddCandidate(SHA256.HashData(Encoding.UTF8.GetBytes(trimmed)));
+        }
+
+        return candidates;
     }
 
     /// <summary>
@@ -173,6 +261,7 @@ public static class OzikolDataCipher
             }
 
             string? envKey = Environment.GetEnvironmentVariable("Security__MasterEncryptionKey")
+                ?? Environment.GetEnvironmentVariable("OZIKOL_SECURITY_MASTER_ENCRYPTION_KEY")
                 ?? Environment.GetEnvironmentVariable("OZIKOL_MASTER_ENCRYPTION_KEY")
                 ?? Environment.GetEnvironmentVariable("Jwt__Key")
                 ?? Environment.GetEnvironmentVariable("Jwt__Secret");
@@ -180,8 +269,7 @@ public static class OzikolDataCipher
             if (string.IsNullOrWhiteSpace(envKey))
             {
                 throw new InvalidOperationException(
-                    "CRITICAL SECURITY CONFIGURATION ERROR: Master encryption key is not configured. " +
-                    "Please set 'Security__MasterEncryptionKey' (or 'OZIKOL_MASTER_ENCRYPTION_KEY') in your OS environment variables or .env file.");
+                    "Master encryption key is not configured. Please set 'Security__MasterEncryptionKey' in your .env or environment variables.");
             }
 
             _cachedMasterKey = Derive256BitKey(envKey.Trim());
@@ -201,4 +289,3 @@ public static class OzikolDataCipher
         return SHA256.HashData(saltedInput);
     }
 }
-

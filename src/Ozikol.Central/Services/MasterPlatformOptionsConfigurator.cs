@@ -46,11 +46,19 @@ namespace Ozikol.Central.Services
                     {
                         if (!string.IsNullOrWhiteSpace(settings.PostmarkServerToken))
                         {
-                            options.ServerToken = OzikolDataCipher.DecryptIfNeeded(settings.PostmarkServerToken)?.Trim() ?? string.Empty;
+                            var val = OzikolDataCipher.DecryptIfNeeded(settings.PostmarkServerToken)?.Trim();
+                            if (!string.IsNullOrWhiteSpace(val) && !val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                            {
+                                options.ServerToken = val;
+                            }
                         }
                         if (!string.IsNullOrWhiteSpace(settings.PostmarkDefaultFrom))
                         {
-                            options.SenderEmail = OzikolDataCipher.DecryptIfNeeded(settings.PostmarkDefaultFrom)?.Trim() ?? string.Empty;
+                            var val = OzikolDataCipher.DecryptIfNeeded(settings.PostmarkDefaultFrom)?.Trim();
+                            if (!string.IsNullOrWhiteSpace(val) && !val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                            {
+                                options.SenderEmail = val;
+                            }
                         }
                     }
                 }
