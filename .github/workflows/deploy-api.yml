@@ -70,6 +70,8 @@ jobs:
               docker load -i /tmp/ozikol-api.tar
               docker run -d --name ozikol-api \
                 --restart unless-stopped \
+                --network ozikol-network \
+                --env-file /opt/ozikol/.env \
                 -p 127.0.0.1:5000:8080 \
                 ozikol/api:latest dotnet Ozikol-BCC.Api.dll
               rm -f /tmp/ozikol-api.tar
