@@ -1114,7 +1114,8 @@ Reply ONLY with the valid JSON object.";
 
             _context.PageCategories.Remove(existing);
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}' deleted successfully."));
+        }
 
         /// <summary>
         /// Request model for batch deleting multiple web categories.
