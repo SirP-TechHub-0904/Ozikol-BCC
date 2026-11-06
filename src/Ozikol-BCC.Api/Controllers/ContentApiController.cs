@@ -671,20 +671,20 @@ namespace Ozikol_BCC.Api.Controllers
                 // Gather sections and repeating cards attached to this page
                 var sections = await _context.PageSections
                     .Where(s => s.WebPageId == page.Id)
-                    .OrderBy(s => s.SortOrder)
+                    .OrderBy(s => s.PageSortOrder)
                     .ToListAsync(cancellationToken);
 
                 var sectionIds = sections.Select(s => s.Id).ToList();
                 var subItems = await _context.PageSectionLists
-                    .Where(l => sectionIds.Contains(l.PageSectionId))
+                    .Where(l => l.PageSectionId.HasValue && sectionIds.Contains(l.PageSectionId.Value))
                     .OrderBy(l => l.SortOrder)
                     .ToListAsync(cancellationToken);
 
                 var contentSummary = new System.Text.StringBuilder();
                 contentSummary.AppendLine($"Page Title: {page.Title}");
-                if (!string.IsNullOrWhiteSpace(page.Headline)) contentSummary.AppendLine($"Headline: {page.Headline}");
-                if (!string.IsNullOrWhiteSpace(page.Description)) contentSummary.AppendLine($"Description: {page.Description}");
-                if (!string.IsNullOrWhiteSpace(page.Category)) contentSummary.AppendLine($"Category: {page.Category}");
+                if (!string.IsNullOrWhiteSpace(page.RibonCustomDisplayTitle)) contentSummary.AppendLine($"Headline: {page.RibonCustomDisplayTitle}");
+
+                if (page.PageCategory != null && !string.IsNullOrWhiteSpace(page.PageCategory.Title)) contentSummary.AppendLine($"Category: {page.PageCategory.Title}");
                 if (!string.IsNullOrWhiteSpace(page.DirectUrl)) contentSummary.AppendLine($"Route Slug: {page.DirectUrl}");
 
                 if (sections.Any())
@@ -762,7 +762,7 @@ Reply ONLY with the valid JSON object.";
 
                 if (modified)
                 {
-                    page.UpdatedAt = DateTime.UtcNow;
+
                     await _context.SaveChangesAsync(cancellationToken);
                 }
 
@@ -1520,13 +1520,14 @@ Reply ONLY with the valid JSON object.";
                                 MoreDescription = sub.MoreDescription,
                                 ImageUrl = sub.ImageUrl,
                                 ImageKey = sub.ImageKey,
-                                SecondImageUrl = sub.SecondImageUrl,
+                                VideoUrl = sub.VideoUrl,
+                                VideoKey = sub.VideoKey,
                                 IconText = sub.IconText,
                                 ButtonText = sub.ButtonText,
                                 ButtonLink = sub.ButtonLink,
                                 SortOrder = sub.SortOrder,
                                 Disable = sub.Disable,
-                                DisableButton = sub.DisableButton,
+
                                 CustomClass = sub.CustomClass
                             });
                         }
@@ -1775,13 +1776,13 @@ Reply ONLY with the valid JSON object.";
                         MoreDescription = orig.MoreDescription,
                         ImageUrl = orig.ImageUrl,
                         ImageKey = orig.ImageKey,
-                        SecondImageUrl = orig.SecondImageUrl,
+                        VideoUrl = orig.VideoUrl,
+                        VideoKey = orig.VideoKey,
                         IconText = orig.IconText,
                         ButtonText = orig.ButtonText,
                         ButtonLink = orig.ButtonLink,
                         SortOrder = currentMaxSort,
                         Disable = orig.Disable,
-                        DisableButton = orig.DisableButton,
                         CustomClass = orig.CustomClass
                     });
                 }
@@ -6305,14 +6306,14 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     var incomingUrl = ExtractUrlFromTag(incomingContent);
                     if (string.IsNullOrWhiteSpace(incomingUrl) || incomingUrl != existingUrl)
                     {
-                        var isJs = incomingTagType.Contains("script") || incomingTagType.Contains("js") || existingUrl.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
-                        var rawText = isJs ? ExtractCleanJs(incomingContent) : ExtractCleanCss(incomingContent);
-                        var contentType = isJs ? "application/javascript" : "text/css";
+                        var isExistingJs = incomingTagType.Contains("script") || incomingTagType.Contains("js") || existingUrl.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
+                        var rawText = isExistingJs ? ExtractCleanJs(incomingContent) : ExtractCleanCss(incomingContent);
+                        var contentType = isExistingJs ? "application/javascript" : "text/css";
                         var updateRes = await _r2Storage.SaveAssetTextAsync(existingUrl, rawText, contentType);
                         if (updateRes.Success)
                         {
-                            incomingContent = isJs ? $"<script src=\"{existingUrl}\"></script>" : $"<link rel=\"stylesheet\" href=\"{existingUrl}\" />";
-                            incomingTagType = isJs ? "script_link" : "css_link";
+                            incomingContent = isExistingJs ? $"<script src=\"{existingUrl}\"></script>" : $"<link rel=\"stylesheet\" href=\"{existingUrl}\" />";
+                            incomingTagType = isExistingJs ? "script_link" : "css_link";
                         }
                     }
                 }
