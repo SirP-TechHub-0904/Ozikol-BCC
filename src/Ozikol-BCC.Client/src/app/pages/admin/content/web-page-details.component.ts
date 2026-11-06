@@ -15,9 +15,9 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="page-header">
         <div class="header-titles">
           <div class="breadcrumb">
-            <a routerLink="/admin/content">CMS Studio</a>
+            <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/admin/content/pages">All Web Pages</a>
+            <a routerLink="/content/console/pages">All Web Pages</a>
             <span class="sep">/</span>
             <span class="current">{{ page?.title || 'Page Details' }}</span>
           </div>
@@ -25,11 +25,11 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Direct Route: <code>/{{ page?.directUrl }}</code> &bull; {{ page?.pageSections?.length || 0 }} Layout Section Blocks</p>
         </div>
         <div class="header-actions">
-          <a [routerLink]="['/admin/content/pages/edit', pageId]" class="btn btn-primary">
+          <a [routerLink]="['/content/console/pages/edit', pageId]" class="btn btn-primary">
             <span class="material-symbols-outlined">edit</span>
             <span>Edit Page Settings</span>
           </a>
-          <a routerLink="/admin/content/pages" class="btn btn-outline">
+          <a routerLink="/content/console/pages" class="btn btn-outline">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Back to Pages</span>
           </a>

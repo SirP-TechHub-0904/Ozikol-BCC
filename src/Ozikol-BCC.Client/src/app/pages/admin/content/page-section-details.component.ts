@@ -272,10 +272,13 @@ export class PageSectionDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.sectionId = this.route.snapshot.paramMap.get('id') || '';
-    if (this.sectionId) {
-      this.loadSection();
-    }
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (id) {
+        this.sectionId = id;
+        this.loadSection();
+      }
+    });
   }
 
   loadSection(): void {
