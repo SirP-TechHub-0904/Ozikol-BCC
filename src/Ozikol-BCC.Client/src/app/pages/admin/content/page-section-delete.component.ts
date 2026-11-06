@@ -17,7 +17,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="breadcrumb">
             <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/content/console/sections">Page Sections</a>
+            <a (click)="cancel()" style="cursor: pointer;">Page Sections</a>
             <span class="sep">/</span>
             <span class="current danger-text">Delete Section</span>
           </div>
@@ -409,6 +409,7 @@ export class PageSectionDeleteComponent implements OnInit {
   confirmationInput = '';
   errorMsg = '';
   returnUrl: string | null = null;
+  pageIdFromQuery: string | null = null;
 
   constructor(
     private api: ApiService,
@@ -420,6 +421,7 @@ export class PageSectionDeleteComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(qp => {
       this.returnUrl = qp.get('returnUrl');
+      this.pageIdFromQuery = qp.get('webPageId') || qp.get('pageId');
     });
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -470,11 +472,14 @@ export class PageSectionDeleteComponent implements OnInit {
     this.api.delete<any>(`ContentApi/sections/${this.sectionId}`).subscribe({
       next: () => {
         this.deleting = false;
-        this.toast.success(`Page section '${this.section.title}' deleted successfully.`);
-        if (this.returnUrl) {
+        this.toast.success(`Page section '${this.section?.title || 'Section'}' deleted successfully.`);
+        const pageId = this.section?.webPageId || this.pageIdFromQuery;
+        if (this.returnUrl && this.returnUrl.includes('/pages/delete/')) {
           this.router.navigateByUrl(this.returnUrl);
-        } else if (this.section?.webPageId) {
-          this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+        } else if (pageId) {
+          this.router.navigate(['/content/console/sections'], { queryParams: { webPageId: pageId } });
+        } else if (this.returnUrl) {
+          this.router.navigateByUrl(this.returnUrl);
         } else {
           this.router.navigate(['/content/console/sections']);
         }
@@ -487,10 +492,13 @@ export class PageSectionDeleteComponent implements OnInit {
   }
 
   cancel(): void {
-    if (this.returnUrl) {
+    const pageId = this.section?.webPageId || this.pageIdFromQuery;
+    if (this.returnUrl && this.returnUrl.includes('/pages/delete/')) {
       this.router.navigateByUrl(this.returnUrl);
-    } else if (this.section?.webPageId) {
-      this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+    } else if (pageId) {
+      this.router.navigate(['/content/console/sections'], { queryParams: { webPageId: pageId } });
+    } else if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
     } else {
       this.router.navigate(['/content/console/sections']);
     }
