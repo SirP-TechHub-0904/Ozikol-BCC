@@ -110,7 +110,7 @@ import { ToastService } from '../../../core/services/toast.service';
                         <span class="material-symbols-outlined">edit</span>
                         <span>Edit</span>
                       </a>
-                      <a [routerLink]="['/content/console/sections/delete', sec.id]" class="btn-action btn-delete" title="Delete Section">
+                      <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: '/content/console/pages/details/' + page.id }" class="btn-action btn-delete" title="Delete Section">
                         <span class="material-symbols-outlined">delete</span>
                       </a>
                     </div>

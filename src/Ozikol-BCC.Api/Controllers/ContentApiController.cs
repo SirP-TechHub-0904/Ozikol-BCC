@@ -809,10 +809,18 @@ namespace Ozikol_BCC.Api.Controllers
         // 3. PAGE SECTIONS & SECTION LISTS
         // ==========================================
 
+        /// <summary>
+        /// Retrieves layout sections with optional filtering by web page or home landing preset.
+        /// Returns all sections across all pages with attached web page metadata when pageSet is 'all' or empty.
+        /// </summary>
+        /// <param name="pageSet">Optional preset filter: 'home' for landing page only, 'all' for all pages.</param>
+        /// <param name="webPageId">Optional specific web page identifier.</param>
+        /// <returns>A standardized API response with layout sections.</returns>
         [HttpGet("sections")]
         public async Task<IActionResult> GetSections([FromQuery] string? pageSet = null, [FromQuery] Guid? webPageId = null)
         {
             var query = _context.PageSections
+                .Include(s => s.WebPage)
                 .Include(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
                 .Include(s => s.PageForm)
                     .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
@@ -822,7 +830,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 query = query.Where(s => s.WebPageId == webPageId.Value).OrderBy(s => s.PageSortOrder);
             }
-            else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
+            else if (pageSet == "home")
             {
                 var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
                 if (homePage != null)
@@ -833,6 +841,10 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     query = query.OrderBy(s => s.PageSortOrder);
                 }
+            }
+            else
+            {
+                query = query.OrderBy(s => s.WebPageId).ThenBy(s => s.PageSortOrder);
             }
 
             var sections = await query.ToListAsync();
@@ -937,6 +949,29 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
         // 3B. PAGE SECTION LISTS (Sub-Items)
         // ==========================================
+
+        /// <summary>
+        /// Retrieves all repeating sub-items across all layout sections irrespective of parent page,
+        /// including parent section and parent web page metadata for global overview.
+        /// </summary>
+        /// <param name="sectionId">Optional filter for a specific section.</param>
+        /// <returns>A standardized API response with the list of section sub-items.</returns>
+        [HttpGet("section-lists")]
+        public async Task<IActionResult> GetAllSectionLists([FromQuery] Guid? sectionId = null)
+        {
+            var query = _context.PageSectionLists
+                .Include(l => l.PageSection)
+                    .ThenInclude(s => s!.WebPage)
+                .AsQueryable();
+
+            if (sectionId.HasValue)
+            {
+                query = query.Where(l => l.PageSectionId == sectionId.Value);
+            }
+
+            var items = await query.OrderBy(l => l.PageSectionId).ThenBy(l => l.SortOrder).ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(items, "Section sub-items retrieved successfully."));
+        }
 
         [HttpGet("section-lists/{id:guid}")]
         public async Task<IActionResult> GetSectionListById(Guid id)

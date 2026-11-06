@@ -15,12 +15,12 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="page-header">
         <div class="header-titles">
           <div class="breadcrumb">
-            <a routerLink="/admin/content">CMS Studio</a>
+            <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
             <span class="current">Page Section Templates</span>
           </div>
-          <h1>Page Layout Section Templates</h1>
-          <p class="subtitle">Reusable UI blocks, feature grids, hero banners, and breaking news ribbon items.</p>
+          <h1>All Page Layout Sections &amp; Sub-Items</h1>
+          <p class="subtitle">Global overview of all layout blocks, feature grids, hero banners, and child card items across all web pages.</p>
         </div>
         <div class="header-actions">
           <button type="button" class="btn btn-primary" (click)="openCreateModal()">
@@ -34,21 +34,57 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Search & Filter -->
+      <!-- Navigation Tabs (Sections vs All Sub-Items) -->
+      <div class="cms-nav-tabs">
+        <button
+          type="button"
+          class="nav-tab"
+          [class.active]="activeTab === 'sections'"
+          (click)="activeTab = 'sections'"
+        >
+          <span class="material-symbols-outlined fs-5">view_quilt</span>
+          <span>All Page Sections</span>
+          <span class="tab-badge">{{ sections.length }}</span>
+        </button>
+        <button
+          type="button"
+          class="nav-tab"
+          [class.active]="activeTab === 'subitems'"
+          (click)="activeTab = 'subitems'"
+        >
+          <span class="material-symbols-outlined fs-5">list</span>
+          <span>All Repeating Sub-Items &amp; Cards</span>
+          <span class="tab-badge">{{ allSubItems.length }}</span>
+        </button>
+      </div>
+
+      <!-- Search & Page Filter -->
       <div class="filter-bar">
-        <div class="search-box">
-          <span class="material-symbols-outlined">search</span>
-          <input type="text" [(ngModel)]="searchTerm" placeholder="Search section by title or template key...">
+        <div class="filter-group">
+          <select [(ngModel)]="filterPageId" class="filter-select">
+            <option value="">All Web Pages (Global View)</option>
+            <option *ngFor="let p of allPages" [value]="p.id">{{ p.title }} (/{{ p.directUrl || 'page' }})</option>
+          </select>
+
+          <div class="search-box">
+            <span class="material-symbols-outlined">search</span>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              [placeholder]="activeTab === 'sections' ? 'Search sections by title, page, template...' : 'Search sub-items, cards, buttons...'"
+            >
+          </div>
         </div>
       </div>
 
-      <!-- Sections Table Card -->
-      <div class="cms-card">
+      <!-- TAB 1: ALL SECTIONS TABLE -->
+      <div class="cms-card" *ngIf="activeTab === 'sections'">
         <div class="table-responsive">
           <table class="cms-table">
             <thead>
               <tr>
                 <th>SECTION TITLE</th>
+                <th>PARENT PAGE</th>
                 <th>TEMPLATE KEY</th>
                 <th>SUB-ITEMS</th>
                 <th>HOME VISIBLE</th>
@@ -61,6 +97,16 @@ import { ToastService } from '../../../core/services/toast.service';
                 <td>
                   <strong>{{ sec.title || '(Untitled Section)' }}</strong>
                   <div class="sub-text" *ngIf="sec.miniTitle">{{ sec.miniTitle }}</div>
+                </td>
+                <td>
+                  <span class="page-pill" *ngIf="sec.webPage">
+                    <span class="material-symbols-outlined fs-6">web</span>
+                    {{ sec.webPage.title }}
+                  </span>
+                  <span class="page-pill global" *ngIf="!sec.webPage">
+                    <span class="material-symbols-outlined fs-6">public</span>
+                    Standalone / Global
+                  </span>
                 </td>
                 <td><code>{{ sec.templateKey || 'default-block' }}</code></td>
                 <td>
@@ -84,16 +130,84 @@ import { ToastService } from '../../../core/services/toast.service';
                     </a>
                     <a [routerLink]="['/content/console/sections/edit', sec.id]" class="btn-action btn-edit" title="Edit section">
                       <span class="material-symbols-outlined">edit</span>
-                      <span>Edit Page</span>
+                      <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/delete', sec.id]" class="btn-action btn-delete" title="Delete Section">
+                    <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: '/content/console/sections' }" class="btn-action btn-delete" title="Delete Section">
                       <span class="material-symbols-outlined">delete</span>
                     </a>
                   </div>
                 </td>
               </tr>
               <tr *ngIf="filteredSections.length === 0">
-                <td colspan="6" class="empty-cell">No sections found. Click "New Section" to create one.</td>
+                <td colspan="7" class="empty-cell">No sections found matching your filter criteria.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: ALL SUB-ITEMS & CARDS TABLE -->
+      <div class="cms-card" *ngIf="activeTab === 'subitems'">
+        <div class="table-responsive">
+          <table class="cms-table">
+            <thead>
+              <tr>
+                <th>SUB-ITEM / CARD TITLE</th>
+                <th>PARENT SECTION</th>
+                <th>PARENT PAGE</th>
+                <th>BUTTON / DESTINATION</th>
+                <th>SORT ORDER</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of filteredSubItems">
+                <td>
+                  <strong>{{ item.title || '(Untitled Item)' }}</strong>
+                  <div class="sub-text" *ngIf="item.miniTitle">{{ item.miniTitle }}</div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined text-muted fs-6">layers</span>
+                    <strong class="text-dark">{{ item.pageSection?.title || 'Unknown Section' }}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span class="page-pill" *ngIf="item.pageSection?.webPage">
+                    <span class="material-symbols-outlined fs-6">web</span>
+                    {{ item.pageSection.webPage.title }}
+                  </span>
+                  <span class="page-pill global" *ngIf="!item.pageSection?.webPage">
+                    <span class="material-symbols-outlined fs-6">public</span>
+                    Standalone / Global
+                  </span>
+                </td>
+                <td>
+                  <span class="btn-preview-tag" *ngIf="item.buttonText">{{ item.buttonText }}</span>
+                  <code class="small text-muted" *ngIf="item.buttonLink"> &rarr; {{ item.buttonLink }}</code>
+                  <span class="badge-none" *ngIf="!item.buttonText &amp;&amp; !item.buttonLink">-</span>
+                </td>
+                <td><code>#{{ item.sortOrder || 0 }}</code></td>
+                <td>
+                  <span class="status-pill" [class.published]="!item.disable" [class.draft]="item.disable">
+                    {{ !item.disable ? 'Active' : 'Disabled' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <a [routerLink]="['/content/console/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
+                      <span class="material-symbols-outlined">edit</span>
+                      <span>Edit</span>
+                    </a>
+                    <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: '/content/console/sections' }" class="btn-action btn-delete" title="Delete Item">
+                      <span class="material-symbols-outlined">delete</span>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredSubItems.length === 0">
+                <td colspan="7" class="empty-cell">No repeating sub-items found matching your filter criteria.</td>
               </tr>
             </tbody>
           </table>
@@ -134,14 +248,14 @@ import { ToastService } from '../../../core/services/toast.service';
 
             <div class="form-row">
               <div class="form-group flex-1">
-                <label>HOME PAGE SORT ORDER</label>
-                <input type="number" [(ngModel)]="newSection.homePageSortOrder" class="form-control">
+                <label>PAGE SORT ORDER</label>
+                <input type="number" [(ngModel)]="newSection.pageSortOrder" class="form-control">
               </div>
               <div class="form-group flex-1">
-                <label>ATTACH TO WEB PAGE (OPTIONAL)</label>
+                <label>ATTACH TO WEB PAGE</label>
                 <select [(ngModel)]="newSection.webPageId" class="form-control">
-                  <option [ngValue]="null">Standalone (Global / Home Only)</option>
-                  <option *ngFor="let p of allPages" [ngValue]="p.id">{{ p.title }} ({{ p.directUrl }})</option>
+                  <option [ngValue]="null">Standalone (Global / All Pages)</option>
+                  <option *ngFor="let p of allPages" [ngValue]="p.id">{{ p.title }} ({{ p.directUrl || 'page' }})</option>
                 </select>
               </div>
             </div>
@@ -151,7 +265,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="modal-footer">
             <button type="button" class="btn btn-outline" (click)="closeCreateModal()">Cancel</button>
             <button type="button" class="btn btn-primary" (click)="saveNewSection()" [disabled]="saving">
-              <span *ngIf="!saving">Save & Create Section</span>
+              <span *ngIf="!saving">Save &amp; Create Section</span>
               <span *ngIf="saving">Saving...</span>
             </button>
           </div>
@@ -160,43 +274,52 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
-    .cms-page-container { display: flex; flex-direction: column; gap: 24px; }
+    .cms-page-container { display: flex; flex-direction: column; gap: 20px; }
     .page-header {
       display: flex; justify-content: space-between; align-items: flex-start;
       background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
     }
     .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; }
     .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .page-header h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
+    .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+    .subtitle { color: #64748b; font-size: 13.5px; margin: 0; }
     .header-actions { display: flex; gap: 12px; }
 
     .btn {
-      display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
-      border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px;
+      border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
     }
     .btn-primary { background: #0050e5; color: #fff; border: none; }
     .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #334155; }
 
     .cms-nav-tabs {
-      display: flex; gap: 8px; background: #fff; padding: 8px 12px;
-      border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;
+      display: flex; gap: 10px; background: #fff; padding: 8px 12px;
+      border-radius: 12px; border: 1px solid #e2e8f0;
     }
     .nav-tab {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
-      border-radius: 8px; font-size: 13px; font-weight: 600; color: #64748b; text-decoration: none;
+      border-radius: 8px; font-size: 13.5px; font-weight: 700; color: #64748b;
+      background: transparent; border: none; cursor: pointer; transition: all 0.2s ease;
     }
     .nav-tab.active { background: #0050e5; color: #fff; }
-    .tab-badge { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-    .nav-tab.active .tab-badge { background: rgba(255,255,255,0.25); color: #fff; }
+    .tab-badge {
+      background: #f1f5f9; color: #475569; padding: 2px 8px;
+      border-radius: 12px; font-size: 11px; font-weight: 800;
+    }
+    .nav-tab.active .tab-badge { background: rgba(255, 255, 255, 0.25); color: #fff; }
 
     .filter-bar {
       display: flex; justify-content: flex-end; background: #fff; padding: 12px 18px;
       border-radius: 12px; border: 1px solid #e2e8f0;
     }
+    .filter-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-select {
+      padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1;
+      font-size: 13px; background: #fff; color: #334155; outline: none; font-weight: 600;
+    }
     .search-box {
       display: flex; align-items: center; gap: 8px; background: #f8fafc;
-      padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; width: 320px;
+      padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; width: 340px;
     }
     .search-box input { border: none; background: transparent; font-size: 13px; outline: none; width: 100%; }
 
@@ -209,6 +332,15 @@ import { ToastService } from '../../../core/services/toast.service';
     .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; }
 
     .sub-text { font-size: 11px; color: #64748b; }
+    .page-pill {
+      display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+      border-radius: 6px; font-size: 12px; font-weight: 700;
+      background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe;
+    }
+    .page-pill.global { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
+    .btn-preview-tag { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 11.5px; font-weight: 700; }
+    .badge-none { color: #94a3b8; font-size: 12px; }
+
     .subitems-badge { background: #eff6ff; color: #0050e5; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }
     .indicator { font-size: 12px; font-weight: 700; }
     .indicator.on { color: #16a34a; }
@@ -228,6 +360,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-edit:hover { background: #0050e5; color: #fff; }
     .btn-delete { background: #fee2e2; color: #dc2626; }
     .btn-delete:hover { background: #dc2626; color: #fff; }
+    .empty-cell { text-align: center; color: #64748b; padding: 32px !important; font-size: 13.5px; }
 
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
@@ -256,9 +389,12 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PageSectionsComponent implements OnInit {
   loading = false;
   saving = false;
+  activeTab: 'sections' | 'subitems' = 'sections';
   sections: any[] = [];
+  allSubItems: any[] = [];
   allPages: any[] = [];
   searchTerm = '';
+  filterPageId = '';
 
   showCreateModal = false;
   errorMessage = '';
@@ -279,6 +415,7 @@ export class PageSectionsComponent implements OnInit {
       next: (res) => {
         this.sections = res?.data || [];
         this.loadPages();
+        this.loadSubItems();
       },
       error: (err) => {
         this.loading = false;
@@ -299,10 +436,48 @@ export class PageSectionsComponent implements OnInit {
     });
   }
 
+  loadSubItems(): void {
+    this.api.get<any>('ContentApi/section-lists').subscribe({
+      next: (res) => {
+        this.allSubItems = res?.data || [];
+      },
+      error: () => {}
+    });
+  }
+
   get filteredSections(): any[] {
-    if (!this.searchTerm) return this.sections;
-    const term = this.searchTerm.toLowerCase();
-    return this.sections.filter(s => s.title?.toLowerCase().includes(term) || s.templateKey?.toLowerCase().includes(term));
+    let list = this.sections;
+    if (this.filterPageId) {
+      list = list.filter(s => s.webPageId === this.filterPageId);
+    }
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      list = list.filter(s =>
+        s.title?.toLowerCase().includes(term) ||
+        s.templateKey?.toLowerCase().includes(term) ||
+        s.webPage?.title?.toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }
+
+  get filteredSubItems(): any[] {
+    let list = this.allSubItems;
+    if (this.filterPageId) {
+      list = list.filter(item => item.pageSection?.webPageId === this.filterPageId);
+    }
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      list = list.filter(item =>
+        item.title?.toLowerCase().includes(term) ||
+        item.miniTitle?.toLowerCase().includes(term) ||
+        item.buttonText?.toLowerCase().includes(term) ||
+        item.buttonLink?.toLowerCase().includes(term) ||
+        item.pageSection?.title?.toLowerCase().includes(term) ||
+        item.pageSection?.webPage?.title?.toLowerCase().includes(term)
+      );
+    }
+    return list;
   }
 
   openCreateModal(): void {
@@ -311,7 +486,7 @@ export class PageSectionsComponent implements OnInit {
       miniTitle: '',
       templateKey: 'feature-block',
       description: '',
-      homePageSortOrder: this.sections.length + 1,
+      pageSortOrder: this.sections.length + 1,
       showInHome: true,
       webPageId: null
     };
@@ -344,32 +519,5 @@ export class PageSectionsComponent implements OnInit {
         this.errorMessage = err?.error?.message || 'Failed to create section.';
       }
     });
-  }
-
-  async deleteSection(sec: any): Promise<void> {
-    const confirmed = await this.toast.confirm(
-      'Delete Layout Section',
-      `You are about to permanently delete layout section "${sec.title}".`,
-      'Delete Section',
-      'Cancel',
-      'danger',
-      sec.title,
-      [
-        'All nested list items, banners, and layout widgets in this section will be deleted.',
-        'This layout section cannot be restored.'
-      ]
-    );
-
-    if (confirmed) {
-      this.api.delete<any>(`ContentApi/sections/${sec.id}`).subscribe({
-        next: () => {
-          this.toast.success(`Section "${sec.title}" deleted successfully.`);
-          this.loadSections();
-        },
-        error: (err) => {
-          this.toast.error(err?.error?.message || 'Failed to delete section.');
-        }
-      });
-    }
   }
 }
