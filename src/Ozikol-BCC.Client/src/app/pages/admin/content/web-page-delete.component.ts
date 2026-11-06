@@ -70,7 +70,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <span class="meta-pill" [ngClass]="page.publish ? 'published' : 'draft'">
                   {{ page.publish ? 'Published Live' : 'Draft / Offline' }}
                 </span>
-                <span class="meta-pill count-pill">{{ page.sectionCount || 0 }} Sections Attached</span>
+                <span class="meta-pill count-pill">{{ page.pageSections?.length ?? page.sectionCount ?? 0 }} Sections Attached</span>
                 <span class="meta-date">Date: {{ page.date | date:'mediumDate' }}</span>
               </div>
             </div>
@@ -139,7 +139,7 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isTitleMatched() || deleting"
+              [disabled]="!isTitleMatched() || deleting || (page.pageSections?.length || 0) > 0"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'delete_forever' }}</span>
               <span>{{ deleting ? 'Deleting Web Page...' : 'I understand the consequences, delete this web page' }}</span>

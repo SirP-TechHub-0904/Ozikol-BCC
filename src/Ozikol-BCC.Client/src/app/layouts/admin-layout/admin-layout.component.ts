@@ -5072,7 +5072,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   isContentSectionsActive(): boolean {
-    return this.currentRoute.startsWith('/admin/content/sections');
+    return this.currentRoute.startsWith('/admin/content/sections') || this.currentRoute.startsWith('/content/console/sections');
   }
 
 

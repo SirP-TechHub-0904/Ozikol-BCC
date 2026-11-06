@@ -621,36 +621,26 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Permanently deletes a web page, cascading deletion to all attached layout sections,
-        /// repeating child section lists, and visitor analytics logs, while detaching any child pages.
+        /// Permanently deletes a web page if it has no attached layout sections.
+        /// If sections exist, blocks deletion and returns a clear custom error requesting their removal.
         /// </summary>
         /// <param name="id">The unique identifier of the web page to delete.</param>
-        /// <returns>A standardized API response confirming the deletion.</returns>
+        /// <returns>A standardized API response confirming the deletion or reporting existing sections.</returns>
         [HttpDelete("pages/{id:guid}")]
         public async Task<IActionResult> DeletePage(Guid id)
         {
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
-            // 1. Cascade delete all layout sections attached to this page, including child list items
-            var sections = await _context.PageSections
-                .Include(s => s.PageSectionLists)
-                .Where(s => s.WebPageId == id)
-                .ToListAsync();
-
-            if (sections.Any())
+            // 1. Guard check: Restrict deletion if the page contains layout sections
+            var sectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == id);
+            if (sectionCount > 0)
             {
-                var childLists = sections
-                    .Where(s => s.PageSectionLists != null)
-                    .SelectMany(s => s.PageSectionLists)
-                    .ToList();
-
-                if (childLists.Any())
-                {
-                    _context.PageSectionLists.RemoveRange(childLists);
-                }
-
-                _context.PageSections.RemoveRange(sections);
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Cannot delete web page '{existing.Title}' because it contains {sectionCount} layout section(s). Please remove all attached sections before deleting.",
+                    null,
+                    "ERR-2005",
+                    $"WebPage {id} contains {sectionCount} linked PageSections. Restricting deletion."));
             }
 
             // 2. Cascade delete WebPageViewLogs referencing this page
@@ -676,7 +666,7 @@ namespace Ozikol_BCC.Api.Controllers
             // 4. Remove the parent web page
             _context.WebPages.Remove(existing);
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Web page and associated sections deleted successfully."));
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Web page deleted successfully."));
         }
 
         private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null)
@@ -917,30 +907,26 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Permanently deletes a layout section, cascading deletion to any repeating child list items.
+        /// Permanently deletes a layout section if it has no repeating child list items.
+        /// If sub-items exist, blocks deletion and returns a clear custom error requesting their removal.
         /// </summary>
         /// <param name="id">The unique identifier of the section to delete.</param>
-        /// <returns>A standardized API response confirming the deletion.</returns>
+        /// <returns>A standardized API response confirming the deletion or reporting existing sub-items.</returns>
         [HttpDelete("sections/{id:guid}")]
         public async Task<IActionResult> DeleteSection(Guid id)
         {
-            var existing = await _context.PageSections
-                .Include(s => s.PageSectionLists)
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var existing = await _context.PageSections.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
 
-            // Cascade delete attached child list items to prevent foreign key restriction
-            if (existing.PageSectionLists != null && existing.PageSectionLists.Any())
+            // Guard check: Restrict deletion if the section contains repeating sub-items
+            var listCount = await _context.PageSectionLists.CountAsync(l => l.PageSectionId == id);
+            if (listCount > 0)
             {
-                _context.PageSectionLists.RemoveRange(existing.PageSectionLists);
-            }
-            else
-            {
-                var orphanLists = await _context.PageSectionLists.Where(l => l.PageSectionId == id).ToListAsync();
-                if (orphanLists.Any())
-                {
-                    _context.PageSectionLists.RemoveRange(orphanLists);
-                }
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Cannot delete section '{existing.Title ?? "Layout Section"}' because it contains {listCount} repeating sub-item(s). Please remove all sub-items before deleting.",
+                    null,
+                    "ERR-2005",
+                    $"PageSection {id} contains {listCount} linked PageSectionLists. Restricting deletion."));
             }
 
             _context.PageSections.Remove(existing);

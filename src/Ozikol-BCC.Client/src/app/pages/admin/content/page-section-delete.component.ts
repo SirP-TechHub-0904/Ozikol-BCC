@@ -141,7 +141,7 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isTitleMatched() || deleting"
+              [disabled]="!isTitleMatched() || deleting || (section.pageSectionLists?.length || 0) > 0"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'delete_forever' }}</span>
               <span>{{ deleting ? 'Deleting Section...' : 'I understand the consequences, delete this section' }}</span>

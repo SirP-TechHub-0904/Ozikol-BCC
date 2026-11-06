@@ -102,11 +102,11 @@ import { ToastService } from '../../../core/services/toast.service';
                   </td>
                   <td>
                     <div class="action-buttons">
-                      <a [routerLink]="['/admin/content/sections/details', sec.id]" class="btn-action btn-details" title="Manage sub-items">
+                      <a [routerLink]="['/content/console/sections/details', sec.id]" class="btn-action btn-details" title="Manage sub-items">
                         <span class="material-symbols-outlined">list</span>
                         <span>Items</span>
                       </a>
-                      <a [routerLink]="['/admin/content/sections/edit', sec.id]" class="btn-action btn-edit" title="Edit section">
+                      <a [routerLink]="['/content/console/sections/edit', sec.id]" class="btn-action btn-edit" title="Edit section">
                         <span class="material-symbols-outlined">edit</span>
                         <span>Edit</span>
                       </a>

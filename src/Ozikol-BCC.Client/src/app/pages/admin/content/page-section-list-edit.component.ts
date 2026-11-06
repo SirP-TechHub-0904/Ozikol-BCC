@@ -15,9 +15,9 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="page-header">
         <div class="header-titles">
           <div class="breadcrumb">
-            <a routerLink="/admin/content">CMS Studio</a>
+            <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/admin/content/sections">Page Sections</a>
+            <a routerLink="/content/console/sections">Page Sections</a>
             <span class="sep">/</span>
             <span class="current">Edit Sub-Item</span>
           </div>
@@ -354,9 +354,9 @@ export class PageSectionListEditComponent implements OnInit {
 
   goBack(): void {
     if (this.item?.pageSectionId) {
-      this.router.navigate(['/admin/content/sections/details', this.item.pageSectionId]);
+      this.router.navigate(['/content/console/sections/details', this.item.pageSectionId]);
     } else {
-      this.router.navigate(['/admin/content/sections']);
+      this.router.navigate(['/content/console/sections']);
     }
   }
 }

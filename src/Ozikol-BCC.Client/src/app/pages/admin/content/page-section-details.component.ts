@@ -15,9 +15,9 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="page-header">
         <div class="header-titles">
           <div class="breadcrumb">
-            <a routerLink="/admin/content">CMS Studio</a>
+            <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/admin/content/sections">Page Sections</a>
+            <a routerLink="/content/console/sections">Page Sections</a>
             <span class="sep">/</span>
             <span class="current">{{ section?.title || 'Section Details' }}</span>
           </div>
@@ -25,11 +25,11 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Template Key: <code>{{ section?.templateKey }}</code> &bull; {{ section?.pageSectionLists?.length || 0 }} Repeating Sub-Items</p>
         </div>
         <div class="header-actions">
-          <a [routerLink]="['/admin/content/sections/edit', sectionId]" class="btn btn-primary">
+          <a [routerLink]="['/content/console/sections/edit', sectionId]" class="btn btn-primary">
             <span class="material-symbols-outlined">edit</span>
             <span>Edit Section Block</span>
           </a>
-          <a routerLink="/admin/content/sections" class="btn btn-outline">
+          <a routerLink="/content/console/sections" class="btn btn-outline">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Back to Sections</span>
           </a>
@@ -88,7 +88,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <a [routerLink]="['/admin/content/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
+                    <a [routerLink]="['/content/console/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit Page</span>
                     </a>
