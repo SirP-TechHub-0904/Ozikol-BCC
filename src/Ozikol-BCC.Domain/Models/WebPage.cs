@@ -276,5 +276,11 @@ namespace Ozikol_BCC.Domain.Models
         /// Navigation collection of ordered layout blocks/sections on this page.
         /// </summary>
         public ICollection<PageSection> PageSections { get; set; } = new List<PageSection>();
+
+        /// <summary>
+        /// Total number of layout sections attached to this web page. Computed / non-persisted property.
+        /// </summary>
+        [NotMapped]
+        public int SectionCount { get; set; }
     }
 }

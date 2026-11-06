@@ -5,6 +5,11 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 
+/**
+ * Component providing verified deletion confirmation for CMS page layout sections,
+ * equipped with an interactive checklist allowing administrators to select and cascade-delete
+ * all attached repeating sub-items and cards.
+ */
 @Component({
   selector: 'app-page-section-delete',
   standalone: true,
@@ -17,7 +22,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="breadcrumb">
             <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/content/console/sections">Page Sections</a>
+            <a (click)="cancel()" style="cursor: pointer;">Page Sections</a>
             <span class="sep">/</span>
             <span class="current danger-text">Delete Section</span>
           </div>
@@ -73,12 +78,103 @@ import { ToastService } from '../../../core/services/toast.service';
                 <span class="meta-pill count-pill" *ngIf="section.webPage">
                   Attached to Page: {{ section.webPage.title }}
                 </span>
-                <span class="meta-pill count-pill" *ngIf="section.pageSectionLists">
-                  {{ section.pageSectionLists.length }} Sub-Items / Cards Attached
+                <span class="meta-pill count-pill" [class.danger]="subItemsCount > 0">
+                  {{ subItemsCount }} Sub-Items / Cards Attached
                 </span>
                 <span class="meta-date">Sort Order: {{ section.sortOrder || 0 }}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Attached Sub-Items & Forceful Cascade Checklist Card -->
+        <div class="subitems-block-card" *ngIf="subItemsCount > 0">
+          <div class="block-head">
+            <span class="material-symbols-outlined force-icon">delete_sweep</span>
+            <div class="block-head-text">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h3>Forceful Cascade Purge: {{ subItemsCount }} Repeating Sub-Item(s)</h3>
+                <span class="badge-cascade">Cascade Purge Available</span>
+              </div>
+              <p class="block-sub">
+                This section contains repeating sub-items (cards, pillars, or features). You can remove them one by one, or select all items below to authorize a forceful cascade purge of this section and everything inside it.
+              </p>
+            </div>
+          </div>
+
+          <!-- Select All Master Checklist Bar -->
+          <div class="select-all-bar">
+            <label class="custom-check-label select-all-label">
+              <input
+                type="checkbox"
+                [checked]="isAllSelected()"
+                (change)="toggleSelectAll()"
+                class="custom-check"
+              />
+              <span class="check-title">
+                <strong>Select All ({{ subItemsCount }} Sub-Items &amp; Cards) for Cascade Deletion</strong>
+              </span>
+            </label>
+            <span class="selected-counter" [class.ready]="isAllSelected()">
+              {{ selectedSubItemIds.size }} of {{ subItemsCount }} sub-items selected
+            </span>
+          </div>
+
+          <!-- Sub-Items Checklist Table -->
+          <div class="subitems-checklist">
+            <div *ngFor="let item of attachedSubItems" class="subitem-check-card" [class.selected]="selectedSubItemIds.has(item.id)">
+              <div class="item-card-header">
+                <label class="custom-check-label item-check-label">
+                  <input
+                    type="checkbox"
+                    [checked]="selectedSubItemIds.has(item.id)"
+                    (change)="toggleSubItem(item)"
+                    class="custom-check"
+                  />
+                  <span class="item-meta">
+                    <span class="item-order">#{{ item.sortOrder || 0 }}</span>
+                    <strong class="item-title">{{ item.title || '(Untitled Sub-Item)' }}</strong>
+                    <span class="item-mini" *ngIf="item.miniTitle">[{{ item.miniTitle }}]</span>
+                    <span class="item-desc" *ngIf="item.description">{{ item.description | slice:0:65 }}...</span>
+                  </span>
+                </label>
+                <div class="item-actions">
+                  <a
+                    [routerLink]="['/content/console/sections/lists/delete', item.id]"
+                    [queryParams]="{ returnUrl: '/content/console/sections/delete/' + sectionId, webPageId: section?.webPageId || pageIdFromQuery }"
+                    class="btn-delete-item-sm"
+                    title="Delete only this sub-item"
+                  >
+                    <span class="material-symbols-outlined">delete</span>
+                    <span>Delete Individually</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cascade Authorization Confirmation Checkbox -->
+          <div class="force-confirm-box">
+            <label class="custom-check-label force-auth-label">
+              <input
+                type="checkbox"
+                [(ngModel)]="forceDeleteConfirmed"
+                class="custom-check"
+              />
+              <span class="auth-text">
+                <strong>I understand that Force Delete will permanently destroy all {{ subItemsCount }} attached repeating sub-item cards without recovery.</strong>
+              </span>
+            </label>
+          </div>
+
+          <div class="block-action-bar">
+            <a
+              [routerLink]="['/content/console/sections/details', sectionId]"
+              class="btn btn-warning-action"
+            >
+              <span class="material-symbols-outlined">list</span>
+              <span>Manage Sub-Items in Details View</span>
+            </a>
           </div>
         </div>
 
@@ -93,8 +189,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <li>
               <strong>Page Layout Removal:</strong> This section block, media, and copy will immediately disappear from its parent web page.
             </li>
-            <li>
-              <strong>Sub-Item Cards Cascade Destruction:</strong> All cards, feature list items, and widget blocks inside this section will be permanently deleted.
+            <li *ngIf="subItemsCount > 0 && !isAllSelected()">
+              <strong>Attached Sub-Items Protection:</strong> This section contains {{ subItemsCount }} repeating sub-item(s). Select all items above and authorize Force Delete to proceed with cascade destruction.
+            </li>
+            <li *ngIf="subItemsCount > 0 && isAllSelected()">
+              <strong>Cascade Purge Notice:</strong> All {{ subItemsCount }} child sub-item card(s) selected above will be permanently eradicated alongside this layout section.
+            </li>
+            <li *ngIf="subItemsCount === 0">
+              <strong>Sub-Item Independence:</strong> There are no repeating sub-items blocking this deletion.
             </li>
             <li>
               <strong>Permanent Record Eradication:</strong> This layout section cannot be recovered after deletion.
@@ -124,8 +226,14 @@ import { ToastService } from '../../../core/services/toast.service';
             />
 
             <div class="match-status" *ngIf="confirmationInput">
-              <span *ngIf="isTitleMatched()" class="status-match">
-                <span class="material-symbols-outlined">check_circle</span> Section title matched. Deletion unlocked.
+              <span *ngIf="canProceedWithDeletion()" class="status-match">
+                <span class="material-symbols-outlined">check_circle</span> Section title matched &amp; deletion authorized. Ready to proceed.
+              </span>
+              <span *ngIf="isTitleMatched() && subItemsCount > 0 && !isAllSelected()" class="status-warning">
+                <span class="material-symbols-outlined">shield</span> Section title matched, but please select all {{ subItemsCount }} sub-item(s) in the checklist above.
+              </span>
+              <span *ngIf="isTitleMatched() && subItemsCount > 0 && isAllSelected() && !forceDeleteConfirmed" class="status-warning">
+                <span class="material-symbols-outlined">shield</span> Please check the cascade authorization box above to unlock Force Delete.
               </span>
               <span *ngIf="!isTitleMatched()" class="status-mismatch">
                 <span class="material-symbols-outlined">cancel</span> Section title does not match yet.
@@ -141,10 +249,19 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isTitleMatched() || deleting || (section.pageSectionLists?.length || 0) > 0"
+              [disabled]="!canProceedWithDeletion()"
+              [title]="!canProceedWithDeletion() ? 'Please match section title and authorize cascade checklist.' : ''"
             >
-              <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'delete_forever' }}</span>
-              <span>{{ deleting ? 'Deleting Section...' : 'I understand the consequences, delete this section' }}</span>
+              <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : (subItemsCount > 0 ? 'delete_sweep' : 'delete_forever') }}</span>
+              <span>
+                {{
+                  deleting
+                    ? 'Purging Section & Sub-Items...'
+                    : subItemsCount > 0
+                    ? 'Force Delete Section & ' + subItemsCount + ' Sub-Item(s)'
+                    : 'I understand the consequences, delete this section'
+                }}
+              </span>
             </button>
           </div>
         </div>
@@ -291,8 +408,200 @@ import { ToastService } from '../../../core/services/toast.service';
     .meta-pill.published { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
     .meta-pill.draft { background: rgba(100, 116, 139, 0.12); color: #64748b; }
     .meta-pill.count-pill { background: #f1f5f9; color: #334155; }
+    .meta-pill.count-pill.danger { background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25); }
     .meta-date { font-size: 12px; color: #94a3b8; }
 
+    /* Forceful Cascade Checklist Card */
+    .subitems-block-card {
+      background: #fffbeb;
+      border: 1.5px solid #fde68a;
+      border-radius: 16px;
+      padding: 22px 26px;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .block-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border-bottom: 1px solid #fef3c7;
+      padding-bottom: 14px;
+    }
+    .force-icon {
+      font-size: 30px;
+      color: #d97706;
+      background: #fef3c7;
+      padding: 8px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .block-head-text { flex: 1; }
+    .block-head-text h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #92400e;
+      margin: 0;
+    }
+    .badge-cascade {
+      background: #f59e0b;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .block-sub {
+      font-size: 13px;
+      color: #78350f;
+      margin: 6px 0 0;
+      line-height: 1.45;
+    }
+
+    /* Master Select All Bar */
+    .select-all-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 10px 16px;
+    }
+    .custom-check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0;
+    }
+    .custom-check {
+      width: 18px;
+      height: 18px;
+      accent-color: #d97706;
+      cursor: pointer;
+    }
+    .check-title { font-size: 13.5px; color: #78350f; }
+    .selected-counter {
+      font-size: 12px;
+      font-weight: 700;
+      color: #b45309;
+      background: #fff;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid #fde68a;
+    }
+    .selected-counter.ready {
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #16a34a;
+    }
+
+    /* Checklist Cards */
+    .subitems-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .subitem-check-card {
+      background: #ffffff;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      transition: all 0.2s;
+    }
+    .subitem-check-card:hover { border-color: #f59e0b; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1); }
+    .subitem-check-card.selected {
+      border-color: #d97706;
+      background: #fffbeb;
+    }
+    .item-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-check-label { flex: 1; margin: 0; }
+    .item-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .item-order {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .item-title { color: #0f172a; font-weight: 700; }
+    .item-mini {
+      color: #d97706;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .item-desc {
+      color: #64748b;
+      font-size: 12px;
+    }
+    .btn-delete-item-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #fee2e2;
+      color: #dc2626;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-delete-item-sm:hover { background: #fca5a5; }
+    .btn-delete-item-sm span { font-size: 14px; }
+
+    /* Authorization Confirm Box */
+    .force-confirm-box {
+      background: #ffffff;
+      border: 1.5px dashed #f59e0b;
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .force-auth-label { width: 100%; margin: 0; }
+    .auth-text { font-size: 13px; color: #92400e; line-height: 1.4; }
+
+    .block-action-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 4px;
+    }
+    .btn-warning-action {
+      background: #ffffff;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .btn-warning-action:hover { background: #fef3c7; }
+
+    /* Consequences Warning Box */
     .consequences-card {
       background: #fef2f2;
       border: 1px solid #fecaca;
@@ -374,8 +683,9 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .match-status { font-size: 12px; font-weight: 700; }
     .status-match { color: #16a34a; display: flex; align-items: center; gap: 4px; }
+    .status-warning { color: #d97706; display: flex; align-items: center; gap: 4px; }
     .status-mismatch { color: #dc2626; display: flex; align-items: center; gap: 4px; }
-    .status-match span, .status-mismatch span { font-size: 16px; }
+    .status-match span, .status-warning span, .status-mismatch span { font-size: 16px; }
 
     .delete-action-row {
       display: flex;
@@ -391,11 +701,18 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PageSectionDeleteComponent implements OnInit {
   sectionId: string | null = null;
   section: any = null;
+  attachedSubItems: any[] = [];
+  subItemsCount: number = 0;
   loading = false;
   deleting = false;
   confirmationInput = '';
   errorMsg = '';
   returnUrl: string | null = null;
+  pageIdFromQuery: string | null = null;
+
+  // Forceful Cascade Checklist State
+  selectedSubItemIds = new Set<string>();
+  forceDeleteConfirmed = false;
 
   constructor(
     private api: ApiService,
@@ -407,6 +724,7 @@ export class PageSectionDeleteComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(qp => {
       this.returnUrl = qp.get('returnUrl');
+      this.pageIdFromQuery = qp.get('webPageId') || qp.get('pageId');
     });
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -424,6 +742,11 @@ export class PageSectionDeleteComponent implements OnInit {
         this.loading = false;
         if (res?.data) {
           this.section = res.data;
+          this.attachedSubItems = this.section.pageSectionLists || [];
+          this.subItemsCount = this.section.listCount ?? this.attachedSubItems.length;
+          if (this.attachedSubItems.length === 0 && this.subItemsCount > 0) {
+            this.loadAttachedSubItems(id);
+          }
         } else {
           this.errorMsg = 'Page section record not found.';
         }
@@ -435,9 +758,53 @@ export class PageSectionDeleteComponent implements OnInit {
     });
   }
 
+  loadAttachedSubItems(id: string): void {
+    this.api.get<any>('ContentApi/section-lists', { sectionId: id }).subscribe({
+      next: (res) => {
+        if (Array.isArray(res?.data)) {
+          this.attachedSubItems = res.data;
+          this.subItemsCount = this.attachedSubItems.length;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  isAllSelected(): boolean {
+    if (this.attachedSubItems.length === 0) return true;
+    return this.attachedSubItems.every(item => this.selectedSubItemIds.has(item.id));
+  }
+
+  toggleSelectAll(): void {
+    if (this.isAllSelected()) {
+      this.selectedSubItemIds.clear();
+      this.forceDeleteConfirmed = false;
+    } else {
+      this.attachedSubItems.forEach(item => this.selectedSubItemIds.add(item.id));
+      this.forceDeleteConfirmed = true;
+    }
+  }
+
+  toggleSubItem(item: any): void {
+    if (this.selectedSubItemIds.has(item.id)) {
+      this.selectedSubItemIds.delete(item.id);
+    } else {
+      this.selectedSubItemIds.add(item.id);
+    }
+    if (!this.isAllSelected()) {
+      this.forceDeleteConfirmed = false;
+    }
+  }
+
   isTitleMatched(): boolean {
     if (!this.section?.title || !this.confirmationInput) return false;
     return this.confirmationInput.trim().toLowerCase() === this.section.title.trim().toLowerCase();
+  }
+
+  canProceedWithDeletion(): boolean {
+    if (!this.isTitleMatched() || this.deleting) return false;
+    if (this.subItemsCount === 0) return true;
+    return this.isAllSelected() && this.forceDeleteConfirmed;
   }
 
   copyTitle(): void {
@@ -448,19 +815,26 @@ export class PageSectionDeleteComponent implements OnInit {
   }
 
   executeDelete(): void {
-    if (!this.isTitleMatched() || !this.sectionId) return;
+    if (!this.canProceedWithDeletion() || !this.sectionId) return;
 
     this.deleting = true;
     this.errorMsg = '';
 
-    this.api.delete<any>(`ContentApi/sections/${this.sectionId}`).subscribe({
+    const endpoint = this.subItemsCount > 0
+      ? `ContentApi/sections/${this.sectionId}?forceCascade=true`
+      : `ContentApi/sections/${this.sectionId}`;
+
+    this.api.delete<any>(endpoint).subscribe({
       next: () => {
         this.deleting = false;
-        this.toast.success(`Page section '${this.section.title}' deleted successfully.`);
-        if (this.returnUrl) {
+        this.toast.success(`Page section '${this.section?.title || 'Section'}' deleted successfully.`);
+        const pageId = this.section?.webPageId || this.pageIdFromQuery;
+        if (this.returnUrl && this.returnUrl.includes('/pages/delete/')) {
           this.router.navigateByUrl(this.returnUrl);
-        } else if (this.section?.webPageId) {
-          this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+        } else if (pageId) {
+          this.router.navigate(['/content/console/sections'], { queryParams: { webPageId: pageId } });
+        } else if (this.returnUrl) {
+          this.router.navigateByUrl(this.returnUrl);
         } else {
           this.router.navigate(['/content/console/sections']);
         }
@@ -473,10 +847,13 @@ export class PageSectionDeleteComponent implements OnInit {
   }
 
   cancel(): void {
-    if (this.returnUrl) {
+    const pageId = this.section?.webPageId || this.pageIdFromQuery;
+    if (this.returnUrl && this.returnUrl.includes('/pages/delete/')) {
       this.router.navigateByUrl(this.returnUrl);
-    } else if (this.section?.webPageId) {
-      this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+    } else if (pageId) {
+      this.router.navigate(['/content/console/sections'], { queryParams: { webPageId: pageId } });
+    } else if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
     } else {
       this.router.navigate(['/content/console/sections']);
     }

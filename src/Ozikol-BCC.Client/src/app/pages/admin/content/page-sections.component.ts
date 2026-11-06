@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -132,7 +132,7 @@ import { ToastService } from '../../../core/services/toast.service';
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: '/content/console/sections' }" class="btn-action btn-delete" title="Delete Section">
+                    <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: getSectionDeleteReturnUrl(sec) }" class="btn-action btn-delete" title="Delete Section">
                       <span class="material-symbols-outlined">delete</span>
                     </a>
                   </div>
@@ -200,7 +200,7 @@ import { ToastService } from '../../../core/services/toast.service';
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: '/content/console/sections' }" class="btn-action btn-delete" title="Delete Item">
+                    <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: getSubItemDeleteReturnUrl(item) }" class="btn-action btn-delete" title="Delete Item">
                       <span class="material-symbols-outlined">delete</span>
                     </a>
                   </div>
@@ -402,10 +402,17 @@ export class PageSectionsComponent implements OnInit {
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      const pageId = params.get('webPageId') || params.get('pageId');
+      if (pageId) {
+        this.filterPageId = pageId;
+      }
+    });
     this.loadSections();
   }
 
@@ -519,5 +526,15 @@ export class PageSectionsComponent implements OnInit {
         this.errorMessage = err?.error?.message || 'Failed to create section.';
       }
     });
+  }
+
+  getSectionDeleteReturnUrl(sec: any): string {
+    const pageId = this.filterPageId || sec.webPageId;
+    return pageId ? `/content/console/sections?webPageId=${pageId}` : '/content/console/sections';
+  }
+
+  getSubItemDeleteReturnUrl(item: any): string {
+    const pageId = this.filterPageId || item.pageSection?.webPageId;
+    return pageId ? `/content/console/sections?webPageId=${pageId}` : '/content/console/sections';
   }
 }

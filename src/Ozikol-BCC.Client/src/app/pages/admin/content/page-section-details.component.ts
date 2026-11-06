@@ -17,7 +17,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="breadcrumb">
             <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/content/console/sections">Page Sections</a>
+            <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null">Page Sections</a>
             <span class="sep">/</span>
             <span class="current">{{ section?.title || 'Section Details' }}</span>
           </div>
@@ -29,7 +29,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined">edit</span>
             <span>Edit Section Block</span>
           </a>
-          <a routerLink="/content/console/sections" class="btn btn-outline">
+          <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null" class="btn btn-outline">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Back to Sections</span>
           </a>
@@ -272,10 +272,13 @@ export class PageSectionDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.sectionId = this.route.snapshot.paramMap.get('id') || '';
-    if (this.sectionId) {
-      this.loadSection();
-    }
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (id) {
+        this.sectionId = id;
+        this.loadSection();
+      }
+    });
   }
 
   loadSection(): void {

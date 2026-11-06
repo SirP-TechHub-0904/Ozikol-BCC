@@ -1122,6 +1122,170 @@ export class TemplateHydrationService {
    * @param html The footer HTML string to check and augment.
    * @returns HTML string guaranteed to contain valid Ozikol attribution.
    */
+  /**
+   * Compiles SEO, Open Graph, Twitter, and Favicon meta tags by hydrating
+   * all placeholders ({{ Title }}, {{ Description }}, {{ Keywords }}, {{ Author }},
+   * {{ CanonicalUrl }}, {{ ImageUrl }}, {{ FaviconUrl }}, {{ Icon32Url }}, {{ Icon16Url }},
+   * {{ AppleTouchIconUrl }}, {{ BrandName }}, {{ ThemeColor }}, {{ DomainName }})
+   * using the active page metadata and tenant brand settings.
+   *
+   * @param rawMetaHtml The raw HTML tag snippet containing placeholders.
+   * @param context Active page, brand settings, and routing context.
+   * @returns Fully compiled and sanitized meta tag markup.
+   */
+  compileMetaTags(
+    rawMetaHtml: string,
+    context?: {
+      page?: any;
+      brand?: any;
+      currentUrl?: string;
+    }
+  ): string {
+    if (!rawMetaHtml) return '';
+
+    const page = context?.page || {};
+    const brand = context?.brand || {};
+
+    const brandName = (
+      brand.brandName ||
+      brand.BrandName ||
+      brand.companyName ||
+      brand.CompanyName ||
+      brand.websiteTitle ||
+      brand.WebsiteTitle ||
+      'Workspace'
+    ).toString().trim();
+
+    // 1. Resolve raw title (Priority: Page MetaTitle > Page Title > Brand Browser Title > Brand Name)
+    const rawTitle = (
+      page.metaTitle ||
+      page.MetaTitle ||
+      page.title ||
+      page.Title ||
+      page.name ||
+      brand.websiteBrowserTitle ||
+      brand.WebsiteBrowserTitle ||
+      brand.websiteTitle ||
+      brand.WebsiteTitle ||
+      brandName
+    ).toString().trim();
+
+    // Intelligently prevent clumsy duplicate brand suffixes when {{ Title }} is followed by {{ BrandName }}
+    const brandEscaped = brandName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const cleanTitle = rawTitle.replace(new RegExp(`\\s*[\\|\\-]\\s*${brandEscaped}$`, 'i'), '').trim() || brandName;
+
+    // 2. Resolve Description (Priority: Page MetaDescription > Page Description > Brand Tagline/Bio)
+    const description = (
+      page.metaDescription ||
+      page.MetaDescription ||
+      page.description ||
+      page.Description ||
+      brand.companyDescription ||
+      brand.CompanyDescription ||
+      brand.tagline ||
+      brand.Tagline ||
+      brand.footerDescription ||
+      ''
+    ).toString().trim();
+
+    // 3. Resolve Keywords (Priority: Page MetaKeywords > Page Tags > Brand Keywords/Industry)
+    const keywords = (
+      page.metaKeywords ||
+      page.MetaKeywords ||
+      page.tags ||
+      page.Tags ||
+      brand.metaKeywords ||
+      brand.MetaKeywords ||
+      brand.industry ||
+      brand.Industry ||
+      ''
+    ).toString().trim();
+
+    // 4. Resolve Author
+    const author = (
+      page.author ||
+      page.Author ||
+      brandName
+    ).toString().trim();
+
+    // 5. Resolve Domain and Canonical URL
+    const domainName = (
+      brand.customDomain ||
+      brand.CustomDomain ||
+      (typeof window !== 'undefined' ? window.location.host : 'localhost')
+    ).toString().trim();
+
+    let canonicalUrl = context?.currentUrl || '';
+    if (!canonicalUrl && typeof window !== 'undefined') {
+      canonicalUrl = window.location.href.split('?')[0];
+    }
+    if (!canonicalUrl && page.directUrl) {
+      const cleanSlug = page.directUrl.toString().replace(/^\//, '');
+      canonicalUrl = `https://${domainName}/${cleanSlug}`;
+    } else if (!canonicalUrl) {
+      canonicalUrl = `https://${domainName}/`;
+    }
+
+    // 6. Resolve Media and Visual Assets
+    const imageUrl = (
+      page.imageUrl ||
+      page.ImageUrl ||
+      brand.logoUrl ||
+      brand.LogoUrl ||
+      brand.companyLogoUrl ||
+      brand.CompanyLogoUrl ||
+      ''
+    ).toString().trim();
+
+    const rawFavicon = (
+      brand.faviconUrl ||
+      brand.FaviconUrl ||
+      brand.companyIconUrl ||
+      brand.CompanyIconUrl ||
+      '/favicon.ico'
+    ).toString().trim();
+    const faviconUrl = rawFavicon || '/favicon.ico';
+
+    const appleTouchIconUrl = (
+      brand.companyIconUrl ||
+      brand.CompanyIconUrl ||
+      brand.faviconUrl ||
+      brand.FaviconUrl ||
+      '/favicon.ico'
+    ).toString().trim() || '/favicon.ico';
+
+    const themeColor = (
+      brand.primaryColor ||
+      brand.PrimaryColor ||
+      brand.themeColor ||
+      brand.ThemeColor ||
+      '#0050E5'
+    ).toString().trim();
+
+    let output = rawMetaHtml;
+
+    // Substitute all Primary SEO & Open Graph placeholders
+    output = output.replace(/\{\{\s*Title\s*\}\}/gi, cleanTitle);
+    output = output.replace(/\{\{\s*(?:Description|MetaDescription)\s*\}\}/gi, description);
+    output = output.replace(/\{\{\s*(?:Keywords|MetaKeywords)\s*\}\}/gi, keywords);
+    output = output.replace(/\{\{\s*Author\s*\}\}/gi, author);
+    output = output.replace(/\{\{\s*CanonicalUrl\s*\}\}/gi, canonicalUrl);
+    output = output.replace(/\{\{\s*(?:ImageUrl|Image|OgImage)\s*\}\}/gi, imageUrl);
+    output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
+    output = output.replace(/\{\{\s*AppleTouchIconUrl\s*\}\}/gi, appleTouchIconUrl);
+    output = output.replace(/\{\{\s*Icon32Url\s*\}\}/gi, faviconUrl);
+    output = output.replace(/\{\{\s*Icon16Url\s*\}\}/gi, faviconUrl);
+    output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
+    output = output.replace(/\{\{\s*ThemeColor\s*\}\}/gi, themeColor);
+    output = output.replace(/\{\{\s*DomainName\s*\}\}/gi, domainName);
+
+    // Universal safety guard: replace empty href="" on shortcut icon / icon tags with fallback
+    output = output.replace(/(<link[^>]*rel=["'](?:shortcut icon|icon)["'][^>]*href=["'])\s*(["'])/gi, `$1${faviconUrl}$2`);
+    output = output.replace(/(<link[^>]*rel=["']apple-touch-icon["'][^>]*href=["'])\s*(["'])/gi, `$1${appleTouchIconUrl}$2`);
+
+    return output;
+  }
+
   enforceOzikolCredit(html: string): string {
     if (!html) return '';
     const standardCredit = `Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" class="text-primary fw-bold text-decoration-none" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>.`;

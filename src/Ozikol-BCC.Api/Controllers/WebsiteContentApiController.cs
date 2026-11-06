@@ -311,11 +311,20 @@ namespace Ozikol_BCC.Api.Controllers
         /// <returns>Grouped active code injection tags.</returns>
         /// <summary>
         /// Retrieves public active code injections (Head, Body Open, Footer) for the storefront and preview.
+        /// Supports per-page dynamic SEO metadata resolution when pageSlug or webPageId is provided,
+        /// and token preservation for real-time single-page application client routing.
         /// </summary>
         /// <param name="suiteCode">Optional theme suite code filter for preview simulation.</param>
+        /// <param name="pageSlug">Optional direct URL slug of the active page.</param>
+        /// <param name="webPageId">Optional unique identifier of the active page.</param>
+        /// <param name="preserveTokens">True to retain page-level tokens for real-time client hydration.</param>
         /// <returns>Grouped active code injection tags.</returns>
         [HttpGet("code-injections")]
-        public async Task<IActionResult> GetPublicCodeInjections([FromQuery] string? suiteCode = null)
+        public async Task<IActionResult> GetPublicCodeInjections(
+            [FromQuery] string? suiteCode = null,
+            [FromQuery] string? pageSlug = null,
+            [FromQuery] Guid? webPageId = null,
+            [FromQuery] bool preserveTokens = false)
         {
             var query = _context.SiteCodeInjectionTags.Where(t => t.IsActive);
 
@@ -343,14 +352,54 @@ namespace Ozikol_BCC.Api.Controllers
                 ? siteSetting.FaviconUrl
                 : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyIconUrl) && siteSetting.CompanyIconUrl != "/favicon.ico"
                     ? siteSetting.CompanyIconUrl
-                    : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : string.Empty));
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : "/favicon.ico"));
+
+            var appleTouchIconUrl = !string.IsNullOrWhiteSpace(siteSetting?.CompanyIconUrl)
+                ? siteSetting.CompanyIconUrl
+                : faviconUrl;
 
             var logoUrl = !string.IsNullOrWhiteSpace(siteSetting?.LogoUrl)
                 ? siteSetting.LogoUrl
                 : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : faviconUrl);
 
-            var description = siteSetting?.CompanyDescription ?? siteSetting?.Tagline ?? string.Empty;
+            var defaultDescription = siteSetting?.CompanyDescription ?? siteSetting?.Tagline ?? string.Empty;
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var domainName = Request.Host.Value;
+            var themeColor = "#0050E5";
+
+            // Attempt to resolve target page metadata if pageSlug or webPageId is specified
+            WebPage? targetPage = null;
+            if (webPageId.HasValue && webPageId.Value != Guid.Empty)
+            {
+                targetPage = await _context.WebPages.AsNoTracking().FirstOrDefaultAsync(p => p.Id == webPageId.Value);
+            }
+            else if (!string.IsNullOrWhiteSpace(pageSlug))
+            {
+                var cleanSlug = pageSlug.Trim().Trim('/').ToLowerInvariant();
+                var slashSlug = "/" + cleanSlug;
+                targetPage = await _context.WebPages.AsNoTracking().FirstOrDefaultAsync(p => p.DirectUrl != null &&
+                    (p.DirectUrl.ToLower() == cleanSlug || p.DirectUrl.ToLower() == slashSlug));
+            }
+
+            var resolvedTitle = targetPage != null
+                ? (!string.IsNullOrWhiteSpace(targetPage.MetaTitle) ? targetPage.MetaTitle : (!string.IsNullOrWhiteSpace(targetPage.Title) ? targetPage.Title : brandName))
+                : (!string.IsNullOrWhiteSpace(siteSetting?.WebsiteTitle) ? siteSetting.WebsiteTitle : brandName);
+
+            var resolvedDescription = targetPage != null && !string.IsNullOrWhiteSpace(targetPage.MetaDescription)
+                ? targetPage.MetaDescription
+                : defaultDescription;
+
+            var resolvedKeywords = targetPage != null && !string.IsNullOrWhiteSpace(targetPage.MetaKeywords)
+                ? targetPage.MetaKeywords
+                : (targetPage?.Tags ?? string.Empty);
+
+            var resolvedImageUrl = targetPage != null && !string.IsNullOrWhiteSpace(targetPage.ImageUrl)
+                ? targetPage.ImageUrl
+                : logoUrl;
+
+            var resolvedCanonicalUrl = targetPage != null && !string.IsNullOrWhiteSpace(targetPage.DirectUrl) && targetPage.DirectUrl != "/"
+                ? $"{baseUrl}/{targetPage.DirectUrl.TrimStart('/')}"
+                : baseUrl;
 
             // Hydrate dynamic tokens so client receives valid URLs with zero empty hrefs
             foreach (var tag in activeTags)
@@ -360,12 +409,26 @@ namespace Ozikol_BCC.Api.Controllers
                 var hydrated = tag.Content
                     .Replace("{{ FaviconUrl }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ Favicon }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ AppleTouchIconUrl }}", appleTouchIconUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Icon32Url }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Icon16Url }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ LogoUrl }}", logoUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ BrandName }}", brandName, StringComparison.OrdinalIgnoreCase)
-                    .Replace("{{ Title }}", brandName, StringComparison.OrdinalIgnoreCase)
-                    .Replace("{{ MetaDescription }}", description, StringComparison.OrdinalIgnoreCase)
-                    .Replace("{{ Description }}", description, StringComparison.OrdinalIgnoreCase)
-                    .Replace("{{ CanonicalUrl }}", baseUrl, StringComparison.OrdinalIgnoreCase);
+                    .Replace("{{ ThemeColor }}", themeColor, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ DomainName }}", domainName, StringComparison.OrdinalIgnoreCase);
+
+                if (!preserveTokens)
+                {
+                    hydrated = hydrated
+                        .Replace("{{ Title }}", resolvedTitle, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ MetaDescription }}", resolvedDescription, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ Description }}", resolvedDescription, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ Keywords }}", resolvedKeywords, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ MetaKeywords }}", resolvedKeywords, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ CanonicalUrl }}", resolvedCanonicalUrl, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ ImageUrl }}", resolvedImageUrl, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ Author }}", brandName, StringComparison.OrdinalIgnoreCase);
+                }
 
                 // Universal safety guard: replace empty href="" on shortcut icon / icon tags with fallback
                 hydrated = System.Text.RegularExpressions.Regex.Replace(
