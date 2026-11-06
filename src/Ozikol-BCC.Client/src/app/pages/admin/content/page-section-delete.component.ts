@@ -457,12 +457,28 @@ export class PageSectionDeleteComponent implements OnInit {
       next: () => {
         this.deleting = false;
         this.toast.success(`Page section '${this.section.title}' deleted successfully.`);
-        this.router.navigate(['/content/console/sections']);
+        if (this.returnUrl) {
+          this.router.navigateByUrl(this.returnUrl);
+        } else if (this.section?.webPageId) {
+          this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+        } else {
+          this.router.navigate(['/content/console/sections']);
+        }
       },
       error: (err) => {
         this.deleting = false;
         this.errorMsg = err?.error?.message || 'Failed to delete page section.';
       }
     });
+  }
+
+  cancel(): void {
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
+    } else if (this.section?.webPageId) {
+      this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+    } else {
+      this.router.navigate(['/content/console/sections']);
+    }
   }
 }

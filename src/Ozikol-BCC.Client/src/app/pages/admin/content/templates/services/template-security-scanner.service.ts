@@ -15,6 +15,8 @@ export interface SecurityViolation {
   snippet: string;
   /** Approximate 1-based source code line number */
   lineNumber?: number;
+  /** Specific file name in bulk audit */
+  fileName?: string;
   /** Human-readable explanation of why this code pattern was flagged */
   message: string;
 }
