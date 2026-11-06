@@ -869,6 +869,118 @@ Reply ONLY with the valid JSON object.";
             return Ok(ApiResponse<object>.SuccessResponse(null, "Web page deleted successfully."));
         }
 
+        /// <summary>
+        /// Request model for batch deleting multiple web pages.
+        /// </summary>
+        public class BulkDeletePagesRequest
+        {
+            /// <summary>
+            /// List of web page identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to forcefully purge all attached layout sections and repeating cards.
+            /// </summary>
+            public bool ForceCascade { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple web pages, and optionally cascades to all attached layout sections and repeating cards.
+        /// </summary>
+        /// <param name="request">Payload containing list of page GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("pages/bulk-delete")]
+        public async Task<IActionResult> BulkDeletePages([FromBody] BulkDeletePagesRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No web page identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var pages = await _context.WebPages
+                .Where(p => targetIds.Contains(p.Id))
+                .ToListAsync();
+
+            if (!pages.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified web pages were found."));
+            }
+
+            var foundIds = pages.Select(p => p.Id).ToList();
+
+            // Guard check if cascade is false: restrict deletion of pages that have attached sections
+            if (!request.ForceCascade)
+            {
+                var pagesWithSections = await _context.PageSections
+                    .Where(s => s.WebPageId.HasValue && foundIds.Contains(s.WebPageId.Value))
+                    .Select(s => s.WebPageId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (pagesWithSections.Any())
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Cannot bulk delete because {pagesWithSections.Count} selected page(s) contain attached layout sections. Enable Force Cascade or remove sections first.",
+                        null,
+                        "ERR-2005",
+                        $"{pagesWithSections.Count} pages have linked sections."));
+                }
+            }
+            else
+            {
+                // Cascade delete all sections and sub-items attached to these pages
+                var sections = await _context.PageSections
+                    .Where(s => s.WebPageId.HasValue && foundIds.Contains(s.WebPageId.Value))
+                    .Include(s => s.PageSectionLists)
+                    .ToListAsync();
+
+                foreach (var sec in sections)
+                {
+                    if (sec.PageSectionLists != null && sec.PageSectionLists.Any())
+                    {
+                        _context.PageSectionLists.RemoveRange(sec.PageSectionLists);
+                    }
+                }
+
+                if (sections.Any())
+                {
+                    _context.PageSections.RemoveRange(sections);
+                }
+
+                // Clean up view logs
+                var viewLogs = await _context.WebPageViewLogs
+                    .Where(l => l.WebPageId.HasValue && foundIds.Contains(l.WebPageId.Value))
+                    .ToListAsync();
+
+                if (viewLogs.Any())
+                {
+                    _context.WebPageViewLogs.RemoveRange(viewLogs);
+                }
+            }
+
+            // Unlink any child sub-pages referencing these pages
+            var childPages = await _context.WebPages
+                .Where(p => p.MainPageId.HasValue && foundIds.Contains(p.MainPageId.Value))
+                .ToListAsync();
+
+            foreach (var child in childPages)
+            {
+                child.MainPageId = null;
+            }
+
+            _context.WebPages.RemoveRange(pages);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = pages.Count
+            }, $"{pages.Count} web page(s) deleted successfully."));
+        }
+
+
+
         private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null)
         {
             if (string.IsNullOrWhiteSpace(rawInput)) rawInput = "page";
@@ -1002,7 +1114,77 @@ Reply ONLY with the valid JSON object.";
 
             _context.PageCategories.Remove(existing);
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}' deleted successfully."));
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}
+
+        /// <summary>
+        /// Request model for batch deleting multiple web categories.
+        /// </summary>
+        public class BulkDeleteCategoriesRequest
+        {
+            /// <summary>
+            /// List of category identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to unbind pages from deleted categories (setting PageCategoryId = null) instead of blocking deletion.
+            /// </summary>
+            public bool UnlinkPages { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple web navigation categories and unlinks attached web pages.
+        /// </summary>
+        /// <param name="request">Payload containing list of category GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("categories/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteCategories([FromBody] BulkDeleteCategoriesRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No category identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var categories = await _context.PageCategories
+                .Where(c => targetIds.Contains(c.Id))
+                .Include(c => c.WebPages)
+                .ToListAsync();
+
+            if (!categories.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified categories were found."));
+            }
+
+            foreach (var cat in categories)
+            {
+                if (cat.WebPages != null && cat.WebPages.Any())
+                {
+                    if (request.UnlinkPages)
+                    {
+                        foreach (var page in cat.WebPages)
+                        {
+                            page.PageCategoryId = null;
+                        }
+                    }
+                    else
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResponse(
+                            $"Cannot delete category '{cat.Title}' because it contains {cat.WebPages.Count} linked web page(s). Enable page unlinking to proceed."));
+                    }
+                }
+            }
+
+            _context.PageCategories.RemoveRange(categories);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = categories.Count
+            }, $"{categories.Count} category/categories deleted successfully."));
+        }
+
+' deleted successfully."));
         }
 
         // ==========================================
@@ -1429,6 +1611,76 @@ Reply ONLY with the valid JSON object.";
             return Ok(ApiResponse<object>.SuccessResponse(null, "Blog category deleted successfully."));
         }
 
+        /// <summary>
+        /// Request model for batch deleting multiple blog categories.
+        /// </summary>
+        public class BulkDeleteBlogCategoriesRequest
+        {
+            /// <summary>
+            /// List of blog category identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to unbind blog posts from deleted categories (setting BlogCategoryId = null) instead of blocking.
+            /// </summary>
+            public bool UnlinkPosts { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple blog categories.
+        /// </summary>
+        /// <param name="request">Payload containing list of blog category GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("blog-categories/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteBlogCategories([FromBody] BulkDeleteBlogCategoriesRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No blog category identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var categories = await _context.BlogCategories
+                .Where(c => targetIds.Contains(c.Id))
+                .ToListAsync();
+
+            if (!categories.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified blog categories were found."));
+            }
+
+            var posts = await _context.Blogs
+                .Where(b => b.BlogCategoryId.HasValue && targetIds.Contains(b.BlogCategoryId.Value))
+                .ToListAsync();
+
+            if (posts.Any())
+            {
+                if (request.UnlinkPosts)
+                {
+                    foreach (var post in posts)
+                    {
+                        post.BlogCategoryId = null;
+                    }
+                }
+                else
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Cannot delete categories because {posts.Count} blog post(s) are linked to them. Enable post unlinking to proceed."));
+                }
+            }
+
+            _context.BlogCategories.RemoveRange(categories);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = categories.Count
+            }, $"{categories.Count} blog category/categories deleted successfully."));
+        }
+
+
+
         // ==========================================
         // 9. BLOG POSTS & ARTICLES
         // ==========================================
@@ -1662,6 +1914,51 @@ Reply ONLY with the valid JSON object.";
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, "Blog article deleted successfully."));
         }
+
+        /// <summary>
+        /// Request model for batch deleting multiple blog posts.
+        /// </summary>
+        public class BulkDeleteBlogsRequest
+        {
+            /// <summary>
+            /// List of blog article identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple blog articles.
+        /// </summary>
+        /// <param name="request">Payload containing list of blog post GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("blogs/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteBlogs([FromBody] BulkDeleteBlogsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No blog identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var blogs = await _context.Blogs
+                .Where(b => targetIds.Contains(b.Id))
+                .ToListAsync();
+
+            if (!blogs.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified blog posts were found."));
+            }
+
+            _context.Blogs.RemoveRange(blogs);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = blogs.Count
+            }, $"{blogs.Count} blog article(s) deleted successfully."));
+        }
+
+
 
         // ==========================================
         // 9. TENANT INSTALLED UI TEMPLATES & MARKETPLACE

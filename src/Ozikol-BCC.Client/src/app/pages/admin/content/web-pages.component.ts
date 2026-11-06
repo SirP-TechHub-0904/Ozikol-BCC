@@ -64,12 +64,37 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
+      <!-- Bulk Action Bar -->
+      <div class="bulk-action-bar" *ngIf="selectedIds.size > 0">
+        <div class="bulk-info">
+          <span class="material-symbols-outlined text-primary">check_circle</span>
+          <span><strong>{{ selectedIds.size }}</strong> web page{{ selectedIds.size > 1 ? 's' : '' }} selected</span>
+        </div>
+        <div class="bulk-buttons">
+          <button type="button" class="btn btn-sm btn-outline" (click)="clearSelection()">Deselect All</button>
+          <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteModal()">
+            <span class="material-symbols-outlined fs-6">delete_sweep</span>
+            <span>Delete Selected ({{ selectedIds.size }})</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Pages Table Card (Full Width) -->
       <div class="cms-card full-width-card">
         <div class="table-responsive">
           <table class="cms-table">
             <thead>
               <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isAllSelected"
+                    [indeterminate]="isIndeterminate"
+                    (change)="toggleSelectAll($event)"
+                    title="Select / Deselect all pages on this page"
+                  >
+                </th>
                 <th>PAGE TITLE</th>
                 <th>ZONE</th>
                 <th>DIRECT URL SLUG</th>
@@ -85,7 +110,15 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let page of paginatedPages">
+              <tr *ngFor="let page of paginatedPages" [class.selected-row]="isSelected(page.id)">
+                <td style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isSelected(page.id)"
+                    (change)="toggleSelection(page.id)"
+                  >
+                </td>
                 <td>
                   <div class="page-title-cell">
                     <div class="title-row">
@@ -233,10 +266,180 @@ import { ToastService } from '../../../core/services/toast.service';
             </button>
           </div>
         </div>
+      <!-- Bulk Delete Confirmation Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-danger">delete_sweep</span>
+              <h3>Delete {{ selectedIds.size }} Web Page{{ selectedIds.size > 1 ? 's' : '' }}?</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeBulkDeleteModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Are you sure you want to permanently delete the <strong>{{ selectedIds.size }}</strong> selected web page(s)?
+            </p>
+            <div class="force-cascade-check">
+              <label class="custom-check-label">
+                <input type="checkbox" [(ngModel)]="cascadeSections" class="cms-checkbox">
+                <span>
+                  <strong>Cascade Purge:</strong> Also delete all attached layout sections and repeating child cards for these pages.
+                </span>
+              </label>
+            </div>
+            <div class="warning-callout">
+              <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
+              <div style="font-size: 12.5px; color: #991b1b; line-height: 1.5;">
+                This action cannot be undone. Public routes for these pages will immediately return 404.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkDeleteModal()" [disabled]="bulkDeleting">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" (click)="executeBulkDelete()" [disabled]="bulkDeleting">
+              <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
+              <span *ngIf="!bulkDeleting">Delete {{ selectedIds.size }} Page{{ selectedIds.size > 1 ? 's' : '' }}</span>
+              <span *ngIf="bulkDeleting">Deleting Pages...</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
   styles: [`
+    .cms-checkbox {
+      width: 17px;
+      height: 17px;
+      accent-color: #0050e5;
+      cursor: pointer;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+    .selected-row {
+      background: #f0f7ff !important;
+    }
+    .bulk-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px 20px;
+      animation: slideDown 0.2s ease;
+    }
+    .bulk-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      color: #1e3a8a;
+    }
+    .bulk-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12.5px;
+      border-radius: 8px;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-title-group h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .force-cascade-check {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .custom-check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+    }
+    .warning-callout {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .cms-page-container {
       display: flex;
       flex-direction: column;
@@ -753,6 +956,10 @@ import { ToastService } from '../../../core/services/toast.service';
 })
 export class WebPagesComponent implements OnInit {
   loading = false;
+  bulkDeleting = false;
+  showBulkDeleteModal = false;
+  cascadeSections = true;
+  selectedIds = new Set<string>();
   pages: any[] = [];
   categories: any[] = [];
   filterStatus = 'all';
@@ -791,6 +998,75 @@ export class WebPagesComponent implements OnInit {
       case 4: return 'zone-top';
       default: return 'zone-first';
     }
+  }
+
+  // Bulk Selection Methods
+  get isAllSelected(): boolean {
+    const list = this.paginatedPages;
+    return list.length > 0 && list.every(p => this.selectedIds.has(p.id));
+  }
+
+  get isIndeterminate(): boolean {
+    const count = this.paginatedPages.filter(p => this.selectedIds.has(p.id)).length;
+    return count > 0 && count < this.paginatedPages.length;
+  }
+
+  toggleSelectAll(event: any): void {
+    const isChecked = event?.target?.checked;
+    const list = this.paginatedPages;
+    if (isChecked) {
+      list.forEach(p => this.selectedIds.add(p.id));
+    } else {
+      list.forEach(p => this.selectedIds.delete(p.id));
+    }
+  }
+
+  toggleSelection(id: string): void {
+    if (this.selectedIds.has(id)) {
+      this.selectedIds.delete(id);
+    } else {
+      this.selectedIds.add(id);
+    }
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  clearSelection(): void {
+    this.selectedIds.clear();
+  }
+
+  openBulkDeleteModal(): void {
+    if (this.selectedIds.size > 0) {
+      this.showBulkDeleteModal = true;
+    }
+  }
+
+  closeBulkDeleteModal(): void {
+    if (this.bulkDeleting) return;
+    this.showBulkDeleteModal = false;
+  }
+
+  executeBulkDelete(): void {
+    if (this.selectedIds.size === 0) return;
+
+    this.bulkDeleting = true;
+    const ids = Array.from(this.selectedIds);
+
+    this.api.post<any>('ContentApi/pages/bulk-delete', { ids, forceCascade: this.cascadeSections }).subscribe({
+      next: (res) => {
+        this.bulkDeleting = false;
+        this.showBulkDeleteModal = false;
+        this.selectedIds.clear();
+        this.toast.success(res?.message || `${ids.length} web page(s) deleted successfully.`);
+        this.loadAll();
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toast.error(err?.error?.message || 'Failed to bulk delete web pages.');
+      }
+    });
   }
 
   loadAll(): void {
