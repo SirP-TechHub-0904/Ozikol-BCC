@@ -641,6 +641,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// If sections exist, blocks deletion and returns a clear custom error requesting their removal.
         /// </summary>
         /// <param name="id">The unique identifier of the web page to delete.</param>
+        /// <param name="forceCascade">Whether to forcefully delete the web page along with all attached layout sections and sub-items.</param>
         /// <returns>A standardized API response confirming the deletion or reporting existing sections.</returns>
         [HttpDelete("pages/{id:guid}")]
         public async Task<IActionResult> DeletePage(Guid id, [FromQuery] bool forceCascade = false)
@@ -958,6 +959,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// If sub-items exist, blocks deletion and returns a clear custom error requesting their removal.
         /// </summary>
         /// <param name="id">The unique identifier of the section to delete.</param>
+        /// <param name="forceCascade">Whether to forcefully delete the layout section along with all repeating sub-items.</param>
         /// <returns>A standardized API response confirming the deletion or reporting existing sub-items.</returns>
         [HttpDelete("sections/{id:guid}")]
         public async Task<IActionResult> DeleteSection(Guid id, [FromQuery] bool forceCascade = false)

@@ -747,10 +747,44 @@ export class LandingComponent implements OnInit, OnDestroy {
    */
   private get allCodeInjectionsList(): CodeInjectionTag[] {
     const list: CodeInjectionTag[] = [];
-    (this.codeInjections.head || []).forEach(t => list.push({ ...t, zone: 'head', isActive: t.isActive !== false }));
+    const currentUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
+    (this.codeInjections.head || []).forEach(t => list.push({
+      ...t,
+      zone: 'head',
+      isActive: t.isActive !== false,
+      content: this.templateHydration.compileMetaTags(t.content, {
+        page: this.currentPage,
+        brand: this.brandInfo,
+        currentUrl
+      })
+    }));
     (this.codeInjections.bodyOpen || []).forEach(t => list.push({ ...t, zone: 'body_open', isActive: t.isActive !== false }));
     (this.codeInjections.footer || []).forEach(t => list.push({ ...t, zone: 'footer', isActive: t.isActive !== false }));
     return list;
+  }
+
+  /**
+   * Updates standard browser document title and OpenGraph / Twitter meta tags
+   * in real time for crawler indexing and crisp browser tab identification.
+   */
+  private updatePageSeoMeta(pageTitle: string, metaDescription?: string, metaKeywords?: string, ogImage?: string): void {
+    if (pageTitle) {
+      this.titleService.setTitle(pageTitle);
+      this.metaService.updateTag({ property: 'og:title', content: pageTitle });
+      this.metaService.updateTag({ name: 'twitter:title', content: pageTitle });
+    }
+    if (metaDescription) {
+      this.metaService.updateTag({ name: 'description', content: metaDescription });
+      this.metaService.updateTag({ property: 'og:description', content: metaDescription });
+      this.metaService.updateTag({ name: 'twitter:description', content: metaDescription });
+    }
+    if (metaKeywords) {
+      this.metaService.updateTag({ name: 'keywords', content: metaKeywords });
+    }
+    if (ogImage) {
+      this.metaService.updateTag({ property: 'og:image', content: ogImage });
+      this.metaService.updateTag({ name: 'twitter:image', content: ogImage });
+    }
   }
 
   ngOnInit(): void {
@@ -1391,7 +1425,7 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchCodeInjections(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/code-injections').subscribe({
+      this.apiService.get('WebsiteContentApi/code-injections?preserveTokens=true').subscribe({
         next: (res: any) => {
           const data = res?.data || {};
           this.codeInjections = {
@@ -1528,7 +1562,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     this.currentPage = this.publishedPages.find(p => p.isHomePage || p.directUrl === '/' || p.directUrl === 'home' || p.directUrl === 'index') || null;
-    this.titleService.setTitle(`${this.brandName} | Official Website`);
+    const homeTitle = this.currentPage?.metaTitle || this.brandInfo?.websiteBrowserTitle || `${this.brandName} | Official Website`;
+    const homeDesc = this.currentPage?.metaDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '';
+    const homeKeywords = this.currentPage?.metaKeywords || this.currentPage?.tags || this.brandInfo?.metaKeywords || '';
+    this.updatePageSeoMeta(homeTitle, homeDesc, homeKeywords, this.currentPage?.imageUrl);
 
     // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
@@ -1629,7 +1666,10 @@ export class LandingComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.titleService.setTitle(`${this.currentPage.title || 'Page'} | ${this.brandName}`);
+    const innerTitle = this.currentPage?.metaTitle || `${this.currentPage?.title || 'Page'} | ${this.brandName}`;
+    const innerDesc = this.currentPage?.metaDescription || this.currentPage?.description || this.brandInfo?.companyDescription || '';
+    const innerKeywords = this.currentPage?.metaKeywords || this.currentPage?.tags || '';
+    this.updatePageSeoMeta(innerTitle, innerDesc, innerKeywords, this.currentPage?.imageUrl);
 
     // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
@@ -4238,9 +4278,15 @@ export class LandingComponent implements OnInit, OnDestroy {
     // 3. Pre-inject Zone 1 (<head>) tags and collect stylesheet loading promises
     const stylePromises: Promise<void>[] = [];
     if (this.codeInjections.head && this.codeInjections.head.length > 0) {
+      const currentUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
       for (const tag of this.codeInjections.head) {
         if (!tag.content) continue;
-        const promises = this.appendHtmlToContainer(document.head, tag.content, 'head');
+        const compiledHeadTag = this.templateHydration.compileMetaTags(tag.content, {
+          page: this.currentPage,
+          brand: this.brandInfo,
+          currentUrl
+        });
+        const promises = this.appendHtmlToContainer(document.head, compiledHeadTag, 'head');
         stylePromises.push(...promises);
       }
     }

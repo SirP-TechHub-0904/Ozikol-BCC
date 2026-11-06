@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { TemplateHydrationService } from './template-hydration.service';
 
 /**
  * Represents a code injection record targeting one of the three critical browser document zones.
@@ -39,6 +40,9 @@ export interface SectionPreviewOptions {
   js?: string;
   category?: string;
   pageTitle?: string;
+  pageSlug?: string;
+  metaDescription?: string;
+  faviconUrl?: string;
   codeInjections?: CodeInjectionTag[];
   suiteCode?: string;
 }
@@ -51,6 +55,8 @@ export interface FullPageAssemblyOptions {
   pageSlug?: string;
   metaDescription?: string;
   faviconUrl?: string;
+  pageMetadata?: any;
+  brandSettings?: any;
   language?: string;
   suiteCode?: string;
   codeInjections?: CodeInjectionTag[];
@@ -96,6 +102,7 @@ export interface PageAssemblyBundle {
   providedIn: 'root'
 })
 export class HtmlAssemblerService {
+  constructor(private templateHydration: TemplateHydrationService) {}
 
   /**
    * Filters and sorts code injection tags for a specific target zone by ascending SortOrder.
@@ -157,7 +164,17 @@ export class HtmlAssemblerService {
 
     // 1. Pillar 1: Header Tags (<head>)
     const sortedHeadTags = this.filterAndSortTags(options.codeInjections, 'head', suite)
-      .map(t => t.content)
+      .map(t => this.templateHydration.compileMetaTags(t.content, {
+        page: {
+          title: options.pageTitle,
+          metaTitle: options.pageTitle,
+          metaDescription: options.metaDescription,
+          directUrl: options.pageSlug
+        },
+        brand: {
+          faviconUrl: options.faviconUrl
+        }
+      }))
       .join('\n  ');
 
     // 2. Pillar 2: Body Open Tags (<body>)
@@ -210,7 +227,17 @@ export class HtmlAssemblerService {
 
     // 1. Pillar 1: Header Tags (<head>) sorted by SortOrder
     const sortedHeadTags = this.filterAndSortTags(options.codeInjections, 'head', suite)
-      .map(t => t.content)
+      .map(t => this.templateHydration.compileMetaTags(t.content, {
+        page: {
+          title: options.pageTitle,
+          metaTitle: options.pageTitle,
+          metaDescription: options.metaDescription,
+          directUrl: options.pageSlug
+        },
+        brand: {
+          faviconUrl: options.faviconUrl
+        }
+      }))
       .join('\n  ');
 
     // 2. Pillar 2: Body Open Tags (<body>) sorted by SortOrder
