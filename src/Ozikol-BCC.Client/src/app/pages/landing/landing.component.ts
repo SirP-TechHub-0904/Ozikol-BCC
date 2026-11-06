@@ -945,7 +945,10 @@ export class LandingComponent implements OnInit, OnDestroy {
               if (brandRes?.data) {
                 const bData = brandRes.data;
                 this.brandInfo = { ...this.brandInfo, ...bData };
-                if (bData.companyName) this.brandName = bData.companyName;
+                if (bData.companyName) {
+                  this.brandName = bData.companyName;
+                  try { localStorage.setItem('tenant_name', bData.companyName); } catch {}
+                }
                 if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
                 if (bData.enableBreakingNewsRibon !== undefined) {
                   this.ribbonSettings = {
@@ -1029,6 +1032,9 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private applyFavicon(rawIcon?: string): void {
     const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+    if (activeIcon && typeof window !== 'undefined' && window.localStorage) {
+      try { localStorage.setItem('tenant_favicon', activeIcon); } catch {}
+    }
     const favicons = document.querySelectorAll("link[rel*='icon']");
     if (favicons.length > 0) {
       favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
