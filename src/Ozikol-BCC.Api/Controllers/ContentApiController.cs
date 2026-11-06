@@ -1184,9 +1184,6 @@ Reply ONLY with the valid JSON object.";
             }, $"{categories.Count} category/categories deleted successfully."));
         }
 
-' deleted successfully."));
-        }
-
         // ==========================================
         // 3. PAGE SECTIONS & SECTION LISTS
         // ==========================================

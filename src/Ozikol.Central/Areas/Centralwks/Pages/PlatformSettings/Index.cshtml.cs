@@ -625,7 +625,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             // Fallback to saved database settings if fields left blank
             if (string.IsNullOrWhiteSpace(targetAccount) || string.IsNullOrWhiteSpace(targetAccessKey) || string.IsNullOrWhiteSpace(targetSecret))
             {
-                var existing = await _db.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+                var existing = await _context.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
                 if (existing != null)
                 {
                     targetAccount ??= existing.CloudflareR2AccountId;
