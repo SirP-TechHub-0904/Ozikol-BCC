@@ -1797,6 +1797,32 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    * auto-deriving the Tag Name from the filename before the first dot.
    * Example: 'animate.min.css' -> 'animate', 'bexon-icons.css' -> 'bexon-icons', 'bootstrap.min.css' -> 'bootstrap'.
    */
+  /**
+   * Derives a clean, intuitive tag name from an uploaded file name by stripping common
+   * technical extensions (.min.js, .min.css, .bundle.js, .download, etc.) while preserving the full library name.
+   * e.g. jquery.magnific-popup.min.js -> jquery.magnific-popup, swiper-bundle.min.js -> swiper-bundle
+   */
+  deriveTagNameFromFileName(filename: string): string {
+    if (!filename) return 'asset';
+    let clean = filename.trim();
+    if (clean.toLowerCase().endsWith('.download')) {
+      clean = clean.substring(0, clean.length - 9);
+    }
+    const extPatterns = [
+      /\.bundle\.min\.(js|css)$/i,
+      /\.min\.(js|css)$/i,
+      /\.bundle\.(js|css)$/i,
+      /\.(js|css|woff2|woff|ttf|otf|eot|svg)$/i
+    ];
+    for (const pat of extPatterns) {
+      if (pat.test(clean)) {
+        clean = clean.replace(pat, '');
+        break;
+      }
+    }
+    return clean.trim() || filename;
+  }
+
   addFilesToBulkQueue(files: File[]): void {
     let addedCount = 0;
     for (const f of files) {
@@ -1813,9 +1839,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         continue;
       }
 
-      // Auto-naming rule: Take the part before the first dot
-      const nameBeforeDot = f.name.includes('.') ? f.name.split('.')[0] : f.name;
-      const derivedName = nameBeforeDot.trim() || f.name;
+      // Auto-naming rule: Strip technical extensions (.min.js, .bundle.css, .download) to preserve full library identity
+      const derivedName = this.deriveTagNameFromFileName(f.name);
 
       this.bulkUploadFiles.push({
         file: f,

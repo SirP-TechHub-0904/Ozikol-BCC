@@ -119,7 +119,7 @@ namespace Ozikol_BCC.Api.Services
             (new Regex(@"\b(XP_CMDSHELL|SP_EXECUTESQL)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase),
                 "SqlInjection", "Restricted SQL Server stored procedure execution signature detected."),
 
-            (new Regex(@"\bEXEC(UTE)?\s*\(", RegexOptions.Compiled | RegexOptions.IgnoreCase),
+            (new Regex(@"(?<![\.\?])\bEXEC(UTE)?\s*\(", RegexOptions.Compiled | RegexOptions.IgnoreCase),
                 "SqlInjection", "Dynamic SQL execution function signature (EXEC(...)) detected."),
 
             (new Regex(@"\bOR\s+['""]?1['""]?\s*=\s*['""]?1\b", RegexOptions.Compiled | RegexOptions.IgnoreCase),

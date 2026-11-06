@@ -5080,7 +5080,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     fileName = fileName.Substring(0, fileName.Length - 9);
                 }
 
-                // Determine tag name: prioritize custom user input from names array, otherwise extract prefix before first dot
+                // Determine tag name: prioritize custom user input from names array, otherwise strip technical file extensions
                 string tagName;
                 if (names != null && names.Count > i && !string.IsNullOrWhiteSpace(names[i]))
                 {
@@ -5088,8 +5088,12 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 }
                 else
                 {
-                    var nameBeforeDot = fileName.Contains('.') ? fileName.Substring(0, fileName.IndexOf('.')) : fileName;
-                    tagName = string.IsNullOrWhiteSpace(nameBeforeDot) ? fileName : nameBeforeDot.Trim();
+                    var cleanDerived = System.Text.RegularExpressions.Regex.Replace(
+                        fileName,
+                        @"\.(bundle\.min|min|bundle)\.(js|css)$|\.(js|css|woff2|woff|ttf|otf|eot|svg)$",
+                        string.Empty,
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    tagName = string.IsNullOrWhiteSpace(cleanDerived) ? fileName : cleanDerived.Trim();
                 }
 
                 var ext = Path.GetExtension(fileName).ToLowerInvariant();
