@@ -37,6 +37,9 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICloudflareR2StorageService _r2Storage;
         private readonly ITenantProvider? _tenantProvider;
         private readonly Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService _templateSecurityInspector;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService? _aiService;
+        private readonly IServiceScopeFactory? _serviceScopeFactory;
+        private readonly ILogger<ContentApiController>? _logger;
 
         public ContentApiController(
             DashboardDbContext context, 
@@ -45,7 +48,10 @@ namespace Ozikol_BCC.Api.Controllers
             ICloudflareR2StorageService r2Storage,
             ITenantProvider? tenantProvider = null,
             MasterCatalogDbContext? masterCatalogDbContext = null,
-            Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService? templateSecurityInspector = null)
+            Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService? templateSecurityInspector = null,
+            Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService? aiService = null,
+            IServiceScopeFactory? serviceScopeFactory = null,
+            ILogger<ContentApiController>? logger = null)
         {
             _context = context;
             _mediator = mediator;
@@ -54,6 +60,9 @@ namespace Ozikol_BCC.Api.Controllers
             _tenantProvider = tenantProvider;
             _masterCatalogDbContext = masterCatalogDbContext;
             _templateSecurityInspector = templateSecurityInspector ?? new Ozikol_BCC.Api.Services.TemplateSecurityInspectorService();
+            _aiService = aiService;
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger;
         }
 
         // ==========================================
@@ -565,6 +574,7 @@ namespace Ozikol_BCC.Api.Controllers
                     MetaTitle = request.MetaTitle,
                     MetaDescription = request.MetaDescription,
                     MetaKeywords = request.MetaKeywords,
+                DisableAiAutoFill = request.DisableAiAutoFill,
                     MainPageId = request.MainPageId,
                     AddToRibon = request.AddToRibon,
                     RibonCustomDisplayTitle = request.RibonCustomDisplayTitle,
@@ -628,6 +638,7 @@ namespace Ozikol_BCC.Api.Controllers
             existing.MetaKeywords = updated.MetaKeywords;
             existing.MainPageId = updated.MainPageId;
             existing.AddToRibon = updated.AddToRibon;
+            existing.DisableAiAutoFill = updated.DisableAiAutoFill;
             existing.RibonCustomDisplayTitle = updated.RibonCustomDisplayTitle;
             existing.RibonSortOrder = updated.RibonSortOrder;
             existing.UpdatedAtUtc = DateTime.UtcNow;
@@ -635,6 +646,160 @@ namespace Ozikol_BCC.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Web page updated successfully."));
         }
+
+        /// <summary>
+        /// Analyzes the full page content (title, category, headline, attached layout sections, and repeating sub-items)
+        /// and uses AI to generate or update high-CTR, SEO-optimized Meta Title, Meta Description, and Meta Keywords.
+        /// Respects the <see cref="WebPage.DisableAiAutoFill"/> toggle.
+        /// </summary>
+        /// <param name="page">The target web page entity.</param>
+        /// <param name="force">True to force regeneration even if metadata fields already contain text.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>True if metadata was updated; false if skipped or disabled.</returns>
+        private async Task<bool> StudyAndOptimizePageSeoMetaAsync(WebPage page, bool force = false, CancellationToken cancellationToken = default)
+        {
+            if (page == null || _aiService == null) return false;
+
+            // Strict check: if administrator disabled AI auto-fill for this page, never touch or overwrite it
+            if (page.DisableAiAutoFill && !force)
+            {
+                return false;
+            }
+
+            try
+            {
+                // Gather sections and repeating cards attached to this page
+                var sections = await _context.PageSections
+                    .Where(s => s.WebPageId == page.Id)
+                    .OrderBy(s => s.SortOrder)
+                    .ToListAsync(cancellationToken);
+
+                var sectionIds = sections.Select(s => s.Id).ToList();
+                var subItems = await _context.PageSectionLists
+                    .Where(l => sectionIds.Contains(l.PageSectionId))
+                    .OrderBy(l => l.SortOrder)
+                    .ToListAsync(cancellationToken);
+
+                var contentSummary = new System.Text.StringBuilder();
+                contentSummary.AppendLine($"Page Title: {page.Title}");
+                if (!string.IsNullOrWhiteSpace(page.Headline)) contentSummary.AppendLine($"Headline: {page.Headline}");
+                if (!string.IsNullOrWhiteSpace(page.Description)) contentSummary.AppendLine($"Description: {page.Description}");
+                if (!string.IsNullOrWhiteSpace(page.Category)) contentSummary.AppendLine($"Category: {page.Category}");
+                if (!string.IsNullOrWhiteSpace(page.DirectUrl)) contentSummary.AppendLine($"Route Slug: {page.DirectUrl}");
+
+                if (sections.Any())
+                {
+                    contentSummary.AppendLine("Attached Layout Sections:");
+                    foreach (var s in sections)
+                    {
+                        contentSummary.AppendLine($"- Section: {s.Title} ({s.MiniTitle ?? "Standard"}): {s.Description}");
+                    }
+                }
+
+                if (subItems.Any())
+                {
+                    contentSummary.AppendLine("Repeating Sub-Items & Feature Highlights:");
+                    foreach (var item in subItems)
+                    {
+                        contentSummary.AppendLine($"* {item.Title} - {item.Description}");
+                    }
+                }
+
+                var prompt = $@"Study the following web page content and synthesize high-CTR, professional SEO metadata:
+{contentSummary}
+
+Generate a JSON object with exactly these 3 keys:
+- ""metaTitle"": (50 to 60 chars maximum. High click-through rate, captivating title for Google search snippets and browser tabs. Do NOT append brand name suffix.)
+- ""metaDescription"": (150 to 160 chars maximum. Engaging summary of value proposition for Google search result snippets.)
+- ""metaKeywords"": (6 to 10 high-relevance comma-separated keywords for crawler indexing.)
+
+Reply ONLY with the valid JSON object.";
+
+                var aiRequest = new Ozikol_BCC.Application.Interfaces.Services.AiCompletionRequest
+                {
+                    SystemInstruction = "You are an expert SEO copywriter and crawler indexing specialist. Always respond with pure, valid JSON with keys: metaTitle, metaDescription, metaKeywords.",
+                    Prompt = prompt,
+                    Temperature = 0.3f,
+                    MaxTokens = 500
+                };
+
+                var result = await _aiService.GenerateCompletionAsync(aiRequest, cancellationToken);
+                if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.Content))
+                {
+                    return false;
+                }
+
+                // Parse AI JSON response
+                var rawJson = result.Content.Trim();
+                if (rawJson.StartsWith("```json")) rawJson = rawJson.Substring(7);
+                if (rawJson.StartsWith("```")) rawJson = rawJson.Substring(3);
+                if (rawJson.EndsWith("```")) rawJson = rawJson.Substring(0, rawJson.Length - 3);
+                rawJson = rawJson.Trim();
+
+                using var doc = JsonDocument.Parse(rawJson);
+                var root = doc.RootElement;
+
+                var newTitle = root.TryGetProperty("metaTitle", out var tElem) ? tElem.GetString() : null;
+                var newDesc = root.TryGetProperty("metaDescription", out var dElem) ? dElem.GetString() : null;
+                var newKeywords = root.TryGetProperty("metaKeywords", out var kElem) ? kElem.GetString() : null;
+
+                bool modified = false;
+                if (!string.IsNullOrWhiteSpace(newTitle) && (force || string.IsNullOrWhiteSpace(page.MetaTitle)))
+                {
+                    page.MetaTitle = newTitle.Trim();
+                    modified = true;
+                }
+                if (!string.IsNullOrWhiteSpace(newDesc) && (force || string.IsNullOrWhiteSpace(page.MetaDescription)))
+                {
+                    page.MetaDescription = newDesc.Trim();
+                    modified = true;
+                }
+                if (!string.IsNullOrWhiteSpace(newKeywords) && (force || string.IsNullOrWhiteSpace(page.MetaKeywords)))
+                {
+                    page.MetaKeywords = newKeywords.Trim();
+                    modified = true;
+                }
+
+                if (modified)
+                {
+                    page.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                return modified;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to auto-generate SEO metadata for page {PageId}", page.Id);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Explicitly triggers an AI study of the web page and its attached layout sections to synthesize or optimize
+        /// high-CTR SEO metadata (Meta Title, Description, and Keywords).
+        /// </summary>
+        /// <param name="id">The unique identifier of the web page.</param>
+        /// <returns>A standardized API response returning the updated page with generated SEO fields.</returns>
+        [HttpPost("pages/{id:guid}/generate-seo")]
+        public async Task<IActionResult> GeneratePageSeo(Guid id)
+        {
+            var page = await _context.WebPages.FindAsync(id);
+            if (page == null) return NotFound(ApiResponse<object>.FailureResponse("Web page not found."));
+
+            var updated = await StudyAndOptimizePageSeoMetaAsync(page, force: true);
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                page.Id,
+                page.Title,
+                page.MetaTitle,
+                page.MetaDescription,
+                page.MetaKeywords,
+                page.DisableAiAutoFill,
+                IsOptimized = updated
+            }, updated ? "AI SEO metadata generated and saved successfully." : "AI SEO metadata generated."));
+        }
+
 
         /// <summary>
         /// Permanently deletes a web page if it has no attached layout sections.
@@ -5825,6 +5990,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? MetaTitle { get; set; }
         public string? MetaDescription { get; set; }
         public string? MetaKeywords { get; set; }
+        public bool DisableAiAutoFill { get; set; } = false;
         public Ozikol_BCC.Domain.Enum.Enum.HomeSortFrom HomeSortFrom { get; set; }
         public Guid? MainPageId { get; set; }
         public bool IsHomePage { get; set; } = false;

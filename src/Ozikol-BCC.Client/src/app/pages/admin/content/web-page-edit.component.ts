@@ -104,6 +104,19 @@ interface SystemPageOption {
           </div>
 
           <div class="row-card-body">
+            <!-- AI Auto-Pilot Switch -->
+            <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px;">
+              <input type="checkbox" id="disableAiAutoFill" [(ngModel)]="page.disableAiAutoFill" name="disableAiAutoFill" style="cursor: pointer; width: 18px; height: 18px; margin-top: 2px;">
+              <div style="flex: 1;">
+                <label for="disableAiAutoFill" style="font-size: 13px; font-weight: 700; color: #0f172a; cursor: pointer; display: block; margin-bottom: 2px;">
+                  Disable AI Auto-Fill &amp; Continuous SEO Updates
+                </label>
+                <div style="font-size: 12px; color: #64748b;">
+                  When unchecked (default: false), AI automatically synthesizes and optimizes your Meta Title, Description, and Keywords from page layout content. Check this to lock and manually manage SEO metadata.
+                </div>
+              </div>
+            </div>
+
             <div class="form-grid-2">
               <!-- Page Title -->
               <div class="form-group">
@@ -782,10 +795,16 @@ interface SystemPageOption {
           <div class="row-card-header">
             <div class="row-num-tag">7</div>
             <div class="row-title-box">
-              <div class="row-title-heading">
-                <h3>SEO Meta Information &amp; Tags</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(7)" (click)="toggleDesc(7)" title="Click to view explanation for this section">
-                  <span class="material-symbols-outlined">info</span>
+              <div class="row-title-heading" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <h3>SEO Meta Information &amp; Tags</h3>
+                  <button type="button" class="btn-info-pop" [class.active]="isDescOpen(7)" (click)="toggleDesc(7)" title="Click to view explanation for this section">
+                    <span class="material-symbols-outlined">info</span>
+                  </button>
+                </div>
+                <button type="button" (click)="generateSeoWithAi()" [disabled]="isGeneratingSeo || page.disableAiAutoFill" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; padding: 5px 12px; border-radius: 6px; border: 1px solid #0050e5; color: #0050e5; background: #eff6ff; cursor: pointer;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">{{ isGeneratingSeo ? 'sync' : 'auto_awesome' }}</span>
+                  <span>{{ isGeneratingSeo ? 'Analyzing...' : '⚡ Auto-Generate with AI' }}</span>
                 </button>
               </div>
               <div class="row-desc-drawer" *ngIf="isDescOpen(7)">
@@ -2186,6 +2205,7 @@ interface SystemPageOption {
 export class WebPageEditComponent implements OnInit {
   pageId = '';
   isEditMode = false;
+  isGeneratingSeo = false;
   page: any = null;
   categories: any[] = [];
   allPages: any[] = [];
@@ -2313,6 +2333,7 @@ export class WebPageEditComponent implements OnInit {
       metaTitle: '',
       metaDescription: '',
       metaKeywords: '',
+      disableAiAutoFill: false,
       homeSortFrom: 0,
       addToRibon: false,
       ribonCustomDisplayTitle: '',
@@ -2322,7 +2343,64 @@ export class WebPageEditComponent implements OnInit {
     this.destinationType = 'section';
   }
 
-  onTitleInput(): void {
+  generateSeoWithAi(): void {
+    if (!this.page?.title?.trim()) {
+      this.toast.error("Please enter a Page Title first so AI can analyze your content.");
+      return;
+    }
+
+    if (this.isEditMode && this.pageId) {
+      this.isGeneratingSeo = true;
+      this.api.post("ContentApi/pages/" + this.pageId + "/generate-seo", {}).subscribe({
+        next: (res: any) => {
+          this.isGeneratingSeo = false;
+          if (res?.data) {
+            this.page.metaTitle = res.data.metaTitle || this.page.metaTitle;
+            this.page.metaDescription = res.data.metaDescription || this.page.metaDescription;
+            this.page.metaKeywords = res.data.metaKeywords || this.page.metaKeywords;
+            this.toast.success("SEO Meta Information synthesized successfully with AI.");
+          }
+        },
+        error: (err: any) => {
+          this.isGeneratingSeo = false;
+          this.toast.error(err?.error?.message || "Failed to synthesize SEO with AI.");
+        }
+      });
+    } else {
+      this.isGeneratingSeo = true;
+      const prompt = "Synthesize high-CTR SEO metadata for a web page titled: \"" + this.page.title + "\", Category: \"" + (this.page.category || "General") + "\", Headline: \"" + (this.page.headline || "") + "\". Return JSON with keys: \"metaTitle\" (50-60 chars max), \"metaDescription\" (150-160 chars max), \"metaKeywords\" (6-10 keywords). Only valid JSON.";
+
+      this.api.post("AiAssistApi/completion", {
+        systemInstruction: "You are an expert SEO copywriter. Always return strictly valid JSON with metaTitle, metaDescription, metaKeywords.",
+        prompt: prompt,
+        temperature: 0.3,
+        maxTokens: 500
+      }).subscribe({
+        next: (res: any) => {
+          this.isGeneratingSeo = false;
+          try {
+            let raw = (res?.data?.content || "").trim();
+            if (raw.startsWith("```json")) raw = raw.substring(7);
+            if (raw.startsWith("```")) raw = raw.substring(3);
+            if (raw.endsWith("```")) raw = raw.substring(0, raw.length - 3);
+            const parsed = JSON.parse(raw.trim());
+            if (parsed.metaTitle) this.page.metaTitle = parsed.metaTitle;
+            if (parsed.metaDescription) this.page.metaDescription = parsed.metaDescription;
+            if (parsed.metaKeywords) this.page.metaKeywords = parsed.metaKeywords;
+            this.toast.success("SEO Meta Information pre-populated with AI.");
+          } catch (e) {
+            this.toast.info("AI generated response, review and save.");
+          }
+        },
+        error: (err: any) => {
+          this.isGeneratingSeo = false;
+          this.toast.error(err?.error?.message || "Failed to generate SEO with AI.");
+        }
+      });
+    }
+  }
+
+    onTitleInput(): void {
     if (!this.page?.title?.trim()) {
       return;
     }

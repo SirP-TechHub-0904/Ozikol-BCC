@@ -163,6 +163,7 @@
                         <th style="padding: 12px 20px; font-weight: 700;">Lifetime</th>
                         <th style="padding: 12px 20px; font-weight: 700;">Status</th>
                         <th style="padding: 12px 20px; font-weight: 700;">Last Used</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Diagnostic Report</th>
                         <th style="padding: 12px 20px; font-weight: 700; text-align: right;">Actions</th>
                     </tr>
                 </thead>
@@ -170,7 +171,7 @@
                     @if (!Model.Summary.Keys.Any())
                     {
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 56px 20px; color: #64748b;">
+                            <td colspan="9" style="text-align: center; padding: 56px 20px; color: #64748b;">
                                 <span class="material-symbols-outlined" style="font-size: 48px; opacity: 0.3; display: block; margin-bottom: 8px; color: #64748b;">vpn_key_off</span>
                                 <div style="font-weight: 800; font-size: 15px; color: #0f172a; margin-bottom: 4px;">No API Keys Registered</div>
                                 <div style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">Add Google Gemini free tier API keys to the rotation pool to enable automated key failover.</div>
@@ -248,6 +249,38 @@
                             </td>
                             <td style="padding: 14px 20px; font-size: 12.5px; color: #64748b;">
                                 @(key.LastUsedAtUtc.HasValue ? key.LastUsedAtUtc.Value.ToString("dd MMM, HH:mm UTC") : "Never")
+                            </td>
+                            <td style="padding: 14px 20px;">
+                                @{
+                                    var latestLog = key.LatestUsageLog;
+                                }
+                                @if (latestLog == null)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">help_outline</span> Never Invoked
+                                    </span>
+                                }
+                                else if (latestLog.StatusCode == 200)
+                                {
+                                    <button type="button" onclick="openKeyDiagnosticModal('@key.Id', '@key.KeyAlias', '@key.Provider', '@(latestLog.RequestTimestampUtc.ToString("dd MMM yyyy, HH:mm:ss UTC"))', '@latestLog.ActionName', @latestLog.StatusCode, @latestLog.ResponseTimeMs, '@(latestLog.PromptTokens ?? 0)', '@(latestLog.CompletionTokens ?? 0)', '@(Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(latestLog.ErrorMessage ?? "HTTP 200 OK: Request executed successfully with zero provider issues.")))')" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; cursor: pointer;" title="Click to view full diagnostic report">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> 200 OK (@(latestLog.ResponseTimeMs)ms)
+                                    </button>
+                                }
+                                else if (latestLog.StatusCode == 429)
+                                {
+                                    <button type="button" onclick="openKeyDiagnosticModal('@key.Id', '@key.KeyAlias', '@key.Provider', '@(latestLog.RequestTimestampUtc.ToString("dd MMM yyyy, HH:mm:ss UTC"))', '@latestLog.ActionName', @latestLog.StatusCode, @latestLog.ResponseTimeMs, '@(latestLog.PromptTokens ?? 0)', '@(latestLog.CompletionTokens ?? 0)', '@(Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(latestLog.ErrorMessage ?? "HTTP 429 Rate Limited. Key placed in cooldown.")))')" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; cursor: pointer;" title="Click to view full diagnostic report">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">schedule</span> 429 Cooldown
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" onclick="openKeyDiagnosticModal('@key.Id', '@key.KeyAlias', '@key.Provider', '@(latestLog.RequestTimestampUtc.ToString("dd MMM yyyy, HH:mm:ss UTC"))', '@latestLog.ActionName', @latestLog.StatusCode, @latestLog.ResponseTimeMs, '@(latestLog.PromptTokens ?? 0)', '@(latestLog.CompletionTokens ?? 0)', '@(Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(latestLog.ErrorMessage ?? "Provider error occurred.")))')" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; cursor: pointer;" title="Click to view full diagnostic report">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">error</span> Error (@latestLog.StatusCode)
+                                    </button>
+                                }
                             </td>
                             <td style="padding: 14px 20px; text-align: right;">
                                 <div style="display: inline-flex; gap: 6px; align-items: center;">
@@ -447,6 +480,69 @@
     }
 </style>
 
+
+<!-- ============================================================== -->
+<!-- MODAL 3: KEY DIAGNOSTIC REPORT POP-UP MODAL                    -->
+<!-- ============================================================== -->
+<div id="diagnosticReportModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 580px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #0050e5;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">troubleshoot</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0;">AI Key Telemetry & Diagnostic Report</h3>
+                    <p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;" id="diagModalSubtitle">Last executed request outcome & error details</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeKeyDiagnosticModal()" style="background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; padding: 4px; border-radius: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <div style="padding: 24px; max-height: 75vh; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block; margin-bottom: 4px;">Key Alias & Provider</span>
+                    <span id="diagKeyAlias" style="font-size: 13.5px; font-weight: 800; color: #0f172a;">-</span>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block; margin-bottom: 4px;">HTTP Outcome & Latency</span>
+                    <span id="diagHttpStatus" style="font-size: 13.5px; font-weight: 800; color: #0f172a;">-</span>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block; margin-bottom: 4px;">Action Invoked</span>
+                    <span id="diagActionName" style="font-size: 13.5px; font-weight: 700; color: #0050e5;">-</span>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block; margin-bottom: 4px;">Executed At (UTC)</span>
+                    <span id="diagTimestamp" style="font-size: 12.5px; font-weight: 600; color: #475569;">-</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 6px;">Last Provider Issue / Response Report</label>
+                <div id="diagErrorBox" style="background: #0f172a; color: #f8fafc; font-family: monospace; font-size: 12px; padding: 14px; border-radius: 8px; border: 1px solid #1e293b; max-height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;">
+                    -
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f1f5f9; border-radius: 8px; font-size: 12.5px; color: #475569;">
+                <div><strong>Prompt Tokens:</strong> <span id="diagPromptTokens">0</span></div>
+                <div><strong>Completion Tokens:</strong> <span id="diagCompletionTokens">0</span></div>
+                <div><strong>Status:</strong> <span id="diagStatusBadge">Healthy</span></div>
+            </div>
+        </div>
+
+        <div style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+            <button type="button" onclick="closeKeyDiagnosticModal()" style="padding: 8px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 13px; font-weight: 700; cursor: pointer;">
+                Close Report
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     function openAddKeyModal() {
         var el = document.getElementById('addKeyModal');
@@ -558,4 +654,38 @@
             }
         }
     }
+
+    function openKeyDiagnosticModal(keyId, alias, provider, timestamp, action, statusCode, latency, promptTokens, completionTokens, message) {
+        document.getElementById('diagKeyAlias').textContent = alias + ' (' + provider + ')';
+        document.getElementById('diagModalSubtitle').textContent = 'Key Identifier: ' + keyId;
+        document.getElementById('diagHttpStatus').textContent = 'HTTP ' + statusCode + ' (' + latency + 'ms)';
+        document.getElementById('diagActionName').textContent = action || 'General AI Completion';
+        document.getElementById('diagTimestamp').textContent = timestamp || 'Never';
+        document.getElementById('diagPromptTokens').textContent = promptTokens || '0';
+        document.getElementById('diagCompletionTokens').textContent = completionTokens || '0';
+
+        const errBox = document.getElementById('diagErrorBox');
+        const badge = document.getElementById('diagStatusBadge');
+
+        if (statusCode === 200) {
+            errBox.style.color = '#34d399';
+            errBox.textContent = message || 'HTTP 200 OK: Request executed successfully with zero provider issues.';
+            badge.innerHTML = '<span style="color: #059669; font-weight: 800;">Operational</span>';
+        } else if (statusCode === 429) {
+            errBox.style.color = '#fbbf24';
+            errBox.textContent = '[RATE LIMIT / COOLDOWN]\n' + (message || 'HTTP 429: Quota or RPM limit exceeded. Key placed in cooldown.');
+            badge.innerHTML = '<span style="color: #d97706; font-weight: 800;">Cooling Down (Rotated)</span>';
+        } else {
+            errBox.style.color = '#f87171';
+            errBox.textContent = '[PROVIDER ERROR ' + statusCode + ']\n' + (message || 'Inference call failed.');
+            badge.innerHTML = '<span style="color: #dc2626; font-weight: 800;">Provider Error</span>';
+        }
+
+        document.getElementById('diagnosticReportModal').style.display = 'flex';
+    }
+
+    function closeKeyDiagnosticModal() {
+        document.getElementById('diagnosticReportModal').style.display = 'none';
+    }
+
 </script>
