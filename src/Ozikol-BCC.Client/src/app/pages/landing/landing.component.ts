@@ -257,6 +257,19 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       min-height: 100vh;
     }
 
+    /* Anti-FOUC Smooth Site Reveal */
+    .dynamic-rendered-content {
+      animation: ozSiteReveal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes ozSiteReveal {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
     /* Dynamic Form Input Focus & Styling */
     .dynamic-rendered-content form .form-control:focus,
     .dynamic-rendered-content form .form-select:focus {
@@ -4193,7 +4206,15 @@ export class LandingComponent implements OnInit, OnDestroy {
    * 2. Sanitizing HTML for Angular DOM rendering.
    * 3. Executing the complete 3-zone tag injection pipeline (head, body_open, footer) + section scripts.
    */
-  private finalizeRender(styles: string, html: string, combinedJs?: string): void {
+  /**
+   * Finalizes the rendering pipeline by:
+   * 1. Injecting dynamic scoped template CSS into <head>.
+   * 2. Pre-injecting Zone 1 <head> stylesheet tags and waiting for them to load (eliminating FOUC).
+   * 3. Sanitizing and binding dynamic HTML layout to safeRenderedHtml.
+   * 4. Hiding the preloader and revealing the styled website smoothly.
+   * 5. Executing Zone 2 (body_open), Zone 3 (footer), and section scripts.
+   */
+  private async finalizeRender(styles: string, html: string, combinedJs?: string): Promise<void> {
     // 1. Inject Scoped Template CSS into <head>
     let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
     if (!styleTag) {
@@ -4203,43 +4224,49 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
     // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
     const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
-
     styleTag.textContent = cleanStyles;
 
-    // 2. Set Safe HTML for main page layout
+    // 2. Clean up previously injected dynamic tags
+    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+
+    // 3. Pre-inject Zone 1 (<head>) tags and collect stylesheet loading promises
+    const stylePromises: Promise<void>[] = [];
+    if (this.codeInjections.head && this.codeInjections.head.length > 0) {
+      for (const tag of this.codeInjections.head) {
+        if (!tag.content) continue;
+        const promises = this.appendHtmlToContainer(document.head, tag.content, 'head');
+        stylePromises.push(...promises);
+      }
+    }
+
+    // Await external stylesheets (e.g. Bootstrap, custom.css) with a 350ms safety race
+    // to guarantee the browser never paints raw unstyled HTML (prevents FOUC)
+    if (stylePromises.length > 0) {
+      await Promise.race([
+        Promise.all(stylePromises),
+        new Promise<void>(resolve => setTimeout(resolve, 350))
+      ]);
+    }
+
+    // 4. Set Safe HTML for main page layout now that stylesheets are in place
     this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
 
-    // 3. Complete loading and trigger Change Detection so Angular renders [innerHTML] into the DOM
+    // 5. Complete loading and trigger Change Detection to reveal fully-styled page
     this.loading = false;
     this.cdr.detectChanges();
 
-    // 4. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
-    // after Angular has mounted the elements into the DOM tree
+    // 6. Inject Zone 2 (body-open), Zone 3 (footer), and section scripts
     setTimeout(() => {
-      this.injectCodeTags(combinedJs);
+      this.injectRemainingCodeTags(combinedJs);
       this.initRecaptchas();
     }, 50);
   }
 
   /**
-   * Injects code tags strictly from the database according to CMS architecture:
-   * - Zone 1: <head> -> external CSS stylesheets, meta tags, Google Fonts, OpenGraph, JSON-LD, Favicons
-   * - Zone 2: <body> -> immediately after opening body tag
-   * - Zone 3: </body> -> immediately before closing body tag (vendor JavaScript, section scripts)
+   * Injects remaining code tags (Zone 2 body open, Zone 3 footer, and section JS).
    */
-  private injectCodeTags(combinedJs?: string): void {
-    // Clean up previously injected dynamic tags
-    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
-
-    // 1. Inject CMS Header Tags (<head>) strictly from DB in sort order
-    if (this.codeInjections.head && this.codeInjections.head.length > 0) {
-      for (const tag of this.codeInjections.head) {
-        if (!tag.content) continue;
-        this.appendHtmlToContainer(document.head, tag.content, 'head');
-      }
-    }
-
-    // 2. Inject CMS Body Open Tags (immediately after <body>) strictly from DB
+  private injectRemainingCodeTags(combinedJs?: string): void {
+    // 1. Inject CMS Body Open Tags (immediately after <body>) strictly from DB
     if (this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
       for (const tag of this.codeInjections.bodyOpen) {
         if (!tag.content) continue;
@@ -4247,7 +4274,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 3. Inject CMS Footer Scripts (right before </body>) strictly from DB in sort order
+    // 2. Inject CMS Footer Scripts (right before </body>) strictly from DB in sort order
     if (this.codeInjections.footer && this.codeInjections.footer.length > 0) {
       for (const tag of this.codeInjections.footer) {
         if (!tag.content) continue;
@@ -4255,31 +4282,36 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 4. Section JavaScript Execution
+    // 3. Section JavaScript Execution
     if (combinedJs && combinedJs.trim()) {
       const script = document.createElement('script');
       script.className = 'ozikol-injected-tag ozikol-section-scripts';
       const cleanJs = combinedJs.replace(/<\/?script[^>]*>/gi, '').trim();
-      script.textContent = `
-        try {
-          ${cleanJs}
-        } catch (e) {
-          console.error('[Ozikol Theme Script Error]:', e);
-        }
-      `;
+      script.textContent = `\n        try {\n          ${cleanJs}\n        } catch (e) {\n          console.error('[Ozikol Theme Script Error]:', e);\n        }\n      `;
       document.body.appendChild(script);
     }
   }
 
-  private appendHtmlToContainer(container: HTMLElement, htmlString: string, zone: string): void {
+  private appendHtmlToContainer(container: HTMLElement, htmlString: string, zone: string): Promise<void>[] {
     const temp = document.createElement('div');
     temp.innerHTML = htmlString.trim();
+    const promises: Promise<void>[] = [];
 
     Array.from(temp.children).forEach(child => {
       const el = child as HTMLElement;
       el.classList.add('ozikol-injected-tag', `ozikol-zone-${zone}`);
 
-      if (el.tagName.toLowerCase() === 'script') {
+      if (el.tagName.toLowerCase() === 'link' && el.getAttribute('rel') === 'stylesheet') {
+        const link = document.createElement('link');
+        link.className = el.className;
+        Array.from(el.attributes).forEach(attr => link.setAttribute(attr.name, attr.value));
+        const promise = new Promise<void>(resolve => {
+          link.onload = () => resolve();
+          link.onerror = () => resolve();
+        });
+        promises.push(promise);
+        container.appendChild(link);
+      } else if (el.tagName.toLowerCase() === 'script') {
         const script = document.createElement('script');
         script.className = el.className;
         Array.from(el.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
@@ -4289,6 +4321,8 @@ export class LandingComponent implements OnInit, OnDestroy {
         container.appendChild(el);
       }
     });
+
+    return promises;
   }
 
   private prependHtmlToBody(htmlString: string): void {
