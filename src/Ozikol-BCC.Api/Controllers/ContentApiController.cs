@@ -1160,6 +1160,70 @@ Reply ONLY with the valid JSON object.";
             return Ok(ApiResponse<object>.SuccessResponse(null, "Section deleted successfully."));
         }
 
+        /// <summary>
+        /// Request model for batch deleting multiple layout sections.
+        /// </summary>
+        public class BulkDeleteSectionsRequest
+        {
+            /// <summary>
+            /// List of section identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to forcefully delete associated repeating sub-items.
+            /// </summary>
+            public bool ForceCascade { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple page layout sections and their child repeating sub-items.
+        /// </summary>
+        /// <param name="request">Payload containing list of section GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("sections/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteSections([FromBody] BulkDeleteSectionsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No section identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var sections = await _context.PageSections
+                .Where(s => targetIds.Contains(s.Id))
+                .ToListAsync();
+
+            if (!sections.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found."));
+            }
+
+            var foundIds = sections.Select(s => s.Id).ToList();
+
+            // Cascade delete child repeating sub-items if requested
+            if (request.ForceCascade)
+            {
+                var subItems = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId.HasValue && foundIds.Contains(l.PageSectionId.Value))
+                    .ToListAsync();
+
+                if (subItems.Any())
+                {
+                    _context.PageSectionLists.RemoveRange(subItems);
+                }
+            }
+
+            _context.PageSections.RemoveRange(sections);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = sections.Count
+            }, $"{sections.Count} layout section(s) deleted successfully."));
+        }
+
+
         // ==========================================
         // 3B. PAGE SECTION LISTS (Sub-Items)
         // ==========================================
@@ -1243,6 +1307,50 @@ Reply ONLY with the valid JSON object.";
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, "Section sub-item deleted successfully."));
         }
+
+        /// <summary>
+        /// Request model for batch deleting multiple repeating sub-items / cards.
+        /// </summary>
+        public class BulkDeleteSectionListsRequest
+        {
+            /// <summary>
+            /// List of sub-item identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple repeating sub-items / card items.
+        /// </summary>
+        /// <param name="request">Payload containing list of sub-item GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("section-lists/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteSectionLists([FromBody] BulkDeleteSectionListsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No sub-item identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var subItems = await _context.PageSectionLists
+                .Where(l => targetIds.Contains(l.Id))
+                .ToListAsync();
+
+            if (!subItems.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified sub-items were found."));
+            }
+
+            _context.PageSectionLists.RemoveRange(subItems);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = subItems.Count
+            }, $"{subItems.Count} repeating sub-item(s) deleted successfully."));
+        }
+
 
 
         // ==========================================

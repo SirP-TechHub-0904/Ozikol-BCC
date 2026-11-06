@@ -40,7 +40,7 @@ import { ToastService } from '../../../core/services/toast.service';
           type="button"
           class="nav-tab"
           [class.active]="activeTab === 'sections'"
-          (click)="activeTab = 'sections'"
+          (click)="switchTab('sections')"
         >
           <span class="material-symbols-outlined fs-5">view_quilt</span>
           <span>All Page Sections</span>
@@ -50,7 +50,7 @@ import { ToastService } from '../../../core/services/toast.service';
           type="button"
           class="nav-tab"
           [class.active]="activeTab === 'subitems'"
-          (click)="activeTab = 'subitems'"
+          (click)="switchTab('subitems')"
         >
           <span class="material-symbols-outlined fs-5">list</span>
           <span>All Repeating Sub-Items &amp; Cards</span>
@@ -61,7 +61,7 @@ import { ToastService } from '../../../core/services/toast.service';
       <!-- Search & Page Filter -->
       <div class="filter-bar">
         <div class="filter-group">
-          <select [(ngModel)]="filterPageId" class="filter-select">
+          <select [(ngModel)]="filterPageId" (change)="onFilterChange()" class="filter-select">
             <option value="">All Web Pages (Global View)</option>
             <option *ngFor="let p of allPages" [value]="p.id">{{ p.title }} (/{{ p.directUrl || 'page' }})</option>
           </select>
@@ -71,9 +71,40 @@ import { ToastService } from '../../../core/services/toast.service';
             <input
               type="text"
               [(ngModel)]="searchTerm"
+              (input)="onFilterChange()"
               [placeholder]="activeTab === 'sections' ? 'Search sections by title, page, template...' : 'Search sub-items, cards, buttons...'"
             >
           </div>
+        </div>
+      </div>
+
+      <!-- Bulk Action Toolbar (Sections) -->
+      <div class="bulk-action-bar" *ngIf="activeTab === 'sections' && selectedSectionIds.size > 0">
+        <div class="bulk-info">
+          <span class="material-symbols-outlined text-primary">check_circle</span>
+          <span><strong>{{ selectedSectionIds.size }}</strong> layout section{{ selectedSectionIds.size > 1 ? 's' : '' }} selected</span>
+        </div>
+        <div class="bulk-buttons">
+          <button type="button" class="btn btn-sm btn-outline" (click)="clearSelectedSections()">Deselect All</button>
+          <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteSectionsModal()">
+            <span class="material-symbols-outlined fs-6">delete_sweep</span>
+            <span>Delete Selected ({{ selectedSectionIds.size }})</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bulk Action Toolbar (Sub-Items) -->
+      <div class="bulk-action-bar" *ngIf="activeTab === 'subitems' && selectedSubItemIds.size > 0">
+        <div class="bulk-info">
+          <span class="material-symbols-outlined text-primary">check_circle</span>
+          <span><strong>{{ selectedSubItemIds.size }}</strong> repeating sub-item{{ selectedSubItemIds.size > 1 ? 's' : '' }} selected</span>
+        </div>
+        <div class="bulk-buttons">
+          <button type="button" class="btn btn-sm btn-outline" (click)="clearSelectedSubItems()">Deselect All</button>
+          <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteSubItemsModal()">
+            <span class="material-symbols-outlined fs-6">delete_sweep</span>
+            <span>Delete Selected ({{ selectedSubItemIds.size }})</span>
+          </button>
         </div>
       </div>
 
@@ -83,6 +114,16 @@ import { ToastService } from '../../../core/services/toast.service';
           <table class="cms-table">
             <thead>
               <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isAllSectionsSelected"
+                    [indeterminate]="isIndeterminateSections"
+                    (change)="toggleSelectAllSections($event)"
+                    title="Select / Deselect all sections on this view"
+                  >
+                </th>
                 <th>SECTION TITLE</th>
                 <th>PARENT PAGE</th>
                 <th>TEMPLATE KEY</th>
@@ -93,7 +134,15 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let sec of filteredSections">
+              <tr *ngFor="let sec of filteredSections" [class.selected-row]="isSectionSelected(sec.id)">
+                <td style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isSectionSelected(sec.id)"
+                    (change)="toggleSectionSelection(sec.id)"
+                  >
+                </td>
                 <td>
                   <strong>{{ sec.title || '(Untitled Section)' }}</strong>
                   <div class="sub-text" *ngIf="sec.miniTitle">{{ sec.miniTitle }}</div>
@@ -139,7 +188,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
               </tr>
               <tr *ngIf="filteredSections.length === 0">
-                <td colspan="7" class="empty-cell">No sections found matching your filter criteria.</td>
+                <td colspan="8" class="empty-cell">No sections found matching your filter criteria.</td>
               </tr>
             </tbody>
           </table>
@@ -152,6 +201,16 @@ import { ToastService } from '../../../core/services/toast.service';
           <table class="cms-table">
             <thead>
               <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isAllSubItemsSelected"
+                    [indeterminate]="isIndeterminateSubItems"
+                    (change)="toggleSelectAllSubItems($event)"
+                    title="Select / Deselect all sub-items on this view"
+                  >
+                </th>
                 <th>SUB-ITEM / CARD TITLE</th>
                 <th>PARENT SECTION</th>
                 <th>PARENT PAGE</th>
@@ -162,7 +221,15 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of filteredSubItems">
+              <tr *ngFor="let item of filteredSubItems" [class.selected-row]="isSubItemSelected(item.id)">
+                <td style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isSubItemSelected(item.id)"
+                    (change)="toggleSubItemSelection(item.id)"
+                  >
+                </td>
                 <td>
                   <strong>{{ item.title || '(Untitled Item)' }}</strong>
                   <div class="sub-text" *ngIf="item.miniTitle">{{ item.miniTitle }}</div>
@@ -207,10 +274,78 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
               </tr>
               <tr *ngIf="filteredSubItems.length === 0">
-                <td colspan="7" class="empty-cell">No repeating sub-items found matching your filter criteria.</td>
+                <td colspan="8" class="empty-cell">No repeating sub-items found matching your filter criteria.</td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Bulk Delete Sections Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkDeleteSectionsModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-danger">delete_sweep</span>
+              <h3>Delete {{ selectedSectionIds.size }} Layout Section{{ selectedSectionIds.size > 1 ? 's' : '' }}?</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeBulkDeleteSectionsModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Are you sure you want to permanently delete the <strong>{{ selectedSectionIds.size }}</strong> selected layout section(s)?
+            </p>
+            <div class="warning-callout">
+              <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
+              <div style="font-size: 13px; color: #991b1b; line-height: 1.5;">
+                <strong>Cascade Deletion Notice:</strong> All repeating sub-items, child card items, buttons, and custom layout data associated with these sections will be permanently removed.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkDeleteSectionsModal()" [disabled]="bulkDeleting">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" (click)="executeBulkDeleteSections()" [disabled]="bulkDeleting">
+              <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
+              <span *ngIf="!bulkDeleting">Delete {{ selectedSectionIds.size }} Section{{ selectedSectionIds.size > 1 ? 's' : '' }}</span>
+              <span *ngIf="bulkDeleting">Deleting Sections...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Delete Sub-Items Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkDeleteSubItemsModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-danger">delete_sweep</span>
+              <h3>Delete {{ selectedSubItemIds.size }} Sub-Item{{ selectedSubItemIds.size > 1 ? 's' : '' }}?</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeBulkDeleteSubItemsModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Are you sure you want to permanently delete the <strong>{{ selectedSubItemIds.size }}</strong> selected repeating sub-item(s) across your page sections?
+            </p>
+            <div class="warning-callout">
+              <span class="material-symbols-outlined text-danger" style="font-size: 20px;">info</span>
+              <div style="font-size: 13px; color: #991b1b; line-height: 1.5;">
+                This will unbind and delete these card items from their parent sections. This action cannot be undone.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkDeleteSubItemsModal()" [disabled]="bulkDeleting">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" (click)="executeBulkDeleteSubItems()" [disabled]="bulkDeleting">
+              <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
+              <span *ngIf="!bulkDeleting">Delete {{ selectedSubItemIds.size }} Item{{ selectedSubItemIds.size > 1 ? 's' : '' }}</span>
+              <span *ngIf="bulkDeleting">Deleting Items...</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -287,10 +422,16 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px;
-      border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
+      border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: none;
+      transition: all 0.15s ease;
     }
-    .btn-primary { background: #0050e5; color: #fff; border: none; }
-    .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #334155; }
+    .btn-sm { padding: 6px 14px; font-size: 12.5px; border-radius: 8px; }
+    .btn-primary { background: #0050e5; color: #fff; }
+    .btn-primary:hover { background: #003ebd; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #334155; }
+    .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
 
     .cms-nav-tabs {
       display: flex; gap: 10px; background: #fff; padding: 8px 12px;
@@ -323,13 +464,28 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .search-box input { border: none; background: transparent; font-size: 13px; outline: none; width: 100%; }
 
+    /* Bulk Action Bar */
+    .bulk-action-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px;
+      padding: 12px 20px; animation: slideDown 0.2s ease;
+    }
+    .bulk-info { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #1e3a8a; }
+    .bulk-buttons { display: flex; align-items: center; gap: 10px; }
+
     .cms-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; }
     .cms-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .cms-table th {
       text-align: left; padding: 12px; background: #f8fafc; color: #64748b;
       font-weight: 700; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-transform: uppercase;
     }
-    .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; }
+    .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .selected-row { background: #f0f7ff !important; }
+
+    .cms-checkbox {
+      width: 17px; height: 17px; accent-color: #0050e5; cursor: pointer;
+      border-radius: 4px; vertical-align: middle;
+    }
 
     .sub-text { font-size: 11px; color: #64748b; }
     .page-pill {
@@ -362,33 +518,46 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-delete:hover { background: #dc2626; color: #fff; }
     .empty-cell { text-align: center; color: #64748b; padding: 32px !important; font-size: 13.5px; }
 
+    .warning-callout {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+      padding: 14px 16px; margin-top: 12px;
+    }
+
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center; z-index: 2000;
     }
     .modal-card {
-      background: #fff; border-radius: 16px; width: 100%; max-width: 600px;
+      background: #fff; border-radius: 16px; width: 100%; max-width: 540px;
       box-shadow: 0 25px 60px rgba(0,0,0,0.3); overflow: hidden;
     }
+    .modal-card.modal-lg { max-width: 600px; }
     .modal-header {
       padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;
       border-bottom: 1px solid #e2e8f0;
     }
     .modal-title-group { display: flex; align-items: center; gap: 10px; }
-    .modal-title-group h3 { margin: 0; font-size: 18px; font-weight: 800; }
-    .btn-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; }
-    .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .modal-title-group h3 { margin: 0; font-size: 17px; font-weight: 800; color: #0f172a; }
+    .btn-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b; }
+    .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
     .modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; }
     .form-control { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; }
     .form-row { display: flex; gap: 12px; }
     .error-box { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   `]
 })
 export class PageSectionsComponent implements OnInit {
   loading = false;
   saving = false;
+  bulkDeleting = false;
   activeTab: 'sections' | 'subitems' = 'sections';
   sections: any[] = [];
   allSubItems: any[] = [];
@@ -396,7 +565,14 @@ export class PageSectionsComponent implements OnInit {
   searchTerm = '';
   filterPageId = '';
 
+  // Bulk Selection Sets
+  selectedSectionIds = new Set<string>();
+  selectedSubItemIds = new Set<string>();
+
+  // Modals
   showCreateModal = false;
+  showBulkDeleteSectionsModal = false;
+  showBulkDeleteSubItemsModal = false;
   errorMessage = '';
   newSection: any = {};
 
@@ -452,6 +628,19 @@ export class PageSectionsComponent implements OnInit {
     });
   }
 
+  switchTab(tab: 'sections' | 'subitems'): void {
+    this.activeTab = tab;
+  }
+
+  onFilterChange(): void {
+    // When filter changes, clean up selection of hidden items
+    // but keep current items if still in view
+  }
+
+  // ==========================================
+  // SECTION SELECTION LOGIC
+  // ==========================================
+
   get filteredSections(): any[] {
     let list = this.sections;
     if (this.filterPageId) {
@@ -467,6 +656,78 @@ export class PageSectionsComponent implements OnInit {
     }
     return list;
   }
+
+  get isAllSectionsSelected(): boolean {
+    const current = this.filteredSections;
+    return current.length > 0 && current.every(s => this.selectedSectionIds.has(s.id));
+  }
+
+  get isIndeterminateSections(): boolean {
+    const count = this.filteredSections.filter(s => this.selectedSectionIds.has(s.id)).length;
+    return count > 0 && count < this.filteredSections.length;
+  }
+
+  toggleSelectAllSections(event: any): void {
+    const isChecked = event?.target?.checked;
+    const current = this.filteredSections;
+    if (isChecked) {
+      current.forEach(s => this.selectedSectionIds.add(s.id));
+    } else {
+      current.forEach(s => this.selectedSectionIds.delete(s.id));
+    }
+  }
+
+  toggleSectionSelection(id: string): void {
+    if (this.selectedSectionIds.has(id)) {
+      this.selectedSectionIds.delete(id);
+    } else {
+      this.selectedSectionIds.add(id);
+    }
+  }
+
+  isSectionSelected(id: string): boolean {
+    return this.selectedSectionIds.has(id);
+  }
+
+  clearSelectedSections(): void {
+    this.selectedSectionIds.clear();
+  }
+
+  openBulkDeleteSectionsModal(): void {
+    if (this.selectedSectionIds.size > 0) {
+      this.showBulkDeleteSectionsModal = true;
+    }
+  }
+
+  closeBulkDeleteSectionsModal(): void {
+    if (this.bulkDeleting) return;
+    this.showBulkDeleteSectionsModal = false;
+  }
+
+  executeBulkDeleteSections(): void {
+    if (this.selectedSectionIds.size === 0) return;
+
+    this.bulkDeleting = true;
+    const ids = Array.from(this.selectedSectionIds);
+
+    this.api.post<any>('ContentApi/sections/bulk-delete', { ids, forceCascade: true }).subscribe({
+      next: (res) => {
+        this.bulkDeleting = false;
+        this.showBulkDeleteSectionsModal = false;
+        this.selectedSectionIds.clear();
+        this.toast.success(res?.message || `${ids.length} layout section(s) deleted successfully.`);
+        this.loadSections();
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toast.error(err?.error?.message || 'Failed to bulk delete sections.');
+      }
+    });
+  }
+
+  // ==========================================
+  // SUB-ITEMS SELECTION LOGIC
+  // ==========================================
 
   get filteredSubItems(): any[] {
     let list = this.allSubItems;
@@ -486,6 +747,78 @@ export class PageSectionsComponent implements OnInit {
     }
     return list;
   }
+
+  get isAllSubItemsSelected(): boolean {
+    const current = this.filteredSubItems;
+    return current.length > 0 && current.every(i => this.selectedSubItemIds.has(i.id));
+  }
+
+  get isIndeterminateSubItems(): boolean {
+    const count = this.filteredSubItems.filter(i => this.selectedSubItemIds.has(i.id)).length;
+    return count > 0 && count < this.filteredSubItems.length;
+  }
+
+  toggleSelectAllSubItems(event: any): void {
+    const isChecked = event?.target?.checked;
+    const current = this.filteredSubItems;
+    if (isChecked) {
+      current.forEach(i => this.selectedSubItemIds.add(i.id));
+    } else {
+      current.forEach(i => this.selectedSubItemIds.delete(i.id));
+    }
+  }
+
+  toggleSubItemSelection(id: string): void {
+    if (this.selectedSubItemIds.has(id)) {
+      this.selectedSubItemIds.delete(id);
+    } else {
+      this.selectedSubItemIds.add(id);
+    }
+  }
+
+  isSubItemSelected(id: string): boolean {
+    return this.selectedSubItemIds.has(id);
+  }
+
+  clearSelectedSubItems(): void {
+    this.selectedSubItemIds.clear();
+  }
+
+  openBulkDeleteSubItemsModal(): void {
+    if (this.selectedSubItemIds.size > 0) {
+      this.showBulkDeleteSubItemsModal = true;
+    }
+  }
+
+  closeBulkDeleteSubItemsModal(): void {
+    if (this.bulkDeleting) return;
+    this.showBulkDeleteSubItemsModal = false;
+  }
+
+  executeBulkDeleteSubItems(): void {
+    if (this.selectedSubItemIds.size === 0) return;
+
+    this.bulkDeleting = true;
+    const ids = Array.from(this.selectedSubItemIds);
+
+    this.api.post<any>('ContentApi/section-lists/bulk-delete', { ids }).subscribe({
+      next: (res) => {
+        this.bulkDeleting = false;
+        this.showBulkDeleteSubItemsModal = false;
+        this.selectedSubItemIds.clear();
+        this.toast.success(res?.message || `${ids.length} repeating sub-item(s) deleted successfully.`);
+        this.loadSections();
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toast.error(err?.error?.message || 'Failed to bulk delete sub-items.');
+      }
+    });
+  }
+
+  // ==========================================
+  // CREATE SECTION
+  // ==========================================
 
   openCreateModal(): void {
     this.newSection = {
