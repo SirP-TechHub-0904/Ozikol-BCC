@@ -73,8 +73,8 @@ import { ToastService } from '../../../core/services/toast.service';
                 <span class="meta-pill count-pill" *ngIf="section.webPage">
                   Attached to Page: {{ section.webPage.title }}
                 </span>
-                <span class="meta-pill count-pill" *ngIf="section.pageSectionLists">
-                  {{ section.pageSectionLists.length }} Sub-Items / Cards Attached
+                <span class="meta-pill count-pill" [class.danger]="subItemsCount > 0">
+                  {{ subItemsCount }} Sub-Items / Cards Attached
                 </span>
                 <span class="meta-date">Sort Order: {{ section.sortOrder || 0 }}</span>
               </div>
@@ -124,8 +124,11 @@ import { ToastService } from '../../../core/services/toast.service';
             />
 
             <div class="match-status" *ngIf="confirmationInput">
-              <span *ngIf="isTitleMatched()" class="status-match">
+              <span *ngIf="isTitleMatched() && subItemsCount === 0" class="status-match">
                 <span class="material-symbols-outlined">check_circle</span> Section title matched. Deletion unlocked.
+              </span>
+              <span *ngIf="isTitleMatched() && subItemsCount > 0" class="status-warning" style="color: #d97706; display: flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined">shield</span> Section title matched, but deletion is BLOCKED by {{ subItemsCount }} attached sub-item(s).
               </span>
               <span *ngIf="!isTitleMatched()" class="status-mismatch">
                 <span class="material-symbols-outlined">cancel</span> Section title does not match yet.
@@ -141,10 +144,19 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isTitleMatched() || deleting || (section.pageSectionLists?.length || 0) > 0"
+              [disabled]="!isTitleMatched() || deleting || subItemsCount > 0"
+              [title]="subItemsCount > 0 ? 'Cannot delete section while repeating sub-items exist.' : ''"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'delete_forever' }}</span>
-              <span>{{ deleting ? 'Deleting Section...' : 'I understand the consequences, delete this section' }}</span>
+              <span>
+                {{
+                  deleting
+                    ? 'Deleting Section...'
+                    : subItemsCount > 0
+                    ? 'Deletion Blocked (' + subItemsCount + ' Sub-Items Attached)'
+                    : 'I understand the consequences, delete this section'
+                }}
+              </span>
             </button>
           </div>
         </div>
@@ -391,6 +403,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PageSectionDeleteComponent implements OnInit {
   sectionId: string | null = null;
   section: any = null;
+  subItemsCount: number = 0;
   loading = false;
   deleting = false;
   confirmationInput = '';
@@ -424,6 +437,7 @@ export class PageSectionDeleteComponent implements OnInit {
         this.loading = false;
         if (res?.data) {
           this.section = res.data;
+          this.subItemsCount = this.section.listCount ?? (this.section.pageSectionLists?.length ?? 0);
         } else {
           this.errorMsg = 'Page section record not found.';
         }

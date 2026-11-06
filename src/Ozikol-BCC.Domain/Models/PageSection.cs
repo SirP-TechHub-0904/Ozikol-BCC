@@ -276,5 +276,11 @@ namespace Ozikol_BCC.Domain.Models
         /// Injected into templates via {{#each PageSectionLists}} loops.
         /// </summary>
         public ICollection<PageSectionList> PageSectionLists { get; set; } = new List<PageSectionList>();
+
+        /// <summary>
+        /// Total number of repeatable child items (cards, lists) attached to this section. Computed / non-persisted property.
+        /// </summary>
+        [NotMapped]
+        public int ListCount { get; set; }
     }
 }

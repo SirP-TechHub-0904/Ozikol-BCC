@@ -440,6 +440,20 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderBy(p => p.SortOrder)
                 .ToListAsync();
 
+            var sectionCounts = await _context.PageSections
+                .Where(s => s.WebPageId.HasValue)
+                .GroupBy(s => s.WebPageId!.Value)
+                .Select(g => new { WebPageId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.WebPageId, g => g.Count);
+
+            foreach (var p in pages)
+            {
+                if (sectionCounts.TryGetValue(p.Id, out var count))
+                {
+                    p.SectionCount = count;
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(pages, "Web pages retrieved successfully."));
         }
 
@@ -453,6 +467,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (page == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
+            page.SectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == page.Id);
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
@@ -468,6 +483,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (page == null) return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' was not found or is unpublished."));
 
+            page.SectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == page.Id);
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
@@ -862,6 +878,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (section == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
+            section.ListCount = await _context.PageSectionLists.CountAsync(l => l.PageSectionId == id);
             return Ok(ApiResponse<object>.SuccessResponse(section, "Section details retrieved."));
         }
 
