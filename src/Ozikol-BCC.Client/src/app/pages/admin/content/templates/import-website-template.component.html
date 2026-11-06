@@ -82,7 +82,7 @@
         <div class="step-number">5</div>
         <div class="step-info">
           <span class="step-label">Vault Adoption</span>
-          <span class="step-sub">Save to Database</span>
+          <span class="step-sub">Save</span>
         </div>
       </div>
     </div>
@@ -203,7 +203,7 @@
             <div class="info-icon bg-danger-subtle text-danger"><span class="material-symbols-outlined">verified</span></div>
             <div>
               <strong>Phase 5: Instant Adoption</strong>
-              <p>Installs the complete suite directly into your tenant database ready for live publishing.</p>
+              <p>Installs the complete suite into your workspace ready for live publishing.</p>
             </div>
           </li>
         </ul>
@@ -791,7 +791,7 @@
             </div>
             <div class="stat-data">
               <span class="stat-number">{{ generatedSuite.pages.length }}</span>
-              <span class="stat-text">Database Pages</span>
+              <span class="stat-text">Pages</span>
             </div>
           </div>
 
@@ -832,7 +832,7 @@
             >
               <span class="material-symbols-outlined btn-icon" *ngIf="!importingToDatabase">save_alt</span>
               <span class="spinner-border spinner-border-sm btn-icon" *ngIf="importingToDatabase"></span>
-              <span>{{ importingToDatabase ? 'Importing...' : 'Adopt & Save to Vault →' }}</span>
+              <span>{{ importingToDatabase ? 'Saving...' : 'Save & Publish →' }}</span>
             </button>
           </div>
         </div>

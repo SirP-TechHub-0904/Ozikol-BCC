@@ -55,6 +55,7 @@ public static class StandardErrorCodes
     public const string DuplicateRecord = "ERR-2003";
     public const string RecordNotFound = "ERR-2004";
     public const string InvalidOperationState = "ERR-2005";
+    public const string SaveOperationFailed = "ERR-2006";
 
     // ── Billing, Checkout & Payment Gateways (ERR-3000 – ERR-3999) ──
     public const string PaystackUnavailable = "ERR-3001";
@@ -175,6 +176,14 @@ public static class StandardErrorCodes
             Category = "Validation & Request Data",
             CustomError = "Operation not allowed in current state.",
             Meaning = "This action cannot be completed because of the item's current status or linked dependencies.",
+            DefaultHttpStatus = 400
+        },
+        new()
+        {
+            Code = SaveOperationFailed,
+            Category = "Validation & Request Data",
+            CustomError = "Save operation failed.",
+            Meaning = "The changes could not be saved at this time. Review your inputs and try again.",
             DefaultHttpStatus = 400
         },
 
@@ -446,6 +455,10 @@ public static class StandardErrorCodes
         {
             def = _byCode[DuplicateRecord];
         }
+        else if (msgLower.Contains("database") || msgLower.Contains("save failed") || msgLower.Contains("failed to save") || msgLower.Contains("persist"))
+        {
+            def = _byCode[SaveOperationFailed];
+        }
         else if (httpStatusCode == 429 || msgLower.Contains("rate limit") || msgLower.Contains("too many requests"))
         {
             def = _byCode[RateLimitExceeded];
@@ -471,8 +484,15 @@ public static class StandardErrorCodes
         bool isSensitiveOrRaw =
             string.IsNullOrWhiteSpace(msg) ||
             httpStatusCode >= 500 ||
-            msgLower.Contains("exception") ||
+            msgLower.Contains("database") ||
+            msgLower.Contains("dbcontext") ||
             msgLower.Contains("sql") ||
+            msgLower.Contains("table") ||
+            msgLower.Contains("column") ||
+            msgLower.Contains("entity") ||
+            msgLower.Contains("save to") ||
+            msgLower.Contains("cloudinary") ||
+            msgLower.Contains("exception") ||
             msgLower.Contains("deactivated") ||
             msgLower.Contains("stacktrace") ||
             msgLower.Contains("inner exception") ||

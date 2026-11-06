@@ -95,7 +95,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <strong>Irreversible Action Warning</strong>
             </div>
             <ul class="consequences-list">
-              <li>The product record <strong>"{{ product.title }}"</strong> will be permanently purged from the database.</li>
+              <li>The product record <strong>"{{ product.title }}"</strong> will be permanently deleted.</li>
               <li>Associated gallery assets, software license templates, and release schedules will be removed.</li>
               <li>Any cart items referencing this product will become invalid.</li>
               <li>This action <strong>CANNOT</strong> be undone.</li>

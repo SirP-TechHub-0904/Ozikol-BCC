@@ -622,7 +622,7 @@ interface IndustryTemplate {
                         <span class="material-symbols-outlined">{{ isCoreFieldPublished('phone') ? 'visibility' : 'visibility_off' }}</span>
                         <span>{{ isCoreFieldPublished('phone') ? 'Published' : 'Unpublished' }}</span>
                       </button>
-                      <span class="rf-lock-badge" title="System Field: Cannot delete from database, but can be unpublished">
+                      <span class="rf-lock-badge" title="System Field: Cannot be deleted, but can be hidden">
                         <span class="material-symbols-outlined">lock</span>
                         <span>No Delete</span>
                       </span>
@@ -649,7 +649,7 @@ interface IndustryTemplate {
                         <span class="material-symbols-outlined">{{ isCoreFieldPublished('category') ? 'visibility' : 'visibility_off' }}</span>
                         <span>{{ isCoreFieldPublished('category') ? 'Published' : 'Unpublished' }}</span>
                       </button>
-                      <span class="rf-lock-badge" title="System Field: Cannot delete from database, but can be unpublished">
+                      <span class="rf-lock-badge" title="System Field: Cannot be deleted, but can be hidden">
                         <span class="material-symbols-outlined">lock</span>
                         <span>No Delete</span>
                       </span>
@@ -676,7 +676,7 @@ interface IndustryTemplate {
                         <span class="material-symbols-outlined">{{ isCoreFieldPublished('organizationType') ? 'visibility' : 'visibility_off' }}</span>
                         <span>{{ isCoreFieldPublished('organizationType') ? 'Published' : 'Unpublished' }}</span>
                       </button>
-                      <span class="rf-lock-badge" title="System Field: Cannot delete from database, but can be unpublished">
+                      <span class="rf-lock-badge" title="System Field: Cannot be deleted, but can be hidden">
                         <span class="material-symbols-outlined">lock</span>
                         <span>No Delete</span>
                       </span>

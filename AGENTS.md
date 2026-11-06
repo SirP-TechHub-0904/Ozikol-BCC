@@ -71,6 +71,9 @@ This document serves as the permanent memory bank and behavioral guidelines for 
     * **Username**: `e.g. @username`
 * **No Ambiguous or Cluttered Strings**: Placeholders must avoid arbitrary or overly verbose sample text and show the expected format at a glance.
 * **Razor Escaping in Placeholders**: In Razor `.cshtml` files, always properly escape `@` characters in placeholder attributes (e.g., `placeholder="e.g. @@username"` or `placeholder="name@@company.com"` where applicable) to prevent Razor compilation parsing errors.
+* **Button & Action Label Simplicity (Zero Technical Leaks)**:
+  * **Canonical Action Verbs**: All buttons, links, form submits, and toast notifications across Web, Desktop, and Mobile MUST use clean, simple action verbs (e.g., **Save**, **Upload**, **Delete**, **Submit**, **Update**, **Import**, **Adopt**, **Create**, **Cancel**).
+  * **Strict Prohibition of Database Terminology in Custom Errors & UI Text**: NEVER append or include technical storage terms such as `database`, `db`, `table`, `column`, `SQL`, or `save to database` in client-facing Custom Errors, error messages, toast popups, or button text. Internal database details belong strictly to Central Admin `RealError` telemetry.
 
 ---
 
