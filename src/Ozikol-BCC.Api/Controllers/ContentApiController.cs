@@ -1405,6 +1405,181 @@ Reply ONLY with the valid JSON object.";
             }, $"{sections.Count} layout section(s) deleted successfully."));
         }
 
+        public class BulkTransferSectionsRequest
+        {
+            /// <summary>
+            /// List of section GUIDs to move or copy.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Destination WebPage ID.
+            /// </summary>
+            public Guid TargetPageId { get; set; }
+
+            /// <summary>
+            /// Transfer action mode: "move" or "copy".
+            /// </summary>
+            public string Action { get; set; } = "move";
+        }
+
+        /// <summary>
+        /// Bulk moves or copies layout sections to a destination web page.
+        /// When moving, updates WebPageId. When copying, creates cloned PageSections with newly assigned GUIDs
+        /// and clones all attached child PageSectionLists (sub-items/cards).
+        /// </summary>
+        [HttpPost("sections/bulk-transfer")]
+        public async Task<IActionResult> BulkTransferSections([FromBody] BulkTransferSectionsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No section identifiers provided."));
+            }
+
+            var targetPage = await _context.WebPages.FindAsync(request.TargetPageId);
+            if (targetPage == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Target web page not found."));
+            }
+
+            var isCopy = string.Equals(request.Action, "copy", StringComparison.OrdinalIgnoreCase);
+            var targetIds = request.Ids.Distinct().ToList();
+
+            if (isCopy)
+            {
+                var originalSections = await _context.PageSections
+                    .Include(s => s.PageSectionLists)
+                    .Where(s => targetIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (!originalSections.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found to copy."));
+                }
+
+                var currentMaxSort = await _context.PageSections
+                    .Where(s => s.WebPageId == request.TargetPageId)
+                    .MaxAsync(s => (int?)s.PageSortOrder) ?? 0;
+
+                var clonedSections = new List<PageSection>();
+
+                foreach (var orig in originalSections)
+                {
+                    currentMaxSort++;
+                    var cloned = new PageSection
+                    {
+                        Id = Guid.NewGuid(),
+                        WebPageId = request.TargetPageId,
+                        TemplateKey = orig.TemplateKey,
+                        MasterTemplateId = orig.MasterTemplateId,
+                        Title = orig.Title != null ? $"{orig.Title} (Copy)" : "Untitled (Copy)",
+                        MiniTitle = orig.MiniTitle,
+                        Qoute = orig.Qoute,
+                        Description = orig.Description,
+                        FullDescription = orig.FullDescription,
+                        ImageUrl = orig.ImageUrl,
+                        ImageKey = orig.ImageKey,
+                        SecondImageUrl = orig.SecondImageUrl,
+                        SecondImageKey = orig.SecondImageKey,
+                        VideoUrl = orig.VideoUrl,
+                        VideoKey = orig.VideoKey,
+                        YoutubeUrlLink = orig.YoutubeUrlLink,
+                        IconText = orig.IconText,
+                        ButtonText = orig.ButtonText,
+                        ButtonLink = orig.ButtonLink,
+                        SecondButtonText = orig.SecondButtonText,
+                        SecondButtonLink = orig.SecondButtonLink,
+                        DirectUrl = orig.DirectUrl,
+                        DisableButton = orig.DisableButton,
+                        Disable = orig.Disable,
+                        FixedAfterFooter = orig.FixedAfterFooter,
+                        PageSortOrder = currentMaxSort,
+                        HtmlTemplate = orig.HtmlTemplate,
+                        CssStyles = orig.CssStyles,
+                        JsScript = orig.JsScript,
+                        CustomClass = orig.CustomClass,
+                        BackgroundColor = orig.BackgroundColor,
+                        IsCustomized = orig.IsCustomized,
+                        IsDefault = false,
+                        AddToRibon = orig.AddToRibon,
+                        RibonCustomDisplayTitle = orig.RibonCustomDisplayTitle,
+                        RibonSortOrder = orig.RibonSortOrder,
+                        PageFormId = orig.PageFormId,
+                        FormKey = orig.FormKey
+                    };
+
+                    if (orig.PageSectionLists != null && orig.PageSectionLists.Any())
+                    {
+                        foreach (var sub in orig.PageSectionLists)
+                        {
+                            cloned.PageSectionLists.Add(new PageSectionList
+                            {
+                                Id = Guid.NewGuid(),
+                                PageSectionId = cloned.Id,
+                                Title = sub.Title,
+                                MiniTitle = sub.MiniTitle,
+                                Description = sub.Description,
+                                MoreDescription = sub.MoreDescription,
+                                ImageUrl = sub.ImageUrl,
+                                ImageKey = sub.ImageKey,
+                                SecondImageUrl = sub.SecondImageUrl,
+                                IconText = sub.IconText,
+                                ButtonText = sub.ButtonText,
+                                ButtonLink = sub.ButtonLink,
+                                SortOrder = sub.SortOrder,
+                                Disable = sub.Disable,
+                                DisableButton = sub.DisableButton,
+                                CustomClass = sub.CustomClass
+                            });
+                        }
+                    }
+
+                    clonedSections.Add(cloned);
+                }
+
+                _context.PageSections.AddRange(clonedSections);
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = clonedSections.Count,
+                    targetPageTitle = targetPage.Title
+                }, $"{clonedSections.Count} section(s) copied successfully to '{targetPage.Title}'."));
+            }
+            else
+            {
+                // MOVE
+                var sections = await _context.PageSections
+                    .Where(s => targetIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (!sections.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found to move."));
+                }
+
+                var currentMaxSort = await _context.PageSections
+                    .Where(s => s.WebPageId == request.TargetPageId)
+                    .MaxAsync(s => (int?)s.PageSortOrder) ?? 0;
+
+                foreach (var section in sections)
+                {
+                    currentMaxSort++;
+                    section.WebPageId = request.TargetPageId;
+                    section.PageSortOrder = currentMaxSort;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = sections.Count,
+                    targetPageTitle = targetPage.Title
+                }, $"{sections.Count} section(s) moved successfully to '{targetPage.Title}'."));
+            }
+        }
+
+
 
         // ==========================================
         // 3B. PAGE SECTION LISTS (Sub-Items)
@@ -1532,6 +1707,129 @@ Reply ONLY with the valid JSON object.";
                 deletedCount = subItems.Count
             }, $"{subItems.Count} repeating sub-item(s) deleted successfully."));
         }
+
+        public class BulkTransferSectionListsRequest
+        {
+            /// <summary>
+            /// List of sub-item / card GUIDs to move or copy.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Destination PageSection ID.
+            /// </summary>
+            public Guid TargetSectionId { get; set; }
+
+            /// <summary>
+            /// Transfer action mode: "move" or "copy".
+            /// </summary>
+            public string Action { get; set; } = "move";
+        }
+
+        /// <summary>
+        /// Bulk moves or copies repeating sub-items/cards to a destination page section.
+        /// When moving, updates PageSectionId. When copying, creates cloned PageSectionList records with newly assigned GUIDs.
+        /// </summary>
+        [HttpPost("section-lists/bulk-transfer")]
+        public async Task<IActionResult> BulkTransferSectionLists([FromBody] BulkTransferSectionListsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No sub-item identifiers provided."));
+            }
+
+            var targetSection = await _context.PageSections.FindAsync(request.TargetSectionId);
+            if (targetSection == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Target layout section not found."));
+            }
+
+            var isCopy = string.Equals(request.Action, "copy", StringComparison.OrdinalIgnoreCase);
+            var targetIds = request.Ids.Distinct().ToList();
+
+            if (isCopy)
+            {
+                var originalItems = await _context.PageSectionLists
+                    .Where(l => targetIds.Contains(l.Id))
+                    .ToListAsync();
+
+                if (!originalItems.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sub-items were found to copy."));
+                }
+
+                var currentMaxSort = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId == request.TargetSectionId)
+                    .MaxAsync(l => (int?)l.SortOrder) ?? 0;
+
+                var clonedItems = new List<PageSectionList>();
+
+                foreach (var orig in originalItems)
+                {
+                    currentMaxSort++;
+                    clonedItems.Add(new PageSectionList
+                    {
+                        Id = Guid.NewGuid(),
+                        PageSectionId = request.TargetSectionId,
+                        Title = orig.Title != null ? $"{orig.Title} (Copy)" : "Untitled (Copy)",
+                        MiniTitle = orig.MiniTitle,
+                        Description = orig.Description,
+                        MoreDescription = orig.MoreDescription,
+                        ImageUrl = orig.ImageUrl,
+                        ImageKey = orig.ImageKey,
+                        SecondImageUrl = orig.SecondImageUrl,
+                        IconText = orig.IconText,
+                        ButtonText = orig.ButtonText,
+                        ButtonLink = orig.ButtonLink,
+                        SortOrder = currentMaxSort,
+                        Disable = orig.Disable,
+                        DisableButton = orig.DisableButton,
+                        CustomClass = orig.CustomClass
+                    });
+                }
+
+                _context.PageSectionLists.AddRange(clonedItems);
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = clonedItems.Count,
+                    targetSectionTitle = targetSection.Title
+                }, $"{clonedItems.Count} sub-item(s) copied successfully to section '{targetSection.Title}'."));
+            }
+            else
+            {
+                // MOVE
+                var subItems = await _context.PageSectionLists
+                    .Where(l => targetIds.Contains(l.Id))
+                    .ToListAsync();
+
+                if (!subItems.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sub-items were found to move."));
+                }
+
+                var currentMaxSort = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId == request.TargetSectionId)
+                    .MaxAsync(l => (int?)l.SortOrder) ?? 0;
+
+                foreach (var item in subItems)
+                {
+                    currentMaxSort++;
+                    item.PageSectionId = request.TargetSectionId;
+                    item.SortOrder = currentMaxSort;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = subItems.Count,
+                    targetSectionTitle = targetSection.Title
+                }, $"{subItems.Count} sub-item(s) moved successfully to section '{targetSection.Title}'."));
+            }
+        }
+
 
 
 

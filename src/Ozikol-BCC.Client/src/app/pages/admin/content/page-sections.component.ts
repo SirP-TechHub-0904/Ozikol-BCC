@@ -86,6 +86,14 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
         <div class="bulk-buttons">
           <button type="button" class="btn btn-sm btn-outline" (click)="clearSelectedSections()">Deselect All</button>
+          <button type="button" class="btn btn-sm btn-primary" (click)="openBulkTransferSectionsModal('copy')">
+            <span class="material-symbols-outlined fs-6">content_copy</span>
+            <span>Copy to Page...</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="openBulkTransferSectionsModal('move')">
+            <span class="material-symbols-outlined fs-6">drive_file_move</span>
+            <span>Move to Page...</span>
+          </button>
           <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteSectionsModal()">
             <span class="material-symbols-outlined fs-6">delete_sweep</span>
             <span>Delete Selected ({{ selectedSectionIds.size }})</span>
@@ -101,6 +109,14 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
         <div class="bulk-buttons">
           <button type="button" class="btn btn-sm btn-outline" (click)="clearSelectedSubItems()">Deselect All</button>
+          <button type="button" class="btn btn-sm btn-primary" (click)="openBulkTransferSubItemsModal('copy')">
+            <span class="material-symbols-outlined fs-6">content_copy</span>
+            <span>Copy to Section...</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="openBulkTransferSubItemsModal('move')">
+            <span class="material-symbols-outlined fs-6">drive_file_move</span>
+            <span>Move to Section...</span>
+          </button>
           <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteSubItemsModal()">
             <span class="material-symbols-outlined fs-6">delete_sweep</span>
             <span>Delete Selected ({{ selectedSubItemIds.size }})</span>
@@ -349,6 +365,104 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
+      <!-- Bulk Transfer (Move/Copy) Sections Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkTransferSectionsModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">{{ transferSectionsMode === 'copy' ? 'content_copy' : 'drive_file_move' }}</span>
+              <h3>{{ transferSectionsMode === 'copy' ? 'Copy' : 'Move' }} {{ selectedSectionIds.size }} Layout Section{{ selectedSectionIds.size > 1 ? 's' : '' }}</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeBulkTransferSectionsModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Select the destination web page to {{ transferSectionsMode }} the <strong>{{ selectedSectionIds.size }}</strong> selected layout section(s):
+            </p>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 6px; display: block;">Target Destination Web Page:</label>
+              <select [(ngModel)]="targetTransferPageId" class="filter-select" style="width: 100%; height: 42px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 12px; font-size: 13.5px;">
+                <option value="" disabled selected>-- Select Target Web Page --</option>
+                <option *ngFor="let p of allPages" [value]="p.id">{{ p.title }} (/{{ p.directUrl || 'page' }})</option>
+              </select>
+            </div>
+
+            <div class="warning-callout" [style.background]="transferSectionsMode === 'copy' ? '#eff6ff' : '#fffbeb'" [style.border-color]="transferSectionsMode === 'copy' ? '#bfdbfe' : '#fde68a'">
+              <span class="material-symbols-outlined" [style.color]="transferSectionsMode === 'copy' ? '#1d4ed8' : '#b45309'" style="font-size: 20px;">info</span>
+              <div style="font-size: 12.5px;" [style.color]="transferSectionsMode === 'copy' ? '#1e40af' : '#92400e'">
+                <span *ngIf="transferSectionsMode === 'move'">
+                  <strong>Move Notice:</strong> The selected section(s) will update their parent WebPage ID and be relocated to the destination page.
+                </span>
+                <span *ngIf="transferSectionsMode === 'copy'">
+                  <strong>Copy Notice:</strong> Duplicate copies of each selected section and all attached repeating sub-items/cards will be created on the destination page. Original sections remain untouched.
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkTransferSectionsModal()" [disabled]="transferringSections">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" (click)="executeBulkTransferSections()" [disabled]="transferringSections || !targetTransferPageId">
+              <span class="material-symbols-outlined fs-6" *ngIf="!transferringSections">{{ transferSectionsMode === 'copy' ? 'content_copy' : 'drive_file_move' }}</span>
+              <span *ngIf="!transferringSections">Confirm {{ transferSectionsMode === 'copy' ? 'Copy' : 'Move' }}</span>
+              <span *ngIf="transferringSections">Processing {{ transferSectionsMode }}...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Transfer (Move/Copy) Sub-Items Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkTransferSubItemsModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">{{ transferSubItemsMode === 'copy' ? 'content_copy' : 'drive_file_move' }}</span>
+              <h3>{{ transferSubItemsMode === 'copy' ? 'Copy' : 'Move' }} {{ selectedSubItemIds.size }} Repeating Sub-Item{{ selectedSubItemIds.size > 1 ? 's' : '' }}</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeBulkTransferSubItemsModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Select the destination layout section to {{ transferSubItemsMode }} the <strong>{{ selectedSubItemIds.size }}</strong> selected sub-item(s):
+            </p>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 6px; display: block;">Target Destination Layout Section:</label>
+              <select [(ngModel)]="targetTransferSectionId" class="filter-select" style="width: 100%; height: 42px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 12px; font-size: 13.5px;">
+                <option value="" disabled selected>-- Select Target Section --</option>
+                <option *ngFor="let s of sections" [value]="s.id">
+                  {{ s.title || '(Untitled Section)' }} [Page: {{ s.webPage?.title || 'Global' }}]
+                </option>
+              </select>
+            </div>
+
+            <div class="warning-callout" [style.background]="transferSubItemsMode === 'copy' ? '#eff6ff' : '#fffbeb'" [style.border-color]="transferSubItemsMode === 'copy' ? '#bfdbfe' : '#fde68a'">
+              <span class="material-symbols-outlined" [style.color]="transferSubItemsMode === 'copy' ? '#1d4ed8' : '#b45309'" style="font-size: 20px;">info</span>
+              <div style="font-size: 12.5px;" [style.color]="transferSubItemsMode === 'copy' ? '#1e40af' : '#92400e'">
+                <span *ngIf="transferSubItemsMode === 'move'">
+                  <strong>Move Notice:</strong> The selected card(s) will change their parent PageSection ID and move to the target section's repeatable item list.
+                </span>
+                <span *ngIf="transferSubItemsMode === 'copy'">
+                  <strong>Copy Notice:</strong> Duplicate copies of each card item will be generated and assigned to the destination layout section.
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkTransferSubItemsModal()" [disabled]="transferringSubItems">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" (click)="executeBulkTransferSubItems()" [disabled]="transferringSubItems || !targetTransferSectionId">
+              <span class="material-symbols-outlined fs-6" *ngIf="!transferringSubItems">{{ transferSubItemsMode === 'copy' ? 'content_copy' : 'drive_file_move' }}</span>
+              <span *ngIf="!transferringSubItems">Confirm {{ transferSubItemsMode === 'copy' ? 'Copy' : 'Move' }}</span>
+              <span *ngIf="transferringSubItems">Processing {{ transferSubItemsMode }}...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Create Section Modal -->
       <div class="modal-backdrop" *ngIf="showCreateModal">
         <div class="modal-card modal-lg">
@@ -430,6 +544,18 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-primary:hover { background: #003ebd; }
     .btn-danger { background: #dc2626; color: #fff; }
     .btn-danger:hover { background: #b91c1c; }
+    .btn-secondary {
+      background: #475569;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-secondary:hover {
+      background: #334155;
+    }
     .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
 
@@ -573,6 +699,17 @@ export class PageSectionsComponent implements OnInit {
   showCreateModal = false;
   showBulkDeleteSectionsModal = false;
   showBulkDeleteSubItemsModal = false;
+
+  // Bulk Transfer Properties
+  showBulkTransferSectionsModal = false;
+  transferSectionsMode: 'move' | 'copy' = 'move';
+  targetTransferPageId = '';
+  transferringSections = false;
+
+  showBulkTransferSubItemsModal = false;
+  transferSubItemsMode: 'move' | 'copy' = 'move';
+  targetTransferSectionId = '';
+  transferringSubItems = false;
   errorMessage = '';
   newSection: any = {};
 
@@ -819,6 +956,88 @@ export class PageSectionsComponent implements OnInit {
   // ==========================================
   // CREATE SECTION
   // ==========================================
+
+  // ==========================================
+  // BULK TRANSFER SECTIONS (MOVE & COPY)
+  // ==========================================
+
+  openBulkTransferSectionsModal(mode: 'move' | 'copy'): void {
+    if (this.selectedSectionIds.size === 0) return;
+    this.transferSectionsMode = mode;
+    this.targetTransferPageId = this.filterPageId || (this.allPages.length > 0 ? this.allPages[0].id : '');
+    this.showBulkTransferSectionsModal = true;
+  }
+
+  closeBulkTransferSectionsModal(): void {
+    if (this.transferringSections) return;
+    this.showBulkTransferSectionsModal = false;
+  }
+
+  executeBulkTransferSections(): void {
+    if (this.selectedSectionIds.size === 0 || !this.targetTransferPageId) return;
+
+    this.transferringSections = true;
+    const ids = Array.from(this.selectedSectionIds);
+
+    this.api.post<any>('ContentApi/sections/bulk-transfer', {
+      ids,
+      targetPageId: this.targetTransferPageId,
+      action: this.transferSectionsMode
+    }).subscribe({
+      next: (res) => {
+        this.transferringSections = false;
+        this.showBulkTransferSectionsModal = false;
+        this.selectedSectionIds.clear();
+        this.toast.success(res?.message || `${ids.length} section(s) transferred successfully.`);
+        this.loadSections();
+      },
+      error: (err) => {
+        this.transferringSections = false;
+        this.toast.error(err?.error?.message || `Failed to ${this.transferSectionsMode} sections.`);
+      }
+    });
+  }
+
+  // ==========================================
+  // BULK TRANSFER SUB-ITEMS (MOVE & COPY)
+  // ==========================================
+
+  openBulkTransferSubItemsModal(mode: 'move' | 'copy'): void {
+    if (this.selectedSubItemIds.size === 0) return;
+    this.transferSubItemsMode = mode;
+    this.targetTransferSectionId = this.sections.length > 0 ? this.sections[0].id : '';
+    this.showBulkTransferSubItemsModal = true;
+  }
+
+  closeBulkTransferSubItemsModal(): void {
+    if (this.transferringSubItems) return;
+    this.showBulkTransferSubItemsModal = false;
+  }
+
+  executeBulkTransferSubItems(): void {
+    if (this.selectedSubItemIds.size === 0 || !this.targetTransferSectionId) return;
+
+    this.transferringSubItems = true;
+    const ids = Array.from(this.selectedSubItemIds);
+
+    this.api.post<any>('ContentApi/section-lists/bulk-transfer', {
+      ids,
+      targetSectionId: this.targetTransferSectionId,
+      action: this.transferSubItemsMode
+    }).subscribe({
+      next: (res) => {
+        this.transferringSubItems = false;
+        this.showBulkTransferSubItemsModal = false;
+        this.selectedSubItemIds.clear();
+        this.toast.success(res?.message || `${ids.length} sub-item(s) transferred successfully.`);
+        this.loadSections();
+      },
+      error: (err) => {
+        this.transferringSubItems = false;
+        this.toast.error(err?.error?.message || `Failed to ${this.transferSubItemsMode} sub-items.`);
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.newSection = {
