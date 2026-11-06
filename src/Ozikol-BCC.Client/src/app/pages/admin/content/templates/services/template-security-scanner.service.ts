@@ -101,7 +101,7 @@ export class TemplateSecurityScannerService {
     { pattern: /\b(DROP|ALTER|TRUNCATE)\s+TABLE\b/i, category: 'SqlInjection', message: 'Destructive DDL SQL statement (DROP/ALTER/TRUNCATE TABLE) detected.' },
     { pattern: /\bUNION\s+(ALL\s+)?SELECT\b/i, category: 'SqlInjection', message: 'Classic SQL UNION SELECT data exfiltration pattern detected.' },
     { pattern: /\b(XP_CMDSHELL|SP_EXECUTESQL)\b/i, category: 'SqlInjection', message: 'Restricted database stored procedure invocation signature detected.' },
-    { pattern: /\bEXEC(UTE)?\s*\(/i, category: 'SqlInjection', message: 'Dynamic SQL execution function signature (EXEC(...)) detected.' },
+    { pattern: /(?<![\.\?])\bEXEC(UTE)?\s*\(/i, category: 'SqlInjection', message: 'Dynamic SQL execution function signature (EXEC(...)) detected.' },
     { pattern: /\bOR\s+['"]?1['"]?\s*=\s*['"]?1\b/i, category: 'SqlInjection', message: 'Tautological SQL bypass pattern ("OR 1=1") detected.' },
     { pattern: /\b(INFORMATION_SCHEMA|SYS\.OBJECTS|SYSOBJECTS)\b/i, category: 'SqlInjection', message: 'Database system catalog schema interrogation keyword detected.' }
   ];
@@ -249,6 +249,7 @@ export class TemplateSecurityScannerService {
           severity: (v.severity || 'critical').toLowerCase() === 'warning' ? 'warning' : 'critical',
           snippet: v.snippet || '',
           lineNumber: v.lineNumber,
+          fileName: v.fileName || v.file || undefined,
           message: v.message || 'Security violation detected by backend inspector.'
         }))
       : [{
@@ -301,12 +302,14 @@ export class TemplateSecurityScannerService {
     for (const rule of rules) {
       const match = rule.pattern.exec(content);
       if (match) {
+        const loc = this.calculateLineLocation(content, match.index);
         violations.push({
           field,
           threatCategory: rule.category,
           severity: rule.severity,
           snippet: this.extractSnippet(content, match.index, match[0].length),
-          lineNumber: this.calculateLineNumber(content, match.index),
+          lineNumber: loc.line,
+          fileName: loc.fileName,
           message: rule.message
         });
       }
@@ -322,12 +325,14 @@ export class TemplateSecurityScannerService {
     for (const rule of this.sqlRules) {
       const match = rule.pattern.exec(content);
       if (match) {
+        const loc = this.calculateLineLocation(content, match.index);
         violations.push({
           field,
           threatCategory: rule.category,
           severity: 'critical',
           snippet: this.extractSnippet(content, match.index, match[0].length),
-          lineNumber: this.calculateLineNumber(content, match.index),
+          lineNumber: loc.line,
+          fileName: loc.fileName,
           message: rule.message
         });
       }
@@ -343,12 +348,14 @@ export class TemplateSecurityScannerService {
     for (const rule of this.urlRules) {
       const match = rule.pattern.exec(content);
       if (match) {
+        const loc = this.calculateLineLocation(content, match.index);
         violations.push({
           field,
           threatCategory: rule.category,
           severity: rule.severity,
           snippet: this.extractSnippet(content, match.index, match[0].length),
-          lineNumber: this.calculateLineNumber(content, match.index),
+          lineNumber: loc.line,
+          fileName: loc.fileName,
           message: rule.message
         });
       }
@@ -363,12 +370,24 @@ export class TemplateSecurityScannerService {
     return snippet.length > 120 ? snippet.substring(0, 120) + '...' : snippet;
   }
 
-  private calculateLineNumber(text: string, index: number): number {
-    if (!text || index <= 0) return 1;
+  private calculateLineLocation(text: string, index: number): { line: number; fileName?: string } {
+    if (!text || index <= 0) return { line: 1 };
+    const prefix = text.substring(0, index);
+    const matches = Array.from(prefix.matchAll(/\/\*\s*File:\s*([^\*]+?)\s*\*\//gi));
+    if (matches.length > 0) {
+      const lastMatch = matches[matches.length - 1];
+      const fileName = lastMatch[1].trim();
+      const fileStartIdx = (lastMatch.index ?? 0) + lastMatch[0].length;
+      let line = 1;
+      for (let i = fileStartIdx; i < Math.min(index, text.length); i++) {
+        if (text[i] === '\n') line++;
+      }
+      return { line, fileName };
+    }
     let line = 1;
     for (let i = 0; i < Math.min(index, text.length); i++) {
       if (text[i] === '\n') line++;
     }
-    return line;
+    return { line };
   }
 }

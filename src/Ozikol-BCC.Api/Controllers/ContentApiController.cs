@@ -620,12 +620,50 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Web page updated successfully."));
         }
 
+        /// <summary>
+        /// Permanently deletes a web page if it has no attached layout sections.
+        /// If sections exist, blocks deletion and returns a clear custom error requesting their removal.
+        /// </summary>
+        /// <param name="id">The unique identifier of the web page to delete.</param>
+        /// <returns>A standardized API response confirming the deletion or reporting existing sections.</returns>
         [HttpDelete("pages/{id:guid}")]
         public async Task<IActionResult> DeletePage(Guid id)
         {
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
+            // 1. Guard check: Restrict deletion if the page contains layout sections
+            var sectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == id);
+            if (sectionCount > 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Cannot delete web page '{existing.Title}' because it contains {sectionCount} layout section(s). Please remove all attached sections before deleting.",
+                    null,
+                    "ERR-2005",
+                    $"WebPage {id} contains {sectionCount} linked PageSections. Restricting deletion."));
+            }
+
+            // 2. Cascade delete WebPageViewLogs referencing this page
+            var viewLogs = await _context.WebPageViewLogs
+                .Where(l => l.WebPageId == id)
+                .ToListAsync();
+
+            if (viewLogs.Any())
+            {
+                _context.WebPageViewLogs.RemoveRange(viewLogs);
+            }
+
+            // 3. Unlink any child sub-pages referencing this page as their parent MainPageId
+            var childPages = await _context.WebPages
+                .Where(p => p.MainPageId == id)
+                .ToListAsync();
+
+            foreach (var child in childPages)
+            {
+                child.MainPageId = null;
+            }
+
+            // 4. Remove the parent web page
             _context.WebPages.Remove(existing);
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, "Web page deleted successfully."));
@@ -771,10 +809,18 @@ namespace Ozikol_BCC.Api.Controllers
         // 3. PAGE SECTIONS & SECTION LISTS
         // ==========================================
 
+        /// <summary>
+        /// Retrieves layout sections with optional filtering by web page or home landing preset.
+        /// Returns all sections across all pages with attached web page metadata when pageSet is 'all' or empty.
+        /// </summary>
+        /// <param name="pageSet">Optional preset filter: 'home' for landing page only, 'all' for all pages.</param>
+        /// <param name="webPageId">Optional specific web page identifier.</param>
+        /// <returns>A standardized API response with layout sections.</returns>
         [HttpGet("sections")]
         public async Task<IActionResult> GetSections([FromQuery] string? pageSet = null, [FromQuery] Guid? webPageId = null)
         {
             var query = _context.PageSections
+                .Include(s => s.WebPage)
                 .Include(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
                 .Include(s => s.PageForm)
                     .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
@@ -784,7 +830,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 query = query.Where(s => s.WebPageId == webPageId.Value).OrderBy(s => s.PageSortOrder);
             }
-            else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
+            else if (pageSet == "home")
             {
                 var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
                 if (homePage != null)
@@ -795,6 +841,10 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     query = query.OrderBy(s => s.PageSortOrder);
                 }
+            }
+            else
+            {
+                query = query.OrderBy(s => s.WebPageId).ThenBy(s => s.PageSortOrder);
             }
 
             var sections = await query.ToListAsync();
@@ -868,11 +918,28 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Section updated successfully."));
         }
 
+        /// <summary>
+        /// Permanently deletes a layout section if it has no repeating child list items.
+        /// If sub-items exist, blocks deletion and returns a clear custom error requesting their removal.
+        /// </summary>
+        /// <param name="id">The unique identifier of the section to delete.</param>
+        /// <returns>A standardized API response confirming the deletion or reporting existing sub-items.</returns>
         [HttpDelete("sections/{id:guid}")]
         public async Task<IActionResult> DeleteSection(Guid id)
         {
             var existing = await _context.PageSections.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
+
+            // Guard check: Restrict deletion if the section contains repeating sub-items
+            var listCount = await _context.PageSectionLists.CountAsync(l => l.PageSectionId == id);
+            if (listCount > 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Cannot delete section '{existing.Title ?? "Layout Section"}' because it contains {listCount} repeating sub-item(s). Please remove all sub-items before deleting.",
+                    null,
+                    "ERR-2005",
+                    $"PageSection {id} contains {listCount} linked PageSectionLists. Restricting deletion."));
+            }
 
             _context.PageSections.Remove(existing);
             await _context.SaveChangesAsync();
@@ -882,6 +949,29 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
         // 3B. PAGE SECTION LISTS (Sub-Items)
         // ==========================================
+
+        /// <summary>
+        /// Retrieves all repeating sub-items across all layout sections irrespective of parent page,
+        /// including parent section and parent web page metadata for global overview.
+        /// </summary>
+        /// <param name="sectionId">Optional filter for a specific section.</param>
+        /// <returns>A standardized API response with the list of section sub-items.</returns>
+        [HttpGet("section-lists")]
+        public async Task<IActionResult> GetAllSectionLists([FromQuery] Guid? sectionId = null)
+        {
+            var query = _context.PageSectionLists
+                .Include(l => l.PageSection)
+                    .ThenInclude(s => s!.WebPage)
+                .AsQueryable();
+
+            if (sectionId.HasValue)
+            {
+                query = query.Where(l => l.PageSectionId == sectionId.Value);
+            }
+
+            var items = await query.OrderBy(l => l.PageSectionId).ThenBy(l => l.SortOrder).ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(items, "Section sub-items retrieved successfully."));
+        }
 
         [HttpGet("section-lists/{id:guid}")]
         public async Task<IActionResult> GetSectionListById(Guid id)
@@ -5025,7 +5115,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     fileName = fileName.Substring(0, fileName.Length - 9);
                 }
 
-                // Determine tag name: prioritize custom user input from names array, otherwise extract prefix before first dot
+                // Determine tag name: prioritize custom user input from names array, otherwise strip technical file extensions
                 string tagName;
                 if (names != null && names.Count > i && !string.IsNullOrWhiteSpace(names[i]))
                 {
@@ -5033,8 +5123,12 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 }
                 else
                 {
-                    var nameBeforeDot = fileName.Contains('.') ? fileName.Substring(0, fileName.IndexOf('.')) : fileName;
-                    tagName = string.IsNullOrWhiteSpace(nameBeforeDot) ? fileName : nameBeforeDot.Trim();
+                    var cleanDerived = System.Text.RegularExpressions.Regex.Replace(
+                        fileName,
+                        @"\.(bundle\.min|min|bundle)\.(js|css)$|\.(js|css|woff2|woff|ttf|otf|eot|svg)$",
+                        string.Empty,
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    tagName = string.IsNullOrWhiteSpace(cleanDerived) ? fileName : cleanDerived.Trim();
                 }
 
                 var ext = Path.GetExtension(fileName).ToLowerInvariant();

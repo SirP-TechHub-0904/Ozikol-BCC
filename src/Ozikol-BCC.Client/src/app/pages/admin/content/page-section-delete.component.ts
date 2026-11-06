@@ -29,10 +29,10 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
 
         <div class="header-actions">
-          <a routerLink="/content/console/sections" class="btn btn-secondary">
+          <button type="button" (click)="cancel()" class="btn btn-secondary">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Cancel & Go Back</span>
-          </a>
+          </button>
         </div>
       </div>
 
@@ -134,14 +134,14 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <div class="delete-action-row">
-            <a routerLink="/content/console/sections" class="btn btn-secondary">
+            <button type="button" (click)="cancel()" class="btn btn-secondary">
               <span>Cancel</span>
-            </a>
+            </button>
             <button
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isTitleMatched() || deleting"
+              [disabled]="!isTitleMatched() || deleting || (section.pageSectionLists?.length || 0) > 0"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'delete_forever' }}</span>
               <span>{{ deleting ? 'Deleting Section...' : 'I understand the consequences, delete this section' }}</span>
@@ -395,6 +395,7 @@ export class PageSectionDeleteComponent implements OnInit {
   deleting = false;
   confirmationInput = '';
   errorMsg = '';
+  returnUrl: string | null = null;
 
   constructor(
     private api: ApiService,
@@ -404,6 +405,9 @@ export class PageSectionDeleteComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe(qp => {
+      this.returnUrl = qp.get('returnUrl');
+    });
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {

@@ -126,6 +126,10 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
                     {{ item.severity | uppercase }}
                   </span>
                   <span class="category-tag">{{ item.threatCategory }}</span>
+                  <span class="file-pill" *ngIf="item.fileName">
+                    <span class="material-symbols-outlined file-pill-icon">description</span>
+                    {{ item.fileName }}
+                  </span>
                   <span class="field-pill">Tab: {{ item.field | uppercase }}</span>
                   <span class="line-pill" *ngIf="item.lineNumber">Line {{ item.lineNumber }}</span>
                 </div>
@@ -478,6 +482,23 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
     .pill-warning { background: #f59e0b; color: #ffffff; }
 
     .category-tag { font-size: 11.5px; font-weight: 600; color: #0f172a; }
+    .file-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(0, 80, 229, 0.08);
+      color: #0050e5;
+      border: 1px solid rgba(0, 80, 229, 0.2);
+      padding: 1px 7px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-family: monospace;
+    }
+    .file-pill-icon {
+      font-size: 13px;
+    }
+
     .field-pill, .line-pill {
       font-size: 11px;
       font-weight: 600;

@@ -15,9 +15,9 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="page-header">
         <div class="header-titles">
           <div class="breadcrumb">
-            <a routerLink="/admin/content">CMS Studio</a>
+            <a routerLink="/content/console">CMS Studio</a>
             <span class="sep">/</span>
-            <a routerLink="/admin/content/sections">Page Sections</a>
+            <a routerLink="/content/console/sections">Page Sections</a>
             <span class="sep">/</span>
             <span class="current">Edit Section</span>
           </div>
@@ -25,11 +25,11 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Complete configuration of template layout key, rich descriptions, media assets, and ribbon settings.</p>
         </div>
         <div class="header-actions">
-          <a [routerLink]="['/admin/content/sections/details', sectionId]" class="btn btn-outline">
+          <a [routerLink]="['/content/console/sections/details', sectionId]" class="btn btn-outline">
             <span class="material-symbols-outlined">list</span>
             <span>Manage Sub-Items</span>
           </a>
-          <a routerLink="/admin/content/sections" class="btn btn-outline">
+          <a routerLink="/content/console/sections" class="btn btn-outline">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Back to Sections</span>
           </a>
