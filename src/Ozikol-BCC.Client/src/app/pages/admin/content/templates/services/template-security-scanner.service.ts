@@ -249,6 +249,7 @@ export class TemplateSecurityScannerService {
           severity: (v.severity || 'critical').toLowerCase() === 'warning' ? 'warning' : 'critical',
           snippet: v.snippet || '',
           lineNumber: v.lineNumber,
+          fileName: v.fileName || v.file || undefined,
           message: v.message || 'Security violation detected by backend inspector.'
         }))
       : [{
