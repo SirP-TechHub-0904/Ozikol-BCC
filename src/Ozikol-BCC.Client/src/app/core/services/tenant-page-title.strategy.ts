@@ -21,7 +21,7 @@ export class TenantPageTitleStrategy extends TitleStrategy {
     if (pageTitle) {
       this.title.setTitle(`${pageTitle} | ${brandName}`);
     } else {
-      this.title.setTitle(`${brandName} | Workspace Portal`);
+      this.title.setTitle(brandName);
     }
   }
 
