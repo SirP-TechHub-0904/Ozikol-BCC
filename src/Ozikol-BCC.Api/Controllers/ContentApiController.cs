@@ -643,20 +643,38 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="id">The unique identifier of the web page to delete.</param>
         /// <returns>A standardized API response confirming the deletion or reporting existing sections.</returns>
         [HttpDelete("pages/{id:guid}")]
-        public async Task<IActionResult> DeletePage(Guid id)
+        public async Task<IActionResult> DeletePage(Guid id, [FromQuery] bool forceCascade = false)
         {
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
             // 1. Guard check: Restrict deletion if the page contains layout sections
             var sectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == id);
-            if (sectionCount > 0)
+            if (sectionCount > 0 && !forceCascade)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
                     $"Cannot delete web page '{existing.Title}' because it contains {sectionCount} layout section(s). Please remove all attached sections before deleting.",
                     null,
                     "ERR-2005",
                     $"WebPage {id} contains {sectionCount} linked PageSections. Restricting deletion."));
+            }
+
+            if (forceCascade && sectionCount > 0)
+            {
+                var sections = await _context.PageSections
+                    .Where(s => s.WebPageId == id)
+                    .Include(s => s.PageSectionLists)
+                    .ToListAsync();
+
+                foreach (var sec in sections)
+                {
+                    if (sec.PageSectionLists != null && sec.PageSectionLists.Any())
+                    {
+                        _context.PageSectionLists.RemoveRange(sec.PageSectionLists);
+                    }
+                }
+
+                _context.PageSections.RemoveRange(sections);
             }
 
             // 2. Cascade delete WebPageViewLogs referencing this page
@@ -942,20 +960,32 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="id">The unique identifier of the section to delete.</param>
         /// <returns>A standardized API response confirming the deletion or reporting existing sub-items.</returns>
         [HttpDelete("sections/{id:guid}")]
-        public async Task<IActionResult> DeleteSection(Guid id)
+        public async Task<IActionResult> DeleteSection(Guid id, [FromQuery] bool forceCascade = false)
         {
             var existing = await _context.PageSections.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
 
             // Guard check: Restrict deletion if the section contains repeating sub-items
             var listCount = await _context.PageSectionLists.CountAsync(l => l.PageSectionId == id);
-            if (listCount > 0)
+            if (listCount > 0 && !forceCascade)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
                     $"Cannot delete section '{existing.Title ?? "Layout Section"}' because it contains {listCount} repeating sub-item(s). Please remove all sub-items before deleting.",
                     null,
                     "ERR-2005",
                     $"PageSection {id} contains {listCount} linked PageSectionLists. Restricting deletion."));
+            }
+
+            if (forceCascade && listCount > 0)
+            {
+                var subItems = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId == id)
+                    .ToListAsync();
+
+                if (subItems.Any())
+                {
+                    _context.PageSectionLists.RemoveRange(subItems);
+                }
             }
 
             _context.PageSections.Remove(existing);
