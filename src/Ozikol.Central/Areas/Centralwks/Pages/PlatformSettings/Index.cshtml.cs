@@ -181,6 +181,26 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [MaxLength(255)]
             public string? CloudinaryApiSecret { get; set; }
 
+            /// <summary>Gets or sets Cloudflare Account ID for R2 Object Storage.</summary>
+            [MaxLength(255)]
+            public string? CloudflareR2AccountId { get; set; }
+
+            /// <summary>Gets or sets Cloudflare R2 Access Key ID.</summary>
+            [MaxLength(255)]
+            public string? CloudflareR2AccessKeyId { get; set; }
+
+            /// <summary>Gets or sets Cloudflare R2 Secret Access Key.</summary>
+            [MaxLength(255)]
+            public string? CloudflareR2SecretAccessKey { get; set; }
+
+            /// <summary>Gets or sets Cloudflare R2 Bucket Name.</summary>
+            [MaxLength(255)]
+            public string CloudflareR2BucketName { get; set; } = "ozikol-assets";
+
+            /// <summary>Gets or sets Cloudflare R2 Public CDN URL.</summary>
+            [MaxLength(500)]
+            public string? CloudflareR2PublicCdnUrl { get; set; }
+
             /// <summary>Gets or sets whether Central Paystack checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
             public bool EnablePaystack { get; set; } = true;
 
@@ -331,6 +351,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 CloudinaryCloudName = settings.CloudinaryCloudName,
                 CloudinaryApiKey = settings.CloudinaryApiKey,
                 CloudinaryApiSecret = settings.CloudinaryApiSecret,
+                CloudflareR2AccountId = settings.CloudflareR2AccountId,
+                CloudflareR2AccessKeyId = settings.CloudflareR2AccessKeyId,
+                CloudflareR2SecretAccessKey = settings.CloudflareR2SecretAccessKey,
+                CloudflareR2BucketName = !string.IsNullOrWhiteSpace(settings.CloudflareR2BucketName) ? settings.CloudflareR2BucketName : "ozikol-assets",
+                CloudflareR2PublicCdnUrl = settings.CloudflareR2PublicCdnUrl,
                 EnablePaystack = settings.EnablePaystack,
                 PaystackPublicKey = settings.PaystackPublicKey,
                 PaystackSecretKey = settings.PaystackSecretKey,
@@ -426,6 +451,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             {
                 settings.CloudinaryApiSecret = Input.CloudinaryApiSecret.Trim();
             }
+
+            settings.CloudflareR2AccountId = Input.CloudflareR2AccountId?.Trim();
+            settings.CloudflareR2AccessKeyId = Input.CloudflareR2AccessKeyId?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.CloudflareR2SecretAccessKey))
+            {
+                settings.CloudflareR2SecretAccessKey = Input.CloudflareR2SecretAccessKey.Trim();
+            }
+            settings.CloudflareR2BucketName = string.IsNullOrWhiteSpace(Input.CloudflareR2BucketName) ? "ozikol-assets" : Input.CloudflareR2BucketName.Trim();
+            settings.CloudflareR2PublicCdnUrl = Input.CloudflareR2PublicCdnUrl?.Trim();
 
             settings.EnablePaystack = Input.EnablePaystack;
             settings.PaystackPublicKey = Input.PaystackPublicKey?.Trim();
@@ -569,6 +603,73 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             catch (Exception ex)
             {
                 return new JsonResult(new { success = false, message = $"Connection failed: {ex.Message}" });
+            }
+        }
+    
+        /// <summary>
+        /// Tests connectivity and credentials for Cloudflare R2 Object Storage.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestCloudflareR2ConnectionAsync(
+            [FromForm] string? accountId,
+            [FromForm] string? accessKeyId,
+            [FromForm] string? secretAccessKey,
+            [FromForm] string? bucketName,
+            [FromForm] string? publicCdnUrl)
+        {
+            var targetAccount = accountId?.Trim();
+            var targetAccessKey = accessKeyId?.Trim();
+            var targetSecret = secretAccessKey?.Trim();
+            var targetBucket = string.IsNullOrWhiteSpace(bucketName) ? "ozikol-assets" : bucketName.Trim();
+            var targetCdnUrl = publicCdnUrl?.Trim();
+
+            // Fallback to saved database settings if fields left blank
+            if (string.IsNullOrWhiteSpace(targetAccount) || string.IsNullOrWhiteSpace(targetAccessKey) || string.IsNullOrWhiteSpace(targetSecret))
+            {
+                var existing = await _db.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+                if (existing != null)
+                {
+                    targetAccount ??= existing.CloudflareR2AccountId;
+                    targetAccessKey ??= existing.CloudflareR2AccessKeyId;
+                    targetSecret ??= existing.CloudflareR2SecretAccessKey;
+                    if (string.IsNullOrWhiteSpace(targetBucket)) targetBucket = existing.CloudflareR2BucketName ?? "ozikol-assets";
+                    if (string.IsNullOrWhiteSpace(targetCdnUrl)) targetCdnUrl = existing.CloudflareR2PublicCdnUrl;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(targetAccount) || string.IsNullOrWhiteSpace(targetAccessKey) || string.IsNullOrWhiteSpace(targetSecret))
+            {
+                return new JsonResult(new { success = false, message = "Please provide Cloudflare Account ID, Access Key ID, and Secret Access Key." });
+            }
+
+            try
+            {
+                var serviceUrl = $"https://{targetAccount}.r2.cloudflarestorage.com";
+                var s3Config = new Amazon.S3.AmazonS3Config
+                {
+                    ServiceURL = serviceUrl,
+                    ForcePathStyle = true,
+                    Timeout = TimeSpan.FromSeconds(10)
+                };
+                var credentials = new Amazon.Runtime.BasicAWSCredentials(targetAccessKey, targetSecret);
+                using var client = new Amazon.S3.AmazonS3Client(credentials, s3Config);
+
+                var response = await client.ListObjectsV2Async(new Amazon.S3.Model.ListObjectsV2Request
+                {
+                    BucketName = targetBucket,
+                    MaxKeys = 1
+                });
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = $"Successfully connected to Cloudflare R2 bucket '{targetBucket}'! Object count inspected: {response.KeyCount}.",
+                    bucket = targetBucket,
+                    cdnUrl = targetCdnUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Cloudflare R2 connection test failed: {ex.Message}" });
             }
         }
     }

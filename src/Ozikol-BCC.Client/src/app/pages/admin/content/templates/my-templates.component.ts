@@ -1416,6 +1416,17 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.tagFormZone = tag.zone;
     this.tagForm = { ...tag };
     this.showTagModal = true;
+
+    // Cloudflare R2 Offloader: If the tag references an external CDN asset, fetch the live raw source code for editing
+    if (tag.content && (tag.content.includes('<link rel="stylesheet"') || tag.content.includes('<script src='))) {
+      this.api.get<any>(`ContentApi/code-injections/${tag.id}/raw-content`).subscribe({
+        next: (res) => {
+          if (res?.data?.rawContent) {
+            this.tagForm.content = res.data.rawContent;
+          }
+        }
+      });
+    }
   }
 
   closeTagModal(): void {

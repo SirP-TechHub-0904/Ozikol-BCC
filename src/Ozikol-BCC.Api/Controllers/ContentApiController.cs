@@ -5240,14 +5240,59 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             try
             {
+                var tagId = Guid.NewGuid();
+                var resolvedContent = request.Content.Trim();
+                var resolvedTagType = string.IsNullOrWhiteSpace(request.TagType) ? "raw_html" : request.TagType.Trim().ToLowerInvariant();
+
+                // Cloudflare R2 Auto-Offloader: If R2 is configured and user submitted inline CSS or JS,
+                // compile the code into a standalone CDN asset and save the CDN <link> or <script> tag in the database.
+                if (_r2Storage.IsConfigured())
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    var safeTenant = tenantSlug.Trim().ToLowerInvariant();
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.Name.ToLowerInvariant(), @"[^a-z0-9\-_]", "-").Trim('-');
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = "custom";
+
+                    if (IsInlineCss(resolvedContent, resolvedTagType))
+                    {
+                        var cleanCss = ExtractCleanCss(resolvedContent);
+                        if (!string.IsNullOrWhiteSpace(cleanCss))
+                        {
+                            var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tagId.ToString("N")[..8]}.css";
+                            var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                            var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanCss, "text/css");
+                            if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                            {
+                                resolvedContent = $"<link rel=\"stylesheet\" href=\"{uploadRes.Url}\" />";
+                                resolvedTagType = "css_link";
+                            }
+                        }
+                    }
+                    else if (IsInlineJs(resolvedContent, resolvedTagType))
+                    {
+                        var cleanJs = ExtractCleanJs(resolvedContent);
+                        if (!string.IsNullOrWhiteSpace(cleanJs))
+                        {
+                            var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tagId.ToString("N")[..8]}.js";
+                            var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                            var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanJs, "application/javascript");
+                            if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                            {
+                                resolvedContent = $"<script src=\"{uploadRes.Url}\"></script>";
+                                resolvedTagType = "script_link";
+                            }
+                        }
+                    }
+                }
+
                 var tag = new SiteCodeInjectionTag
                 {
-                    Id = Guid.NewGuid(),
+                    Id = tagId,
                     Name = request.Name.Trim(),
                     Zone = cleanZone,
-                    TagType = string.IsNullOrWhiteSpace(request.TagType) ? "raw_html" : request.TagType.Trim().ToLowerInvariant(),
+                    TagType = resolvedTagType,
                     SuiteCode = string.IsNullOrWhiteSpace(request.SuiteCode) ? "global" : request.SuiteCode.Trim().ToLowerInvariant(),
-                    Content = request.Content.Trim(),
+                    Content = resolvedContent,
                     SortOrder = request.SortOrder,
                     IsActive = request.IsActive,
                     CreatedAtUtc = DateTime.UtcNow
@@ -5542,14 +5587,74 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
             }
 
+            var incomingContent = request.Content.Trim();
+            var incomingTagType = string.IsNullOrWhiteSpace(request.TagType) ? tag.TagType : request.TagType.Trim().ToLowerInvariant();
+
+            // Cloudflare R2 Auto-Offloader on Update:
+            if (_r2Storage.IsConfigured())
+            {
+                var existingUrl = ExtractUrlFromTag(tag.Content);
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                var safeTenant = tenantSlug.Trim().ToLowerInvariant();
+                var safeName = System.Text.RegularExpressions.Regex.Replace(request.Name.ToLowerInvariant(), @"[^a-z0-9\-_]", "-").Trim('-');
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "custom";
+
+                if (!string.IsNullOrWhiteSpace(existingUrl) && (existingUrl.Contains(".r2.dev") || existingUrl.Contains(".r2.cloudflarestorage.com") || existingUrl.Contains("/tenants/")))
+                {
+                    var incomingUrl = ExtractUrlFromTag(incomingContent);
+                    if (string.IsNullOrWhiteSpace(incomingUrl) || incomingUrl != existingUrl)
+                    {
+                        var isJs = incomingTagType.Contains("script") || incomingTagType.Contains("js") || existingUrl.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
+                        var rawText = isJs ? ExtractCleanJs(incomingContent) : ExtractCleanCss(incomingContent);
+                        var contentType = isJs ? "application/javascript" : "text/css";
+                        var updateRes = await _r2Storage.SaveAssetTextAsync(existingUrl, rawText, contentType);
+                        if (updateRes.Success)
+                        {
+                            incomingContent = isJs ? $"<script src=\"{existingUrl}\"></script>" : $"<link rel=\"stylesheet\" href=\"{existingUrl}\" />";
+                            incomingTagType = isJs ? "script_link" : "css_link";
+                        }
+                    }
+                }
+                else if (IsInlineCss(incomingContent, incomingTagType))
+                {
+                    var cleanCss = ExtractCleanCss(incomingContent);
+                    if (!string.IsNullOrWhiteSpace(cleanCss))
+                    {
+                        var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tag.Id.ToString("N")[..8]}.css";
+                        var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                        var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanCss, "text/css");
+                        if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                        {
+                            incomingContent = $"<link rel=\"stylesheet\" href=\"{uploadRes.Url}\" />";
+                            incomingTagType = "css_link";
+                        }
+                    }
+                }
+                else if (IsInlineJs(incomingContent, incomingTagType))
+                {
+                    var cleanJs = ExtractCleanJs(incomingContent);
+                    if (!string.IsNullOrWhiteSpace(cleanJs))
+                    {
+                        var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tag.Id.ToString("N")[..8]}.js";
+                        var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                        var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanJs, "application/javascript");
+                        if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                        {
+                            incomingContent = $"<script src=\"{uploadRes.Url}\"></script>";
+                            incomingTagType = "script_link";
+                        }
+                    }
+                }
+            }
+
             tag.Name = request.Name.Trim();
             tag.Zone = cleanZone;
-            tag.TagType = string.IsNullOrWhiteSpace(request.TagType) ? tag.TagType : request.TagType.Trim().ToLowerInvariant();
+            tag.TagType = incomingTagType;
             if (request.SuiteCode != null)
             {
                 tag.SuiteCode = string.IsNullOrWhiteSpace(request.SuiteCode) ? "global" : request.SuiteCode.Trim().ToLowerInvariant();
             }
-            tag.Content = request.Content.Trim();
+            tag.Content = incomingContent;
             tag.SortOrder = request.SortOrder;
             tag.IsActive = request.IsActive;
             tag.UpdatedAtUtc = DateTime.UtcNow;
@@ -5842,6 +5947,53 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         /// <summary>
         /// Extracts an HTTP/HTTPS URL from a HTML tag or string.
         /// </summary>
+        
+        /// <summary>
+        /// Detects if the tag content represents inline CSS styles.
+        /// </summary>
+        private static bool IsInlineCss(string content, string? tagType)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return false;
+            var typeLower = (tagType ?? string.Empty).ToLowerInvariant();
+            if (typeLower == "inline_css" || typeLower == "css" || typeLower == "stylesheet") return true;
+            var trimmed = content.Trim();
+            return trimmed.StartsWith("<style", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith("</style>", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Detects if the tag content represents inline JavaScript.
+        /// </summary>
+        private static bool IsInlineJs(string content, string? tagType)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return false;
+            var typeLower = (tagType ?? string.Empty).ToLowerInvariant();
+            if (typeLower == "inline_js" || typeLower == "script" || typeLower == "javascript") return true;
+            var trimmed = content.Trim();
+            return trimmed.StartsWith("<script", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith("</script>", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Extracts clean CSS text by stripping wrapping &lt;style&gt; tags if present.
+        /// </summary>
+        private static string ExtractCleanCss(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+            var trimmed = content.Trim();
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"<style[^>]*>([\s\S]*?)<\/style>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value.Trim() : trimmed;
+        }
+
+        /// <summary>
+        /// Extracts clean JavaScript text by stripping wrapping &lt;script&gt; tags if present.
+        /// </summary>
+        private static string ExtractCleanJs(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+            var trimmed = content.Trim();
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"<script[^>]*>([\s\S]*?)<\/script>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value.Trim() : trimmed;
+        }
+
         private static string? ExtractUrlFromTag(string content)
         {
             if (string.IsNullOrWhiteSpace(content)) return null;
