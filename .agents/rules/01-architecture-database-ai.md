@@ -18,12 +18,18 @@
 
 ---
 
-## 5. Central Database Migrations & Schema Changes (Mandatory)
+## 5. Database Migrations & Schema Changes (Master & Tenant - Mandatory)
+* **Zero Unmigrated Persistent Model Properties (CRITICAL)**: Whenever a domain model, table, or entity in either `Ozikol.MasterDomain` OR `Ozikol-BCC.Domain` is created or modified:
+  * **Immediate Migration Generation**: If any new property, column, relationship, or constraint is added, the agent MUST IMMEDIATELY generate the official EF Core migration before concluding the prompt, task, or feature implementation.
+  * **Master Domain Changes**: Must target `Ozikol.MasterPersistence.EF.MasterSQL`:
+    `dotnet ef migrations add <DescriptiveName> --project src/Ozikol.MasterPersistence.EF.MasterSQL --startup-project src/Ozikol.Central`
+  * **Tenant Domain Changes**: Must target `Ozikol-BCC.Persistence.EF.SQL`:
+    `dotnet ef migrations add <DescriptiveName> --project src/Ozikol-BCC.Persistence.EF.SQL --startup-project src/Ozikol-BCC.Api`
+  * **Runtime-Only Properties (`[NotMapped]`)**: If a model property is intended strictly for in-memory, computed, or runtime display purposes and is NOT a database column, it MUST be explicitly annotated with `[NotMapped]`. Never leave an unmapped runtime property unannotated.
 * **No Ad-Hoc Runtime Schema Scripts**: Do not embed ad-hoc `ALTER TABLE` or raw DDL statements inside application startup or seeder classes.
-* **Standard EF Core Migrations**: Whenever a model or schema changes in `Ozikol.MasterDomain` or `Ozikol.Central`, always generate the official EF Core migration in `Ozikol.MasterPersistence.EF.MasterSQL`.
 * **Zero Retroactive Migration Editing**: NEVER manually edit already-generated EF Core migration files (`.cs` or `.Designer.cs`) to patch schema drift or bypass discrepancies. Migrations must remain immutable historical records. If schema changes occur, generate a new forward migration or perform an explicit approved reset.
-* **Zero Automated Database Execution**: NEVER execute `dotnet ef database update`, `Update-Database`, or any DDL/DML script against the database. Migration generation (`dotnet ef migrations add`) is permitted, but applying migrations is strictly reserved for the user.
-* **Explicit User Migration Notification**: Always inform the user clearly: *"I have added the migration. Please update both your local and production database."* (e.g. via `dotnet ef database update` or Package Manager Console `Update-Database`).
+* **Zero Automated Database Execution**: NEVER execute `dotnet ef database update`, `Update-Database`, or any DDL/DML script against the database. Migration generation (`dotnet ef migrations add`) is permitted and mandatory, but applying migrations is strictly reserved for the user.
+* **Explicit User Migration Notification**: Always inform the user clearly: *"I have generated the EF Core migration `<MigrationName>`. Please update both your local and production database."* Provide the exact command targeting the relevant project (`Ozikol.MasterPersistence.EF.MasterSQL` or `Ozikol-BCC.Persistence.EF.SQL`).
 
 ---
 
