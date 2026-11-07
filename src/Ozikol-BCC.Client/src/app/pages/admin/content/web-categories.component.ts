@@ -28,6 +28,10 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Organize pages into hierarchical header dropdowns and website navigation groups.</p>
         </div>
         <div class="header-actions">
+          <button type="button" (click)="normalizeCategoryOrders()" class="btn btn-outline" [disabled]="savingCategoryOrder" title="Normalize and re-space all categories into clean sequential increments (10, 20, 30...)">
+            <span class="material-symbols-outlined" [class.spin]="savingCategoryOrder">reorder</span>
+            <span>Normalize (10, 20...)</span>
+          </button>
           <a routerLink="/content/console/categories/create" class="btn btn-primary">
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Category</span>
@@ -72,6 +76,28 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
 
+        <!-- Zone Arrangement Quick Filters -->
+        <div class="filter-bar" style="margin-bottom: 16px;">
+          <div class="filter-group">
+            <button type="button" class="filter-btn" [class.active]="selectedZoneFilter === null" (click)="selectedZoneFilter = null; onSearchChange()">
+              All Categories ({{ categories.length }})
+            </button>
+            <span class="filter-sep"></span>
+            <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 1" (click)="toggleZoneFilter(1)" title="Filter to 1. First Zone categories">
+              1. First ({{ getZoneCount(1) }})
+            </button>
+            <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 2" (click)="toggleZoneFilter(2)" title="Filter to 2. Middle Zone categories">
+              2. Middle ({{ getZoneCount(2) }})
+            </button>
+            <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 3" (click)="toggleZoneFilter(3)" title="Filter to 3. Last Zone categories">
+              3. Last ({{ getZoneCount(3) }})
+            </button>
+            <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 4" (click)="toggleZoneFilter(4)" title="Filter to Top Utility categories">
+              Top Utility ({{ getZoneCount(4) }})
+            </button>
+          </div>
+        </div>
+
         <div class="table-responsive">
           <table class="cms-table">
             <thead>
@@ -86,10 +112,10 @@ import { ToastService } from '../../../core/services/toast.service';
                     title="Select / Deselect all categories on this page"
                   >
                 </th>
+                <th style="width: 130px;">ORDER</th>
                 <th>TITLE</th>
                 <th>MENU ZONE</th>
                 <th>ICON</th>
-                <th>ORDER</th>
                 <th>MAIN NAV</th>
                 <th>FOOTER</th>
                 <th>ATTACHED PAGES</th>
@@ -98,7 +124,15 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let cat of paginatedCategories" [class.selected-row]="isSelected(cat.id)">
+              <tr *ngFor="let cat of paginatedCategories; let i = index"
+                  [class.selected-row]="isSelected(cat.id)"
+                  draggable="true"
+                  (dragstart)="onCategoryDragStart($event, i)"
+                  (dragover)="onCategoryDragOver($event, i)"
+                  (dragleave)="onCategoryDragLeave($event, i)"
+                  (drop)="onCategoryDrop($event, i)"
+                  [class.row-dragged]="draggedCategoryIndex === getGlobalIndex(i)"
+                  [class.row-drag-over]="dragOverCategoryIndex === getGlobalIndex(i)">
                 <td style="width: 44px; text-align: center;">
                   <input
                     type="checkbox"
@@ -106,6 +140,37 @@ import { ToastService } from '../../../core/services/toast.service';
                     [checked]="isSelected(cat.id)"
                     (change)="toggleSelection(cat.id)"
                   >
+                </td>
+                <td>
+                  <div class="tag-order-cell">
+                    <span class="drag-grip-handle" title="Drag up or down to re-order category sequence">
+                      <span class="material-symbols-outlined">drag_indicator</span>
+                    </span>
+                    <span class="order-pill" *ngIf="editingOrderId !== cat.id" (click)="startEditOrder(cat)" title="Click to edit custom sort order">
+                      #{{ cat.menuSortOrder }}
+                    </span>
+                    <input
+                      *ngIf="editingOrderId === cat.id"
+                      type="number"
+                      class="order-input-mini"
+                      [value]="cat.menuSortOrder"
+                      #orderInput
+                      (blur)="finishEditOrder(cat, orderInput.value)"
+                      (keydown.enter)="finishEditOrder(cat, orderInput.value)"
+                      (keydown.escape)="cancelEditOrder()"
+                    >
+                    <div class="arrow-sort-group">
+                      <button type="button" class="btn-sort-arrow" (click)="moveCategoryToTop(i)" [disabled]="isFirstItem(i)" title="Move category directly to top">
+                        <span class="material-symbols-outlined">vertical_align_top</span>
+                      </button>
+                      <button type="button" class="btn-sort-arrow" (click)="moveCategoryUp(i)" [disabled]="isFirstItem(i)" title="Move category up">
+                        <span class="material-symbols-outlined">expand_less</span>
+                      </button>
+                      <button type="button" class="btn-sort-arrow" (click)="moveCategoryDown(i)" [disabled]="isLastItem(i)" title="Move category down">
+                        <span class="material-symbols-outlined">expand_more</span>
+                      </button>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <strong class="cat-title">{{ cat.title }}</strong>
@@ -120,7 +185,6 @@ import { ToastService } from '../../../core/services/toast.service';
                 <td>
                   <span class="icon-chip"><i [class]="cat.icon || 'fa fa-folder'"></i> {{ cat.icon || '(None)' }}</span>
                 </td>
-                <td><strong>#{{ cat.menuSortOrder }}</strong></td>
                 <td>
                   <span class="indicator" [class.on]="cat.showInMenu" [class.off]="!cat.showInMenu" [title]="'Menu Order: #' + (cat.menuSortOrder || 0)">
                     {{ cat.showInMenu ? ('#' + (cat.menuSortOrder || 0)) : 'No' }}
@@ -565,6 +629,103 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #fbfcfe;
     }
 
+    /* Drag-and-Drop & Arrow Reordering Styling */
+    .tag-order-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .drag-grip-handle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      color: #94a3b8;
+      padding: 2px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .drag-grip-handle:hover {
+      color: #0050e5;
+      background: #eff6ff;
+    }
+    .drag-grip-handle:active {
+      cursor: grabbing;
+    }
+    .drag-grip-handle .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .order-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      padding: 2px 7px;
+      background: #f1f5f9;
+      color: #1e293b;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #e2e8f0;
+      transition: all 0.15s ease;
+    }
+    .order-pill:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #0050e5;
+    }
+    .order-input-mini {
+      width: 48px;
+      height: 24px;
+      padding: 0 4px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1.5px solid #0050e5;
+      border-radius: 5px;
+      outline: none;
+      background: #ffffff;
+      color: #0f172a;
+      text-align: center;
+    }
+    .arrow-sort-group {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .btn-sort-arrow {
+      background: transparent;
+      border: none;
+      padding: 0;
+      line-height: 1;
+      height: 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .btn-sort-arrow .material-symbols-outlined {
+      font-size: 15px;
+    }
+    .btn-sort-arrow:hover:not(:disabled) {
+      color: #0050e5;
+      transform: scale(1.15);
+    }
+    .btn-sort-arrow:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+    tr.row-dragged {
+      opacity: 0.45;
+      background: #f1f5f9 !important;
+    }
+    tr.row-drag-over {
+      border-top: 2.5px solid #0050e5 !important;
+      background: #eff6ff !important;
+    }
+
     .cat-title {
       font-size: 14px;
       color: #0f172a;
@@ -794,14 +955,20 @@ import { ToastService } from '../../../core/services/toast.service';
 })
 export class WebCategoriesComponent implements OnInit {
   loading = false;
+  savingCategoryOrder = false;
   bulkDeleting = false;
   showBulkDeleteModal = false;
   cascadePages = true;
   selectedIds = new Set<string>();
   categories: any[] = [];
   searchTerm = '';
+  selectedZoneFilter: number | null = null;
   pageSize = 10;
   currentPage = 1;
+
+  draggedCategoryIndex: number | null = null;
+  dragOverCategoryIndex: number | null = null;
+  editingOrderId: string | null = null;
 
   constructor(private api: ApiService, private toast: ToastService) {}
 
@@ -878,12 +1045,34 @@ export class WebCategoriesComponent implements OnInit {
     });
   }
 
+  sortByZoneAndOrder(a: any, b: any): number {
+    const zoneA = Number(a.menuPosition) || 2;
+    const zoneB = Number(b.menuPosition) || 2;
+    if (zoneA !== zoneB) {
+      return zoneA - zoneB;
+    }
+    return (a.menuSortOrder || 0) - (b.menuSortOrder || 0);
+  }
+
+  toggleZoneFilter(zone: number): void {
+    if (this.selectedZoneFilter === zone) {
+      this.selectedZoneFilter = null;
+    } else {
+      this.selectedZoneFilter = zone;
+    }
+    this.currentPage = 1;
+  }
+
+  getZoneCount(zone: number): number {
+    return this.categories.filter(c => (Number(c.menuPosition) || 2) === zone).length;
+  }
+
   loadCategories(): void {
     this.loading = true;
     this.api.get<any>('ContentApi/categories').subscribe({
       next: (res) => {
         this.loading = false;
-        this.categories = res?.data || [];
+        this.categories = (res?.data || []).sort((a: any, b: any) => this.sortByZoneAndOrder(a, b));
         this.currentPage = 1;
       },
       error: () => {
@@ -893,9 +1082,15 @@ export class WebCategoriesComponent implements OnInit {
   }
 
   get filteredCategories(): any[] {
-    if (!this.searchTerm) return this.categories;
-    const term = this.searchTerm.toLowerCase();
-    return this.categories.filter(c => c.title?.toLowerCase().includes(term));
+    let list = this.categories;
+    if (this.selectedZoneFilter !== null) {
+      list = list.filter(c => (Number(c.menuPosition) || 2) === this.selectedZoneFilter);
+    }
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      list = list.filter(c => c.title?.toLowerCase().includes(term));
+    }
+    return list.slice().sort((a, b) => this.sortByZoneAndOrder(a, b));
   }
 
   get totalPages(): number {
@@ -963,5 +1158,148 @@ export class WebCategoriesComponent implements OnInit {
       case 4: return 'zone-top';
       default: return 'zone-middle';
     }
+  }
+
+  getGlobalIndex(localIndex: number): number {
+    return (this.currentPage - 1) * this.pageSize + localIndex;
+  }
+
+  isFirstItem(localIndex: number): boolean {
+    return this.getGlobalIndex(localIndex) === 0;
+  }
+
+  isLastItem(localIndex: number): boolean {
+    return this.getGlobalIndex(localIndex) >= this.filteredCategories.length - 1;
+  }
+
+  startEditOrder(cat: any): void {
+    this.editingOrderId = cat.id;
+  }
+
+  cancelEditOrder(): void {
+    this.editingOrderId = null;
+  }
+
+  finishEditOrder(cat: any, newVal: string): void {
+    this.editingOrderId = null;
+    const parsed = parseInt(newVal, 10);
+    if (isNaN(parsed) || parsed === cat.menuSortOrder) return;
+    cat.menuSortOrder = parsed;
+    this.categories.sort((a, b) => this.sortByZoneAndOrder(a, b));
+    const payload = this.categories.map(c => ({ id: c.id, sortOrder: c.menuSortOrder || 0 }));
+    this.savingCategoryOrder = true;
+    this.api.put<any>('ContentApi/categories/reorder', payload).subscribe({
+      next: () => {
+        this.savingCategoryOrder = false;
+        this.toast.success(`Sort order for '${cat.title}' updated to #${parsed}.`);
+      },
+      error: (err) => {
+        this.savingCategoryOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to update category sort order.');
+        this.loadCategories();
+      }
+    });
+  }
+
+  moveCategoryToTop(localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    const list = [...this.filteredCategories];
+    if (globalIdx <= 0 || globalIdx >= list.length) return;
+    const [moved] = list.splice(globalIdx, 1);
+    list.unshift(moved);
+    this.applyAndSaveCategoryReorder(list);
+  }
+
+  moveCategoryUp(localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    const list = [...this.filteredCategories];
+    if (globalIdx <= 0 || globalIdx >= list.length) return;
+    const temp = list[globalIdx];
+    list[globalIdx] = list[globalIdx - 1];
+    list[globalIdx - 1] = temp;
+    this.applyAndSaveCategoryReorder(list);
+  }
+
+  moveCategoryDown(localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    const list = [...this.filteredCategories];
+    if (globalIdx < 0 || globalIdx >= list.length - 1) return;
+    const temp = list[globalIdx];
+    list[globalIdx] = list[globalIdx + 1];
+    list[globalIdx + 1] = temp;
+    this.applyAndSaveCategoryReorder(list);
+  }
+
+  onCategoryDragStart(event: DragEvent, localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    this.draggedCategoryIndex = globalIdx;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', globalIdx.toString());
+    }
+  }
+
+  onCategoryDragOver(event: DragEvent, localIndex: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.dragOverCategoryIndex = this.getGlobalIndex(localIndex);
+  }
+
+  onCategoryDragLeave(event: DragEvent, localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    if (this.dragOverCategoryIndex === globalIdx) {
+      this.dragOverCategoryIndex = null;
+    }
+  }
+
+  onCategoryDrop(event: DragEvent, localIndex: number): void {
+    event.preventDefault();
+    this.dragOverCategoryIndex = null;
+    const targetGlobalIdx = this.getGlobalIndex(localIndex);
+    if (this.draggedCategoryIndex === null || this.draggedCategoryIndex === targetGlobalIdx) {
+      this.draggedCategoryIndex = null;
+      return;
+    }
+    const list = [...this.filteredCategories];
+    const [moved] = list.splice(this.draggedCategoryIndex, 1);
+    list.splice(targetGlobalIdx, 0, moved);
+    this.draggedCategoryIndex = null;
+    this.applyAndSaveCategoryReorder(list);
+  }
+
+  normalizeCategoryOrders(): void {
+    const list = [...this.categories].sort((a, b) => this.sortByZoneAndOrder(a, b));
+    this.applyAndSaveCategoryReorder(list, true);
+  }
+
+  applyAndSaveCategoryReorder(orderedList: any[], showNotice: boolean = false): void {
+    const payload: Array<{ id: string; sortOrder: number }> = [];
+    orderedList.forEach((cat, idx) => {
+      const newOrder = (idx + 1) * 10;
+      cat.menuSortOrder = newOrder;
+      payload.push({ id: cat.id, sortOrder: newOrder });
+
+      const master = this.categories.find(c => c.id === cat.id);
+      if (master) master.menuSortOrder = newOrder;
+    });
+
+    this.categories.sort((a, b) => this.sortByZoneAndOrder(a, b));
+
+    this.savingCategoryOrder = true;
+    this.api.put<any>('ContentApi/categories/reorder', payload).subscribe({
+      next: () => {
+        this.savingCategoryOrder = false;
+        if (showNotice) {
+          this.toast.success('Categories re-spaced to 10, 20, 30, 40... successfully!');
+        }
+      },
+      error: (err) => {
+        this.savingCategoryOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save category order.');
+        this.loadCategories();
+      }
+    });
   }
 }

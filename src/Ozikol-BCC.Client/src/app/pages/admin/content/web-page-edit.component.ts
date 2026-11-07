@@ -2305,7 +2305,7 @@ export class WebPageEditComponent implements OnInit {
       directUrl: '',
       enableDirectUrl: false,
       isHomePage: false,
-      publish: true,
+      publish: false,
       securityPage: false,
       pageCategoryId: null,
       mainPageId: null,
@@ -2564,6 +2564,10 @@ export class WebPageEditComponent implements OnInit {
     this.api.get<any>('ContentApi/pages').subscribe({
       next: (res) => {
         this.allPages = res?.data || [];
+        if (!this.isEditMode && (!this.page.sortOrder || this.page.sortOrder <= 0)) {
+          const maxSort = this.allPages.reduce((max: number, p: any) => Math.max(max, p.sortOrder || 0), 0);
+          this.page.sortOrder = maxSort + 10;
+        }
       }
     });
   }
