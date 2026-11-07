@@ -163,72 +163,30 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                 }
 
-                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
-                string finalUrl;
-                string storageType;
-                string safeName;
-                string? contentPreview = null;
-
-                if (_r2Storage.IsConfigured())
+                if (!_r2Storage.IsConfigured())
                 {
-                    await using var stream = file.OpenReadStream();
-                    var result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
-
-                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
-                    {
-                        finalUrl = result.Url;
-                        storageType = "Cloudflare R2 + Cloudflare CDN";
-                        safeName = result.SafeFileName ?? fileName;
-                        contentPreview = result.ContentPreview;
-                    }
-                    else
-                    {
-                        // Fallback to local server storage if R2 bucket upload failed
-                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "css");
-                        Directory.CreateDirectory(localDir);
-                        safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.css";
-                        var localPath = Path.Combine(localDir, safeName);
-                        
-                        await using (var localStream = new FileStream(localPath, FileMode.Create))
-                        {
-                            file.OpenReadStream().CopyTo(localStream);
-                        }
-
-                        using var textReader = new StreamReader(file.OpenReadStream());
-                        contentPreview = await textReader.ReadToEndAsync();
-                        finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/css/{safeName}";
-                        storageType = "Local Server Storage (Fallback)";
-                    }
+                    return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
                 }
-                else
-                {
-                    // Fallback to local server storage when R2 is unconfigured
-                    var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "css");
-                    Directory.CreateDirectory(localDir);
-                    safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.css";
-                    var localPath = Path.Combine(localDir, safeName);
-                    
-                    await using (var localStream = new FileStream(localPath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(localStream);
-                    }
 
-                    using var textReader = new StreamReader(file.OpenReadStream());
-                    contentPreview = await textReader.ReadToEndAsync();
-                    finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/css/{safeName}";
-                    storageType = "Local Server Storage";
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                await using var stream = file.OpenReadStream();
+                var result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
+
+                if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(result.Message ?? "Failed to upload stylesheet to CDN."));
                 }
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
-                    url = finalUrl,
-                    key = safeName,
+                    url = result.Url,
+                    key = result.SafeFileName ?? fileName,
                     fileName = fileName,
-                    safeName = safeName,
+                    safeName = result.SafeFileName ?? fileName,
                     size = file.Length,
-                    storage = storageType,
-                    content = contentPreview
-                }, "CSS stylesheet uploaded successfully."));
+                    storage = "CDN Delivery",
+                    content = result.ContentPreview
+                }, "Stylesheet uploaded successfully to CDN."));
             }
             catch (Exception ex)
             {
@@ -280,72 +238,30 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                 }
 
-                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
-                string finalUrl;
-                string storageType;
-                string safeName;
-                string? contentPreview = null;
-
-                if (_r2Storage.IsConfigured())
+                if (!_r2Storage.IsConfigured())
                 {
-                    await using var stream = file.OpenReadStream();
-                    var result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
-
-                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
-                    {
-                        finalUrl = result.Url;
-                        storageType = "Cloudflare R2 + Cloudflare CDN";
-                        safeName = result.SafeFileName ?? fileName;
-                        contentPreview = result.ContentPreview;
-                    }
-                    else
-                    {
-                        // Fallback to local server storage
-                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "js");
-                        Directory.CreateDirectory(localDir);
-                        safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.js";
-                        var localPath = Path.Combine(localDir, safeName);
-                        
-                        await using (var localStream = new FileStream(localPath, FileMode.Create))
-                        {
-                            file.OpenReadStream().CopyTo(localStream);
-                        }
-
-                        using var textReader = new StreamReader(file.OpenReadStream());
-                        contentPreview = await textReader.ReadToEndAsync();
-                        finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/js/{safeName}";
-                        storageType = "Local Server Storage (Fallback)";
-                    }
+                    return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
                 }
-                else
-                {
-                    // Fallback to local server storage when R2 is unconfigured
-                    var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "js");
-                    Directory.CreateDirectory(localDir);
-                    safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.js";
-                    var localPath = Path.Combine(localDir, safeName);
-                    
-                    await using (var localStream = new FileStream(localPath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(localStream);
-                    }
 
-                    using var textReader = new StreamReader(file.OpenReadStream());
-                    contentPreview = await textReader.ReadToEndAsync();
-                    finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/js/{safeName}";
-                    storageType = "Local Server Storage";
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                await using var stream = file.OpenReadStream();
+                var result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
+
+                if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(result.Message ?? "Failed to upload JavaScript file to CDN."));
                 }
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
-                    url = finalUrl,
-                    key = safeName,
+                    url = result.Url,
+                    key = result.SafeFileName ?? fileName,
                     fileName = fileName,
-                    safeName = safeName,
+                    safeName = result.SafeFileName ?? fileName,
                     size = file.Length,
-                    storage = storageType,
-                    content = contentPreview
-                }, "JavaScript file uploaded successfully."));
+                    storage = "CDN Delivery",
+                    content = result.ContentPreview
+                }, "JavaScript script uploaded successfully to CDN."));
             }
             catch (Exception ex)
             {
@@ -3998,20 +3914,21 @@ Instructions:
                 }
 
                 // =========================================================
-                // 1. PRIMARY ENGINE: Google Gemini from Central DB Key Pool
+                // 1. PRIMARY ENGINE: Google Gemini Multi-Key Rotation Pool
                 // =========================================================
-                MasterAiApiKey? activeGeminiKey = null;
+                List<MasterAiApiKey> candidateGeminiKeys = new();
                 if (_masterCatalogDbContext != null)
                 {
                     try
                     {
                         var nowUtc = DateTime.UtcNow;
-                        activeGeminiKey = await _masterCatalogDbContext.MasterAiApiKeys
+                        candidateGeminiKeys = await _masterCatalogDbContext.MasterAiApiKeys
                             .Where(k => k.Provider == "Gemini" && k.IsActive 
                                      && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                                      && k.TodayRequestsCount < k.DailyQuotaLimit)
                             .OrderBy(k => k.TodayRequestsCount)
-                            .FirstOrDefaultAsync();
+                            .ThenBy(k => k.LastUsedAtUtc ?? DateTime.MinValue)
+                            .ToListAsync();
                     }
                     catch (Exception dbKeyEx)
                     {
@@ -4019,58 +3936,77 @@ Instructions:
                     }
                 }
 
-                if (activeGeminiKey != null && !string.IsNullOrWhiteSpace(activeGeminiKey.ApiKey))
+                if (candidateGeminiKeys.Any())
                 {
-                    provider = $"Gemini 2.5 Flash ({activeGeminiKey.KeyAlias})";
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Primary Provider: Google Gemini ({activeGeminiKey.KeyAlias}) ...");
-                    var geminiTimer = Stopwatch.StartNew();
+                    var geminiModels = new[] { "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
 
-                    try
+                    foreach (var activeGeminiKey in candidateGeminiKeys)
                     {
-                        using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
-                        var geminiPayload = new
-                        {
-                            contents = new[]
-                            {
-                                new
-                                {
-                                    role = "user",
-                                    parts = new[] { new { text = llmPrompt } }
-                                }
-                            },
-                            generationConfig = new
-                            {
-                                temperature = 0.2,
-                                maxOutputTokens = 8192
-                            }
-                        };
+                        if (string.IsNullOrWhiteSpace(activeGeminiKey.ApiKey)) continue;
 
-                        var geminiModels = new[] { "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Gemini Key [{activeGeminiKey.KeyAlias}] ...");
+                        var geminiTimer = Stopwatch.StartNew();
                         HttpResponseMessage? geminiResponse = null;
-                        string matchedModel = "gemini-1.5-flash";
+                        string matchedModel = "gemini-2.5-flash";
+                        string? geminiError = null;
+                        int geminiStatusCode = 500;
 
-                        foreach (var gModel in geminiModels)
+                        try
                         {
-                            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
-                            try
+                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                            var geminiPayload = new
                             {
-                                using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
-                                geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
-                                if (geminiResponse.IsSuccessStatusCode)
+                                contents = new[]
                                 {
-                                    matchedModel = gModel;
-                                    break;
+                                    new
+                                    {
+                                        role = "user",
+                                        parts = new[] { new { text = llmPrompt } }
+                                    }
+                                },
+                                generationConfig = new
+                                {
+                                    temperature = 0.2,
+                                    maxOutputTokens = 8192
                                 }
-                                else
+                            };
+
+                            foreach (var gModel in geminiModels)
+                            {
+                                var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
+                                try
                                 {
-                                    var errContent = await geminiResponse.Content.ReadAsStringAsync();
-                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini ({gModel}) with key [{activeGeminiKey.KeyAlias}] returned {(int)geminiResponse.StatusCode} {geminiResponse.StatusCode}: {errContent}");
+                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                                    geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
+                                    geminiStatusCode = (int)geminiResponse.StatusCode;
+
+                                    if (geminiResponse.IsSuccessStatusCode)
+                                    {
+                                        matchedModel = gModel;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        geminiError = await geminiResponse.Content.ReadAsStringAsync();
+                                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini ({gModel}) with key [{activeGeminiKey.KeyAlias}] returned {geminiStatusCode}: {geminiError}");
+
+                                        // If authentication failed on this key (400/401/403 with invalid key), abort other models on this key and rotate
+                                        if (geminiStatusCode == 400 || geminiStatusCode == 401 || geminiStatusCode == 403)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    geminiError = ex.Message;
+                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini ({gModel}) dispatch exception on [{activeGeminiKey.KeyAlias}]: {ex.Message}");
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini ({gModel}) dispatch exception: {ex.Message}");
-                            }
+                        }
+                        catch (Exception clientEx)
+                        {
+                            geminiError = clientEx.Message;
                         }
 
                         geminiTimer.Stop();
@@ -4093,14 +4029,36 @@ Instructions:
 
                             if (!string.IsNullOrWhiteSpace(gText))
                             {
-                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+                                provider = $"Gemini {matchedModel} ({activeGeminiKey.KeyAlias})";
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed via [{activeGeminiKey.KeyAlias}] ({matchedModel}) in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+
+                                int? promptTokens = null;
+                                int? completionTokens = null;
+                                if (gDoc.RootElement.TryGetProperty("usageMetadata", out var usageMeta))
+                                {
+                                    if (usageMeta.TryGetProperty("promptTokenCount", out var pt)) promptTokens = pt.GetInt32();
+                                    if (usageMeta.TryGetProperty("candidatesTokenCount", out var ct)) completionTokens = ct.GetInt32();
+                                }
 
                                 try
                                 {
                                     activeGeminiKey.TodayRequestsCount++;
                                     activeGeminiKey.TotalRequestsCount++;
                                     activeGeminiKey.LastUsedAtUtc = DateTime.UtcNow;
-                                    await _masterCatalogDbContext!.SaveChangesAsync();
+                                    activeGeminiKey.UpdatedAtUtc = DateTime.UtcNow;
+
+                                    _masterCatalogDbContext!.MasterAiApiKeyUsageLogs.Add(new MasterAiApiKeyUsageLog
+                                    {
+                                        MasterAiApiKeyId = activeGeminiKey.Id,
+                                        ActionName = $"TemplateCopilot-{matchedModel}",
+                                        RequestTimestampUtc = DateTime.UtcNow,
+                                        ResponseTimeMs = (int)geminiTimer.ElapsedMilliseconds,
+                                        StatusCode = 200,
+                                        PromptTokens = promptTokens,
+                                        CompletionTokens = completionTokens
+                                    });
+
+                                    await _masterCatalogDbContext.SaveChangesAsync();
                                 }
                                 catch (Exception dbKeySaveEx)
                                 {
@@ -4139,18 +4097,42 @@ Instructions:
 
                                     parsedReply = !string.IsNullOrWhiteSpace(cleanReply)
                                         ? cleanReply
-                                        : $"Generated template blueprint with Google Gemini using canonical Ozikol tokens.";
+                                        : $"Generated template blueprint with Google Gemini ({matchedModel}) using canonical Ozikol tokens.";
                                 }
                                 else
                                 {
                                     parsedReply = gText;
                                 }
+
+                                break; // Success! Exit Gemini key rotation loop
                             }
                         }
-                    }
-                    catch (Exception gEx)
-                    {
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini error: {gEx.Message} -> Falling over to secondary providers...");
+
+                        // This key failed — place in 300s cooldown, record failure telemetry log, and rotate to next key
+                        try
+                        {
+                            activeGeminiKey.RateLimitCooldownUntilUtc = DateTime.UtcNow.AddSeconds(300);
+                            activeGeminiKey.Status = "CoolingDown";
+                            activeGeminiKey.UpdatedAtUtc = DateTime.UtcNow;
+
+                            _masterCatalogDbContext!.MasterAiApiKeyUsageLogs.Add(new MasterAiApiKeyUsageLog
+                            {
+                                MasterAiApiKeyId = activeGeminiKey.Id,
+                                ActionName = "TemplateCopilot-Gemini",
+                                RequestTimestampUtc = DateTime.UtcNow,
+                                ResponseTimeMs = (int)geminiTimer.ElapsedMilliseconds,
+                                StatusCode = geminiStatusCode,
+                                ErrorMessage = geminiError != null && geminiError.Length > 500 ? geminiError[..500] : geminiError
+                            });
+
+                            await _masterCatalogDbContext.SaveChangesAsync();
+                        }
+                        catch (Exception cooldownEx)
+                        {
+                            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini cooldown save notice: {cooldownEx.Message}");
+                        }
+
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini Key [{activeGeminiKey.KeyAlias}] failed. Placed on cooldown. Rotating to next Gemini key in pool...");
                     }
                 }
 
@@ -4177,6 +4159,7 @@ Instructions:
                         provider = $"DeepSeek ({activeDeepSeekKey.KeyAlias})";
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Secondary Provider: DeepSeek ({activeDeepSeekKey.KeyAlias}) ...");
                         var dsTimer = Stopwatch.StartNew();
+                        string? dsError = null;
 
                         try
                         {
@@ -4211,11 +4194,32 @@ Instructions:
                                 {
                                     Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ DeepSeek completed in {dsTimer.ElapsedMilliseconds}ms ({dsText.Length} chars)");
 
+                                    int? dsPromptTokens = null;
+                                    int? dsCompletionTokens = null;
+                                    if (dsDoc.RootElement.TryGetProperty("usage", out var dsUsage))
+                                    {
+                                        if (dsUsage.TryGetProperty("prompt_tokens", out var pt)) dsPromptTokens = pt.GetInt32();
+                                        if (dsUsage.TryGetProperty("completion_tokens", out var ct)) dsCompletionTokens = ct.GetInt32();
+                                    }
+
                                     try
                                     {
                                         activeDeepSeekKey.TodayRequestsCount++;
                                         activeDeepSeekKey.TotalRequestsCount++;
                                         activeDeepSeekKey.LastUsedAtUtc = DateTime.UtcNow;
+                                        activeDeepSeekKey.UpdatedAtUtc = DateTime.UtcNow;
+
+                                        _masterCatalogDbContext.MasterAiApiKeyUsageLogs.Add(new MasterAiApiKeyUsageLog
+                                        {
+                                            MasterAiApiKeyId = activeDeepSeekKey.Id,
+                                            ActionName = "TemplateCopilot-DeepSeek",
+                                            RequestTimestampUtc = DateTime.UtcNow,
+                                            ResponseTimeMs = (int)dsTimer.ElapsedMilliseconds,
+                                            StatusCode = 200,
+                                            PromptTokens = dsPromptTokens,
+                                            CompletionTokens = dsCompletionTokens
+                                        });
+
                                         await _masterCatalogDbContext.SaveChangesAsync();
                                     }
                                     catch (Exception dbKeySaveEx)
@@ -4262,6 +4266,27 @@ Instructions:
                                         parsedReply = dsText;
                                     }
                                 }
+                            }
+                            else
+                            {
+                                dsError = await dsResponse.Content.ReadAsStringAsync();
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ DeepSeek returned {(int)dsResponse.StatusCode}: {dsError}");
+
+                                try
+                                {
+                                    _masterCatalogDbContext.MasterAiApiKeyUsageLogs.Add(new MasterAiApiKeyUsageLog
+                                    {
+                                        MasterAiApiKeyId = activeDeepSeekKey.Id,
+                                        ActionName = "TemplateCopilot-DeepSeek",
+                                        RequestTimestampUtc = DateTime.UtcNow,
+                                        ResponseTimeMs = (int)dsTimer.ElapsedMilliseconds,
+                                        StatusCode = (int)dsResponse.StatusCode,
+                                        ErrorMessage = dsError != null && dsError.Length > 500 ? dsError[..500] : dsError
+                                    });
+
+                                    await _masterCatalogDbContext.SaveChangesAsync();
+                                }
+                                catch { }
                             }
                         }
                         catch (Exception dsEx)
@@ -6043,6 +6068,11 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
             }
 
+            if (!_r2Storage.IsConfigured())
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
+            }
+
             var cleanSuite = string.IsNullOrWhiteSpace(suiteCode) ? "global" : suiteCode.Trim().ToLowerInvariant();
             var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
 
@@ -6122,76 +6152,37 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
                 try
                 {
-                    string assetUrl;
-
-                    if (_r2Storage.IsConfigured())
+                    await using var stream = file.OpenReadStream();
+                    CloudflareR2UploadResult result;
+                    if (isJs)
                     {
-                        await using var stream = file.OpenReadStream();
-                        CloudflareR2UploadResult result;
-                        if (isJs)
+                        result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
+                    }
+                    else if (isFont)
+                    {
+                        var contentType = ext switch
                         {
-                            result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
-                        }
-                        else if (isFont)
-                        {
-                            var contentType = ext switch
-                            {
-                                ".woff2" => "font/woff2",
-                                ".woff" => "font/woff",
-                                ".ttf" => "font/ttf",
-                                ".otf" => "font/otf",
-                                ".eot" => "application/vnd.ms-fontobject",
-                                ".svg" => "image/svg+xml",
-                                _ => "application/octet-stream"
-                            };
-                            result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
-                        }
-                        else
-                        {
-                            result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
-                        }
-
-                        if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
-                        {
-                            assetUrl = result.Url;
-                        }
-                        else
-                        {
-                            // Fallback to local server storage if R2 upload fails
-                            var subFolder = isJs ? "js" : (isFont ? "fonts" : "css");
-                            var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", subFolder);
-                            Directory.CreateDirectory(localDir);
-
-                            var safeBaseName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant();
-                            var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}{ext}";
-                            var localPath = Path.Combine(localDir, uniqueFileName);
-
-                            await using (var localStream = new FileStream(localPath, FileMode.Create))
-                            {
-                                file.OpenReadStream().CopyTo(localStream);
-                            }
-
-                            assetUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/{subFolder}/{uniqueFileName}";
-                        }
+                            ".woff2" => "font/woff2",
+                            ".woff" => "font/woff",
+                            ".ttf" => "font/ttf",
+                            ".otf" => "font/otf",
+                            ".eot" => "application/vnd.ms-fontobject",
+                            ".svg" => "image/svg+xml",
+                            _ => "application/octet-stream"
+                        };
+                        result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
                     }
                     else
                     {
-                        // Fallback to local server storage when R2 is unconfigured
-                        var subFolder = isJs ? "js" : (isFont ? "fonts" : "css");
-                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", subFolder);
-                        Directory.CreateDirectory(localDir);
-
-                        var safeBaseName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant();
-                        var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}{ext}";
-                        var localPath = Path.Combine(localDir, uniqueFileName);
-
-                        await using (var localStream = new FileStream(localPath, FileMode.Create))
-                        {
-                            await file.CopyToAsync(localStream);
-                        }
-
-                        assetUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/{subFolder}/{uniqueFileName}";
+                        result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
                     }
+
+                    if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResponse($"Failed to upload asset '{fileName}' to CDN: {result.Message}"));
+                    }
+
+                    string assetUrl = result.Url;
 
                     string tagContent;
                     if (isJs)
@@ -6578,7 +6569,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!_r2Storage.IsConfigured())
             {
-                return BadRequest(ApiResponse<object>.FailureResponse("Cloudflare R2 storage is not configured. Please define CloudflareR2 credentials in environment settings."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
             }
 
             var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";

@@ -1360,6 +1360,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.uploadedCssUrl = '';
     this.uploadedCssStorage = '';
     this.uploadingCss = false;
+    if (this.tagForm && this.tagForm.content && this.tagForm.content.startsWith('/* Upload pending:')) {
+      this.tagForm.content = '';
+    }
     if (this.cssFileInput?.nativeElement) {
       this.cssFileInput.nativeElement.value = '';
     }
@@ -1375,6 +1378,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.uploadedJsUrl = '';
     this.uploadedJsStorage = '';
     this.uploadingJs = false;
+    if (this.tagForm && this.tagForm.content && this.tagForm.content.startsWith('/* Upload pending:')) {
+      this.tagForm.content = '';
+    }
     if (this.jsFileInput?.nativeElement) {
       this.jsFileInput.nativeElement.value = '';
     }
@@ -1523,7 +1529,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handles local CSS file selection.
+   * Handles local CSS file selection for single file injection.
+   * Automatically populates the tag name and prepares the file for unified single-step upload & save.
    */
   onCssFileSelected(event: any): void {
     const file = event.target.files?.[0];
@@ -1537,11 +1544,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.selectedCssFile = file;
     this.selectedCssFileName = file.name;
     this.selectedCssFileSize = (file.size / 1024).toFixed(1) + ' KB';
-    this.toast.info(`Selected CSS file: ${file.name}`);
+    
+    // Automatically populate Tag Name immediately from chosen file
+    const displayName = file.name.replace(/\.download$/i, '').replace(/\.css$/i, '');
+    this.tagForm.name = `Stylesheet: ${displayName}`;
+    this.tagForm.tagType = 'link_stylesheet';
+    this.tagForm.content = `/* Upload pending: ${file.name} (${this.selectedCssFileSize}) */`;
+
+    // Clear input so selecting the same file again triggers change event
+    if (event.target) event.target.value = '';
   }
 
   /**
-   * Handles local JavaScript file selection.
+   * Handles local JavaScript file selection for single file injection.
+   * Automatically populates the tag name and prepares the file for unified single-step upload & save.
    */
   onJsFileSelected(event: any): void {
     const file = event.target.files?.[0];
@@ -1555,7 +1571,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.selectedJsFile = file;
     this.selectedJsFileName = file.name;
     this.selectedJsFileSize = (file.size / 1024).toFixed(1) + ' KB';
-    this.toast.info(`Selected JavaScript file: ${file.name}`);
+
+    // Automatically populate Tag Name immediately from chosen file
+    const displayName = file.name.replace(/\.download$/i, '').replace(/\.js$/i, '');
+    this.tagForm.name = `Script: ${displayName}`;
+    this.tagForm.tagType = this.tagFormZone === 'footer' ? 'footer_script_url' : 'script_url';
+    this.tagForm.content = `/* Upload pending: ${file.name} (${this.selectedJsFileSize}) */`;
+
+    // Clear input so selecting the same file again triggers change event
+    if (event.target) event.target.value = '';
   }
 
   /**
@@ -1569,13 +1593,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Copies the generated Cloudflare CDN URL to the clipboard.
+   * Copies the generated CDN URL to the clipboard.
    */
   copyCdnUrl(url: string): void {
     if (!url) return;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
-        this.toast.success('Cloudflare CDN URL copied to clipboard!');
+        this.toast.success('CDN URL copied to clipboard!');
       }).catch(() => {
         this.toast.info(`CDN URL: ${url}`);
       });
@@ -1585,8 +1609,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Uploads the selected CSS file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
-   * Pre-scans the file locally in browser memory to guarantee zero malicious payloads reach R2.
+   * Uploads the selected CSS file to CDN Object Storage and links it.
+   * Pre-scans the file locally in browser memory to guarantee zero malicious payloads reach storage.
    */
   uploadAndLinkCssFile(): void {
     if (!this.selectedCssFile) {
@@ -1622,29 +1646,30 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingCss = false;
         const url = res?.data?.url;
-        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
+        const storage = res?.data?.storage || 'CDN Delivery';
         if (url) {
           this.uploadedCssUrl = url;
           this.uploadedCssStorage = storage;
           this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
           this.tagForm.name = `Stylesheet: ${this.selectedCssFileName.replace(/\.download$/i, '')}`;
           this.tagForm.tagType = 'link_stylesheet';
-          this.toast.success(`Uploaded to ${storage} and edge CDN link generated!`);
+          this.toast.success('Stylesheet uploaded to CDN and linked!');
         } else {
           this.toast.error('Failed to resolve uploaded CSS URL.');
         }
       },
       error: (err) => {
         this.uploadingCss = false;
-        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.resetCssUploadState();
+        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
         this.toast.error(errMsg);
       }
     });
   }
 
   /**
-   * Uploads the selected JavaScript file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
-   * Pre-scans the script locally in browser memory to guarantee zero dangerous executions reach R2.
+   * Uploads the selected JavaScript file to CDN Object Storage and links it.
+   * Pre-scans the script locally in browser memory to guarantee zero dangerous executions reach storage.
    */
   uploadAndLinkJsFile(): void {
     if (!this.selectedJsFile) {
@@ -1680,7 +1705,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingJs = false;
         const url = res?.data?.url;
-        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
+        const storage = res?.data?.storage || 'CDN Delivery';
         if (url) {
           this.uploadedJsUrl = url;
           this.uploadedJsStorage = storage;
@@ -1691,14 +1716,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             : `<script src="${url}" defer></script>`;
           this.tagForm.name = `Script: ${cleanName}`;
           this.tagForm.tagType = isFooter ? 'footer_script_url' : 'script_url';
-          this.toast.success(`Uploaded to ${storage} and edge CDN script link generated!`);
+          this.toast.success('JavaScript script uploaded to CDN and linked!');
         } else {
           this.toast.error('Failed to resolve uploaded JS URL.');
         }
       },
       error: (err) => {
         this.uploadingJs = false;
-        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.resetJsUploadState();
+        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
         this.toast.error(errMsg);
       }
     });
@@ -2036,7 +2062,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         this.savingAssetContent = false;
-        this.toast.success(res?.message || 'Asset file updated and published to Cloudflare CDN successfully!');
+        this.toast.success(res?.message || 'Asset file updated and published to CDN successfully!');
         this.loadAllCodeInjections();
         this.closeAssetEditorModal();
       },
@@ -2107,7 +2133,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         if (Array.isArray(res?.data)) {
           this.uploadedFonts.push(...res.data);
         }
-        this.toast.success(res?.message || `${files.length} font file(s) uploaded to Cloudflare CDN!`);
+        this.toast.success(res?.message || `${files.length} font file(s) uploaded to CDN!`);
         if (event.target) event.target.value = '';
       },
       error: (err) => {
@@ -2145,13 +2171,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.toast.info(`Switched to editing existing '${tag.name}'.`);
   }
 
+  /**
+   * Submits the tag form.
+   * If a local CSS or JS file was chosen, executes a unified single-step workflow:
+   * runs the pre-flight security scan ONCE, uploads the file to Cloudflare CDN,
+   * generates the link/script tag, and saves the injection directly to the database.
+   */
   saveTag(): void {
-    if (!this.tagForm.name?.trim() || !this.tagForm.content?.trim()) {
-      this.toast.error('Please enter a tag name and snippet content.');
+    // 1. Auto-fill name if missing when a file is selected
+    if (this.selectedCssFile && !this.tagForm.name?.trim()) {
+      const displayName = this.selectedCssFileName.replace(/\.download$/i, '').replace(/\.css$/i, '');
+      this.tagForm.name = `Stylesheet: ${displayName}`;
+    } else if (this.selectedJsFile && !this.tagForm.name?.trim()) {
+      const displayName = this.selectedJsFileName.replace(/\.download$/i, '').replace(/\.js$/i, '');
+      this.tagForm.name = `Script: ${displayName}`;
+    }
+
+    if (!this.tagForm.name?.trim()) {
+      this.toast.error('Please enter a tag name.');
       return;
     }
 
-    // Singleton Duplicate Guard
+    if (!this.selectedCssFile && !this.selectedJsFile && !this.tagForm.content?.trim()) {
+      this.toast.error('Please enter snippet content or choose a file.');
+      return;
+    }
+
+    // 2. Singleton Duplicate Guard
     if (!this.isEditingTag) {
       const existing = this.getExistingSingletonTag(this.tagForm.tagType, this.tagFormZone);
       if (existing) {
@@ -2160,7 +2206,49 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Pre-flight security scan before saving/injecting tag
+    // 3. Single-step upload & save for CSS file: Pre-flight scan ONCE, then upload to CDN and save DB
+    if (this.selectedCssFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const cssContent = reader.result as string;
+        this.securityScanner.scanAndExecute({
+          title: `Stylesheet: ${this.selectedCssFileName}`,
+          category: `${this.getZoneShortTitle(this.tagFormZone)} CSS Upload`,
+          html: '',
+          css: cssContent,
+          js: '',
+          onConfirmSave: () => this.executeUploadAndSaveCssTag()
+        });
+      };
+      reader.onerror = () => {
+        this.toast.error('Failed to read CSS file from local disk.');
+      };
+      reader.readAsText(this.selectedCssFile);
+      return;
+    }
+
+    // 4. Single-step upload & save for JS file: Pre-flight scan ONCE, then upload to CDN and save DB
+    if (this.selectedJsFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const jsContent = reader.result as string;
+        this.securityScanner.scanAndExecute({
+          title: `Script: ${this.selectedJsFileName}`,
+          category: `${this.getZoneShortTitle(this.tagFormZone)} JS Upload`,
+          html: '',
+          css: '',
+          js: jsContent,
+          onConfirmSave: () => this.executeUploadAndSaveJsTag()
+        });
+      };
+      reader.onerror = () => {
+        this.toast.error('Failed to read JavaScript file from local disk.');
+      };
+      reader.readAsText(this.selectedJsFile);
+      return;
+    }
+
+    // 5. Standard Tag Save (Pre-flight scan once)
     const tagTypeLower = (this.tagForm.tagType || '').toLowerCase();
     const isCss = tagTypeLower.includes('css') || tagTypeLower.includes('stylesheet');
     const isJs = tagTypeLower.includes('script') || tagTypeLower.includes('js');
@@ -2175,7 +2263,94 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Uploads the selected CSS file to CDN and atomically saves the code injection tag to the database.
+   */
+  private executeUploadAndSaveCssTag(): void {
+    if (!this.selectedCssFile) return;
+
+    this.uploadingCss = true;
+    this.savingTag = true;
+    const formData = new FormData();
+    formData.append('file', this.selectedCssFile);
+
+    this.api.post<any>('ContentApi/upload-css', formData).subscribe({
+      next: (res) => {
+        const url = res?.data?.url;
+        if (url) {
+          this.uploadedCssUrl = url;
+          this.uploadedCssStorage = res?.data?.storage || 'CDN Delivery';
+          this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
+          this.tagForm.tagType = 'link_stylesheet';
+          this.tagForm.zone = this.tagFormZone;
+
+          this.persistTagToDatabase(`Stylesheet '${this.tagForm.name}' uploaded to CDN and saved.`);
+        } else {
+          this.uploadingCss = false;
+          this.savingTag = false;
+          this.toast.error('Failed to resolve uploaded CSS URL.');
+        }
+      },
+      error: (err) => {
+        this.uploadingCss = false;
+        this.savingTag = false;
+        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
+        this.toast.error(errMsg);
+      }
+    });
+  }
+
+  /**
+   * Uploads the selected JS file to CDN and atomically saves the code injection tag to the database.
+   */
+  private executeUploadAndSaveJsTag(): void {
+    if (!this.selectedJsFile) return;
+
+    this.uploadingJs = true;
+    this.savingTag = true;
+    const formData = new FormData();
+    formData.append('file', this.selectedJsFile);
+
+    this.api.post<any>('ContentApi/upload-js', formData).subscribe({
+      next: (res) => {
+        const url = res?.data?.url;
+        if (url) {
+          this.uploadedJsUrl = url;
+          this.uploadedJsStorage = res?.data?.storage || 'CDN Delivery';
+          const isFooter = this.tagFormZone === 'footer';
+          this.tagForm.content = isFooter 
+            ? `<script src="${url}"></script>` 
+            : `<script src="${url}" defer></script>`;
+          this.tagForm.tagType = isFooter ? 'footer_script_url' : 'script_url';
+          this.tagForm.zone = this.tagFormZone;
+
+          this.persistTagToDatabase(`Script '${this.tagForm.name}' uploaded to CDN and saved.`);
+        } else {
+          this.uploadingJs = false;
+          this.savingTag = false;
+          this.toast.error('Failed to resolve uploaded JS URL.');
+        }
+      },
+      error: (err) => {
+        this.uploadingJs = false;
+        this.savingTag = false;
+        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
+        this.toast.error(errMsg);
+      }
+    });
+  }
+
   private executeSaveTag(): void {
+    const successMsg = this.isEditingTag 
+      ? `Tag '${this.tagForm.name}' updated.`
+      : `Tag '${this.tagForm.name}' injected into ${this.getZoneShortTitle(this.tagFormZone)}.`;
+    this.persistTagToDatabase(successMsg);
+  }
+
+  /**
+   * Persists tagForm to the database via ContentApi, displays success feedback, and reloads tag registry.
+   */
+  private persistTagToDatabase(successMsg: string): void {
     this.savingTag = true;
     this.tagForm.zone = this.tagFormZone;
 
@@ -2183,12 +2358,18 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       this.api.put<any>(`ContentApi/code-injections/${this.tagForm.id}`, this.tagForm).subscribe({
         next: () => {
           this.savingTag = false;
-          this.toast.success(`Tag '${this.tagForm.name}' updated.`);
+          this.uploadingCss = false;
+          this.uploadingJs = false;
+          this.resetCssUploadState();
+          this.resetJsUploadState();
+          this.toast.success(successMsg);
           this.closeTagModal();
           this.loadAllCodeInjections();
         },
         error: (err) => {
           this.savingTag = false;
+          this.uploadingCss = false;
+          this.uploadingJs = false;
           const msg = err?.error?.message || 'Failed to update tag.';
           this.toast.error(msg);
         }
@@ -2197,12 +2378,18 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       this.api.post<any>('ContentApi/code-injections', this.tagForm).subscribe({
         next: () => {
           this.savingTag = false;
-          this.toast.success(`Tag '${this.tagForm.name}' injected into ${this.getZoneShortTitle(this.tagFormZone)}.`);
+          this.uploadingCss = false;
+          this.uploadingJs = false;
+          this.resetCssUploadState();
+          this.resetJsUploadState();
+          this.toast.success(successMsg);
           this.closeTagModal();
           this.loadAllCodeInjections();
         },
         error: (err) => {
           this.savingTag = false;
+          this.uploadingCss = false;
+          this.uploadingJs = false;
           const msg = err?.error?.message || 'Failed to save tag.';
           this.toast.error(msg);
         }
