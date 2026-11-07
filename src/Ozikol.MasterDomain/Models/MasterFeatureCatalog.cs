@@ -126,11 +126,11 @@ namespace Ozikol.MasterDomain.Models
         public int FreeTrialDays { get; set; } = 7;
 
         /// <summary>
-        /// Indicates whether this capability has an active non-zero catalog price configured (monthly, yearly, or quarterly).
-        /// Capabilities without active pricing cannot be published or activated.
+        /// Indicates whether this capability has active non-zero catalog prices configured for BOTH Monthly and Yearly durations.
+        /// Non-compulsory capabilities MUST have both Monthly and Yearly amounts configured before they can be published or activated.
         /// </summary>
         [NotMapped]
-        public bool HasConfiguredPrice => IsCompulsory || MonthlyPrice > 0m || YearlyPrice > 0m || QuarterlyPrice > 0m;
+        public bool HasConfiguredPrice => IsCompulsory || (MonthlyPrice > 0m && YearlyPrice > 0m);
 
         public bool IsActive { get; set; } = true;
         public bool IsInBeta { get; set; } = false;

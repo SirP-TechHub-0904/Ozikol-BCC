@@ -174,16 +174,13 @@ namespace Ozikol_BCC.Api.Controllers
 
             bool targetActive = request.SetActive ?? !currentlyActive;
 
-            // Enforce "no price, don't publish": unpublished or unpriced capabilities cannot be activated
-            bool hasCatalogPrice = feature.IsCompulsory
-                || feature.MonthlyPrice > 0m
-                || feature.YearlyPrice > 0m
-                || feature.QuarterlyPrice > 0m;
+            // Enforce "no price, don't publish": both Monthly and Yearly amounts are compulsory (> 0)
+            bool hasCatalogPrice = feature.IsCompulsory || (feature.MonthlyPrice > 0m && feature.YearlyPrice > 0m);
 
             if (!feature.IsPublished || !hasCatalogPrice)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"'{feature.Name}' does not have active pricing configured and cannot be activated."));
+                    $"'{feature.Name}' does not have compulsory Monthly and Yearly pricing configured and cannot be activated."));
             }
 
             if (targetActive && !effectiveAvail)
@@ -208,18 +205,19 @@ namespace Ozikol_BCC.Api.Controllers
                 ? existing.CustomPriceOverride.Value
                 : catalogPrice;
 
-            int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 7;
+            int catalogTrialDays = Math.Max(0, feature.FreeTrialDays);
             bool hasCustomTrialOverride = existing?.CustomFreeTrialDaysOverride != null;
             int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability || hasCustomTrialOverride) && hasCustomTrialOverride)
                 ? Math.Max(0, existing!.CustomFreeTrialDaysOverride!.Value)
                 : catalogTrialDays;
-            if (effectiveFreeTrialDays <= 0) effectiveFreeTrialDays = 7;
+
             bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
-            bool startFirstTimeTrial = targetActive && !hasUsedFreeTrial;
+            // Free trial can ONLY start if the tenant has not already used it AND effectiveFreeTrialDays > 0!
+            bool startFirstTimeTrial = targetActive && !hasUsedFreeTrial && effectiveFreeTrialDays > 0;
 
             // Safeguard: If activating a capability when no first-time free trial applies,
             // only allow re-enabling if the tenant already holds an unexpired paid subscription that is currently suspended.
-            // Renewals or expired/post-trial paid activations MUST go through Paystack Inline Checkout (/api/billing/features/paystack/initialize).
+            // If it is 0 days free trial, tenant MUST pay via Paystack to activate!
             bool hasUnexpiredPaidTerm = existing != null
                 && !existing.IsTrialPeriod
                 && !string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase)
@@ -229,7 +227,9 @@ namespace Ozikol_BCC.Api.Controllers
             if (targetActive && effectiveUsdPrice > 0m && !startFirstTimeTrial && !hasUnexpiredPaidTerm)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Payment is required to activate or renew '{feature.Name}'. Please complete payment via Paystack Inline Checkout."));
+                    effectiveFreeTrialDays == 0
+                        ? $"Payment is required to activate '{feature.Name}'. This capability has 0 days free trial — please complete payment via Paystack to activate."
+                        : $"Payment is required to activate or renew '{feature.Name}'. Please complete payment via Paystack Inline Checkout."));
             }
 
             if (existing != null)

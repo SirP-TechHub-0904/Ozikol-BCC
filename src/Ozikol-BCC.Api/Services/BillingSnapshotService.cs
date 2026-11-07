@@ -217,7 +217,7 @@ namespace Ozikol_BCC.Api.Services
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
                     .Include(f => f.Suite)
-                    .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || f.MonthlyPrice > 0m || f.YearlyPrice > 0m || f.QuarterlyPrice > 0m))
+                    .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m)))
                     .ToListAsync(cancellationToken);
             }
             catch
@@ -225,7 +225,7 @@ namespace Ozikol_BCC.Api.Services
                 // Graceful fallback if the MasterFeatureSuites / MenuTitle migration has not yet been applied to SQL Server
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || f.MonthlyPrice > 0m || f.YearlyPrice > 0m || f.QuarterlyPrice > 0m))
+                    .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m)))
                     .Select(f => new MasterFeatureCatalog
                     {
                         Id = f.Id,
@@ -439,14 +439,13 @@ namespace Ozikol_BCC.Api.Services
                 var suiteSortOrder = matchedSuite?.SortOrder ?? (GetSuiteOrder(suiteFullTitle) + 1);
 
                 bool hasCustomTrial = sub?.CustomFreeTrialDaysOverride != null;
-                int catalogTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 7;
+                int catalogTrialDays = Math.Max(0, f.FreeTrialDays);
                 int effectiveTrialDays = ((tenant?.UseCustomPricing == true || tenant?.UseCustomAvailability == true || hasCustomTrial) && hasCustomTrial)
                     ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
                     : catalogTrialDays;
-                if (effectiveTrialDays <= 0) effectiveTrialDays = 7;
                 bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
                 bool isTrialPeriod = ((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now);
-                bool isEligibleForFreeTrial = !hasUsedTrial;
+                bool isEligibleForFreeTrial = !hasUsedTrial && effectiveTrialDays > 0;
 
                 bool isPaidCapability = defaultEffectivePrice > 0m || effectiveYearly > 0m;
                 var item = new BillingFeatureItemDto

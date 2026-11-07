@@ -66,7 +66,7 @@ namespace Ozikol_BCC.Api.Services
 
             var allActiveFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
                 .AsNoTracking()
-                .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || f.MonthlyPrice > 0m || f.YearlyPrice > 0m || f.QuarterlyPrice > 0m))
+                .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m)))
                 .ToListAsync(cancellationToken);
 
             var entitlements = new TenantFeatureEntitlementsDto
