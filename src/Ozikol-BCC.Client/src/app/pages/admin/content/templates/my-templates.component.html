@@ -961,7 +961,7 @@
           </div>
         </div>
 
-        <!-- Cloudflare R2 + Cloudflare CDN Custom CSS Studio -->
+        <!-- Global CDN Custom CSS Studio -->
         <div class="form-group full-width" *ngIf="isCssTagType()">
           <div class="cloudflare-r2-studio-card">
             <div class="cloudflare-header">
@@ -971,11 +971,10 @@
                 </div>
                 <div>
                   <div class="cloudflare-pill-row">
-                    <strong>Cloudflare R2 + Global CDN</strong>
-                    <span class="cf-badge-tag">Zero-Egress Edge Storage</span>
+                    <strong>Global CDN Delivery</strong>
+                    <span class="cf-badge-tag">Edge Caching</span>
                   </div>
-                  <small>Upload your stylesheet to Cloudflare R2 for worldwide edge distribution and sub-millisecond
-                    asset caching.</small>
+                  <small>Deliver stylesheets through fast, low-latency global CDN edge caching.</small>
                 </div>
               </div>
               <input type="file" #cssFileInput accept=".css,.download" (change)="onCssFileSelected($event)"
@@ -994,36 +993,21 @@
               </div>
             </div>
 
-            <!-- Selected File Status Bar -->
-            <div class="css-file-status-bar" *ngIf="selectedCssFileName">
+            <!-- Uploading Progress Indicator -->
+            <div class="css-file-status-bar" *ngIf="uploadingCss"
+              style="background: #eff6ff; border-color: #93c5fd; padding: 10px 14px; border-radius: 8px; margin-top: 12px;">
               <div class="css-file-info">
-                <span class="material-symbols-outlined icon-file">css</span>
-                <span class="css-filename">{{ selectedCssFileName }}</span>
+                <span class="material-symbols-outlined icon-file spin-icon" style="color: #0050E5;">sync</span>
+                <span class="css-filename">Uploading <strong>{{ selectedCssFileName }}</strong> to CDN...</span>
                 <span class="css-filesize">({{ selectedCssFileSize }})</span>
-              </div>
-              <div class="css-action-buttons">
-                <button type="button" class="btn-action-link-css" (click)="uploadAndLinkCssFile()"
-                  [disabled]="uploadingCss">
-                  <span class="material-symbols-outlined">{{ uploadingCss ? 'sync' : 'rocket_launch' }}</span>
-                  <span>{{ uploadingCss ? 'Uploading to R2...' : 'Upload to Cloudflare R2 &amp; Link' }}</span>
-                </button>
-                <button type="button" class="btn-action-import-css" (click)="importCssAsInlineStyle()"
-                  [disabled]="uploadingCss">
-                  <span class="material-symbols-outlined">code</span>
-                  <span>Import as Inline CSS (&lt;style&gt;)</span>
-                </button>
-                <button type="button" class="btn-dismiss-bar" (click)="resetCssUploadState()"
-                  title="Remove chosen file">
-                  <span class="material-symbols-outlined">close</span>
-                </button>
               </div>
             </div>
 
             <!-- Uploaded CDN URL Ribbon -->
-            <div class="cloudflare-cdn-result-bar" *ngIf="uploadedCssUrl">
+            <div class="cloudflare-cdn-result-bar" *ngIf="uploadedCssUrl && !uploadingCss">
               <div class="cdn-url-info">
-                <span class="material-symbols-outlined icon-edge">cloud_done</span>
-                <span class="cdn-label">CDN Edge URL:</span>
+                <span class="material-symbols-outlined icon-edge" style="color: #16a34a;">cloud_done</span>
+                <span class="cdn-label"><strong>{{ selectedCssFileName || 'Stylesheet' }}</strong> &bull; CDN Linked:</span>
                 <a [href]="uploadedCssUrl" target="_blank" rel="noopener noreferrer" class="cdn-url-link"
                   title="Open stylesheet directly in new tab">
                   <span>{{ uploadedCssUrl }}</span>
@@ -1031,11 +1015,11 @@
                 </a>
               </div>
               <div class="cdn-action-btns">
-                <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)">
+                <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)" title="Copy URL">
                   <span class="material-symbols-outlined">content_copy</span>
                   <span>Copy URL</span>
                 </button>
-                <button type="button" class="btn-dismiss-bar" (click)="uploadedCssUrl = ''" title="Dismiss CDN ribbon">
+                <button type="button" class="btn-dismiss-bar" (click)="resetCssUploadState()" title="Remove file">
                   <span class="material-symbols-outlined">close</span>
                 </button>
               </div>
@@ -1043,7 +1027,7 @@
           </div>
         </div>
 
-        <!-- Cloudflare R2 + Cloudflare CDN Custom JavaScript Studio -->
+        <!-- Global CDN Custom JavaScript Studio -->
         <div class="form-group full-width" *ngIf="isJsTagType()">
           <div class="cloudflare-r2-studio-card"
             style="border-color: rgba(234, 179, 8, 0.4); background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(255, 255, 255, 0.95) 100%);">
@@ -1054,11 +1038,10 @@
                 </div>
                 <div>
                   <div class="cloudflare-pill-row">
-                    <strong>Cloudflare R2 + Global CDN</strong>
+                    <strong>Global CDN Delivery</strong>
                     <span class="cf-badge-tag" style="background: #fef08a; color: #854d0e;">Edge Script Delivery</span>
                   </div>
-                  <small>Upload your JavaScript file to Cloudflare R2 for worldwide edge distribution and fast script
-                    execution.</small>
+                  <small>Deliver JavaScript files through fast, low-latency global CDN edge caching.</small>
                 </div>
               </div>
               <input type="file" #jsFileInput accept=".js,.download" (change)="onJsFileSelected($event)"
@@ -1078,37 +1061,22 @@
               </div>
             </div>
 
-            <!-- Selected JS File Status Bar -->
-            <div class="css-file-status-bar" *ngIf="selectedJsFileName"
-              style="background: #fffbeb; border-color: #fde047;">
+            <!-- Uploading Progress Indicator -->
+            <div class="css-file-status-bar" *ngIf="uploadingJs"
+              style="background: #fffbeb; border-color: #fde047; padding: 10px 14px; border-radius: 8px; margin-top: 12px;">
               <div class="css-file-info">
-                <span class="material-symbols-outlined icon-file" style="color: #ca8a04;">javascript</span>
-                <span class="css-filename">{{ selectedJsFileName }}</span>
+                <span class="material-symbols-outlined icon-file spin-icon" style="color: #ca8a04;">sync</span>
+                <span class="css-filename">Uploading <strong>{{ selectedJsFileName }}</strong> to CDN...</span>
                 <span class="css-filesize">({{ selectedJsFileSize }})</span>
-              </div>
-              <div class="css-action-buttons">
-                <button type="button" class="btn-action-link-css" (click)="uploadAndLinkJsFile()"
-                  [disabled]="uploadingJs" style="background: #ca8a04;">
-                  <span class="material-symbols-outlined">{{ uploadingJs ? 'sync' : 'rocket_launch' }}</span>
-                  <span>{{ uploadingJs ? 'Uploading to R2...' : 'Upload to Cloudflare R2 &amp; Link' }}</span>
-                </button>
-                <button type="button" class="btn-action-import-css" (click)="importJsAsInlineScript()"
-                  [disabled]="uploadingJs" style="background: #64748b;">
-                  <span class="material-symbols-outlined">code</span>
-                  <span>Import as Inline Script (&lt;script&gt;)</span>
-                </button>
-                <button type="button" class="btn-dismiss-bar" (click)="resetJsUploadState()" title="Remove chosen file">
-                  <span class="material-symbols-outlined">close</span>
-                </button>
               </div>
             </div>
 
             <!-- Uploaded JS CDN URL Ribbon -->
-            <div class="cloudflare-cdn-result-bar" *ngIf="uploadedJsUrl"
+            <div class="cloudflare-cdn-result-bar" *ngIf="uploadedJsUrl && !uploadingJs"
               style="background: #f0fdf4; border-color: #86efac;">
               <div class="cdn-url-info">
                 <span class="material-symbols-outlined icon-edge" style="color: #16a34a;">cloud_done</span>
-                <span class="cdn-label">CDN Edge URL:</span>
+                <span class="cdn-label"><strong>{{ selectedJsFileName || 'Script' }}</strong> &bull; CDN Linked:</span>
                 <a [href]="uploadedJsUrl" target="_blank" rel="noopener noreferrer" class="cdn-url-link"
                   title="Open script directly in new tab">
                   <span>{{ uploadedJsUrl }}</span>
@@ -1116,11 +1084,11 @@
                 </a>
               </div>
               <div class="cdn-action-btns">
-                <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedJsUrl)">
+                <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedJsUrl)" title="Copy URL">
                   <span class="material-symbols-outlined">content_copy</span>
                   <span>Copy URL</span>
                 </button>
-                <button type="button" class="btn-dismiss-bar" (click)="uploadedJsUrl = ''" title="Dismiss CDN ribbon">
+                <button type="button" class="btn-dismiss-bar" (click)="resetJsUploadState()" title="Remove file">
                   <span class="material-symbols-outlined">close</span>
                 </button>
               </div>
@@ -1175,7 +1143,7 @@
           </span>
         </div>
         <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9"
-          [placeholder]="tagForm.tagType === 'link_stylesheet' ? 'Upload your CSS file above to Cloudflare R2, choose a 1-click preset, or paste a <link rel=&quot;stylesheet&quot; href=&quot;...&quot; /> tag here...' : (tagForm.tagType === 'script_url' ? 'Paste an external script tag here, e.g. <script src=&quot;https://...&quot; async></script>' : 'Paste your HTML, script, or link snippet here...')"></textarea>
+          [placeholder]="tagForm.tagType === 'link_stylesheet' ? 'Upload your CSS file above to CDN, choose a 1-click preset, or paste a <link rel=&quot;stylesheet&quot; href=&quot;...&quot; /> tag here...' : (tagForm.tagType === 'script_url' ? 'Paste an external script tag here, e.g. <script src=&quot;https://...&quot; async></script>' : 'Paste your HTML, script, or link snippet here...')"></textarea>
       </div>
     </div>
 
@@ -1510,7 +1478,7 @@
         <div>
           <h3 class="preview-modal-name">Bulk Upload Stylesheets &amp; Scripts</h3>
           <span class="preview-modal-sub">
-            Cloudflare R2 + Global CDN • Auto-Tag Naming from filename prefix before the first dot
+            Global CDN Delivery • Auto-Tag Naming from filename prefix before the first dot
           </span>
         </div>
       </div>
@@ -1646,7 +1614,7 @@
         style="background: #0050e5; border-color: #0050e5; border-radius: 8px; padding: 10px 24px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
         <span class="material-symbols-outlined" *ngIf="!uploadingBulk">cloud_upload</span>
         <span class="material-symbols-outlined spin-icon" *ngIf="uploadingBulk">sync</span>
-        <span>{{ uploadingBulk ? 'Uploading to Cloudflare R2...' : ('Upload &amp; Inject (' + bulkUploadFiles.length +
+        <span>{{ uploadingBulk ? 'Uploading to CDN...' : ('Upload &amp; Inject (' + bulkUploadFiles.length +
           ') Tags') }}</span>
       </button>
     </div>
@@ -1672,7 +1640,7 @@
               {{ editingAssetTag.tagType }}
             </span>
             <span class="badge bg-dark border text-info" *ngIf="editingAssetIsCdn" style="font-size: 10.5px;">
-              Cloudflare R2 CDN
+              Global CDN
             </span>
           </div>
           <span class="preview-modal-sub" style="color: #94a3b8; font-size: 12px;" *ngIf="editingAssetUrl">
@@ -1685,7 +1653,7 @@
       <div style="display: flex; align-items: center; gap: 8px;">
         <button type="button" class="btn-save-template-code" (click)="saveAssetContent()"
           [disabled]="savingAssetContent || loadingAssetContent"
-          title="Save modifications directly to Cloudflare R2 Object Storage"
+          title="Save modifications directly to CDN asset"
           style="background: #10b981; border-color: #059669; font-weight: 700; height: 36px; padding: 0 16px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; color: #ffffff; cursor: pointer;">
           <span class="material-symbols-outlined" *ngIf="!savingAssetContent" style="font-size: 18px;">save</span>
           <span class="material-symbols-outlined spin-icon" *ngIf="savingAssetContent"
@@ -1748,7 +1716,7 @@
       <div *ngIf="loadingAssetContent"
         style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 480px; color: #94a3b8; gap: 12px;">
         <span class="material-symbols-outlined spin-icon" style="font-size: 32px; color: #38bdf8;">sync</span>
-        <span>Fetching asset content from Cloudflare CDN...</span>
+        <span>Fetching asset content from CDN...</span>
       </div>
 
       <textarea *ngIf="!loadingAssetContent" [(ngModel)]="editingAssetContent" class="modal-code-textarea"
@@ -1783,7 +1751,7 @@
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL 12: CUSTOM WEBFONT & TYPOGRAPHY VAULT (CLOUDFLARE CDN)   -->
+<!-- MODAL 12: CUSTOM WEBFONT & TYPOGRAPHY VAULT (GLOBAL CDN)       -->
 <!-- ============================================================== -->
 <div class="modal-backdrop" *ngIf="showFontUploadModal" (click)="closeFontUploadModal()">
   <div class="modal-card"
@@ -1802,7 +1770,7 @@
           </h3>
           <span class="preview-modal-sub" style="color: #64748b; font-size: 12.5px;">
             Upload <code>.woff2</code>, <code>.woff</code>, <code>.ttf</code>, <code>.otf</code>, or <code>.eot</code>
-            files to Cloudflare R2 and copy instant CDN URLs.
+            files to CDN storage and copy instant CDN URLs.
           </span>
         </div>
       </div>
@@ -1835,7 +1803,7 @@
       <div *ngIf="uploadingFonts"
         class="text-center py-3 text-primary fw-semibold d-flex align-items-center justify-content-center gap-2">
         <span class="material-symbols-outlined spin-icon">sync</span>
-        <span>Uploading webfonts to Cloudflare R2 Storage...</span>
+        <span>Uploading webfonts to CDN...</span>
       </div>
 
       <!-- Uploaded Fonts Reference List -->

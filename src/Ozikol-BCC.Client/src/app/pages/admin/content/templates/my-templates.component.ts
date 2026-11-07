@@ -1524,6 +1524,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /**
    * Handles local CSS file selection.
+   * Immediately uploads to CDN and auto-populates the tag form.
    */
   onCssFileSelected(event: any): void {
     const file = event.target.files?.[0];
@@ -1537,11 +1538,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.selectedCssFile = file;
     this.selectedCssFileName = file.name;
     this.selectedCssFileSize = (file.size / 1024).toFixed(1) + ' KB';
-    this.toast.info(`Selected CSS file: ${file.name}`);
+    
+    // Automatically upload to CDN immediately!
+    this.uploadAndLinkCssFile();
   }
 
   /**
    * Handles local JavaScript file selection.
+   * Immediately uploads to CDN and auto-populates the tag form.
    */
   onJsFileSelected(event: any): void {
     const file = event.target.files?.[0];
@@ -1555,7 +1559,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.selectedJsFile = file;
     this.selectedJsFileName = file.name;
     this.selectedJsFileSize = (file.size / 1024).toFixed(1) + ' KB';
-    this.toast.info(`Selected JavaScript file: ${file.name}`);
+
+    // Automatically upload to CDN immediately!
+    this.uploadAndLinkJsFile();
   }
 
   /**
@@ -1569,13 +1575,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Copies the generated Cloudflare CDN URL to the clipboard.
+   * Copies the generated CDN URL to the clipboard.
    */
   copyCdnUrl(url: string): void {
     if (!url) return;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
-        this.toast.success('Cloudflare CDN URL copied to clipboard!');
+        this.toast.success('CDN URL copied to clipboard!');
       }).catch(() => {
         this.toast.info(`CDN URL: ${url}`);
       });
@@ -1585,8 +1591,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Uploads the selected CSS file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
-   * Pre-scans the file locally in browser memory to guarantee zero malicious payloads reach R2.
+   * Uploads the selected CSS file to CDN Object Storage and links it.
+   * Pre-scans the file locally in browser memory to guarantee zero malicious payloads reach storage.
    */
   uploadAndLinkCssFile(): void {
     if (!this.selectedCssFile) {
@@ -1622,29 +1628,30 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingCss = false;
         const url = res?.data?.url;
-        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
+        const storage = res?.data?.storage || 'CDN Delivery';
         if (url) {
           this.uploadedCssUrl = url;
           this.uploadedCssStorage = storage;
           this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
           this.tagForm.name = `Stylesheet: ${this.selectedCssFileName.replace(/\.download$/i, '')}`;
           this.tagForm.tagType = 'link_stylesheet';
-          this.toast.success(`Uploaded to ${storage} and edge CDN link generated!`);
+          this.toast.success('Stylesheet uploaded to CDN and linked!');
         } else {
           this.toast.error('Failed to resolve uploaded CSS URL.');
         }
       },
       error: (err) => {
         this.uploadingCss = false;
-        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.resetCssUploadState();
+        const errMsg = err?.error?.message || err?.message || 'Asset upload failed.';
         this.toast.error(errMsg);
       }
     });
   }
 
   /**
-   * Uploads the selected JavaScript file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
-   * Pre-scans the script locally in browser memory to guarantee zero dangerous executions reach R2.
+   * Uploads the selected JavaScript file to CDN Object Storage and links it.
+   * Pre-scans the script locally in browser memory to guarantee zero dangerous executions reach storage.
    */
   uploadAndLinkJsFile(): void {
     if (!this.selectedJsFile) {
@@ -1680,7 +1687,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingJs = false;
         const url = res?.data?.url;
-        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
+        const storage = res?.data?.storage || 'CDN Delivery';
         if (url) {
           this.uploadedJsUrl = url;
           this.uploadedJsStorage = storage;
@@ -1691,14 +1698,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             : `<script src="${url}" defer></script>`;
           this.tagForm.name = `Script: ${cleanName}`;
           this.tagForm.tagType = isFooter ? 'footer_script_url' : 'script_url';
-          this.toast.success(`Uploaded to ${storage} and edge CDN script link generated!`);
+          this.toast.success('JavaScript script uploaded to CDN and linked!');
         } else {
           this.toast.error('Failed to resolve uploaded JS URL.');
         }
       },
       error: (err) => {
         this.uploadingJs = false;
-        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.resetJsUploadState();
+        const errMsg = err?.error?.message || err?.message || 'Asset upload failed.';
         this.toast.error(errMsg);
       }
     });
@@ -2036,7 +2044,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         this.savingAssetContent = false;
-        this.toast.success(res?.message || 'Asset file updated and published to Cloudflare CDN successfully!');
+        this.toast.success(res?.message || 'Asset file updated and published to CDN successfully!');
         this.loadAllCodeInjections();
         this.closeAssetEditorModal();
       },
@@ -2107,7 +2115,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         if (Array.isArray(res?.data)) {
           this.uploadedFonts.push(...res.data);
         }
-        this.toast.success(res?.message || `${files.length} font file(s) uploaded to Cloudflare CDN!`);
+        this.toast.success(res?.message || `${files.length} font file(s) uploaded to CDN!`);
         if (event.target) event.target.value = '';
       },
       error: (err) => {

@@ -163,72 +163,30 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                 }
 
-                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
-                string finalUrl;
-                string storageType;
-                string safeName;
-                string? contentPreview = null;
-
-                if (_r2Storage.IsConfigured())
+                if (!_r2Storage.IsConfigured())
                 {
-                    await using var stream = file.OpenReadStream();
-                    var result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
-
-                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
-                    {
-                        finalUrl = result.Url;
-                        storageType = "Cloudflare R2 + Cloudflare CDN";
-                        safeName = result.SafeFileName ?? fileName;
-                        contentPreview = result.ContentPreview;
-                    }
-                    else
-                    {
-                        // Fallback to local server storage if R2 bucket upload failed
-                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "css");
-                        Directory.CreateDirectory(localDir);
-                        safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.css";
-                        var localPath = Path.Combine(localDir, safeName);
-                        
-                        await using (var localStream = new FileStream(localPath, FileMode.Create))
-                        {
-                            file.OpenReadStream().CopyTo(localStream);
-                        }
-
-                        using var textReader = new StreamReader(file.OpenReadStream());
-                        contentPreview = await textReader.ReadToEndAsync();
-                        finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/css/{safeName}";
-                        storageType = "Local Server Storage (Fallback)";
-                    }
+                    return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
                 }
-                else
-                {
-                    // Fallback to local server storage when R2 is unconfigured
-                    var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "css");
-                    Directory.CreateDirectory(localDir);
-                    safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.css";
-                    var localPath = Path.Combine(localDir, safeName);
-                    
-                    await using (var localStream = new FileStream(localPath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(localStream);
-                    }
 
-                    using var textReader = new StreamReader(file.OpenReadStream());
-                    contentPreview = await textReader.ReadToEndAsync();
-                    finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/css/{safeName}";
-                    storageType = "Local Server Storage";
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                await using var stream = file.OpenReadStream();
+                var result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
+
+                if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(result.Message ?? "Failed to upload stylesheet to CDN."));
                 }
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
-                    url = finalUrl,
-                    key = safeName,
+                    url = result.Url,
+                    key = result.SafeFileName ?? fileName,
                     fileName = fileName,
-                    safeName = safeName,
+                    safeName = result.SafeFileName ?? fileName,
                     size = file.Length,
-                    storage = storageType,
-                    content = contentPreview
-                }, "CSS stylesheet uploaded successfully."));
+                    storage = "CDN Delivery",
+                    content = result.ContentPreview
+                }, "Stylesheet uploaded successfully to CDN."));
             }
             catch (Exception ex)
             {
@@ -280,72 +238,30 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                 }
 
-                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
-                string finalUrl;
-                string storageType;
-                string safeName;
-                string? contentPreview = null;
-
-                if (_r2Storage.IsConfigured())
+                if (!_r2Storage.IsConfigured())
                 {
-                    await using var stream = file.OpenReadStream();
-                    var result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
-
-                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
-                    {
-                        finalUrl = result.Url;
-                        storageType = "Cloudflare R2 + Cloudflare CDN";
-                        safeName = result.SafeFileName ?? fileName;
-                        contentPreview = result.ContentPreview;
-                    }
-                    else
-                    {
-                        // Fallback to local server storage
-                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "js");
-                        Directory.CreateDirectory(localDir);
-                        safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.js";
-                        var localPath = Path.Combine(localDir, safeName);
-                        
-                        await using (var localStream = new FileStream(localPath, FileMode.Create))
-                        {
-                            file.OpenReadStream().CopyTo(localStream);
-                        }
-
-                        using var textReader = new StreamReader(file.OpenReadStream());
-                        contentPreview = await textReader.ReadToEndAsync();
-                        finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/js/{safeName}";
-                        storageType = "Local Server Storage (Fallback)";
-                    }
+                    return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
                 }
-                else
-                {
-                    // Fallback to local server storage when R2 is unconfigured
-                    var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "js");
-                    Directory.CreateDirectory(localDir);
-                    safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.js";
-                    var localPath = Path.Combine(localDir, safeName);
-                    
-                    await using (var localStream = new FileStream(localPath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(localStream);
-                    }
 
-                    using var textReader = new StreamReader(file.OpenReadStream());
-                    contentPreview = await textReader.ReadToEndAsync();
-                    finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/js/{safeName}";
-                    storageType = "Local Server Storage";
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                await using var stream = file.OpenReadStream();
+                var result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
+
+                if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(result.Message ?? "Failed to upload JavaScript file to CDN."));
                 }
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
-                    url = finalUrl,
-                    key = safeName,
+                    url = result.Url,
+                    key = result.SafeFileName ?? fileName,
                     fileName = fileName,
-                    safeName = safeName,
+                    safeName = result.SafeFileName ?? fileName,
                     size = file.Length,
-                    storage = storageType,
-                    content = contentPreview
-                }, "JavaScript file uploaded successfully."));
+                    storage = "CDN Delivery",
+                    content = result.ContentPreview
+                }, "JavaScript script uploaded successfully to CDN."));
             }
             catch (Exception ex)
             {
@@ -6043,6 +5959,11 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
             }
 
+            if (!_r2Storage.IsConfigured())
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
+            }
+
             var cleanSuite = string.IsNullOrWhiteSpace(suiteCode) ? "global" : suiteCode.Trim().ToLowerInvariant();
             var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
 
@@ -6122,76 +6043,37 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
                 try
                 {
-                    string assetUrl;
-
-                    if (_r2Storage.IsConfigured())
+                    await using var stream = file.OpenReadStream();
+                    CloudflareR2UploadResult result;
+                    if (isJs)
                     {
-                        await using var stream = file.OpenReadStream();
-                        CloudflareR2UploadResult result;
-                        if (isJs)
+                        result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
+                    }
+                    else if (isFont)
+                    {
+                        var contentType = ext switch
                         {
-                            result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
-                        }
-                        else if (isFont)
-                        {
-                            var contentType = ext switch
-                            {
-                                ".woff2" => "font/woff2",
-                                ".woff" => "font/woff",
-                                ".ttf" => "font/ttf",
-                                ".otf" => "font/otf",
-                                ".eot" => "application/vnd.ms-fontobject",
-                                ".svg" => "image/svg+xml",
-                                _ => "application/octet-stream"
-                            };
-                            result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
-                        }
-                        else
-                        {
-                            result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
-                        }
-
-                        if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
-                        {
-                            assetUrl = result.Url;
-                        }
-                        else
-                        {
-                            // Fallback to local server storage if R2 upload fails
-                            var subFolder = isJs ? "js" : (isFont ? "fonts" : "css");
-                            var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", subFolder);
-                            Directory.CreateDirectory(localDir);
-
-                            var safeBaseName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant();
-                            var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}{ext}";
-                            var localPath = Path.Combine(localDir, uniqueFileName);
-
-                            await using (var localStream = new FileStream(localPath, FileMode.Create))
-                            {
-                                file.OpenReadStream().CopyTo(localStream);
-                            }
-
-                            assetUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/{subFolder}/{uniqueFileName}";
-                        }
+                            ".woff2" => "font/woff2",
+                            ".woff" => "font/woff",
+                            ".ttf" => "font/ttf",
+                            ".otf" => "font/otf",
+                            ".eot" => "application/vnd.ms-fontobject",
+                            ".svg" => "image/svg+xml",
+                            _ => "application/octet-stream"
+                        };
+                        result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
                     }
                     else
                     {
-                        // Fallback to local server storage when R2 is unconfigured
-                        var subFolder = isJs ? "js" : (isFont ? "fonts" : "css");
-                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", subFolder);
-                        Directory.CreateDirectory(localDir);
-
-                        var safeBaseName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant();
-                        var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}{ext}";
-                        var localPath = Path.Combine(localDir, uniqueFileName);
-
-                        await using (var localStream = new FileStream(localPath, FileMode.Create))
-                        {
-                            await file.CopyToAsync(localStream);
-                        }
-
-                        assetUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/{subFolder}/{uniqueFileName}";
+                        result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
                     }
+
+                    if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResponse($"Failed to upload asset '{fileName}' to CDN: {result.Message}"));
+                    }
+
+                    string assetUrl = result.Url;
 
                     string tagContent;
                     if (isJs)
@@ -6578,7 +6460,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!_r2Storage.IsConfigured())
             {
-                return BadRequest(ApiResponse<object>.FailureResponse("Cloudflare R2 storage is not configured. Please define CloudflareR2 credentials in environment settings."));
+                return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
             }
 
             var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
