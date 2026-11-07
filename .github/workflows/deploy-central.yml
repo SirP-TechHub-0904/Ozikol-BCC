@@ -12,6 +12,8 @@ on:
       - 'src/Ozikol.Central/**'
       - 'src/Ozikol.MasterDomain/**'
       - 'src/Ozikol.MasterPersistence.EF.MasterSQL/**'
+      - 'src/Ozikol-BCC.Domain/**'
+      - 'src/Ozikol-BCC.Persistence.EF.SQL/**'
       - '.github/workflows/deploy-central.yml'
   workflow_dispatch:
 
