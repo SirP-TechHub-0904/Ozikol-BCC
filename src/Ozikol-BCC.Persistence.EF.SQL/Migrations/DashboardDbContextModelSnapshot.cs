@@ -558,6 +558,85 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpChatAuditLogs");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpClientSite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("GeofenceRadiusMeters")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("RequiredSiaLicenceType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SiteAssignmentInstructions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SiteCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SiteName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TenantKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantKey", "IsActive");
+
+                    b.HasIndex("TenantKey", "SiteCode")
+                        .IsUnique();
+
+                    b.ToTable("BcpClientSites");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommittee", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4137,6 +4216,373 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpScheduledJobQueues");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssignedUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AssignedUserName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("BreakMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ClientSiteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ConfirmedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EndsAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("HourlyChargeRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("HourlyPayRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsConfirmedByGuard")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOvernight")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("PlannedDurationHours")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<string>("PostName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("RequiredWorkspaceStationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RequiredWorkspaceStationName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ShiftCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("StartsAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TenantKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientSiteId");
+
+                    b.HasIndex("TenantKey", "Status");
+
+                    b.HasIndex("TenantKey", "AssignedUserId", "StartsAtUtc");
+
+                    b.HasIndex("TenantKey", "ClientSiteId", "StartsAtUtc");
+
+                    b.HasIndex("TenantKey", "StartsAtUtc", "EndsAtUtc");
+
+                    b.ToTable("BcpShifts");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShiftAttendance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ActualDurationHours")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal?>("BillableHours")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<double?>("ClockInAccuracyMeters")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ClockInDistanceFromSiteMeters")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ClockInLatitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ClockInLongitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ClockInMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("ClockInUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("ClockOutAccuracyMeters")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ClockOutDistanceFromSiteMeters")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ClockOutLatitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ClockOutLongitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ClockOutMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("ClockOutUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FlagReason")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsClockInGeofenceVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsClockOutGeofenceVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFlagged")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastWelfareCheckAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LateArrivalMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("OvertimeHours")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<Guid>("ShiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("SupervisorApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SupervisorApprovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SupervisorApprovedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SupervisorNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TenantKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("WelfareChecksCompletedCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShiftId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantKey", "IsFlagged");
+
+                    b.HasIndex("TenantKey", "UserId", "ClockInUtc");
+
+                    b.ToTable("BcpShiftAttendances");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShiftLeaveRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AttachmentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LeaveType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TenantKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("TotalDays")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(5,1)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantKey", "Status");
+
+                    b.HasIndex("TenantKey", "UserId", "StartDate", "EndDate");
+
+                    b.ToTable("BcpShiftLeaveRequests");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShiftSwapRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OfferedToUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OfferedToUserName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RequestingUserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RequestingUserName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("ShiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("SupervisorApprovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SupervisorApprovedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SupervisorRejectionReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid?>("TargetShiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TenantKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("TenantKey", "ShiftId");
+
+                    b.HasIndex("TenantKey", "OfferedToUserId", "Status");
+
+                    b.HasIndex("TenantKey", "RequestingUserId", "Status");
+
+                    b.ToTable("BcpShiftSwapRequests");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSmsCampaign", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6935,6 +7381,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<bool>("DisableAiAutoFill")
+                        .HasColumnType("bit");
+
                     b.Property<int>("DropdownSortOrder")
                         .HasColumnType("int");
 
@@ -8143,6 +8592,39 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("BcpReportSubmission");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShift", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpClientSite", "ClientSite")
+                        .WithMany("Shifts")
+                        .HasForeignKey("ClientSiteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClientSite");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShiftAttendance", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpShift", "Shift")
+                        .WithOne("AttendanceRecord")
+                        .HasForeignKey("Ozikol_BCC.Domain.Models.BcpShiftAttendance", "ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shift");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShiftSwapRequest", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpShift", "Shift")
+                        .WithMany("SwapRequests")
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shift");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSmsCampaign", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
@@ -8465,6 +8947,11 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("BcpUserVotes");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpClientSite", b =>
+                {
+                    b.Navigation("Shifts");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpCommittee", b =>
                 {
                     b.Navigation("CloudDocuments");
@@ -8636,6 +9123,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpReportSubmission", b =>
                 {
                     b.Navigation("TimeLogs");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpShift", b =>
+                {
+                    b.Navigation("AttendanceRecord");
+
+                    b.Navigation("SwapRequests");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSmsCampaign", b =>
