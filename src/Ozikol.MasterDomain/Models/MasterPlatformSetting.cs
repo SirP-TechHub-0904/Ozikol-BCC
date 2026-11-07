@@ -407,6 +407,36 @@ namespace Ozikol.MasterDomain.Models
         public string? BankDepositInstructions { get; set; }
 
         /// <summary>
+        /// Gets or sets the GitHub Personal Access Token (PAT) used by Central to trigger automated cloud app builds via GitHub Actions.
+        /// </summary>
+        [MaxLength(500)]
+        public string? GitHubAppBuilderToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the GitHub repository owner or organization name (e.g. "SirP-TechHub-0904").
+        /// </summary>
+        [MaxLength(100)]
+        public string? GitHubAppBuilderOwner { get; set; } = "SirP-TechHub-0904";
+
+        /// <summary>
+        /// Gets or sets the GitHub repository name (e.g. "Ozikol-BCC").
+        /// </summary>
+        [MaxLength(100)]
+        public string? GitHubAppBuilderRepo { get; set; } = "Ozikol-BCC";
+
+        /// <summary>
+        /// Gets or sets the GitHub workflow file name (e.g. "build-tenant-apps.yml").
+        /// </summary>
+        [MaxLength(100)]
+        public string? GitHubAppBuilderWorkflow { get; set; } = "build-tenant-apps.yml";
+
+        /// <summary>
+        /// Gets or sets the base URL for public app downloads (e.g. "https://downloads.ozikol.cloud/builds" or "/downloads/builds").
+        /// </summary>
+        [MaxLength(500)]
+        public string? AppBuilderDownloadBaseUrl { get; set; }
+
+        /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
         /// </summary>
         public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;

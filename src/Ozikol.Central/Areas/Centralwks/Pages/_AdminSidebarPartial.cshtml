@@ -1,278 +1,284 @@
-@* ─────────────────────────────────────────────────────────────────────────────
-    _AdminSidebarPartial.cshtml — Collapsible sidebar navigation for Ozikol Central.
-    Structured with section titles, accordion dropdowns, and Material Symbols.
-    No emojis. Supports icon-only rail mode when collapsed.
-   ───────────────────────────────────────────────────────────────────────────── *@
-
-<nav class="admin-sidebar" id="adminSidebar">
-    <div class="sidebar-header">
-        <a href="/centralwks/dashboard" class="sidebar-brand">
-            <img src="/images/oz-logo.png" class="brand-logo" alt="Ozikol" />
-            <span class="brand-text">Ozikol Console</span>
-        </a>
-        <div class="sidebar-header-actions">
-            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar">
-                <span class="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-    </div>
-
-    <div class="sidebar-nav-container">
-        @* ── OVERVIEW ── *@
-        <ul class="sidebar-nav">
-            <li class="nav-section-label"><span class="section-label-text">Overview</span></li>
-            <li class="nav-item">
-                <a href="/centralwks/dashboard" class="nav-link" data-page="dashboard" title="Dashboard">
-                    <span class="material-symbols-outlined nav-icon">dashboard</span>
-                    <span class="nav-label">Dashboard</span>
-                </a>
-            </li>
-        </ul>
-
-        @* ── PLATFORM CORE ── *@
-        <ul class="sidebar-nav">
-            <li class="nav-section-label"><span class="section-label-text">Platform Core</span></li>
-            
-            @* Tenants Dropdown *@
-            <li class="nav-item nav-item-dropdown" data-dropdown="tenants">
-                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Tenants">
-                    <span class="material-symbols-outlined nav-icon">domain</span>
-                    <span class="nav-label">Tenants</span>
-                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
-                </button>
-                <ul class="nav-submenu">
-                    <li>
-                        <a href="/centralwks/tenants" class="nav-sublink" data-page="tenants">
-                            <span class="nav-subdot"></span>
-                            <span>All Tenants</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/tenants/databases" class="nav-sublink" data-page="tenant-databases">
-                            <span class="nav-subdot"></span>
-                            <span>Database Health</span>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-
-            @* Features Dropdown *@
-            <li class="nav-item nav-item-dropdown" data-dropdown="features">
-                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Features &amp; Modules">
-                    <span class="material-symbols-outlined nav-icon">toggle_on</span>
-                    <span class="nav-label">Features</span>
-                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
-                </button>
-                <ul class="nav-submenu">
-                    <li>
-                        <a href="/centralwks/features" class="nav-sublink" data-page="features-catalog">
-                            <span class="nav-subdot"></span>
-                            <span>Feature Directory</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/features/analytics" class="nav-sublink" data-page="features-analytics">
-                            <span class="nav-subdot"></span>
-                            <span>Tenant Feature Adoption</span>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-
-            @* Billing & Plans Dropdown *@
-            <li class="nav-item nav-item-dropdown" data-dropdown="billing">
-                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Billing & Plans">
-                    <span class="material-symbols-outlined nav-icon">payments</span>
-                    <span class="nav-label">Billing &amp; Plans</span>
-                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
-                </button>
-                <ul class="nav-submenu">
-                    <li>
-                        <a href="/centralwks/subscriptions" class="nav-sublink" data-page="subscriptions">
-                            <span class="nav-subdot"></span>
-                            <span>Subscriptions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/coupons" class="nav-sublink" data-page="coupons">
-                            <span class="nav-subdot"></span>
-                            <span>Vouchers &amp; Coupons</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/voucher-applications" class="nav-sublink" data-page="voucher-applications">
-                            <span class="nav-subdot"></span>
-                            <span>Voucher Applications</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/billing" class="nav-sublink" data-page="billing">
-                            <span class="nav-subdot"></span>
-                            <span>Revenue &amp; Invoices</span>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-
-        @* ── MARKETPLACE ── *@
-        <ul class="sidebar-nav">
-            <li class="nav-section-label"><span class="section-label-text">Marketplace</span></li>
-            <li class="nav-item">
-                <a href="/centralwks/templates" class="nav-link" data-page="templates" title="Templates">
-                    <span class="material-symbols-outlined nav-icon">style</span>
-                    <span class="nav-label">Templates</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/affiliates" class="nav-link" data-page="affiliates" title="Affiliates">
-                    <span class="material-symbols-outlined nav-icon">handshake</span>
-                    <span class="nav-label">Affiliates</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/creators" class="nav-link" data-page="creators" title="Creators">
-                    <span class="material-symbols-outlined nav-icon">draw</span>
-                    <span class="nav-label">Creators</span>
-                </a>
-            </li>
-        </ul>
-
-        @* ── SUPPORT & COMMS ── *@
-        <ul class="sidebar-nav">
-            <li class="nav-section-label"><span class="section-label-text">Support &amp; Comms</span></li>
-            <li class="nav-item">
-                <a href="/centralwks/support" class="nav-link" data-page="support" title="Support Tickets">
-                    <span class="material-symbols-outlined nav-icon">support_agent</span>
-                    <span class="nav-label">Support Tickets</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/email-logs" class="nav-link" data-page="email-logs" title="Email Logs">
-                    <span class="material-symbols-outlined nav-icon">mail</span>
-                    <span class="nav-label">Email Logs</span>
-                </a>
-            </li>
-        </ul>
-
-        @* ── CONTENT & CMS ── *@
-        <ul class="sidebar-nav">
-            <li class="nav-section-label"><span class="section-label-text">Content &amp; CMS</span></li>
-            <li class="nav-item nav-item-dropdown" data-dropdown="content">
-                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Content Management">
-                    <span class="material-symbols-outlined nav-icon">article</span>
-                    <span class="nav-label">Content</span>
-                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
-                </button>
-                <ul class="nav-submenu">
-                    <li>
-                        <a href="/centralwks/news/articles" class="nav-sublink" data-page="news">
-                            <span class="nav-subdot"></span>
-                            <span>News &amp; Blog</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/careers/openings" class="nav-sublink" data-page="careers">
-                            <span class="nav-subdot"></span>
-                            <span>Careers &amp; Jobs</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/legal" class="nav-sublink" data-page="legal">
-                            <span class="nav-subdot"></span>
-                            <span>Legal Docs</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/helpdesk/articles" class="nav-sublink" data-page="helpdesk">
-                            <span class="nav-subdot"></span>
-                            <span>Knowledge Base</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/centralwks/helpdesk/videos" class="nav-sublink" data-page="helpdesk-videos">
-                            <span class="nav-subdot"></span>
-                            <span>Video Guides</span>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-
-        @* ── SYSTEM ── *@
-        <ul class="sidebar-nav">
-            <li class="nav-section-label"><span class="section-label-text">System</span></li>
-            <li class="nav-item">
-                <a href="/centralwks/platform-settings" class="nav-link" data-page="platform-settings" title="Settings">
-                    <span class="material-symbols-outlined nav-icon">settings</span>
-                    <span class="nav-label">Settings</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/email-templates" class="nav-link" data-page="email-templates" title="Email Templates">
-                    <span class="material-symbols-outlined nav-icon">mark_email_read</span>
-                    <span class="nav-label">Email Templates</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/currencies" class="nav-link" data-page="currencies" title="Manage Currencies &amp; FX Rates">
-                    <span class="material-symbols-outlined nav-icon">currency_exchange</span>
-                    <span class="nav-label">Manage Currencies</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/app-releases" class="nav-link" data-page="app-releases" title="App Releases">
-                    <span class="material-symbols-outlined nav-icon">system_update</span>
-                    <span class="nav-label">App Releases</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/ai-keys" class="nav-link" data-page="ai-keys" title="AI Key Hub">
-                    <span class="material-symbols-outlined nav-icon">psychology</span>
-                    <span class="nav-label">AI Key Hub</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/users" class="nav-link" data-page="users" title="Users">
-                    <span class="material-symbols-outlined nav-icon">group</span>
-                    <span class="nav-label">Users &amp; Roles</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/audit-log" class="nav-link" data-page="audit-log" title="Audit Log">
-                    <span class="material-symbols-outlined nav-icon">history</span>
-                    <span class="nav-label">Audit Log</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/error-logs" class="nav-link" data-page="error-logs" title="API Error Logs (Custom vs Real Error)">
-                    <span class="material-symbols-outlined nav-icon">bug_report</span>
-                    <span class="nav-label">Error Logs</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/notifications" class="nav-link" data-page="notifications" title="Notifications">
-                    <span class="material-symbols-outlined nav-icon">notifications</span>
-                    <span class="nav-label">Notifications</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/centralwks/jobs" class="nav-link" data-page="jobs" title="Background Jobs">
-                    <span class="material-symbols-outlined nav-icon">schedule</span>
-                    <span class="nav-label">Background Jobs</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    @* ── Sidebar Footer ── *@
-    <div class="sidebar-footer">
-        <a href="/" class="nav-link sidebar-footer-link" target="_blank" title="Public Portal">
-            <span class="material-symbols-outlined nav-icon">open_in_new</span>
-            <span class="nav-label">Public Portal</span>
-        </a>
-    </div>
-</nav>
+@* ─────────────────────────────────────────────────────────────────────────────
+    _AdminSidebarPartial.cshtml — Collapsible sidebar navigation for Ozikol Central.
+    Structured with section titles, accordion dropdowns, and Material Symbols.
+    No emojis. Supports icon-only rail mode when collapsed.
+   ───────────────────────────────────────────────────────────────────────────── *@
+
+<nav class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+        <a href="/centralwks/dashboard" class="sidebar-brand">
+            <img src="/images/oz-logo.png" class="brand-logo" alt="Ozikol" />
+            <span class="brand-text">Ozikol Console</span>
+        </a>
+        <div class="sidebar-header-actions">
+            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="sidebar-nav-container">
+        @* ── OVERVIEW ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label"><span class="section-label-text">Overview</span></li>
+            <li class="nav-item">
+                <a href="/centralwks/dashboard" class="nav-link" data-page="dashboard" title="Dashboard">
+                    <span class="material-symbols-outlined nav-icon">dashboard</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+            </li>
+        </ul>
+
+        @* ── PLATFORM CORE ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label"><span class="section-label-text">Platform Core</span></li>
+            
+            @* Tenants Dropdown *@
+            <li class="nav-item nav-item-dropdown" data-dropdown="tenants">
+                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Tenants">
+                    <span class="material-symbols-outlined nav-icon">domain</span>
+                    <span class="nav-label">Tenants</span>
+                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
+                </button>
+                <ul class="nav-submenu">
+                    <li>
+                        <a href="/centralwks/tenants" class="nav-sublink" data-page="tenants">
+                            <span class="nav-subdot"></span>
+                            <span>All Tenants</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/tenants/databases" class="nav-sublink" data-page="tenant-databases">
+                            <span class="nav-subdot"></span>
+                            <span>Database Health</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            @* Features Dropdown *@
+            <li class="nav-item nav-item-dropdown" data-dropdown="features">
+                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Features &amp; Modules">
+                    <span class="material-symbols-outlined nav-icon">toggle_on</span>
+                    <span class="nav-label">Features</span>
+                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
+                </button>
+                <ul class="nav-submenu">
+                    <li>
+                        <a href="/centralwks/features" class="nav-sublink" data-page="features-catalog">
+                            <span class="nav-subdot"></span>
+                            <span>Feature Directory</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/features/analytics" class="nav-sublink" data-page="features-analytics">
+                            <span class="nav-subdot"></span>
+                            <span>Tenant Feature Adoption</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            @* Billing & Plans Dropdown *@
+            <li class="nav-item nav-item-dropdown" data-dropdown="billing">
+                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Billing & Plans">
+                    <span class="material-symbols-outlined nav-icon">payments</span>
+                    <span class="nav-label">Billing &amp; Plans</span>
+                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
+                </button>
+                <ul class="nav-submenu">
+                    <li>
+                        <a href="/centralwks/subscriptions" class="nav-sublink" data-page="subscriptions">
+                            <span class="nav-subdot"></span>
+                            <span>Subscriptions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/coupons" class="nav-sublink" data-page="coupons">
+                            <span class="nav-subdot"></span>
+                            <span>Vouchers &amp; Coupons</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/voucher-applications" class="nav-sublink" data-page="voucher-applications">
+                            <span class="nav-subdot"></span>
+                            <span>Voucher Applications</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/billing" class="nav-sublink" data-page="billing">
+                            <span class="nav-subdot"></span>
+                            <span>Revenue &amp; Invoices</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        @* ── MARKETPLACE ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label"><span class="section-label-text">Marketplace</span></li>
+            <li class="nav-item">
+                <a href="/centralwks/templates" class="nav-link" data-page="templates" title="Templates">
+                    <span class="material-symbols-outlined nav-icon">style</span>
+                    <span class="nav-label">Templates</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/affiliates" class="nav-link" data-page="affiliates" title="Affiliates">
+                    <span class="material-symbols-outlined nav-icon">handshake</span>
+                    <span class="nav-label">Affiliates</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/creators" class="nav-link" data-page="creators" title="Creators">
+                    <span class="material-symbols-outlined nav-icon">draw</span>
+                    <span class="nav-label">Creators</span>
+                </a>
+            </li>
+        </ul>
+
+        @* ── SUPPORT & COMMS ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label"><span class="section-label-text">Support &amp; Comms</span></li>
+            <li class="nav-item">
+                <a href="/centralwks/support" class="nav-link" data-page="support" title="Support Tickets">
+                    <span class="material-symbols-outlined nav-icon">support_agent</span>
+                    <span class="nav-label">Support Tickets</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/email-logs" class="nav-link" data-page="email-logs" title="Email Logs">
+                    <span class="material-symbols-outlined nav-icon">mail</span>
+                    <span class="nav-label">Email Logs</span>
+                </a>
+            </li>
+        </ul>
+
+        @* ── CONTENT & CMS ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label"><span class="section-label-text">Content &amp; CMS</span></li>
+            <li class="nav-item nav-item-dropdown" data-dropdown="content">
+                <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" title="Content Management">
+                    <span class="material-symbols-outlined nav-icon">article</span>
+                    <span class="nav-label">Content</span>
+                    <span class="material-symbols-outlined nav-chevron">expand_more</span>
+                </button>
+                <ul class="nav-submenu">
+                    <li>
+                        <a href="/centralwks/news/articles" class="nav-sublink" data-page="news">
+                            <span class="nav-subdot"></span>
+                            <span>News &amp; Blog</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/careers/openings" class="nav-sublink" data-page="careers">
+                            <span class="nav-subdot"></span>
+                            <span>Careers &amp; Jobs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/legal" class="nav-sublink" data-page="legal">
+                            <span class="nav-subdot"></span>
+                            <span>Legal Docs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/helpdesk/articles" class="nav-sublink" data-page="helpdesk">
+                            <span class="nav-subdot"></span>
+                            <span>Knowledge Base</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/centralwks/helpdesk/videos" class="nav-sublink" data-page="helpdesk-videos">
+                            <span class="nav-subdot"></span>
+                            <span>Video Guides</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        @* ── SYSTEM ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label"><span class="section-label-text">System</span></li>
+            <li class="nav-item">
+                <a href="/centralwks/platform-settings" class="nav-link" data-page="platform-settings" title="Settings">
+                    <span class="material-symbols-outlined nav-icon">settings</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/email-templates" class="nav-link" data-page="email-templates" title="Email Templates">
+                    <span class="material-symbols-outlined nav-icon">mark_email_read</span>
+                    <span class="nav-label">Email Templates</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/currencies" class="nav-link" data-page="currencies" title="Manage Currencies &amp; FX Rates">
+                    <span class="material-symbols-outlined nav-icon">currency_exchange</span>
+                    <span class="nav-label">Manage Currencies</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/app-builder" class="nav-link" data-page="app-builder" title="App Builder (Workstations &amp; Mobile)">
+                    <span class="material-symbols-outlined nav-icon">build_circle</span>
+                    <span class="nav-label">App Builder</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/app-releases" class="nav-link" data-page="app-releases" title="App Releases">
+                    <span class="material-symbols-outlined nav-icon">system_update</span>
+                    <span class="nav-label">App Releases</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/ai-keys" class="nav-link" data-page="ai-keys" title="AI Key Hub">
+                    <span class="material-symbols-outlined nav-icon">psychology</span>
+                    <span class="nav-label">AI Key Hub</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/users" class="nav-link" data-page="users" title="Users">
+                    <span class="material-symbols-outlined nav-icon">group</span>
+                    <span class="nav-label">Users &amp; Roles</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/audit-log" class="nav-link" data-page="audit-log" title="Audit Log">
+                    <span class="material-symbols-outlined nav-icon">history</span>
+                    <span class="nav-label">Audit Log</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/error-logs" class="nav-link" data-page="error-logs" title="API Error Logs (Custom vs Real Error)">
+                    <span class="material-symbols-outlined nav-icon">bug_report</span>
+                    <span class="nav-label">Error Logs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/notifications" class="nav-link" data-page="notifications" title="Notifications">
+                    <span class="material-symbols-outlined nav-icon">notifications</span>
+                    <span class="nav-label">Notifications</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/centralwks/jobs" class="nav-link" data-page="jobs" title="Background Jobs">
+                    <span class="material-symbols-outlined nav-icon">schedule</span>
+                    <span class="nav-label">Background Jobs</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    @* ── Sidebar Footer ── *@
+    <div class="sidebar-footer">
+        <a href="/" class="nav-link sidebar-footer-link" target="_blank" title="Public Portal">
+            <span class="material-symbols-outlined nav-icon">open_in_new</span>
+            <span class="nav-label">Public Portal</span>
+        </a>
+    </div>
+</nav>

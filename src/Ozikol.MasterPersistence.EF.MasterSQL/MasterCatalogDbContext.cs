@@ -68,6 +68,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     /// </summary>
     public DbSet<MasterClientRelease> MasterClientReleases { get; set; } = null!;
 
+    /// <summary>
+    /// Automated application build jobs and history records for Windows, Android, and iOS releases.
+    /// </summary>
+    public DbSet<MasterTenantAppBuild> MasterTenantAppBuilds { get; set; } = null!;
+
 
     /// <summary>
     /// Audit log entries tracking all administrative actions across the platform.

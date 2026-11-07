@@ -1,0 +1,504 @@
+@page "/centralwks/app-builder"
+@model Ozikol.Central.Areas.Centralwks.Pages.AppBuilder.IndexModel
+@{
+    ViewData["Title"] = "Tenant App Builder & Cloud Publisher";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span>Automated App Builder &amp; Cloud Publisher</span>
+            <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050E5; border: 1px solid rgba(0, 80, 229, 0.25); font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+                Central Works
+            </span>
+            @if (!Model.IsGitHubConfigured)
+            {
+                <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+                    PAT Token Required
+                </span>
+            }
+        </h1>
+        <p class="admin-subtitle">Generate, compile, and distribute brand-locked Windows Workstations (.exe) and Android Mobile (.apk, .aab) binaries for dedicated tenants and general multi-tenant releases via GitHub Actions cloud runners.</p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" onclick="openSettingsModal()" class="btn-admin" style="padding: 9px 16px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); color: var(--admin-text); border-radius: var(--radius-md); cursor: pointer;">
+            <span class="material-symbols-outlined" style="font-size: 19px; color: #0050E5;">settings</span>
+            <span>Cloud Runner Settings</span>
+        </button>
+        <button type="button" onclick="scrollToBuilder()" class="btn-admin" style="padding: 9px 18px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px; background: #0050E5; color: #ffffff; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+            <span class="material-symbols-outlined" style="font-size: 19px;">rocket_launch</span>
+            <span>New Cloud Build</span>
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="admin-alert admin-alert-success" style="width: 100%; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: #059669;">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">check_circle</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.StatusMessage</div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="admin-alert admin-alert-danger" style="width: 100%; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #dc2626;">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">error</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.ErrorMessage</div>
+    </div>
+}
+
+@* ── KPI Summary Cards ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(0, 80, 229, 0.12); color: #0050E5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">deployed_code</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Total App Releases</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.TotalBuildsCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">desktop_windows</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Windows Workstations</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.WindowsBuildsCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">phone_android</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Android APK &amp; AAB</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.AndroidBuildsCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">sync</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Building / Queued</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.ActiveBuildingCount</div>
+        </div>
+    </div>
+</div>
+
+@* ── Cloud Build Trigger Card ── *@
+<div id="builderSection" class="admin-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 24px; margin-bottom: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #0050E5;">construction</span>
+            <div>
+                <h2 style="font-size: 17px; font-weight: 700; margin: 0; color: var(--admin-text);">Generate New Cloud Build</h2>
+                <p style="font-size: 13px; color: var(--admin-text-muted); margin: 3px 0 0 0;">Compile custom branded desktop and mobile executables without using your local CPU resources.</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" asp-page-handler="TriggerBuild">
+        @* App Mode Toggle Tabs *@
+        <div style="display: flex; gap: 12px; margin-bottom: 22px;">
+            <label style="flex: 1; padding: 14px; border-radius: var(--radius-md); border: 2px solid #0050E5; background: rgba(0, 80, 229, 0.04); cursor: pointer; display: flex; align-items: flex-start; gap: 12px;" id="lblWhiteLabel">
+                <input type="radio" asp-for="BuildInput.AppMode" value="whitelabel" checked onchange="toggleAppMode('whitelabel')" style="margin-top: 3px;" />
+                <div>
+                    <strong style="display: block; font-size: 14px; color: var(--admin-text);">Tenant White-Label Dedicated App</strong>
+                    <span style="font-size: 12.5px; color: var(--admin-text-muted); display: block; margin-top: 2px;">Locks the application directly to the selected tenant. The client launches the app with zero workspace prompts.</span>
+                </div>
+            </label>
+
+            <label style="flex: 1; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); cursor: pointer; display: flex; align-items: flex-start; gap: 12px;" id="lblGeneral">
+                <input type="radio" asp-for="BuildInput.AppMode" value="general" onchange="toggleAppMode('general')" style="margin-top: 3px;" />
+                <div>
+                    <strong style="display: block; font-size: 14px; color: var(--admin-text);">General Multi-Tenant App (Universal BCC)</strong>
+                    <span style="font-size: 12.5px; color: var(--admin-text-muted); display: block; margin-top: 2px;">Standard Ozikol BCC branding with an interactive workspace code picker for public and multi-client access.</span>
+                </div>
+            </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 20px;">
+            @* Tenant Selector *@
+            <div id="tenantSelectGroup">
+                <label style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: block; margin-bottom: 6px;">SELECT TENANT *</label>
+                <select id="tenantSelect" asp-for="BuildInput.TenantKey" onchange="onTenantSelected()" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 14px;">
+                    <option value="">-- Choose Tenant --</option>
+                    @foreach (var t in Model.Tenants)
+                    {
+                        <option value="@t.TenantKey" data-name="@t.OrganizationName" data-domain="@(t.CustomDomain ?? t.PrimaryDomain)" data-api="@t.ApiUrl">
+                            @t.OrganizationName (@t.TenantKey)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            @* Brand Name *@
+            <div>
+                <label style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: block; margin-bottom: 6px;">APPLICATION / BRAND NAME *</label>
+                <input type="text" id="inputBrandName" asp-for="BuildInput.BrandName" placeholder="e.g. Workspace Command Center" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 14px;" />
+            </div>
+
+            @* Semantic Version *@
+            <div>
+                <label style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: block; margin-bottom: 6px;">APP VERSION *</label>
+                <input type="text" asp-for="BuildInput.Version" value="1.0.0" placeholder="e.g. 1.0.0" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 14px;" />
+            </div>
+
+            @* Build Number *@
+            <div>
+                <label style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: block; margin-bottom: 6px;">BUILD SEQUENCE NUMBER</label>
+                <input type="number" asp-for="BuildInput.BuildNumber" value="1" min="1" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 14px;" />
+            </div>
+
+            @* API Base URL *@
+            <div>
+                <label style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: block; margin-bottom: 6px;">TARGET API ENDPOINT</label>
+                <input type="text" id="inputApiUrl" asp-for="BuildInput.ApiBaseUrl" placeholder="e.g. https://api.domain.com" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 14px;" />
+            </div>
+
+            @* Primary Custom Domain *@
+            <div id="domainGroup">
+                <label style="font-size: 13px; font-weight: 600; color: var(--admin-text); display: block; margin-bottom: 6px;">WORKSPACE DOMAIN</label>
+                <input type="text" id="inputDomain" asp-for="BuildInput.PrimaryDomain" placeholder="e.g. workspace.domain.com" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 14px;" />
+            </div>
+        </div>
+
+        @* Target Platform Checkboxes *@
+        <div style="background: rgba(0, 80, 229, 0.03); border: 1px dashed rgba(0, 80, 229, 0.3); border-radius: var(--radius-md); padding: 16px; margin-bottom: 22px;">
+            <label style="font-size: 13px; font-weight: 700; color: #0050E5; display: block; margin-bottom: 10px;">SELECT TARGET COMPILATION PLATFORMS</label>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 500; cursor: pointer;">
+                    <input type="checkbox" asp-for="BuildInput.BuildWindows" checked style="width: 18px; height: 18px; accent-color: #0050E5;" />
+                    <span class="material-symbols-outlined" style="color: #0284c7; font-size: 20px;">desktop_windows</span>
+                    <span>Windows Desktop Workstation (.exe / installer package)</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 500; cursor: pointer;">
+                    <input type="checkbox" asp-for="BuildInput.BuildAndroid" checked style="width: 18px; height: 18px; accent-color: #0050E5;" />
+                    <span class="material-symbols-outlined" style="color: #059669; font-size: 20px;">phone_android</span>
+                    <span>Android Mobile (.apk direct sideload &amp; .aab Google Play Store)</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+            <button type="submit" class="btn-admin" style="background: #0050E5; color: #ffffff; padding: 11px 24px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">cloud_upload</span>
+                <span>Dispatch Build to GitHub Actions</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@* ── Builds History & Distribution Table ── *@
+<div class="admin-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--admin-text);">Builds History &amp; Artifact Distribution</h3>
+            <span style="font-size: 12.5px; color: var(--admin-text-muted);">Instant client downloads, QR code mobile sideloading, and binary audit trail.</span>
+        </div>
+
+        @* Filters *@
+        <form method="get" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <select name="FilterPlatform" onchange="this.form.submit()" style="padding: 7px 12px; font-size: 13px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text);">
+                <option value="">All Platforms</option>
+                <option value="WindowsExe" selected="@(Model.FilterPlatform == "WindowsExe")">Windows Workstations</option>
+                <option value="AndroidApk" selected="@(Model.FilterPlatform == "AndroidApk")">Android Mobile</option>
+            </select>
+
+            <select name="FilterStatus" onchange="this.form.submit()" style="padding: 7px 12px; font-size: 13px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text);">
+                <option value="">All Statuses</option>
+                <option value="Succeeded" selected="@(Model.FilterStatus == "Succeeded")">Succeeded</option>
+                <option value="Building" selected="@(Model.FilterStatus == "Building")">Building</option>
+                <option value="Failed" selected="@(Model.FilterStatus == "Failed")">Failed</option>
+            </select>
+
+            @if (!string.IsNullOrEmpty(Model.FilterPlatform) || !string.IsNullOrEmpty(Model.FilterStatus))
+            {
+                <a href="/centralwks/app-builder" style="font-size: 12.5px; color: #0050E5; text-decoration: underline; margin-left: 4px;">Reset Filters</a>
+            }
+        </form>
+    </div>
+
+    @if (Model.Builds.Count == 0)
+    {
+        <div style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: var(--admin-border); display: block; margin-bottom: 12px;">inventory_2</span>
+            <strong style="font-size: 15px; display: block; margin-bottom: 4px; color: var(--admin-text);">No Application Builds Found</strong>
+            <p style="font-size: 13px; margin: 0;">Use the build generator above to compile your first client workstation or mobile package.</p>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <table class="admin-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--admin-border); text-align: left; color: var(--admin-text-muted); font-size: 11.5px; text-transform: uppercase;">
+                        <th style="padding: 12px 14px;">Application / Tenant</th>
+                        <th style="padding: 12px 14px;">Mode</th>
+                        <th style="padding: 12px 14px;">Platform</th>
+                        <th style="padding: 12px 14px;">Version</th>
+                        <th style="padding: 12px 14px;">Status</th>
+                        <th style="padding: 12px 14px;">File Size</th>
+                        <th style="padding: 12px 14px;">Created</th>
+                        <th style="padding: 12px 14px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.Builds)
+                    {
+                        <tr style="border-bottom: 1px solid var(--admin-border);">
+                            <td style="padding: 14px;">
+                                <strong style="font-size: 13.5px; color: var(--admin-text); display: block;">@b.BrandName</strong>
+                                <span style="font-size: 11.5px; color: var(--admin-text-muted); font-family: monospace;">@b.TenantKey</span>
+                            </td>
+                            <td style="padding: 14px;">
+                                @if (b.AppMode == "WhiteLabel")
+                                {
+                                    <span style="font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: rgba(0, 80, 229, 0.08); color: #0050E5;">White-Label</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: rgba(100, 116, 139, 0.1); color: #475569;">Universal BCC</span>
+                                }
+                            </td>
+                            <td style="padding: 14px;">
+                                @if (b.Platform == "WindowsExe")
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; color: #0284c7; font-weight: 600;">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">desktop_windows</span>
+                                        <span>Windows .EXE</span>
+                                    </span>
+                                }
+                                else if (b.Platform == "AndroidApk")
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; color: #059669; font-weight: 600;">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">phone_android</span>
+                                        <span>Android .APK</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--admin-text); font-weight: 600;">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">code</span>
+                                        <span>@b.Platform</span>
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 14px;">
+                                <span style="font-family: monospace; font-weight: 600; color: var(--admin-text);">v@(b.Version)+@b.BuildNumber</span>
+                            </td>
+                            <td style="padding: 14px;">
+                                @if (b.Status == "Succeeded")
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #059669; font-weight: 600; background: rgba(16, 185, 129, 0.1); padding: 3px 9px; border-radius: 999px; font-size: 12px;">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                                        <span>Ready</span>
+                                    </span>
+                                }
+                                else if (b.Status == "Building" || b.Status == "Queued")
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #d97706; font-weight: 600; background: rgba(245, 158, 11, 0.1); padding: 3px 9px; border-radius: 999px; font-size: 12px;">
+                                        <span class="material-symbols-outlined" style="font-size: 15px; animation: spin 2s linear infinite;">sync</span>
+                                        <span>Compiling...</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #dc2626; font-weight: 600; background: rgba(239, 68, 68, 0.1); padding: 3px 9px; border-radius: 999px; font-size: 12px;" title="@b.ErrorMessage">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">error</span>
+                                        <span>Failed</span>
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 14px; font-family: monospace; color: var(--admin-text-muted);">
+                                @(b.FileSizeBytes > 0 ? $"{(b.FileSizeBytes / (1024.0 * 1024.0)):N1} MB" : "—")
+                            </td>
+                            <td style="padding: 14px; color: var(--admin-text-muted); font-size: 12px;">
+                                @b.CreatedAtUtc.ToString("MMM dd, yyyy HH:mm")
+                            </td>
+                            <td style="padding: 14px; text-align: right;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    @if (!string.IsNullOrEmpty(b.DownloadUrl))
+                                    {
+                                        <a href="@b.DownloadUrl" class="btn-admin" style="padding: 6px 12px; font-size: 12px; background: rgba(0, 80, 229, 0.1); color: #0050E5; border: 1px solid rgba(0, 80, 229, 0.25); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" title="Download Artifact">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+                                            <span>Download</span>
+                                        </a>
+                                        <button type="button" onclick="copyDownloadLink('@b.DownloadUrl')" class="btn-admin" style="padding: 6px 9px; font-size: 12px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-sm); cursor: pointer;" title="Copy Direct Download Link">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">content_copy</span>
+                                        </button>
+                                        @if (b.Platform == "AndroidApk")
+                                        {
+                                            <button type="button" onclick="openQrModal('@b.DownloadUrl', '@b.BrandName')" class="btn-admin" style="padding: 6px 9px; font-size: 12px; background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); cursor: pointer;" title="Scan QR Code to Install on Phone">
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">qr_code_2</span>
+                                            </button>
+                                        }
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(b.GitHubRunUrl))
+                                    {
+                                        <a href="@b.GitHubRunUrl" target="_blank" class="btn-admin" style="padding: 6px 9px; font-size: 12px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-sm); display: inline-flex; align-items: center;" title="View Live Run on GitHub Actions">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
+                                        </a>
+                                    }
+
+                                    <form method="post" asp-page-handler="DeleteBuild" asp-route-id="@b.Id" onsubmit="return confirm('Delete this build record from history?');" style="display: inline;">
+                                        <button type="submit" class="btn-admin" style="padding: 6px 9px; font-size: 12px; background: transparent; border: none; color: #dc2626; cursor: pointer;" title="Delete Record">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* ── Cloud Runner Settings Modal ── *@
+<div id="settingsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--admin-bg-surface); border-radius: var(--radius-md); border: 1px solid var(--admin-border); width: 100%; max-width: 540px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #0050E5; font-size: 22px;">settings</span>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--admin-text);">GitHub Actions Cloud Runner Configuration</h3>
+            </div>
+            <button type="button" onclick="closeSettingsModal()" style="background: none; border: none; cursor: pointer; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="SaveSettings">
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; color: var(--admin-text);">GITHUB PERSONAL ACCESS TOKEN (PAT) *</label>
+                <input type="password" asp-for="SettingsInput.GitHubAppBuilderToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+                <span style="font-size: 11.5px; color: var(--admin-text-muted); display: block; margin-top: 4px;">Requires `workflow` and `repo` scopes. Generated at github.com/settings/tokens.</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; color: var(--admin-text);">REPOSITORY OWNER</label>
+                    <input type="text" asp-for="SettingsInput.GitHubAppBuilderOwner" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; color: var(--admin-text);">REPOSITORY NAME</label>
+                    <input type="text" asp-for="SettingsInput.GitHubAppBuilderRepo" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; color: var(--admin-text);">WORKFLOW FILE NAME</label>
+                <input type="text" asp-for="SettingsInput.GitHubAppBuilderWorkflow" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+            </div>
+
+            <div style="margin-bottom: 22px;">
+                <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; color: var(--admin-text);">DOWNLOAD BASE URL</label>
+                <input type="text" asp-for="SettingsInput.AppBuilderDownloadBaseUrl" placeholder="e.g. /downloads/builds" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); font-size: 13.5px;" />
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeSettingsModal()" style="padding: 9px 18px; border: 1px solid var(--admin-border); background: var(--admin-bg-surface); color: var(--admin-text); border-radius: var(--radius-md); cursor: pointer;">Cancel</button>
+                <button type="submit" style="padding: 9px 20px; background: #0050E5; color: #ffffff; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── QR Code Sideload Modal ── *@
+<div id="qrModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--admin-bg-surface); border-radius: var(--radius-md); border: 1px solid var(--admin-border); width: 100%; max-width: 380px; padding: 24px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+        <h4 id="qrModalTitle" style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: var(--admin-text);">Scan to Install on Android</h4>
+        <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 0 0 16px 0;">Point your mobile camera at this QR code to download and install the package.</p>
+        <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+            <img id="qrImage" src="" alt="Download QR Code" style="width: 200px; height: 200px; border-radius: 8px; border: 1px solid var(--admin-border); padding: 8px; background: #ffffff;" />
+        </div>
+        <button type="button" onclick="closeQrModal()" style="width: 100%; padding: 10px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">Close</button>
+    </div>
+</div>
+
+<script>
+    function toggleAppMode(mode) {
+        const isWhite = mode === 'whitelabel';
+        const tenantGroup = document.getElementById('tenantSelectGroup');
+        const domainGroup = document.getElementById('domainGroup');
+        const lblWhite = document.getElementById('lblWhiteLabel');
+        const lblGen = document.getElementById('lblGeneral');
+
+        if (isWhite) {
+            tenantGroup.style.display = 'block';
+            domainGroup.style.display = 'block';
+            lblWhite.style.borderColor = '#0050E5';
+            lblWhite.style.background = 'rgba(0, 80, 229, 0.04)';
+            lblGen.style.borderColor = 'var(--admin-border)';
+            lblGen.style.background = 'var(--admin-bg-surface)';
+        } else {
+            tenantGroup.style.display = 'none';
+            domainGroup.style.display = 'none';
+            lblGen.style.borderColor = '#0050E5';
+            lblGen.style.background = 'rgba(0, 80, 229, 0.04)';
+            lblWhite.style.borderColor = 'var(--admin-border)';
+            lblWhite.style.background = 'var(--admin-bg-surface)';
+            document.getElementById('inputBrandName').value = 'Ozikol Business Command Center';
+        }
+    }
+
+    function onTenantSelected() {
+        const select = document.getElementById('tenantSelect');
+        const option = select.options[select.selectedIndex];
+        if (option && option.value) {
+            const name = option.getAttribute('data-name');
+            const domain = option.getAttribute('data-domain');
+            const api = option.getAttribute('data-api');
+
+            if (name) document.getElementById('inputBrandName').value = name;
+            if (domain) document.getElementById('inputDomain').value = domain;
+            if (api) document.getElementById('inputApiUrl').value = api;
+        }
+    }
+
+    function scrollToBuilder() {
+        document.getElementById('builderSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function openSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function openQrModal(url, title) {
+        document.getElementById('qrModalTitle').innerText = title || 'Scan to Install';
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+        document.getElementById('qrImage').src = qrUrl;
+        document.getElementById('qrModal').style.display = 'flex';
+    }
+
+    function closeQrModal() {
+        document.getElementById('qrModal').style.display = 'none';
+    }
+
+    function copyDownloadLink(url) {
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Download link copied to clipboard:\n' + url);
+        });
+    }
+</script>
+
+<style>
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
