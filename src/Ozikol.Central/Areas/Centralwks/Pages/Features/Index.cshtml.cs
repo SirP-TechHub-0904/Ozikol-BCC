@@ -223,7 +223,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             MonthlyPrice = f.MonthlyPrice,
                             QuarterlyPrice = f.QuarterlyPrice,
                             YearlyPrice = f.YearlyPrice,
-                            FreeTrialDays = 14,
+                            FreeTrialDays = 7,
                             IsMetered = f.IsMetered,
                             IsActive = f.IsActive,
                             IsPublished = true,
@@ -235,14 +235,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             TotalCount = allFeatures.Count;
-            // In Master Catalog, IsActive represents whether the capability is Published (visible) or Unpublished (hidden)
+            // "No price, don't publish" rule: non-compulsory capabilities with zero price must not be published
             foreach (var f in allFeatures)
             {
-                f.IsPublished = f.IsActive;
+                bool hasPrice = f.IsCompulsory || f.MonthlyPrice > 0m || f.YearlyPrice > 0m || f.QuarterlyPrice > 0m;
+                f.IsPublished = hasPrice && f.IsActive;
                 f.MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(f.FeatureCode, f.MenuTitle, f.Name);
             }
-            PublishedCount = allFeatures.Count(f => f.IsActive);
-            UnpublishedCount = allFeatures.Count(f => !f.IsActive);
+            PublishedCount = allFeatures.Count(f => f.IsPublished);
+            UnpublishedCount = allFeatures.Count(f => !f.IsPublished);
             ActiveCount = PublishedCount;
             InactiveCount = UnpublishedCount;
             MaintenanceCount = allFeatures.Count(f => f.IsInBeta);

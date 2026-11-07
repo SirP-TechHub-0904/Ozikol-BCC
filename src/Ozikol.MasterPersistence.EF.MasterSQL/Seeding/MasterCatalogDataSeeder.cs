@@ -2331,14 +2331,15 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     RoutePrefix = "/workspace/console",
                     IsCompulsory = false,
                     BillingType = FeatureBillingType.FlatSubscription,
-                    MonthlyPrice = 0.00m,
-                    QuarterlyPrice = 0.00m,
+                    MonthlyPrice = 0.09m,
+                    QuarterlyPrice = 0.25m,
                     YearlyPrice = 0.74m,
+                    FreeTrialDays = 7,
                     IsMetered = false,
                     SortOrder = 45,
                     IsActive = true,
                     IsPublished = true,
-                    IsAvailableForUse = false
+                    IsAvailableForUse = true
                 }
             };
 

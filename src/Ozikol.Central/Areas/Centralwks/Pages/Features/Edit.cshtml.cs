@@ -370,10 +370,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public int MeterBatchSize { get; set; } = 1;
 
             /// <summary>
-            /// Number of free trial days granted to a tenant the first time they activate and test this capability before payment (General Mode).
+            /// Number of free trial days granted to a tenant the first time they activate and test this capability before payment (General Mode default: 7 days).
             /// </summary>
             [Range(0, 365)]
-            public int FreeTrialDays { get; set; } = 14;
+            public int FreeTrialDays { get; set; } = 7;
 
             public int DisplayOrder { get; set; }
 

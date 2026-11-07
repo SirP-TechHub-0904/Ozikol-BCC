@@ -174,6 +174,18 @@ namespace Ozikol_BCC.Api.Controllers
 
             bool targetActive = request.SetActive ?? !currentlyActive;
 
+            // Enforce "no price, don't publish": unpublished or unpriced capabilities cannot be activated
+            bool hasCatalogPrice = feature.IsCompulsory
+                || feature.MonthlyPrice > 0m
+                || feature.YearlyPrice > 0m
+                || feature.QuarterlyPrice > 0m;
+
+            if (!feature.IsPublished || !hasCatalogPrice)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"'{feature.Name}' does not have active pricing configured and cannot be activated."));
+            }
+
             if (targetActive && !effectiveAvail)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse($"'{feature.Name}' is Coming Soon and not yet available for installation."));
@@ -185,16 +197,23 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var now = DateTime.UtcNow;
+            decimal catalogPrice = cadence switch
+            {
+                SubscriptionBillingDuration.Yearly => (feature.YearlyPrice > 0m ? feature.YearlyPrice : (feature.MonthlyPrice > 0m ? feature.MonthlyPrice * 12m : 0m)),
+                SubscriptionBillingDuration.Quarterly => (feature.QuarterlyPrice > 0m ? feature.QuarterlyPrice : (feature.MonthlyPrice > 0m ? feature.MonthlyPrice * 3m : 0m)),
+                _ => (feature.MonthlyPrice > 0m ? feature.MonthlyPrice : (feature.YearlyPrice > 0m ? feature.YearlyPrice : 0m))
+            };
+
             decimal effectiveUsdPrice = (tenant.UseCustomPricing && existing?.CustomPriceOverride != null)
                 ? existing.CustomPriceOverride.Value
-                : feature.MonthlyPrice;
+                : catalogPrice;
 
-            int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 14;
+            int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 7;
             bool hasCustomTrialOverride = existing?.CustomFreeTrialDaysOverride != null;
             int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability || hasCustomTrialOverride) && hasCustomTrialOverride)
                 ? Math.Max(0, existing!.CustomFreeTrialDaysOverride!.Value)
                 : catalogTrialDays;
-            if (effectiveFreeTrialDays <= 0) effectiveFreeTrialDays = 14;
+            if (effectiveFreeTrialDays <= 0) effectiveFreeTrialDays = 7;
             bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
             bool startFirstTimeTrial = targetActive && !hasUsedFreeTrial;
 
@@ -226,10 +245,10 @@ namespace Ozikol_BCC.Api.Controllers
                         existing.IsTrialPeriod = true;
                         existing.Status = "Trial";
                     }
-                    else if (effectiveUsdPrice <= 0m)
+                    else if (effectiveUsdPrice <= 0m || feature.IsCompulsory)
                     {
                         existing.StartsAtUtc = now;
-                        existing.ExpiresAtUtc = now.AddYears(10);
+                        existing.ExpiresAtUtc = DateTime.MaxValue;
                         existing.HasUsedFreeTrial = true;
                         existing.IsTrialPeriod = false;
                         existing.Status = "Active";
@@ -265,12 +284,12 @@ namespace Ozikol_BCC.Api.Controllers
                     DurationType = cadence,
                     RecurringPrice = effectiveUsdPrice,
                     StartsAtUtc = now,
-                    ExpiresAtUtc = effectiveUsdPrice <= 0m ? now.AddYears(10) : now.AddDays(effectiveFreeTrialDays),
+                    ExpiresAtUtc = feature.IsCompulsory ? DateTime.MaxValue : now.AddDays(effectiveFreeTrialDays),
                     AutoRenew = true,
                     IsActive = targetActive,
-                    Status = targetActive ? (effectiveUsdPrice <= 0m ? "Active" : "Trial") : "Suspended",
+                    Status = targetActive ? (feature.IsCompulsory ? "Active" : "Trial") : "Suspended",
                     HasUsedFreeTrial = true,
-                    IsTrialPeriod = effectiveUsdPrice > 0m,
+                    IsTrialPeriod = !feature.IsCompulsory,
                     IsAvailableForUseOverride = tenant.UseCustomAvailability && targetActive ? true : null,
                     CreatedUtc = now
                 };

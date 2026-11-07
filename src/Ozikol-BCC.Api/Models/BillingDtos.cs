@@ -59,11 +59,11 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>True when a custom availability override is set for this tenant in Central.</summary>
         public bool HasCustomAvailabilityOverride { get; set; }
 
-        /// <summary>General catalog first-time free trial days before payment (e.g. 14 days).</summary>
-        public int FreeTrialDays { get; set; } = 14;
+        /// <summary>General catalog first-time free trial days before payment (default 7 days).</summary>
+        public int FreeTrialDays { get; set; } = 7;
 
-        /// <summary>Effective first-time free trial days for this tenant (respecting General vs Custom mode).</summary>
-        public int EffectiveFreeTrialDays { get; set; } = 14;
+        /// <summary>Effective first-time free trial days for this tenant (respecting General vs Custom mode, default 7 days).</summary>
+        public int EffectiveFreeTrialDays { get; set; } = 7;
 
         /// <summary>True when a custom free trial days override is set for this tenant in Central.</summary>
         public bool HasCustomFreeTrialOverride { get; set; }
