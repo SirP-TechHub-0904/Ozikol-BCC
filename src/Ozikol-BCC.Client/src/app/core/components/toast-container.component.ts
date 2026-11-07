@@ -46,7 +46,7 @@ import { ToastService, ToastMessage, ConfirmDialogOptions } from '../services/to
               <span>Irreversible Action Warning:</span>
             </div>
             <ul class="consequences-bullets">
-              <li *ngIf="!dialog.consequences?.length">This record will be permanently erased from the database.</li>
+              <li *ngIf="!dialog.consequences?.length">This record will be permanently deleted.</li>
               <li *ngIf="!dialog.consequences?.length">This action is permanent and cannot be undone or restored.</li>
               <li *ngFor="let c of dialog.consequences">{{ c }}</li>
             </ul>

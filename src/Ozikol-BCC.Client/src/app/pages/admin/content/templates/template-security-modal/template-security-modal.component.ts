@@ -5,7 +5,7 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
 /**
  * Enterprise Pre-Flight Security & Code Integrity Scanning Modal.
  * Intercepts template create and update operations, providing real-time 5-point heuristic
- * auditing of HTML, CSS, JavaScript, and dynamic mock tokens before database persistence.
+ * auditing of HTML, CSS, JavaScript, and dynamic mock tokens before changes are saved.
  */
 @Component({
   selector: 'app-template-security-modal',
@@ -25,7 +25,7 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
             <div class="header-titles">
               <h3 class="modal-title">Pre-Flight Security &amp; Code Integrity Scan</h3>
               <p class="modal-subtitle">
-                Verifying template source assets against SQL injection, executable scripts, and security policies before database persistence.
+                Verifying template source assets against SQL injection, executable scripts, and security policies before changes are saved.
               </p>
             </div>
           </div>
@@ -37,7 +37,7 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
         <!-- Scanning Pulse Banner (When Active) -->
         <div class="scanning-pulse-banner" *ngIf="state.isScanning">
           <div class="scanning-spinner"></div>
-          <span class="scanning-text">Executing 5-point heuristic inspection across HTML, CSS, JavaScript, and database tokens...</span>
+          <span class="scanning-text">Executing 5-point heuristic inspection across HTML, CSS, JavaScript, and template tokens...</span>
         </div>
 
         <!-- 5-Point Security Checklist Stages -->
@@ -98,9 +98,9 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
           <div class="outcome-banner banner-blocked" *ngIf="state.hasCriticalThreats">
             <span class="material-symbols-outlined outcome-icon">dangerous</span>
             <div class="outcome-texts">
-              <h4 class="outcome-headline">Database Persistence Blocked</h4>
+              <h4 class="outcome-headline">Save Operation Blocked</h4>
               <p class="outcome-detail">
-                The security gatekeeper detected prohibited code patterns. These must be removed from the template before the database can be updated.
+                The security gatekeeper detected prohibited code patterns. These must be removed from the template before changes can be saved.
               </p>
             </div>
           </div>
@@ -163,7 +163,7 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
             (click)="proceed()"
           >
             <span class="material-symbols-outlined">shield</span>
-            <span>Proceed &amp; Save to Database</span>
+            <span>Proceed &amp; Save</span>
           </button>
 
           <button

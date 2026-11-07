@@ -1,7 +1,3 @@
----
-trigger: always_on
----
-
 # Rules: Standardized API Error Codes, Custom Error vs. Real Error Isolation
 
 ## 1. Core Architectural Principle
@@ -46,6 +42,7 @@ Every non-success API response (`IsSuccess == false` or `HTTP >= 400`) across th
 | `ERR-2003` | `Duplicate record detected.` | A record with the same unique identifier, email, or code already exists in your workspace. |
 | `ERR-2004` | `Requested record not found.` | The item you are trying to view or update no longer exists or has been removed. |
 | `ERR-2005` | `Operation not allowed in current state.` | This item cannot be modified or deleted because of its current status or linked dependencies. |
+| `ERR-2006` | `Save operation failed.` | The changes could not be saved at this time. Review your inputs and try again. |
 
 ### Billing, Checkout & Payment Gateways (`ERR-3000` – `ERR-3999`)
 | Error Code | Custom Error (Client Message) | Meaning & Recommended Action |
@@ -83,3 +80,14 @@ Every non-success API response (`IsSuccess == false` or `HTTP >= 400`) across th
 | `ERR-9003` | `Too many requests. Please slow down.` | Rate limit exceeded for this action. Wait a moment before retrying. |
 | `ERR-9999` | `An unexpected error occurred.` | An unexpected system error prevented this request from completing. Reference the error code if contacting support. |
 
+---
+
+## 3. Strict Button & Action Label Standards (Zero Technical Leaks)
+* **Canonical Action Verbs**: All buttons, links, submit actions, and toast notices across Web, Desktop, and Mobile MUST use clean, simple, canonical action verbs:
+  * **Save** (never "Save to Database" or "Save to DB")
+  * **Upload** (never "Upload to Database" or "Upload to Cloud")
+  * **Delete** (never "Delete from Database" or "Purge from Database")
+  * **Submit** / **Update** / **Import** / **Adopt** / **Create** / **Cancel**
+* **Strict Prohibition of Database Terminology in Custom Errors & UI Text**:
+  * NEVER include words such as `database`, `db`, `table`, `column`, `SQL`, `dbcontext`, `entity`, or `record in database` in client-facing Custom Errors, error messages, toast popups, or button text.
+  * Internal storage terms belong strictly to Central Admin `RealError` telemetry and logs, never the client workspace.

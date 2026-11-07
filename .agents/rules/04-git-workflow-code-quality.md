@@ -17,6 +17,9 @@
   * Bug fixes / UI issues: `fix/<bug-name>` (e.g., `fix/login-currency-column-error`)
   * Maintenance / Config / Migrations: `chore/<task-name>` (e.g., `chore/migration-tenant-last-accessed`)
   * Refactoring / Cleanups: `refactor/<task-name>` (e.g., `refactor/auth-middleware-pipeline`)
+* **Context-Driven Task Branch Switching & Isolation (Mandatory)**:
+  * **Use Discretion on Domain Scope**: If incoming user requests, features, or bug fixes address a different subsystem, domain, or architectural area than the currently active branch (e.g., CMS layout sections / Cloudflare R2 vs. Email dispatch services), the agent MUST proactively use discretion to create, switch to, and push changes on a new dedicated, descriptive task branch.
+  * **No Unrelated Task Stacking**: NEVER accumulate unrelated domain changes onto a mismatched branch. Each task branch must remain cleanly scoped to its specific functional domain.
 * **Zero-Error Pre-Commit Rule**: Code MUST build cleanly with 0 compilation errors across all affected projects before any commit is created.
 * **Conventional Commits Format**:
   * Structure: `<type>(<scope>): <concise summary>` followed by a blank line and a bulleted list of changed files and architectural context.

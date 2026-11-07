@@ -84,10 +84,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AiKeys
                 return Page();
             }
 
-            var cleanKey = Input.ApiKey.Trim();
+            var cleanKey = Input.ApiKey.Trim().Trim('"', '\'', '`').Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase).Trim();
 
             // Check duplicate key
-            var existingKey = await _dbContext.MasterAiApiKeys.FirstOrDefaultAsync(k => k.ApiKey == cleanKey);
+            // In-memory decrypted duplicate key verification (AES-256-GCM ciphertexts have randomized nonces)
+            var allExistingKeys = await _dbContext.MasterAiApiKeys.AsNoTracking().ToListAsync();
+            var existingKey = allExistingKeys.FirstOrDefault(k => string.Equals(k.ApiKey?.Trim(), cleanKey, StringComparison.Ordinal));
             if (existingKey != null)
             {
                 StatusMessage = $"Duplicate Key Blocked: This API key is already active in the pool as '{existingKey.KeyAlias}'.";
@@ -170,11 +172,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AiKeys
                 return new JsonResult(new { success = false, message = "API Key cannot be empty." });
             }
 
-            var cleanKey = req.ApiKey.Trim();
+            var cleanKey = req.ApiKey.Trim().Trim('"', '\'', '`').Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase).Trim();
 
             // Immediate proactive duplicate key check
-            var existingKey = await _dbContext.MasterAiApiKeys
-                .FirstOrDefaultAsync(k => k.ApiKey == cleanKey);
+            // Immediate in-memory decrypted duplicate key check
+            var allExistingKeys = await _dbContext.MasterAiApiKeys.AsNoTracking().ToListAsync();
+            var existingKey = allExistingKeys.FirstOrDefault(k => string.Equals(k.ApiKey?.Trim(), cleanKey, StringComparison.Ordinal));
 
             if (existingKey != null)
             {

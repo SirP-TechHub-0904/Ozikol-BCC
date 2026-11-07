@@ -258,6 +258,13 @@ namespace Ozikol_BCC.Domain.Models
         public string? MetaKeywords { get; set; }
 
         /// <summary>
+        /// When false (default), AI automatically synthesizes and updates page SEO metadata (Meta Title, Description, Keywords)
+        /// upon page creation or section content updates. When true, AI auto-updates are disabled to preserve manual SEO copy.
+        /// </summary>
+        [Display(Name = "Disable AI Auto-Fill")]
+        public bool DisableAiAutoFill { get; set; } = false;
+
+        /// <summary>
         /// Live page visit counter powering analytics &amp; most visited metrics.
         /// </summary>
         public long ViewCount { get; set; } = 0;

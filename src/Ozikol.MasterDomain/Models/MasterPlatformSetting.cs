@@ -151,6 +151,38 @@ namespace Ozikol.MasterDomain.Models
         public string? CloudinaryApiSecret { get; set; }
 
         /// <summary>
+        /// Gets or sets the Cloudflare Account ID for R2 Object Storage and Edge CDN.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareR2AccountId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Cloudflare R2 Access Key ID (S3 compatible API credential).
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareR2AccessKeyId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Cloudflare R2 Secret Access Key (S3 compatible API credential).
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareR2SecretAccessKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default Cloudflare R2 Bucket Name (e.g. "ozikol-assets").
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareR2BucketName { get; set; } = "ozikol-assets";
+
+        /// <summary>
+        /// Gets or sets the public Cloudflare R2 Edge CDN URL (e.g. "https://pub-1f1001ded5214d4d9327545cbf5ad2d5.r2.dev").
+        /// </summary>
+        [MaxLength(500)]
+        public string? CloudflareR2PublicCdnUrl { get; set; }
+
+
+        /// <summary>
         /// Gets or sets the OneSignal App ID used for mobile and desktop push notifications.
         /// </summary>
         [MaxLength(255)]

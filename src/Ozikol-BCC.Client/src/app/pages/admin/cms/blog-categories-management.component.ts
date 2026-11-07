@@ -32,10 +32,35 @@ import { ToastService } from '../../../core/services/toast.service';
           <span class="count-badge">{{ filteredCategories.length }} Categories</span>
         </div>
 
+        <!-- Bulk Action Bar -->
+        <div class="bulk-action-bar" *ngIf="selectedIds.size > 0">
+          <div class="bulk-info">
+            <span class="material-symbols-outlined text-primary">check_circle</span>
+            <span><strong>{{ selectedIds.size }}</strong> category{{ selectedIds.size > 1 ? 'ies' : '' }} selected</span>
+          </div>
+          <div class="bulk-buttons">
+            <button type="button" class="btn btn-sm btn-outline" (click)="clearSelection()">Deselect All</button>
+            <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteModal()" [disabled]="!canEdit">
+              <span class="material-symbols-outlined fs-6">delete_sweep</span>
+              <span>Delete Selected ({{ selectedIds.size }})</span>
+            </button>
+          </div>
+        </div>
+
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isAllSelected"
+                    [indeterminate]="isIndeterminate"
+                    (change)="toggleSelectAll($event)"
+                    title="Select / Deselect all categories on this page"
+                  >
+                </th>
                 <th>Category Name</th>
                 <th>Parent Category</th>
                 <th>Articles Count</th>
@@ -44,7 +69,15 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let cat of paginatedCategories">
+              <tr *ngFor="let cat of paginatedCategories" [class.selected-row]="isSelected(cat.id)">
+                <td style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isSelected(cat.id)"
+                    (change)="toggleSelection(cat.id)"
+                  >
+                </td>
                 <td>
                   <div class="cat-name-cell">
                     <span class="material-symbols-outlined text-purple">folder</span>
@@ -72,10 +105,10 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
               </tr>
               <tr *ngIf="!filteredCategories.length && !loading">
-                <td colspan="5" class="empty-row">No blog categories found.</td>
+                <td colspan="6" class="empty-row">No blog categories found.</td>
               </tr>
               <tr *ngIf="loading">
-                <td colspan="5" class="empty-row">Loading categories...</td>
+                <td colspan="6" class="empty-row">Loading categories...</td>
               </tr>
             </tbody>
           </table>
@@ -173,10 +206,138 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </form>
         </div>
+        <!-- Bulk Delete Confirmation Modal -->
+        <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
+          <div class="modal-card">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="material-symbols-outlined text-danger">delete_sweep</span>
+                <h3>Delete {{ selectedIds.size }} Blog Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}?</h3>
+              </div>
+              <button type="button" class="btn-close" (click)="closeBulkDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+                Are you sure you want to permanently delete the <strong>{{ selectedIds.size }}</strong> selected blog category(ies)?
+              </p>
+              <div class="force-cascade-check">
+                <label class="custom-check-label">
+                  <input type="checkbox" [(ngModel)]="unlinkBlogs" class="cms-checkbox">
+                  <span>
+                    <strong>Unlink Articles:</strong> Safely unassign attached articles so they become uncategorized.
+                  </span>
+                </label>
+              </div>
+              <div class="warning-callout">
+                <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
+                <div style="font-size: 12.5px; color: #991b1b; line-height: 1.5;">
+                  Category taxonomy and article grouping filters will be permanently removed.
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" (click)="closeBulkDeleteModal()" [disabled]="bulkDeleting">
+                Cancel
+              </button>
+              <button type="button" class="btn btn-danger" (click)="executeBulkDelete()" [disabled]="bulkDeleting">
+                <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
+                <span *ngIf="!bulkDeleting">Delete {{ selectedIds.size }} Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}</span>
+                <span *ngIf="bulkDeleting">Deleting Categories...</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   `,
   styles: [`
+    .cms-checkbox {
+      width: 17px;
+      height: 17px;
+      accent-color: #0050e5;
+      cursor: pointer;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+    .selected-row {
+      background: #f0f7ff !important;
+    }
+    .bulk-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin: 16px 20px 0;
+      animation: slideDown 0.2s ease;
+    }
+    .bulk-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      color: #1e3a8a;
+    }
+    .bulk-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12.5px;
+      border-radius: 8px;
+    }
+    .btn-outline {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      cursor: pointer;
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .force-cascade-check {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .custom-check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+    }
+    .warning-callout {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .cms-container { display: flex; flex-direction: column; gap: 20px; }
     .page-header { display: flex; justify-content: space-between; align-items: center; }
     .page-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
@@ -434,6 +595,10 @@ import { ToastService } from '../../../core/services/toast.service';
   `]
 })
 export class BlogCategoriesManagementComponent implements OnInit {
+  bulkDeleting = false;
+  showBulkDeleteModal = false;
+  unlinkBlogs = true;
+  selectedIds = new Set<string>();
   categories: any[] = [];
   searchQuery = '';
   loading = false;
@@ -456,6 +621,75 @@ export class BlogCategoriesManagementComponent implements OnInit {
     private api: ApiService,
     private toast: ToastService
   ) {}
+
+  // Bulk Selection Methods
+  get isAllSelected(): boolean {
+    const list = this.paginatedCategories;
+    return list.length > 0 && list.every(c => this.selectedIds.has(c.id));
+  }
+
+  get isIndeterminate(): boolean {
+    const count = this.paginatedCategories.filter(c => this.selectedIds.has(c.id)).length;
+    return count > 0 && count < this.paginatedCategories.length;
+  }
+
+  toggleSelectAll(event: any): void {
+    const isChecked = event?.target?.checked;
+    const list = this.paginatedCategories;
+    if (isChecked) {
+      list.forEach(c => this.selectedIds.add(c.id));
+    } else {
+      list.forEach(c => this.selectedIds.delete(c.id));
+    }
+  }
+
+  toggleSelection(id: string): void {
+    if (this.selectedIds.has(id)) {
+      this.selectedIds.delete(id);
+    } else {
+      this.selectedIds.add(id);
+    }
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  clearSelection(): void {
+    this.selectedIds.clear();
+  }
+
+  openBulkDeleteModal(): void {
+    if (this.selectedIds.size > 0) {
+      this.showBulkDeleteModal = true;
+    }
+  }
+
+  closeBulkDeleteModal(): void {
+    if (this.bulkDeleting) return;
+    this.showBulkDeleteModal = false;
+  }
+
+  executeBulkDelete(): void {
+    if (this.selectedIds.size === 0) return;
+
+    this.bulkDeleting = true;
+    const ids = Array.from(this.selectedIds);
+
+    this.api.post<any>('ContentApi/blog-categories/bulk-delete', { ids, unlinkBlogs: this.unlinkBlogs }).subscribe({
+      next: (res) => {
+        this.bulkDeleting = false;
+        this.showBulkDeleteModal = false;
+        this.selectedIds.clear();
+        this.toast.success(res?.message || `${ids.length} category(ies) deleted successfully.`);
+        this.loadCategories();
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toast.error(err?.error?.message || 'Failed to bulk delete blog categories.');
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.checkPermissions();

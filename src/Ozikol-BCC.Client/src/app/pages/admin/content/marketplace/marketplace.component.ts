@@ -3880,13 +3880,13 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
 
     let step1Msg = 'Connecting to Master Marketplace...';
     let step2Msg = 'Fetching HTML markup & scoped CSS...';
-    let step3Msg = 'Saving to Database...';
+    let step3Msg = 'Saving template...';
     let finalMsg = `Template '${item.name}' installed to My Templates!`;
 
     if (isReplacingSingleton) {
       step1Msg = `Switching website active ${singletonLabel.toLowerCase()} to ${item.name}...`;
       step2Msg = `Configuring responsive ${singletonLabel.toLowerCase()} layout...`;
-      step3Msg = 'Updating layout pointer in database...';
+      step3Msg = 'Configuring layout...';
       finalMsg = `Active ${singletonLabel} Replaced with ${item.name}!`;
     }
 

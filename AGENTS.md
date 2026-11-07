@@ -22,6 +22,9 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Bug fixes / UI issues: `fix/<bug-name>` (e.g., `fix/login-currency-column-error`)
   * Maintenance / Config / Migrations: `chore/<task-name>` (e.g., `chore/migration-tenant-last-accessed`)
   * Refactoring / Cleanups: `refactor/<task-name>` (e.g., `refactor/auth-middleware-pipeline`)
+* **Context-Driven Task Branch Switching & Isolation (Mandatory)**:
+  * **Use Discretion on Domain Scope**: If incoming user requests, features, or bug fixes address a different subsystem, domain, or architectural area than the currently active branch (e.g., CMS layout sections / Cloudflare R2 vs. Email dispatch services), the agent MUST proactively use discretion to create, switch to, and push changes on a new dedicated, descriptive task branch.
+  * **No Unrelated Task Stacking**: NEVER accumulate unrelated domain changes onto a mismatched branch. Each task branch must remain cleanly scoped to its specific functional domain.
 * **Zero-Error Pre-Commit Rule**: Code MUST build cleanly with 0 compilation errors across all affected projects before any commit is created.
 * **Conventional Commits Format**:
   * Structure: `<type>(<scope>): <concise summary>` followed by a blank line and a bulleted list of changed files and architectural context.
@@ -68,6 +71,9 @@ This document serves as the permanent memory bank and behavioral guidelines for 
     * **Username**: `e.g. @username`
 * **No Ambiguous or Cluttered Strings**: Placeholders must avoid arbitrary or overly verbose sample text and show the expected format at a glance.
 * **Razor Escaping in Placeholders**: In Razor `.cshtml` files, always properly escape `@` characters in placeholder attributes (e.g., `placeholder="e.g. @@username"` or `placeholder="name@@company.com"` where applicable) to prevent Razor compilation parsing errors.
+* **Button & Action Label Simplicity (Zero Technical Leaks)**:
+  * **Canonical Action Verbs**: All buttons, links, form submits, and toast notifications across Web, Desktop, and Mobile MUST use clean, simple action verbs (e.g., **Save**, **Upload**, **Delete**, **Submit**, **Update**, **Import**, **Adopt**, **Create**, **Cancel**).
+  * **Strict Prohibition of Database Terminology in Custom Errors & UI Text**: NEVER append or include technical storage terms such as `database`, `db`, `table`, `column`, `SQL`, or `save to database` in client-facing Custom Errors, error messages, toast popups, or button text. Internal database details belong strictly to Central Admin `RealError` telemetry.
 
 ---
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 /**
  * Web Navigation Categories management console.
@@ -38,6 +39,21 @@ import { ApiService } from '../../../core/services/api.service';
         </div>
       </div>
 
+      <!-- Bulk Action Bar -->
+      <div class="bulk-action-bar" *ngIf="selectedIds.size > 0">
+        <div class="bulk-info">
+          <span class="material-symbols-outlined text-primary">check_circle</span>
+          <span><strong>{{ selectedIds.size }}</strong> category{{ selectedIds.size > 1 ? 'ies' : '' }} selected</span>
+        </div>
+        <div class="bulk-buttons">
+          <button type="button" class="btn btn-sm btn-outline" (click)="clearSelection()">Deselect All</button>
+          <button type="button" class="btn btn-sm btn-danger" (click)="openBulkDeleteModal()">
+            <span class="material-symbols-outlined fs-6">delete_sweep</span>
+            <span>Delete Selected ({{ selectedIds.size }})</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Categories Table Card (Full Width) -->
       <div class="cms-card full-width-card">
         <div class="card-header-bar">
@@ -60,6 +76,16 @@ import { ApiService } from '../../../core/services/api.service';
           <table class="cms-table">
             <thead>
               <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isAllSelected"
+                    [indeterminate]="isIndeterminate"
+                    (change)="toggleSelectAll($event)"
+                    title="Select / Deselect all categories on this page"
+                  >
+                </th>
                 <th>TITLE</th>
                 <th>MENU ZONE</th>
                 <th>ICON</th>
@@ -72,7 +98,15 @@ import { ApiService } from '../../../core/services/api.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let cat of paginatedCategories">
+              <tr *ngFor="let cat of paginatedCategories" [class.selected-row]="isSelected(cat.id)">
+                <td style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    class="cms-checkbox"
+                    [checked]="isSelected(cat.id)"
+                    (change)="toggleSelection(cat.id)"
+                  >
+                </td>
                 <td>
                   <strong class="cat-title">{{ cat.title }}</strong>
                   <div class="sub-text" *ngIf="cat.parent">Parent: {{ cat.parent.title }}</div>
@@ -121,7 +155,7 @@ import { ApiService } from '../../../core/services/api.service';
                 </td>
               </tr>
               <tr *ngIf="filteredCategories.length === 0">
-                <td colspan="9" class="empty-cell">
+                <td colspan="10" class="empty-cell">
                   <div class="empty-state">
                     <span class="material-symbols-outlined">folder_off</span>
                     <p>No categories found. Click "New Category" to create one.</p>
@@ -177,10 +211,181 @@ import { ApiService } from '../../../core/services/api.service';
             </button>
           </div>
         </div>
+      <!-- Bulk Delete Confirmation Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-danger">delete_sweep</span>
+              <h3>Delete {{ selectedIds.size }} Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}?</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeBulkDeleteModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Are you sure you want to permanently delete the <strong>{{ selectedIds.size }}</strong> selected category(ies)?
+            </p>
+            <div class="force-cascade-check">
+              <label class="custom-check-label">
+                <input type="checkbox" [(ngModel)]="cascadePages" class="cms-checkbox">
+                <span>
+                  <strong>Unlink Pages:</strong> Safely unassign attached web pages so they are not deleted.
+                </span>
+              </label>
+            </div>
+            <div class="warning-callout">
+              <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
+              <div style="font-size: 12.5px; color: #991b1b; line-height: 1.5;">
+                Navigation dropdowns containing these categories will immediately disappear from the public header and footer.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkDeleteModal()" [disabled]="bulkDeleting">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" (click)="executeBulkDelete()" [disabled]="bulkDeleting">
+              <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
+              <span *ngIf="!bulkDeleting">Delete {{ selectedIds.size }} Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}</span>
+              <span *ngIf="bulkDeleting">Deleting Categories...</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
   styles: [`
+    .cms-checkbox {
+      width: 17px;
+      height: 17px;
+      accent-color: #0050e5;
+      cursor: pointer;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+    .selected-row {
+      background: #f0f7ff !important;
+    }
+    .bulk-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 16px;
+      animation: slideDown 0.2s ease;
+    }
+    .bulk-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      color: #1e3a8a;
+    }
+    .bulk-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12.5px;
+      border-radius: 8px;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-title-group h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .force-cascade-check {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .custom-check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+    }
+    .warning-callout {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .cms-page-container {
       display: flex;
       flex-direction: column;
@@ -589,15 +794,88 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class WebCategoriesComponent implements OnInit {
   loading = false;
+  bulkDeleting = false;
+  showBulkDeleteModal = false;
+  cascadePages = true;
+  selectedIds = new Set<string>();
   categories: any[] = [];
   searchTerm = '';
   pageSize = 10;
   currentPage = 1;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private toast: ToastService) {}
 
   ngOnInit(): void {
     this.loadCategories();
+  }
+
+  // Bulk Selection Methods
+  get isAllSelected(): boolean {
+    const list = this.paginatedCategories;
+    return list.length > 0 && list.every(c => this.selectedIds.has(c.id));
+  }
+
+  get isIndeterminate(): boolean {
+    const count = this.paginatedCategories.filter(c => this.selectedIds.has(c.id)).length;
+    return count > 0 && count < this.paginatedCategories.length;
+  }
+
+  toggleSelectAll(event: any): void {
+    const isChecked = event?.target?.checked;
+    const list = this.paginatedCategories;
+    if (isChecked) {
+      list.forEach(c => this.selectedIds.add(c.id));
+    } else {
+      list.forEach(c => this.selectedIds.delete(c.id));
+    }
+  }
+
+  toggleSelection(id: string): void {
+    if (this.selectedIds.has(id)) {
+      this.selectedIds.delete(id);
+    } else {
+      this.selectedIds.add(id);
+    }
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  clearSelection(): void {
+    this.selectedIds.clear();
+  }
+
+  openBulkDeleteModal(): void {
+    if (this.selectedIds.size > 0) {
+      this.showBulkDeleteModal = true;
+    }
+  }
+
+  closeBulkDeleteModal(): void {
+    if (this.bulkDeleting) return;
+    this.showBulkDeleteModal = false;
+  }
+
+  executeBulkDelete(): void {
+    if (this.selectedIds.size === 0) return;
+
+    this.bulkDeleting = true;
+    const ids = Array.from(this.selectedIds);
+
+    this.api.post<any>('ContentApi/categories/bulk-delete', { ids, forceCascade: !this.cascadePages }).subscribe({
+      next: (res) => {
+        this.bulkDeleting = false;
+        this.showBulkDeleteModal = false;
+        this.selectedIds.clear();
+        this.toast.success(res?.message || `${ids.length} category(ies) deleted successfully.`);
+        this.loadCategories();
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toast.error(err?.error?.message || 'Failed to bulk delete categories.');
+      }
+    });
   }
 
   loadCategories(): void {

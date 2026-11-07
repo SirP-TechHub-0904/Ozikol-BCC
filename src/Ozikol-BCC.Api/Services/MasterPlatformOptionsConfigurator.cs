@@ -135,4 +135,70 @@ namespace Ozikol_BCC.Api.Services
             }
         }
     }
+
+    /// <summary>
+    /// Dynamically enriches Cloudflare R2 and Edge CDN configuration with credentials stored in <see cref="MasterPlatformSetting"/>.
+    /// </summary>
+    public sealed class MasterPlatformCloudflareR2PostConfigure : IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudflareR2Settings>
+    {
+        private readonly IServiceProvider _serviceProvider;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MasterPlatformCloudflareR2PostConfigure"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">Application service provider for resolving scoped DbContext on demand.</param>
+        public MasterPlatformCloudflareR2PostConfigure(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        }
+
+        /// <summary>
+        /// Applies central Master database credentials to the resolved Cloudflare R2 options.
+        /// </summary>
+        /// <param name="name">Options instance name.</param>
+        /// <param name="options">Options instance to configure.</param>
+        public void PostConfigure(string? name, Ozikol_BCC.Application.Configuration.CloudflareR2Settings options)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (db != null)
+                {
+                    var settings = db.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1);
+                    if (settings != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(settings.CloudflareR2AccountId))
+                        {
+                            options.AccountId = settings.CloudflareR2AccountId.Trim();
+                        }
+                        if (!string.IsNullOrWhiteSpace(settings.CloudflareR2AccessKeyId))
+                        {
+                            options.AccessKeyId = settings.CloudflareR2AccessKeyId.Trim();
+                        }
+                        if (!string.IsNullOrWhiteSpace(settings.CloudflareR2SecretAccessKey))
+                        {
+                            var val = OzikolDataCipher.DecryptIfNeeded(settings.CloudflareR2SecretAccessKey)?.Trim() ?? string.Empty;
+                            if (!val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                            {
+                                options.SecretAccessKey = val;
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(settings.CloudflareR2BucketName))
+                        {
+                            options.BucketName = settings.CloudflareR2BucketName.Trim();
+                        }
+                        if (!string.IsNullOrWhiteSpace(settings.CloudflareR2PublicCdnUrl))
+                        {
+                            options.PublicCdnUrl = settings.CloudflareR2PublicCdnUrl.Trim();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Graceful fallback during DB initialization or migrations
+            }
+        }
+    }
 }

@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -89,5 +90,11 @@ namespace Ozikol.MasterDomain.Models
         /// Gets or sets the collection of telemetry usage logs associated with this key.
         /// </summary>
         public virtual ICollection<MasterAiApiKeyUsageLog> UsageLogs { get; set; } = new List<MasterAiApiKeyUsageLog>();
+
+        /// <summary>
+        /// Gets the most recent telemetry usage log entry for this key, or null if never invoked.
+        /// </summary>
+        [NotMapped]
+        public MasterAiApiKeyUsageLog? LatestUsageLog => UsageLogs?.OrderByDescending(l => l.RequestTimestampUtc).FirstOrDefault();
     }
 }

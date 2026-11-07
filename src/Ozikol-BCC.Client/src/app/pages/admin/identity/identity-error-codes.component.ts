@@ -397,6 +397,12 @@ export class IdentityErrorCodesComponent implements OnInit {
       customError: 'Operation not allowed in current state.',
       meaning: 'This action cannot be completed because of the item current status or linked dependencies.'
     },
+    {
+      code: 'ERR-2006',
+      category: 'Validation & Request Data',
+      customError: 'Save operation failed.',
+      meaning: 'The changes could not be saved at this time. Review your inputs and try again.'
+    },
 
     // Billing & Payments
     {

@@ -584,6 +584,102 @@
             </div>
         </div>
 
+        
+        @* ── Section 7.1: Cloudflare R2 Object Storage & Edge CDN ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 22px;">cloud_sync</span>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Cloudflare R2 Object Storage &amp; Edge CDN</h2>
+                        <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Zero-egress cloud storage for offloading CMS code injections, stylesheets, scripts, web fonts, and tenant assets.</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    @if (!string.IsNullOrEmpty(Model.Input.CloudflareR2SecretAccessKey))
+                    {
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+                            Active &amp; Configured
+                        </span>
+                    }
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="testCloudflareR2Connection(this)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">wifi_protected_setup</span>
+                        Test R2 Connection
+                    </button>
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div id="r2TestStatus" style="font-size: 12.5px; font-weight: 500; margin-bottom: 16px; display: none;"></div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.CloudflareR2AccountId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Account ID
+                        </label>
+                        <input asp-for="Input.CloudflareR2AccountId" id="r2AccountIdInput" class="form-control" placeholder="e.g. edd3e27d73f391991df0f3d9ce22c4e5" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudflareR2AccountId" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.CloudflareR2AccessKeyId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Access Key ID
+                        </label>
+                        <input asp-for="Input.CloudflareR2AccessKeyId" id="r2AccessKeyInput" class="form-control" placeholder="e.g. f4580892a71d0b7d7c9b30553d62b991" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudflareR2AccessKeyId" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label asp-for="Input.CloudflareR2SecretAccessKey" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Secret Access Key
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.CloudflareR2SecretAccessKey))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Encrypted
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.CloudflareR2SecretAccessKey" value="@Model.Input.CloudflareR2SecretAccessKey" id="r2SecretKeyInput" type="password" class="form-control" 
+                                   placeholder="e.g. 577a4b2e9036ffa36ba9ba1a6a901b8c..." 
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('r2SecretKeyInput', this)" 
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.CloudflareR2SecretAccessKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.CloudflareR2BucketName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Bucket Name
+                        </label>
+                        <input asp-for="Input.CloudflareR2BucketName" id="r2BucketInput" class="form-control" placeholder="e.g. ozikol-assets" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudflareR2BucketName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <label asp-for="Input.CloudflareR2PublicCdnUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Public Edge CDN Base URL
+                        </label>
+                        <input asp-for="Input.CloudflareR2PublicCdnUrl" id="r2CdnUrlInput" class="form-control" placeholder="e.g. https://pub-1f1001ded5214d4d9327545cbf5ad2d5.r2.dev" 
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudflareR2PublicCdnUrl" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                        <p style="font-size: 12px; color: var(--admin-text-muted); margin: 6px 0 0 0;">
+                            Publicly accessible CDN hostname serving assets without query parameters. Set your R2 custom domain or r2.dev public URL.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @* ── Section 7.5: Central Payment Gateway (Paystack — Platform Subscription & Capability Billing) ── *@
         <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); flex-wrap: wrap;">
@@ -1085,4 +1181,53 @@
             });
         }
     });
+
+    async function testCloudflareR2Connection(btn) {
+        var status = document.getElementById('r2TestStatus');
+        if (!status) return;
+
+        var accountId = document.getElementById('r2AccountIdInput')?.value?.trim() || '';
+        var accessKeyId = document.getElementById('r2AccessKeyInput')?.value?.trim() || '';
+        var secretAccessKey = document.getElementById('r2SecretKeyInput')?.value?.trim() || '';
+        var bucketName = document.getElementById('r2BucketInput')?.value?.trim() || '';
+        var publicCdnUrl = document.getElementById('r2CdnUrlInput')?.value?.trim() || '';
+
+        status.style.display = 'block';
+        status.style.color = 'var(--admin-text-muted)';
+        status.textContent = 'Connecting to Cloudflare R2 bucket...';
+        if (btn) btn.disabled = true;
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        var formData = new FormData();
+        formData.append('accountId', accountId);
+        formData.append('accessKeyId', accessKeyId);
+        formData.append('secretAccessKey', secretAccessKey);
+        formData.append('bucketName', bucketName);
+        formData.append('publicCdnUrl', publicCdnUrl);
+
+        try {
+            var response = await fetch('/centralwks/platform-settings?handler=TestCloudflareR2Connection', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            var result = await response.json();
+            if (result.success) {
+                status.style.color = '#059669';
+                status.textContent = '✓ ' + result.message;
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = '✗ ' + result.message;
+            }
+        } catch (err) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Network error testing Cloudflare R2 connection.';
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
 </script>

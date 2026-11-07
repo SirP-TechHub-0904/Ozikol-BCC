@@ -722,7 +722,7 @@ export class ImportWebsiteTemplateComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.importingToDatabase = false;
-        const msg = err.error?.message || err.message || 'Database import failed.';
+        const msg = err.error?.message || err.message || 'Template save failed.';
         this.toastService.error(`Import failed: ${msg}`);
         this.cdr.markForCheck();
       }

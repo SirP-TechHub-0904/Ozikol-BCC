@@ -37,6 +37,9 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICloudflareR2StorageService _r2Storage;
         private readonly ITenantProvider? _tenantProvider;
         private readonly Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService _templateSecurityInspector;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService? _aiService;
+        private readonly IServiceScopeFactory? _serviceScopeFactory;
+        private readonly ILogger<ContentApiController>? _logger;
 
         public ContentApiController(
             DashboardDbContext context, 
@@ -45,7 +48,10 @@ namespace Ozikol_BCC.Api.Controllers
             ICloudflareR2StorageService r2Storage,
             ITenantProvider? tenantProvider = null,
             MasterCatalogDbContext? masterCatalogDbContext = null,
-            Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService? templateSecurityInspector = null)
+            Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService? templateSecurityInspector = null,
+            Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService? aiService = null,
+            IServiceScopeFactory? serviceScopeFactory = null,
+            ILogger<ContentApiController>? logger = null)
         {
             _context = context;
             _mediator = mediator;
@@ -54,6 +60,9 @@ namespace Ozikol_BCC.Api.Controllers
             _tenantProvider = tenantProvider;
             _masterCatalogDbContext = masterCatalogDbContext;
             _templateSecurityInspector = templateSecurityInspector ?? new Ozikol_BCC.Api.Services.TemplateSecurityInspectorService();
+            _aiService = aiService;
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger;
         }
 
         // ==========================================
@@ -565,6 +574,7 @@ namespace Ozikol_BCC.Api.Controllers
                     MetaTitle = request.MetaTitle,
                     MetaDescription = request.MetaDescription,
                     MetaKeywords = request.MetaKeywords,
+                DisableAiAutoFill = request.DisableAiAutoFill,
                     MainPageId = request.MainPageId,
                     AddToRibon = request.AddToRibon,
                     RibonCustomDisplayTitle = request.RibonCustomDisplayTitle,
@@ -628,6 +638,7 @@ namespace Ozikol_BCC.Api.Controllers
             existing.MetaKeywords = updated.MetaKeywords;
             existing.MainPageId = updated.MainPageId;
             existing.AddToRibon = updated.AddToRibon;
+            existing.DisableAiAutoFill = updated.DisableAiAutoFill;
             existing.RibonCustomDisplayTitle = updated.RibonCustomDisplayTitle;
             existing.RibonSortOrder = updated.RibonSortOrder;
             existing.UpdatedAtUtc = DateTime.UtcNow;
@@ -635,6 +646,160 @@ namespace Ozikol_BCC.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Web page updated successfully."));
         }
+
+        /// <summary>
+        /// Analyzes the full page content (title, category, headline, attached layout sections, and repeating sub-items)
+        /// and uses AI to generate or update high-CTR, SEO-optimized Meta Title, Meta Description, and Meta Keywords.
+        /// Respects the <see cref="WebPage.DisableAiAutoFill"/> toggle.
+        /// </summary>
+        /// <param name="page">The target web page entity.</param>
+        /// <param name="force">True to force regeneration even if metadata fields already contain text.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>True if metadata was updated; false if skipped or disabled.</returns>
+        private async Task<bool> StudyAndOptimizePageSeoMetaAsync(WebPage page, bool force = false, CancellationToken cancellationToken = default)
+        {
+            if (page == null || _aiService == null) return false;
+
+            // Strict check: if administrator disabled AI auto-fill for this page, never touch or overwrite it
+            if (page.DisableAiAutoFill && !force)
+            {
+                return false;
+            }
+
+            try
+            {
+                // Gather sections and repeating cards attached to this page
+                var sections = await _context.PageSections
+                    .Where(s => s.WebPageId == page.Id)
+                    .OrderBy(s => s.PageSortOrder)
+                    .ToListAsync(cancellationToken);
+
+                var sectionIds = sections.Select(s => s.Id).ToList();
+                var subItems = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId.HasValue && sectionIds.Contains(l.PageSectionId.Value))
+                    .OrderBy(l => l.SortOrder)
+                    .ToListAsync(cancellationToken);
+
+                var contentSummary = new System.Text.StringBuilder();
+                contentSummary.AppendLine($"Page Title: {page.Title}");
+                if (!string.IsNullOrWhiteSpace(page.RibonCustomDisplayTitle)) contentSummary.AppendLine($"Headline: {page.RibonCustomDisplayTitle}");
+
+                if (page.PageCategory != null && !string.IsNullOrWhiteSpace(page.PageCategory.Title)) contentSummary.AppendLine($"Category: {page.PageCategory.Title}");
+                if (!string.IsNullOrWhiteSpace(page.DirectUrl)) contentSummary.AppendLine($"Route Slug: {page.DirectUrl}");
+
+                if (sections.Any())
+                {
+                    contentSummary.AppendLine("Attached Layout Sections:");
+                    foreach (var s in sections)
+                    {
+                        contentSummary.AppendLine($"- Section: {s.Title} ({s.MiniTitle ?? "Standard"}): {s.Description}");
+                    }
+                }
+
+                if (subItems.Any())
+                {
+                    contentSummary.AppendLine("Repeating Sub-Items & Feature Highlights:");
+                    foreach (var item in subItems)
+                    {
+                        contentSummary.AppendLine($"* {item.Title} - {item.Description}");
+                    }
+                }
+
+                var prompt = $@"Study the following web page content and synthesize high-CTR, professional SEO metadata:
+{contentSummary}
+
+Generate a JSON object with exactly these 3 keys:
+- ""metaTitle"": (50 to 60 chars maximum. High click-through rate, captivating title for Google search snippets and browser tabs. Do NOT append brand name suffix.)
+- ""metaDescription"": (150 to 160 chars maximum. Engaging summary of value proposition for Google search result snippets.)
+- ""metaKeywords"": (6 to 10 high-relevance comma-separated keywords for crawler indexing.)
+
+Reply ONLY with the valid JSON object.";
+
+                var aiRequest = new Ozikol_BCC.Application.Interfaces.Services.AiCompletionRequest
+                {
+                    SystemInstruction = "You are an expert SEO copywriter and crawler indexing specialist. Always respond with pure, valid JSON with keys: metaTitle, metaDescription, metaKeywords.",
+                    Prompt = prompt,
+                    Temperature = 0.3f,
+                    MaxTokens = 500
+                };
+
+                var result = await _aiService.GenerateCompletionAsync(aiRequest, cancellationToken);
+                if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.Content))
+                {
+                    return false;
+                }
+
+                // Parse AI JSON response
+                var rawJson = result.Content.Trim();
+                if (rawJson.StartsWith("```json")) rawJson = rawJson.Substring(7);
+                if (rawJson.StartsWith("```")) rawJson = rawJson.Substring(3);
+                if (rawJson.EndsWith("```")) rawJson = rawJson.Substring(0, rawJson.Length - 3);
+                rawJson = rawJson.Trim();
+
+                using var doc = JsonDocument.Parse(rawJson);
+                var root = doc.RootElement;
+
+                var newTitle = root.TryGetProperty("metaTitle", out var tElem) ? tElem.GetString() : null;
+                var newDesc = root.TryGetProperty("metaDescription", out var dElem) ? dElem.GetString() : null;
+                var newKeywords = root.TryGetProperty("metaKeywords", out var kElem) ? kElem.GetString() : null;
+
+                bool modified = false;
+                if (!string.IsNullOrWhiteSpace(newTitle) && (force || string.IsNullOrWhiteSpace(page.MetaTitle)))
+                {
+                    page.MetaTitle = newTitle.Trim();
+                    modified = true;
+                }
+                if (!string.IsNullOrWhiteSpace(newDesc) && (force || string.IsNullOrWhiteSpace(page.MetaDescription)))
+                {
+                    page.MetaDescription = newDesc.Trim();
+                    modified = true;
+                }
+                if (!string.IsNullOrWhiteSpace(newKeywords) && (force || string.IsNullOrWhiteSpace(page.MetaKeywords)))
+                {
+                    page.MetaKeywords = newKeywords.Trim();
+                    modified = true;
+                }
+
+                if (modified)
+                {
+
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                return modified;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to auto-generate SEO metadata for page {PageId}", page.Id);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Explicitly triggers an AI study of the web page and its attached layout sections to synthesize or optimize
+        /// high-CTR SEO metadata (Meta Title, Description, and Keywords).
+        /// </summary>
+        /// <param name="id">The unique identifier of the web page.</param>
+        /// <returns>A standardized API response returning the updated page with generated SEO fields.</returns>
+        [HttpPost("pages/{id:guid}/generate-seo")]
+        public async Task<IActionResult> GeneratePageSeo(Guid id)
+        {
+            var page = await _context.WebPages.FindAsync(id);
+            if (page == null) return NotFound(ApiResponse<object>.FailureResponse("Web page not found."));
+
+            var updated = await StudyAndOptimizePageSeoMetaAsync(page, force: true);
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                page.Id,
+                page.Title,
+                page.MetaTitle,
+                page.MetaDescription,
+                page.MetaKeywords,
+                page.DisableAiAutoFill,
+                IsOptimized = updated
+            }, updated ? "AI SEO metadata generated and saved successfully." : "AI SEO metadata generated."));
+        }
+
 
         /// <summary>
         /// Permanently deletes a web page if it has no attached layout sections.
@@ -703,6 +868,118 @@ namespace Ozikol_BCC.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, "Web page deleted successfully."));
         }
+
+        /// <summary>
+        /// Request model for batch deleting multiple web pages.
+        /// </summary>
+        public class BulkDeletePagesRequest
+        {
+            /// <summary>
+            /// List of web page identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to forcefully purge all attached layout sections and repeating cards.
+            /// </summary>
+            public bool ForceCascade { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple web pages, and optionally cascades to all attached layout sections and repeating cards.
+        /// </summary>
+        /// <param name="request">Payload containing list of page GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("pages/bulk-delete")]
+        public async Task<IActionResult> BulkDeletePages([FromBody] BulkDeletePagesRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No web page identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var pages = await _context.WebPages
+                .Where(p => targetIds.Contains(p.Id))
+                .ToListAsync();
+
+            if (!pages.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified web pages were found."));
+            }
+
+            var foundIds = pages.Select(p => p.Id).ToList();
+
+            // Guard check if cascade is false: restrict deletion of pages that have attached sections
+            if (!request.ForceCascade)
+            {
+                var pagesWithSections = await _context.PageSections
+                    .Where(s => s.WebPageId.HasValue && foundIds.Contains(s.WebPageId.Value))
+                    .Select(s => s.WebPageId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (pagesWithSections.Any())
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Cannot bulk delete because {pagesWithSections.Count} selected page(s) contain attached layout sections. Enable Force Cascade or remove sections first.",
+                        null,
+                        "ERR-2005",
+                        $"{pagesWithSections.Count} pages have linked sections."));
+                }
+            }
+            else
+            {
+                // Cascade delete all sections and sub-items attached to these pages
+                var sections = await _context.PageSections
+                    .Where(s => s.WebPageId.HasValue && foundIds.Contains(s.WebPageId.Value))
+                    .Include(s => s.PageSectionLists)
+                    .ToListAsync();
+
+                foreach (var sec in sections)
+                {
+                    if (sec.PageSectionLists != null && sec.PageSectionLists.Any())
+                    {
+                        _context.PageSectionLists.RemoveRange(sec.PageSectionLists);
+                    }
+                }
+
+                if (sections.Any())
+                {
+                    _context.PageSections.RemoveRange(sections);
+                }
+
+                // Clean up view logs
+                var viewLogs = await _context.WebPageViewLogs
+                    .Where(l => l.WebPageId.HasValue && foundIds.Contains(l.WebPageId.Value))
+                    .ToListAsync();
+
+                if (viewLogs.Any())
+                {
+                    _context.WebPageViewLogs.RemoveRange(viewLogs);
+                }
+            }
+
+            // Unlink any child sub-pages referencing these pages
+            var childPages = await _context.WebPages
+                .Where(p => p.MainPageId.HasValue && foundIds.Contains(p.MainPageId.Value))
+                .ToListAsync();
+
+            foreach (var child in childPages)
+            {
+                child.MainPageId = null;
+            }
+
+            _context.WebPages.RemoveRange(pages);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = pages.Count
+            }, $"{pages.Count} web page(s) deleted successfully."));
+        }
+
+
 
         private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null)
         {
@@ -838,6 +1115,74 @@ namespace Ozikol_BCC.Api.Controllers
             _context.PageCategories.Remove(existing);
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}' deleted successfully."));
+        }
+
+        /// <summary>
+        /// Request model for batch deleting multiple web categories.
+        /// </summary>
+        public class BulkDeleteCategoriesRequest
+        {
+            /// <summary>
+            /// List of category identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to unbind pages from deleted categories (setting PageCategoryId = null) instead of blocking deletion.
+            /// </summary>
+            public bool UnlinkPages { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple web navigation categories and unlinks attached web pages.
+        /// </summary>
+        /// <param name="request">Payload containing list of category GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("categories/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteCategories([FromBody] BulkDeleteCategoriesRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No category identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var categories = await _context.PageCategories
+                .Where(c => targetIds.Contains(c.Id))
+                .Include(c => c.WebPages)
+                .ToListAsync();
+
+            if (!categories.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified categories were found."));
+            }
+
+            foreach (var cat in categories)
+            {
+                if (cat.WebPages != null && cat.WebPages.Any())
+                {
+                    if (request.UnlinkPages)
+                    {
+                        foreach (var page in cat.WebPages)
+                        {
+                            page.PageCategoryId = null;
+                        }
+                    }
+                    else
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResponse(
+                            $"Cannot delete category '{cat.Title}' because it contains {cat.WebPages.Count} linked web page(s). Enable page unlinking to proceed."));
+                    }
+                }
+            }
+
+            _context.PageCategories.RemoveRange(categories);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = categories.Count
+            }, $"{categories.Count} category/categories deleted successfully."));
         }
 
         // ==========================================
@@ -995,6 +1340,246 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(null, "Section deleted successfully."));
         }
 
+        /// <summary>
+        /// Request model for batch deleting multiple layout sections.
+        /// </summary>
+        public class BulkDeleteSectionsRequest
+        {
+            /// <summary>
+            /// List of section identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to forcefully delete associated repeating sub-items.
+            /// </summary>
+            public bool ForceCascade { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple page layout sections and their child repeating sub-items.
+        /// </summary>
+        /// <param name="request">Payload containing list of section GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("sections/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteSections([FromBody] BulkDeleteSectionsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No section identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var sections = await _context.PageSections
+                .Where(s => targetIds.Contains(s.Id))
+                .ToListAsync();
+
+            if (!sections.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found."));
+            }
+
+            var foundIds = sections.Select(s => s.Id).ToList();
+
+            // Cascade delete child repeating sub-items if requested
+            if (request.ForceCascade)
+            {
+                var subItems = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId.HasValue && foundIds.Contains(l.PageSectionId.Value))
+                    .ToListAsync();
+
+                if (subItems.Any())
+                {
+                    _context.PageSectionLists.RemoveRange(subItems);
+                }
+            }
+
+            _context.PageSections.RemoveRange(sections);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = sections.Count
+            }, $"{sections.Count} layout section(s) deleted successfully."));
+        }
+
+        public class BulkTransferSectionsRequest
+        {
+            /// <summary>
+            /// List of section GUIDs to move or copy.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Destination WebPage ID.
+            /// </summary>
+            public Guid TargetPageId { get; set; }
+
+            /// <summary>
+            /// Transfer action mode: "move" or "copy".
+            /// </summary>
+            public string Action { get; set; } = "move";
+        }
+
+        /// <summary>
+        /// Bulk moves or copies layout sections to a destination web page.
+        /// When moving, updates WebPageId. When copying, creates cloned PageSections with newly assigned GUIDs
+        /// and clones all attached child PageSectionLists (sub-items/cards).
+        /// </summary>
+        [HttpPost("sections/bulk-transfer")]
+        public async Task<IActionResult> BulkTransferSections([FromBody] BulkTransferSectionsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No section identifiers provided."));
+            }
+
+            var targetPage = await _context.WebPages.FindAsync(request.TargetPageId);
+            if (targetPage == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Target web page not found."));
+            }
+
+            var isCopy = string.Equals(request.Action, "copy", StringComparison.OrdinalIgnoreCase);
+            var targetIds = request.Ids.Distinct().ToList();
+
+            if (isCopy)
+            {
+                var originalSections = await _context.PageSections
+                    .Include(s => s.PageSectionLists)
+                    .Where(s => targetIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (!originalSections.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found to copy."));
+                }
+
+                var currentMaxSort = await _context.PageSections
+                    .Where(s => s.WebPageId == request.TargetPageId)
+                    .MaxAsync(s => (int?)s.PageSortOrder) ?? 0;
+
+                var clonedSections = new List<PageSection>();
+
+                foreach (var orig in originalSections)
+                {
+                    currentMaxSort++;
+                    var cloned = new PageSection
+                    {
+                        Id = Guid.NewGuid(),
+                        WebPageId = request.TargetPageId,
+                        TemplateKey = orig.TemplateKey,
+                        MasterTemplateId = orig.MasterTemplateId,
+                        Title = orig.Title != null ? $"{orig.Title} (Copy)" : "Untitled (Copy)",
+                        MiniTitle = orig.MiniTitle,
+                        Qoute = orig.Qoute,
+                        Description = orig.Description,
+                        FullDescription = orig.FullDescription,
+                        ImageUrl = orig.ImageUrl,
+                        ImageKey = orig.ImageKey,
+                        SecondImageUrl = orig.SecondImageUrl,
+                        SecondImageKey = orig.SecondImageKey,
+                        VideoUrl = orig.VideoUrl,
+                        VideoKey = orig.VideoKey,
+                        YoutubeUrlLink = orig.YoutubeUrlLink,
+                        IconText = orig.IconText,
+                        ButtonText = orig.ButtonText,
+                        ButtonLink = orig.ButtonLink,
+                        SecondButtonText = orig.SecondButtonText,
+                        SecondButtonLink = orig.SecondButtonLink,
+                        DirectUrl = orig.DirectUrl,
+                        DisableButton = orig.DisableButton,
+                        Disable = orig.Disable,
+                        FixedAfterFooter = orig.FixedAfterFooter,
+                        PageSortOrder = currentMaxSort,
+                        HtmlTemplate = orig.HtmlTemplate,
+                        CssStyles = orig.CssStyles,
+                        JsScript = orig.JsScript,
+                        CustomClass = orig.CustomClass,
+                        BackgroundColor = orig.BackgroundColor,
+                        IsCustomized = orig.IsCustomized,
+                        IsDefault = false,
+                        AddToRibon = orig.AddToRibon,
+                        RibonCustomDisplayTitle = orig.RibonCustomDisplayTitle,
+                        RibonSortOrder = orig.RibonSortOrder,
+                        PageFormId = orig.PageFormId,
+                        FormKey = orig.FormKey
+                    };
+
+                    if (orig.PageSectionLists != null && orig.PageSectionLists.Any())
+                    {
+                        foreach (var sub in orig.PageSectionLists)
+                        {
+                            cloned.PageSectionLists.Add(new PageSectionList
+                            {
+                                Id = Guid.NewGuid(),
+                                PageSectionId = cloned.Id,
+                                Title = sub.Title,
+                                MiniTitle = sub.MiniTitle,
+                                Description = sub.Description,
+                                MoreDescription = sub.MoreDescription,
+                                ImageUrl = sub.ImageUrl,
+                                ImageKey = sub.ImageKey,
+                                VideoUrl = sub.VideoUrl,
+                                VideoKey = sub.VideoKey,
+                                IconText = sub.IconText,
+                                ButtonText = sub.ButtonText,
+                                ButtonLink = sub.ButtonLink,
+                                SortOrder = sub.SortOrder,
+                                Disable = sub.Disable,
+
+                                CustomClass = sub.CustomClass
+                            });
+                        }
+                    }
+
+                    clonedSections.Add(cloned);
+                }
+
+                _context.PageSections.AddRange(clonedSections);
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = clonedSections.Count,
+                    targetPageTitle = targetPage.Title
+                }, $"{clonedSections.Count} section(s) copied successfully to '{targetPage.Title}'."));
+            }
+            else
+            {
+                // MOVE
+                var sections = await _context.PageSections
+                    .Where(s => targetIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (!sections.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found to move."));
+                }
+
+                var currentMaxSort = await _context.PageSections
+                    .Where(s => s.WebPageId == request.TargetPageId)
+                    .MaxAsync(s => (int?)s.PageSortOrder) ?? 0;
+
+                foreach (var section in sections)
+                {
+                    currentMaxSort++;
+                    section.WebPageId = request.TargetPageId;
+                    section.PageSortOrder = currentMaxSort;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = sections.Count,
+                    targetPageTitle = targetPage.Title
+                }, $"{sections.Count} section(s) moved successfully to '{targetPage.Title}'."));
+            }
+        }
+
+
+
         // ==========================================
         // 3B. PAGE SECTION LISTS (Sub-Items)
         // ==========================================
@@ -1079,6 +1664,173 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(null, "Section sub-item deleted successfully."));
         }
 
+        /// <summary>
+        /// Request model for batch deleting multiple repeating sub-items / cards.
+        /// </summary>
+        public class BulkDeleteSectionListsRequest
+        {
+            /// <summary>
+            /// List of sub-item identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple repeating sub-items / card items.
+        /// </summary>
+        /// <param name="request">Payload containing list of sub-item GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("section-lists/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteSectionLists([FromBody] BulkDeleteSectionListsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No sub-item identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var subItems = await _context.PageSectionLists
+                .Where(l => targetIds.Contains(l.Id))
+                .ToListAsync();
+
+            if (!subItems.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified sub-items were found."));
+            }
+
+            _context.PageSectionLists.RemoveRange(subItems);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = subItems.Count
+            }, $"{subItems.Count} repeating sub-item(s) deleted successfully."));
+        }
+
+        public class BulkTransferSectionListsRequest
+        {
+            /// <summary>
+            /// List of sub-item / card GUIDs to move or copy.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Destination PageSection ID.
+            /// </summary>
+            public Guid TargetSectionId { get; set; }
+
+            /// <summary>
+            /// Transfer action mode: "move" or "copy".
+            /// </summary>
+            public string Action { get; set; } = "move";
+        }
+
+        /// <summary>
+        /// Bulk moves or copies repeating sub-items/cards to a destination page section.
+        /// When moving, updates PageSectionId. When copying, creates cloned PageSectionList records with newly assigned GUIDs.
+        /// </summary>
+        [HttpPost("section-lists/bulk-transfer")]
+        public async Task<IActionResult> BulkTransferSectionLists([FromBody] BulkTransferSectionListsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No sub-item identifiers provided."));
+            }
+
+            var targetSection = await _context.PageSections.FindAsync(request.TargetSectionId);
+            if (targetSection == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Target layout section not found."));
+            }
+
+            var isCopy = string.Equals(request.Action, "copy", StringComparison.OrdinalIgnoreCase);
+            var targetIds = request.Ids.Distinct().ToList();
+
+            if (isCopy)
+            {
+                var originalItems = await _context.PageSectionLists
+                    .Where(l => targetIds.Contains(l.Id))
+                    .ToListAsync();
+
+                if (!originalItems.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sub-items were found to copy."));
+                }
+
+                var currentMaxSort = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId == request.TargetSectionId)
+                    .MaxAsync(l => (int?)l.SortOrder) ?? 0;
+
+                var clonedItems = new List<PageSectionList>();
+
+                foreach (var orig in originalItems)
+                {
+                    currentMaxSort++;
+                    clonedItems.Add(new PageSectionList
+                    {
+                        Id = Guid.NewGuid(),
+                        PageSectionId = request.TargetSectionId,
+                        Title = orig.Title != null ? $"{orig.Title} (Copy)" : "Untitled (Copy)",
+                        MiniTitle = orig.MiniTitle,
+                        Description = orig.Description,
+                        MoreDescription = orig.MoreDescription,
+                        ImageUrl = orig.ImageUrl,
+                        ImageKey = orig.ImageKey,
+                        VideoUrl = orig.VideoUrl,
+                        VideoKey = orig.VideoKey,
+                        IconText = orig.IconText,
+                        ButtonText = orig.ButtonText,
+                        ButtonLink = orig.ButtonLink,
+                        SortOrder = currentMaxSort,
+                        Disable = orig.Disable,
+                        CustomClass = orig.CustomClass
+                    });
+                }
+
+                _context.PageSectionLists.AddRange(clonedItems);
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = clonedItems.Count,
+                    targetSectionTitle = targetSection.Title
+                }, $"{clonedItems.Count} sub-item(s) copied successfully to section '{targetSection.Title}'."));
+            }
+            else
+            {
+                // MOVE
+                var subItems = await _context.PageSectionLists
+                    .Where(l => targetIds.Contains(l.Id))
+                    .ToListAsync();
+
+                if (!subItems.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sub-items were found to move."));
+                }
+
+                var currentMaxSort = await _context.PageSectionLists
+                    .Where(l => l.PageSectionId == request.TargetSectionId)
+                    .MaxAsync(l => (int?)l.SortOrder) ?? 0;
+
+                foreach (var item in subItems)
+                {
+                    currentMaxSort++;
+                    item.PageSectionId = request.TargetSectionId;
+                    item.SortOrder = currentMaxSort;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    count = subItems.Count,
+                    targetSectionTitle = targetSection.Title
+                }, $"{subItems.Count} sub-item(s) moved successfully to section '{targetSection.Title}'."));
+            }
+        }
+
+
+
 
         // ==========================================
         // 8. BLOG CATEGORIES
@@ -1155,6 +1907,76 @@ namespace Ozikol_BCC.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, "Blog category deleted successfully."));
         }
+
+        /// <summary>
+        /// Request model for batch deleting multiple blog categories.
+        /// </summary>
+        public class BulkDeleteBlogCategoriesRequest
+        {
+            /// <summary>
+            /// List of blog category identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+
+            /// <summary>
+            /// Whether to unbind blog posts from deleted categories (setting BlogCategoryId = null) instead of blocking.
+            /// </summary>
+            public bool UnlinkPosts { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple blog categories.
+        /// </summary>
+        /// <param name="request">Payload containing list of blog category GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("blog-categories/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteBlogCategories([FromBody] BulkDeleteBlogCategoriesRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No blog category identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var categories = await _context.BlogCategories
+                .Where(c => targetIds.Contains(c.Id))
+                .ToListAsync();
+
+            if (!categories.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified blog categories were found."));
+            }
+
+            var posts = await _context.Blogs
+                .Where(b => b.BlogCategoryId.HasValue && targetIds.Contains(b.BlogCategoryId.Value))
+                .ToListAsync();
+
+            if (posts.Any())
+            {
+                if (request.UnlinkPosts)
+                {
+                    foreach (var post in posts)
+                    {
+                        post.BlogCategoryId = null;
+                    }
+                }
+                else
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Cannot delete categories because {posts.Count} blog post(s) are linked to them. Enable post unlinking to proceed."));
+                }
+            }
+
+            _context.BlogCategories.RemoveRange(categories);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = categories.Count
+            }, $"{categories.Count} blog category/categories deleted successfully."));
+        }
+
+
 
         // ==========================================
         // 9. BLOG POSTS & ARTICLES
@@ -1389,6 +2211,51 @@ namespace Ozikol_BCC.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, "Blog article deleted successfully."));
         }
+
+        /// <summary>
+        /// Request model for batch deleting multiple blog posts.
+        /// </summary>
+        public class BulkDeleteBlogsRequest
+        {
+            /// <summary>
+            /// List of blog article identifiers to delete.
+            /// </summary>
+            public List<Guid> Ids { get; set; } = new();
+        }
+
+        /// <summary>
+        /// Atomically bulk deletes multiple blog articles.
+        /// </summary>
+        /// <param name="request">Payload containing list of blog post GUIDs to delete.</param>
+        /// <returns>Standardized API response confirming number of deleted records.</returns>
+        [HttpPost("blogs/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteBlogs([FromBody] BulkDeleteBlogsRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No blog identifiers provided for bulk deletion."));
+            }
+
+            var targetIds = request.Ids.Distinct().ToList();
+            var blogs = await _context.Blogs
+                .Where(b => targetIds.Contains(b.Id))
+                .ToListAsync();
+
+            if (!blogs.Any())
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified blog posts were found."));
+            }
+
+            _context.Blogs.RemoveRange(blogs);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                deletedCount = blogs.Count
+            }, $"{blogs.Count} blog article(s) deleted successfully."));
+        }
+
+
 
         // ==========================================
         // 9. TENANT INSTALLED UI TEMPLATES & MARKETPLACE
@@ -5075,14 +5942,59 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             try
             {
+                var tagId = Guid.NewGuid();
+                var resolvedContent = request.Content.Trim();
+                var resolvedTagType = string.IsNullOrWhiteSpace(request.TagType) ? "raw_html" : request.TagType.Trim().ToLowerInvariant();
+
+                // Cloudflare R2 Auto-Offloader: If R2 is configured and user submitted inline CSS or JS,
+                // compile the code into a standalone CDN asset and save the CDN <link> or <script> tag in the database.
+                if (_r2Storage.IsConfigured())
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    var safeTenant = tenantSlug.Trim().ToLowerInvariant();
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.Name.ToLowerInvariant(), @"[^a-z0-9\-_]", "-").Trim('-');
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = "custom";
+
+                    if (IsInlineCss(resolvedContent, resolvedTagType))
+                    {
+                        var cleanCss = ExtractCleanCss(resolvedContent);
+                        if (!string.IsNullOrWhiteSpace(cleanCss))
+                        {
+                            var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tagId.ToString("N")[..8]}.css";
+                            var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                            var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanCss, "text/css");
+                            if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                            {
+                                resolvedContent = $"<link rel=\"stylesheet\" href=\"{uploadRes.Url}\" />";
+                                resolvedTagType = "css_link";
+                            }
+                        }
+                    }
+                    else if (IsInlineJs(resolvedContent, resolvedTagType))
+                    {
+                        var cleanJs = ExtractCleanJs(resolvedContent);
+                        if (!string.IsNullOrWhiteSpace(cleanJs))
+                        {
+                            var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tagId.ToString("N")[..8]}.js";
+                            var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                            var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanJs, "application/javascript");
+                            if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                            {
+                                resolvedContent = $"<script src=\"{uploadRes.Url}\"></script>";
+                                resolvedTagType = "script_link";
+                            }
+                        }
+                    }
+                }
+
                 var tag = new SiteCodeInjectionTag
                 {
-                    Id = Guid.NewGuid(),
+                    Id = tagId,
                     Name = request.Name.Trim(),
                     Zone = cleanZone,
-                    TagType = string.IsNullOrWhiteSpace(request.TagType) ? "raw_html" : request.TagType.Trim().ToLowerInvariant(),
+                    TagType = resolvedTagType,
                     SuiteCode = string.IsNullOrWhiteSpace(request.SuiteCode) ? "global" : request.SuiteCode.Trim().ToLowerInvariant(),
-                    Content = request.Content.Trim(),
+                    Content = resolvedContent,
                     SortOrder = request.SortOrder,
                     IsActive = request.IsActive,
                     CreatedAtUtc = DateTime.UtcNow
@@ -5377,14 +6289,74 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
             }
 
+            var incomingContent = request.Content.Trim();
+            var incomingTagType = string.IsNullOrWhiteSpace(request.TagType) ? tag.TagType : request.TagType.Trim().ToLowerInvariant();
+
+            // Cloudflare R2 Auto-Offloader on Update:
+            if (_r2Storage.IsConfigured())
+            {
+                var existingUrl = ExtractUrlFromTag(tag.Content);
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                var safeTenant = tenantSlug.Trim().ToLowerInvariant();
+                var safeName = System.Text.RegularExpressions.Regex.Replace(request.Name.ToLowerInvariant(), @"[^a-z0-9\-_]", "-").Trim('-');
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "custom";
+
+                if (!string.IsNullOrWhiteSpace(existingUrl) && (existingUrl.Contains(".r2.dev") || existingUrl.Contains(".r2.cloudflarestorage.com") || existingUrl.Contains("/tenants/")))
+                {
+                    var incomingUrl = ExtractUrlFromTag(incomingContent);
+                    if (string.IsNullOrWhiteSpace(incomingUrl) || incomingUrl != existingUrl)
+                    {
+                        var isExistingJs = incomingTagType.Contains("script") || incomingTagType.Contains("js") || existingUrl.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
+                        var rawText = isExistingJs ? ExtractCleanJs(incomingContent) : ExtractCleanCss(incomingContent);
+                        var contentType = isExistingJs ? "application/javascript" : "text/css";
+                        var updateRes = await _r2Storage.SaveAssetTextAsync(existingUrl, rawText, contentType);
+                        if (updateRes.Success)
+                        {
+                            incomingContent = isExistingJs ? $"<script src=\"{existingUrl}\"></script>" : $"<link rel=\"stylesheet\" href=\"{existingUrl}\" />";
+                            incomingTagType = isExistingJs ? "script_link" : "css_link";
+                        }
+                    }
+                }
+                else if (IsInlineCss(incomingContent, incomingTagType))
+                {
+                    var cleanCss = ExtractCleanCss(incomingContent);
+                    if (!string.IsNullOrWhiteSpace(cleanCss))
+                    {
+                        var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tag.Id.ToString("N")[..8]}.css";
+                        var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                        var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanCss, "text/css");
+                        if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                        {
+                            incomingContent = $"<link rel=\"stylesheet\" href=\"{uploadRes.Url}\" />";
+                            incomingTagType = "css_link";
+                        }
+                    }
+                }
+                else if (IsInlineJs(incomingContent, incomingTagType))
+                {
+                    var cleanJs = ExtractCleanJs(incomingContent);
+                    if (!string.IsNullOrWhiteSpace(cleanJs))
+                    {
+                        var objectKey = $"tenants/{safeTenant}/injections/{safeName}-{tag.Id.ToString("N")[..8]}.js";
+                        var cdnUrl = _r2Storage.GetPublicCdnUrl(objectKey);
+                        var uploadRes = await _r2Storage.SaveAssetTextAsync(cdnUrl, cleanJs, "application/javascript");
+                        if (uploadRes.Success && !string.IsNullOrWhiteSpace(uploadRes.Url))
+                        {
+                            incomingContent = $"<script src=\"{uploadRes.Url}\"></script>";
+                            incomingTagType = "script_link";
+                        }
+                    }
+                }
+            }
+
             tag.Name = request.Name.Trim();
             tag.Zone = cleanZone;
-            tag.TagType = string.IsNullOrWhiteSpace(request.TagType) ? tag.TagType : request.TagType.Trim().ToLowerInvariant();
+            tag.TagType = incomingTagType;
             if (request.SuiteCode != null)
             {
                 tag.SuiteCode = string.IsNullOrWhiteSpace(request.SuiteCode) ? "global" : request.SuiteCode.Trim().ToLowerInvariant();
             }
-            tag.Content = request.Content.Trim();
+            tag.Content = incomingContent;
             tag.SortOrder = request.SortOrder;
             tag.IsActive = request.IsActive;
             tag.UpdatedAtUtc = DateTime.UtcNow;
@@ -5677,6 +6649,53 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         /// <summary>
         /// Extracts an HTTP/HTTPS URL from a HTML tag or string.
         /// </summary>
+        
+        /// <summary>
+        /// Detects if the tag content represents inline CSS styles.
+        /// </summary>
+        private static bool IsInlineCss(string content, string? tagType)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return false;
+            var typeLower = (tagType ?? string.Empty).ToLowerInvariant();
+            if (typeLower == "inline_css" || typeLower == "css" || typeLower == "stylesheet") return true;
+            var trimmed = content.Trim();
+            return trimmed.StartsWith("<style", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith("</style>", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Detects if the tag content represents inline JavaScript.
+        /// </summary>
+        private static bool IsInlineJs(string content, string? tagType)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return false;
+            var typeLower = (tagType ?? string.Empty).ToLowerInvariant();
+            if (typeLower == "inline_js" || typeLower == "script" || typeLower == "javascript") return true;
+            var trimmed = content.Trim();
+            return trimmed.StartsWith("<script", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith("</script>", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Extracts clean CSS text by stripping wrapping &lt;style&gt; tags if present.
+        /// </summary>
+        private static string ExtractCleanCss(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+            var trimmed = content.Trim();
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"<style[^>]*>([\s\S]*?)<\/style>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value.Trim() : trimmed;
+        }
+
+        /// <summary>
+        /// Extracts clean JavaScript text by stripping wrapping &lt;script&gt; tags if present.
+        /// </summary>
+        private static string ExtractCleanJs(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+            var trimmed = content.Trim();
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"<script[^>]*>([\s\S]*?)<\/script>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value.Trim() : trimmed;
+        }
+
         private static string? ExtractUrlFromTag(string content)
         {
             if (string.IsNullOrWhiteSpace(content)) return null;
@@ -5825,6 +6844,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? MetaTitle { get; set; }
         public string? MetaDescription { get; set; }
         public string? MetaKeywords { get; set; }
+        public bool DisableAiAutoFill { get; set; } = false;
         public Ozikol_BCC.Domain.Enum.Enum.HomeSortFrom HomeSortFrom { get; set; }
         public Guid? MainPageId { get; set; }
         public bool IsHomePage { get; set; } = false;

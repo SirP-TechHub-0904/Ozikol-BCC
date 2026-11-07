@@ -703,6 +703,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.StripeSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.StripeWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.CloudinaryApiSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.CloudflareR2AccountId).HasMaxLength(255);
+            entity.Property(e => e.CloudflareR2AccessKeyId).HasMaxLength(255);
+            entity.Property(e => e.CloudflareR2SecretAccessKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.CloudflareR2BucketName).HasMaxLength(255).HasDefaultValue("ozikol-assets");
+            entity.Property(e => e.CloudflareR2PublicCdnUrl).HasMaxLength(500);
             entity.Property(e => e.MongoLogsConnectionString).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.GoogleReCaptchaSiteKey).HasMaxLength(255);
             entity.Property(e => e.GoogleReCaptchaSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);

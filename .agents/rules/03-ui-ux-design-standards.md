@@ -87,3 +87,12 @@
   * **Angular Client**: Use official Angular Material / Material Symbols / FontAwesome or custom SVG icons.
   * **Flutter Desktop & Mobile**: Use Flutter `Icons.<icon_name>` (e.g. `Icons.rocket_launch`, `Icons.bolt`, `Icons.calendar_month`, `Icons.warning_amber`).
 * **Design Rationale**: Raw Unicode emojis render inconsistently across operating systems (Windows, macOS, iOS, Android, Linux), disrupt typography baselines, and convey an informal/unprofessional appearance incompatible with an enterprise Business Command Center. Vector icons ensure 100% theme color fidelity, responsive scaling, and unified cross-platform aesthetics.
+
+
+---
+
+## 24. Button & Action Label Simplicity (Zero Technical Leaks)
+* **Canonical Action Verbs**: All buttons, links, form submits, and toast notifications across Web, Desktop, and Mobile MUST use clean, simple action verbs (e.g., **Save**, **Upload**, **Delete**, **Submit**, **Update**, **Import**, **Adopt**, **Create**, **Cancel**).
+* **Strict Prohibition of Database Terminology in Custom Errors & UI Text**:
+  * NEVER append or include technical storage terms such as `database`, `db`, `table`, `column`, `SQL`, or `save to database` in client-facing Custom Errors, error messages, toast popups, or button text.
+  * Internal database and infrastructure details belong strictly to Central Admin `RealError` telemetry and backend logs.

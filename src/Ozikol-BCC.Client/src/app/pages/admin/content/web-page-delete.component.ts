@@ -36,7 +36,7 @@ import { ToastService } from '../../../core/services/toast.service';
         <div class="header-actions">
           <a routerLink="/content/console/pages" class="btn btn-secondary">
             <span class="material-symbols-outlined">arrow_back</span>
-            <span>Cancel & Go Back</span>
+            <span>Cancel &amp; Go Back</span>
           </a>
         </div>
       </div>
@@ -94,11 +94,11 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined force-icon">delete_sweep</span>
             <div class="block-head-text">
               <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h3>Forceful Cascade Purge: {{ sectionsCount }} Attached Section{{ sectionsCount === 1 ? '' : 's' }} &bull; {{ totalSubItemsCount }} Sub-Item(s)</h3>
+                <h3>Cascade Deletion: {{ sectionsCount }} Attached Section{{ sectionsCount === 1 ? '' : 's' }} &bull; {{ totalSubItemsCount }} Repeating Sub-Item(s)</h3>
                 <span class="badge-cascade">Cascade Purge Available</span>
               </div>
               <p class="block-sub">
-                This page contains attached layout sections and sub-items. You can remove them one by one, or select all items below to authorize a forceful cascade purge of this page and everything inside it.
+                This page contains attached layout sections and repeating cards. Instead of deleting them one by one in CMS Studio, you can check <strong>Select All</strong> below to permanently delete the web page and all its nested sections and cards in one action.
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 class="custom-check"
               />
               <span class="check-title">
-                <strong>Select All ({{ sectionsCount }} Sections & {{ totalSubItemsCount }} Sub-Items) for Cascade Deletion</strong>
+                <strong>Check All: Cascade Delete all {{ sectionsCount }} section(s) and {{ totalSubItemsCount }} sub-item(s) with this page</strong>
               </span>
             </label>
             <span class="selected-counter" [class.ready]="isAllSelected()">
@@ -181,7 +181,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 class="custom-check"
               />
               <span class="auth-text">
-                <strong>I understand that Force Delete will permanently destroy all {{ sectionsCount }} attached sections and {{ totalSubItemsCount }} child sub-item cards without recovery.</strong>
+                <strong>I authorize Cascade Deletion to permanently eradicate all {{ sectionsCount }} attached sections and {{ totalSubItemsCount }} child sub-item cards without recovery.</strong>
               </span>
             </label>
           </div>
@@ -210,7 +210,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <strong>Immediate 404 Route Failure:</strong> The public URL <code>/{{ page.directUrl || page.slug || '' }}</code> will immediately return a 404 Not Found response to all visitors and search engines.
             </li>
             <li *ngIf="sectionsCount > 0 && !isAllSelected()">
-              <strong>Attached Sections Protection:</strong> This web page contains {{ sectionsCount }} layout section(s). Select all items above and authorize Force Delete to proceed with cascade destruction.
+              <strong>Attached Sections Protection:</strong> This web page contains {{ sectionsCount }} layout section(s). Check "Select All" in the Cascade Deletion card above to unlock page deletion.
             </li>
             <li *ngIf="sectionsCount > 0 && isAllSelected()">
               <strong>Cascade Purge Notice:</strong> All {{ sectionsCount }} layout section(s) and {{ totalSubItemsCount }} child sub-item(s) selected above will be permanently eradicated alongside this web page.
@@ -233,7 +233,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <p>
               To confirm that you understand these consequences and intend to permanently destroy this web page, please type the exact page title:
             </p>
-            <div class="target-title-pill" (click)="copyTitle()" title="Click to copy">
+            <div class="target-title-pill" (click)="copyTitle()" title="Click to copy title into input">
               <code>{{ page.title }}</code>
             </div>
           </div>
@@ -248,22 +248,37 @@ import { ToastService } from '../../../core/services/toast.service';
               [class.matched]="isTitleMatched()"
             />
 
+            <!-- Real-time Status and Explicit Unlock Reason -->
             <div class="match-status" *ngIf="confirmationInput">
               <span *ngIf="canProceedWithDeletion()" class="status-match">
                 <span class="material-symbols-outlined">check_circle</span>
-                Page title matched &amp; deletion authorized. Ready to proceed.
+                Page title matched &amp; cascade deletion authorized. Deletion unlocked!
               </span>
-              <span *ngIf="isTitleMatched() && sectionsCount > 0 && !isAllSelected()" class="status-warning">
+              <span *ngIf="isTitleMatched() && sectionsCount > 0 && (!isAllSelected() || !forceDeleteConfirmed)" class="status-warning">
                 <span class="material-symbols-outlined">shield</span>
-                Page title matched, but please select all {{ sectionsCount }} section(s) in the checklist above.
-              </span>
-              <span *ngIf="isTitleMatched() && sectionsCount > 0 && isAllSelected() && !forceDeleteConfirmed" class="status-warning">
-                <span class="material-symbols-outlined">shield</span>
-                Please check the cascade authorization box above to unlock Force Delete.
+                Page title matched, but deletion is locked by {{ sectionsCount }} attached section(s). Check the Cascade Deletion box above to unlock.
               </span>
               <span *ngIf="!isTitleMatched()" class="status-mismatch">
                 <span class="material-symbols-outlined">cancel</span> Page title does not match yet.
               </span>
+            </div>
+          </div>
+
+          <!-- Explicit Explanation Banner when Delete Button is Disabled -->
+          <div class="lock-reason-banner" *ngIf="sectionsCount > 0 && (!isAllSelected() || !forceDeleteConfirmed)">
+            <div class="lock-icon">
+              <span class="material-symbols-outlined">lock</span>
+            </div>
+            <div class="lock-text">
+              <h4>Why is the Delete button disabled?</h4>
+              <p>
+                This web page contains <strong>{{ sectionsCount }} attached layout section(s)</strong> and <strong>{{ totalSubItemsCount }} repeating sub-item card(s)</strong>.
+                To prevent accidental loss of page content, deletion is locked until you authorize <strong>Cascade Deletion</strong>.
+              </p>
+              <button type="button" class="btn btn-sm btn-authorize" (click)="authorizeAllCascade()">
+                <span class="material-symbols-outlined fs-6">done_all</span>
+                <span>Click Here to Select All Sections &amp; Unlock Deletion</span>
+              </button>
             </div>
           </div>
 
@@ -276,7 +291,7 @@ import { ToastService } from '../../../core/services/toast.service';
               class="btn btn-danger"
               (click)="executeDelete()"
               [disabled]="!canProceedWithDeletion()"
-              [title]="!canProceedWithDeletion() ? 'Please match title and authorize cascade checklist.' : ''"
+              [title]="!canProceedWithDeletion() ? 'Please match the page title and authorize cascade deletion to enable this button.' : ''"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : (sectionsCount > 0 ? 'delete_sweep' : 'delete_forever') }}</span>
               <span>
@@ -298,145 +313,164 @@ import { ToastService } from '../../../core/services/toast.service';
     .delete-page-container {
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      width: 100%;
-      max-width: 100%;
+      gap: 24px;
+      padding-bottom: 40px;
     }
 
     .page-header-bar {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      gap: 16px;
+      align-items: flex-start;
+      background: #ffffff;
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
-    .breadcrumb {
+    .header-titles .breadcrumb {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #64748b;
-      margin-bottom: 4px;
     }
-    .breadcrumb a { color: #0050e5; text-decoration: none; }
-    .breadcrumb .sep { color: #cbd5e1; }
-    .breadcrumb .danger-text { color: #dc2626; }
-
+    .header-titles .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .danger-text { color: #dc2626 !important; font-weight: 700; }
     .page-title {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
+      color: #0f172a;
       margin: 0 0 4px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .danger-title { color: #dc2626; }
-    .danger-icon { font-size: 26px; color: #dc2626; }
-    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
+    .danger-title { color: #b91c1c; }
+    .danger-icon { color: #dc2626; font-size: 28px; }
+    .page-sub { color: #64748b; font-size: 13.5px; margin: 0; }
 
-    .header-actions { display: flex; align-items: center; gap: 10px; }
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       padding: 10px 18px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
-      border: none;
-      transition: all 0.2s;
       text-decoration: none;
+      transition: all 0.2s;
+      border: none;
     }
-    .btn-secondary { background: #ffffff; color: #334155; border: 1px solid #cbd5e1; }
-    .btn-secondary:hover { background: #f8fafc; }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-secondary:hover { background: #e2e8f0; color: #0f172a; }
     .btn-danger {
       background: #dc2626;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
     }
-    .btn-danger:hover:not(:disabled) { background: #b91c1c; transform: translateY(-1px); }
+    .btn-danger:hover:not(:disabled) {
+      background: #b91c1c;
+      box-shadow: 0 4px 12px rgba(185, 28, 28, 0.35);
+    }
     .btn-danger:disabled {
       background: #fca5a5;
+      opacity: 0.65;
       cursor: not-allowed;
       box-shadow: none;
-      opacity: 0.7;
     }
 
-    .alert-banner {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 18px;
-      border-radius: 10px;
-      font-size: 13.5px;
-      font-weight: 600;
+    .btn-sm { padding: 6px 14px; font-size: 12.5px; border-radius: 6px; }
+    .btn-authorize {
+      background: #0050e5;
+      color: #fff;
+      margin-top: 10px;
     }
-    .alert-banner.error { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid #ef4444; }
+    .btn-authorize:hover { background: #003ebd; }
 
     .state-card {
       background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 40px;
+      border-radius: 16px;
+      padding: 60px 20px;
       text-align: center;
+      border: 1px solid #e2e8f0;
       color: #64748b;
     }
     .spin { animation: spin 1s linear infinite; font-size: 32px; color: #0050e5; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    .delete-layout { display: flex; flex-direction: column; gap: 20px; }
+    .alert-banner.error {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 14px 20px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .delete-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
     .record-summary-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 16px;
-      padding: 22px 26px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      padding: 24px 28px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .summary-head {
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 12px;
+      color: #0050e5;
       margin-bottom: 16px;
     }
-    .summary-head h3 { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }
-    .summary-head span { font-size: 20px; color: #0050e5; }
-
-    .record-body { display: flex; gap: 20px; align-items: center; }
+    .summary-head h3 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+    .record-body { display: flex; align-items: flex-start; gap: 18px; }
     .page-icon-box {
-      width: 64px;
-      height: 64px;
-      border-radius: 14px;
-      background: rgba(0, 80, 229, 0.1);
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
       color: #0050e5;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
-    .page-icon-box span { font-size: 32px; }
-
-    .record-details { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-    .record-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; }
-    .record-sub { font-size: 13.5px; color: #64748b; margin: 0; }
-    .record-sub code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #0050e5; }
-
-    .meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .page-icon-box span { font-size: 28px; }
+    .record-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 6px; }
+    .record-sub { font-size: 13.5px; color: #64748b; margin: 0 0 12px; }
+    .meta-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .meta-pill {
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 3px 10px;
       border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
-    .meta-pill.published { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
-    .meta-pill.draft { background: rgba(100, 116, 139, 0.12); color: #64748b; }
-    .meta-pill.count-pill { background: #f1f5f9; color: #334155; }
-    .meta-pill.count-pill.danger { background: rgba(239, 68, 68, 0.12); color: #dc2626; font-weight: 800; }
-    .meta-pill.count-pill.success { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+    .meta-pill.published { background: #dcfce7; color: #15803d; }
+    .meta-pill.draft { background: #f1f5f9; color: #64748b; }
+    .count-pill.danger { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+    .count-pill.success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
     .meta-date { font-size: 12px; color: #94a3b8; }
 
     /* Sections & Forceful Cascade Card */
@@ -448,52 +482,63 @@ import { ToastService } from '../../../core/services/toast.service';
       display: flex;
       flex-direction: column;
       gap: 16px;
-      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.08);
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.08);
     }
     .block-head {
       display: flex;
       align-items: flex-start;
       gap: 12px;
     }
-    .force-icon { font-size: 28px; color: #d97706; }
+    .force-icon { font-size: 28px; color: #d97706; flex-shrink: 0; margin-top: 2px; }
     .block-head-text { flex: 1; }
-    .block-head-text h3 { font-size: 16px; font-weight: 800; color: #92400e; margin: 0; }
+    .block-head-text h3 { font-size: 16px; font-weight: 800; color: #92400e; margin: 0 0 4px; }
     .badge-cascade {
-      background: #dc2626;
-      color: #fff;
+      background: #f59e0b;
+      color: #ffffff;
       font-size: 11px;
       font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .block-sub { font-size: 13px; color: #b45309; margin: 4px 0 0; }
+    .block-sub { font-size: 13px; color: #b45309; margin: 0; line-height: 1.5; }
 
     /* Select All Bar */
     .select-all-bar {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: #fef3c7;
-      border: 1px solid #fde68a;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1.5px solid #fcd34d;
       border-radius: 10px;
-      padding: 10px 16px;
+      padding: 12px 16px;
     }
-    .select-all-label { cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; }
+    .custom-check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .custom-check {
+      width: 18px;
+      height: 18px;
+      accent-color: #0050e5;
+      cursor: pointer;
+    }
+    .check-title { font-size: 13.5px; color: #0f172a; }
     .selected-counter {
       font-size: 12px;
       font-weight: 700;
       color: #92400e;
-      background: #fff;
+      background: #fef3c7;
       padding: 3px 10px;
-      border-radius: 20px;
-      border: 1px solid #fde68a;
+      border-radius: 6px;
     }
     .selected-counter.ready {
-      background: #16a34a;
-      color: #fff;
-      border-color: #16a34a;
+      background: #dcfce7;
+      color: #15803d;
     }
 
     /* Sections Checklist */
@@ -501,18 +546,20 @@ import { ToastService } from '../../../core/services/toast.service';
       display: flex;
       flex-direction: column;
       gap: 10px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 4px;
     }
     .section-check-card {
       background: #ffffff;
       border: 1.5px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 14px 18px;
-      transition: all 0.2s;
+      border-radius: 10px;
+      padding: 12px 16px;
+      transition: all 0.15s ease;
     }
     .section-check-card.selected {
-      border-color: #f59e0b;
-      background: #fffdf5;
-      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+      border-color: #0050e5;
+      background: #f0f7ff;
     }
     .sec-card-header {
       display: flex;
@@ -520,26 +567,13 @@ import { ToastService } from '../../../core/services/toast.service';
       align-items: center;
       gap: 12px;
     }
-    .sec-check-label {
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-      margin: 0;
-    }
-    .custom-check {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      accent-color: #dc2626;
-    }
+    .sec-check-label { flex: 1; margin: 0; }
     .sec-meta {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13.5px;
       flex-wrap: wrap;
+      font-size: 13px;
     }
     .sec-order {
       background: #f1f5f9;
@@ -549,7 +583,7 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 2px 6px;
       border-radius: 4px;
     }
-    .sec-title { color: #0f172a; }
+    .sec-title { color: #0f172a; font-size: 13.5px; }
     .sec-badge {
       background: #e0f2fe;
       color: #0284c7;
@@ -559,12 +593,13 @@ import { ToastService } from '../../../core/services/toast.service';
       border-radius: 4px;
     }
     .sec-subitems-count {
-      background: #ede9fe;
-      color: #7c3aed;
+      background: #eff6ff;
+      color: #0050e5;
       font-size: 11px;
       font-weight: 700;
-      padding: 2px 6px;
+      padding: 2px 7px;
       border-radius: 4px;
+      border: 1px solid #bfdbfe;
     }
     .btn-delete-sec-sm {
       display: inline-flex;
@@ -577,26 +612,23 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 3px 8px;
       border: 1px solid #fecaca;
       border-radius: 6px;
-      background: #fff;
-      transition: all 0.2s;
+      background: #ffffff;
     }
     .btn-delete-sec-sm:hover { background: #fee2e2; }
-    .btn-delete-sec-sm span { font-size: 14px; }
+    .btn-delete-sec-sm span.material-symbols-outlined { font-size: 14px; }
 
-    /* Nested Repeating Sub-Items Tree */
+    /* Nested Repeating Sub-Items */
     .subitems-tree {
       margin-top: 10px;
       padding-top: 10px;
-      border-top: 1px dashed #e2e8f0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      border-top: 1px dashed #cbd5e1;
       padding-left: 28px;
     }
     .tree-label {
       font-size: 11.5px;
       font-weight: 700;
       color: #64748b;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
       gap: 4px;
@@ -725,11 +757,38 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #f0fdf4;
     }
 
-    .match-status { font-size: 12px; font-weight: 700; }
+    .match-status { font-size: 12px; font-weight: 700; margin-top: 4px; }
     .status-match { color: #16a34a; display: flex; align-items: center; gap: 4px; }
     .status-warning { color: #d97706; display: flex; align-items: center; gap: 4px; }
     .status-mismatch { color: #dc2626; display: flex; align-items: center; gap: 4px; }
     .status-match span, .status-warning span, .status-mismatch span { font-size: 16px; }
+
+    /* Lock Reason Banner */
+    .lock-reason-banner {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #fffbeb;
+      border: 1.5px solid #fde68a;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-top: 4px;
+    }
+    .lock-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .lock-text { flex: 1; }
+    .lock-text h4 { margin: 0 0 4px; font-size: 14px; font-weight: 800; color: #92400e; }
+    .lock-text p { margin: 0; font-size: 13px; color: #b45309; line-height: 1.5; }
 
     .delete-action-row {
       display: flex;
@@ -780,7 +839,16 @@ export class WebPageDeleteComponent implements OnInit {
         this.loading = false;
         if (res?.data) {
           this.page = res.data;
-          this.sectionsCount = this.page.sectionCount ?? (this.page.pageSections?.length ?? 0);
+
+          // Populate attachedSections immediately from pageSections if present
+          if (Array.isArray(this.page.pageSections) && this.page.pageSections.length > 0) {
+            this.attachedSections = [...this.page.pageSections];
+            this.sectionsCount = this.attachedSections.length;
+          } else {
+            this.sectionsCount = this.page.sectionCount ?? (this.page.pageSections?.length ?? 0);
+          }
+
+          // Fetch fresh sections list to guarantee full nested sub-items are synchronized
           this.loadAttachedSections(id);
         } else {
           this.errorMsg = 'Web page record not found.';
@@ -794,9 +862,9 @@ export class WebPageDeleteComponent implements OnInit {
   }
 
   loadAttachedSections(id: string): void {
-    this.api.get<any>('ContentApi/sections', { webPageId: id }).subscribe({
+    this.api.get<any>(`ContentApi/sections?webPageId=${id}`).subscribe({
       next: (res) => {
-        if (Array.isArray(res?.data)) {
+        if (Array.isArray(res?.data) && res.data.length > 0) {
           this.attachedSections = res.data;
           this.sectionsCount = this.attachedSections.length;
         }
@@ -822,6 +890,12 @@ export class WebPageDeleteComponent implements OnInit {
       this.attachedSections.forEach(s => this.selectedSectionIds.add(s.id));
       this.forceDeleteConfirmed = true;
     }
+  }
+
+  authorizeAllCascade(): void {
+    this.attachedSections.forEach(s => this.selectedSectionIds.add(s.id));
+    this.forceDeleteConfirmed = true;
+    this.toast.info(`Authorized cascade purge for all ${this.sectionsCount} section(s).`);
   }
 
   toggleSection(sec: any): void {

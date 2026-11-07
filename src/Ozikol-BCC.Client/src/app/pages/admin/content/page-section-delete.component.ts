@@ -241,6 +241,24 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
+          <!-- Explicit Explanation Banner when Delete Button is Disabled -->
+          <div class="lock-reason-banner" *ngIf="subItemsCount > 0 && (!isAllSelected() || !forceDeleteConfirmed)">
+            <div class="lock-icon">
+              <span class="material-symbols-outlined">lock</span>
+            </div>
+            <div class="lock-text">
+              <h4>Why is the Delete button disabled?</h4>
+              <p>
+                This layout section contains <strong>{{ subItemsCount }} repeating sub-item card(s)</strong>.
+                To delete this section and all its cards together, check the <strong>"Select All"</strong> box in the checklist above, or click below to unlock.
+              </p>
+              <button type="button" class="btn btn-sm btn-authorize" (click)="authorizeAllCascade()">
+                <span class="material-symbols-outlined fs-6">done_all</span>
+                <span>Click Here to Select All Sub-Items &amp; Unlock Deletion</span>
+              </button>
+            </div>
+          </div>
+
           <div class="delete-action-row">
             <button type="button" (click)="cancel()" class="btn btn-secondary">
               <span>Cancel</span>
@@ -687,6 +705,38 @@ import { ToastService } from '../../../core/services/toast.service';
     .status-mismatch { color: #dc2626; display: flex; align-items: center; gap: 4px; }
     .status-match span, .status-warning span, .status-mismatch span { font-size: 16px; }
 
+    .lock-reason-banner {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #fffbeb;
+      border: 1.5px solid #fde68a;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-top: 4px;
+    }
+    .lock-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .lock-text { flex: 1; }
+    .lock-text h4 { margin: 0 0 4px; font-size: 14px; font-weight: 800; color: #92400e; }
+    .lock-text p { margin: 0; font-size: 13px; color: #b45309; line-height: 1.5; }
+    .btn-authorize {
+      background: #0050e5;
+      color: #fff;
+      margin-top: 10px;
+    }
+    .btn-authorize:hover { background: #003ebd; }
+
     .delete-action-row {
       display: flex;
       justify-content: flex-end;
@@ -773,6 +823,12 @@ export class PageSectionDeleteComponent implements OnInit {
   isAllSelected(): boolean {
     if (this.attachedSubItems.length === 0) return true;
     return this.attachedSubItems.every(item => this.selectedSubItemIds.has(item.id));
+  }
+
+  authorizeAllCascade(): void {
+    this.attachedSubItems.forEach(i => this.selectedSubItemIds.add(i.id));
+    this.forceDeleteConfirmed = true;
+    this.toast.info(`Authorized cascade purge for all ${this.subItemsCount} sub-item(s).`);
   }
 
   toggleSelectAll(): void {
