@@ -1648,6 +1648,7 @@ Reply ONLY with the valid JSON object.";
             existing.ButtonText = updated.ButtonText;
             existing.ButtonLink = updated.ButtonLink;
             existing.DirectUrl = updated.DirectUrl;
+            existing.CustomClass = updated.CustomClass;
             existing.SortOrder = updated.SortOrder;
             existing.Disable = updated.Disable;
             existing.AddToRibon = updated.AddToRibon;

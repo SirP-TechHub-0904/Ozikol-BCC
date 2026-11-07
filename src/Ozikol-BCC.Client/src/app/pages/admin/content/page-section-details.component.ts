@@ -49,10 +49,10 @@ import { ToastService } from '../../../core/services/toast.service';
             <h3>Repeating Sub-Items & Feature Cards</h3>
             <p class="card-sub">Items rendered inside this layout block (e.g., service cards, core pillars, team members).</p>
           </div>
-          <button type="button" class="btn btn-primary btn-sm" (click)="openAddSubItemModal()">
+          <a [routerLink]="['/content/console/sections/lists/create']" [queryParams]="{ pageSectionId: sectionId }" class="btn btn-primary btn-sm">
             <span class="material-symbols-outlined">add_circle</span>
             <span>Add Sub-Item</span>
-          </button>
+          </a>
         </div>
 
         <div class="table-responsive">
@@ -102,71 +102,16 @@ import { ToastService } from '../../../core/services/toast.service';
                 <td colspan="7" class="empty-cell">
                   <div class="empty-state">
                     <span class="material-symbols-outlined">list</span>
-                    <p>No repeating sub-items added yet. Click "Add Sub-Item" to populate this section block!</p>
+                    <p>No repeating sub-items added yet.</p>
+                    <a [routerLink]="['/content/console/sections/lists/create']" [queryParams]="{ pageSectionId: sectionId }" class="btn btn-outline btn-sm" style="margin-top: 10px;">
+                      <span class="material-symbols-outlined">add_circle</span>
+                      <span>Add First Sub-Item</span>
+                    </a>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Add Sub-Item Modal (Protected Backdrop) -->
-      <div class="modal-backdrop" *ngIf="showAddModal">
-        <div class="modal-card modal-lg">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">add_circle</span>
-              <h3>Add Sub-Item to {{ section.title }}</h3>
-            </div>
-            <button type="button" class="btn-close" (click)="closeAddModal()">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label>ITEM TITLE *</label>
-              <input type="text" [(ngModel)]="newItem.title" class="form-control" placeholder="e.g. Youth Mentorship, Health Care Outreach">
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>MINI TITLE (SUB-TAG)</label>
-                <input type="text" [(ngModel)]="newItem.miniTitle" class="form-control" placeholder="PILLAR 01">
-              </div>
-              <div class="form-group flex-1">
-                <label>ICON CLASS (FONTAWESOME / BOOTSTRAP)</label>
-                <input type="text" [(ngModel)]="newItem.iconText" class="form-control" placeholder="fa-solid fa-heart">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>DESCRIPTION</label>
-              <textarea rows="3" [(ngModel)]="newItem.description" class="form-control" placeholder="Short description of this sub-item..."></textarea>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>BUTTON TEXT</label>
-                <input type="text" [(ngModel)]="newItem.buttonText" class="form-control" placeholder="Learn More">
-              </div>
-              <div class="form-group flex-1">
-                <label>BUTTON LINK</label>
-                <input type="text" [(ngModel)]="newItem.buttonLink" class="form-control" placeholder="/programs/youth">
-              </div>
-              <div class="form-group flex-1">
-                <label>SORT ORDER</label>
-                <input type="number" [(ngModel)]="newItem.sortOrder" class="form-control">
-              </div>
-            </div>
-
-            <div class="error-box" *ngIf="modalError">{{ modalError }}</div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeAddModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveNewSubItem()" [disabled]="savingItem">
-              <span *ngIf="!savingItem">Save & Add Sub-Item</span>
-              <span *ngIf="savingItem">Saving...</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -260,11 +205,6 @@ export class PageSectionDetailsComponent implements OnInit {
   section: any = null;
   loading = false;
 
-  showAddModal = false;
-  savingItem = false;
-  modalError = '';
-  newItem: any = {};
-
   constructor(
     private route: ActivatedRoute,
     private api: ApiService,
@@ -290,47 +230,6 @@ export class PageSectionDetailsComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-      }
-    });
-  }
-
-  openAddSubItemModal(): void {
-    this.newItem = {
-      title: '',
-      miniTitle: '',
-      iconText: 'fa-solid fa-star',
-      description: '',
-      buttonText: '',
-      buttonLink: '',
-      sortOrder: (this.section?.pageSectionLists?.length || 0) + 1,
-      pageSectionId: this.sectionId
-    };
-    this.modalError = '';
-    this.showAddModal = true;
-  }
-
-  closeAddModal(): void {
-    this.showAddModal = false;
-  }
-
-  saveNewSubItem(): void {
-    if (!this.newItem.title?.trim()) {
-      this.modalError = 'Item Title is required.';
-      return;
-    }
-
-    this.savingItem = true;
-    this.modalError = '';
-
-    this.api.post<any>('ContentApi/section-lists', this.newItem).subscribe({
-      next: () => {
-        this.savingItem = false;
-        this.showAddModal = false;
-        this.loadSection();
-      },
-      error: (err) => {
-        this.savingItem = false;
-        this.modalError = err?.error?.message || 'Failed to add sub-item.';
       }
     });
   }

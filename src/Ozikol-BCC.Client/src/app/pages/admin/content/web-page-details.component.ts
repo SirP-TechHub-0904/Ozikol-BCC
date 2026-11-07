@@ -62,10 +62,10 @@ import { ToastService } from '../../../core/services/toast.service';
               <h3>Attached Layout Blocks</h3>
               <p class="card-sub">Sections render from top to bottom based on Page Sort Order.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="openAddSectionModal()">
+            <a [routerLink]="['/content/console/sections/create']" [queryParams]="{ webPageId: pageId }" class="btn btn-primary btn-sm">
               <span class="material-symbols-outlined">add_circle</span>
               <span>Add New Section</span>
-            </button>
+            </a>
           </div>
 
           <div class="table-responsive">
@@ -120,7 +120,11 @@ import { ToastService } from '../../../core/services/toast.service';
                   <td colspan="7" class="empty-cell">
                     <div class="empty-state">
                       <span class="material-symbols-outlined">view_quilt</span>
-                      <p>No layout sections added yet. Click "Add New Section" to build your page layout!</p>
+                      <p>No layout sections added yet.</p>
+                      <a [routerLink]="['/content/console/sections/create']" [queryParams]="{ webPageId: pageId }" class="btn btn-outline btn-sm" style="margin-top: 10px;">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        <span>Add First Section</span>
+                      </a>
                     </div>
                   </td>
                 </tr>
@@ -185,65 +189,6 @@ import { ToastService } from '../../../core/services/toast.service';
                 <strong>{{ page.viewCount || 0 }} views</strong>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Add Section Modal (Protected Backdrop) -->
-      <div class="modal-backdrop" *ngIf="showAddSectionModal">
-        <div class="modal-card modal-lg">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">view_quilt</span>
-              <h3>Add Section to {{ page.title }}</h3>
-            </div>
-            <button type="button" class="btn-close" (click)="closeAddSectionModal()">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label>SECTION MAIN TITLE *</label>
-              <input type="text" [(ngModel)]="newSection.title" class="form-control" placeholder="e.g. Our Core Values, Featured Programs">
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>MINI TITLE (SUB-TAG)</label>
-                <input type="text" [(ngModel)]="newSection.miniTitle" class="form-control" placeholder="WHAT WE BELIEVE">
-              </div>
-              <div class="form-group flex-1">
-                <label>TEMPLATE DESIGN KEY</label>
-                <input type="text" [(ngModel)]="newSection.templateKey" class="form-control" placeholder="values-grid, features-hero">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>SHORT DESCRIPTION</label>
-              <textarea rows="2" [(ngModel)]="newSection.description" class="form-control" placeholder="Introductory paragraph..."></textarea>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>PAGE SORT ORDER</label>
-                <input type="number" [(ngModel)]="newSection.pageSortOrder" class="form-control">
-              </div>
-              <div class="form-group flex-1">
-                <label>BUTTON TEXT</label>
-                <input type="text" [(ngModel)]="newSection.buttonText" class="form-control" placeholder="Learn More">
-              </div>
-              <div class="form-group flex-1">
-                <label>BUTTON LINK</label>
-                <input type="text" [(ngModel)]="newSection.buttonLink" class="form-control" placeholder="/contact">
-              </div>
-            </div>
-
-            <div class="error-box" *ngIf="sectionError">{{ sectionError }}</div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeAddSectionModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveNewSection()" [disabled]="savingSection">
-              <span *ngIf="!savingSection">Save & Add Section</span>
-              <span *ngIf="savingSection">Saving...</span>
-            </button>
           </div>
         </div>
       </div>
@@ -354,12 +299,6 @@ export class WebPageDetailsComponent implements OnInit {
   loading = false;
   activeTab = 'sections';
 
-  // Add Section Modal
-  showAddSectionModal = false;
-  savingSection = false;
-  sectionError = '';
-  newSection: any = {};
-
   constructor(
     private route: ActivatedRoute,
     private api: ApiService,
@@ -382,48 +321,6 @@ export class WebPageDetailsComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-      }
-    });
-  }
-
-  openAddSectionModal(): void {
-    this.newSection = {
-      title: '',
-      miniTitle: '',
-      templateKey: 'feature-block',
-      description: '',
-      pageSortOrder: (this.page?.pageSections?.length || 0) + 1,
-      showInHome: true,
-      webPageId: this.pageId,
-      buttonText: '',
-      buttonLink: ''
-    };
-    this.sectionError = '';
-    this.showAddSectionModal = true;
-  }
-
-  closeAddSectionModal(): void {
-    this.showAddSectionModal = false;
-  }
-
-  saveNewSection(): void {
-    if (!this.newSection.title?.trim()) {
-      this.sectionError = 'Section Title is required.';
-      return;
-    }
-
-    this.savingSection = true;
-    this.sectionError = '';
-
-    this.api.post<any>('ContentApi/sections', this.newSection).subscribe({
-      next: () => {
-        this.savingSection = false;
-        this.showAddSectionModal = false;
-        this.loadPage();
-      },
-      error: (err) => {
-        this.savingSection = false;
-        this.sectionError = err?.error?.message || 'Failed to add section.';
       }
     });
   }
