@@ -993,12 +993,26 @@
               </div>
             </div>
 
+            <!-- Selected File Ready Banner -->
+            <div class="css-file-status-bar" *ngIf="selectedCssFile && !uploadedCssUrl && !uploadingCss"
+              style="background: #f0fdf4; border: 1px solid #86efac; padding: 10px 14px; border-radius: 8px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div class="css-file-info" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #16a34a;">check_circle</span>
+                <span class="css-filename">Ready: <strong>{{ selectedCssFileName }}</strong> ({{ selectedCssFileSize }})</span>
+                <span style="font-size: 11px; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Ready to Upload & Save</span>
+              </div>
+              <button type="button" class="btn-dismiss-bar" (click)="resetCssUploadState()" title="Remove file"
+                style="background: none; border: none; cursor: pointer; color: #64748b;">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
             <!-- Uploading Progress Indicator -->
             <div class="css-file-status-bar" *ngIf="uploadingCss"
               style="background: #eff6ff; border-color: #93c5fd; padding: 10px 14px; border-radius: 8px; margin-top: 12px;">
               <div class="css-file-info">
                 <span class="material-symbols-outlined icon-file spin-icon" style="color: #0050E5;">sync</span>
-                <span class="css-filename">Uploading <strong>{{ selectedCssFileName }}</strong> to CDN...</span>
+                <span class="css-filename">Uploading <strong>{{ selectedCssFileName }}</strong> to CDN and saving...</span>
                 <span class="css-filesize">({{ selectedCssFileSize }})</span>
               </div>
             </div>
@@ -1061,12 +1075,26 @@
               </div>
             </div>
 
+            <!-- Selected JS File Ready Banner -->
+            <div class="css-file-status-bar" *ngIf="selectedJsFile && !uploadedJsUrl && !uploadingJs"
+              style="background: #fefce8; border: 1px solid #fde047; padding: 10px 14px; border-radius: 8px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div class="css-file-info" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #ca8a04;">check_circle</span>
+                <span class="css-filename">Ready: <strong>{{ selectedJsFileName }}</strong> ({{ selectedJsFileSize }})</span>
+                <span style="font-size: 11px; background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Ready to Upload & Save</span>
+              </div>
+              <button type="button" class="btn-dismiss-bar" (click)="resetJsUploadState()" title="Remove file"
+                style="background: none; border: none; cursor: pointer; color: #64748b;">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
             <!-- Uploading Progress Indicator -->
             <div class="css-file-status-bar" *ngIf="uploadingJs"
               style="background: #fffbeb; border-color: #fde047; padding: 10px 14px; border-radius: 8px; margin-top: 12px;">
               <div class="css-file-info">
                 <span class="material-symbols-outlined icon-file spin-icon" style="color: #ca8a04;">sync</span>
-                <span class="css-filename">Uploading <strong>{{ selectedJsFileName }}</strong> to CDN...</span>
+                <span class="css-filename">Uploading <strong>{{ selectedJsFileName }}</strong> to CDN and saving...</span>
                 <span class="css-filesize">({{ selectedJsFileSize }})</span>
               </div>
             </div>
@@ -1148,10 +1176,10 @@
     </div>
 
     <div class="preview-modal-footer">
-      <button type="button" class="btn btn-outline" (click)="closeTagModal()">Cancel</button>
-      <button type="button" class="btn btn-primary" (click)="saveTag()" [disabled]="savingTag">
-        <span class="material-symbols-outlined">save</span>
-        <span>{{ savingTag ? 'Saving...' : (isEditingTag ? 'Update Tag' : 'Save & Inject Tag') }}</span>
+      <button type="button" class="btn btn-outline" (click)="closeTagModal()" [disabled]="savingTag || uploadingCss || uploadingJs">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="saveTag()" [disabled]="savingTag || uploadingCss || uploadingJs">
+        <span class="material-symbols-outlined">{{ (uploadingCss || uploadingJs) ? 'cloud_upload' : 'save' }}</span>
+        <span>{{ (uploadingCss || uploadingJs) ? 'Uploading & Saving...' : (savingTag ? 'Saving...' : (isEditingTag ? 'Update Tag' : ((selectedCssFile || selectedJsFile) ? 'Upload & Save Tag' : 'Save & Inject Tag'))) }}</span>
       </button>
     </div>
   </div>
