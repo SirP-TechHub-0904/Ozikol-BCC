@@ -165,7 +165,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                 if (!_r2Storage.IsConfigured())
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
                 }
 
                 var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
@@ -240,7 +240,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                 if (!_r2Storage.IsConfigured())
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
                 }
 
                 var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
@@ -5961,7 +5961,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!_r2Storage.IsConfigured())
             {
-                return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
             }
 
             var cleanSuite = string.IsNullOrWhiteSpace(suiteCode) ? "global" : suiteCode.Trim().ToLowerInvariant();
@@ -6460,7 +6460,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!_r2Storage.IsConfigured())
             {
-                return BadRequest(ApiResponse<object>.FailureResponse("CDN asset storage is not configured. Unable to proceed with asset upload."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Unable to proceed."));
             }
 
             var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";

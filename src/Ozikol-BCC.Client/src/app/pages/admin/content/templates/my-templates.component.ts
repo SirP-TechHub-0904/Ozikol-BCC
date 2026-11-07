@@ -1643,7 +1643,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.uploadingCss = false;
         this.resetCssUploadState();
-        const errMsg = err?.error?.message || err?.message || 'Asset upload failed.';
+        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
         this.toast.error(errMsg);
       }
     });
@@ -1706,7 +1706,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.uploadingJs = false;
         this.resetJsUploadState();
-        const errMsg = err?.error?.message || err?.message || 'Asset upload failed.';
+        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
         this.toast.error(errMsg);
       }
     });
