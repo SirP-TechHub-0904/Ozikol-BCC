@@ -168,3 +168,4 @@ namespace Ozikol.MasterDomain.Models
         public DateTime? CompletedAtUtc { get; set; }
     }
 }
+

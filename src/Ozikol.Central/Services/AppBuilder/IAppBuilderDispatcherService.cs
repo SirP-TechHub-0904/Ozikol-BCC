@@ -46,3 +46,4 @@ namespace Ozikol.Central.Services.AppBuilder
         public string? WorkflowUrl { get; set; }
     }
 }
+

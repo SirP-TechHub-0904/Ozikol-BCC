@@ -129,3 +129,4 @@ namespace Ozikol.Central.Controllers
         public string? ErrorMessage { get; set; }
     }
 }
+
