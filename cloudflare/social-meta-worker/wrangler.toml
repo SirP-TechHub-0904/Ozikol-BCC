@@ -1,0 +1,11 @@
+name = "ozikol-social-meta-worker"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Account and Zone configuration
+account_id = "edd3e27d73f391991df0f3d9ce22c4e5"
+
+# Route to intercept all tenant subdomains on ozikol.cloud
+routes = [
+  { pattern = "*://*.ozikol.cloud/*", zone_id = "66104652bc74411279ca90930425b49e" }
+]
