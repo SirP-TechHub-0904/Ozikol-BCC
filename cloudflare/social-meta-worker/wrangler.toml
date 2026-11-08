@@ -9,3 +9,4 @@ account_id = "edd3e27d73f391991df0f3d9ce22c4e5"
 routes = [
   { pattern = "*://*.ozikol.cloud/*", zone_id = "66104652bc74411279ca90930425b49e" }
 ]
+

@@ -32,3 +32,4 @@ If deploying from terminal, ensure your API Token has **Workers Scripts (Edit)**
 ```bash
 npx wrangler deploy
 ```
+
