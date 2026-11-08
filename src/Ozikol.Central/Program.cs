@@ -326,6 +326,9 @@ builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateA
 builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService, Ozikol_BCC.Application.Services.Sections.TemplateImageOptimizationService>();
 builder.Services.AddScoped<Ozikol.Central.Services.ISectionCompilerRendererService, Ozikol.Central.Services.SectionCompilerRendererService>();
 
+// 7d. Register App Builder Dispatcher Service (GitHub Actions Cloud Runners)
+builder.Services.AddHttpClient<Ozikol.Central.Services.AppBuilder.IAppBuilderDispatcherService, Ozikol.Central.Services.AppBuilder.AppBuilderDispatcherService>();
+
 builder.Services.AddControllers();
 
 // 7d. Defense-in-Depth Native Rate Limiting Configuration

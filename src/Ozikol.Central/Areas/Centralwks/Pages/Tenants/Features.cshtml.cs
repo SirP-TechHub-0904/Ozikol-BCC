@@ -343,7 +343,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                             MonthlyPrice = f.MonthlyPrice,
                             QuarterlyPrice = f.QuarterlyPrice,
                             YearlyPrice = f.YearlyPrice,
-                            FreeTrialDays = 14,
+                            FreeTrialDays = 7,
                             IsActive = f.IsActive,
                             IsPublished = f.IsPublished,
                             IsAvailableForUse = f.IsAvailableForUse,
@@ -369,7 +369,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                             MonthlyPrice = f.MonthlyPrice,
                             QuarterlyPrice = f.QuarterlyPrice,
                             YearlyPrice = f.YearlyPrice,
-                            FreeTrialDays = 14,
+                            FreeTrialDays = 7,
                             IsActive = f.IsActive,
                             IsPublished = true,
                             SortOrder = f.SortOrder

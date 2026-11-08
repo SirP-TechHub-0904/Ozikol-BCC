@@ -451,7 +451,11 @@ public class TenantProvider : ITenantProvider
                 tenantServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
                 tenantServer.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
                 tenantServer.Equals(".", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase);
+                tenantServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.StartsWith("(local)", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.StartsWith("(localdb)", StringComparison.OrdinalIgnoreCase) ||
+                tenantServer.IndexOf(Environment.MachineName, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                tenantServer.EndsWith("SQLEXPRESS", StringComparison.OrdinalIgnoreCase);
 
             if (isMasterRemote && isTenantLocal)
             {

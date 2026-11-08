@@ -121,9 +121,16 @@ namespace Ozikol.MasterDomain.Models
 
         /// <summary>
         /// Number of free trial days granted to a tenant the first time they activate and test this capability
-        /// before recurring payment is required (General Mode default, e.g. 14 days; 0 = no free trial).
+        /// before recurring payment is required (General Mode default: 7 days; 0 = no free trial).
         /// </summary>
-        public int FreeTrialDays { get; set; } = 14;
+        public int FreeTrialDays { get; set; } = 7;
+
+        /// <summary>
+        /// Indicates whether this capability has active non-zero catalog prices configured for BOTH Monthly and Yearly durations.
+        /// Non-compulsory capabilities MUST have both Monthly and Yearly amounts configured before they can be published or activated.
+        /// </summary>
+        [NotMapped]
+        public bool HasConfiguredPrice => IsCompulsory || (MonthlyPrice > 0m && YearlyPrice > 0m);
 
         public bool IsActive { get; set; } = true;
         public bool IsInBeta { get; set; } = false;

@@ -212,23 +212,29 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             feature.Icon = Input.Icon?.Trim();
             feature.BillingType = (FeatureBillingType)Input.BillingType;
 
-            // Apply automated pricing logic based on cadence
+            // Apply automated pricing logic based on cadence (Both Monthly and Yearly are compulsory)
+            decimal monthly = Math.Max(0m, Input.MonthlyPrice);
+            decimal yearly = Math.Max(0m, Input.YearlyPrice);
+            decimal quarterly = 0m;
+
             if (string.Equals(Input.BillingCadence, "Yearly", StringComparison.OrdinalIgnoreCase))
             {
-                feature.MonthlyPrice = 0m;
-                feature.QuarterlyPrice = 0m;
-                feature.YearlyPrice = Math.Max(0m, Input.YearlyPrice);
+                yearly = Math.Max(0m, Input.YearlyPrice);
+                monthly = monthly > 0m ? monthly : Math.Round(yearly / 10m, 2);
+                quarterly = Math.Round(monthly * 3m * 0.90m, 2);
             }
             else
             {
-                var monthly = Math.Max(0m, Input.MonthlyPrice);
                 var qDisc = Math.Clamp(Input.QuarterlyDiscountPercent, 0, 100);
                 var yDisc = Math.Clamp(Input.YearlyDiscountPercent, 0, 100);
 
-                feature.MonthlyPrice = monthly;
-                feature.QuarterlyPrice = Math.Round((monthly * 3m) * (1.0m - (qDisc / 100m)), 2);
-                feature.YearlyPrice = Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
+                quarterly = Math.Round((monthly * 3m) * (1.0m - (qDisc / 100m)), 2);
+                yearly = yearly > 0m ? yearly : Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
             }
+
+            feature.MonthlyPrice = monthly;
+            feature.QuarterlyPrice = quarterly;
+            feature.YearlyPrice = yearly;
 
             feature.IsCompulsory = false;
             feature.IsMetered = Input.IsMetered;
@@ -239,10 +245,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             var previousOrder = feature.SortOrder;
             feature.SortOrder = Input.DisplayOrder;
 
-            // Guard: If amount is 0, do not publish!
-            if (Input.IsPublished && feature.MonthlyPrice <= 0m && feature.YearlyPrice <= 0m)
+            // Compulsory: BOTH Monthly and Yearly amounts must be > 0!
+            if (!feature.IsCompulsory && (feature.MonthlyPrice <= 0m || feature.YearlyPrice <= 0m))
             {
-                ModelState.AddModelError("Input.IsPublished", "Cannot publish a capability with ₦0.00 / $0.00 price. Assign monthly or yearly pricing before publishing.");
+                ModelState.AddModelError(string.Empty, "Both Monthly and Yearly amounts are compulsory (> ₦0.00 / $0.00) before a capability can be saved or published.");
                 await LoadSuitesAsync();
                 return Page();
             }
@@ -370,10 +376,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public int MeterBatchSize { get; set; } = 1;
 
             /// <summary>
-            /// Number of free trial days granted to a tenant the first time they activate and test this capability before payment (General Mode).
+            /// Number of free trial days granted to a tenant the first time they activate and test this capability before payment (General Mode default: 7 days).
             /// </summary>
             [Range(0, 365)]
-            public int FreeTrialDays { get; set; } = 14;
+            public int FreeTrialDays { get; set; } = 7;
 
             public int DisplayOrder { get; set; }
 

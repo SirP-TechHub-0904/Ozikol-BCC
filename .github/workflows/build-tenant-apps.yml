@@ -1,0 +1,265 @@
+name: Build Tenant Workstation & Mobile Apps
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'Unique identifier for MasterTenantAppBuilds record'
+        required: true
+        type: string
+      app_mode:
+        description: 'Application distribution mode (general or whitelabel)'
+        required: true
+        default: 'whitelabel'
+        type: choice
+        options:
+          - whitelabel
+          - general
+      tenant_key:
+        description: 'Tenant key or slug (e.g. cocacola or global)'
+        required: true
+        default: 'global'
+        type: string
+      brand_name:
+        description: 'Display brand name for title bar and shortcuts'
+        required: true
+        default: 'Workspace Command Center'
+        type: string
+      api_base_url:
+        description: 'Central or Tenant API base URL baked into binary'
+        required: true
+        default: 'https://api.ozikol.cloud'
+        type: string
+      primary_domain:
+        description: 'Primary custom domain'
+        required: false
+        default: ''
+        type: string
+      version:
+        description: 'Application semantic version (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+        type: string
+      build_number:
+        description: 'Build sequence number'
+        required: true
+        default: '1'
+        type: string
+      build_windows:
+        description: 'Build Windows Desktop (.exe / installer)'
+        required: false
+        default: true
+        type: boolean
+      build_android:
+        description: 'Build Android Mobile (.apk and .aab)'
+        required: false
+        default: true
+        type: boolean
+      callback_url:
+        description: 'Central API webhook callback URL upon completion'
+        required: false
+        default: ''
+        type: string
+      callback_secret:
+        description: 'Shared secret for webhook authenticity verification'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  # ===================================================================
+  # Job 1: Windows Workstation Desktop (.exe)
+  # ===================================================================
+  build-windows:
+    name: Build Windows Workstation (.exe)
+    if: ${{ inputs.build_windows }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter & Windows Toolchain
+        run: |
+          flutter doctor -v
+
+      - name: Build Windows Desktop App
+        shell: pwsh
+        working-directory: FutterMobDeskApp
+        run: |
+          $tenantParam = if ("${{ inputs.app_mode }}" -eq "whitelabel") { "${{ inputs.tenant_key }}" } else { "" }
+          $brandParam = "${{ inputs.brand_name }}"
+          $apiParam = "${{ inputs.api_base_url }}"
+          $domainParam = "${{ inputs.primary_domain }}"
+          
+          Write-Host "Triggering Windows Build for: Mode=${{ inputs.app_mode }}, Tenant=$tenantParam, Brand=$brandParam" -ForegroundColor Cyan
+          
+          .\build-tenant-installer.ps1 -TenantKey $tenantParam -BrandName $brandParam -ApiBaseUrl $apiParam -PrimaryDomain $domainParam
+
+      - name: Locate & Verify Windows Artifacts
+        id: win_artifacts
+        shell: pwsh
+        run: |
+          $installerDir = "FutterMobDeskApp\build\installer"
+          $files = Get-ChildItem -Path $installerDir -Filter "*.*" -ErrorAction SilentlyContinue
+          if ($files.Count -gt 0) {
+              $artifact = $files[0]
+              $sha = (Get-FileHash -Path $artifact.FullName -Algorithm SHA256).Hash
+              Write-Host "Found Artifact: $($artifact.Name) ($($artifact.Length) bytes, SHA256: $sha)"
+              echo "filename=$($artifact.Name)" >> $env:GITHUB_OUTPUT
+              echo "filepath=$($artifact.FullName)" >> $env:GITHUB_OUTPUT
+              echo "filesize=$($artifact.Length)" >> $env:GITHUB_OUTPUT
+              echo "sha256=$sha" >> $env:GITHUB_OUTPUT
+          } else {
+              Write-Error "No installer artifact generated in $installerDir"
+          }
+
+      - name: Upload Windows Artifact to GitHub Actions Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ inputs.tenant_key }}-workstation
+          path: FutterMobDeskApp/build/installer/*
+          retention-days: 14
+
+      - name: Notify Central Callback (Windows Success)
+        if: ${{ inputs.callback_url != '' }}
+        shell: pwsh
+        run: |
+          $payload = @{
+              buildId = "${{ inputs.build_id }}"
+              platform = "WindowsExe"
+              status = "Succeeded"
+              fileName = "${{ steps.win_artifacts.outputs.filename }}"
+              fileSizeBytes = [int64]"${{ steps.win_artifacts.outputs.filesize }}"
+              sha256Checksum = "${{ steps.win_artifacts.outputs.sha256 }}"
+              gitHubRunId = [int64]$env:GITHUB_RUN_ID
+              gitHubRunUrl = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          } | ConvertTo-Json -Depth 3
+
+          try {
+              $headers = @{ "Content-Type" = "application/json" }
+              if ("${{ inputs.callback_secret }}" -ne "") {
+                  $headers["X-AppBuilder-Secret"] = "${{ inputs.callback_secret }}"
+              }
+              Invoke-RestMethod -Uri "${{ inputs.callback_url }}" -Method POST -Body $payload -Headers $headers -TimeoutSec 15
+              Write-Host "Successfully notified Central callback."
+          } catch {
+              Write-Warning "Callback dispatch failed: $_"
+          }
+
+  # ===================================================================
+  # Job 2: Android Mobile (.apk and .aab)
+  # ===================================================================
+  build-android:
+    name: Build Android Mobile (.apk & .aab)
+    if: ${{ inputs.build_android }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter & Android Toolchain
+        run: |
+          flutter doctor -v
+
+      - name: Build Android Release APK
+        working-directory: FutterMobDeskApp
+        run: |
+          DART_DEFINES=""
+          if [ "${{ inputs.app_mode }}" = "whitelabel" ]; then
+            DART_DEFINES="--dart-define=LOCKED_TENANT_KEY=${{ inputs.tenant_key }} --dart-define=LOCKED_TENANT_NAME='${{ inputs.brand_name }}' --dart-define=API_BASE_URL='${{ inputs.api_base_url }}'"
+          else
+            DART_DEFINES="--dart-define=API_BASE_URL='${{ inputs.api_base_url }}'"
+          fi
+          
+          flutter build apk --release $DART_DEFINES
+
+      - name: Build Android Play Store App Bundle (.aab)
+        working-directory: FutterMobDeskApp
+        run: |
+          DART_DEFINES=""
+          if [ "${{ inputs.app_mode }}" = "whitelabel" ]; then
+            DART_DEFINES="--dart-define=LOCKED_TENANT_KEY=${{ inputs.tenant_key }} --dart-define=LOCKED_TENANT_NAME='${{ inputs.brand_name }}' --dart-define=API_BASE_URL='${{ inputs.api_base_url }}'"
+          else
+            DART_DEFINES="--dart-define=API_BASE_URL='${{ inputs.api_base_url }}'"
+          fi
+
+          flutter build appbundle --release $DART_DEFINES
+
+      - name: Inspect Android Artifacts
+        id: android_artifacts
+        shell: bash
+        run: |
+          APK_FILE="FutterMobDeskApp/build/app/outputs/flutter-apk/app-release.apk"
+          AAB_FILE="FutterMobDeskApp/build/app/outputs/bundle/release/app-release.aab"
+          
+          if [ -f "$APK_FILE" ]; then
+            APK_SIZE=$(wc -c < "$APK_FILE")
+            APK_SHA=$(sha256sum "$APK_FILE" | awk '{print $1}')
+            echo "apk_exists=true" >> $GITHUB_OUTPUT
+            echo "apk_size=$APK_SIZE" >> $GITHUB_OUTPUT
+            echo "apk_sha=$APK_SHA" >> $GITHUB_OUTPUT
+            echo "Found APK: $APK_FILE ($APK_SIZE bytes)"
+          fi
+
+          if [ -f "$AAB_FILE" ]; then
+            AAB_SIZE=$(wc -c < "$AAB_FILE")
+            AAB_SHA=$(sha256sum "$AAB_FILE" | awk '{print $1}')
+            echo "aab_exists=true" >> $GITHUB_OUTPUT
+            echo "aab_size=$AAB_SIZE" >> $GITHUB_OUTPUT
+            echo "aab_sha=$AAB_SHA" >> $GITHUB_OUTPUT
+            echo "Found AAB: $AAB_FILE ($AAB_SIZE bytes)"
+          fi
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ inputs.tenant_key }}-apk
+          path: FutterMobDeskApp/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      - name: Upload Android AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ inputs.tenant_key }}-playstore-aab
+          path: FutterMobDeskApp/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+      - name: Notify Central Callback (Android Success)
+        if: ${{ inputs.callback_url != '' }}
+        shell: bash
+        run: |
+          curl -X POST "${{ inputs.callback_url }}" \
+            -H "Content-Type: application/json" \
+            -H "X-AppBuilder-Secret: ${{ inputs.callback_secret }}" \
+            -d '{
+              "buildId": "${{ inputs.build_id }}",
+              "platform": "AndroidApk",
+              "status": "Succeeded",
+              "fileName": "${{ inputs.tenant_key }}-mobile.apk",
+              "fileSizeBytes": ${{ steps.android_artifacts.outputs.apk_size || 0 }},
+              "sha256Checksum": "${{ steps.android_artifacts.outputs.apk_sha || \"\" }}",
+              "gitHubRunId": '${GITHUB_RUN_ID}',
+              "gitHubRunUrl": "https://github.com/'${GITHUB_REPOSITORY}'/actions/runs/'${GITHUB_RUN_ID}'"
+            }'
+

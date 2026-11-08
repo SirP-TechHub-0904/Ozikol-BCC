@@ -230,10 +230,10 @@ Chart.register(...registerables);
             <span class="material-symbols-outlined drag-dot">drag_indicator</span>
             <h2 class="widget-title">Modular Page Section Templates</h2>
           </div>
-          <button type="button" class="console-btn primary" (click)="openCreateModal('section')">
+          <a [routerLink]="['/content/console/sections/create']" class="console-btn primary">
             <span class="material-symbols-outlined">add</span>
             <span>New Section</span>
-          </button>
+          </a>
         </div>
         <div class="widget-body" style="padding: 0;">
           <table class="table-clean">

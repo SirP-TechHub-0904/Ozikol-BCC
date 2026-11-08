@@ -75,7 +75,7 @@
             @if (selectedFeatureDetail.isActive) {
               <span class="badge-pill-md badge-available">
                 <span class="material-symbols-outlined">check_circle</span>
-                <span>{{ selectedFeatureDetail.isTrialPeriod ? ('Active in Menu (Free Trial — ' + (selectedFeatureDetail.daysRemaining || selectedFeatureDetail.effectiveFreeTrialDays || 14) + 'd left)') : 'Active in Workspace Menu' }}</span>
+                <span>{{ selectedFeatureDetail.isTrialPeriod ? ('Active in Menu (Free Trial — ' + (selectedFeatureDetail.daysRemaining || selectedFeatureDetail.effectiveFreeTrialDays || 7) + 'd left)') : 'Active in Workspace Menu' }}</span>
               </span>
             } @else if (selectedFeatureDetail.isAvailableForUse) {
               <span class="badge-pill-md badge-optional">
@@ -488,7 +488,7 @@
                       @if (feat.isActive) {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active' }}</span>
+                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active' }}</span>
                         </span>
                       } @else if (feat.isAvailableForUse) {
                         <span class="badge-pill-md badge-optional">
@@ -845,7 +845,7 @@
                           @if (feat.isActive) {
                             <span class="badge-pill-md badge-available">
                               <span class="material-symbols-outlined">check_circle</span>
-                              <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active in Menu' }}</span>
+                              <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active in Menu' }}</span>
                             </span>
                             @if (hasFeatureExpirationInfo(feat)) {
                               <span class="badge-pill-md" [style.background]="isFeatureExpiringWithinMonth(feat) ? 'rgba(245, 158, 11, 0.14)' : '#f1f5f9'" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'" [style.border]="isFeatureExpiringWithinMonth(feat) ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #cbd5e1'">
@@ -1259,7 +1259,7 @@
                       } @else {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || 14) + 'd left)') : 'Active' }}</span>
+                          <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || 7) + 'd left)') : 'Active' }}</span>
                         </span>
                       }
                       @if (hasFeatureExpirationInfo(feat)) {

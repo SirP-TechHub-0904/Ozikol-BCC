@@ -23,10 +23,10 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Global overview of all layout blocks, feature grids, hero banners, and child card items across all web pages.</p>
         </div>
         <div class="header-actions">
-          <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+          <a [routerLink]="['/content/console/sections/create']" [queryParams]="filterPageId ? { webPageId: filterPageId } : null" class="btn btn-primary">
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Section</span>
-          </button>
+          </a>
           <button type="button" (click)="loadSections()" class="btn btn-outline" [disabled]="loading">
             <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
             <span>Refresh</span>
@@ -462,64 +462,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
       </div>
-
-      <!-- Create Section Modal -->
-      <div class="modal-backdrop" *ngIf="showCreateModal">
-        <div class="modal-card modal-lg">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">view_quilt</span>
-              <h3>Create Page Section Template</h3>
-            </div>
-            <button type="button" class="btn-close" (click)="closeCreateModal()">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label>SECTION MAIN TITLE *</label>
-              <input type="text" [(ngModel)]="newSection.title" class="form-control" placeholder="e.g. Services, About Section, Core Pillars">
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>MINI TITLE (SUB-TAG)</label>
-                <input type="text" [(ngModel)]="newSection.miniTitle" class="form-control" placeholder="WHAT WE OFFER">
-              </div>
-              <div class="form-group flex-1">
-                <label>TEMPLATE KEY</label>
-                <input type="text" [(ngModel)]="newSection.templateKey" class="form-control" placeholder="services-grid, feature-callout">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>SHORT DESCRIPTION</label>
-              <textarea rows="2" [(ngModel)]="newSection.description" class="form-control" placeholder="Brief section intro..."></textarea>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>PAGE SORT ORDER</label>
-                <input type="number" [(ngModel)]="newSection.pageSortOrder" class="form-control">
-              </div>
-              <div class="form-group flex-1">
-                <label>ATTACH TO WEB PAGE</label>
-                <select [(ngModel)]="newSection.webPageId" class="form-control">
-                  <option [ngValue]="null">Standalone (Global / All Pages)</option>
-                  <option *ngFor="let p of allPages" [ngValue]="p.id">{{ p.title }} ({{ p.directUrl || 'page' }})</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeCreateModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveNewSection()" [disabled]="saving">
-              <span *ngIf="!saving">Save &amp; Create Section</span>
-              <span *ngIf="saving">Saving...</span>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   `,
   styles: [`
@@ -696,7 +638,6 @@ export class PageSectionsComponent implements OnInit {
   selectedSubItemIds = new Set<string>();
 
   // Modals
-  showCreateModal = false;
   showBulkDeleteSectionsModal = false;
   showBulkDeleteSubItemsModal = false;
 
@@ -1035,47 +976,6 @@ export class PageSectionsComponent implements OnInit {
       error: (err) => {
         this.transferringSubItems = false;
         this.toast.error(err?.error?.message || `Failed to ${this.transferSubItemsMode} sub-items.`);
-      }
-    });
-  }
-
-  openCreateModal(): void {
-    this.newSection = {
-      title: '',
-      miniTitle: '',
-      templateKey: 'feature-block',
-      description: '',
-      pageSortOrder: this.sections.length + 1,
-      showInHome: true,
-      webPageId: null
-    };
-    this.errorMessage = '';
-    this.showCreateModal = true;
-  }
-
-  closeCreateModal(): void {
-    this.showCreateModal = false;
-  }
-
-  saveNewSection(): void {
-    if (!this.newSection.title?.trim()) {
-      this.errorMessage = 'Section Title is required.';
-      return;
-    }
-
-    this.saving = true;
-    this.errorMessage = '';
-
-    this.api.post<any>('ContentApi/sections', this.newSection).subscribe({
-      next: () => {
-        this.saving = false;
-        this.showCreateModal = false;
-        this.toast.success('Layout section created successfully!');
-        this.loadSections();
-      },
-      error: (err) => {
-        this.saving = false;
-        this.errorMessage = err?.error?.message || 'Failed to create section.';
       }
     });
   }

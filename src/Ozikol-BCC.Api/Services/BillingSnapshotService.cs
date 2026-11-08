@@ -217,7 +217,7 @@ namespace Ozikol_BCC.Api.Services
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
                     .Include(f => f.Suite)
-                    .Where(f => f.IsActive)
+                    .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m)))
                     .ToListAsync(cancellationToken);
             }
             catch
@@ -225,7 +225,7 @@ namespace Ozikol_BCC.Api.Services
                 // Graceful fallback if the MasterFeatureSuites / MenuTitle migration has not yet been applied to SQL Server
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive)
+                    .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m)))
                     .Select(f => new MasterFeatureCatalog
                     {
                         Id = f.Id,
@@ -240,7 +240,7 @@ namespace Ozikol_BCC.Api.Services
                         MonthlyPrice = f.MonthlyPrice,
                         QuarterlyPrice = f.QuarterlyPrice,
                         YearlyPrice = f.YearlyPrice,
-                        FreeTrialDays = 14,
+                        FreeTrialDays = 7,
                         IsMetered = f.IsMetered,
                         IsActive = f.IsActive,
                         IsPublished = f.IsActive,
@@ -439,14 +439,13 @@ namespace Ozikol_BCC.Api.Services
                 var suiteSortOrder = matchedSuite?.SortOrder ?? (GetSuiteOrder(suiteFullTitle) + 1);
 
                 bool hasCustomTrial = sub?.CustomFreeTrialDaysOverride != null;
-                int catalogTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 14;
+                int catalogTrialDays = Math.Max(0, f.FreeTrialDays);
                 int effectiveTrialDays = ((tenant?.UseCustomPricing == true || tenant?.UseCustomAvailability == true || hasCustomTrial) && hasCustomTrial)
                     ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
                     : catalogTrialDays;
-                if (effectiveTrialDays <= 0) effectiveTrialDays = 14;
                 bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
                 bool isTrialPeriod = ((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now);
-                bool isEligibleForFreeTrial = !hasUsedTrial;
+                bool isEligibleForFreeTrial = !hasUsedTrial && effectiveTrialDays > 0;
 
                 bool isPaidCapability = defaultEffectivePrice > 0m || effectiveYearly > 0m;
                 var item = new BillingFeatureItemDto
@@ -500,6 +499,36 @@ namespace Ozikol_BCC.Api.Services
                     item.EffectivePrice = defaultEffectivePrice;
                     snapshot.Available.Add(item);
                     continue;
+                }
+
+                // Auto-healing: If an active non-compulsory subscription was erroneously given 10 years (legacy bug)
+                if (sub != null && sub.ExpiresAtUtc > now.AddYears(2) && !f.IsCompulsory)
+                {
+                    int trialDays = effectiveTrialDays > 0 ? effectiveTrialDays : 7;
+                    var correctExpiry = (sub.StartsAtUtc > DateTime.MinValue ? sub.StartsAtUtc : now).AddDays(trialDays);
+                    if (correctExpiry <= now && sub.StartsAtUtc >= now.AddDays(-1))
+                    {
+                        correctExpiry = now.AddDays(trialDays);
+                    }
+                    sub.ExpiresAtUtc = correctExpiry;
+                    sub.IsTrialPeriod = correctExpiry > now;
+                    sub.Status = correctExpiry > now ? "Trial" : "Expired";
+
+                    try
+                    {
+                        var dbSub = await _master.MasterTenantFeatureSubscriptions.FirstOrDefaultAsync(s => s.Id == sub.Id, cancellationToken);
+                        if (dbSub != null)
+                        {
+                            dbSub.ExpiresAtUtc = correctExpiry;
+                            dbSub.IsTrialPeriod = sub.IsTrialPeriod;
+                            dbSub.Status = sub.Status;
+                            await _master.SaveChangesAsync(cancellationToken);
+                        }
+                    }
+                    catch
+                    {
+                        // Concurrency/fallback safe
+                    }
                 }
 
                 bool isFreeCapability = !isPaidCapability;

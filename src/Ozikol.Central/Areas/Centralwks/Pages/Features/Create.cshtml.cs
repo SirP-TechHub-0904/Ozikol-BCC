@@ -98,9 +98,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             if (string.Equals(Input.BillingCadence, "Yearly", StringComparison.OrdinalIgnoreCase))
             {
-                monthly = 0m;
-                quarterly = 0m;
                 yearly = Math.Max(0m, Input.YearlyPrice);
+                monthly = Input.MonthlyPrice > 0m ? Input.MonthlyPrice : Math.Round(yearly / 10m, 2);
+                quarterly = Input.QuarterlyPrice > 0m ? Input.QuarterlyPrice : Math.Round(monthly * 3m * 0.90m, 2);
             }
             else
             {
@@ -109,10 +109,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 var yDisc = Math.Clamp(Input.YearlyDiscountPercent, 0, 100);
 
                 quarterly = Math.Round((monthly * 3m) * (1.0m - (qDisc / 100m)), 2);
-                yearly = Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
+                yearly = Input.YearlyPrice > 0m ? Input.YearlyPrice : Math.Round((monthly * 12m) * (1.0m - (yDisc / 100m)), 2);
             }
 
-            bool hasPrice = monthly > 0m || yearly > 0m;
+            // Both Monthly and Yearly amounts are compulsory (> 0)
+            if (monthly <= 0m || yearly <= 0m)
+            {
+                ModelState.AddModelError(string.Empty, "Both Monthly and Yearly amounts are compulsory (> ₦0.00 / $0.00) before a capability can be saved or published.");
+                return Page();
+            }
+
+            bool hasPrice = monthly > 0m && yearly > 0m;
             var feature = new MasterFeatureCatalog
             {
                 Id = Guid.NewGuid(),

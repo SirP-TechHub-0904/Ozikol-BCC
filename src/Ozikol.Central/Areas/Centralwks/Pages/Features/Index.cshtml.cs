@@ -223,7 +223,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             MonthlyPrice = f.MonthlyPrice,
                             QuarterlyPrice = f.QuarterlyPrice,
                             YearlyPrice = f.YearlyPrice,
-                            FreeTrialDays = 14,
+                            FreeTrialDays = 7,
                             IsMetered = f.IsMetered,
                             IsActive = f.IsActive,
                             IsPublished = true,
@@ -235,14 +235,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             TotalCount = allFeatures.Count;
-            // In Master Catalog, IsActive represents whether the capability is Published (visible) or Unpublished (hidden)
+            // "No price, don't publish" rule: non-compulsory capabilities MUST have BOTH Monthly and Yearly prices
             foreach (var f in allFeatures)
             {
-                f.IsPublished = f.IsActive;
+                bool hasPrice = f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m);
+                f.IsPublished = hasPrice && f.IsActive;
                 f.MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(f.FeatureCode, f.MenuTitle, f.Name);
             }
-            PublishedCount = allFeatures.Count(f => f.IsActive);
-            UnpublishedCount = allFeatures.Count(f => !f.IsActive);
+            PublishedCount = allFeatures.Count(f => f.IsPublished);
+            UnpublishedCount = allFeatures.Count(f => !f.IsPublished);
             ActiveCount = PublishedCount;
             InactiveCount = UnpublishedCount;
             MaintenanceCount = allFeatures.Count(f => f.IsInBeta);
@@ -403,7 +404,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             var feature = await _dbContext.MasterFeatureCatalogs
                 .AsNoTracking()
                 .Where(f => f.Id == id)
-                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse, f.MonthlyPrice, f.YearlyPrice })
+                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsCompulsory, f.IsActive, f.IsAvailableForUse, f.MonthlyPrice, f.YearlyPrice })
                 .FirstOrDefaultAsync();
 
             if (feature == null)
@@ -418,10 +419,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             var newActive = !feature.IsActive;
 
-            // Guard: If amount is 0, do not publish!
-            if (newActive && feature.MonthlyPrice <= 0m && feature.YearlyPrice <= 0m)
+            // Guard: Both Monthly and Yearly amounts are compulsory (> 0)
+            if (newActive && !feature.IsCompulsory && (feature.MonthlyPrice <= 0m || feature.YearlyPrice <= 0m))
             {
-                var priceMsg = $"Cannot publish '{feature.Name}' because its amount is ₦0.00 / $0.00. Please assign a Monthly or Yearly price before publishing.";
+                var priceMsg = $"Cannot publish '{feature.Name}' because both Monthly and Yearly amounts are compulsory (> ₦0.00 / $0.00). Please assign both Monthly and Yearly prices before publishing.";
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
                     return new JsonResult(new { success = false, message = priceMsg }) { StatusCode = 400 };
@@ -867,8 +868,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     ? Math.Max(0m, yearlyPrice.Value)
                     : (monthlyPrice.HasValue ? Math.Round(effectiveMonthly * 10m, 2) : featureInfo.YearlyPrice);
                 
-                // If amount is 0, don't publish! Unpublish immediately if price drops to 0.
-                bool hasPrice = effectiveMonthly > 0m || effectiveYearly > 0m;
+                // Both Monthly and Yearly amounts are compulsory (> 0)
+                bool hasPrice = featureInfo.IsCompulsory || (effectiveMonthly > 0m && effectiveYearly > 0m);
                 bool newIsActive = hasPrice && featureInfo.IsActive;
                 bool newIsPublished = hasPrice && featureInfo.IsPublished;
 

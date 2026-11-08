@@ -28,6 +28,10 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Create, organize layout blocks, and manage SEO metadata for all public website pages.</p>
         </div>
         <div class="header-actions">
+          <button type="button" (click)="normalizePageOrders()" class="btn btn-outline" [disabled]="savingPageOrder" title="Normalize and re-space all pages into clean sequential increments (10, 20, 30...)">
+            <span class="material-symbols-outlined" [class.spin]="savingPageOrder">reorder</span>
+            <span>Normalize (10, 20...)</span>
+          </button>
           <a routerLink="/content/console/pages/create" class="btn btn-primary">
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Web Page</span>
@@ -42,14 +46,29 @@ import { ToastService } from '../../../core/services/toast.service';
       <!-- Filter Controls Bar -->
       <div class="filter-bar">
         <div class="filter-group">
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'all' && !selectedTagFilter" (click)="filterStatus = 'all'; selectedTagFilter = null">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'all' && !selectedTagFilter && selectedZoneFilter === null" (click)="filterStatus = 'all'; selectedTagFilter = null; selectedZoneFilter = null">
             All Pages ({{ pages.length }})
           </button>
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'published' && !selectedTagFilter" (click)="filterStatus = 'published'; selectedTagFilter = null">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'published' && !selectedTagFilter && selectedZoneFilter === null" (click)="filterStatus = 'published'; selectedTagFilter = null; selectedZoneFilter = null">
             Published ({{ publishedCount }})
           </button>
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'draft' && !selectedTagFilter" (click)="filterStatus = 'draft'; selectedTagFilter = null">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'draft' && !selectedTagFilter && selectedZoneFilter === null" (click)="filterStatus = 'draft'; selectedTagFilter = null; selectedZoneFilter = null">
             Drafts ({{ draftCount }})
+          </button>
+
+          <!-- Zone Arrangement Quick Filters -->
+          <span class="filter-sep"></span>
+          <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 1" (click)="toggleZoneFilter(1)" title="Filter to 1. First Zone pages">
+            1. First ({{ getZoneCount(1) }})
+          </button>
+          <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 2" (click)="toggleZoneFilter(2)" title="Filter to 2. Middle Zone pages">
+            2. Middle ({{ getZoneCount(2) }})
+          </button>
+          <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 3" (click)="toggleZoneFilter(3)" title="Filter to 3. Last Zone pages">
+            3. Last ({{ getZoneCount(3) }})
+          </button>
+          <button type="button" class="filter-btn zone-btn" [class.active]="selectedZoneFilter === 4" (click)="toggleZoneFilter(4)" title="Filter to Top Utility pages">
+            Top Utility ({{ getZoneCount(4) }})
           </button>
 
           <!-- Dynamic Active Tag Filters -->
@@ -95,6 +114,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     title="Select / Deselect all pages on this page"
                   >
                 </th>
+                <th style="width: 130px;">ORDER</th>
                 <th>PAGE TITLE</th>
                 <th>ZONE</th>
                 <th>DIRECT URL SLUG</th>
@@ -110,7 +130,15 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let page of paginatedPages" [class.selected-row]="isSelected(page.id)">
+              <tr *ngFor="let page of paginatedPages; let i = index"
+                  [class.selected-row]="isSelected(page.id)"
+                  draggable="true"
+                  (dragstart)="onPageDragStart($event, i)"
+                  (dragover)="onPageDragOver($event, i)"
+                  (dragleave)="onPageDragLeave($event, i)"
+                  (drop)="onPageDrop($event, i)"
+                  [class.row-dragged]="draggedPageIndex === getGlobalIndex(i)"
+                  [class.row-drag-over]="dragOverPageIndex === getGlobalIndex(i)">
                 <td style="width: 44px; text-align: center;">
                   <input
                     type="checkbox"
@@ -118,6 +146,37 @@ import { ToastService } from '../../../core/services/toast.service';
                     [checked]="isSelected(page.id)"
                     (change)="toggleSelection(page.id)"
                   >
+                </td>
+                <td>
+                  <div class="tag-order-cell">
+                    <span class="drag-grip-handle" title="Drag up or down to re-order page sequence">
+                      <span class="material-symbols-outlined">drag_indicator</span>
+                    </span>
+                    <span class="order-pill" *ngIf="editingOrderId !== page.id" (click)="startEditOrder(page)" title="Click to edit custom sort order">
+                      #{{ page.sortOrder }}
+                    </span>
+                    <input
+                      *ngIf="editingOrderId === page.id"
+                      type="number"
+                      class="order-input-mini"
+                      [value]="page.sortOrder"
+                      #orderInput
+                      (blur)="finishEditOrder(page, orderInput.value)"
+                      (keydown.enter)="finishEditOrder(page, orderInput.value)"
+                      (keydown.escape)="cancelEditOrder()"
+                    >
+                    <div class="arrow-sort-group">
+                      <button type="button" class="btn-sort-arrow" (click)="movePageToTop(i)" [disabled]="isFirstItem(i)" title="Move page directly to top">
+                        <span class="material-symbols-outlined">vertical_align_top</span>
+                      </button>
+                      <button type="button" class="btn-sort-arrow" (click)="movePageUp(i)" [disabled]="isFirstItem(i)" title="Move page up">
+                        <span class="material-symbols-outlined">expand_less</span>
+                      </button>
+                      <button type="button" class="btn-sort-arrow" (click)="movePageDown(i)" [disabled]="isLastItem(i)" title="Move page down">
+                        <span class="material-symbols-outlined">expand_more</span>
+                      </button>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div class="page-title-cell">
@@ -210,7 +269,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
               </tr>
               <tr *ngIf="filteredPages.length === 0">
-                <td colspan="11" class="empty-cell">
+                <td colspan="14" class="empty-cell">
                   <div class="empty-state">
                     <span class="material-symbols-outlined">description</span>
                     <p>No web pages match your criteria. Click "New Web Page" to create one.</p>
@@ -644,6 +703,103 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #fbfcfe;
     }
 
+    /* Drag-and-Drop & Arrow Reordering Styling */
+    .tag-order-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .drag-grip-handle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      color: #94a3b8;
+      padding: 2px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .drag-grip-handle:hover {
+      color: #0050e5;
+      background: #eff6ff;
+    }
+    .drag-grip-handle:active {
+      cursor: grabbing;
+    }
+    .drag-grip-handle .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .order-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      padding: 2px 7px;
+      background: #f1f5f9;
+      color: #1e293b;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #e2e8f0;
+      transition: all 0.15s ease;
+    }
+    .order-pill:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #0050e5;
+    }
+    .order-input-mini {
+      width: 48px;
+      height: 24px;
+      padding: 0 4px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1.5px solid #0050e5;
+      border-radius: 5px;
+      outline: none;
+      background: #ffffff;
+      color: #0f172a;
+      text-align: center;
+    }
+    .arrow-sort-group {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .btn-sort-arrow {
+      background: transparent;
+      border: none;
+      padding: 0;
+      line-height: 1;
+      height: 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .btn-sort-arrow .material-symbols-outlined {
+      font-size: 15px;
+    }
+    .btn-sort-arrow:hover:not(:disabled) {
+      color: #0050e5;
+      transform: scale(1.15);
+    }
+    .btn-sort-arrow:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+    tr.row-dragged {
+      opacity: 0.45;
+      background: #f1f5f9 !important;
+    }
+    tr.row-drag-over {
+      border-top: 2.5px solid #0050e5 !important;
+      background: #eff6ff !important;
+    }
+
     .page-title-cell {
       display: flex;
       flex-direction: column;
@@ -956,6 +1112,7 @@ import { ToastService } from '../../../core/services/toast.service';
 })
 export class WebPagesComponent implements OnInit {
   loading = false;
+  savingPageOrder = false;
   bulkDeleting = false;
   showBulkDeleteModal = false;
   cascadeSections = true;
@@ -965,8 +1122,13 @@ export class WebPagesComponent implements OnInit {
   filterStatus = 'all';
   searchTerm = '';
   selectedTagFilter: string | null = null;
+  selectedZoneFilter: number | null = null;
   pageSize = 10;
   currentPage = 1;
+
+  draggedPageIndex: number | null = null;
+  dragOverPageIndex: number | null = null;
+  editingOrderId: string | null = null;
 
   constructor(
     private api: ApiService,
@@ -1069,11 +1231,33 @@ export class WebPagesComponent implements OnInit {
     });
   }
 
+  sortByZoneAndOrder(a: any, b: any): number {
+    const zoneA = Number(a.menuPosition) || 1;
+    const zoneB = Number(b.menuPosition) || 1;
+    if (zoneA !== zoneB) {
+      return zoneA - zoneB;
+    }
+    return (a.sortOrder || 0) - (b.sortOrder || 0);
+  }
+
+  toggleZoneFilter(zone: number): void {
+    if (this.selectedZoneFilter === zone) {
+      this.selectedZoneFilter = null;
+    } else {
+      this.selectedZoneFilter = zone;
+    }
+    this.currentPage = 1;
+  }
+
+  getZoneCount(zone: number): number {
+    return this.pages.filter(p => (Number(p.menuPosition) || 1) === zone).length;
+  }
+
   loadAll(): void {
     this.loading = true;
     this.api.get<any>('ContentApi/pages').subscribe({
       next: (res) => {
-        this.pages = res?.data || [];
+        this.pages = (res?.data || []).sort((a: any, b: any) => this.sortByZoneAndOrder(a, b));
         this.loadCategories();
       },
       error: (err) => {
@@ -1138,6 +1322,10 @@ export class WebPagesComponent implements OnInit {
     if (this.filterStatus === 'published') list = list.filter(p => p.publish);
     else if (this.filterStatus === 'draft') list = list.filter(p => !p.publish);
 
+    if (this.selectedZoneFilter !== null) {
+      list = list.filter(p => (Number(p.menuPosition) || 1) === this.selectedZoneFilter);
+    }
+
     if (this.selectedTagFilter) {
       list = list.filter(p => this.getPageTags(p.tags).includes(this.selectedTagFilter!));
     }
@@ -1146,7 +1334,7 @@ export class WebPagesComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       list = list.filter(p => p.title?.toLowerCase().includes(term) || p.directUrl?.toLowerCase().includes(term) || (p.tags && p.tags.toLowerCase().includes(term)));
     }
-    return list;
+    return list.slice().sort((a, b) => this.sortByZoneAndOrder(a, b));
   }
 
   get totalPages(): number {
@@ -1192,6 +1380,149 @@ export class WebPagesComponent implements OnInit {
 
   getEndIndex(): number {
     return Math.min(this.currentPage * this.pageSize, this.filteredPages.length);
+  }
+
+  getGlobalIndex(localIndex: number): number {
+    return (this.currentPage - 1) * this.pageSize + localIndex;
+  }
+
+  isFirstItem(localIndex: number): boolean {
+    return this.getGlobalIndex(localIndex) === 0;
+  }
+
+  isLastItem(localIndex: number): boolean {
+    return this.getGlobalIndex(localIndex) >= this.filteredPages.length - 1;
+  }
+
+  startEditOrder(page: any): void {
+    this.editingOrderId = page.id;
+  }
+
+  cancelEditOrder(): void {
+    this.editingOrderId = null;
+  }
+
+  finishEditOrder(page: any, newVal: string): void {
+    this.editingOrderId = null;
+    const parsed = parseInt(newVal, 10);
+    if (isNaN(parsed) || parsed === page.sortOrder) return;
+    page.sortOrder = parsed;
+    this.pages.sort((a, b) => this.sortByZoneAndOrder(a, b));
+    const payload = this.pages.map(p => ({ id: p.id, sortOrder: p.sortOrder || 0 }));
+    this.savingPageOrder = true;
+    this.api.put<any>('ContentApi/pages/reorder', payload).subscribe({
+      next: () => {
+        this.savingPageOrder = false;
+        this.toast.success(`Sort order for '${page.title}' updated to #${parsed}.`);
+      },
+      error: (err) => {
+        this.savingPageOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to update sort order.');
+        this.loadAll();
+      }
+    });
+  }
+
+  movePageToTop(localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    const list = [...this.filteredPages];
+    if (globalIdx <= 0 || globalIdx >= list.length) return;
+    const [moved] = list.splice(globalIdx, 1);
+    list.unshift(moved);
+    this.applyAndSavePageReorder(list);
+  }
+
+  movePageUp(localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    const list = [...this.filteredPages];
+    if (globalIdx <= 0 || globalIdx >= list.length) return;
+    const temp = list[globalIdx];
+    list[globalIdx] = list[globalIdx - 1];
+    list[globalIdx - 1] = temp;
+    this.applyAndSavePageReorder(list);
+  }
+
+  movePageDown(localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    const list = [...this.filteredPages];
+    if (globalIdx < 0 || globalIdx >= list.length - 1) return;
+    const temp = list[globalIdx];
+    list[globalIdx] = list[globalIdx + 1];
+    list[globalIdx + 1] = temp;
+    this.applyAndSavePageReorder(list);
+  }
+
+  onPageDragStart(event: DragEvent, localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    this.draggedPageIndex = globalIdx;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', globalIdx.toString());
+    }
+  }
+
+  onPageDragOver(event: DragEvent, localIndex: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.dragOverPageIndex = this.getGlobalIndex(localIndex);
+  }
+
+  onPageDragLeave(event: DragEvent, localIndex: number): void {
+    const globalIdx = this.getGlobalIndex(localIndex);
+    if (this.dragOverPageIndex === globalIdx) {
+      this.dragOverPageIndex = null;
+    }
+  }
+
+  onPageDrop(event: DragEvent, localIndex: number): void {
+    event.preventDefault();
+    this.dragOverPageIndex = null;
+    const targetGlobalIdx = this.getGlobalIndex(localIndex);
+    if (this.draggedPageIndex === null || this.draggedPageIndex === targetGlobalIdx) {
+      this.draggedPageIndex = null;
+      return;
+    }
+    const list = [...this.filteredPages];
+    const [moved] = list.splice(this.draggedPageIndex, 1);
+    list.splice(targetGlobalIdx, 0, moved);
+    this.draggedPageIndex = null;
+    this.applyAndSavePageReorder(list);
+  }
+
+  normalizePageOrders(): void {
+    const list = [...this.pages].sort((a, b) => this.sortByZoneAndOrder(a, b));
+    this.applyAndSavePageReorder(list, true);
+  }
+
+  applyAndSavePageReorder(orderedList: any[], showNotice: boolean = false): void {
+    const payload: Array<{ id: string; sortOrder: number }> = [];
+    orderedList.forEach((page, idx) => {
+      const newOrder = (idx + 1) * 10;
+      page.sortOrder = newOrder;
+      payload.push({ id: page.id, sortOrder: newOrder });
+
+      const master = this.pages.find(p => p.id === page.id);
+      if (master) master.sortOrder = newOrder;
+    });
+
+    this.pages.sort((a, b) => this.sortByZoneAndOrder(a, b));
+
+    this.savingPageOrder = true;
+    this.api.put<any>('ContentApi/pages/reorder', payload).subscribe({
+      next: () => {
+        this.savingPageOrder = false;
+        if (showNotice) {
+          this.toast.success('Web pages re-spaced to 10, 20, 30, 40... successfully!');
+        }
+      },
+      error: (err) => {
+        this.savingPageOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save page order.');
+        this.loadAll();
+      }
+    });
   }
 
   /**

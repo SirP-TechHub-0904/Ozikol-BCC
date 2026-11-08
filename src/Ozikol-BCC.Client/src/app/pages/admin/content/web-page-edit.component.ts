@@ -385,60 +385,40 @@ interface SystemPageOption {
                     <input type="checkbox" [(ngModel)]="page.isMenuCTA">
                     <span class="toggle-text">
                       <strong>Header Action CTA Button</strong>
-                      <small>Renders as a prominent call-to-action button in the menu.</small>
+                      <small>Separates this item from general navigation and renders it as a prominent action button on the navbar.</small>
                     </span>
                   </label>
                 </div>
 
                 <div class="cta-expanded-fields" *ngIf="page.isMenuCTA">
-                  <div class="form-grid-3">
+                  <div class="form-grid-2">
                     <div class="form-group">
                       <label class="form-label">CTA BUTTON TEXT</label>
-                      <input type="text" [(ngModel)]="page.menuCtaText" class="form-control" placeholder="e.g. Get Started">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">CTA DESTINATION URL</label>
-                      <input type="text" [(ngModel)]="page.menuCtaUrl" list="ctaDestOptions" class="form-control" placeholder="e.g. /register or /login">
-                      <datalist id="ctaDestOptions">
-                        <option [value]="registrationSlug">Member Registration ("Get Started") — Configured in User Manager > Form Builder</option>
-                        <option value="/login">Member &amp; Staff Login (Auto-routes by role)</option>
-                        <option value="/contact">Contact &amp; Inquiries</option>
-                      </datalist>
+                      <input type="text" [(ngModel)]="page.menuCtaText" class="form-control" [placeholder]="page.title ? ('e.g. ' + page.title) : 'e.g. Get Started'">
                     </div>
                     <div class="form-group">
                       <label class="form-label">CTA BUTTON STYLE</label>
                       <select [(ngModel)]="page.menuCtaStyle" class="form-control">
-                        <option value="primary">Primary (Solid Brand)</option>
+                        <option value="primary">Primary (Solid Brand Royal Blue)</option>
                         <option value="outline">Outline (Subtle Border)</option>
                         <option value="accent">Accent (High Contrast)</option>
                         <option value="gradient">Gradient (Vibrant)</option>
                       </select>
                     </div>
                   </div>
-                  <!-- Quick Preset Pills for CTA Route -->
-                  <div class="cta-quick-pills">
-                    <span class="quick-pill-label">Quick Action:</span>
-                    <button type="button" class="cta-pill-btn" (click)="setCtaDestination(registrationSlug, 'Get Started')">
-                      <span class="material-symbols-outlined">how_to_reg</span>
-                      <span>Register / Get Started ({{ registrationSlug }})</span>
-                    </button>
-                    <button type="button" class="cta-pill-btn" (click)="setCtaDestination('/login', 'Sign In')">
-                      <span class="material-symbols-outlined">login</span>
-                      <span>Member Login (/login)</span>
-                    </button>
-                    <button type="button" class="cta-pill-btn" (click)="setCtaDestination('/contact', 'Contact Us')">
-                      <span class="material-symbols-outlined">mail</span>
-                      <span>Contact (/contact)</span>
-                    </button>
+
+                  <div class="cta-route-indicator">
+                    <span class="material-symbols-outlined icon-route">alt_route</span>
+                    <span>Target Route: <strong>/{{ page.directUrl || 'route' }}</strong> (Inherited directly from Section 4: Page Destination)</span>
                   </div>
 
-                  <!-- Contextual notice when CTA points to registration -->
-                  <div *ngIf="page.menuCtaUrl === registrationSlug || page.menuCtaUrl === '/register'" class="cta-reg-hint-banner">
+                  <!-- Contextual notice when page points to registration -->
+                  <div *ngIf="page.directUrl === registrationSlug || page.directUrl === 'register' || page.directUrl === '/register'" class="cta-reg-hint-banner" style="margin-top: 12px;">
                     <div class="cta-hint-left">
                       <span class="material-symbols-outlined hint-icon">tune</span>
                       <div>
                         <strong>Dynamic Onboarding Form Connected</strong>
-                        <p>This button routes to your live onboarding form configured in <strong>User Manager &gt; Registration Form Builder</strong>. If you want to change questions, required fields, or presentation layout, adjust it in the form builder.</p>
+                        <p>This CTA button routes directly to your live onboarding form configured in <strong>User Manager &gt; Registration Form Builder</strong>.</p>
                       </div>
                     </div>
                     <a routerLink="/admin/users/registration-form" target="_blank" class="btn-jump-form-builder-sm">
@@ -1495,6 +1475,22 @@ interface SystemPageOption {
       border-top: 1px dashed #e9d5ff;
       margin-top: 4px;
     }
+    .cta-route-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: #faf5ff;
+      border: 1px solid #e9d5ff;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #6b21a8;
+    }
+    .cta-route-indicator .icon-route {
+      font-size: 18px;
+      color: #9333ea;
+    }
     .cta-quick-pills {
       display: flex;
       align-items: center;
@@ -2305,7 +2301,7 @@ export class WebPageEditComponent implements OnInit {
       directUrl: '',
       enableDirectUrl: false,
       isHomePage: false,
-      publish: true,
+      publish: false,
       securityPage: false,
       pageCategoryId: null,
       mainPageId: null,
@@ -2564,6 +2560,10 @@ export class WebPageEditComponent implements OnInit {
     this.api.get<any>('ContentApi/pages').subscribe({
       next: (res) => {
         this.allPages = res?.data || [];
+        if (!this.isEditMode && (!this.page.sortOrder || this.page.sortOrder <= 0)) {
+          const maxSort = this.allPages.reduce((max: number, p: any) => Math.max(max, p.sortOrder || 0), 0);
+          this.page.sortOrder = maxSort + 10;
+        }
       }
     });
   }
@@ -2673,6 +2673,17 @@ export class WebPageEditComponent implements OnInit {
       this.page.enableDirectUrl = true;
     } else {
       this.page.enableDirectUrl = false;
+    }
+
+    // Automatically sync CTA URL with page destination route
+    if (this.page.isMenuCTA) {
+      const slug = (this.page.directUrl || '').trim();
+      this.page.menuCtaUrl = slug.startsWith('http://') || slug.startsWith('https://') || slug.startsWith('/')
+        ? slug
+        : `/${slug}`;
+      if (!this.page.menuCtaText?.trim() && this.page.title?.trim()) {
+        this.page.menuCtaText = this.page.title.trim();
+      }
     }
 
     this.saving = true;

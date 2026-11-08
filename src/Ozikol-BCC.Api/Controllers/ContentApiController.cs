@@ -362,7 +362,8 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var pages = await _context.WebPages
                 .Include(p => p.PageCategory)
-                .OrderBy(p => p.SortOrder)
+                .OrderBy(p => (int)p.MenuPosition)
+                .ThenBy(p => p.SortOrder)
                 .ToListAsync();
 
             var sectionCounts = await _context.PageSections
@@ -456,6 +457,18 @@ namespace Ozikol_BCC.Api.Controllers
                 Guid? categoryId = request.PageCategoryId;
                 if (categoryId == Guid.Empty) categoryId = null;
 
+                var assignedPosition = request.MenuPosition != 0 ? request.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
+
+                // Auto-calculate sort order on auto-increment if not specified or <= 0 (within target zone)
+                var assignedSortOrder = request.SortOrder;
+                if (assignedSortOrder <= 0)
+                {
+                    var maxSort = await _context.WebPages
+                        .Where(p => p.MenuPosition == assignedPosition)
+                        .MaxAsync(p => (int?)p.SortOrder) ?? 0;
+                    assignedSortOrder = maxSort + 10;
+                }
+
                 var page = new WebPage
                 {
                     Id = Guid.NewGuid(),
@@ -467,7 +480,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ShowInTopBar = request.ShowInTopBar,
                     TopBarSortOrder = request.TopBarSortOrder,
                     ShowInMainMenu = request.ShowInMenu || request.ShowInMainMenu,
-                    MainMenuSortOrder = request.MainMenuSortOrder != 0 ? request.MainMenuSortOrder : request.SortOrder,
+                    MainMenuSortOrder = request.MainMenuSortOrder != 0 ? request.MainMenuSortOrder : assignedSortOrder,
                     ShowInMenuDropDown = request.ShowInMenuDropDown,
                     DropdownSortOrder = request.DropdownSortOrder,
                     ShowInFooter = request.ShowInFooter,
@@ -480,10 +493,10 @@ namespace Ozikol_BCC.Api.Controllers
                     MenuCtaUrl = request.MenuCtaUrl?.Trim(),
                     MenuCtaStyle = string.IsNullOrWhiteSpace(request.MenuCtaStyle) ? "primary" : request.MenuCtaStyle.Trim(),
                     Tags = request.Tags,
-                    Publish = request.IsPublished || request.Publish,
+                    Publish = request.Publish || request.IsPublished,
                     SecurityPage = request.SecurityPage,
-                    SortOrder = request.SortOrder,
-                    MenuPosition = request.MenuPosition != 0 ? request.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First,
+                    SortOrder = assignedSortOrder,
+                    MenuPosition = assignedPosition,
                     CustomClass = request.CustomClass,
                     ImageUrl = request.ImageUrl,
                     ImageKey = request.ImageKey,
@@ -561,6 +574,38 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Web page updated successfully."));
+        }
+
+        /// <summary>
+        /// Batch reorders multiple web pages atomically with updated SortOrder values.
+        /// </summary>
+        /// <param name="items">List of page IDs and their newly assigned sort orders.</param>
+        /// <returns>Success response.</returns>
+        [HttpPut("pages/reorder")]
+        public async Task<IActionResult> ReorderPages([FromBody] List<ReorderItemRequest> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).ToList();
+            var pages = await _context.WebPages
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+
+            var itemMap = items.ToDictionary(i => i.Id, i => i.SortOrder);
+            foreach (var page in pages)
+            {
+                if (itemMap.TryGetValue(page.Id, out var newSortOrder))
+                {
+                    page.SortOrder = newSortOrder;
+                    page.UpdatedAtUtc = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{pages.Count} web page(s) reordered successfully."));
         }
 
         /// <summary>
@@ -924,8 +969,9 @@ Reply ONLY with the valid JSON object.";
         public async Task<IActionResult> GetCategories()
         {
             var categories = await _context.PageCategories
-                .Include(c => c.WebPages!.OrderBy(p => p.SortOrder))
-                .OrderBy(c => c.MenuSortOrder)
+                .Include(c => c.WebPages!.OrderBy(p => (int)p.MenuPosition).ThenBy(p => p.SortOrder))
+                .OrderBy(c => (int)c.MenuPosition)
+                .ThenBy(c => c.MenuSortOrder)
                 .ToListAsync();
 
             return Ok(ApiResponse<object>.SuccessResponse(categories, "Categories retrieved."));
@@ -953,12 +999,24 @@ Reply ONLY with the valid JSON object.";
 
             try
             {
+                var assignedPosition = request.MenuPosition != 0 ? request.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+
+                // Auto-calculate menu sort order on auto-increment if not specified or <= 0 (within target zone)
+                var assignedSortOrder = request.MenuSortOrder;
+                if (assignedSortOrder <= 0)
+                {
+                    var maxSort = await _context.PageCategories
+                        .Where(c => c.MenuPosition == assignedPosition)
+                        .MaxAsync(c => (int?)c.MenuSortOrder) ?? 0;
+                    assignedSortOrder = maxSort + 10;
+                }
+
                 var category = new PageCategory
                 {
                     Id = Guid.NewGuid(),
                     Title = request.Title.Trim(),
-                    MenuPosition = request.MenuPosition != 0 ? request.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle,
-                    MenuSortOrder = request.MenuSortOrder,
+                    MenuPosition = assignedPosition,
+                    MenuSortOrder = assignedSortOrder,
                     CustomClass = request.CustomClass?.Trim(),
                     Publish = request.Publish,
                     ShowInMenu = request.ShowInMenu,
@@ -979,6 +1037,38 @@ Reply ONLY with the valid JSON object.";
             {
                 return StatusCode(500, ApiResponse<object>.FailureResponse(ex.InnerException?.Message ?? ex.Message));
             }
+        }
+
+        /// <summary>
+        /// Batch reorders multiple page categories atomically with updated MenuSortOrder values.
+        /// </summary>
+        /// <param name="items">List of category IDs and their newly assigned menu sort orders.</param>
+        /// <returns>Success response.</returns>
+        [HttpPut("categories/reorder")]
+        public async Task<IActionResult> ReorderCategories([FromBody] List<ReorderItemRequest> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).ToList();
+            var categories = await _context.PageCategories
+                .Where(c => ids.Contains(c.Id))
+                .ToListAsync();
+
+            var itemMap = items.ToDictionary(i => i.Id, i => i.SortOrder);
+            foreach (var cat in categories)
+            {
+                if (itemMap.TryGetValue(cat.Id, out var newSortOrder))
+                {
+                    cat.MenuSortOrder = newSortOrder;
+                    cat.UpdatedAtUtc = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{categories.Count} category(s) reordered successfully."));
         }
 
         [HttpPut("categories/{id:guid}")]
@@ -1558,6 +1648,7 @@ Reply ONLY with the valid JSON object.";
             existing.ButtonText = updated.ButtonText;
             existing.ButtonLink = updated.ButtonLink;
             existing.DirectUrl = updated.DirectUrl;
+            existing.CustomClass = updated.CustomClass;
             existing.SortOrder = updated.SortOrder;
             existing.Disable = updated.Disable;
             existing.AddToRibon = updated.AddToRibon;
@@ -6824,8 +6915,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public bool IsLegal { get; set; } = false;
         public bool IsMenuCTA { get; set; } = false;
         public string? Tags { get; set; }
-        public bool IsPublished { get; set; } = true;
-        public bool Publish { get; set; } = true;
+        public bool IsPublished { get; set; } = false;
+        public bool Publish { get; set; } = false;
         public bool SecurityPage { get; set; } = false;
         public int SortOrder { get; set; } = 0;
         public Ozikol_BCC.Domain.Enum.Enum.MenuPosition MenuPosition { get; set; } = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
@@ -6988,12 +7079,19 @@ You MUST respond strictly with a valid JSON object matching this schema without 
     }
 
     /// <summary>
-    /// Payload item for updating the SortOrder of an individual code injection tag during batch reordering.
+    /// Generic payload item for updating the SortOrder of an individual entity during batch reordering.
     /// </summary>
-    public class ReorderCodeInjectionItem
+    public class ReorderItemRequest
     {
         public Guid Id { get; set; }
         public int SortOrder { get; set; }
+    }
+
+    /// <summary>
+    /// Payload item for updating the SortOrder of an individual code injection tag during batch reordering.
+    /// </summary>
+    public class ReorderCodeInjectionItem : ReorderItemRequest
+    {
     }
 
     /// <summary>

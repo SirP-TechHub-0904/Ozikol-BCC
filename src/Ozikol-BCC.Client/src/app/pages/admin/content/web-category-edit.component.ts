@@ -547,6 +547,10 @@ export class WebCategoryEditComponent implements OnInit {
     this.api.get<any>('ContentApi/categories').subscribe({
       next: (res) => {
         this.allCategories = res?.data || [];
+        if (!this.isEditMode && (!this.category.menuSortOrder || this.category.menuSortOrder <= 0)) {
+          const maxSort = this.allCategories.reduce((max: number, c: any) => Math.max(max, c.menuSortOrder || 0), 0);
+          this.category.menuSortOrder = maxSort + 10;
+        }
       }
     });
   }

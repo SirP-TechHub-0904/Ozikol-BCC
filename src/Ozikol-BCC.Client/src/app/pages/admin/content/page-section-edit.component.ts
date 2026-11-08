@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -19,24 +19,24 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="sep">/</span>
             <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null">Page Sections</a>
             <span class="sep">/</span>
-            <span class="current">Edit Section</span>
+            <span class="current">{{ isEditMode ? 'Edit Section' : 'Create Section' }}</span>
           </div>
-          <h1>Edit Section: {{ section?.title }}</h1>
-          <p class="subtitle">Complete configuration of template layout key, rich descriptions, media assets, and ribbon settings.</p>
+          <h1>{{ isEditMode ? ('Edit Section: ' + (section?.title || 'Layout Block')) : 'Create New Section' }}</h1>
+          <p class="subtitle">Complete configuration of template layout key, rich descriptions, media assets, dynamic forms, and ribbon settings.</p>
         </div>
         <div class="header-actions">
-          <a [routerLink]="['/content/console/sections/details', sectionId]" class="btn btn-outline">
+          <a *ngIf="isEditMode && sectionId" [routerLink]="['/content/console/sections/details', sectionId]" class="btn btn-outline">
             <span class="material-symbols-outlined">list</span>
             <span>Manage Sub-Items</span>
           </a>
-          <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null" class="btn btn-outline">
+          <button type="button" class="btn btn-outline" (click)="goBack()">
             <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Sections</span>
-          </a>
+            <span>{{ section?.webPageId ? 'Back to Page' : 'Back to Sections' }}</span>
+          </button>
           <button type="button" class="btn btn-primary" (click)="saveSection()" [disabled]="saving || loading">
             <span class="material-symbols-outlined">save</span>
-            <span *ngIf="!saving">Save Section Changes</span>
-            <span *ngIf="saving">Saving...</span>
+            <span *ngIf="!saving">{{ isEditMode ? 'Save Section Changes' : 'Create Section' }}</span>
+            <span *ngIf="saving">{{ isEditMode ? 'Saving...' : 'Creating...' }}</span>
           </button>
         </div>
       </div>
@@ -54,12 +54,15 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Card 1: Titles & Core Copy -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Titles & Copywriting</h3>
+              <div>
+                <h3>Titles & Copywriting</h3>
+                <p class="card-sub">Core headings, sub-tags, and rich narrative for this layout block.</p>
+              </div>
             </div>
             <div class="form-grid">
               <div class="form-group full-width">
                 <label>SECTION MAIN TITLE *</label>
-                <input type="text" [(ngModel)]="section.title" class="form-control" placeholder="e.g. Empowering Our Community Through Action">
+                <input type="text" [(ngModel)]="section.title" class="form-control font-bold" placeholder="e.g. Empowering Our Community Through Action">
               </div>
 
               <div class="form-group">
@@ -69,17 +72,134 @@ import { ToastService } from '../../../core/services/toast.service';
 
               <div class="form-group">
                 <label>QUOTE / CALLOUT PHRASE</label>
-                <input type="text" [(ngModel)]="section.qoute" class="form-control" placeholder="Prominent quote or highlight...">
+                <input type="text" [(ngModel)]="section.qoute" class="form-control" placeholder="Prominent quote or highlight banner...">
               </div>
 
               <div class="form-group full-width">
-                <label>SHORT DESCRIPTION</label>
-                <textarea rows="3" [(ngModel)]="section.description" class="form-control" placeholder="Brief section overview..."></textarea>
+                <label>SHORT DESCRIPTION (INTRODUCTORY SUMMARY)</label>
+                <textarea rows="3" [(ngModel)]="section.description" class="form-control" placeholder="Brief section overview or excerpt..."></textarea>
               </div>
 
+              <!-- WYSIWYG Rich Text Extended Description -->
               <div class="form-group full-width">
-                <label>FULL EXTENDED DESCRIPTION (RICH TEXT / HTML)</label>
-                <textarea rows="5" [(ngModel)]="section.fullDescription" class="form-control" placeholder="Detailed content narrative..."></textarea>
+                <div class="card-head-between" style="margin-bottom: 8px;">
+                  <label style="margin: 0;">FULL EXTENDED DESCRIPTION (RICH TEXT / SUMMERNOTE WYSIWYG)</label>
+                  <div class="editor-view-toggle">
+                    <button type="button" class="btn-toggle" [class.active]="!showHtmlSource" (click)="setEditorMode(false)">
+                      <span class="material-symbols-outlined">edit_note</span> Visual Editor
+                    </button>
+                    <button type="button" class="btn-toggle" [class.active]="showHtmlSource" (click)="setEditorMode(true)">
+                      <span class="material-symbols-outlined">code</span> HTML Source
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Rich Text Formatting Toolbar -->
+                <div class="rich-toolbar" *ngIf="!showHtmlSource">
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" (click)="execFormat('bold')" title="Bold (Ctrl+B)">
+                      <span class="material-symbols-outlined">format_bold</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('italic')" title="Italic (Ctrl+I)">
+                      <span class="material-symbols-outlined">format_italic</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('underline')" title="Underline (Ctrl+U)">
+                      <span class="material-symbols-outlined">format_underlined</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('strikeThrough')" title="Strikethrough">
+                      <span class="material-symbols-outlined">strikethrough_s</span>
+                    </button>
+                  </div>
+
+                  <div class="toolbar-sep"></div>
+
+                  <div class="toolbar-group">
+                    <select (change)="onHeadingChange($event)" class="tool-select" title="Headings">
+                      <option value="p">Paragraph</option>
+                      <option value="h1">Heading 1</option>
+                      <option value="h2">Heading 2</option>
+                      <option value="h3">Heading 3</option>
+                      <option value="h4">Heading 4</option>
+                    </select>
+
+                    <select (change)="onFontSizeChange($event)" class="tool-select" title="Font Size">
+                      <option value="3">Size: Normal</option>
+                      <option value="2">Size: Small</option>
+                      <option value="4">Size: Medium</option>
+                      <option value="5">Size: Large</option>
+                      <option value="6">Size: Extra Large</option>
+                    </select>
+                  </div>
+
+                  <div class="toolbar-sep"></div>
+
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" (click)="execFormat('justifyLeft')" title="Align Left">
+                      <span class="material-symbols-outlined">format_align_left</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('justifyCenter')" title="Align Center">
+                      <span class="material-symbols-outlined">format_align_center</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('justifyRight')" title="Align Right">
+                      <span class="material-symbols-outlined">format_align_right</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('justifyFull')" title="Justify">
+                      <span class="material-symbols-outlined">format_align_justify</span>
+                    </button>
+                  </div>
+
+                  <div class="toolbar-sep"></div>
+
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" (click)="execFormat('insertUnorderedList')" title="Bullet List">
+                      <span class="material-symbols-outlined">format_list_bulleted</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('insertOrderedList')" title="Numbered List">
+                      <span class="material-symbols-outlined">format_list_numbered</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="insertBlockquote()" title="Quote Block">
+                      <span class="material-symbols-outlined">format_quote</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('insertHorizontalRule')" title="Divider Line">
+                      <span class="material-symbols-outlined">horizontal_rule</span>
+                    </button>
+                  </div>
+
+                  <div class="toolbar-sep"></div>
+
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" (click)="insertLink()" title="Insert Link">
+                      <span class="material-symbols-outlined">link</span>
+                    </button>
+                    <button type="button" class="tool-btn" (click)="execFormat('unlink')" title="Remove Link">
+                      <span class="material-symbols-outlined">link_off</span>
+                    </button>
+                    <button type="button" class="tool-btn text-muted" (click)="execFormat('removeFormat')" title="Clear Formatting">
+                      <span class="material-symbols-outlined">format_clear</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- WYSIWYG Editable Canvas -->
+                <div
+                  #editorCanvas
+                  *ngIf="!showHtmlSource"
+                  class="editor-canvas"
+                  contenteditable="true"
+                  (input)="onCanvasInput()"
+                  (blur)="onCanvasInput()"
+                  data-placeholder="Write detailed section narrative, formatted paragraphs, bullet points, or embed callouts...">
+                </div>
+
+                <!-- Raw HTML Source Code Editor -->
+                <textarea
+                  *ngIf="showHtmlSource"
+                  rows="12"
+                  [(ngModel)]="section.fullDescription"
+                  class="form-control source-textarea"
+                  placeholder="<p>Write or paste custom HTML code here...</p>">
+                </textarea>
+                <small class="help-text">Summernote-compatible WYSIWYG rich text editor with full HTML markup support.</small>
               </div>
             </div>
           </div>
@@ -87,17 +207,20 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Card 2: Action Buttons, Root Icon & Direct Links -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Action Buttons, Root Icon & Links</h3>
+              <div>
+                <h3>Action Buttons, Root Icon & Links</h3>
+                <p class="card-sub">Interactive CTA buttons, anchor routing, and section iconography.</p>
+              </div>
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label>ROOT ICON CLASS (OPTIONAL)</label>
-                <input type="text" [(ngModel)]="section.iconText" class="form-control" placeholder="e.g. tji-phone or fa-solid fa-rocket">
+                <label>ROOT ICON CLASS (FONT AWESOME / THEME)</label>
+                <input type="text" [(ngModel)]="section.iconText" class="form-control" placeholder="e.g. fa-solid fa-rocket, tji-phone">
               </div>
 
               <div class="form-group">
-                <label>DIRECT SECTION URL ROUTE</label>
-                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="e.g. core-programs">
+                <label>DIRECT SECTION URL / ANCHOR SLUG</label>
+                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="e.g. core-programs, overview">
               </div>
 
               <div class="form-group">
@@ -121,10 +244,9 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="form-group full-width">
-                <label>BUTTON TOGGLE</label>
                 <div class="checkbox-card">
                   <input type="checkbox" [(ngModel)]="section.disableButton" id="disBtn">
-                  <label for="disBtn"><strong>Disable / Hide Action Button</strong></label>
+                  <label for="disBtn"><strong>Disable / Hide Action Buttons</strong> — Hides CTA action triggers from the rendered template.</label>
                 </div>
               </div>
             </div>
@@ -134,8 +256,8 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="cms-card">
             <div class="card-header-bar">
               <div>
-                <h3>Media Assets & Image Uploads</h3>
-                <p class="card-sub">Upload high-resolution images, videos, or media assets.</p>
+                <h3>Media Assets & Video Uploads</h3>
+                <p class="card-sub">Upload high-resolution images, videos, or embed streaming video links.</p>
               </div>
             </div>
 
@@ -183,6 +305,12 @@ import { ToastService } from '../../../core/services/toast.service';
                   </label>
                 </div>
               </div>
+              <div class="form-group full-width" *ngIf="section.secondImageUrl">
+                <div class="image-preview-box">
+                  <img [src]="section.secondImageUrl" alt="Secondary Image">
+                  <button type="button" class="btn-remove-img" (click)="section.secondImageUrl = ''; section.secondImageKey = ''">&times;</button>
+                </div>
+              </div>
 
               <!-- Video & Youtube -->
               <div class="form-group">
@@ -191,7 +319,12 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="form-group">
-                <label>YOUTUBE EMBED LINK</label>
+                <label>VIDEO ASSET KEY</label>
+                <input type="text" [(ngModel)]="section.videoKey" class="form-control" placeholder="e.g. bcp-cms/videos/hero.mp4">
+              </div>
+
+              <div class="form-group full-width">
+                <label>YOUTUBE / VIMEO EMBED LINK</label>
                 <input type="text" [(ngModel)]="section.youtubeUrlLink" class="form-control" placeholder="https://youtube.com/watch?v=...">
               </div>
             </div>
@@ -203,70 +336,58 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Template Design Block -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Theme Engine Layout</h3>
-            </div>
-            <div class="form-group">
-              <label>TEMPLATE DESIGN KEY *</label>
-              <select [(ngModel)]="section.templateKey" class="form-control" *ngIf="installedTemplates.length > 0">
-                <option value="">-- Select Installed Template --</option>
-                <option *ngFor="let t of installedTemplates" [value]="t.templateKey || t.variantCode">
-                  {{ t.name }} ({{ t.variantCode }}) [{{ t.categoryKey }}]
-                </option>
-              </select>
-              <input type="text" [(ngModel)]="section.templateKey" class="form-control" placeholder="e.g. services-grid, hero-features" [style.margin-top]="installedTemplates.length > 0 ? '8px' : '0'">
-              <small class="help-text">Choose from your installed blueprint library or type a custom key. View all in <a routerLink="/content/console/templates" target="_blank" style="color: #0050e5; font-weight: 600;">My Templates</a>.</small>
-            </div>
-
-            <div class="form-group" style="margin-top:12px;">
-              <label>CUSTOM CSS CLASS INJECTION</label>
-              <input type="text" [(ngModel)]="section.customClass" class="form-control" placeholder="bg-slate-50 py-12">
-            </div>
-
-            <div class="form-group" style="margin-top:12px;">
-              <label>BACKGROUND COLOR / THEME OVERRIDE</label>
-              <input type="text" [(ngModel)]="section.backgroundColor" class="form-control" placeholder="#ffffff, #f8fafc, dark">
-            </div>
-          </div>
-
-          <!-- Dynamic Page Form Attachment -->
-          <div class="cms-card">
-            <div class="card-header-bar">
               <div>
-                <h3>Attach Dynamic Page Form</h3>
-                <p class="card-sub" style="margin:0; font-size:12px; color:#64748b;">Connect an interactive inquiry, intake, or newsletter form to this section.</p>
+                <h3>Theme Engine Layout</h3>
+                <p class="card-sub">Select design layout template.</p>
               </div>
             </div>
+
+            <!-- Dropdown from Templates -->
             <div class="form-group">
-              <label>DYNAMIC FORM</label>
-              <select [(ngModel)]="section.pageFormId" (ngModelChange)="onFormSelected($event)" class="form-control">
-                <option [ngValue]="null">-- None (No Dynamic Form) --</option>
-                <optgroup label="System Onboarding &amp; Registration">
-                  <option [ngValue]="'__registration_form__'">Member Registration ("Get Started") — Configured in User Manager &gt; Form Builder</option>
+              <label>TEMPLATE DESIGN KEY *</label>
+              <select [(ngModel)]="section.templateKey" class="form-control template-select">
+                <option value="">-- Select Template Layout --</option>
+                <optgroup label="Tenant Installed Templates" *ngIf="installedTemplates.length > 0">
+                  <option *ngFor="let t of installedTemplates" [value]="t.templateKey || t.variantCode">
+                    {{ t.name }} ({{ t.variantCode || t.templateKey }}) [{{ t.categoryKey }}]
+                  </option>
                 </optgroup>
-                <optgroup label="Custom Inquiry &amp; Lead Forms" *ngIf="availableForms && availableForms.length > 0">
-                  <option *ngFor="let f of availableForms" [ngValue]="f.id">
-                    {{ f.title }} ({{ f.formKey }}) [{{ f.fieldCount || f.fields?.length || 0 }} fields]
+                <optgroup label="Standard System Blueprints">
+                  <option *ngFor="let bp of systemBlueprints" [value]="bp.key">
+                    {{ bp.name }} ({{ bp.key }})
                   </option>
                 </optgroup>
               </select>
-              <small class="help-text" *ngIf="section.pageFormId === '__registration_form__'">
-                Renders the live dynamic onboarding form configured in <strong>User Manager &gt; Registration Form Builder</strong>. To change questions, sector templates, or layout, adjust it in the form builder.
-              </small>
-              <small class="help-text" *ngIf="section.pageFormId !== '__registration_form__'">
-                Select the member registration onboarding form or an inquiry form to attach to this section.
-              </small>
+
+              <div class="template-key-manual-row" style="margin-top: 8px;">
+                <label style="font-size: 10px; color: #64748b;">OR CUSTOM DESIGN KEY:</label>
+                <input type="text" [(ngModel)]="section.templateKey" class="form-control" placeholder="e.g. feature-block, services-grid">
+              </div>
+
+              <div class="template-selected-badge" *ngIf="section.templateKey">
+                <span class="material-symbols-outlined">style</span>
+                <span>Active Key: <strong>{{ section.templateKey }}</strong></span>
+              </div>
             </div>
 
-            <div class="form-group" style="margin-top:12px;">
-              <label>DIRECT FORM KEY</label>
-              <input type="text" [(ngModel)]="section.formKey" class="form-control" placeholder="e.g. contact-us, service-request, newsletter">
+            <div class="form-group" style="margin-top:14px;">
+              <label>CUSTOM CSS CLASS INJECTION</label>
+              <input type="text" [(ngModel)]="section.customClass" class="form-control" placeholder="bg-slate-50 py-12 border-b">
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+              <label>BACKGROUND COLOR / THEME OVERRIDE</label>
+              <input type="text" [(ngModel)]="section.backgroundColor" class="form-control" placeholder="#ffffff, #f8fafc, dark">
             </div>
           </div>
 
           <!-- Placement & Sorting -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Hierarchy & Positioning</h3>
+              <div>
+                <h3>Hierarchy & Positioning</h3>
+                <p class="card-sub">Page assignment and sequence.</p>
+              </div>
             </div>
             <div class="form-group">
               <label>PARENT WEB PAGE</label>
@@ -276,53 +397,73 @@ import { ToastService } from '../../../core/services/toast.service';
               </select>
             </div>
 
-            <div class="form-row" style="margin-top:12px;">
-              <div class="form-group flex-1">
-                <label>PAGE ORDER</label>
-                <input type="number" [(ngModel)]="section.pageSortOrder" class="form-control">
-              </div>
-              <div class="form-group flex-1">
-                <label>HOME ORDER</label>
-                <input type="number" [(ngModel)]="section.homePageSortOrder" class="form-control">
-              </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label>PAGE SORT ORDER</label>
+              <input type="number" [(ngModel)]="section.pageSortOrder" class="form-control">
+              <small class="help-text">Sections render from lowest to highest numerical order.</small>
             </div>
 
             <div class="toggles-list" style="margin-top:14px;">
               <label class="toggle-card">
-                <input type="checkbox" [(ngModel)]="section.showInHome">
-                <div class="toggle-info">
-                  <strong>Show on Home Page</strong>
-                  <p>Renders on the main landing page.</p>
-                </div>
-              </label>
-              <label class="toggle-card">
                 <input type="checkbox" [(ngModel)]="section.disable">
                 <div class="toggle-info">
                   <strong>Disable Section</strong>
-                  <p>Temporarily hides this section completely.</p>
+                  <p>Temporarily hides this section from rendering.</p>
                 </div>
               </label>
               <label class="toggle-card">
                 <input type="checkbox" [(ngModel)]="section.fixedAfterFooter">
                 <div class="toggle-info">
                   <strong>Fixed After Footer</strong>
-                  <p>Pushes section below the footer layout.</p>
+                  <p>Forces section below the footer layout.</p>
                 </div>
               </label>
+            </div>
+          </div>
+
+          <!-- Dynamic Page Form Attachment -->
+          <div class="cms-card">
+            <div class="card-header-bar">
+              <div>
+                <h3>Attach Dynamic Page Form</h3>
+                <p class="card-sub">Connect an interactive intake or lead form.</p>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>DYNAMIC FORM</label>
+              <select [(ngModel)]="section.pageFormId" (ngModelChange)="onFormSelected($event)" class="form-control">
+                <option [ngValue]="null">-- None (No Dynamic Form) --</option>
+                <optgroup label="System Onboarding &amp; Registration">
+                  <option [ngValue]="'__registration_form__'">Member Registration ("Get Started")</option>
+                </optgroup>
+                <optgroup label="Custom Inquiry &amp; Lead Forms" *ngIf="availableForms && availableForms.length > 0">
+                  <option *ngFor="let f of availableForms" [ngValue]="f.id">
+                    {{ f.title }} ({{ f.formKey }}) [{{ f.fieldCount || f.fields?.length || 0 }} fields]
+                  </option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-top:12px;">
+              <label>DIRECT FORM KEY</label>
+              <input type="text" [(ngModel)]="section.formKey" class="form-control" placeholder="e.g. contact-us, registration">
             </div>
           </div>
 
           <!-- Breaking News Ribbon -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Breaking News Ribbon</h3>
+              <div>
+                <h3>Breaking News Ribbon</h3>
+                <p class="card-sub">Push headline to top marquee ticker.</p>
+              </div>
             </div>
             <div class="toggles-list">
               <label class="toggle-card">
                 <input type="checkbox" [(ngModel)]="section.addToRibon">
                 <div class="toggle-info">
                   <strong>Add to News Ribbon Ticker</strong>
-                  <p>Pushes title to the top marquee ticker.</p>
+                  <p>Broadcasts title in header alert ticker.</p>
                 </div>
               </label>
             </div>
@@ -339,10 +480,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
       </div>
-
-      <!-- Notification Alerts -->
-      <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
-      <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
     </div>
   `,
   styles: [`
@@ -355,16 +492,22 @@ import { ToastService } from '../../../core/services/toast.service';
     .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
     .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
     .subtitle { color: #64748b; font-size: 14px; margin: 0; }
-    .header-actions { display: flex; gap: 10px; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
       border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: all 0.2s;
     }
     .btn-primary { background: #0050e5; color: #fff; border: none; }
+    .btn-primary:hover { background: #0043c2; }
     .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #334155; }
+    .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
 
     .form-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (max-width: 1024px) {
+      .form-layout { grid-template-columns: 1fr; }
+    }
     .main-column, .side-column { display: flex; flex-direction: column; gap: 24px; }
 
     .cms-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; }
@@ -374,22 +517,82 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .card-header-bar h3 { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 2px; }
     .card-sub { font-size: 13px; color: #64748b; margin: 0; }
+    .card-head-between { display: flex; justify-content: space-between; align-items: center; }
 
     .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
-    .full-width { grid-column: span 2; }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    .full-width { grid-column: 1 / -1; }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; }
-    .form-control { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; }
-    .form-row { display: flex; gap: 12px; }
+    .form-group label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control {
+      padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;
+      transition: border-color 0.2s, box-shadow 0.2s; background: #fff;
+    }
+    .form-control:focus { outline: none; border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
     .help-text { font-size: 11px; color: #64748b; }
 
+    /* Template Select & Badge */
+    .template-select { font-weight: 600; color: #0f172a; }
+    .template-key-manual-row { display: flex; flex-direction: column; gap: 4px; }
+    .template-selected-badge {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+      background: #eff6ff; color: #0050e5; padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; border: 1px solid #bfdbfe;
+    }
+    .template-selected-badge .material-symbols-outlined { font-size: 16px; }
+
+    /* Rich Text / Summernote-style WYSIWYG Editor */
+    .editor-view-toggle { display: flex; gap: 4px; }
+    .btn-toggle {
+      display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px;
+      border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid #e2e8f0;
+      background: #f8fafc; color: #64748b; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-toggle .material-symbols-outlined { font-size: 15px; }
+    .btn-toggle.active { background: #0050e5; color: #fff; border-color: #0050e5; }
+
+    .rich-toolbar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+      background: #f8fafc; border: 1px solid #cbd5e1; border-bottom: none;
+      border-radius: 8px 8px 0 0; padding: 6px 10px;
+    }
+    .toolbar-group { display: flex; align-items: center; gap: 2px; }
+    .toolbar-sep { width: 1px; height: 22px; background: #cbd5e1; margin: 0 4px; }
+    .tool-btn {
+      background: none; border: none; padding: 5px 7px; border-radius: 5px;
+      cursor: pointer; color: #334155; display: inline-flex; align-items: center;
+      justify-content: center; transition: all 0.15s;
+    }
+    .tool-btn:hover { background: #e2e8f0; color: #0050e5; }
+    .tool-btn .material-symbols-outlined { font-size: 18px; }
+    .tool-select {
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 5px;
+      padding: 4px 8px; font-size: 12px; color: #334155; font-weight: 500; cursor: pointer;
+    }
+
+    .editor-canvas {
+      min-height: 220px; max-height: 480px; overflow-y: auto; padding: 16px;
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 0 0 8px 8px;
+      font-size: 14px; line-height: 1.7; color: #1e293b; outline: none;
+    }
+    .editor-canvas:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.08); }
+    .editor-canvas:empty:before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
+    .source-textarea {
+      font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.5;
+      background: #0f172a; color: #38bdf8; border-color: #1e293b; border-radius: 8px;
+    }
+
+    /* Media Uploads */
     .input-with-upload { display: flex; gap: 10px; }
     .input-with-upload input { flex: 1; }
     .btn-upload {
       display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px;
       background: #eff6ff; color: #0050e5; border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; white-space: nowrap;
+      cursor: pointer; white-space: nowrap; border: 1px solid #bfdbfe; transition: all 0.2s;
     }
+    .btn-upload:hover { background: #dbeafe; }
     .btn-upload.uploading { background: #cbd5e1; cursor: wait; }
 
     .image-preview-box {
@@ -399,6 +602,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-remove-img {
       position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff;
       border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
     }
 
     .label-with-badge { display: flex; justify-content: space-between; align-items: center; }
@@ -408,8 +612,8 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 3px 8px; border-radius: 6px; font-family: monospace; border: 1px solid #e2e8f0;
     }
     .key-pill .icon-mini { font-size: 12px; color: #0050e5; }
-    .readonly-input { background: #f8fafc; color: #64748b; cursor: not-allowed; }
 
+    /* Toggles */
     .toggles-list { display: flex; flex-direction: column; gap: 10px; }
     .toggle-card {
       display: flex; align-items: flex-start; gap: 12px; background: #f8fafc;
@@ -423,38 +627,131 @@ import { ToastService } from '../../../core/services/toast.service';
     .loading-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; color: #64748b; }
     .spin { animation: spin 1s linear infinite; font-size: 32px; color: #0050e5; margin-bottom: 12px; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
-
-    .success-box { background: #f0fdf4; color: #166534; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
-    .error-box { background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
   `]
 })
-export class PageSectionEditComponent implements OnInit {
+export class PageSectionEditComponent implements OnInit, AfterViewInit {
+  @ViewChild('editorCanvas') editorCanvasRef!: ElementRef;
+
   sectionId = '';
+  isEditMode = false;
   section: any = null;
   installedTemplates: any[] = [];
   allPages: any[] = [];
   availableForms: any[] = [];
+
+  showHtmlSource = false;
   loading = false;
+  saving = false;
   uploadingPrimary = false;
   uploadingSecondary = false;
-  saving = false;
-  successMessage = '';
-  errorMessage = '';
+
+  // Standard System Section Blueprints
+  systemBlueprints = [
+    { key: 'feature-block', name: 'Feature Cards Grid' },
+    { key: 'services-grid', name: 'Services & Capabilities Grid' },
+    { key: 'hero-split', name: 'Split Visual Hero Banner' },
+    { key: 'stats-counter', name: 'KPI & Milestone Counters' },
+    { key: 'cta-banner', name: 'Call to Action Strip / Banner' },
+    { key: 'testimonials-carousel', name: 'Testimonials & Reviews' },
+    { key: 'faq-accordion', name: 'Interactive FAQ Accordion' },
+    { key: 'team-grid', name: 'Leadership & Team Grid' },
+    { key: 'pricing-table', name: 'Tiered Pricing Comparison Table' },
+    { key: 'contact-split', name: 'Contact Form & Map Split' },
+    { key: 'process-steps', name: 'How It Works / Step Sequence' },
+    { key: 'gallery-showcase', name: 'Visual Media & Portfolio Showcase' }
+  ];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private api: ApiService,
     private toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
-    this.sectionId = this.route.snapshot.paramMap.get('id') || '';
-    if (this.sectionId) {
+    const rawId = this.route.snapshot.paramMap.get('id') || '';
+    const isCreatePath = this.route.snapshot.url.some(s => s.path === 'create');
+
+    if (!isCreatePath && rawId && rawId !== 'create') {
+      this.isEditMode = true;
+      this.sectionId = rawId;
       this.loadSection();
+    } else {
+      this.isEditMode = false;
+      this.sectionId = '';
+      this.initNewSection();
     }
+
     this.loadInstalledTemplates();
     this.loadForms();
+    this.loadPages();
+  }
+
+  ngAfterViewInit(): void {
+    this.syncCanvasWithHtml();
+  }
+
+  private initNewSection(): void {
+    const webPageIdQuery = this.route.snapshot.queryParams['webPageId'] || null;
+
+    this.section = {
+      title: '',
+      miniTitle: '',
+      qoute: '',
+      description: '',
+      fullDescription: '',
+      iconText: '',
+      buttonText: '',
+      buttonLink: '',
+      secondButtonText: '',
+      secondButtonLink: '',
+      disableButton: false,
+      directUrl: '',
+      pageSortOrder: 1,
+      disable: false,
+      fixedAfterFooter: false,
+      templateKey: 'feature-block',
+      customClass: '',
+      backgroundColor: '',
+      addToRibon: false,
+      ribonCustomDisplayTitle: '',
+      ribonSortOrder: 0,
+      webPageId: webPageIdQuery,
+      pageFormId: null,
+      formKey: '',
+      imageUrl: '',
+      imageKey: '',
+      secondImageUrl: '',
+      secondImageKey: '',
+      videoUrl: '',
+      videoKey: '',
+      youtubeUrlLink: ''
+    };
+
+    // Auto-calculate sort order if attached to a web page
+    if (webPageIdQuery) {
+      this.api.get<any>(`ContentApi/pages/${webPageIdQuery}`).subscribe({
+        next: (res) => {
+          const sections = res?.data?.pageSections || [];
+          if (sections.length > 0) {
+            const maxOrder = Math.max(...sections.map((s: any) => s.pageSortOrder || 0));
+            this.section.pageSortOrder = maxOrder + 1;
+          }
+        },
+        error: () => { }
+      });
+    }
+  }
+
+  loadInstalledTemplates(): void {
+    this.api.get<any>('ContentApi/templates/installed').subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.installedTemplates = res.data;
+        }
+      },
+      error: () => { }
+    });
   }
 
   loadForms(): void {
@@ -464,7 +761,36 @@ export class PageSectionEditComponent implements OnInit {
           this.availableForms = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
+    });
+  }
+
+  loadPages(): void {
+    this.api.get<any>('ContentApi/pages').subscribe({
+      next: (res) => {
+        this.allPages = res?.data || [];
+      },
+      error: () => { }
+    });
+  }
+
+  loadSection(): void {
+    this.loading = true;
+    this.api.get<any>(`ContentApi/sections/${this.sectionId}`).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.section = res?.data;
+        if (this.section) {
+          if (!this.section.pageFormId && (this.section.formKey === 'registration' || this.section.formKey === 'register')) {
+            this.section.pageFormId = '__registration_form__';
+          }
+          this.syncCanvasWithHtml();
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.toast.error(err?.error?.message || 'Failed to load layout section details.');
+      }
     });
   }
 
@@ -483,48 +809,64 @@ export class PageSectionEditComponent implements OnInit {
     }
   }
 
-  loadInstalledTemplates(): void {
-    this.api.get<any>('ContentApi/templates/installed').subscribe({
-      next: (res) => {
-        if (res?.data && Array.isArray(res.data)) {
-          this.installedTemplates = res.data;
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  loadSection(): void {
-    this.loading = true;
-    this.api.get<any>(`ContentApi/sections/${this.sectionId}`).subscribe({
-      next: (res) => {
-        this.section = res?.data;
-        if (this.section) {
-          if (!this.section.pageFormId && (this.section.formKey === 'registration' || this.section.formKey === 'register')) {
-            this.section.pageFormId = '__registration_form__';
-          }
-        }
-        this.loadPages();
-      },
-      error: (err) => {
-        this.loading = false;
-        this.toast.error(err?.error?.message || 'Failed to load layout section details.');
+  // --- WYSIWYG Summernote Rich Text Editor Engine ---
+  syncCanvasWithHtml(): void {
+    setTimeout(() => {
+      if (this.editorCanvasRef?.nativeElement && this.section) {
+        this.editorCanvasRef.nativeElement.innerHTML = this.section.fullDescription || '';
       }
-    });
+    }, 100);
   }
 
-  loadPages(): void {
-    this.api.get<any>('ContentApi/pages').subscribe({
-      next: (res) => {
-        this.loading = false;
-        this.allPages = res?.data || [];
-      },
-      error: () => {
-        this.loading = false;
-      }
-    });
+  onCanvasInput(): void {
+    if (this.editorCanvasRef?.nativeElement && this.section) {
+      this.section.fullDescription = this.editorCanvasRef.nativeElement.innerHTML;
+    }
   }
 
+  setEditorMode(isHtml: boolean): void {
+    if (isHtml) {
+      this.onCanvasInput();
+      this.showHtmlSource = true;
+    } else {
+      this.showHtmlSource = false;
+      this.syncCanvasWithHtml();
+    }
+  }
+
+  execFormat(command: string, value: string | undefined = undefined): void {
+    document.execCommand(command, false, value);
+    this.onCanvasInput();
+  }
+
+  onHeadingChange(event: any): void {
+    const tag = event.target.value;
+    if (tag === 'p') {
+      this.execFormat('formatBlock', '<p>');
+    } else {
+      this.execFormat('formatBlock', `<${tag}>`);
+    }
+    event.target.value = 'p';
+  }
+
+  onFontSizeChange(event: any): void {
+    const size = event.target.value;
+    this.execFormat('fontSize', size);
+    event.target.value = '3';
+  }
+
+  insertBlockquote(): void {
+    this.execFormat('formatBlock', '<blockquote>');
+  }
+
+  insertLink(): void {
+    const url = prompt('Enter the destination hyperlink URL:', 'https://');
+    if (url && url.trim() && url !== 'https://') {
+      this.execFormat('createLink', url.trim());
+    }
+  }
+
+  // --- Media Uploads ---
   uploadMedia(event: any, type: string): void {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -557,23 +899,59 @@ export class PageSectionEditComponent implements OnInit {
     });
   }
 
+  // --- Save / Create Section ---
   saveSection(): void {
     if (!this.section?.title?.trim()) {
       this.toast.warning('Section Title is required.');
       return;
     }
 
+    if (this.showHtmlSource) {
+      // already in fullDescription
+    } else {
+      this.onCanvasInput();
+    }
+
     this.saving = true;
 
-    this.api.put<any>(`ContentApi/sections/${this.sectionId}`, this.section).subscribe({
-      next: (res) => {
-        this.saving = false;
-        this.toast.success(res?.message || 'Section updated successfully!');
-      },
-      error: (err) => {
-        this.saving = false;
-        this.toast.error(err?.error?.message || 'Failed to update section.');
-      }
-    });
+    if (this.isEditMode) {
+      this.api.put<any>(`ContentApi/sections/${this.sectionId}`, this.section).subscribe({
+        next: (res) => {
+          this.saving = false;
+          this.toast.success(res?.message || 'Section updated successfully!');
+        },
+        error: (err) => {
+          this.saving = false;
+          this.toast.error(err?.error?.message || 'Failed to update section.');
+        }
+      });
+    } else {
+      this.api.post<any>('ContentApi/sections', this.section).subscribe({
+        next: (res) => {
+          this.saving = false;
+          this.toast.success(res?.message || 'Layout section created successfully!');
+          const createdId = res?.data?.id;
+          if (this.section.webPageId) {
+            this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+          } else if (createdId) {
+            this.router.navigate(['/content/console/sections/details', createdId]);
+          } else {
+            this.router.navigate(['/content/console/sections']);
+          }
+        },
+        error: (err) => {
+          this.saving = false;
+          this.toast.error(err?.error?.message || 'Failed to create layout section.');
+        }
+      });
+    }
+  }
+
+  goBack(): void {
+    if (this.section?.webPageId) {
+      this.router.navigate(['/content/console/pages/details', this.section.webPageId]);
+    } else {
+      this.router.navigate(['/content/console/sections']);
+    }
   }
 }
