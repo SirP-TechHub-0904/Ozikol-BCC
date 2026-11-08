@@ -3,8 +3,11 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Infrastructure.Caching;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 {
@@ -63,7 +66,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 WebsiteUrl = tenant.WebsiteUrl,
                 AdminEmail = tenant.AdminEmail,
                 IsActive = tenant.IsActive,
-                ReferredByPartnerCode = tenant.ReferredByPartnerCode
+                ReferredByPartnerCode = tenant.ReferredByPartnerCode,
+                ConnectionString = tenant.ConnectionString
             };
 
             return Page();
@@ -99,6 +103,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             tenant.AdminEmail = string.IsNullOrWhiteSpace(Input.AdminEmail) ? null : Input.AdminEmail.Trim().ToLowerInvariant();
             tenant.IsActive = Input.IsActive;
             tenant.ReferredByPartnerCode = string.IsNullOrWhiteSpace(Input.ReferredByPartnerCode) ? null : Input.ReferredByPartnerCode.Trim();
+
+            // Update dedicated connection string (transparently encrypted with AES-256-GCM upon SaveChanges)
+            if (!string.IsNullOrWhiteSpace(Input.ConnectionString))
+            {
+                tenant.ConnectionString = Input.ConnectionString.Trim();
+                try
+                {
+                    var connBuilder = new SqlConnectionStringBuilder(tenant.ConnectionString);
+                    if (!string.IsNullOrWhiteSpace(connBuilder.InitialCatalog))
+                    {
+                        tenant.DatabaseName = connBuilder.InitialCatalog;
+                    }
+                }
+                catch
+                {
+                    // Preserve current database name if builder parse fails
+                }
+            }
+
             tenant.UpdatedUtc = DateTime.UtcNow;
             tenant.LastUpdatedBy = User.Identity?.Name ?? "SuperAdmin";
 
@@ -118,6 +141,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
+
+            // Evict tenant cache so the API immediately switches to the new connection string
+            var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
+            if (cacheInvalidator != null)
+            {
+                await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
+            }
 
             TempData["Success"] = $"Tenant '{tenant.OrganizationName}' updated successfully.";
             return RedirectToPage("/Tenants/Details", new { id = tenant.Id });
@@ -157,6 +187,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             [StringLength(100)]
             [Display(Name = "Affiliate Referral Code")]
             public string? ReferredByPartnerCode { get; set; }
+
+            /// <summary>
+            /// Dedicated database connection string (decrypted in memory, transparently encrypted at rest).
+            /// </summary>
+            [Display(Name = "Dedicated Database Connection String")]
+            public string? ConnectionString { get; set; }
         }
     }
 }
