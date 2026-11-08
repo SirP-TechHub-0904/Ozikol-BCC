@@ -60,12 +60,20 @@
                     @Model.Tenant.CustomDomain
                 </div>
             }
-            <div style="color: var(--admin-text-muted);">
-                Host: <span>@Model.ServerHost</span>
+            <div style="color: var(--admin-text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                Host: <strong style="color: var(--admin-text);">@Model.ServerHost</strong>
+                <button type="button" class="btn-admin-icon" onclick="openEditConnectionModal();" title="Edit Server Host / Connection String" style="padding: 2px 4px; height: auto; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg-surface-elevated); cursor: pointer;">
+                    <span class="material-symbols-outlined" style="font-size: 13px; color: var(--admin-primary);">edit</span>
+                </button>
             </div>
         </div>
     </div>
     <div class="admin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn-admin btn-admin-primary" onclick="openEditConnectionModal();" id="btnOpenEditConn">
+            <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
+            Edit Connection
+        </button>
+
         <button type="button" class="btn-admin btn-admin-secondary" onclick="testPingConnection('@Model.Tenant.TenantKey');" id="btnPingTest">
             <span class="material-symbols-outlined" style="font-size: 16px;">network_ping</span>
             Test Ping Connection
@@ -537,8 +545,278 @@
     </div>
 </div>
 
+@* ── Edit Database Connection String Modal ── *@
+<div class="admin-modal-backdrop" id="editConnectionModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1200; align-items: center; justify-content: center; padding: 20px;">
+    <div class="admin-modal-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 620px; box-shadow: var(--shadow-xl); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+        
+        @* Modal Header *@
+        <div class="admin-modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 80, 229, 0.12); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">tune</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--admin-text);">Edit Tenant Database Connection</h3>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Workspace: <strong style="color: var(--admin-primary);">@Model.Tenant.TenantKey</strong> &bull; AES-256-GCM Encrypted at Rest</div>
+                </div>
+            </div>
+            <button type="button" class="btn-admin-icon" onclick="closeEditConnectionModal();" aria-label="Close dialog" style="cursor: pointer;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+            </button>
+        </div>
+
+        @* Modal Form *@
+        <form method="post" asp-page-handler="UpdateConnectionString" id="formUpdateConnStr" style="display: flex; flex-direction: column; overflow: hidden; margin: 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="TenantKey" value="@Model.Tenant.TenantKey" />
+            <input type="hidden" name="Mode" id="connConfigMode" value="Structured" />
+
+            <div class="admin-modal-body" style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+                
+                @* Mode Switcher: Structured vs Raw *@
+                <div style="display: flex; gap: 8px; margin-bottom: 18px; background: var(--admin-bg-surface-elevated); padding: 4px; border-radius: 8px; border: 1px solid var(--admin-border);">
+                    <button type="button" class="btn-admin btn-admin-sm" id="btnModeStructured" style="flex: 1; font-weight: 600; background: var(--admin-primary); color: white;" onclick="switchConnMode('Structured');">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">view_agenda</span>
+                        Structured Host &amp; Credentials
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" id="btnModeRaw" style="flex: 1; font-weight: 600;" onclick="switchConnMode('Raw');">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">code</span>
+                        Raw Connection String
+                    </button>
+                </div>
+
+                @* Structured Mode Fields *@
+                <div id="sectionStructuredMode">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="form-label" style="font-weight: 600; font-size: 13px; display: flex; justify-content: space-between;">
+                            <span>SQL Server Host / IP &amp; Port <span style="color: var(--admin-danger);">*</span></span>
+                            <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">e.g. 2.24.162.42,1433 or 127.0.0.1,1433</span>
+                        </label>
+                        <input type="text" name="Server" id="inputConnServer" class="form-control" value="@Model.CurrentDataSource" placeholder="e.g. 2.24.162.42,1433" style="font-family: monospace;" />
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="form-label" style="font-weight: 600; font-size: 13px; display: flex; justify-content: space-between;">
+                            <span>Database Name <span style="color: var(--admin-danger);">*</span></span>
+                            <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">Dedicated Tenant DB</span>
+                        </label>
+                        <input type="text" name="DatabaseName" id="inputConnDatabase" class="form-control" value="@Model.CurrentInitialCatalog" placeholder="e.g. Ozikol_Tenant_..." style="font-family: monospace;" />
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="form-label" style="font-weight: 600; font-size: 13px;">Authentication Type</label>
+                        <select name="AuthType" id="selectConnAuthType" class="form-control" onchange="toggleAuthFields(this.value);">
+                            @if (Model.CurrentIntegratedSecurity)
+                            {
+                                <option value="Sql">SQL Server Authentication (Username &amp; Password)</option>
+                                <option value="Windows" selected>Windows Integrated Security (Localhost Only)</option>
+                            }
+                            else
+                            {
+                                <option value="Sql" selected>SQL Server Authentication (Username &amp; Password)</option>
+                                <option value="Windows">Windows Integrated Security (Localhost Only)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div id="sectionSqlAuthCredentials" style="@(Model.CurrentIntegratedSecurity ? "display: none;" : "")">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-weight: 600; font-size: 13px;">SQL Username</label>
+                                <input type="text" name="UserId" id="inputConnUser" class="form-control" value="@Model.CurrentUserId" placeholder="e.g. sa" style="font-family: monospace;" />
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-weight: 600; font-size: 13px;">SQL Password</label>
+                                <input type="password" name="Password" id="inputConnPassword" class="form-control" placeholder="Leave empty to keep existing" style="font-family: monospace;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 18px; margin-top: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
+                            <input type="checkbox" name="TrustServerCertificate" value="true" @(Model.CurrentTrustServerCertificate ? "checked" : "") />
+                            <span>Trust Server Certificate (TLS)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
+                            <input type="checkbox" name="MultipleActiveResultSets" value="true" @(Model.CurrentMultipleActiveResultSets ? "checked" : "") />
+                            <span>MARS Enabled</span>
+                        </label>
+                    </div>
+                </div>
+
+                @* Raw Mode Fields *@
+                <div id="sectionRawMode" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="form-label" style="font-weight: 600; font-size: 13px; display: flex; justify-content: space-between;">
+                            <span>Complete ADO.NET Connection String</span>
+                            <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">Decrypted from database</span>
+                        </label>
+                        <textarea name="RawConnectionString" id="inputRawConnStr" class="form-control" rows="4" style="font-family: monospace; font-size: 12px; resize: vertical;">@Model.DecryptedConnectionString</textarea>
+                    </div>
+                </div>
+
+                @* Connection Test Status Box *@
+                <div id="connTestResultBox" style="display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 12.5px;"></div>
+
+                @* Pre-save verification checkbox *@
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--admin-border);">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
+                        <input type="checkbox" name="TestBeforeSaving" value="true" checked id="chkTestBeforeSave" />
+                        <span>Verify database connection before saving</span>
+                    </label>
+                </div>
+            </div>
+
+            @* Modal Footer *@
+            <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnTestModalConn" onclick="runModalConnectionTest();">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">network_ping</span>
+                    Test Connection
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeEditConnectionModal();">Cancel</button>
+                    <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSaveConn">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">lock</span>
+                        Save &amp; Encrypt
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        function openEditConnectionModal() {
+            const modal = document.getElementById('editConnectionModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeEditConnectionModal() {
+            const modal = document.getElementById('editConnectionModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        document.getElementById('editConnectionModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditConnectionModal();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window.location.hash === '#editConnection') {
+                openEditConnectionModal();
+            }
+        });
+
+        function switchConnMode(mode) {
+            document.getElementById('connConfigMode').value = mode;
+            const btnStructured = document.getElementById('btnModeStructured');
+            const btnRaw = document.getElementById('btnModeRaw');
+            const secStructured = document.getElementById('sectionStructuredMode');
+            const secRaw = document.getElementById('sectionRawMode');
+
+            if (mode === 'Structured') {
+                btnStructured.style.background = 'var(--admin-primary)';
+                btnStructured.style.color = 'white';
+                btnStructured.className = 'btn-admin btn-admin-sm';
+                btnRaw.style.background = '';
+                btnRaw.style.color = '';
+                btnRaw.className = 'btn-admin btn-admin-sm btn-admin-secondary';
+                secStructured.style.display = 'block';
+                secRaw.style.display = 'none';
+            } else {
+                btnRaw.style.background = 'var(--admin-primary)';
+                btnRaw.style.color = 'white';
+                btnRaw.className = 'btn-admin btn-admin-sm';
+                btnStructured.style.background = '';
+                btnStructured.style.color = '';
+                btnStructured.className = 'btn-admin btn-admin-sm btn-admin-secondary';
+                secStructured.style.display = 'none';
+                secRaw.style.display = 'block';
+            }
+        }
+
+        function toggleAuthFields(authType) {
+            const secSql = document.getElementById('sectionSqlAuthCredentials');
+            if (secSql) {
+                secSql.style.display = authType === 'Windows' ? 'none' : 'block';
+            }
+        }
+
+        async function runModalConnectionTest() {
+            const btn = document.getElementById('btnTestModalConn');
+            const resultBox = document.getElementById('connTestResultBox');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; animation: spin 1s infinite linear;">sync</span> Testing...';
+            btn.disabled = true;
+
+            const mode = document.getElementById('connConfigMode').value;
+            const payload = {
+                tenantKey: '@Model.Tenant.TenantKey',
+                mode: mode,
+                server: document.getElementById('inputConnServer')?.value,
+                databaseName: document.getElementById('inputConnDatabase')?.value,
+                authType: document.getElementById('selectConnAuthType')?.value,
+                userId: document.getElementById('inputConnUser')?.value,
+                password: document.getElementById('inputConnPassword')?.value,
+                trustServerCertificate: document.querySelector('input[name="TrustServerCertificate"]')?.checked ?? true,
+                multipleActiveResultSets: document.querySelector('input[name="MultipleActiveResultSets"]')?.checked ?? true,
+                rawConnectionString: document.getElementById('inputRawConnStr')?.value
+            };
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            try {
+                const response = await fetch('?handler=TestConnectionString', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                resultBox.style.display = 'block';
+
+                if (data.success) {
+                    resultBox.style.background = 'rgba(34, 197, 94, 0.12)';
+                    resultBox.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+                    resultBox.style.color = 'var(--admin-success)';
+                    resultBox.innerHTML = `
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; margin-top: 1px;">check_circle</span>
+                            <div>
+                                <div style="font-weight: 700;">Connection Successful! (${data.latencyMs}ms)</div>
+                                <div style="font-size: 11.5px; margin-top: 2px; color: var(--admin-text);">${data.serverVersion}</div>
+                                <div style="font-size: 11.5px; margin-top: 2px;">Host: <code>${data.dataSource}</code> &bull; DB: <code>${data.databaseName}</code></div>
+                            </div>
+                        </div>`;
+                } else {
+                    resultBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                    resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    resultBox.style.color = 'var(--admin-danger)';
+                    resultBox.innerHTML = `
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; margin-top: 1px;">error</span>
+                            <div>
+                                <div style="font-weight: 700;">Connection Failed</div>
+                                <div style="font-size: 12px; margin-top: 2px; color: var(--admin-text);">${data.message}</div>
+                            </div>
+                        </div>`;
+                }
+            } catch (err) {
+                resultBox.style.display = 'block';
+                resultBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                resultBox.style.color = 'var(--admin-danger)';
+                resultBox.innerHTML = `Connection test encountered a network error: ${err.message}`;
+            } finally {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        }
         function filterPhysicalTables() {
             const term = document.getElementById('tableFilterInput').value.toLowerCase();
             const rows = document.querySelectorAll('#physicalTablesList tbody .table-row-item');

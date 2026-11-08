@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -13,9 +14,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Infrastructure.Caching;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
 {
@@ -81,6 +85,46 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         public string ServerHost { get; set; } = string.Empty;
 
         /// <summary>
+        /// Current resolved database server host/IP.
+        /// </summary>
+        public string CurrentDataSource { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Current physical database name.
+        /// </summary>
+        public string CurrentInitialCatalog { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Current database user ID (if SQL Authentication).
+        /// </summary>
+        public string CurrentUserId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Indicates whether the connection uses Windows Integrated Security.
+        /// </summary>
+        public bool CurrentIntegratedSecurity { get; set; }
+
+        /// <summary>
+        /// Indicates whether TrustServerCertificate is enabled.
+        /// </summary>
+        public bool CurrentTrustServerCertificate { get; set; } = true;
+
+        /// <summary>
+        /// Indicates whether MultipleActiveResultSets is enabled.
+        /// </summary>
+        public bool CurrentMultipleActiveResultSets { get; set; } = true;
+
+        /// <summary>
+        /// Masked raw connection string for display/audit.
+        /// </summary>
+        public string MaskedConnectionString { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Raw decrypted connection string for editing in the modal.
+        /// </summary>
+        public string DecryptedConnectionString { get; set; } = string.Empty;
+
+        /// <summary>
         /// Handles HTTP GET requests to load physical database inspection data.
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
@@ -108,6 +152,33 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
             string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
+            // Parse connection string details for display and editing modal
+            try
+            {
+                var connBuilder = new SqlConnectionStringBuilder(tenant.ConnectionString);
+                CurrentDataSource = connBuilder.DataSource;
+                CurrentInitialCatalog = !string.IsNullOrWhiteSpace(connBuilder.InitialCatalog) ? connBuilder.InitialCatalog : tenant.DatabaseName;
+                CurrentUserId = connBuilder.UserID;
+                CurrentIntegratedSecurity = connBuilder.IntegratedSecurity;
+                CurrentTrustServerCertificate = connBuilder.TrustServerCertificate;
+                CurrentMultipleActiveResultSets = connBuilder.MultipleActiveResultSets;
+                DecryptedConnectionString = tenant.ConnectionString;
+
+                var maskedBuilder = new SqlConnectionStringBuilder(tenant.ConnectionString);
+                if (!string.IsNullOrEmpty(maskedBuilder.Password))
+                {
+                    maskedBuilder.Password = "••••••••••••";
+                }
+                MaskedConnectionString = maskedBuilder.ConnectionString;
+            }
+            catch
+            {
+                CurrentDataSource = "MSSQL Host";
+                CurrentInitialCatalog = tenant.DatabaseName;
+                DecryptedConnectionString = tenant.ConnectionString ?? string.Empty;
+                MaskedConnectionString = tenant.ConnectionString ?? string.Empty;
+            }
+
             // Extract sanitized server host
             try
             {
@@ -116,18 +187,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             }
             catch
             {
-                ServerHost = "MSSQL Host";
+                ServerHost = !string.IsNullOrWhiteSpace(CurrentDataSource) ? CurrentDataSource : "MSSQL Host";
             }
 
-            // Load deep dive metrics
+            // Load deep dive metrics with resilient fallback if DB is offline
             var deepDive = await _migrationService.GetTenantDeepDiveAsync(tenant.TenantKey);
-            if (deepDive == null)
+            DeepDive = deepDive ?? new TenantDatabaseDeepDive
             {
-                TempData["Error"] = "Unable to inspect physical database instance.";
-                return RedirectToPage("/Tenants/Databases/Index");
-            }
-
-            DeepDive = deepDive;
+                IsReachable = false,
+                ErrorMessage = "Unable to inspect physical database instance. Check server host, port 1433, and credentials.",
+                Tenant = new TenantMigrationSummary
+                {
+                    Id = tenant.Id,
+                    TenantKey = tenant.TenantKey,
+                    OrganizationName = tenant.OrganizationName,
+                    PrimaryDomain = tenant.PrimaryDomain,
+                    CustomDomain = tenant.CustomDomain,
+                    DatabaseName = tenant.DatabaseName,
+                    ConnectionString = tenant.ConnectionString,
+                    IsActive = tenant.IsActive,
+                    CreatedUtc = tenant.CreatedUtc
+                }
+            };
 
             // Test Ping Latency
             await MeasurePingLatencyAsync(harmonizedConnStr);
@@ -741,5 +822,357 @@ CRITICAL DIAGNOSIS TASK:
                 PingLatencyMs = null;
             }
         }
+
+        /// <summary>
+        /// Handles HTTP POST requests to test candidate connection string parameters before saving.
+        /// </summary>
+        /// <param name="request">The candidate connection parameters.</param>
+        /// <returns>JSON result with latency, version, and connectivity status.</returns>
+        public async Task<IActionResult> OnPostTestConnectionStringAsync([FromBody] TestConnectionRequest request)
+        {
+            if (request == null)
+            {
+                return new JsonResult(new { success = false, message = "Invalid connection test request payload." });
+            }
+
+            string testConnStr;
+            try
+            {
+                testConnStr = await BuildCandidateConnectionStringAsync(
+                    request.TenantKey, request.Mode, request.Server, request.DatabaseName,
+                    request.AuthType, request.UserId, request.Password,
+                    request.TrustServerCertificate, request.MultipleActiveResultSets,
+                    request.RawConnectionString);
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Configuration error: {ex.Message}" });
+            }
+
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                using var conn = new SqlConnection(testConnStr);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
+                await conn.OpenAsync(cts.Token);
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT @@VERSION;";
+                var versionObj = await cmd.ExecuteScalarAsync(cts.Token);
+                sw.Stop();
+
+                var fullVersion = versionObj?.ToString() ?? "SQL Server";
+                var firstLine = fullVersion.Split('\n')[0].Trim();
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    latencyMs = sw.ElapsedMilliseconds,
+                    serverVersion = firstLine,
+                    databaseName = conn.Database,
+                    dataSource = conn.DataSource,
+                    message = $"Connection verified in {sw.ElapsedMilliseconds}ms! Connected to {conn.DataSource} [{conn.Database}]."
+                });
+            }
+            catch (SqlException ex)
+            {
+                sw.Stop();
+                string hint = ex.Number switch
+                {
+                    18456 => "Login failed for user. Please check your SQL Username and Password.",
+                    4060 => $"Database '{request.DatabaseName}' cannot be opened or does not exist on this SQL instance.",
+                    53 => "Network path not found. Please verify the Server host IP/name and ensure port 1433 is open.",
+                    _ when ex.Message.Contains("actively refused it") => "Port 1433 actively refused. Verify that SQL Server is running, TCP/IP is enabled in SQL Configuration Manager, and VPS firewall allows port 1433.",
+                    _ => ex.Message
+                };
+
+                return new JsonResult(new
+                {
+                    success = false,
+                    latencyMs = sw.ElapsedMilliseconds,
+                    errorCode = ex.Number,
+                    message = hint
+                });
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                return new JsonResult(new
+                {
+                    success = false,
+                    latencyMs = sw.ElapsedMilliseconds,
+                    message = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to update and encrypt a tenant's database connection string.
+        /// </summary>
+        /// <param name="input">The validated connection input model.</param>
+        /// <returns>Redirect back to database details page with success or error notification.</returns>
+        public async Task<IActionResult> OnPostUpdateConnectionStringAsync([FromForm] UpdateConnectionStringInputModel input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.TenantKey))
+            {
+                TempData["Error"] = "Tenant key is required to update connection settings.";
+                return RedirectToPage(new { tenantKey = input?.TenantKey });
+            }
+
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == input.TenantKey);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Tenants/Databases/Index");
+            }
+
+            string newConnStr;
+            try
+            {
+                newConnStr = await BuildCandidateConnectionStringAsync(
+                    input.TenantKey, input.Mode, input.Server, input.DatabaseName,
+                    input.AuthType, input.UserId, input.Password,
+                    input.TrustServerCertificate, input.MultipleActiveResultSets,
+                    input.RawConnectionString);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Invalid connection string format: {ex.Message}";
+                return RedirectToPage(new { tenantKey = input.TenantKey });
+            }
+
+            // Optional pre-save connectivity verification
+            if (input.TestBeforeSaving)
+            {
+                try
+                {
+                    using var testConn = new SqlConnection(newConnStr);
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
+                    await testConn.OpenAsync(cts.Token);
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Cannot save unreachable connection string: {ex.Message}. Uncheck 'Test connection before saving' if you want to force save while offline.";
+                    return RedirectToPage(new { tenantKey = input.TenantKey });
+                }
+            }
+
+            // Synchronize database name if altered
+            try
+            {
+                var builder = new SqlConnectionStringBuilder(newConnStr);
+                if (!string.IsNullOrWhiteSpace(builder.InitialCatalog))
+                {
+                    tenant.DatabaseName = builder.InitialCatalog;
+                }
+            }
+            catch
+            {
+                // Preserve current database name on parse discrepancy
+            }
+
+            // Assign new connection string (MasterCatalogDbContext transparently re-encrypts with AES-256-GCM upon SaveChanges)
+            tenant.ConnectionString = newConnStr;
+            tenant.UpdatedUtc = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+
+            // Evict cache across cluster so API picks up the new connection immediately
+            var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
+            if (cacheInvalidator != null)
+            {
+                await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
+            }
+
+            _logger.LogInformation("Central Admin successfully updated database connection for tenant {TenantKey} -> {Host}", tenant.TenantKey, tenant.DatabaseName);
+
+            TempData["Success"] = $"Database connection for '{tenant.OrganizationName}' ({tenant.TenantKey}) updated and encrypted with AES-256-GCM successfully.";
+            return RedirectToPage(new { tenantKey = input.TenantKey });
+        }
+
+        private async Task<string> BuildCandidateConnectionStringAsync(
+            string? tenantKey, string mode, string? server, string? databaseName,
+            string authType, string? userId, string? password,
+            bool trustServerCert, bool mars, string? rawConnStr)
+        {
+            if (string.Equals(mode, "Raw", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(rawConnStr))
+                {
+                    throw new InvalidOperationException("Raw connection string cannot be empty.");
+                }
+                var rawBuilder = new SqlConnectionStringBuilder(rawConnStr.Trim());
+                return rawBuilder.ConnectionString;
+            }
+
+            if (string.IsNullOrWhiteSpace(server))
+            {
+                throw new InvalidOperationException("Server host or IP address is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(databaseName))
+            {
+                throw new InvalidOperationException("Database name is required.");
+            }
+
+            // Retrieve existing tenant to preserve current password if not provided
+            string existingPassword = string.Empty;
+            if (!string.IsNullOrWhiteSpace(tenantKey))
+            {
+                var currentTenant = await _dbContext.MasterTenantCatalogs.AsNoTracking().FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
+                if (currentTenant != null && !string.IsNullOrWhiteSpace(currentTenant.ConnectionString))
+                {
+                    try
+                    {
+                        var currBuilder = new SqlConnectionStringBuilder(currentTenant.ConnectionString);
+                        existingPassword = currBuilder.Password;
+                    }
+                    catch { }
+                }
+            }
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = server.Trim(),
+                InitialCatalog = databaseName.Trim(),
+                TrustServerCertificate = trustServerCert,
+                MultipleActiveResultSets = mars,
+                PersistSecurityInfo = true
+            };
+
+            if (string.Equals(authType, "Windows", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.IntegratedSecurity = true;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    throw new InvalidOperationException("SQL Username is required for SQL Server Authentication.");
+                }
+                builder.UserID = userId.Trim();
+                builder.Password = !string.IsNullOrEmpty(password) ? password : existingPassword;
+            }
+
+            return builder.ConnectionString;
+        }
+    }
+
+    /// <summary>
+    /// Input model for updating a tenant's database connection string.
+    /// </summary>
+    public class UpdateConnectionStringInputModel
+    {
+        /// <summary>
+        /// Target tenant key.
+        /// </summary>
+        [Required]
+        public string TenantKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Configuration mode: 'Structured' or 'Raw'.
+        /// </summary>
+        public string Mode { get; set; } = "Structured";
+
+        /// <summary>
+        /// SQL Server host or IP and port (e.g. '2.24.162.42,1433' or 'localhost\\SQLEXPRESS').
+        /// </summary>
+        public string? Server { get; set; }
+
+        /// <summary>
+        /// Database name (e.g. 'Ozikol_Tenant_xxx').
+        /// </summary>
+        public string? DatabaseName { get; set; }
+
+        /// <summary>
+        /// Authentication type: 'Sql' or 'Windows'.
+        /// </summary>
+        public string AuthType { get; set; } = "Sql";
+
+        /// <summary>
+        /// SQL Server User ID / Login name.
+        /// </summary>
+        public string? UserId { get; set; }
+
+        /// <summary>
+        /// SQL Server Password. If left blank, existing password is preserved.
+        /// </summary>
+        public string? Password { get; set; }
+
+        /// <summary>
+        /// Whether to trust server certificate (recommended true for cloud/VPS TLS).
+        /// </summary>
+        public bool TrustServerCertificate { get; set; } = true;
+
+        /// <summary>
+        /// Whether to enable Multiple Active Result Sets.
+        /// </summary>
+        public bool MultipleActiveResultSets { get; set; } = true;
+
+        /// <summary>
+        /// Raw connection string when Mode is 'Raw'.
+        /// </summary>
+        public string? RawConnectionString { get; set; }
+
+        /// <summary>
+        /// Whether to test connectivity before applying the update.
+        /// </summary>
+        public bool TestBeforeSaving { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Request model for testing candidate connection strings via AJAX.
+    /// </summary>
+    public class TestConnectionRequest
+    {
+        /// <summary>
+        /// Target tenant key.
+        /// </summary>
+        public string? TenantKey { get; set; }
+
+        /// <summary>
+        /// Configuration mode: 'Structured' or 'Raw'.
+        /// </summary>
+        public string Mode { get; set; } = "Structured";
+
+        /// <summary>
+        /// SQL Server host or IP and port.
+        /// </summary>
+        public string? Server { get; set; }
+
+        /// <summary>
+        /// Target database name.
+        /// </summary>
+        public string? DatabaseName { get; set; }
+
+        /// <summary>
+        /// Authentication type: 'Sql' or 'Windows'.
+        /// </summary>
+        public string AuthType { get; set; } = "Sql";
+
+        /// <summary>
+        /// SQL Server User ID.
+        /// </summary>
+        public string? UserId { get; set; }
+
+        /// <summary>
+        /// SQL Server Password.
+        /// </summary>
+        public string? Password { get; set; }
+
+        /// <summary>
+        /// Whether to trust server certificate.
+        /// </summary>
+        public bool TrustServerCertificate { get; set; } = true;
+
+        /// <summary>
+        /// Whether to enable Multiple Active Result Sets.
+        /// </summary>
+        public bool MultipleActiveResultSets { get; set; } = true;
+
+        /// <summary>
+        /// Raw connection string when Mode is 'Raw'.
+        /// </summary>
+        public string? RawConnectionString { get; set; }
     }
 }
