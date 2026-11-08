@@ -75,16 +75,43 @@
                     <span asp-validation-for="Input.ReferredByPartnerCode" class="field-validation-error"></span>
                 </div>
 
-                <div class="form-group" style="margin-top: 14px;">
-                    <label asp-for="Input.ConnectionString" class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Dedicated Database Connection String</span>
-                        <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">AES-256-GCM Encrypted at Rest</span>
-                    </label>
-                    <textarea asp-for="Input.ConnectionString" class="form-control" rows="3" style="font-family: monospace; font-size: 12.5px; resize: vertical;" placeholder="Server=2.24.162.42,1433;Database=...;User Id=...;Password=...;TrustServerCertificate=True;"></textarea>
-                    <span asp-validation-for="Input.ConnectionString" class="field-validation-error"></span>
-                    <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 4px;">
-                        Edit directly to point to your remote VPS (e.g. <code>2.24.162.42,1433</code>) or local SQL instance. It is automatically encrypted on save.
+                <div class="form-group" style="margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label asp-for="Input.ConnectionString" class="form-label" style="margin: 0; font-weight: 700; font-size: 13.5px; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">database</span>
+                            Dedicated Database Connection String
+                        </label>
+                        <span style="font-size: 11.5px; color: var(--admin-success); font-weight: 600; background: rgba(34, 197, 94, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.25);">
+                            <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">lock</span> AES-256-GCM Encrypted at Rest
+                        </span>
                     </div>
+
+                    <div style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 8px;">
+                        Decrypted in memory with your workspace credentials. Edit the <code>Server=...</code> portion (e.g. set to <code>2.24.162.42,1433</code>) and test connectivity before saving.
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" onclick="quickSetServerHost('2.24.162.42,1433');" style="font-size: 11.5px;">
+                            <span class="material-symbols-outlined" style="font-size: 13px;">cloud</span> Set VPS Host: 2.24.162.42,1433
+                        </button>
+                        <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" onclick="quickSetServerHost('127.0.0.1,1433');" style="font-size: 11.5px;">
+                            <span class="material-symbols-outlined" style="font-size: 13px;">computer</span> Set Localhost: 127.0.0.1,1433
+                        </button>
+                    </div>
+
+                    <textarea asp-for="Input.ConnectionString" id="inputConnectionString" class="form-control" rows="4" style="font-family: monospace; font-size: 12.5px; resize: vertical; line-height: 1.5;" placeholder="Server=2.24.162.42,1433;Database=...;User Id=...;Password=...;TrustServerCertificate=True;"></textarea>
+                    <span asp-validation-for="Input.ConnectionString" class="field-validation-error"></span>
+
+                    @* Test Connection Action & Result Box *@
+                    <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnTestConn" onclick="testConnectionNow();">
+                            <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-primary);">network_ping</span>
+                            Test Connection
+                        </button>
+                        <span style="font-size: 11.5px; color: var(--admin-text-dim);">Probes SQL port 1433 and validates credentials</span>
+                    </div>
+
+                    <div id="testConnResultBox" style="display: none; margin-top: 10px; padding: 12px 14px; border-radius: 8px; font-size: 12.5px;"></div>
                 </div>
 
                 <div class="form-group" style="margin-top: 12px;">
@@ -152,3 +179,88 @@
         </div>
     </div>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function quickSetServerHost(newHost) {
+            const textarea = document.getElementById('inputConnectionString');
+            if (!textarea) return;
+            let val = textarea.value;
+            if (/Server\s*=\s*[^;]+/i.test(val)) {
+                val = val.replace(/Server\s*=\s*[^;]+/i, `Server=${newHost}`);
+            } else if (/Data\s+Source\s*=\s*[^;]+/i.test(val)) {
+                val = val.replace(/Data\s+Source\s*=\s*[^;]+/i, `Data Source=${newHost}`);
+            } else {
+                val = `Server=${newHost};` + val;
+            }
+            textarea.value = val;
+        }
+
+        async function testConnectionNow() {
+            const textarea = document.getElementById('inputConnectionString');
+            const btn = document.getElementById('btnTestConn');
+            const resultBox = document.getElementById('testConnResultBox');
+            if (!textarea || !textarea.value.trim()) {
+                alert('Please enter a connection string to test.');
+                return;
+            }
+
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; animation: spin 1s infinite linear;">sync</span> Testing...';
+            btn.disabled = true;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            try {
+                const response = await fetch('?handler=TestConnection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ connectionString: textarea.value.trim() })
+                });
+
+                const data = await response.json();
+                resultBox.style.display = 'block';
+
+                if (data.success) {
+                    resultBox.style.background = 'rgba(34, 197, 94, 0.12)';
+                    resultBox.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+                    resultBox.style.color = 'var(--admin-success)';
+                    resultBox.innerHTML = `
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; margin-top: 1px;">check_circle</span>
+                            <div>
+                                <div style="font-weight: 700;">Connection Successful! (${data.latencyMs}ms)</div>
+                                <div style="font-size: 12px; margin-top: 2px; color: var(--admin-text);">${data.serverVersion}</div>
+                                <div style="font-size: 11.5px; margin-top: 2px;">Host: <code>${data.dataSource}</code> &bull; Database: <code>${data.databaseName}</code></div>
+                            </div>
+                        </div>`;
+                } else {
+                    resultBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                    resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    resultBox.style.color = 'var(--admin-danger)';
+                    resultBox.innerHTML = `
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; margin-top: 1px;">error</span>
+                            <div>
+                                <div style="font-weight: 700;">Connection Failed</div>
+                                <div style="font-size: 12px; margin-top: 2px; color: var(--admin-text);">${data.message}</div>
+                            </div>
+                        </div>`;
+                }
+            } catch (err) {
+                resultBox.style.display = 'block';
+                resultBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                resultBox.style.color = 'var(--admin-danger)';
+                resultBox.innerHTML = `Connection test encountered a network error: ${err.message}`;
+            } finally {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        }
+    </script>
+}
