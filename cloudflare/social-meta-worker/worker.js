@@ -77,7 +77,8 @@ export default {
             const companyName = data.companyName || tenantKey.charAt(0).toUpperCase() + tenantKey.slice(1);
             const title = data.websiteTitle || data.dashboardTitle || companyName;
             const desc = data.companyDescription || data.footerDescription || `Welcome to ${companyName}`;
-            const img = data.companyLogoUrl || data.companyWhiteLogoUrl || data.companyIconUrl || DEFAULT_BRAND.image;
+            // Prioritize square icon (companyIconUrl) for social preview cards so it doesn't get cropped like wide logos
+            const img = data.companyIconUrl || data.companyLogoUrl || data.companyWhiteLogoUrl || DEFAULT_BRAND.image;
 
             meta = {
               title: escapeHtml(title),
