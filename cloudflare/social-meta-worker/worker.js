@@ -74,11 +74,11 @@ export default {
           const json = await apiResponse.json();
           if (json && json.data) {
             const data = json.data;
-            const companyName = data.companyName || tenantKey.charAt(0).toUpperCase() + tenantKey.slice(1);
+            const companyName = data.companyName || "";
             const title = data.websiteTitle || data.dashboardTitle || companyName;
-            const desc = data.companyDescription || data.footerDescription || `Welcome to ${companyName}`;
-            // Prioritize square icon (companyIconUrl) for social preview cards so it doesn't get cropped like wide logos
-            const img = data.companyIconUrl || data.companyLogoUrl || data.companyWhiteLogoUrl || DEFAULT_BRAND.image;
+            const desc = data.companyDescription || data.footerDescription || "";
+            // Prioritize square icon (companyIconUrl) for social preview cards so it doesn't get cropped
+            const img = data.companyIconUrl || data.companyLogoUrl || data.companyWhiteLogoUrl || "";
 
             meta = {
               title: escapeHtml(title),
@@ -88,22 +88,20 @@ export default {
             };
           }
         } else {
-          // Fallback if tenant DB is unpopulated: format subdomain name
           const capitalized = tenantKey.charAt(0).toUpperCase() + tenantKey.slice(1);
           meta = {
-            title: `${capitalized} Portal`,
-            description: `Welcome to ${capitalized} official command portal.`,
-            image: DEFAULT_BRAND.image,
+            title: capitalized,
+            description: "",
+            image: "",
             companyName: capitalized
           };
         }
       } catch (err) {
-        // Fallback on fetch error
         const capitalized = tenantKey.charAt(0).toUpperCase() + tenantKey.slice(1);
         meta = {
-          title: `${capitalized} Portal`,
-          description: `Welcome to ${capitalized} official command portal.`,
-          image: DEFAULT_BRAND.image,
+          title: capitalized,
+          description: "",
+          image: "",
           companyName: capitalized
         };
       }
@@ -122,32 +120,39 @@ export default {
     const siteName = meta.companyName || DEFAULT_BRAND.title;
 
     // Use Cloudflare HTMLRewriter to stream-inject Open Graph and Twitter tags into <head>
-    return new HTMLRewriter()
-      .on("title", {
+    let rewriter = new HTMLRewriter();
+
+    if (meta.title) {
+      rewriter = rewriter.on("title", {
         element(e) {
           e.setInnerContent(meta.title);
         }
-      })
-      .on("head", {
-        element(e) {
-          e.append(`
-  <!-- Dynamic Multi-Tenant Social Preview Injected by Cloudflare Worker -->
-  <meta name="description" content="${meta.description}">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="${siteName}">
-  <meta property="og:title" content="${meta.title}">
-  <meta property="og:description" content="${meta.description}">
-  <meta property="og:image" content="${meta.image}">
-  <meta property="og:image:secure_url" content="${meta.image}">
-  <meta property="og:url" content="${pageUrl}">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${meta.title}">
-  <meta name="twitter:description" content="${meta.description}">
-  <meta name="twitter:image" content="${meta.image}">
-`, { html: true });
+      });
+    }
+
+    rewriter = rewriter.on("head", {
+      element(e) {
+        let tags = '\n  <!-- Dynamic Multi-Tenant Social Preview Injected by Cloudflare Worker -->\n';
+        if (meta.description) tags += `  <meta name="description" content="${meta.description}">\n`;
+        tags += `  <meta property="og:type" content="website">\n`;
+        if (siteName) tags += `  <meta property="og:site_name" content="${siteName}">\n`;
+        if (meta.title) tags += `  <meta property="og:title" content="${meta.title}">\n`;
+        if (meta.description) tags += `  <meta property="og:description" content="${meta.description}">\n`;
+        if (meta.image) {
+          tags += `  <meta property="og:image" content="${meta.image}">\n`;
+          tags += `  <meta property="og:image:secure_url" content="${meta.image}">\n`;
         }
-      })
-      .transform(response);
+        tags += `  <meta property="og:url" content="${pageUrl}">\n`;
+        tags += `  <meta name="twitter:card" content="summary_large_image">\n`;
+        if (meta.title) tags += `  <meta name="twitter:title" content="${meta.title}">\n`;
+        if (meta.description) tags += `  <meta name="twitter:description" content="${meta.description}">\n`;
+        if (meta.image) tags += `  <meta name="twitter:image" content="${meta.image}">\n`;
+
+        e.append(tags, { html: true });
+      }
+    });
+
+    return rewriter.transform(response);
   }
 };
 
