@@ -10,3 +10,4 @@ curl.exe -s -X PUT "https://api.cloudflare.com/client/v4/accounts/$accountId/wor
   -F "worker.js=@$PSScriptRoot/worker.js;type=application/javascript+module"
 
 Write-Host "`nWorker deployed successfully!" -ForegroundColor Green
+
