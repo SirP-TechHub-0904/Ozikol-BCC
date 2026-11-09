@@ -330,9 +330,9 @@ namespace Ozikol_BCC.Api.Controllers
                 updatedSnapshot!,
                 targetActive
                     ? (startFirstTimeTrial
-                        ? $"'{feature.Name}' is now active on your {effectiveFreeTrialDays}-Day Free Trial! Test all capabilities before payment is required."
-                        : $"'{feature.Name}' has been installed and activated. It is now available in your workspace menu.")
-                    : $"'{feature.Name}' has been deactivated and removed from your workspace menu."));
+                        ? $"'{feature.Name}' is now active ({effectiveFreeTrialDays}-Day Free Trial)."
+                        : $"'{feature.Name}' is now active.")
+                    : $"'{feature.Name}' has been deactivated."));
         }
 
         /// <summary>
