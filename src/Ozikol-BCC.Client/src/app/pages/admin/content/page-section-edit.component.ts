@@ -350,7 +350,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </div>
             </div>
 
-            <!-- Dropdown from Templates -->
+            <!-- Dropdown from Real Tenant Database Templates -->
             <div class="form-group">
               <label>TEMPLATE DESIGN KEY *</label>
               <select [(ngModel)]="section.templateKey" class="form-control template-select">
@@ -358,11 +358,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <optgroup label="Tenant Installed Templates" *ngIf="installedTemplates.length > 0">
                   <option *ngFor="let t of installedTemplates" [value]="t.templateKey || t.variantCode">
                     {{ t.name }} ({{ t.variantCode || t.templateKey }}) [{{ t.categoryKey }}]
-                  </option>
-                </optgroup>
-                <optgroup label="Standard System Blueprints">
-                  <option *ngFor="let bp of systemBlueprints" [value]="bp.key">
-                    {{ bp.name }} ({{ bp.key }})
                   </option>
                 </optgroup>
               </select>
@@ -742,21 +737,6 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
   ];
 
   // Standard System Section Blueprints
-  systemBlueprints = [
-    { key: 'feature-block', name: 'Feature Cards Grid' },
-    { key: 'services-grid', name: 'Services & Capabilities Grid' },
-    { key: 'hero-split', name: 'Split Visual Hero Banner' },
-    { key: 'stats-counter', name: 'KPI & Milestone Counters' },
-    { key: 'cta-banner', name: 'Call to Action Strip / Banner' },
-    { key: 'testimonials-carousel', name: 'Testimonials & Reviews' },
-    { key: 'faq-accordion', name: 'Interactive FAQ Accordion' },
-    { key: 'team-grid', name: 'Leadership & Team Grid' },
-    { key: 'pricing-table', name: 'Tiered Pricing Comparison Table' },
-    { key: 'contact-split', name: 'Contact Form & Map Split' },
-    { key: 'process-steps', name: 'How It Works / Step Sequence' },
-    { key: 'gallery-showcase', name: 'Visual Media & Portfolio Showcase' }
-  ];
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -806,7 +786,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
       pageSortOrder: 1,
       disable: false,
       fixedAfterFooter: false,
-      templateKey: 'feature-block',
+      templateKey: '',
       customClass: '',
       backgroundColor: '',
       addToRibon: false,
