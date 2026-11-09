@@ -955,7 +955,7 @@ namespace Ozikol_BCC.Api.Controllers
                 doc.DocumentName = $"SIA_{request.SiaLicenseSector ?? "Badge"}_{request.SiaLicenseNumber.Trim()}";
                 doc.Description = $"SIA License Number: {request.SiaLicenseNumber.Trim()}. Sector: {request.SiaLicenseSector ?? "Security"}";
                 doc.FileUrl = "verified://admin-record";
-                doc.ExpirationDateUtc = request.SiaLicenseExpiryDate;
+                doc.ExpiryDateUtc = request.SiaLicenseExpiryDate;
                 doc.UpdatedUtc = DateTime.UtcNow;
             }
 
@@ -1188,7 +1188,7 @@ namespace Ozikol_BCC.Api.Controllers
                 doc.DocumentName = $"SIA_{request.SiaLicenseSector ?? "Badge"}_{request.SiaLicenseNumber.Trim()}";
                 doc.Description = $"SIA License: {request.SiaLicenseNumber.Trim()}. Sector: {request.SiaLicenseSector ?? "Security"}";
                 doc.FileUrl = "verified://staff-self-declaration";
-                doc.ExpirationDateUtc = request.SiaLicenseExpiryDate;
+                doc.ExpiryDateUtc = request.SiaLicenseExpiryDate;
                 doc.UpdatedUtc = DateTime.UtcNow;
             }
 
@@ -2597,6 +2597,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     Id = s.Id,
                     ClientSiteId = s.ClientSiteId,
+                    SiteName = s.ClientSite?.SiteName ?? "Unassigned Site",
                     ClientSiteName = s.ClientSite?.SiteName ?? "Unassigned Site",
                     PostName = s.PostName,
                     StartsAtUtc = s.StartsAtUtc,
@@ -2747,6 +2748,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string ShiftCode { get; set; } = string.Empty;
         public Guid ClientSiteId { get; set; }
         public string SiteName { get; set; } = string.Empty;
+        public string? ClientSiteName { get; set; }
         public string SiteAddress { get; set; } = string.Empty;
         public string PostName { get; set; } = string.Empty;
         public string? FacilityName { get; set; }
