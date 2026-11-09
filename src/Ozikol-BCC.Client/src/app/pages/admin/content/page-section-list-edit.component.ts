@@ -4,40 +4,23 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-page-section-list-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a [routerLink]="['/content/console/sections']">Page Sections</a>
-            <span class="sep" *ngIf="parentSection">/</span>
-            <a *ngIf="parentSection" [routerLink]="['/content/console/sections/details', parentSection.id]">{{ parentSection.title }}</a>
-            <span class="sep">/</span>
-            <span class="current">{{ isEditMode ? 'Edit Sub-Item' : 'Create Sub-Item' }}</span>
-          </div>
-          <h1>{{ isEditMode ? ('Edit Sub-Item: ' + (item?.title || 'Card Item')) : ('Add Sub-Item to ' + (parentSection?.title || 'Section')) }}</h1>
-          <p class="subtitle">Complete configuration of repeating card fields, rich descriptions, icons, buttons, media, and ribbon settings.</p>
-        </div>
-        <div class="header-actions">
-          <button type="button" class="btn btn-outline" (click)="goBack()">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back</span>
-          </button>
-          <button type="button" class="btn btn-primary" (click)="saveItem()" [disabled]="saving || loading">
-            <span class="material-symbols-outlined">save</span>
-            <span *ngIf="!saving">{{ isEditMode ? 'Save Changes' : 'Create Sub-Item' }}</span>
-            <span *ngIf="saving">{{ isEditMode ? 'Saving...' : 'Creating...' }}</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        [eyebrow]="headerEyebrow"
+        icon="view_list"
+        [title]="headerTitle"
+        subtitle="Complete configuration of repeating card fields, rich descriptions, icons, buttons, media, and ribbon settings."
+        [buttons]="headerButtons"
+        [loading]="saving"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -361,51 +344,6 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .cms-page-container { display: flex; flex-direction: column; gap: 24px; }
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
-      background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
-      flex-wrap: wrap;
-    }
-    .header-titles { flex: 1 1 auto; min-width: 0; }
-    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; word-break: break-word; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; word-break: break-word; line-height: 1.25; }
-    .subtitle { color: #64748b; font-size: 14px; margin: 0; line-height: 1.5; }
-    .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
-
-    @media (max-width: 768px) {
-      .page-header {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 16px;
-        gap: 12px;
-      }
-      .header-titles {
-        width: 100%;
-      }
-      .page-header h1 {
-        font-size: 18px;
-        line-height: 1.3;
-      }
-      .subtitle {
-        display: none !important;
-      }
-      .header-actions {
-        width: 100%;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .header-actions .btn {
-        flex: 1 1 auto;
-        justify-content: center;
-        padding: 9px 12px;
-        font-size: 12px;
-      }
-      .breadcrumb {
-        font-size: 11px;
-      }
-    }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
@@ -571,6 +509,36 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
   saving = false;
   uploadingImage = false;
   uploadingVideo = false;
+
+  get headerEyebrow(): string {
+    return this.parentSection
+      ? `CMS Studio / Page Sections / ${this.parentSection.title}`
+      : 'CMS Studio / Page Sections';
+  }
+
+  get headerTitle(): string {
+    return this.isEditMode
+      ? `Edit Sub-Item: ${this.item?.title || 'Card Item'}`
+      : `Add Sub-Item to ${this.parentSection?.title || 'Section'}`;
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Back',
+        icon: 'arrow_back',
+        action: () => this.goBack()
+      },
+      {
+        text: this.saving ? (this.isEditMode ? 'Saving...' : 'Creating...') : (this.isEditMode ? 'Save Changes' : 'Create Sub-Item'),
+        icon: 'save',
+        isPrimary: true,
+        disabled: this.saving || this.loading,
+        loading: this.saving,
+        action: () => this.saveItem()
+      }
+    ];
+  }
 
   allPages: any[] = [];
   publishedPagesList: { title: string; url: string }[] = [];

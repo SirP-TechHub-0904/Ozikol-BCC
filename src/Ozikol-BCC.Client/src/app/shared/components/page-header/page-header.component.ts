@@ -21,6 +21,7 @@ export interface PageHeaderButton {
     <section class="bcp-page-header" [class.is-loading]="loading">
       <div class="bcp-page-header-main">
         <div class="bcp-header-eyebrow" *ngIf="eyebrow">{{ eyebrow }}</div>
+        <ng-content select="[eyebrow]"></ng-content>
         <div class="bcp-header-title-row">
           <span class="bcp-header-icon material-symbols-outlined" *ngIf="icon">{{ icon }}</span>
           <h1 class="bcp-page-title">{{ title }}</h1>
@@ -44,6 +45,8 @@ export interface PageHeaderButton {
           </a>
         </ng-container>
       </div>
+      <ng-content select="[actions]"></ng-content>
+      <ng-content></ng-content>
 
       <!-- Top Indeterminate Progress Line -->
       <div class="header-loader-line" *ngIf="loading">
