@@ -11,7 +11,7 @@ namespace Ozikol_BCC.Domain.Models
     /// break deductions, and links to designated workspace hardware and attendance records.
     /// Table: [dbo].[BcpShifts]
     /// </summary>
-    public class BcpShift
+    public class BcpShift : IBcpWorkforceEntity
     {
         /// <summary>
         /// Unique primary key identifier for the scheduled shift.
@@ -130,6 +130,36 @@ namespace Ozikol_BCC.Domain.Models
         /// Timestamp in UTC when the guard confirmed acceptance of the shift.
         /// </summary>
         public DateTime? ConfirmedAtUtc { get; set; }
+
+        /// <summary>
+        /// Optional deadline in UTC for the assigned worker to confirm acceptance of the shift.
+        /// If not accepted prior to this timestamp, the shift automatically unassigns and returns to Open Shifts.
+        /// </summary>
+        public DateTime? AcceptanceDeadlineUtc { get; set; }
+
+        /// <summary>
+        /// Optional operational tag categorizing the shift (e.g., "Event", "Care Home", "Healthcare", "Corporate", "Retail").
+        /// </summary>
+        [StringLength(50)]
+        public string? EventTag { get; set; }
+
+        /// <summary>
+        /// Name of the specific client facility or venue (e.g., "Oakleigh Park Care Home", "Wembley Stadium", "Bradford College").
+        /// </summary>
+        [StringLength(150)]
+        public string? FacilityName { get; set; }
+
+        /// <summary>
+        /// Street address or physical location instructions for the assigned post.
+        /// </summary>
+        [StringLength(250)]
+        public string? Address { get; set; }
+
+        /// <summary>
+        /// Postal code of the duty location (e.g., "N20 9NH", "HA9 0WS").
+        /// </summary>
+        [StringLength(20)]
+        public string? PostCode { get; set; }
 
         /// <summary>
         /// Operational notes or shift briefing remarks provided by the rota supervisor.

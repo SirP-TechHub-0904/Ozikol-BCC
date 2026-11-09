@@ -26,6 +26,10 @@ export interface Shift {
   siteName: string;
   siteAddress: string;
   postName: string;
+  facilityName?: string;
+  address?: string;
+  postCode?: string;
+  eventTag?: string;
   assignedUserId?: string;
   assignedUserName?: string;
   startsAtUtc: string;
@@ -33,11 +37,15 @@ export interface Shift {
   isOvernight: boolean;
   breakMinutes: number;
   plannedDurationHours: number;
+  hourlyPayRate?: number;
+  hourlyChargeRate?: number;
   requiredWorkspaceStationId?: string;
   requiredWorkspaceStationName?: string;
   status: string;
   isConfirmedByGuard: boolean;
   confirmedAtUtc?: string;
+  acceptanceDeadlineUtc?: string;
+  acceptanceCountdownMinutes?: number;
   notes?: string;
   siteAssignmentInstructions?: string;
   emergencyContactPhone?: string;
@@ -71,6 +79,9 @@ export interface ClockInPayload {
   longitude?: number;
   accuracyMeters?: number;
   method?: string;
+  biometricVerified?: boolean;
+  biometricType?: string;
+  photoUrl?: string;
 }
 
 export interface ClockInResult {
@@ -81,6 +92,8 @@ export interface ClockInResult {
   isFlagged: boolean;
   flagReason?: string;
   requiredStationUnlocked: boolean;
+  biometricVerified?: boolean;
+  photoUrl?: string;
 }
 
 export interface ClockOutPayload {
@@ -89,6 +102,7 @@ export interface ClockOutPayload {
   longitude?: number;
   accuracyMeters?: number;
   method?: string;
+  photoUrl?: string;
 }
 
 export interface ClockOutResult {
@@ -186,5 +200,55 @@ export class WorkforceService {
 
   validateStationAccess(stationId: string): Observable<any> {
     return this.apiService.get<any>('workforce/attendance/validate-station-access', { stationId });
+  }
+
+  // --- STAFF ENROLLMENT & ROSTER ---
+  enrollMember(member: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/enroll', member);
+  }
+
+  getMembers(): Observable<any> {
+    return this.apiService.get<any>('workforce/members');
+  }
+
+  // --- GRAPHICAL ANALYTICS & KPIS ---
+  getAnalytics(): Observable<any> {
+    return this.apiService.get<any>('workforce/analytics');
+  }
+
+  // --- RATINGS & REVIEWS ---
+  submitRating(rating: any): Observable<any> {
+    return this.apiService.post<any>('workforce/ratings', rating);
+  }
+
+  getRatings(userId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/ratings/${userId}`);
+  }
+
+  // --- TRI-STATE AVAILABILITY ---
+  getAvailability(filters?: { userId?: string; fromDate?: string; toDate?: string }): Observable<any> {
+    return this.apiService.get<any>('workforce/availability', filters);
+  }
+
+  upsertAvailability(availability: { targetDate: string; state: string; unavailableFromTime?: string; unavailableToTime?: string; reason?: string }): Observable<any> {
+    return this.apiService.post<any>('workforce/availability', availability);
+  }
+
+  // --- COMPLIANCE & DOCUMENTS ---
+  getDocuments(userId?: string): Observable<any> {
+    return this.apiService.get<any>('workforce/documents', userId ? { userId } : undefined);
+  }
+
+  uploadDocument(doc: { documentType: string; documentName: string; description?: string; fileUrl: string; expiryDateUtc?: string }): Observable<any> {
+    return this.apiService.post<any>('workforce/documents', doc);
+  }
+
+  // --- CUSTOM SHIFT REMINDER PREFERENCES ---
+  getNotificationPreferences(): Observable<any> {
+    return this.apiService.get<any>('workforce/notifications/preferences');
+  }
+
+  updateNotificationPreferences(pref: any): Observable<any> {
+    return this.apiService.post<any>('workforce/notifications/preferences', pref);
   }
 }

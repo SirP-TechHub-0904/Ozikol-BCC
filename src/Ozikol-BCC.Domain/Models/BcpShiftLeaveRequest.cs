@@ -9,7 +9,7 @@ namespace Ozikol_BCC.Domain.Models
     /// Used by the Rota scheduling engine to black out unavailable staff and prevent scheduling conflicts.
     /// Table: [dbo].[BcpShiftLeaveRequests]
     /// </summary>
-    public class BcpShiftLeaveRequest
+    public class BcpShiftLeaveRequest : IBcpWorkforceEntity
     {
         /// <summary>
         /// Unique primary key identifier for the leave request.
@@ -100,6 +100,11 @@ namespace Ozikol_BCC.Domain.Models
         /// Timestamp when the request was submitted in UTC.
         /// </summary>
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Timestamp when the leave request was last modified in UTC.
+        /// </summary>
+        public DateTime? UpdatedUtc { get; set; }
     }
 }
 

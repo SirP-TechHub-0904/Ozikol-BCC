@@ -134,6 +134,9 @@ namespace Ozikol_BCC.Api.Controllers
             attendance.ClockInDistanceFromSiteMeters = Math.Round(distanceMeters, 1);
             attendance.IsClockInGeofenceVerified = isInsideGeofence;
             attendance.ClockInMethod = string.IsNullOrWhiteSpace(request.Method) ? "MobileGps" : request.Method;
+            attendance.ClockInBiometricVerified = request.BiometricVerified;
+            attendance.ClockInBiometricType = request.BiometricType;
+            attendance.ClockInPhotoUrl = request.PhotoUrl;
             attendance.LateArrivalMinutes = Math.Max(0, lateMinutes);
             attendance.IsFlagged = isFlagged;
             attendance.FlagReason = flagReason;
@@ -183,7 +186,9 @@ namespace Ozikol_BCC.Api.Controllers
                 DistanceFromSiteMeters = Math.Round(distanceMeters, 1),
                 IsFlagged = isFlagged,
                 FlagReason = flagReason,
-                RequiredStationUnlocked = shift.RequiredWorkspaceStationId.HasValue
+                RequiredStationUnlocked = shift.RequiredWorkspaceStationId.HasValue,
+                BiometricVerified = request.BiometricVerified,
+                PhotoUrl = request.PhotoUrl
             };
 
             return Ok(ApiResponse<ClockInResultDto>.SuccessResponse(result, isInsideGeofence ? "Clock-in successful and verified on site." : "Clock-in recorded with geofence warning."));
@@ -233,6 +238,7 @@ namespace Ozikol_BCC.Api.Controllers
             attendance.ClockOutDistanceFromSiteMeters = Math.Round(distanceMeters, 1);
             attendance.IsClockOutGeofenceVerified = isInsideGeofence;
             attendance.ClockOutMethod = string.IsNullOrWhiteSpace(request.Method) ? "MobileGps" : request.Method;
+            attendance.ClockOutPhotoUrl = request.PhotoUrl;
             attendance.ActualDurationHours = Math.Round(actualTotalHours, 2);
             attendance.BillableHours = Math.Round(netBillableHours, 2);
             attendance.OvertimeHours = Math.Round(overtimeHours, 2);
@@ -456,6 +462,9 @@ namespace Ozikol_BCC.Api.Controllers
         public double? Longitude { get; set; }
         public double? AccuracyMeters { get; set; }
         public string? Method { get; set; } = "MobileGps";
+        public bool BiometricVerified { get; set; }
+        public string? BiometricType { get; set; }
+        public string? PhotoUrl { get; set; }
     }
 
     public class ClockInResultDto
@@ -467,6 +476,8 @@ namespace Ozikol_BCC.Api.Controllers
         public bool IsFlagged { get; set; }
         public string? FlagReason { get; set; }
         public bool RequiredStationUnlocked { get; set; }
+        public bool BiometricVerified { get; set; }
+        public string? PhotoUrl { get; set; }
     }
 
     public class ClockOutRequest
@@ -476,6 +487,7 @@ namespace Ozikol_BCC.Api.Controllers
         public double? Longitude { get; set; }
         public double? AccuracyMeters { get; set; }
         public string? Method { get; set; } = "MobileGps";
+        public string? PhotoUrl { get; set; }
     }
 
     public class ClockOutResultDto

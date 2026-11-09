@@ -122,6 +122,11 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpShiftAttendance> BcpShiftAttendances { get; set; } = null!;
     public DbSet<BcpShiftSwapRequest> BcpShiftSwapRequests { get; set; } = null!;
     public DbSet<BcpShiftLeaveRequest> BcpShiftLeaveRequests { get; set; } = null!;
+    public DbSet<BcpShiftAvailability> BcpShiftAvailabilities { get; set; } = null!;
+    public DbSet<BcpShiftDocument> BcpShiftDocuments { get; set; } = null!;
+    public DbSet<BcpShiftStaffProfile> BcpShiftStaffProfiles { get; set; } = null!;
+    public DbSet<BcpShiftStaffRating> BcpShiftStaffRatings { get; set; } = null!;
+    public DbSet<BcpShiftNotificationPreference> BcpShiftNotificationPreferences { get; set; } = null!;
 
     // --- BCP: Committees & Groups Feature ---
     public DbSet<BcpGroup> BcpGroups { get; set; }
@@ -927,6 +932,39 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         {
             entity.HasIndex(l => new { l.TenantKey, l.UserId, l.StartDate, l.EndDate });
             entity.HasIndex(l => new { l.TenantKey, l.Status });
+        });
+
+        modelBuilder.Entity<BcpShiftAvailability>(entity =>
+        {
+            entity.HasIndex(a => new { a.TenantKey, a.UserId, a.TargetDate });
+            entity.HasIndex(a => new { a.TenantKey, a.State });
+        });
+
+        modelBuilder.Entity<BcpShiftDocument>(entity =>
+        {
+            entity.HasIndex(d => new { d.TenantKey, d.UserId, d.DocumentType });
+            entity.HasIndex(d => new { d.TenantKey, d.IsVerified });
+        });
+
+        modelBuilder.Entity<BcpShiftStaffProfile>(entity =>
+        {
+            entity.HasIndex(p => new { p.TenantKey, p.UserId }).IsUnique();
+            entity.HasIndex(p => new { p.TenantKey, p.IsActive });
+        });
+
+        modelBuilder.Entity<BcpShiftStaffRating>(entity =>
+        {
+            entity.HasIndex(r => new { r.TenantKey, r.ShiftId });
+            entity.HasIndex(r => new { r.TenantKey, r.UserId });
+            entity.HasOne(r => r.Shift)
+                .WithMany()
+                .HasForeignKey(r => r.ShiftId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BcpShiftNotificationPreference>(entity =>
+        {
+            entity.HasIndex(p => new { p.TenantKey, p.UserId }).IsUnique();
         });
 
         // --- Website Contact Channels Indexing for Fast Querying by Type and Status ---

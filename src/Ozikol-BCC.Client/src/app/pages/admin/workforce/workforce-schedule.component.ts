@@ -40,8 +40,27 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Filters Bar -->
+      <!-- View Switcher & Filters Bar -->
       <div class="filters-card mb-4 p-3 rounded shadow-sm bg-white">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom flex-wrap gap-2">
+          <div class="btn-group view-switcher">
+            <button class="btn btn-sm" [class.btn-primary]="activeView === 'list'" [class.btn-outline-secondary]="activeView !== 'list'" (click)="activeView = 'list'">
+              <span class="material-symbols-outlined fs-6 align-middle">table_rows</span> Roster List
+            </button>
+            <button class="btn btn-sm" [class.btn-primary]="activeView === 'timesheet'" [class.btn-outline-secondary]="activeView !== 'timesheet'" (click)="activeView = 'timesheet'">
+              <span class="material-symbols-outlined fs-6 align-middle">assignment</span> Daily Timesheet
+            </button>
+            <button class="btn btn-sm" [class.btn-primary]="activeView === 'calendar'" [class.btn-outline-secondary]="activeView !== 'calendar'" (click)="activeView = 'calendar'">
+              <span class="material-symbols-outlined fs-6 align-middle">calendar_month</span> Monthly Calendar
+            </button>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-dark border p-2">
+              Showing <strong>{{ filteredShifts.length }}</strong> planned shifts
+            </span>
+          </div>
+        </div>
+
         <div class="row g-3 align-items-center">
           <div class="col-md-3">
             <label class="form-label small text-muted">Filter by Site</label>
@@ -60,38 +79,47 @@ import { ToastService } from '../../../core/services/toast.service';
               <option value="Completed">Completed</option>
             </select>
           </div>
-          <div class="col-md-6 text-end">
-            <span class="badge bg-light text-dark border p-2">
-              Showing <strong>{{ shifts.length }}</strong> planned shifts
-            </span>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Filter by Date</label>
+            <input type="date" class="form-control" [(ngModel)]="selectedDateFilter" (change)="applyFilters()" />
+          </div>
+          <div class="col-md-3 text-end" *ngIf="selectedDateFilter">
+            <button class="btn btn-sm btn-outline-secondary mt-3" (click)="selectedDateFilter = ''; applyFilters()">Clear Date Filter</button>
           </div>
         </div>
       </div>
 
-      <!-- Shifts Roster Grid -->
+      <!-- Shifts Views Container -->
       <div class="shifts-table-card rounded shadow-sm bg-white p-3">
-        <div class="table-responsive" *ngIf="!isLoading && shifts.length > 0">
+        <!-- View 1: Roster List -->
+        <div class="table-responsive" *ngIf="activeView === 'list' && !isLoading && filteredShifts.length > 0">
           <table class="table table-hover align-middle m-0">
             <thead class="table-light">
               <tr>
                 <th>Shift Ref</th>
                 <th>Operating Site & Post</th>
+                <th>Facility / Address</th>
                 <th>Assigned Officer</th>
                 <th>Date & Hours</th>
                 <th>Break / Net</th>
-                <th>Workstation</th>
+                <th>Rate / Pay</th>
+                <th>Acceptance Status</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let s of shifts">
+              <tr *ngFor="let s of filteredShifts">
                 <td>
                   <span class="fw-semibold text-primary font-monospace">{{ s.shiftCode }}</span>
                 </td>
                 <td>
                   <div class="fw-bold">{{ s.siteName }}</div>
                   <small class="text-muted"><span class="material-symbols-outlined fs-6 align-middle">location_on</span> {{ s.postName }}</small>
+                </td>
+                <td>
+                  <div class="small fw-medium">{{ s.facilityName || s.siteName }}</div>
+                  <small class="text-muted" *ngIf="s.postCode">{{ s.postCode }}</small>
                 </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
@@ -116,11 +144,16 @@ import { ToastService } from '../../../core/services/toast.service';
                   <small class="text-muted" *ngIf="s.breakMinutes > 0">{{ s.breakMinutes }}m break</small>
                 </td>
                 <td>
-                  <span class="badge bg-info-subtle text-info d-inline-flex align-items-center gap-1" *ngIf="s.requiredWorkspaceStationId">
-                    <span class="material-symbols-outlined fs-6">desktop_windows</span>
-                    {{ s.requiredWorkspaceStationName || 'Station Locked' }}
-                  </span>
-                  <span class="text-muted small" *ngIf="!s.requiredWorkspaceStationId">None</span>
+                  <span class="fw-semibold text-success">{{ s.hourlyPayRate ? '£' + s.hourlyPayRate + '/hr' : '—' }}</span>
+                </td>
+                <td>
+                  <div *ngIf="s.isConfirmedByGuard" class="badge bg-success">Accepted</div>
+                  <div *ngIf="!s.isConfirmedByGuard && s.assignedUserId">
+                    <span class="badge" [ngClass]="getAcceptanceCountdownClass(s)">
+                      {{ getAcceptanceCountdown(s) }}
+                    </span>
+                  </div>
+                  <div *ngIf="!s.assignedUserId" class="badge bg-light text-muted">Open Shift</div>
                 </td>
                 <td>
                   <span class="badge" [ngClass]="getStatusBadge(s.status)">{{ s.status }}</span>
@@ -135,9 +168,98 @@ import { ToastService } from '../../../core/services/toast.service';
           </table>
         </div>
 
-        <div class="empty-state text-center p-5" *ngIf="!isLoading && shifts.length === 0">
+        <!-- View 2: Daily Timesheet View (Screenshot Fidelity) -->
+        <div class="table-responsive" *ngIf="activeView === 'timesheet' && !isLoading && filteredShifts.length > 0">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold m-0 text-primary">Daily Timesheet Summary</h5>
+            <span class="text-muted small">Viewing shifts for selected date window</span>
+          </div>
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>User</th>
+                <th>Post Code</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Acceptance Status</th>
+                <th>Acceptance Countdown</th>
+                <th>User Start Time</th>
+                <th>User End Time</th>
+                <th>Rate / Hour</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of filteredShifts">
+                <td>
+                  <div class="fw-bold text-dark">{{ s.assignedUserName || 'Unassigned Staff' }}</div>
+                  <small class="text-muted">{{ s.assignedUserId || 'Open' }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ s.postCode || 'N/A' }}</span>
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ s.startsAtUtc | date:'dd MMM yyyy, HH:mm' }}</span>
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ s.endsAtUtc | date:'dd MMM yyyy, HH:mm' }}</span>
+                </td>
+                <td>
+                  <span class="badge" [class.bg-success]="s.isConfirmedByGuard" [class.bg-warning]="!s.isConfirmedByGuard && s.assignedUserId" [class.bg-light]="!s.assignedUserId" [class.text-dark]="!s.isConfirmedByGuard">
+                    {{ s.isConfirmedByGuard ? 'Accepted' : (s.assignedUserId ? 'Pending Confirmation' : 'Open') }}
+                  </span>
+                </td>
+                <td>
+                  <span class="font-monospace small fw-bold" [ngClass]="getAcceptanceCountdownClass(s)">
+                    {{ getAcceptanceCountdown(s) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-primary fw-medium" *ngIf="s.isClockedIn">Active on Site</span>
+                  <span class="text-muted" *ngIf="!s.isClockedIn">—</span>
+                </td>
+                <td>
+                  <span class="text-secondary fw-medium" *ngIf="s.isClockedOut">Clocked Out</span>
+                  <span class="text-muted" *ngIf="!s.isClockedOut">—</span>
+                </td>
+                <td>
+                  <span class="fw-bold text-success">{{ s.hourlyPayRate ? '£' + s.hourlyPayRate : '£10.00' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- View 3: Monthly Calendar View -->
+        <div class="calendar-view-container" *ngIf="activeView === 'calendar' && !isLoading">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <h4 class="m-0 fw-bold text-primary">{{ currentCalendarDate | date:'MMMM yyyy' }}</h4>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary btn-sm" (click)="navigateMonth(-1)">← Previous</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="currentCalendarDate = currentToday; buildCalendar()">Current</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="navigateMonth(1)">Next →</button>
+            </div>
+          </div>
+          <div class="calendar-grid">
+            <div class="calendar-header-day" *ngFor="let dayName of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
+              {{ dayName }}
+            </div>
+            <div
+              class="calendar-day-cell"
+              *ngFor="let c of calendarDays"
+              [class.not-current-month]="!c.isCurrentMonth"
+              [class.is-today]="c.isToday"
+              (click)="selectCalendarDay(c)">
+              <div class="day-number">{{ c.dayNum }}</div>
+              <div class="day-shifts-badge" *ngIf="c.shiftsCount > 0">
+                <span class="badge bg-success">{{ c.shiftsCount }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state text-center p-5" *ngIf="!isLoading && filteredShifts.length === 0 && activeView !== 'calendar'">
           <span class="material-symbols-outlined display-4 text-muted mb-3">calendar_month</span>
-          <h5>No shifts scheduled yet</h5>
+          <h5>No shifts scheduled for this filter</h5>
           <p class="text-muted">Create your first 24/7 or day shift by tapping "Create Shift".</p>
           <button class="btn btn-primary" (click)="openCreateModal()">Create Shift</button>
         </div>
@@ -148,43 +270,55 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Create Shift Modal -->
+      <!-- Create Shift Modal (Assign User to Sheet) -->
       <div class="modal-backdrop fade show" *ngIf="showCreateModal"></div>
       <div class="modal fade show d-block" *ngIf="showCreateModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Create Scheduled Shift</h5>
+              <h5 class="modal-title">Assign User to Sheet / Create Shift</h5>
               <button type="button" class="btn-close" (click)="showCreateModal = false"></button>
             </div>
             <div class="modal-body">
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label">Client Site *</label>
-                  <select class="form-select" [(ngModel)]="newShift.clientSiteId" required>
+                  <select class="form-select" [(ngModel)]="newShift.clientSiteId" (change)="onSiteSelected()" required>
                     <option value="">Select operating site...</option>
                     <option *ngFor="let site of sites" [value]="site.id">{{ site.siteName }} ({{ site.siteCode }})</option>
                   </select>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Post Name *</label>
-                  <input type="text" class="form-control" [(ngModel)]="newShift.postName" placeholder="e.g. Main Gatehouse, Reception" />
+                  <label class="form-label">Facility / Venue Name</label>
+                  <input type="text" class="form-control" [(ngModel)]="newShift.facilityName" placeholder="e.g. Oakleigh Park Care Home" />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Assigned Staff Name</label>
+                  <label class="form-label">Address</label>
+                  <input type="text" class="form-control" [(ngModel)]="newShift.address" placeholder="e.g. 55 Oakleigh Park North, London" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Post Code</label>
+                  <input type="text" class="form-control" [(ngModel)]="newShift.postCode" placeholder="e.g. N20 9NH" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Post Name / Duty Role *</label>
+                  <input type="text" class="form-control" [(ngModel)]="newShift.postName" placeholder="e.g. Reception, Main Gatehouse, Floor Warden" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Assign User (Leave Blank if unassigned)</label>
                   <input type="text" class="form-control" [(ngModel)]="newShift.assignedUserName" placeholder="e.g. First Last" />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Assigned Staff User ID</label>
-                  <input type="text" class="form-control" [(ngModel)]="newShift.assignedUserId" placeholder="e.g. user-id-code" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Shift Starts At (Local) *</label>
+                  <label class="form-label">Sheet Start Time (Local) *</label>
                   <input type="datetime-local" class="form-control" [(ngModel)]="newShiftStart" (change)="calculateDuration()" required />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Shift Ends At (Local) *</label>
+                  <label class="form-label">Sheet End Time (Local) *</label>
                   <input type="datetime-local" class="form-control" [(ngModel)]="newShiftEnd" (change)="calculateDuration()" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Rate Per Hour in Pounds (£)</label>
+                  <input type="number" class="form-control" [(ngModel)]="newShift.hourlyPayRate" min="0" step="0.5" />
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Unpaid Break (Minutes)</label>
@@ -194,19 +328,18 @@ import { ToastService } from '../../../core/services/toast.service';
                   <label class="form-label">Planned Net Hours</label>
                   <input type="text" class="form-control" [value]="calculatedDuration + ' hrs'" readonly />
                 </div>
-                <div class="col-md-4 d-flex align-items-center mt-4">
-                  <span class="badge bg-purple-subtle text-purple p-2" *ngIf="isOvernightShift">
-                    🌙 24/7 Overnight Shift
-                  </span>
+                <div class="col-md-6">
+                  <label class="form-label">Acceptance Expiration Time (Countdown Deadline)</label>
+                  <input type="datetime-local" class="form-control" [(ngModel)]="newShiftAcceptanceDeadline" />
+                  <small class="text-muted">If unaccepted by this time, shift returns to the open board.</small>
                 </div>
-                <div class="col-md-12">
-                  <label class="form-label">Required Workstation / Laptop (Optional Hardware Lock)</label>
-                  <input type="text" class="form-control" [(ngModel)]="newShift.requiredWorkspaceStationName" placeholder="e.g. Gatehouse Control PC #1" />
-                  <small class="text-muted">When set, the desktop app locks this workstation until the guard clocks in on site.</small>
+                <div class="col-md-6">
+                  <label class="form-label">Workstation Lock (Optional)</label>
+                  <input type="text" class="form-control" [(ngModel)]="newShift.requiredWorkspaceStationName" placeholder="e.g. Gatehouse PC #1" />
                 </div>
                 <div class="col-md-12">
                   <label class="form-label">Post Instructions / Briefing Notes</label>
-                  <textarea class="form-control" rows="3" [(ngModel)]="newShift.notes" placeholder="Enter special site instructions or orders for this shift..."></textarea>
+                  <textarea class="form-control" rows="2" [(ngModel)]="newShift.notes" placeholder="Enter special site instructions, key codes, or handover notes..."></textarea>
                 </div>
               </div>
             </div>
@@ -616,15 +749,72 @@ import { ToastService } from '../../../core/services/toast.service';
       color: #1e40af;
     }
 
+    /* Calendar View Styles (November 2026 Grid) */
+    .calendar-view-container {
+      padding: 10px 0;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+    .calendar-header-day {
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #475569;
+      padding: 10px 0;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+    .calendar-day-cell {
+      min-height: 90px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .calendar-day-cell:hover {
+      border-color: #0050e5;
+      background: #eff6ff;
+    }
+    .calendar-day-cell.not-current-month {
+      background: #f8fafc;
+      opacity: 0.45;
+    }
+    .calendar-day-cell.is-today {
+      border: 2px solid #0050e5;
+      background: #f0f7ff;
+    }
+    .day-number {
+      font-weight: 700;
+      font-size: 14px;
+      color: #0f172a;
+    }
+    .day-shifts-badge {
+      display: flex;
+      justify-content: flex-end;
+    }
+
     /* Dark Mode Support */
     :host-context(.dark-mode) .schedule-page { color: #f8fafc; }
     :host-context(.dark-mode) .page-title { color: #f8fafc; }
     :host-context(.dark-mode) .filters-card,
     :host-context(.dark-mode) .shifts-table-card,
-    :host-context(.dark-mode) .modal-content {
+    :host-context(.dark-mode) .modal-content,
+    :host-context(.dark-mode) .calendar-day-cell {
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
       color: #f8fafc;
+    }
+    :host-context(.dark-mode) .calendar-header-day {
+      background: #0f172a;
+      color: #94a3b8;
     }
     :host-context(.dark-mode) .form-select,
     :host-context(.dark-mode) .form-control {
@@ -649,20 +839,31 @@ import { ToastService } from '../../../core/services/toast.service';
 })
 export class WorkforceScheduleComponent implements OnInit {
   shifts: Shift[] = [];
+  filteredShifts: Shift[] = [];
   sites: ClientSite[] = [];
   isLoading = false;
   isSubmitting = false;
   showCreateModal = false;
   showInfoModal = false;
 
+  activeView: 'list' | 'timesheet' | 'calendar' = 'list';
   selectedSiteId = '';
   selectedStatus = '';
+  selectedDateFilter = '';
+
+  currentToday = new Date();
+  currentCalendarDate = new Date();
+  calendarDays: Array<{ date: Date; dayNum: number; isCurrentMonth: boolean; isToday: boolean; shiftsCount: number }> = [];
 
   newShift: any = {
     clientSiteId: '',
     postName: 'Main Gatehouse',
+    facilityName: '',
+    address: '',
+    postCode: '',
     assignedUserName: '',
     assignedUserId: '',
+    hourlyPayRate: 10.0,
     breakMinutes: 30,
     requiredWorkspaceStationName: '',
     notes: ''
@@ -670,6 +871,7 @@ export class WorkforceScheduleComponent implements OnInit {
 
   newShiftStart = '';
   newShiftEnd = '';
+  newShiftAcceptanceDeadline = '';
   calculatedDuration = '0';
   isOvernightShift = false;
 
@@ -680,6 +882,7 @@ export class WorkforceScheduleComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    this.buildCalendar();
   }
 
   loadData(): void {
@@ -696,6 +899,8 @@ export class WorkforceScheduleComponent implements OnInit {
     }).subscribe({
       next: (res: any) => {
         this.shifts = res?.data || [];
+        this.applyFilters();
+        this.buildCalendar();
         this.isLoading = false;
       },
       error: () => {
@@ -706,16 +911,42 @@ export class WorkforceScheduleComponent implements OnInit {
   }
 
   applyFilters(): void {
-    this.loadData();
+    let result = [...this.shifts];
+    if (this.selectedSiteId) {
+      result = result.filter(s => s.clientSiteId === this.selectedSiteId);
+    }
+    if (this.selectedStatus) {
+      result = result.filter(s => s.status === this.selectedStatus);
+    }
+    if (this.selectedDateFilter) {
+      const targetStr = this.selectedDateFilter; // 'YYYY-MM-DD'
+      result = result.filter(s => {
+        if (!s.startsAtUtc) return false;
+        const shiftDateStr = new Date(s.startsAtUtc).toISOString().substring(0, 10);
+        return shiftDateStr === targetStr;
+      });
+    }
+    this.filteredShifts = result;
+  }
+
+  onSiteSelected(): void {
+    const selected = this.sites.find(s => s.id === this.newShift.clientSiteId);
+    if (selected) {
+      if (!this.newShift.facilityName) this.newShift.facilityName = selected.siteName;
+      if (!this.newShift.address) this.newShift.address = selected.address;
+      if (!this.newShift.postCode) this.newShift.postCode = selected.postalCode;
+    }
   }
 
   openCreateModal(): void {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0);
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0);
+    const deadline = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24h countdown
 
     this.newShiftStart = this.formatDateForInput(start);
     this.newShiftEnd = this.formatDateForInput(end);
+    this.newShiftAcceptanceDeadline = this.formatDateForInput(deadline);
     this.calculateDuration();
     this.showCreateModal = true;
   }
@@ -741,7 +972,8 @@ export class WorkforceScheduleComponent implements OnInit {
     const payload = {
       ...this.newShift,
       startsAtUtc: new Date(this.newShiftStart).toISOString(),
-      endsAtUtc: new Date(this.newShiftEnd).toISOString()
+      endsAtUtc: new Date(this.newShiftEnd).toISOString(),
+      acceptanceDeadlineUtc: this.newShiftAcceptanceDeadline ? new Date(this.newShiftAcceptanceDeadline).toISOString() : null
     };
 
     this.workforceService.createShift(payload).subscribe({
@@ -758,8 +990,108 @@ export class WorkforceScheduleComponent implements OnInit {
     });
   }
 
+  // --- CALENDAR GRID BUILDER ---
+  buildCalendar(): void {
+    const year = this.currentCalendarDate.getFullYear();
+    const month = this.currentCalendarDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const cells: Array<{ date: Date; dayNum: number; isCurrentMonth: boolean; isToday: boolean; shiftsCount: number }> = [];
+
+    // Leading days from previous month
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const d = new Date(year, month - 1, prevMonthDays - i);
+      cells.push({
+        date: d,
+        dayNum: prevMonthDays - i,
+        isCurrentMonth: false,
+        isToday: this.isSameDay(d, this.currentToday),
+        shiftsCount: this.getShiftsCountForDay(d)
+      });
+    }
+
+    // Days in current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(year, month, d);
+      cells.push({
+        date: dateObj,
+        dayNum: d,
+        isCurrentMonth: true,
+        isToday: this.isSameDay(dateObj, this.currentToday),
+        shiftsCount: this.getShiftsCountForDay(dateObj)
+      });
+    }
+
+    // Trailing days to fill 35 or 42 cells
+    const remaining = (7 - (cells.length % 7)) % 7;
+    for (let t = 1; t <= remaining; t++) {
+      const d = new Date(year, month + 1, t);
+      cells.push({
+        date: d,
+        dayNum: t,
+        isCurrentMonth: false,
+        isToday: this.isSameDay(d, this.currentToday),
+        shiftsCount: this.getShiftsCountForDay(d)
+      });
+    }
+
+    this.calendarDays = cells;
+  }
+
+  navigateMonth(delta: number): void {
+    this.currentCalendarDate = new Date(
+      this.currentCalendarDate.getFullYear(),
+      this.currentCalendarDate.getMonth() + delta,
+      1
+    );
+    this.buildCalendar();
+  }
+
+  selectCalendarDay(cell: { date: Date }): void {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const d = cell.date;
+    this.selectedDateFilter = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    this.activeView = 'timesheet';
+    this.applyFilters();
+  }
+
+  getShiftsCountForDay(date: Date): number {
+    return this.shifts.filter(s => {
+      if (!s.startsAtUtc) return false;
+      return this.isSameDay(new Date(s.startsAtUtc), date);
+    }).length;
+  }
+
+  isSameDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
+  }
+
+  // --- COUNTDOWN UTILITIES ---
+  getAcceptanceCountdown(shift: Shift): string {
+    if (shift.isConfirmedByGuard) return 'Accepted';
+    if (!shift.acceptanceDeadlineUtc) return 'No Deadline';
+    const diff = new Date(shift.acceptanceDeadlineUtc).getTime() - Date.now();
+    if (diff <= 0) return 'Expired';
+    const hrs = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hrs.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m left`;
+  }
+
+  getAcceptanceCountdownClass(shift: Shift): string {
+    if (shift.isConfirmedByGuard) return 'bg-success text-white';
+    if (!shift.acceptanceDeadlineUtc) return 'bg-light text-muted';
+    const diff = new Date(shift.acceptanceDeadlineUtc).getTime() - Date.now();
+    if (diff <= 0) return 'bg-danger text-white';
+    if (diff < 4 * 60 * 60 * 1000) return 'bg-warning text-dark';
+    return 'bg-info-subtle text-info border';
+  }
+
   viewShiftDetails(shift: Shift): void {
-    this.toast.info(`Shift: ${shift.shiftCode} at ${shift.siteName}`);
+    this.toast.info(`Shift: ${shift.shiftCode} at ${shift.facilityName || shift.siteName}`);
   }
 
   startTour(): void {

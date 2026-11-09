@@ -10,7 +10,7 @@ namespace Ozikol_BCC.Domain.Models
     /// GPS geofence validation, lone worker safety checks, and supervisor timesheet sign-offs.
     /// Table: [dbo].[BcpShiftAttendances]
     /// </summary>
-    public class BcpShiftAttendance
+    public class BcpShiftAttendance : IBcpWorkforceEntity
     {
         /// <summary>
         /// Unique primary key identifier for the attendance record.
@@ -81,6 +81,23 @@ namespace Ozikol_BCC.Domain.Models
         public string? ClockInMethod { get; set; } = "MobileGps";
 
         /// <summary>
+        /// Indicates whether hardware device biometrics (WebAuthn / Touch ID / Face ID / Windows Hello) was successfully verified at clock-in.
+        /// </summary>
+        public bool ClockInBiometricVerified { get; set; }
+
+        /// <summary>
+        /// Descriptive type of biometric authenticator used at clock-in (e.g., "TouchID", "FaceID", "WindowsHello", "WebAuthnPasskey").
+        /// </summary>
+        [StringLength(50)]
+        public string? ClockInBiometricType { get; set; }
+
+        /// <summary>
+        /// Cloud storage URL of the live WebRTC facecam snapshot captured at clock-in, watermarked with GPS and timestamp.
+        /// </summary>
+        [StringLength(500)]
+        public string? ClockInPhotoUrl { get; set; }
+
+        /// <summary>
         /// Actual clock-out timestamp in UTC.
         /// </summary>
         public DateTime? ClockOutUtc { get; set; }
@@ -115,6 +132,12 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [StringLength(50)]
         public string? ClockOutMethod { get; set; } = "MobileGps";
+
+        /// <summary>
+        /// Cloud storage URL of the live WebRTC facecam snapshot captured at clock-out.
+        /// </summary>
+        [StringLength(500)]
+        public string? ClockOutPhotoUrl { get; set; }
 
         /// <summary>
         /// Total actual duration on site in decimal hours calculated from ClockInUtc to ClockOutUtc.

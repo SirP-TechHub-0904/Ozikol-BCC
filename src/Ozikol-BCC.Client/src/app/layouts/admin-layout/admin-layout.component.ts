@@ -643,6 +643,16 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')">
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/analytics" [class.active]="isCurrentRoute('/workforce/console/analytics')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Analytics &amp; Directory</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/analytics')" (click)="togglePin('Workforce Analytics', '/workforce/console/analytics', 'analytics')" [title]="isPinned('/workforce/console/analytics') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/schedule" [class.active]="isCurrentRoute('/workforce/console/schedule')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Rota Calendar</span>
                   </a>

@@ -20,6 +20,7 @@ import { CommitteesReportComposerComponent } from './pages/workspace/committees/
 import { CommitteesCloudVaultComponent } from './pages/workspace/committees/committees-cloud-vault.component';
 
 // Workforce Rota & Attendance Suite (bcp-staff-rota & bcp-attendance-tracking)
+import { WorkforceAnalyticsComponent } from './pages/admin/workforce/workforce-analytics.component';
 import { WorkforceScheduleComponent } from './pages/admin/workforce/workforce-schedule.component';
 import { WorkforceSitesComponent } from './pages/admin/workforce/workforce-sites.component';
 import { WorkforceAttendanceLiveComponent } from './pages/admin/workforce/workforce-attendance-live.component';
@@ -291,7 +292,8 @@ export const routes: Routes = [
 
       // 4. Staff Rota & Shift Management (bcp-staff-rota) + Attendance (bcp-attendance-tracking)
       // Admin Console Routes
-      { path: 'workforce/console', redirectTo: 'workforce/console/schedule', pathMatch: 'full' },
+      { path: 'workforce/console', redirectTo: 'workforce/console/analytics', pathMatch: 'full' },
+      { path: 'workforce/console/analytics', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/sites', component: WorkforceSitesComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'attendance/console', redirectTo: 'attendance/console/live', pathMatch: 'full' },

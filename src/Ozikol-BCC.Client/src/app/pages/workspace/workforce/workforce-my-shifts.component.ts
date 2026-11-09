@@ -31,77 +31,316 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
+      <!-- Tab Navigation -->
+      <div class="tabs-nav-bar mb-4 d-flex gap-2 border-bottom pb-2 flex-wrap">
+        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'shifts'" [class.btn-light]="activeTab !== 'shifts'" (click)="activeTab = 'shifts'">
+          <span class="material-symbols-outlined fs-6 align-middle">calendar_month</span> My Shifts & Roster
+        </button>
+        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'availability'" [class.btn-light]="activeTab !== 'availability'" (click)="activeTab = 'availability'; loadAvailability()">
+          <span class="material-symbols-outlined fs-6 align-middle">event_available</span> My Availability
+        </button>
+        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'documents'" [class.btn-light]="activeTab !== 'documents'" (click)="activeTab = 'documents'; loadDocuments()">
+          <span class="material-symbols-outlined fs-6 align-middle">badge</span> Compliance Vault
+        </button>
+        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'reminders'" [class.btn-light]="activeTab !== 'reminders'" (click)="activeTab = 'reminders'; loadReminders()">
+          <span class="material-symbols-outlined fs-6 align-middle">notifications_active</span> Shift Reminders
+        </button>
+      </div>
+
       <div class="text-center p-5" *ngIf="isLoading">
         <div class="spinner-border text-primary" role="status"></div>
       </div>
 
-      <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="!isLoading && shifts.length === 0">
-        <span class="material-symbols-outlined display-4 text-muted mb-3">event_available</span>
-        <h5>No shifts assigned</h5>
-        <p class="text-muted">You have no upcoming shifts assigned on your rota schedule.</p>
-      </div>
+      <!-- TAB 1: MY SHIFTS -->
+      <div *ngIf="activeTab === 'shifts' && !isLoading">
+        <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="shifts.length === 0">
+          <span class="material-symbols-outlined display-4 text-muted mb-3">event_available</span>
+          <h5>No shifts assigned</h5>
+          <p class="text-muted">You have no upcoming shifts assigned on your rota schedule.</p>
+        </div>
 
-      <div class="row g-3" *ngIf="!isLoading && shifts.length > 0">
-        <div class="col-md-6 col-xl-4" *ngFor="let s of shifts">
-          <div class="card h-100 border-0 shadow-sm shift-card" [class.border-start-overnight]="s.isOvernight">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                  <span class="badge bg-light text-dark font-monospace">{{ s.shiftCode }}</span>
-                  <span class="badge bg-purple ms-1" *ngIf="s.isOvernight">24/7 Overnight</span>
+        <div class="row g-3" *ngIf="shifts.length > 0">
+          <div class="col-md-6 col-xl-4" *ngFor="let s of shifts">
+            <div class="card h-100 border-0 shadow-sm shift-card" [class.border-start-overnight]="s.isOvernight">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <span class="badge bg-light text-dark font-monospace">{{ s.shiftCode }}</span>
+                    <span class="badge bg-purple ms-1" *ngIf="s.isOvernight">24/7 Overnight</span>
+                  </div>
+                  <span class="badge" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
                 </div>
-                <span class="badge" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
-              </div>
 
-              <h5 class="card-title mb-1 text-primary">{{ s.siteName }}</h5>
-              <p class="text-muted small mb-2"><span class="material-symbols-outlined align-middle fs-6">place</span> {{ s.siteAddress }}</p>
+                <h5 class="card-title mb-1 text-primary">{{ s.facilityName || s.siteName }}</h5>
+                <p class="text-muted small mb-2">
+                  <span class="material-symbols-outlined align-middle fs-6">place</span> 
+                  {{ s.address || s.siteAddress }} <span *ngIf="s.postCode" class="fw-bold">({{ s.postCode }})</span>
+                </p>
 
-              <div class="border rounded p-2 bg-light mb-3">
-                <div class="d-flex justify-content-between small">
-                  <span class="text-muted">Post / Role:</span>
-                  <span class="fw-semibold">{{ s.postName }}</span>
+                <div class="border rounded p-2 bg-light mb-3">
+                  <div class="d-flex justify-content-between small">
+                    <span class="text-muted">Role / Post:</span>
+                    <span class="fw-semibold">{{ s.postName }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <span class="text-muted">Starts:</span>
+                    <span class="fw-semibold">{{ s.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <span class="text-muted">Ends:</span>
+                    <span class="fw-semibold">{{ s.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <span class="text-muted">Duration:</span>
+                    <span>{{ s.plannedDurationHours }} hrs (break: {{ s.breakMinutes }}m)</span>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <span class="text-muted">Pay Rate:</span>
+                    <span class="fw-bold text-success">{{ s.hourlyPayRate ? '£' + s.hourlyPayRate + '/hr' : '£10.00/hr' }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1" *ngIf="s.requiredWorkspaceStationName">
+                    <span class="text-muted">Workstation:</span>
+                    <span class="badge bg-info text-dark">{{ s.requiredWorkspaceStationName }}</span>
+                  </div>
                 </div>
-                <div class="d-flex justify-content-between small mt-1">
-                  <span class="text-muted">Starts:</span>
-                  <span class="fw-semibold">{{ s.startsAtUtc | date:'short' }}</span>
-                </div>
-                <div class="d-flex justify-content-between small mt-1">
-                  <span class="text-muted">Ends:</span>
-                  <span class="fw-semibold">{{ s.endsAtUtc | date:'short' }}</span>
-                </div>
-                <div class="d-flex justify-content-between small mt-1">
-                  <span class="text-muted">Duration:</span>
-                  <span>{{ s.plannedDurationHours }} hrs (deducting {{ s.breakMinutes }}m break)</span>
-                </div>
-                <div class="d-flex justify-content-between small mt-1" *ngIf="s.requiredWorkspaceStationName">
-                  <span class="text-muted">Workstation:</span>
-                  <span class="badge bg-info text-dark">{{ s.requiredWorkspaceStationName }}</span>
-                </div>
-              </div>
 
-              <div class="site-briefing-alert p-2 rounded mb-3 small" *ngIf="s.siteAssignmentInstructions">
-                <div class="fw-semibold text-dark d-flex align-items-center gap-1 mb-1">
-                  <span class="material-symbols-outlined fs-6 text-warning">info</span> Site Assignment Instructions (SIs)
+                <!-- Live Acceptance Countdown Alert -->
+                <div class="acceptance-countdown-box p-2 rounded mb-3" *ngIf="!s.isConfirmedByGuard">
+                  <div class="d-flex align-items-center justify-content-between small">
+                    <span class="fw-bold d-flex align-items-center gap-1" [ngClass]="isShiftExpired(s) ? 'text-danger' : 'text-primary'">
+                      <span class="material-symbols-outlined fs-6">{{ isShiftExpired(s) ? 'timer_off' : 'timer' }}</span>
+                      {{ isShiftExpired(s) ? 'Acceptance Expired' : 'Acceptance Deadline' }}
+                    </span>
+                    <span class="font-monospace fw-bold" [ngClass]="isShiftExpired(s) ? 'text-danger' : 'text-dark'">
+                      {{ getCountdown(s) }}
+                    </span>
+                  </div>
+                  <div class="small text-muted mt-1" *ngIf="!isShiftExpired(s)">
+                    Please confirm before the timer lapses to secure this shift.
+                  </div>
+                  <div class="small text-danger mt-1" *ngIf="isShiftExpired(s)">
+                    This assignment has expired and may be reclaimed by other team members.
+                  </div>
                 </div>
-                <div class="text-secondary">{{ s.siteAssignmentInstructions }}</div>
-              </div>
 
-              <div class="d-flex gap-2">
-                <button
-                  class="btn btn-sm btn-outline-success flex-fill"
-                  *ngIf="!s.isConfirmedByGuard"
-                  (click)="confirmShift(s)"
-                  [disabled]="isActionLoading">
-                  Confirm Shift
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-secondary flex-fill"
-                  (click)="openSwapModal(s)">
-                  Request Swap
-                </button>
+                <div class="site-briefing-alert p-2 rounded mb-3 small" *ngIf="s.siteAssignmentInstructions">
+                  <div class="fw-semibold text-dark d-flex align-items-center gap-1 mb-1">
+                    <span class="material-symbols-outlined fs-6 text-warning">info</span> Site Assignment Instructions (SIs)
+                  </div>
+                  <div class="text-secondary">{{ s.siteAssignmentInstructions }}</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button
+                    class="btn btn-sm btn-outline-success flex-fill"
+                    *ngIf="!s.isConfirmedByGuard"
+                    (click)="confirmShift(s)"
+                    [disabled]="isActionLoading || isShiftExpired(s)">
+                    Confirm Shift
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-secondary flex-fill"
+                    (click)="openSwapModal(s)">
+                    Request Swap
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: MY AVAILABILITY -->
+      <div *ngIf="activeTab === 'availability' && !isLoading">
+        <div class="row g-4">
+          <div class="col-md-5">
+            <div class="card p-3 shadow-sm border-0">
+              <h5 class="fw-bold mb-3 text-primary">Log My Availability</h5>
+              <div class="mb-3">
+                <label class="form-label">Target Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="availForm.targetDate" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Availability State *</label>
+                <select class="form-select" [(ngModel)]="availForm.state">
+                  <option value="Available">Available (Full Day)</option>
+                  <option value="Unavailable">Unavailable (All Day)</option>
+                  <option value="PartlyUnavailable">Partly Unavailable (Time Slots)</option>
+                </select>
+              </div>
+              <div class="row g-2 mb-3" *ngIf="availForm.state === 'PartlyUnavailable'">
+                <div class="col-6">
+                  <label class="form-label">From Time</label>
+                  <input type="time" class="form-control" [(ngModel)]="availForm.unavailableFromTime" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">To Time</label>
+                  <input type="time" class="form-control" [(ngModel)]="availForm.unavailableToTime" />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Reason / Notes</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="availForm.reason" placeholder="e.g. University lectures, family commitment"></textarea>
+              </div>
+              <button class="btn btn-primary w-100" (click)="saveAvailability()" [disabled]="!availForm.targetDate">
+                Save Availability
+              </button>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <div class="card p-3 shadow-sm border-0">
+              <h5 class="fw-bold mb-3 text-dark">Upcoming Availability Logs</h5>
+              <div class="table-responsive" *ngIf="availList.length > 0">
+                <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Window</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let a of availList">
+                      <td class="fw-bold">{{ a.targetDate | date:'dd MMM yyyy' }}</td>
+                      <td>
+                        <span class="badge" [class.bg-success]="a.state === 'Available'" [class.bg-danger]="a.state === 'Unavailable'" [class.bg-warning]="a.state === 'PartlyUnavailable'" [class.text-dark]="a.state === 'PartlyUnavailable'">
+                          {{ a.state }}
+                        </span>
+                      </td>
+                      <td class="small">{{ a.unavailableFromTime ? a.unavailableFromTime + ' - ' + a.unavailableToTime : 'Full Day' }}</td>
+                      <td class="small text-muted">{{ a.reason || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state text-center p-4 text-muted" *ngIf="availList.length === 0">
+                No availability logs recorded yet.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: COMPLIANCE VAULT -->
+      <div *ngIf="activeTab === 'documents' && !isLoading">
+        <div class="row g-4">
+          <div class="col-md-5">
+            <div class="card p-3 shadow-sm border-0">
+              <h5 class="fw-bold mb-3 text-primary">Upload Document</h5>
+              <div class="mb-3">
+                <label class="form-label">Document Type *</label>
+                <select class="form-select" [(ngModel)]="docForm.documentType">
+                  <option value="SiaLicense">SIA Security License</option>
+                  <option value="RightToWork">Right to Work Proof / Passport</option>
+                  <option value="FacialIdSnapshot">Facial ID / Headshot Verification</option>
+                  <option value="FirstAidCert">First Aid Certificate</option>
+                  <option value="DrivingLicense">Driving License</option>
+                  <option value="Other">Other Compliance Document</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Document Name *</label>
+                <input type="text" class="form-control" [(ngModel)]="docForm.documentName" placeholder="e.g. SIA Door Supervisor Badge #1002" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Expiry Date</label>
+                <input type="date" class="form-control" [(ngModel)]="docForm.expiryDateUtc" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Document File URL</label>
+                <input type="text" class="form-control" [(ngModel)]="docForm.fileUrl" placeholder="https://..." />
+              </div>
+              <button class="btn btn-primary w-100" (click)="saveDocument()" [disabled]="!docForm.documentName || !docForm.fileUrl">
+                Upload to Vault
+              </button>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <div class="card p-3 shadow-sm border-0">
+              <h5 class="fw-bold mb-3 text-dark">Verified Documents</h5>
+              <div class="table-responsive" *ngIf="docList.length > 0">
+                <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Document</th>
+                      <th>Type</th>
+                      <th>Expiry</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let d of docList">
+                      <td class="fw-bold">{{ d.documentName }}</td>
+                      <td><span class="badge bg-light text-dark border">{{ d.documentType }}</span></td>
+                      <td class="small">{{ d.expiryDateUtc ? (d.expiryDateUtc | date:'shortDate') : 'No Expiry' }}</td>
+                      <td><span class="badge bg-success">Verified</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state text-center p-4 text-muted" *ngIf="docList.length === 0">
+                No documents uploaded yet.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: SHIFT REMINDERS -->
+      <div *ngIf="activeTab === 'reminders' && !isLoading">
+        <div class="card p-4 shadow-sm border-0" style="max-width: 700px; margin: 0 auto;">
+          <h5 class="fw-bold text-primary mb-2">Shift Readiness & Departure Reminders</h5>
+          <p class="text-muted small mb-4">
+            Customize up to 3 notification intervals before each shift. Choose the channels that ensure you never miss duty call.
+          </p>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Slot 1 Reminder</label>
+              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot1Minutes">
+                <option [ngValue]="1440">1 Day Before (24h)</option>
+                <option [ngValue]="720">12 Hours Before</option>
+                <option [ngValue]="480">8 Hours Before</option>
+                <option [ngValue]="0">Disabled</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Slot 2 Reminder</label>
+              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot2Minutes">
+                <option [ngValue]="240">4 Hours Before</option>
+                <option [ngValue]="180">3 Hours Before</option>
+                <option [ngValue]="120">2 Hours Before</option>
+                <option [ngValue]="0">Disabled</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Slot 3 Reminder</label>
+              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot3Minutes">
+                <option [ngValue]="60">1 Hour Before</option>
+                <option [ngValue]="30">30 Mins Before</option>
+                <option [ngValue]="15">15 Mins Before</option>
+                <option [ngValue]="0">Disabled</option>
+              </select>
+            </div>
+          </div>
+          <h6 class="fw-bold text-dark mb-3">Notification Channels</h6>
+          <div class="d-flex flex-column gap-2 mb-4">
+            <label class="d-flex align-items-center gap-2">
+              <input type="checkbox" [(ngModel)]="reminderPrefs.allowInApp" />
+              <span>In-App & Browser Push Notifications</span>
+            </label>
+            <label class="d-flex align-items-center gap-2">
+              <input type="checkbox" [(ngModel)]="reminderPrefs.allowEmail" />
+              <span>Transactional Email Dispatch</span>
+            </label>
+            <label class="d-flex align-items-center gap-2">
+              <input type="checkbox" [(ngModel)]="reminderPrefs.allowWhatsApp" />
+              <span>WhatsApp Duty Broadcasts</span>
+            </label>
+          </div>
+          <button class="btn btn-primary" (click)="saveReminderPreferences()">
+            Save Reminder Preferences
+          </button>
         </div>
       </div>
 
@@ -412,6 +651,17 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #f8fafc;
     }
 
+    .acceptance-countdown-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+    .text-danger {
+      color: #dc2626 !important;
+    }
+    .w-100 {
+      width: 100%;
+    }
+
     /* Dark Mode */
     :host-context(.dark-mode) .my-shifts-page { color: #f8fafc; }
     :host-context(.dark-mode) .page-title { color: #f8fafc; }
@@ -420,6 +670,10 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
       color: #f8fafc;
+    }
+    :host-context(.dark-mode) .acceptance-countdown-box {
+      background: #0f172a;
+      border-color: #334155;
     }
     :host-context(.dark-mode) .form-select,
     :host-context(.dark-mode) .form-control {
@@ -438,6 +692,8 @@ export class WorkforceMyShiftsComponent implements OnInit {
   isLoading = false;
   isActionLoading = false;
 
+  activeTab: 'shifts' | 'availability' | 'documents' | 'reminders' = 'shifts';
+
   showSwapModal = false;
   selectedShift: Shift | null = null;
   swapReason = '';
@@ -447,6 +703,35 @@ export class WorkforceMyShiftsComponent implements OnInit {
   leaveStartDate = '';
   leaveEndDate = '';
   leaveReason = '';
+
+  // Availability state
+  availList: any[] = [];
+  availForm: any = {
+    targetDate: '',
+    state: 'Available',
+    unavailableFromTime: '09:00',
+    unavailableToTime: '17:00',
+    reason: ''
+  };
+
+  // Documents state
+  docList: any[] = [];
+  docForm: any = {
+    documentType: 'SiaLicense',
+    documentName: '',
+    expiryDateUtc: '',
+    fileUrl: ''
+  };
+
+  // Reminders state
+  reminderPrefs: any = {
+    reminderSlot1Minutes: 1440,
+    reminderSlot2Minutes: 240,
+    reminderSlot3Minutes: 30,
+    allowInApp: true,
+    allowEmail: true,
+    allowWhatsApp: true
+  };
 
   constructor(
     private readonly workforceService: WorkforceService,
@@ -473,7 +758,28 @@ export class WorkforceMyShiftsComponent implements OnInit {
     });
   }
 
+  // --- ACCEPTANCE COUNTDOWN & EXPIRATION ---
+  getCountdown(s: Shift): string {
+    if (s.isConfirmedByGuard) return 'Accepted';
+    if (!s.acceptanceDeadlineUtc) return 'No Deadline Set';
+    const diff = new Date(s.acceptanceDeadlineUtc).getTime() - Date.now();
+    if (diff <= 0) return 'Expired';
+    const hrs = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hrs.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m remaining`;
+  }
+
+  isShiftExpired(s: Shift): boolean {
+    if (s.isConfirmedByGuard || !s.acceptanceDeadlineUtc) return false;
+    return new Date(s.acceptanceDeadlineUtc).getTime() <= Date.now();
+  }
+
   confirmShift(shift: Shift): void {
+    if (this.isShiftExpired(shift)) {
+      this.toast.error('This shift acceptance deadline has expired.');
+      return;
+    }
+
     this.isActionLoading = true;
     this.workforceService.confirmShift(shift.id).subscribe({
       next: (res) => {
@@ -490,6 +796,85 @@ export class WorkforceMyShiftsComponent implements OnInit {
         this.isActionLoading = false;
         this.toast.error('Failed to confirm shift.');
       }
+    });
+  }
+
+  // --- AVAILABILITY LOGIC ---
+  loadAvailability(): void {
+    this.workforceService.getAvailability().subscribe({
+      next: (res: any) => {
+        if (res.isSuccess && res.data) {
+          this.availList = res.data;
+        }
+      }
+    });
+  }
+
+  saveAvailability(): void {
+    if (!this.availForm.targetDate) return;
+    this.workforceService.upsertAvailability(this.availForm).subscribe({
+      next: (res: any) => {
+        if (res.isSuccess) {
+          this.toast.success('Availability saved.');
+          this.loadAvailability();
+          this.availForm.reason = '';
+        } else {
+          this.toast.error(res.message || 'Failed to save availability.');
+        }
+      },
+      error: () => this.toast.error('Error recording availability.')
+    });
+  }
+
+  // --- COMPLIANCE VAULT LOGIC ---
+  loadDocuments(): void {
+    this.workforceService.getDocuments().subscribe({
+      next: (res: any) => {
+        if (res.isSuccess && res.data) {
+          this.docList = res.data;
+        }
+      }
+    });
+  }
+
+  saveDocument(): void {
+    if (!this.docForm.documentName || !this.docForm.fileUrl) return;
+    this.workforceService.uploadDocument(this.docForm).subscribe({
+      next: (res: any) => {
+        if (res.isSuccess) {
+          this.toast.success('Document uploaded to vault.');
+          this.loadDocuments();
+          this.docForm.documentName = '';
+          this.docForm.fileUrl = '';
+        } else {
+          this.toast.error(res.message || 'Failed to save document.');
+        }
+      },
+      error: () => this.toast.error('Error uploading document.')
+    });
+  }
+
+  // --- REMINDERS LOGIC ---
+  loadReminders(): void {
+    this.workforceService.getNotificationPreferences().subscribe({
+      next: (res: any) => {
+        if (res.isSuccess && res.data) {
+          this.reminderPrefs = res.data;
+        }
+      }
+    });
+  }
+
+  saveReminderPreferences(): void {
+    this.workforceService.updateNotificationPreferences(this.reminderPrefs).subscribe({
+      next: (res: any) => {
+        if (res.isSuccess) {
+          this.toast.success('Notification preferences saved.');
+        } else {
+          this.toast.error(res.message || 'Failed to update preferences.');
+        }
+      },
+      error: () => this.toast.error('Error updating notification preferences.')
     });
   }
 

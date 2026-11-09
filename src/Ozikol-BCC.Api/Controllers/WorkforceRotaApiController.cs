@@ -194,6 +194,10 @@ namespace Ozikol_BCC.Api.Controllers
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
                     PostName = s.PostName,
+                    FacilityName = s.FacilityName,
+                    Address = s.Address,
+                    PostCode = s.PostCode,
+                    EventTag = s.EventTag,
                     AssignedUserId = s.AssignedUserId,
                     AssignedUserName = s.AssignedUserName,
                     StartsAtUtc = s.StartsAtUtc,
@@ -201,11 +205,15 @@ namespace Ozikol_BCC.Api.Controllers
                     IsOvernight = s.IsOvernight,
                     BreakMinutes = s.BreakMinutes,
                     PlannedDurationHours = s.PlannedDurationHours,
+                    HourlyPayRate = s.HourlyPayRate,
+                    HourlyChargeRate = s.HourlyChargeRate,
                     RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
                     ConfirmedAtUtc = s.ConfirmedAtUtc,
+                    AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
+                    AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                     Notes = s.Notes,
                     IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
                     IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
@@ -236,6 +244,10 @@ namespace Ozikol_BCC.Api.Controllers
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
                     PostName = s.PostName,
+                    FacilityName = s.FacilityName,
+                    Address = s.Address,
+                    PostCode = s.PostCode,
+                    EventTag = s.EventTag,
                     AssignedUserId = s.AssignedUserId,
                     AssignedUserName = s.AssignedUserName,
                     StartsAtUtc = s.StartsAtUtc,
@@ -243,11 +255,15 @@ namespace Ozikol_BCC.Api.Controllers
                     IsOvernight = s.IsOvernight,
                     BreakMinutes = s.BreakMinutes,
                     PlannedDurationHours = s.PlannedDurationHours,
+                    HourlyPayRate = s.HourlyPayRate,
+                    HourlyChargeRate = s.HourlyChargeRate,
                     RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
                     ConfirmedAtUtc = s.ConfirmedAtUtc,
+                    AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
+                    AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                     Notes = s.Notes,
                     SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null,
                     EmergencyContactPhone = s.ClientSite != null ? s.ClientSite.EmergencyContactPhone : null,
@@ -309,6 +325,10 @@ namespace Ozikol_BCC.Api.Controllers
                 AssignedUserId = request.AssignedUserId,
                 AssignedUserName = request.AssignedUserName,
                 PostName = string.IsNullOrWhiteSpace(request.PostName) ? "General Post" : request.PostName.Trim(),
+                FacilityName = request.FacilityName?.Trim(),
+                Address = request.Address?.Trim(),
+                PostCode = request.PostCode?.Trim(),
+                EventTag = request.EventTag?.Trim(),
                 StartsAtUtc = startUtc,
                 EndsAtUtc = endUtc,
                 IsOvernight = isOvernight,
@@ -318,6 +338,7 @@ namespace Ozikol_BCC.Api.Controllers
                 RequiredWorkspaceStationName = request.RequiredWorkspaceStationName,
                 HourlyPayRate = request.HourlyPayRate,
                 HourlyChargeRate = request.HourlyChargeRate,
+                AcceptanceDeadlineUtc = request.AcceptanceDeadlineUtc,
                 Status = "Scheduled",
                 IsConfirmedByGuard = false,
                 Notes = request.Notes?.Trim(),
@@ -521,6 +542,509 @@ namespace Ozikol_BCC.Api.Controllers
 
             return Ok(ApiResponse<Guid>.SuccessResponse(leave.Id, "Leave request submitted for review."));
         }
+
+        // =========================================================================
+        // 5. STAFF ONBOARDING & INVITATION
+        // =========================================================================
+
+        /// <summary>
+        /// Enrolls a staff member into the workforce rota system, configuring their job title,
+        /// contracted hours, default hourly rate, and triggers a transactional onboarding email.
+        /// </summary>
+        [HttpPost("members/enroll")]
+        public async Task<ActionResult<ApiResponse<Guid>>> EnrollStaffMember([FromBody] EnrollStaffMemberRequest request, CancellationToken ct)
+        {
+            var userId = request.UserId?.Trim();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                userId = Guid.CreateVersion7().ToString();
+            }
+
+            var profile = await _db.BcpShiftStaffProfiles
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            if (profile == null)
+            {
+                profile = new BcpShiftStaffProfile
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    UserId = userId,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpShiftStaffProfiles.Add(profile);
+            }
+
+            profile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
+            profile.DefaultHourlyRate = request.DefaultHourlyRate;
+            profile.ContractedWeeklyHours = request.ContractedWeeklyHours;
+            profile.IsActive = true;
+            profile.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            // Trigger Transactional Welcome & Onboarding Email via Central Notification Dispatcher
+            if (_notificationDispatcher != null && (!string.IsNullOrWhiteSpace(request.Email) || !string.IsNullOrWhiteSpace(userId)))
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = userId,
+                        RecipientEmail = request.Email?.Trim(),
+                        RecipientName = request.FullName?.Trim() ?? "Staff Member",
+                        TenantKey = CurrentTenantKey,
+                        Title = "Welcome to Your Workforce Rota & Shift Workspace",
+                        Message = $"Hello {request.FullName ?? "Team Member"},\n\nYou have been invited to join the Workforce Rota system as a **{profile.JobTitle}**.\n\nPlease log in to your workspace to configure your availability, upload required compliance documents, and set your shift reminder preferences.",
+                        Category = BcpMessageCategory.Account,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        SendEmailCopy = true,
+                        Module = "Workforce",
+                        Icon = "badge",
+                        ActionUrl = "/workforce/workspace/my-shifts"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
+            return Ok(ApiResponse<Guid>.SuccessResponse(profile.Id, "Staff member successfully enrolled and onboarding email dispatched."));
+        }
+
+        /// <summary>
+        /// Returns all enrolled workforce staff members with aggregated ratings, completed shifts, and punctuality scores.
+        /// </summary>
+        [HttpGet("members")]
+        public async Task<ActionResult<ApiResponse<List<StaffMemberDto>>>> GetStaffMembers(CancellationToken ct)
+        {
+            var profiles = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive)
+                .OrderBy(p => p.JobTitle)
+                .ToListAsync(ct);
+
+            // Cross-reference with central users table where available
+            var userIds = profiles.Select(p => p.UserId).Distinct().ToList();
+            var users = await _db.Users
+                .AsNoTracking()
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.Email, u.PhoneNumber }, ct);
+
+            var result = profiles.Select(p =>
+            {
+                users.TryGetValue(p.UserId, out var u);
+                return new StaffMemberDto
+                {
+                    ProfileId = p.Id,
+                    UserId = p.UserId,
+                    FullName = u?.FullName ?? "Staff Member",
+                    Email = u?.Email ?? string.Empty,
+                    PhoneNumber = u?.PhoneNumber,
+                    JobTitle = p.JobTitle,
+                    DefaultHourlyRate = p.DefaultHourlyRate,
+                    ContractedWeeklyHours = p.ContractedWeeklyHours,
+                    AverageRating = p.AverageRating,
+                    TotalRatingsCount = p.TotalRatingsCount,
+                    TotalShiftsCompleted = p.TotalShiftsCompleted,
+                    PunctualityScorePercent = p.PunctualityScorePercent,
+                    NoShowCount = p.NoShowCount,
+                    IsActive = p.IsActive,
+                    EnrolledUtc = p.CreatedUtc
+                };
+            }).ToList();
+
+            return Ok(ApiResponse<List<StaffMemberDto>>.SuccessResponse(result, "Workforce staff members retrieved."));
+        }
+
+        // =========================================================================
+        // 6. GRAPHICAL ANALYTICS & KPIS
+        // =========================================================================
+
+        /// <summary>
+        /// Computes graphical analytics, KPIs, fulfillment rates, punctuality scores, and labor spend for administrators.
+        /// </summary>
+        [HttpGet("analytics")]
+        public async Task<ActionResult<ApiResponse<WorkforceAnalyticsDto>>> GetWorkforceAnalytics(CancellationToken ct)
+        {
+            var nowUtc = DateTime.UtcNow;
+            var thirtyDaysAgo = nowUtc.AddDays(-30);
+
+            var shifts = await _db.BcpShifts
+                .AsNoTracking()
+                .Include(s => s.ClientSite)
+                .Include(s => s.AttendanceRecord)
+                .Where(s => s.TenantKey == CurrentTenantKey && s.StartsAtUtc >= thirtyDaysAgo)
+                .ToListAsync(ct);
+
+            int totalShifts = shifts.Count;
+            int completedShifts = shifts.Count(s => s.Status == "Completed");
+            int openShifts = shifts.Count(s => string.IsNullOrWhiteSpace(s.AssignedUserId));
+            int activeOnDuty = shifts.Count(s => s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue);
+
+            decimal scheduledHours = shifts.Sum(s => s.PlannedDurationHours);
+            decimal workedHours = shifts.Where(s => s.AttendanceRecord?.ActualDurationHours != null).Sum(s => s.AttendanceRecord!.ActualDurationHours!.Value);
+
+            decimal totalSpend = shifts.Sum(s =>
+            {
+                var rate = s.HourlyPayRate ?? 0;
+                var hours = s.AttendanceRecord?.BillableHours ?? s.PlannedDurationHours;
+                return rate * hours;
+            });
+
+            decimal fulfillmentRate = totalShifts > 0
+                ? Math.Round(((decimal)(totalShifts - openShifts) / totalShifts) * 100m, 1)
+                : 100.0m;
+
+            var attendances = shifts.Where(s => s.AttendanceRecord != null).Select(s => s.AttendanceRecord!).ToList();
+            int onTimeCount = attendances.Count(a => a.LateArrivalMinutes <= 5 && !a.IsFlagged);
+            int lateCount = attendances.Count(a => a.LateArrivalMinutes > 5);
+            int geofenceViolations = attendances.Count(a => !a.IsClockInGeofenceVerified);
+            int noShows = shifts.Count(s => s.Status == "Absent");
+
+            decimal punctualityPercent = attendances.Count > 0
+                ? Math.Round(((decimal)onTimeCount / attendances.Count) * 100m, 1)
+                : 100.0m;
+
+            var siteBreakdowns = shifts
+                .GroupBy(s => new { s.ClientSiteId, SiteName = s.ClientSite?.SiteName ?? "Unassigned Venue" })
+                .Select(g => new SiteHoursBreakdownDto
+                {
+                    SiteId = g.Key.ClientSiteId,
+                    SiteName = g.Key.SiteName,
+                    TotalHours = g.Sum(s => s.AttendanceRecord?.BillableHours ?? s.PlannedDurationHours),
+                    TotalSpend = g.Sum(s => (s.HourlyPayRate ?? 0) * (s.AttendanceRecord?.BillableHours ?? s.PlannedDurationHours)),
+                    ShiftCount = g.Count()
+                })
+                .OrderByDescending(b => b.TotalHours)
+                .ToList();
+
+            var dto = new WorkforceAnalyticsDto
+            {
+                ShiftFulfillmentRatePercent = fulfillmentRate,
+                OverallPunctualityPercent = punctualityPercent,
+                ActiveOnDutyCount = activeOnDuty,
+                TotalScheduledHours = Math.Round(scheduledHours, 1),
+                TotalWorkedHours = Math.Round(workedHours, 1),
+                TotalGrossLaborSpend = Math.Round(totalSpend, 2),
+                TotalShiftsCount = totalShifts,
+                CompletedShiftsCount = completedShifts,
+                OpenShiftsCount = openShifts,
+                FlaggedAttendanceCount = attendances.Count(a => a.IsFlagged),
+                SiteBreakdowns = siteBreakdowns,
+                AttendanceDistribution = new AttendanceDistributionDto
+                {
+                    OnTime = onTimeCount,
+                    LateArrivals = lateCount,
+                    GeofenceViolations = geofenceViolations,
+                    NoShows = noShows
+                }
+            };
+
+            return Ok(ApiResponse<WorkforceAnalyticsDto>.SuccessResponse(dto, "Workforce graphical analytics computed successfully."));
+        }
+
+        // =========================================================================
+        // 7. STAFF PERFORMANCE RATINGS
+        // =========================================================================
+
+        /// <summary>
+        /// Submits a supervisor or manager post-shift evaluation rating for a staff member,
+        /// automatically recalculating the worker's average rating and punctuality score.
+        /// </summary>
+        [HttpPost("ratings")]
+        public async Task<ActionResult<ApiResponse<Guid>>> SubmitStaffRating([FromBody] SubmitRatingRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .FirstOrDefaultAsync(s => s.Id == request.ShiftId && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<Guid>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            var rating = new BcpShiftStaffRating
+            {
+                Id = Guid.CreateVersion7(),
+                TenantKey = CurrentTenantKey,
+                ShiftId = shift.Id,
+                UserId = request.UserId,
+                RatedByUserId = CurrentUserId,
+                RatedByUserName = CurrentUserName,
+                RatingStars = Math.Clamp(request.RatingStars, 1, 5),
+                PunctualityScore = Math.Clamp(request.PunctualityScore, 1, 5),
+                FeedbackNotes = request.FeedbackNotes?.Trim(),
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpShiftStaffRatings.Add(rating);
+            await _db.SaveChangesAsync(ct);
+
+            // Update Staff Profile Aggregates
+            var profile = await _db.BcpShiftStaffProfiles
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == request.UserId, ct);
+
+            if (profile != null)
+            {
+                var allRatings = await _db.BcpShiftStaffRatings
+                    .Where(r => r.TenantKey == CurrentTenantKey && r.UserId == request.UserId)
+                    .ToListAsync(ct);
+
+                profile.TotalRatingsCount = allRatings.Count;
+                profile.AverageRating = Math.Round((decimal)allRatings.Average(r => r.RatingStars), 2);
+                profile.PunctualityScorePercent = Math.Round(((decimal)allRatings.Count(r => r.PunctualityScore >= 4) / allRatings.Count) * 100m, 1);
+                profile.UpdatedUtc = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+            }
+
+            return Ok(ApiResponse<Guid>.SuccessResponse(rating.Id, "Staff rating successfully recorded."));
+        }
+
+        /// <summary>
+        /// Returns all supervisor ratings and feedback for a specific staff member.
+        /// </summary>
+        [HttpGet("ratings/{userId}")]
+        public async Task<ActionResult<ApiResponse<List<StaffRatingDto>>>> GetStaffRatings(string userId, CancellationToken ct)
+        {
+            var ratings = await _db.BcpShiftStaffRatings
+                .AsNoTracking()
+                .Where(r => r.TenantKey == CurrentTenantKey && r.UserId == userId)
+                .OrderByDescending(r => r.CreatedUtc)
+                .Select(r => new StaffRatingDto
+                {
+                    Id = r.Id,
+                    ShiftId = r.ShiftId,
+                    UserId = r.UserId,
+                    RatedByUserId = r.RatedByUserId,
+                    RatedByUserName = r.RatedByUserName,
+                    RatingStars = r.RatingStars,
+                    PunctualityScore = r.PunctualityScore,
+                    FeedbackNotes = r.FeedbackNotes,
+                    CreatedUtc = r.CreatedUtc
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<StaffRatingDto>>.SuccessResponse(ratings, "Staff ratings retrieved."));
+        }
+
+        // =========================================================================
+        // 8. TRI-STATE AVAILABILITY MANAGEMENT
+        // =========================================================================
+
+        /// <summary>
+        /// Returns availability records for the current user or a targeted worker.
+        /// </summary>
+        [HttpGet("availability")]
+        public async Task<ActionResult<ApiResponse<List<StaffAvailabilityDto>>>> GetAvailability(
+            [FromQuery] string? userId,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate,
+            CancellationToken ct)
+        {
+            var targetUserId = string.IsNullOrWhiteSpace(userId) ? CurrentUserId : userId.Trim();
+            var query = _db.BcpShiftAvailabilities
+                .AsNoTracking()
+                .Where(a => a.TenantKey == CurrentTenantKey && a.UserId == targetUserId);
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(a => a.TargetDate >= fromDate.Value.Date);
+            }
+            if (toDate.HasValue)
+            {
+                query = query.Where(a => a.TargetDate <= toDate.Value.Date);
+            }
+
+            var list = await query
+                .OrderBy(a => a.TargetDate)
+                .Select(a => new StaffAvailabilityDto
+                {
+                    Id = a.Id,
+                    UserId = a.UserId,
+                    TargetDate = a.TargetDate,
+                    State = a.State,
+                    UnavailableFromTime = a.UnavailableFromTime,
+                    UnavailableToTime = a.UnavailableToTime,
+                    Reason = a.Reason
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<StaffAvailabilityDto>>.SuccessResponse(list, "Availability schedule retrieved."));
+        }
+
+        /// <summary>
+        /// Creates or updates a tri-state availability entry (Available, Unavailable, PartlyUnavailable) for a specific date.
+        /// </summary>
+        [HttpPost("availability")]
+        public async Task<ActionResult<ApiResponse<Guid>>> UpsertAvailability([FromBody] UpsertAvailabilityRequest request, CancellationToken ct)
+        {
+            var targetDate = request.TargetDate.Date;
+            var record = await _db.BcpShiftAvailabilities
+                .FirstOrDefaultAsync(a => a.TenantKey == CurrentTenantKey && a.UserId == CurrentUserId && a.TargetDate == targetDate, ct);
+
+            if (record == null)
+            {
+                record = new BcpShiftAvailability
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    UserId = CurrentUserId,
+                    TargetDate = targetDate,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpShiftAvailabilities.Add(record);
+            }
+
+            record.State = string.IsNullOrWhiteSpace(request.State) ? "Available" : request.State.Trim();
+            record.UnavailableFromTime = request.UnavailableFromTime;
+            record.UnavailableToTime = request.UnavailableToTime;
+            record.Reason = request.Reason?.Trim();
+            record.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<Guid>.SuccessResponse(record.Id, "Availability updated successfully."));
+        }
+
+        // =========================================================================
+        // 9. COMPLIANCE & DOCUMENT VAULT
+        // =========================================================================
+
+        /// <summary>
+        /// Returns compliance credentials, licenses, and proof documents uploaded by staff.
+        /// </summary>
+        [HttpGet("documents")]
+        public async Task<ActionResult<ApiResponse<List<StaffDocumentDto>>>> GetDocuments([FromQuery] string? userId, CancellationToken ct)
+        {
+            var targetUserId = string.IsNullOrWhiteSpace(userId) ? CurrentUserId : userId.Trim();
+            var docs = await _db.BcpShiftDocuments
+                .AsNoTracking()
+                .Where(d => d.TenantKey == CurrentTenantKey && d.UserId == targetUserId)
+                .OrderByDescending(d => d.CreatedUtc)
+                .Select(d => new StaffDocumentDto
+                {
+                    Id = d.Id,
+                    UserId = d.UserId,
+                    DocumentType = d.DocumentType,
+                    DocumentName = d.DocumentName,
+                    Description = d.Description,
+                    FileUrl = d.FileUrl,
+                    UploadedBy = d.UploadedBy,
+                    ExpiryDateUtc = d.ExpiryDateUtc,
+                    IsVerified = d.IsVerified,
+                    CreatedUtc = d.CreatedUtc
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<StaffDocumentDto>>.SuccessResponse(docs, "Compliance documents retrieved."));
+        }
+
+        /// <summary>
+        /// Uploads a new staff credential, license scan, right-to-work proof, or baseline headshot.
+        /// </summary>
+        [HttpPost("documents")]
+        public async Task<ActionResult<ApiResponse<Guid>>> UploadDocument([FromBody] UploadDocumentRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.FileUrl) || string.IsNullOrWhiteSpace(request.DocumentName))
+            {
+                return BadRequest(ApiResponse<Guid>.FailureResponse("Document name and file URL are mandatory.", errorCode: "ERR-2002"));
+            }
+
+            var doc = new BcpShiftDocument
+            {
+                Id = Guid.CreateVersion7(),
+                TenantKey = CurrentTenantKey,
+                UserId = CurrentUserId,
+                DocumentType = string.IsNullOrWhiteSpace(request.DocumentType) ? "General" : request.DocumentType.Trim(),
+                DocumentName = request.DocumentName.Trim(),
+                Description = request.Description?.Trim(),
+                FileUrl = request.FileUrl.Trim(),
+                UploadedBy = CurrentUserName,
+                ExpiryDateUtc = request.ExpiryDateUtc,
+                IsVerified = false,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpShiftDocuments.Add(doc);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<Guid>.SuccessResponse(doc.Id, "Compliance document uploaded successfully."));
+        }
+
+        // =========================================================================
+        // 10. CUSTOM NOTIFICATION & REMINDER PREFERENCES
+        // =========================================================================
+
+        /// <summary>
+        /// Returns the staff member's personalized 3-slot shift departure reminder schedule.
+        /// </summary>
+        [HttpGet("notifications/preferences")]
+        public async Task<ActionResult<ApiResponse<StaffNotificationPreferenceDto>>> GetNotificationPreferences(CancellationToken ct)
+        {
+            var pref = await _db.BcpShiftNotificationPreferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == CurrentUserId, ct);
+
+            var dto = new StaffNotificationPreferenceDto
+            {
+                Id = pref?.Id ?? Guid.Empty,
+                UserId = CurrentUserId,
+                Slot1MinutesBefore = pref?.Slot1MinutesBefore ?? 1440,
+                EnableSlot1 = pref?.EnableSlot1 ?? true,
+                Slot2MinutesBefore = pref?.Slot2MinutesBefore ?? 240,
+                EnableSlot2 = pref?.EnableSlot2 ?? true,
+                Slot3MinutesBefore = pref?.Slot3MinutesBefore ?? 30,
+                EnableSlot3 = pref?.EnableSlot3 ?? true,
+                EnableInApp = pref?.EnableInApp ?? true,
+                EnableEmail = pref?.EnableEmail ?? true,
+                EnableWhatsApp = pref?.EnableWhatsApp ?? true,
+                PreferredContactPhone = pref?.PreferredContactPhone
+            };
+
+            return Ok(ApiResponse<StaffNotificationPreferenceDto>.SuccessResponse(dto, "Notification preferences retrieved."));
+        }
+
+        /// <summary>
+        /// Updates the staff member's custom 3-slot shift reminder schedule and delivery channel toggles.
+        /// </summary>
+        [HttpPost("notifications/preferences")]
+        public async Task<ActionResult<ApiResponse<bool>>> UpdateNotificationPreferences(
+            [FromBody] UpdateNotificationPreferenceRequest request,
+            CancellationToken ct)
+        {
+            var pref = await _db.BcpShiftNotificationPreferences
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == CurrentUserId, ct);
+
+            if (pref == null)
+            {
+                pref = new BcpShiftNotificationPreference
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    UserId = CurrentUserId,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpShiftNotificationPreferences.Add(pref);
+            }
+
+            pref.Slot1MinutesBefore = Math.Max(1, request.Slot1MinutesBefore);
+            pref.EnableSlot1 = request.EnableSlot1;
+            pref.Slot2MinutesBefore = Math.Max(1, request.Slot2MinutesBefore);
+            pref.EnableSlot2 = request.EnableSlot2;
+            pref.Slot3MinutesBefore = Math.Max(1, request.Slot3MinutesBefore);
+            pref.EnableSlot3 = request.EnableSlot3;
+            pref.EnableInApp = request.EnableInApp;
+            pref.EnableEmail = request.EnableEmail;
+            pref.EnableWhatsApp = request.EnableWhatsApp;
+            pref.PreferredContactPhone = request.PreferredContactPhone?.Trim();
+            pref.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift reminder preferences updated successfully."));
+        }
     }
 
     // =========================================================================
@@ -570,6 +1094,10 @@ namespace Ozikol_BCC.Api.Controllers
         public string SiteName { get; set; } = string.Empty;
         public string SiteAddress { get; set; } = string.Empty;
         public string PostName { get; set; } = string.Empty;
+        public string? FacilityName { get; set; }
+        public string? Address { get; set; }
+        public string? PostCode { get; set; }
+        public string? EventTag { get; set; }
         public string? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
         public DateTime StartsAtUtc { get; set; }
@@ -577,11 +1105,15 @@ namespace Ozikol_BCC.Api.Controllers
         public bool IsOvernight { get; set; }
         public int BreakMinutes { get; set; }
         public decimal PlannedDurationHours { get; set; }
+        public decimal? HourlyPayRate { get; set; }
+        public decimal? HourlyChargeRate { get; set; }
         public Guid? RequiredWorkspaceStationId { get; set; }
         public string? RequiredWorkspaceStationName { get; set; }
         public string Status { get; set; } = "Scheduled";
         public bool IsConfirmedByGuard { get; set; }
         public DateTime? ConfirmedAtUtc { get; set; }
+        public DateTime? AcceptanceDeadlineUtc { get; set; }
+        public int? AcceptanceCountdownMinutes { get; set; }
         public string? Notes { get; set; }
         public string? SiteAssignmentInstructions { get; set; }
         public string? EmergencyContactPhone { get; set; }
@@ -595,6 +1127,10 @@ namespace Ozikol_BCC.Api.Controllers
         public string? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
         public string PostName { get; set; } = "General Post";
+        public string? FacilityName { get; set; }
+        public string? Address { get; set; }
+        public string? PostCode { get; set; }
+        public string? EventTag { get; set; }
         public DateTime StartsAtUtc { get; set; }
         public DateTime EndsAtUtc { get; set; }
         public int BreakMinutes { get; set; } = 0;
@@ -602,6 +1138,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? RequiredWorkspaceStationName { get; set; }
         public decimal? HourlyPayRate { get; set; }
         public decimal? HourlyChargeRate { get; set; }
+        public DateTime? AcceptanceDeadlineUtc { get; set; }
         public string? Notes { get; set; }
     }
 
@@ -627,6 +1164,164 @@ namespace Ozikol_BCC.Api.Controllers
         public DateTime EndDate { get; set; }
         public string? Reason { get; set; }
         public string? AttachmentUrl { get; set; }
+    }
+
+    public class EnrollStaffMemberRequest
+    {
+        public string? UserId { get; set; }
+        public string? Email { get; set; }
+        public string? FullName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string JobTitle { get; set; } = "Staff Member";
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
+    }
+
+    public class StaffMemberDto
+    {
+        public Guid ProfileId { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string JobTitle { get; set; } = "Staff Member";
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
+        public decimal AverageRating { get; set; }
+        public int TotalRatingsCount { get; set; }
+        public int TotalShiftsCompleted { get; set; }
+        public decimal PunctualityScorePercent { get; set; }
+        public int NoShowCount { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime EnrolledUtc { get; set; }
+    }
+
+    public class WorkforceAnalyticsDto
+    {
+        public decimal ShiftFulfillmentRatePercent { get; set; }
+        public decimal OverallPunctualityPercent { get; set; }
+        public int ActiveOnDutyCount { get; set; }
+        public decimal TotalScheduledHours { get; set; }
+        public decimal TotalWorkedHours { get; set; }
+        public decimal TotalGrossLaborSpend { get; set; }
+        public int TotalShiftsCount { get; set; }
+        public int CompletedShiftsCount { get; set; }
+        public int OpenShiftsCount { get; set; }
+        public int FlaggedAttendanceCount { get; set; }
+        public List<SiteHoursBreakdownDto> SiteBreakdowns { get; set; } = new();
+        public AttendanceDistributionDto AttendanceDistribution { get; set; } = new();
+    }
+
+    public class SiteHoursBreakdownDto
+    {
+        public Guid SiteId { get; set; }
+        public string SiteName { get; set; } = string.Empty;
+        public decimal TotalHours { get; set; }
+        public decimal TotalSpend { get; set; }
+        public int ShiftCount { get; set; }
+    }
+
+    public class AttendanceDistributionDto
+    {
+        public int OnTime { get; set; }
+        public int LateArrivals { get; set; }
+        public int GeofenceViolations { get; set; }
+        public int NoShows { get; set; }
+    }
+
+    public class SubmitRatingRequest
+    {
+        public Guid ShiftId { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public int RatingStars { get; set; } = 5;
+        public int PunctualityScore { get; set; } = 5;
+        public string? FeedbackNotes { get; set; }
+    }
+
+    public class StaffRatingDto
+    {
+        public Guid Id { get; set; }
+        public Guid ShiftId { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string RatedByUserId { get; set; } = string.Empty;
+        public string? RatedByUserName { get; set; }
+        public int RatingStars { get; set; }
+        public int PunctualityScore { get; set; }
+        public string? FeedbackNotes { get; set; }
+        public DateTime CreatedUtc { get; set; }
+    }
+
+    public class UpsertAvailabilityRequest
+    {
+        public DateTime TargetDate { get; set; }
+        public string State { get; set; } = "Available";
+        public TimeSpan? UnavailableFromTime { get; set; }
+        public TimeSpan? UnavailableToTime { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    public class StaffAvailabilityDto
+    {
+        public Guid Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public DateTime TargetDate { get; set; }
+        public string State { get; set; } = "Available";
+        public TimeSpan? UnavailableFromTime { get; set; }
+        public TimeSpan? UnavailableToTime { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    public class UploadDocumentRequest
+    {
+        public string DocumentType { get; set; } = "General";
+        public string DocumentName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string FileUrl { get; set; } = string.Empty;
+        public DateTime? ExpiryDateUtc { get; set; }
+    }
+
+    public class StaffDocumentDto
+    {
+        public Guid Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string DocumentType { get; set; } = "General";
+        public string DocumentName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string FileUrl { get; set; } = string.Empty;
+        public string UploadedBy { get; set; } = "Staff";
+        public DateTime? ExpiryDateUtc { get; set; }
+        public bool IsVerified { get; set; }
+        public DateTime CreatedUtc { get; set; }
+    }
+
+    public class UpdateNotificationPreferenceRequest
+    {
+        public int Slot1MinutesBefore { get; set; } = 1440;
+        public bool EnableSlot1 { get; set; } = true;
+        public int Slot2MinutesBefore { get; set; } = 240;
+        public bool EnableSlot2 { get; set; } = true;
+        public int Slot3MinutesBefore { get; set; } = 30;
+        public bool EnableSlot3 { get; set; } = true;
+        public bool EnableInApp { get; set; } = true;
+        public bool EnableEmail { get; set; } = true;
+        public bool EnableWhatsApp { get; set; } = true;
+        public string? PreferredContactPhone { get; set; }
+    }
+
+    public class StaffNotificationPreferenceDto
+    {
+        public Guid Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public int Slot1MinutesBefore { get; set; }
+        public bool EnableSlot1 { get; set; }
+        public int Slot2MinutesBefore { get; set; }
+        public bool EnableSlot2 { get; set; }
+        public int Slot3MinutesBefore { get; set; }
+        public bool EnableSlot3 { get; set; }
+        public bool EnableInApp { get; set; }
+        public bool EnableEmail { get; set; }
+        public bool EnableWhatsApp { get; set; }
+        public string? PreferredContactPhone { get; set; }
     }
 }
 

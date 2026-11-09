@@ -10,7 +10,7 @@ namespace Ozikol_BCC.Domain.Models
     /// where security posts, staff shifts, and geofenced attendance boundaries are managed.
     /// Table: [dbo].[BcpClientSites]
     /// </summary>
-    public class BcpClientSite
+    public class BcpClientSite : IBcpWorkforceEntity
     {
         /// <summary>
         /// Unique primary key identifier for the client site.
