@@ -4,40 +4,23 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageFormsService, PageFormItem } from '../../../../core/services/page-forms.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Top Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <span class="current">Manage Forms</span>
-          </div>
-          <div class="title-with-badge">
-            <h1>Dynamic Page Forms & Lead Intake</h1>
-            <span class="badge-pill badge-live">Live</span>
-          </div>
-          <p class="subtitle">
-            Configure dynamic contact forms, subscription boxes, and intake questionnaires embedded across your website sections.
-          </p>
-        </div>
-        <div class="header-actions">
-          <button type="button" class="btn btn-primary" routerLink="/content/console/forms/create">
-            <span class="material-symbols-outlined">add_circle</span>
-            <span>Create New Form</span>
-          </button>
-          <button type="button" (click)="loadForms()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio"
+        icon="dynamic_form"
+        title="Dynamic Page Forms & Lead Intake"
+        subtitle="Configure dynamic contact forms, subscription boxes, and intake questionnaires embedded across your website sections."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Quick Metrics Summary Cards -->
       <div class="metrics-grid">
@@ -429,6 +412,24 @@ export class FormsListComponent implements OnInit {
   searchTerm = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
   formToDelete: PageFormItem | null = null;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Create New Form',
+        icon: 'add_circle',
+        isPrimary: true,
+        routerLink: '/content/console/forms/create'
+      },
+      {
+        text: 'Refresh',
+        icon: 'refresh',
+        disabled: this.loading,
+        loading: this.loading,
+        action: () => this.loadForms()
+      }
+    ];
+  }
 
   constructor(
     private formsService: PageFormsService,

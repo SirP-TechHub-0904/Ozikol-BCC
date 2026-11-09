@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * Published & Draft Web Pages management console.
@@ -13,35 +14,18 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-web-pages',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Full-Width Page Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <span class="current">All Web Pages</span>
-          </div>
-          <h1>Published & Draft Web Pages</h1>
-          <p class="subtitle">Create, organize layout blocks, and manage SEO metadata for all public website pages.</p>
-        </div>
-        <div class="header-actions">
-          <button type="button" (click)="normalizePageOrders()" class="btn btn-outline" [disabled]="savingPageOrder" title="Normalize and re-space all pages into clean sequential increments (10, 20, 30...)">
-            <span class="material-symbols-outlined" [class.spin]="savingPageOrder">reorder</span>
-            <span>Normalize (10, 20...)</span>
-          </button>
-          <a routerLink="/content/console/pages/create" class="btn btn-primary">
-            <span class="material-symbols-outlined">add_circle</span>
-            <span>New Web Page</span>
-          </a>
-          <button type="button" (click)="loadAll()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio"
+        icon="article"
+        title="Published & Draft Web Pages"
+        subtitle="Create, organize layout blocks, and manage SEO metadata for all public website pages."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Filter Controls Bar -->
       <div class="filter-bar">
@@ -1113,6 +1097,31 @@ import { ToastService } from '../../../core/services/toast.service';
 export class WebPagesComponent implements OnInit {
   loading = false;
   savingPageOrder = false;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Normalize (10, 20...)',
+        icon: 'reorder',
+        disabled: this.savingPageOrder,
+        loading: this.savingPageOrder,
+        action: () => this.normalizePageOrders()
+      },
+      {
+        text: 'New Web Page',
+        icon: 'add_circle',
+        isPrimary: true,
+        routerLink: '/content/console/pages/create'
+      },
+      {
+        text: 'Refresh',
+        icon: 'refresh',
+        disabled: this.loading,
+        loading: this.loading,
+        action: () => this.loadAll()
+      }
+    ];
+  }
   bulkDeleting = false;
   showBulkDeleteModal = false;
   cascadeSections = true;

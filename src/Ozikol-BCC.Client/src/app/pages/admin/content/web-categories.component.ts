@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * Web Navigation Categories management console.
@@ -13,35 +14,18 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-web-categories',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Full-Width Page Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <span class="current">Web Categories (Menu Dropdowns)</span>
-          </div>
-          <h1>Web Menu Categories</h1>
-          <p class="subtitle">Organize pages into hierarchical header dropdowns and website navigation groups.</p>
-        </div>
-        <div class="header-actions">
-          <button type="button" (click)="normalizeCategoryOrders()" class="btn btn-outline" [disabled]="savingCategoryOrder" title="Normalize and re-space all categories into clean sequential increments (10, 20, 30...)">
-            <span class="material-symbols-outlined" [class.spin]="savingCategoryOrder">reorder</span>
-            <span>Normalize (10, 20...)</span>
-          </button>
-          <a routerLink="/content/console/categories/create" class="btn btn-primary">
-            <span class="material-symbols-outlined">add_circle</span>
-            <span>New Category</span>
-          </a>
-          <button type="button" (click)="loadCategories()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio"
+        icon="folder_special"
+        title="Web Menu Categories"
+        subtitle="Organize pages into hierarchical header dropdowns and website navigation groups."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Bulk Action Bar -->
       <div class="bulk-action-bar" *ngIf="selectedIds.size > 0">
@@ -956,6 +940,31 @@ import { ToastService } from '../../../core/services/toast.service';
 export class WebCategoriesComponent implements OnInit {
   loading = false;
   savingCategoryOrder = false;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Normalize (10, 20...)',
+        icon: 'reorder',
+        disabled: this.savingCategoryOrder,
+        loading: this.savingCategoryOrder,
+        action: () => this.normalizeCategoryOrders()
+      },
+      {
+        text: 'New Category',
+        icon: 'add_circle',
+        isPrimary: true,
+        routerLink: '/content/console/categories/create'
+      },
+      {
+        text: 'Refresh',
+        icon: 'refresh',
+        disabled: this.loading,
+        loading: this.loading,
+        action: () => this.loadCategories()
+      }
+    ];
+  }
   bulkDeleting = false;
   showBulkDeleteModal = false;
   cascadePages = true;

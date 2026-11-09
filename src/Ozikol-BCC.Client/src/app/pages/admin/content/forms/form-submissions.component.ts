@@ -4,46 +4,23 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageFormsService, PageFormItem, PageFormSubmissionItem } from '../../../../core/services/page-forms.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-form-submissions',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Top Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a routerLink="/content/console/forms">Manage Forms</a>
-            <span class="sep">/</span>
-            <span class="current">{{ form?.title || 'Form Submissions' }}</span>
-          </div>
-          <div class="title-with-badge">
-            <h1>{{ form?.title || 'Form Submissions & Inquiries' }}</h1>
-            <span class="badge-pill badge-key" *ngIf="form?.formKey">key: {{ form?.formKey }}</span>
-          </div>
-          <p class="subtitle">
-            Manage incoming leads, customer inquiries, and questionnaire submissions submitted through this form.
-          </p>
-        </div>
-        <div class="header-actions">
-          <button
-            type="button"
-            class="btn btn-outline"
-            *ngIf="form?.id"
-            [routerLink]="['/content/console/forms/edit', form?.id]">
-            <span class="material-symbols-outlined">edit</span>
-            <span>Edit Form</span>
-          </button>
-          <button type="button" (click)="loadSubmissions()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio / Manage Forms"
+        icon="mark_email_read"
+        [title]="form?.title || 'Form Submissions & Inquiries'"
+        subtitle="Manage incoming leads, customer inquiries, and questionnaire submissions submitted through this form."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Quick Metrics Summary Bar -->
       <div class="metrics-grid">
@@ -530,6 +507,25 @@ export class FormSubmissionsComponent implements OnInit {
   newCount = 0;
   contactedCount = 0;
   closedCount = 0;
+
+  get headerButtons(): PageHeaderButton[] {
+    const btns: PageHeaderButton[] = [];
+    if (this.form?.id) {
+      btns.push({
+        text: 'Edit Form',
+        icon: 'edit',
+        routerLink: `/content/console/forms/edit/${this.form.id}`
+      });
+    }
+    btns.push({
+      text: 'Refresh',
+      icon: 'refresh',
+      disabled: this.loading,
+      loading: this.loading,
+      action: () => this.loadSubmissions()
+    });
+    return btns;
+  }
 
   activeSubmission: PageFormSubmissionItem | null = null;
   modalStatus = 'New';

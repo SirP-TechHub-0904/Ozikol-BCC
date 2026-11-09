@@ -4,35 +4,23 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-page-sections',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <span class="current">Page Section Templates</span>
-          </div>
-          <h1>All Page Layout Sections &amp; Sub-Items</h1>
-          <p class="subtitle">Global overview of all layout blocks, feature grids, hero banners, and child card items across all web pages.</p>
-        </div>
-        <div class="header-actions">
-          <a [routerLink]="['/content/console/sections/create']" [queryParams]="filterPageId ? { webPageId: filterPageId } : null" class="btn btn-primary">
-            <span class="material-symbols-outlined">add_circle</span>
-            <span>New Section</span>
-          </a>
-          <button type="button" (click)="loadSections()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio"
+        icon="view_quilt"
+        title="All Page Layout Sections & Sub-Items"
+        subtitle="Global overview of all layout blocks, feature grids, hero banners, and child card items across all web pages."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Navigation Tabs (Sections vs All Sub-Items) -->
       <div class="cms-nav-tabs">
@@ -466,15 +454,6 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .cms-page-container { display: flex; flex-direction: column; gap: 20px; }
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
-    }
-    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 13.5px; margin: 0; }
-    .header-actions { display: flex; gap: 12px; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px;
@@ -628,6 +607,25 @@ export class PageSectionsComponent implements OnInit {
   bulkDeleting = false;
   activeTab: 'sections' | 'subitems' = 'sections';
   sections: any[] = [];
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'New Section',
+        icon: 'add_circle',
+        isPrimary: true,
+        routerLink: this.filterPageId
+          ? `/content/console/sections/create?webPageId=${this.filterPageId}`
+          : '/content/console/sections/create'
+      },
+      {
+        text: 'Refresh',
+        icon: 'refresh',
+        loading: this.loading,
+        action: () => this.loadSections()
+      }
+    ];
+  }
   allSubItems: any[] = [];
   allPages: any[] = [];
   searchTerm = '';

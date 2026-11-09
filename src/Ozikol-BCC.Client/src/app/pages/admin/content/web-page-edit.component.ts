@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * System page descriptor representing built-in application routes.
@@ -30,46 +31,18 @@ interface SystemPageOption {
 @Component({
   selector: 'app-web-page-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Full-Width Page Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a routerLink="/content/console/pages">All Web Pages</a>
-            <span class="sep">/</span>
-            <span class="current">{{ isEditMode ? 'Edit Web Page' : 'Create Web Page' }}</span>
-          </div>
-          <h1>{{ isEditMode ? ('Edit Page: ' + (page?.title || '')) : 'Create Dynamic Web Page' }}</h1>
-          <p class="subtitle">
-            {{ isEditMode 
-              ? 'Complete configuration of SEO parameters, multi-zone navigation visibility, direct routing, and banner assets.' 
-              : 'Add a new navigable webpage, configure URL routing, and set navigation placements.' }}
-          </p>
-        </div>
-        <div class="header-actions">
-          <a *ngIf="isEditMode" [href]="livePageUrl" target="_blank" class="btn btn-outline" title="Open live published page in a new browser tab">
-            <span class="material-symbols-outlined">open_in_new</span>
-            <span>View Live Page ↗</span>
-          </a>
-          <a *ngIf="isEditMode" [routerLink]="['/content/console/pages/details', pageId]" class="btn btn-outline">
-            <span class="material-symbols-outlined">layers</span>
-            <span>Manage Sections</span>
-          </a>
-          <a routerLink="/content/console/pages" class="btn btn-outline">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Pages</span>
-          </a>
-          <button type="button" class="btn btn-primary" (click)="savePage()" [disabled]="saving || loading">
-            <span class="material-symbols-outlined">save</span>
-            <span *ngIf="!saving">{{ isEditMode ? 'Save Page Changes' : 'Create Web Page' }}</span>
-            <span *ngIf="saving">Saving...</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio / All Web Pages"
+        icon="article"
+        [title]="headerTitle"
+        [subtitle]="headerSubtitle"
+        [buttons]="headerButtons"
+        [loading]="saving"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -959,74 +932,6 @@ interface SystemPageOption {
       width: 100%;
       box-sizing: border-box;
       padding-bottom: 40px;
-    }
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #ffffff;
-      padding: 20px 28px;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
-      gap: 20px;
-    }
-    .header-titles {
-      flex: 1;
-      min-width: 0;
-    }
-    .breadcrumb {
-      font-size: 13px;
-      color: #64748b;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .breadcrumb a {
-      color: #0050e5;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .breadcrumb a:hover {
-      text-decoration: underline;
-    }
-    .breadcrumb .sep {
-      color: #94a3b8;
-    }
-    .breadcrumb .current {
-      color: #334155;
-      font-weight: 500;
-    }
-    .page-header h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0 0 4px;
-    }
-    .subtitle {
-      color: #64748b;
-      font-size: 13.5px;
-      margin: 0;
-      line-height: 1.4;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-    .header-actions .btn {
-      margin-left: 6px;
-    }
-    .header-actions .btn:first-child {
-      margin-left: 0;
-    }
-    .header-actions .btn-primary {
-      margin-left: 14px;
     }
 
     /* Cards Stack Layout */
@@ -2185,6 +2090,48 @@ export class WebPageEditComponent implements OnInit {
   loading = false;
   saving = false;
   uploading = false;
+
+  get headerTitle(): string {
+    return this.isEditMode
+      ? `Edit Page: ${this.page?.title || ''}`
+      : 'Create Dynamic Web Page';
+  }
+
+  get headerSubtitle(): string {
+    return this.isEditMode
+      ? 'Complete configuration of SEO parameters, multi-zone navigation visibility, direct routing, and banner assets.'
+      : 'Add a new navigable webpage, configure URL routing, and set navigation placements.';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    const btns: PageHeaderButton[] = [];
+    if (this.isEditMode) {
+      btns.push({
+        text: 'View Live Page ↗',
+        icon: 'open_in_new',
+        url: this.livePageUrl
+      });
+      btns.push({
+        text: 'Manage Sections',
+        icon: 'layers',
+        routerLink: `/content/console/pages/details/${this.pageId}`
+      });
+    }
+    btns.push({
+      text: 'Back to Pages',
+      icon: 'arrow_back',
+      routerLink: '/content/console/pages'
+    });
+    btns.push({
+      text: this.saving ? 'Saving...' : (this.isEditMode ? 'Save Page Changes' : 'Create Web Page'),
+      icon: 'save',
+      isPrimary: true,
+      disabled: this.saving || this.loading,
+      loading: this.saving,
+      action: () => this.savePage()
+    });
+    return btns;
+  }
 
   // Interactive Row Description Popups
   openRowDescs: { [row: number]: boolean } = {};

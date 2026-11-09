@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * Full-width unified page for Creating and Editing Web Navigation Categories (PageCategories).
@@ -13,38 +14,18 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-web-category-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Full-Width Header Bar -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a routerLink="/content/console/categories">Web Categories</a>
-            <span class="sep">/</span>
-            <span class="current">{{ isEditMode ? 'Edit Category' : 'Create Category' }}</span>
-          </div>
-          <h1>{{ isEditMode ? ('Edit Menu Category: ' + (category?.title || '')) : 'Create Web Menu Category' }}</h1>
-          <p class="subtitle">
-            {{ isEditMode 
-              ? 'Update navigation category configuration, parent hierarchy, and sorting position.' 
-              : 'Add a new navigation category for header dropdown menus and footer columns.' }}
-          </p>
-        </div>
-        <div class="header-actions">
-          <a routerLink="/content/console/categories" class="btn btn-outline">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Categories</span>
-          </a>
-          <button type="button" class="btn btn-primary" (click)="saveCategory()" [disabled]="saving || loading">
-            <span class="material-symbols-outlined">save</span>
-            <span *ngIf="!saving">{{ isEditMode ? 'Save Changes' : 'Create Category' }}</span>
-            <span *ngIf="saving">Saving...</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio / Web Categories"
+        icon="folder_special"
+        [title]="headerTitle"
+        [subtitle]="headerSubtitle"
+        [buttons]="headerButtons"
+        [loading]="saving"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -488,6 +469,36 @@ export class WebCategoryEditComponent implements OnInit {
   saving = false;
   successMessage = '';
   errorMessage = '';
+
+  get headerTitle(): string {
+    return this.isEditMode
+      ? `Edit Menu Category: ${this.category?.title || ''}`
+      : 'Create Web Menu Category';
+  }
+
+  get headerSubtitle(): string {
+    return this.isEditMode
+      ? 'Update navigation category configuration, parent hierarchy, and sorting position.'
+      : 'Add a new navigation category for header dropdown menus and footer columns.';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Back to Categories',
+        icon: 'arrow_back',
+        routerLink: '/content/console/categories'
+      },
+      {
+        text: this.saving ? 'Saving...' : (this.isEditMode ? 'Save Changes' : 'Create Category'),
+        icon: 'save',
+        isPrimary: true,
+        disabled: this.saving || this.loading,
+        loading: this.saving,
+        action: () => this.saveCategory()
+      }
+    ];
+  }
 
   constructor(
     private route: ActivatedRoute,
