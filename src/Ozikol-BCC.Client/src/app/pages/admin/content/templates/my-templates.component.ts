@@ -1095,7 +1095,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   getZoneTitle(zone: string): string {
     switch (zone) {
-      case 'head': return 'Header (<head>)';
+      case 'head': return 'HTML Head (<head>)';
       case 'body_open': return 'Body Open (<body>)';
       case 'footer': return 'Footer (</body>)';
       default: return 'Code Injection';
@@ -1104,7 +1104,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   getZoneShortTitle(zone: string): string {
     switch (zone) {
-      case 'head': return 'Header';
+      case 'head': return 'HTML Head';
       case 'body_open': return 'Body Open';
       case 'footer': return 'Footer';
       default: return 'Tag';
@@ -3228,7 +3228,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   templateUses(token: string): boolean {
     if (!this.activePreviewItem?.htmlTemplate) return false;
     const t = this.activePreviewItem.htmlTemplate;
-    const regex = new RegExp(`\\{\\{\\s*(?:#each\\s+|#if\\s+|#unless\\s+)?(?:PageSectionLists\\.)?\\s*${token}\\b`, 'i');
+    const regex = new RegExp(`\\{\\{\\s*(?:#each\\s+|#if\\s+|#unless\\s+)?(?:PageSectionLists\\.|PageSectionList\\.|PageSection\\.)?\\s*${token}\\b`, 'i');
     return regex.test(t);
   }
 

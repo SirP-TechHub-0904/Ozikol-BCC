@@ -4,42 +4,23 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-page-section-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null">Page Sections</a>
-            <span class="sep">/</span>
-            <span class="current">{{ isEditMode ? 'Edit Section' : 'Create Section' }}</span>
-          </div>
-          <h1>{{ isEditMode ? ('Edit Section: ' + (section?.title || 'Layout Block')) : 'Create New Section' }}</h1>
-          <p class="subtitle">Complete configuration of template layout key, rich descriptions, media assets, dynamic forms, and ribbon settings.</p>
-        </div>
-        <div class="header-actions">
-          <a *ngIf="isEditMode && sectionId" [routerLink]="['/content/console/sections/details', sectionId]" class="btn btn-outline">
-            <span class="material-symbols-outlined">list</span>
-            <span>Manage Sub-Items</span>
-          </a>
-          <button type="button" class="btn btn-outline" (click)="goBack()">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>{{ section?.webPageId ? 'Back to Page' : 'Back to Sections' }}</span>
-          </button>
-          <button type="button" class="btn btn-primary" (click)="saveSection()" [disabled]="saving || loading">
-            <span class="material-symbols-outlined">save</span>
-            <span *ngIf="!saving">{{ isEditMode ? 'Save Section Changes' : 'Create Section' }}</span>
-            <span *ngIf="saving">{{ isEditMode ? 'Saving...' : 'Creating...' }}</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        [eyebrow]="headerEyebrow"
+        icon="dashboard_customize"
+        [title]="headerTitle"
+        subtitle="Complete configuration of template layout key, rich descriptions, media assets, dynamic forms, and ribbon settings."
+        [buttons]="headerButtons"
+        [loading]="saving"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -209,18 +190,13 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-header-bar">
               <div>
                 <h3>Action Buttons, Root Icon & Links</h3>
-                <p class="card-sub">Interactive CTA buttons, anchor routing, and section iconography.</p>
+                <p class="card-sub">Interactive CTA buttons, destination page links, and section iconography.</p>
               </div>
             </div>
             <div class="form-grid">
-              <div class="form-group">
+              <div class="form-group full-width">
                 <label>ROOT ICON CLASS (FONT AWESOME / THEME)</label>
                 <input type="text" [(ngModel)]="section.iconText" class="form-control" placeholder="e.g. fa-solid fa-rocket, tji-phone">
-              </div>
-
-              <div class="form-group">
-                <label>DIRECT SECTION URL / ANCHOR SLUG</label>
-                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="e.g. core-programs, overview">
               </div>
 
               <div class="form-group">
@@ -229,18 +205,52 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="form-group">
-                <label>PRIMARY BUTTON TARGET LINK</label>
-                <input type="text" [(ngModel)]="section.buttonLink" class="form-control" placeholder="e.g. /programs or https://...">
-              </div>
-
-              <div class="form-group">
                 <label>SECONDARY BUTTON TEXT (DUAL CTA)</label>
                 <input type="text" [(ngModel)]="section.secondButtonText" class="form-control" placeholder="e.g. Watch Demo, Learn More">
               </div>
 
-              <div class="form-group">
-                <label>SECONDARY BUTTON TARGET LINK</label>
-                <input type="text" [(ngModel)]="section.secondButtonLink" class="form-control" placeholder="e.g. /about or https://...">
+              <div class="form-group full-width">
+                <label>PRIMARY BUTTON TARGET LINK</label>
+                <div class="input-with-dropdown">
+                  <input
+                    type="text"
+                    [(ngModel)]="section.buttonLink"
+                    class="form-control link-input"
+                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
+                  <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'primary')">
+                    <option value="">-- Quick Pick Page --</option>
+                    <option value="/">🏠 Root / Home Page (/)</option>
+                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                    </optgroup>
+                    <optgroup label="Ready-Made System Pages">
+                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
+              </div>
+
+              <div class="form-group full-width">
+                <label>SECONDARY BUTTON TARGET LINK (DUAL CTA)</label>
+                <div class="input-with-dropdown">
+                  <input
+                    type="text"
+                    [(ngModel)]="section.secondButtonLink"
+                    class="form-control link-input"
+                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
+                  <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'secondary')">
+                    <option value="">-- Quick Pick Page --</option>
+                    <option value="/">🏠 Root / Home Page (/)</option>
+                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                    </optgroup>
+                    <optgroup label="Ready-Made System Pages">
+                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
               </div>
 
               <div class="form-group full-width">
@@ -264,13 +274,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="form-grid">
               <!-- Primary Image -->
               <div class="form-group full-width">
-                <div class="label-with-badge">
-                  <label>PRIMARY BACKGROUND / HERO IMAGE</label>
-                  <span class="key-pill" *ngIf="section.imageKey">
-                    <span class="material-symbols-outlined icon-mini">vpn_key</span>
-                    <span>KEY: {{ section.imageKey }}</span>
-                  </span>
-                </div>
+                <label>PRIMARY BACKGROUND / HERO IMAGE (TYPE URL OR UPLOAD IMAGE)</label>
                 <div class="input-with-upload">
                   <input type="text" [(ngModel)]="section.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/feature-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingPrimary">
@@ -289,13 +293,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
               <!-- Secondary Image -->
               <div class="form-group full-width">
-                <div class="label-with-badge">
-                  <label>SECONDARY / ACCENT IMAGE URL</label>
-                  <span class="key-pill" *ngIf="section.secondImageKey">
-                    <span class="material-symbols-outlined icon-mini">vpn_key</span>
-                    <span>KEY: {{ section.secondImageKey }}</span>
-                  </span>
-                </div>
+                <label>SECONDARY / ACCENT IMAGE (TYPE URL OR UPLOAD IMAGE)</label>
                 <div class="input-with-upload">
                   <input type="text" [(ngModel)]="section.secondImageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/secondary-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingSecondary">
@@ -312,17 +310,27 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
               </div>
 
-              <!-- Video & Youtube -->
-              <div class="form-group">
-                <label>VIDEO FILE URL</label>
-                <input type="text" [(ngModel)]="section.videoUrl" class="form-control" placeholder="Direct MP4 / WebM URL">
+              <!-- Video Upload / URL -->
+              <div class="form-group full-width">
+                <label>VIDEO (TYPE URL OR UPLOAD VIDEO)</label>
+                <div class="input-with-upload">
+                  <input type="text" [(ngModel)]="section.videoUrl" class="form-control" placeholder="Direct MP4 / WebM URL">
+                  <label class="btn-upload" [class.uploading]="uploadingVideo">
+                    <input type="file" (change)="uploadVideo($event)" accept="video/*" style="display:none">
+                    <span class="material-symbols-outlined">video_file</span>
+                    <span>{{ uploadingVideo ? 'Uploading...' : 'Upload Video' }}</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-group full-width" *ngIf="section.videoUrl">
+                <div class="video-preview-row">
+                  <span class="material-symbols-outlined">play_circle</span>
+                  <span class="video-preview-url">{{ section.videoUrl }}</span>
+                  <button type="button" class="btn-remove-video" (click)="section.videoUrl = ''; section.videoKey = ''" title="Remove Video">&times;</button>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label>VIDEO ASSET KEY</label>
-                <input type="text" [(ngModel)]="section.videoKey" class="form-control" placeholder="e.g. bcp-cms/videos/hero.mp4">
-              </div>
-
+              <!-- Youtube / Vimeo Embed -->
               <div class="form-group full-width">
                 <label>YOUTUBE / VIMEO EMBED LINK</label>
                 <input type="text" [(ngModel)]="section.youtubeUrlLink" class="form-control" placeholder="https://youtube.com/watch?v=...">
@@ -342,7 +350,7 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
             </div>
 
-            <!-- Dropdown from Templates -->
+            <!-- Dropdown from Real Tenant Database Templates -->
             <div class="form-group">
               <label>TEMPLATE DESIGN KEY *</label>
               <select [(ngModel)]="section.templateKey" class="form-control template-select">
@@ -352,32 +360,12 @@ import { ToastService } from '../../../core/services/toast.service';
                     {{ t.name }} ({{ t.variantCode || t.templateKey }}) [{{ t.categoryKey }}]
                   </option>
                 </optgroup>
-                <optgroup label="Standard System Blueprints">
-                  <option *ngFor="let bp of systemBlueprints" [value]="bp.key">
-                    {{ bp.name }} ({{ bp.key }})
-                  </option>
-                </optgroup>
               </select>
-
-              <div class="template-key-manual-row" style="margin-top: 8px;">
-                <label style="font-size: 10px; color: #64748b;">OR CUSTOM DESIGN KEY:</label>
-                <input type="text" [(ngModel)]="section.templateKey" class="form-control" placeholder="e.g. feature-block, services-grid">
-              </div>
-
-              <div class="template-selected-badge" *ngIf="section.templateKey">
-                <span class="material-symbols-outlined">style</span>
-                <span>Active Key: <strong>{{ section.templateKey }}</strong></span>
-              </div>
             </div>
 
             <div class="form-group" style="margin-top:14px;">
               <label>CUSTOM CSS CLASS INJECTION</label>
               <input type="text" [(ngModel)]="section.customClass" class="form-control" placeholder="bg-slate-50 py-12 border-b">
-            </div>
-
-            <div class="form-group" style="margin-top:14px;">
-              <label>BACKGROUND COLOR / THEME OVERRIDE</label>
-              <input type="text" [(ngModel)]="section.backgroundColor" class="form-control" placeholder="#ffffff, #f8fafc, dark">
             </div>
           </div>
 
@@ -484,15 +472,6 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .cms-page-container { display: flex; flex-direction: column; gap: 24px; }
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
-    }
-    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
-    .header-actions { display: flex; gap: 10px; align-items: center; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
@@ -595,6 +574,68 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-upload:hover { background: #dbeafe; }
     .btn-upload.uploading { background: #cbd5e1; cursor: wait; }
 
+    .input-with-dropdown {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .input-with-dropdown .link-input {
+      flex: 1 1 55%;
+      min-width: 0;
+    }
+    .input-with-dropdown .link-select {
+      flex: 1 1 45%;
+      min-width: 0;
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      color: #334155;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      .input-with-dropdown {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+    .help-text {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .video-preview-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .video-preview-url {
+      flex: 1;
+      font-size: 12px;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+    }
+    .btn-remove-video {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #dc2626;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .btn-remove-video:hover {
+      color: #b91c1c;
+    }
+
     .image-preview-box {
       position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; max-height: 180px;
     }
@@ -644,23 +685,58 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
   saving = false;
   uploadingPrimary = false;
   uploadingSecondary = false;
+  uploadingVideo = false;
 
-  // Standard System Section Blueprints
-  systemBlueprints = [
-    { key: 'feature-block', name: 'Feature Cards Grid' },
-    { key: 'services-grid', name: 'Services & Capabilities Grid' },
-    { key: 'hero-split', name: 'Split Visual Hero Banner' },
-    { key: 'stats-counter', name: 'KPI & Milestone Counters' },
-    { key: 'cta-banner', name: 'Call to Action Strip / Banner' },
-    { key: 'testimonials-carousel', name: 'Testimonials & Reviews' },
-    { key: 'faq-accordion', name: 'Interactive FAQ Accordion' },
-    { key: 'team-grid', name: 'Leadership & Team Grid' },
-    { key: 'pricing-table', name: 'Tiered Pricing Comparison Table' },
-    { key: 'contact-split', name: 'Contact Form & Map Split' },
-    { key: 'process-steps', name: 'How It Works / Step Sequence' },
-    { key: 'gallery-showcase', name: 'Visual Media & Portfolio Showcase' }
+  get headerEyebrow(): string {
+    return this.section?.webPageId
+      ? 'CMS Studio / Page Sections / Web Page'
+      : 'CMS Studio / Page Sections';
+  }
+
+  get headerTitle(): string {
+    return this.isEditMode
+      ? `Edit Section: ${this.section?.title || 'Layout Block'}`
+      : 'Create New Section';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    const btns: PageHeaderButton[] = [];
+    if (this.isEditMode && this.sectionId) {
+      btns.push({
+        text: 'Manage Sub-Items',
+        icon: 'list',
+        routerLink: `/content/console/sections/details/${this.sectionId}`
+      });
+    }
+    btns.push({
+      text: this.section?.webPageId ? 'Back to Page' : 'Back to Sections',
+      icon: 'arrow_back',
+      action: () => this.goBack()
+    });
+    btns.push({
+      text: this.saving ? (this.isEditMode ? 'Saving...' : 'Creating...') : (this.isEditMode ? 'Save Section Changes' : 'Create Section'),
+      icon: 'save',
+      isPrimary: true,
+      disabled: this.saving || this.loading,
+      loading: this.saving,
+      action: () => this.saveSection()
+    });
+    return btns;
+  }
+
+  publishedPagesList: { title: string; url: string }[] = [];
+
+  systemPages: { name: string; url: string }[] = [
+    { name: 'Member Sign In / Portal', url: '/auth/login' },
+    { name: 'Member Registration', url: '/auth/register' },
+    { name: 'News & Blog Articles', url: '/blog' },
+    { name: 'Commerce Storefront', url: '/store' },
+    { name: 'Contact Us', url: '/contact' },
+    { name: 'Service & Project Request', url: '/service-request' },
+    { name: 'Committees & Working Groups', url: '/join-committee' }
   ];
 
+  // Standard System Section Blueprints
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -710,7 +786,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
       pageSortOrder: 1,
       disable: false,
       fixedAfterFooter: false,
-      templateKey: 'feature-block',
+      templateKey: '',
       customClass: '',
       backgroundColor: '',
       addToRibon: false,
@@ -769,9 +845,32 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
     this.api.get<any>('ContentApi/pages').subscribe({
       next: (res) => {
         this.allPages = res?.data || [];
+        this.publishedPagesList = this.allPages.map((p: any) => {
+          let url = p.directUrl || p.slug || '';
+          if (p.isHomePage || url === 'home' || url === 'index') {
+            url = '/';
+          } else if (!url.startsWith('/') && !url.startsWith('http')) {
+            url = `/${url}`;
+          }
+          return {
+            title: p.title || p.metaTitle || 'Page',
+            url: url
+          };
+        });
       },
       error: () => { }
     });
+  }
+
+  onButtonLinkSelect(event: any, field: 'primary' | 'secondary'): void {
+    const val = event.target?.value;
+    if (val) {
+      if (field === 'primary') {
+        this.section.buttonLink = val;
+      } else {
+        this.section.secondButtonLink = val;
+      }
+    }
   }
 
   loadSection(): void {
@@ -895,6 +994,30 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         this.uploadingPrimary = false;
         this.uploadingSecondary = false;
         this.toast.error(err?.error?.message || 'Media upload failed.');
+      }
+    });
+  }
+
+  // --- Video Upload ---
+  uploadVideo(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    this.uploadingVideo = true;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'bcp-cms/section-videos');
+
+    this.api.post<any>('ContentApi/upload-media', formData).subscribe({
+      next: (res) => {
+        this.uploadingVideo = false;
+        if (res?.data?.url) this.section.videoUrl = res.data.url;
+        if (res?.data?.key) this.section.videoKey = res.data.key;
+        this.toast.success('Video uploaded successfully!');
+      },
+      error: (err) => {
+        this.uploadingVideo = false;
+        this.toast.error(err?.error?.message || 'Video upload failed.');
       }
     });
   }

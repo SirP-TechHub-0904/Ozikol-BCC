@@ -1226,10 +1226,16 @@ export class TemplateHydrationService {
       canonicalUrl = `https://${domainName}/`;
     }
 
-    // 6. Resolve Media and Visual Assets
+    // 6. Resolve Media and Visual Assets (Prioritize square brand icon for social preview cards when page has no specific photo)
     const imageUrl = (
       page.imageUrl ||
       page.ImageUrl ||
+      brand.companyIconUrl ||
+      brand.CompanyIconUrl ||
+      brand.iconUrl ||
+      brand.IconUrl ||
+      brand.faviconUrl ||
+      brand.FaviconUrl ||
       brand.logoUrl ||
       brand.LogoUrl ||
       brand.companyLogoUrl ||

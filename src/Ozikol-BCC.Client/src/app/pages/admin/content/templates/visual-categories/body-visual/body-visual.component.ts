@@ -1017,14 +1017,18 @@ export class BodyVisualComponent implements OnInit {
   bodyPresets: SectionPreset[] = [];
 
   bodyTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    { label: 'Title', token: '{{ Title }}', description: 'Main section heading / title.' },
-    { label: 'MiniTitle', token: '{{ MiniTitle }}', description: 'Eyebrow kicker badge, category label, or card pill.' },
-    { label: 'Description', token: '{{ Description }}', description: 'Section intro description, subtitle, or card excerpt.' },
+    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ PageSectionList.Icon }}</span>\n    <h3>{{ PageSectionList.Title }}</h3>\n    <p>{{ PageSectionList.Description }}</p>\n  </div>\n{{/each}}', description: 'Repeats over child items/cards in PageSectionList.' },
+    { label: 'Card Title', token: '{{ PageSectionList.Title }}', description: 'Child item/card headline in PageSectionList.' },
+    { label: 'Card MiniTitle', token: '{{ PageSectionList.MiniTitle }}', description: 'Child item/card badge/price in PageSectionList.' },
+    { label: 'Card Description', token: '{{ PageSectionList.Description }}', description: 'Child item/card summary in PageSectionList.' },
+    { label: 'Card ImageUrl', token: '{{ PageSectionList.ImageUrl }}', description: 'Child item/card visual thumbnail in PageSectionList.' },
+    { label: 'Section Title', token: '{{ PageSection.Title }}', description: 'Parent section main heading / title.' },
+    { label: 'Section MiniTitle', token: '{{ PageSection.MiniTitle }}', description: 'Parent eyebrow kicker badge or category label.' },
+    { label: 'Section Description', token: '{{ PageSection.Description }}', description: 'Parent section intro description or subtitle.' },
     { label: 'FullDescription', token: '{{{ FullDescription }}}', description: 'Extended rich HTML body content for split showcases.' },
-    { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Primary section graphic, hero image, or card thumbnail.' },
+    { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Primary section graphic or hero image.' },
     { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button display label.' },
-    { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination URL.' },
-    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ Icon }}</span>\n    <h3>{{ Title }}</h3>\n    <p>{{ Description }}</p>\n  </div>\n{{/each}}', description: 'Repeats over child items/cards in PageSectionList.' }
+    { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination URL.' }
   ];
 
   constructor(

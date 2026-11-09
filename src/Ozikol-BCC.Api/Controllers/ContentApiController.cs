@@ -40,6 +40,8 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService? _aiService;
         private readonly IServiceScopeFactory? _serviceScopeFactory;
         private readonly ILogger<ContentApiController>? _logger;
+        private static Guid? _lastSuccessfulGeminiKeyId = null;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, int> _geminiKeyFailureCounts = new();
 
         public ContentApiController(
             DashboardDbContext context, 
@@ -80,14 +82,14 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
             }
 
+            // 1. Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) Cloudinary credentials
+            string? customCloud = null;
+            string? customKey = null;
+            string? customSecret = null;
+
             try
             {
-                // Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) Cloudinary credentials
                 var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
-                string? customCloud = null;
-                string? customKey = null;
-                string? customSecret = null;
-
                 if (config?.UseCustomStorage == true &&
                     !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
                     !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
@@ -97,20 +99,94 @@ namespace Ozikol_BCC.Api.Controllers
                     customKey = config.CustomCloudinaryApiKey;
                     customSecret = config.CustomCloudinaryApiSecret;
                 }
-
-                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
-                return Ok(ApiResponse<object>.SuccessResponse(new
-                {
-                    url = secureUrl,
-                    key = publicId,
-                    fileName = file.FileName,
-                    fileSize = file.Length,
-                    contentType = file.ContentType
-                }, "Media uploaded successfully to Cloudinary."));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Cloudinary upload failed: {ex.Message}"));
+                _logger?.LogWarning(ex, "[ContentApi] Failed to inspect tenant MisConfigurationSettings for custom Cloudinary credentials.");
+            }
+
+            // 2. Primary attempt: Cloudinary (BYOS or Platform credentials)
+            try
+            {
+                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
+                if (!string.IsNullOrWhiteSpace(secureUrl))
+                {
+                    return Ok(ApiResponse<object>.SuccessResponse(new
+                    {
+                        url = secureUrl,
+                        key = publicId,
+                        fileName = file.FileName,
+                        fileSize = file.Length,
+                        contentType = file.ContentType
+                    }, "Media uploaded successfully to Cloudinary."));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[ContentApi] Cloudinary upload unavailable or unconfigured ({Message}). Falling back to Cloudflare R2 / CDN.", ex.Message);
+            }
+
+            // 3. Resilient fallback: Cloudflare R2 Global Edge CDN
+            if (_r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    await using var stream = file.OpenReadStream();
+                    var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+                    var result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folder.TrimStart('/')}");
+
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        return Ok(ApiResponse<object>.SuccessResponse(new
+                        {
+                            url = result.Url,
+                            key = result.SafeFileName ?? file.FileName,
+                            fileName = file.FileName,
+                            fileSize = file.Length,
+                            contentType = file.ContentType
+                        }, "Media uploaded successfully to Cloudflare CDN storage."));
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[ContentApi] Cloudflare R2 upload fallback failed: {Message}. Proceeding to local storage.", r2Ex.Message);
+                }
+            }
+
+            // 4. Local disk fallback: wwwroot/uploads directory so upload never halts development
+            try
+            {
+                var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folder.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(uploadsDir);
+
+                var extension = Path.GetExtension(file.FileName);
+                var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
+                var filePath = Path.Combine(uploadsDir, safeName);
+
+                await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream);
+                }
+
+                var relativeUrl = $"/uploads/{folder.Trim('/')}/{safeName}";
+                var scheme = Request?.Scheme ?? "https";
+                var host = Request?.Host.Value ?? "localhost";
+                var fullUrl = $"{scheme}://{host}{relativeUrl}";
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    url = fullUrl,
+                    key = safeName,
+                    fileName = file.FileName,
+                    fileSize = file.Length,
+                    contentType = file.ContentType
+                }, "Media uploaded successfully."));
+            }
+            catch (Exception finalEx)
+            {
+                _logger?.LogError(finalEx, "[ContentApi] All media upload storage pipelines failed.");
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Media upload failed: {finalEx.Message}"));
             }
         }
 
@@ -452,7 +528,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ? request.Slug
                     : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
 
-                var uniqueSlug = await GenerateUniqueSlugAsync(rawSlug);
+                var uniqueSlug = request.IsHomePage
+                    ? "/"
+                    : await GenerateUniqueSlugAsync(rawSlug, null, request.IsHomePage);
 
                 Guid? categoryId = request.PageCategoryId;
                 if (categoryId == Guid.Empty) categoryId = null;
@@ -528,11 +606,18 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
-            // Ensure unique slug if modified
-            var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) ? updated.DirectUrl : updated.Title;
-            if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+            // Ensure unique slug or root homepage path
+            if (updated.IsHomePage)
             {
-                existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id);
+                existing.DirectUrl = "/";
+            }
+            else
+            {
+                var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) && updated.DirectUrl != "/" ? updated.DirectUrl : updated.Title;
+                if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                {
+                    existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                }
             }
 
             existing.Title = updated.Title;
@@ -600,6 +685,7 @@ namespace Ozikol_BCC.Api.Controllers
                 if (itemMap.TryGetValue(page.Id, out var newSortOrder))
                 {
                     page.SortOrder = newSortOrder;
+                    page.MainMenuSortOrder = newSortOrder;
                     page.UpdatedAtUtc = DateTime.UtcNow;
                 }
             }
@@ -942,8 +1028,13 @@ Reply ONLY with the valid JSON object.";
 
 
 
-        private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null)
+        private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null, bool isHomePage = false)
         {
+            if (isHomePage || rawInput?.Trim() == "/")
+            {
+                return "/";
+            }
+
             if (string.IsNullOrWhiteSpace(rawInput)) rawInput = "page";
             // Strip leading / trailing slashes and normalize
             var cleaned = rawInput.Trim().Trim('/');
@@ -952,11 +1043,10 @@ Reply ONLY with the valid JSON object.";
             if (string.IsNullOrEmpty(baseSlug)) baseSlug = "page";
 
             var slug = baseSlug;
-            int counter = 2;
             while (await _context.WebPages.AnyAsync(p => p.DirectUrl == slug && (!excludePageId.HasValue || p.Id != excludePageId.Value)))
             {
-                slug = $"{baseSlug}-{counter}";
-                counter++;
+                var shortGuid = Guid.NewGuid().ToString("N")[..6];
+                slug = $"{baseSlug}-{shortGuid}";
             }
             return slug;
         }
@@ -3826,17 +3916,17 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    - Dynamic Form Embeds (Contact Us, Newsletter, Quote Request): {{{{ Form ""Contact_Us"" }}}} or {{{{ FormEmbed }}}}
    - Custom Container Class: {{{{ CustomClass }}}}
 
-3. Repeatable Child Cards (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials):
+3. Repeatable Child Cards / Slides (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials, Hero Sliders):
    Wrap repeating cards/items in:
    {{{{#each PageSectionLists}}}}
      <div class=""card"">
-       <i class=""{{{{ IconText }}}}""></i>
-       <span class=""badge"">{{{{ MiniTitle }}}}</span>
-       <img src=""{{{{ ImageUrl }}}}"" alt=""{{{{ Title }}}}"" />
-       <h3>{{{{ Title }}}}</h3>
-       <p>{{{{ Description }}}}</p>
-       <small>{{{{ MoreDescription }}}}</small>
-       <a href=""{{{{ ButtonLink }}}}"" class=""btn"">{{{{ ButtonText }}}}</a>
+       <i class=""{{{{ PageSectionList.IconText }}}}""></i>
+       <span class=""badge"">{{{{ PageSectionList.MiniTitle }}}}</span>
+       <img src=""{{{{ PageSectionList.ImageUrl }}}}"" alt=""{{{{ PageSectionList.Title }}}}"" />
+       <h3>{{{{ PageSectionList.Title }}}}</h3>
+       <p>{{{{ PageSectionList.Description }}}}</p>
+       <small>{{{{ PageSectionList.MoreDescription }}}}</small>
+       <a href=""{{{{ PageSectionList.ButtonLink }}}}"" class=""btn"">{{{{ PageSectionList.ButtonText }}}}</a>
      </div>
    {{{{/each}}}}
 
@@ -4005,6 +4095,26 @@ Instructions:
                 }
 
                 // =========================================================
+                // 0. GLOBAL PRIMARY AI PROVIDER SELECTION
+                // =========================================================
+                string globalPrimaryProvider = "Gemini";
+                if (_masterCatalogDbContext != null)
+                {
+                    try
+                    {
+                        var setting = await _masterCatalogDbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+                        if (!string.IsNullOrWhiteSpace(setting?.PrimaryAiProvider))
+                        {
+                            globalPrimaryProvider = setting.PrimaryAiProvider.Trim();
+                        }
+                    }
+                    catch { }
+                }
+
+                bool runDeepSeekFirst = globalPrimaryProvider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase)
+                                     || (!string.IsNullOrWhiteSpace(request.Provider) && request.Provider.Contains("deep", StringComparison.OrdinalIgnoreCase));
+
+                // =========================================================
                 // 1. PRIMARY ENGINE: Google Gemini Multi-Key Rotation Pool
                 // =========================================================
                 List<MasterAiApiKey> candidateGeminiKeys = new();
@@ -4013,13 +4123,23 @@ Instructions:
                     try
                     {
                         var nowUtc = DateTime.UtcNow;
-                        candidateGeminiKeys = await _masterCatalogDbContext.MasterAiApiKeys
+                        var fetchedKeys = await _masterCatalogDbContext.MasterAiApiKeys
                             .Where(k => k.Provider == "Gemini" && k.IsActive 
                                      && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                                      && k.TodayRequestsCount < k.DailyQuotaLimit)
-                            .OrderBy(k => k.TodayRequestsCount)
-                            .ThenBy(k => k.LastUsedAtUtc ?? DateTime.MinValue)
                             .ToListAsync();
+
+                        // Smart Key Health & Preference Sorting:
+                        // 1. Keys marked as IsPreferred come FIRST (admin explicit priority)
+                        // 2. Keys with fewer consecutive failures come first (broken keys called LAST)
+                        // 3. Stick to the last known working key (_lastSuccessfulGeminiKeyId)
+                        // 4. Lowest today request count for optimal load balancing
+                        candidateGeminiKeys = fetchedKeys
+                            .OrderByDescending(k => k.IsPreferred)
+                            .ThenBy(k => _geminiKeyFailureCounts.GetValueOrDefault(k.Id, 0))
+                            .ThenByDescending(k => k.Id == _lastSuccessfulGeminiKeyId ? 1 : 0)
+                            .ThenBy(k => k.TodayRequestsCount)
+                            .ToList();
                     }
                     catch (Exception dbKeyEx)
                     {
@@ -4027,9 +4147,10 @@ Instructions:
                     }
                 }
 
-                if (candidateGeminiKeys.Any())
+                if (candidateGeminiKeys.Any() && !runDeepSeekFirst)
                 {
-                    var geminiModels = new[] { "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
+                    // Active valid Google Gemini models only (deprecated 404 models removed)
+                    var geminiModels = new[] { "gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.7-flash" };
 
                     foreach (var activeGeminiKey in candidateGeminiKeys)
                     {
@@ -4038,13 +4159,13 @@ Instructions:
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Gemini Key [{activeGeminiKey.KeyAlias}] ...");
                         var geminiTimer = Stopwatch.StartNew();
                         HttpResponseMessage? geminiResponse = null;
-                        string matchedModel = "gemini-2.5-flash";
+                        string matchedModel = "gemini-3.8-flash";
                         string? geminiError = null;
                         int geminiStatusCode = 500;
 
                         try
                         {
-                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
                             var geminiPayload = new
                             {
                                 contents = new[]
@@ -4067,7 +4188,7 @@ Instructions:
                                 var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
                                 try
                                 {
-                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
                                     geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
                                     geminiStatusCode = (int)geminiResponse.StatusCode;
 
@@ -4122,6 +4243,8 @@ Instructions:
                             {
                                 provider = $"Gemini {matchedModel} ({activeGeminiKey.KeyAlias})";
                                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed via [{activeGeminiKey.KeyAlias}] ({matchedModel}) in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+                                _lastSuccessfulGeminiKeyId = activeGeminiKey.Id;
+                                _geminiKeyFailureCounts[activeGeminiKey.Id] = 0;
 
                                 int? promptTokens = null;
                                 int? completionTokens = null;
@@ -4223,7 +4346,8 @@ Instructions:
                             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini cooldown save notice: {cooldownEx.Message}");
                         }
 
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini Key [{activeGeminiKey.KeyAlias}] failed. Placed on cooldown. Rotating to next Gemini key in pool...");
+                        _geminiKeyFailureCounts.AddOrUpdate(activeGeminiKey.Id, 1, (_, count) => count + 1);
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini Key [{activeGeminiKey.KeyAlias}] failed (consecutive failures: {_geminiKeyFailureCounts.GetValueOrDefault(activeGeminiKey.Id, 1)}). Placed on cooldown. Rotating to next Gemini key in pool...");
                     }
                 }
 
@@ -4240,7 +4364,8 @@ Instructions:
                             .Where(k => k.Provider == "DeepSeek" && k.IsActive 
                                      && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                                      && k.TodayRequestsCount < k.DailyQuotaLimit)
-                            .OrderBy(k => k.TodayRequestsCount)
+                            .OrderByDescending(k => k.IsPreferred)
+                            .ThenBy(k => k.TodayRequestsCount)
                             .FirstOrDefaultAsync();
                     }
                     catch { }
@@ -4254,7 +4379,7 @@ Instructions:
 
                         try
                         {
-                            using var dsClient = new HttpClient { Timeout = TimeSpan.FromSeconds(35) };
+                            using var dsClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
                             dsClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", activeDeepSeekKey.ApiKey);
 
                             var dsPayload = new
@@ -4384,6 +4509,141 @@ Instructions:
                         {
                             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ DeepSeek error: {dsEx.Message}");
                         }
+                    }
+                }
+
+                // =========================================================
+                // 2.5 SECONDARY GEMINI FAILOVER (when DeepSeek was selected as primary)
+                // =========================================================
+                if (string.IsNullOrWhiteSpace(parsedReply) && runDeepSeekFirst && candidateGeminiKeys.Any())
+                {
+                    var geminiModels = new[] { "gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.7-flash" };
+
+                    foreach (var activeGeminiKey in candidateGeminiKeys)
+                    {
+                        if (string.IsNullOrWhiteSpace(activeGeminiKey.ApiKey)) continue;
+
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Gemini Key (Failover) [{activeGeminiKey.KeyAlias}] ...");
+                        var geminiTimer = Stopwatch.StartNew();
+                        HttpResponseMessage? geminiResponse = null;
+                        string matchedModel = "gemini-3.8-flash";
+                        string? geminiError = null;
+                        int geminiStatusCode = 500;
+
+                        try
+                        {
+                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
+                            var geminiPayload = new
+                            {
+                                contents = new[]
+                                {
+                                    new
+                                    {
+                                        role = "user",
+                                        parts = new[] { new { text = llmPrompt } }
+                                    }
+                                },
+                                generationConfig = new
+                                {
+                                    temperature = 0.2,
+                                    maxOutputTokens = 8192
+                                }
+                            };
+
+                            foreach (var gModel in geminiModels)
+                            {
+                                var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
+                                try
+                                {
+                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                                    geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
+                                    geminiStatusCode = (int)geminiResponse.StatusCode;
+
+                                    if (geminiResponse.IsSuccessStatusCode)
+                                    {
+                                        matchedModel = gModel;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        geminiError = await geminiResponse.Content.ReadAsStringAsync();
+                                        if (geminiStatusCode == 400 || geminiStatusCode == 401 || geminiStatusCode == 403) break;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    geminiError = ex.Message;
+                                }
+                            }
+                        }
+                        catch (Exception clientEx)
+                        {
+                            geminiError = clientEx.Message;
+                        }
+
+                        geminiTimer.Stop();
+
+                        if (geminiResponse != null && geminiResponse.IsSuccessStatusCode)
+                        {
+                            using var gDoc = await JsonDocument.ParseAsync(await geminiResponse.Content.ReadAsStreamAsync());
+                            var gText = string.Empty;
+                            if (gDoc.RootElement.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
+                            {
+                                var firstCand = cands[0];
+                                if (firstCand.TryGetProperty("content", out var candContent) && candContent.TryGetProperty("parts", out var candParts) && candParts.GetArrayLength() > 0)
+                                {
+                                    if (candParts[0].TryGetProperty("text", out var textProp))
+                                    {
+                                        gText = textProp.GetString()?.Trim() ?? string.Empty;
+                                    }
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(gText))
+                            {
+                                provider = $"Gemini {matchedModel} ({activeGeminiKey.KeyAlias})";
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed via [{activeGeminiKey.KeyAlias}] ({matchedModel}) in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+                                _lastSuccessfulGeminiKeyId = activeGeminiKey.Id;
+                                _geminiKeyFailureCounts[activeGeminiKey.Id] = 0;
+
+                                if (isCodeBlueprint || gText.Contains("<") && gText.Contains(">"))
+                                {
+                                    isCodeBlueprint = true;
+                                    var cssMatch = Regex.Match(gText, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                    if (cssMatch.Success) generatedCss = cssMatch.Groups[1].Value.Trim();
+
+                                    var codeBlockMatch = Regex.Match(gText, @"```html\s*([\s\S]*?)```", RegexOptions.IgnoreCase);
+                                    if (codeBlockMatch.Success)
+                                    {
+                                        var rawBlock = codeBlockMatch.Groups[1].Value.Trim();
+                                        if (!cssMatch.Success)
+                                        {
+                                            var innerCss = Regex.Match(rawBlock, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                            if (innerCss.Success) generatedCss = innerCss.Groups[1].Value.Trim();
+                                        }
+                                        generatedHtml = Regex.Replace(rawBlock, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                    }
+                                    else
+                                    {
+                                        var fullHtml = Regex.Replace(gText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                        fullHtml = Regex.Replace(fullHtml, @"^```(?:html|css)?\s*", "", RegexOptions.IgnoreCase);
+                                        fullHtml = Regex.Replace(fullHtml, @"\s*```$", "", RegexOptions.IgnoreCase).Trim();
+                                        generatedHtml = fullHtml;
+                                    }
+
+                                    var cleanReply = Regex.Replace(gText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase);
+                                    cleanReply = Regex.Replace(cleanReply, @"```(?:html|css)?[\s\S]*?```", "", RegexOptions.IgnoreCase).Trim();
+                                    parsedReply = !string.IsNullOrWhiteSpace(cleanReply) ? cleanReply : $"Generated template blueprint with Google Gemini ({matchedModel}).";
+                                }
+                                else
+                                {
+                                    parsedReply = gText;
+                                }
+                                break;
+                            }
+                        }
+
+                        _geminiKeyFailureCounts.AddOrUpdate(activeGeminiKey.Id, 1, (_, count) => count + 1);
                     }
                 }
 
@@ -4757,7 +5017,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 if (!string.IsNullOrWhiteSpace(geminiKey))
                 {
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={geminiKey}";
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={geminiKey}";
                     var geminiPayload = new
                     {
                         contents = new[] { new { parts = new[] { new { text = prompt } } } },

@@ -131,6 +131,30 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AiKeys
         /// <summary>
         /// Handles POST requests to toggle the active status of a key.
         /// </summary>
+        /// <summary>
+        /// Handles POST requests to change the global primary AI provider (e.g. Gemini vs DeepSeek).
+        /// </summary>
+        public async Task<IActionResult> OnPostSetPrimaryProviderAsync(string provider)
+        {
+            await _keyPoolService.SetPrimaryProviderAsync(provider);
+            StatusMessage = $"Primary AI Provider priority successfully set to '{provider}'. All dispatches will now prioritize this provider first.";
+            StatusMessageType = "success";
+            return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Handles POST requests to mark a specific key as the preferred / primary key in the rotation pool.
+        /// </summary>
+        public async Task<IActionResult> OnPostTogglePreferredKeyAsync(Guid id)
+        {
+            await _keyPoolService.SetPreferredKeyAsync(id);
+            var key = await _dbContext.MasterAiApiKeys.FindAsync(id);
+            var stateStr = key?.IsPreferred == true ? "marked as Primary (Use First)" : "removed from Primary priority";
+            StatusMessage = $"Key '{key?.KeyAlias ?? id.ToString()}' {stateStr}.";
+            StatusMessageType = "success";
+            return RedirectToPage();
+        }
+
         public async Task<IActionResult> OnPostToggleActiveAsync(Guid id)
         {
             var key = await _dbContext.MasterAiApiKeys.FindAsync(id);

@@ -4,39 +4,23 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageFormsService, PageFormItem, PageFormFieldItem } from '../../../../core/services/page-forms.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-form-builder',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Top Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a routerLink="/content/console/forms">Manage Forms</a>
-            <span class="sep">/</span>
-            <span class="current">{{ isEditMode ? 'Edit Form' : 'New Dynamic Form' }}</span>
-          </div>
-          <h1>{{ isEditMode ? ('Edit: ' + form.title) : 'Create Dynamic Website Form' }}</h1>
-          <p class="subtitle">
-            Configure questions, multi-select pills, dropdowns, and submission rules for website intake.
-          </p>
-        </div>
-        <div class="header-actions">
-          <a routerLink="/content/console/forms" class="btn btn-outline">
-            Cancel
-          </a>
-          <button type="button" class="btn btn-primary" (click)="saveForm()" [disabled]="saving">
-            <span class="material-symbols-outlined" *ngIf="!saving">save</span>
-            <span class="material-symbols-outlined spin" *ngIf="saving">progress_activity</span>
-            <span>{{ saving ? 'Saving Form...' : 'Save Form & Questions' }}</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio / Manage Forms"
+        icon="build"
+        [title]="headerTitle"
+        subtitle="Configure questions, multi-select pills, dropdowns, and submission rules for website intake."
+        [buttons]="headerButtons"
+        [loading]="saving"
+      ></app-page-header>
 
       <!-- Main Layout: Left Settings & Fields / Right Live Preview -->
       <div class="builder-grid">
@@ -500,6 +484,28 @@ export class FormBuilderComponent implements OnInit {
   formId: string | null = null;
   saving = false;
   activeFieldIndex = 0;
+
+  get headerTitle(): string {
+    return this.isEditMode ? `Edit: ${this.form.title || ''}` : 'Create Dynamic Website Form';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Cancel',
+        icon: 'arrow_back',
+        routerLink: '/content/console/forms'
+      },
+      {
+        text: this.saving ? 'Saving Form...' : 'Save Form & Questions',
+        icon: 'save',
+        isPrimary: true,
+        disabled: this.saving,
+        loading: this.saving,
+        action: () => this.saveForm()
+      }
+    ];
+  }
 
   form: Partial<PageFormItem> = {
     title: '',

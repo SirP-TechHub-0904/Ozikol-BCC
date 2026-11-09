@@ -4,37 +4,23 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-page-section-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null">Page Sections</a>
-            <span class="sep">/</span>
-            <span class="current">{{ section?.title || 'Section Details' }}</span>
-          </div>
-          <h1>{{ section?.title }}</h1>
-          <p class="subtitle">Template Key: <code>{{ section?.templateKey }}</code> &bull; {{ section?.pageSectionLists?.length || 0 }} Repeating Sub-Items</p>
-        </div>
-        <div class="header-actions">
-          <a [routerLink]="['/content/console/sections/edit', sectionId]" class="btn btn-primary">
-            <span class="material-symbols-outlined">edit</span>
-            <span>Edit Section Block</span>
-          </a>
-          <a [routerLink]="['/content/console/sections']" [queryParams]="section?.webPageId ? { webPageId: section.webPageId } : null" class="btn btn-outline">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Sections</span>
-          </a>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        [eyebrow]="headerEyebrow"
+        icon="view_list"
+        [title]="section?.title || 'Section Details'"
+        [subtitle]="headerSubtitle"
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -90,7 +76,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   <div class="action-buttons">
                     <a [routerLink]="['/content/console/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
                       <span class="material-symbols-outlined">edit</span>
-                      <span>Edit Page</span>
+                      <span>Edit</span>
                     </a>
                     <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: '/content/console/sections/details/' + sectionId }" class="btn-action btn-delete" title="Delete Item">
                       <span class="material-symbols-outlined">delete</span>
@@ -118,15 +104,6 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .cms-page-container { display: flex; flex-direction: column; gap: 24px; }
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
-    }
-    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
-    .header-actions { display: flex; gap: 10px; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
@@ -204,6 +181,34 @@ export class PageSectionDetailsComponent implements OnInit {
   sectionId = '';
   section: any = null;
   loading = false;
+
+  get headerEyebrow(): string {
+    return this.section?.webPageId
+      ? 'CMS Studio / Page Sections / Web Page'
+      : 'CMS Studio / Page Sections';
+  }
+
+  get headerSubtitle(): string {
+    return this.section
+      ? `Template: ${this.section.templateKey || 'Standard'} • ${this.section.pageSectionLists?.length || 0} Repeating Sub-Items`
+      : 'Layout section details and repeating sub-items.';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Back',
+        icon: 'arrow_back',
+        routerLink: '/content/console/sections'
+      },
+      {
+        text: 'Edit Section Block',
+        icon: 'edit',
+        isPrimary: true,
+        routerLink: `/content/console/sections/edit/${this.sectionId}`
+      }
+    ];
+  }
 
   constructor(
     private route: ActivatedRoute,

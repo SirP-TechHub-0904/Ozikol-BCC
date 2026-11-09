@@ -91,7 +91,7 @@
     <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'head'"
       (click)="activeMainTab = 'head'">
       <span class="material-symbols-outlined">code</span>
-      <span>Header Tags (&lt;head&gt;)</span>
+      <span>HTML Head Tags (&lt;head&gt;)</span>
       <span class="tab-count-pill">{{ getZoneTagCount('head') }}</span>
     </button>
     <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'body_open'"
@@ -1521,7 +1521,7 @@
         <div class="form-group">
           <label class="form-lbl">TARGET BROWSER INJECTION ZONE *</label>
           <select [(ngModel)]="bulkUploadZone" class="form-ctrl">
-            <option value="head">Header Tags (&lt;head&gt;) — Stylesheets &amp; Fonts</option>
+            <option value="head">HTML Head Tags (&lt;head&gt;) — Stylesheets &amp; Fonts</option>
             <option value="body_open">Body Open (&lt;body&gt;) — Trackers &amp; Noscripts</option>
             <option value="footer">Footer Scripts (&lt;/body&gt;) — JavaScript Bundles</option>
           </select>

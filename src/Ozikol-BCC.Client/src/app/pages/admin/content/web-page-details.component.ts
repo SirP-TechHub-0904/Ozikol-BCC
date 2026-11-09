@@ -4,37 +4,23 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-web-page-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a routerLink="/content/console/pages">All Web Pages</a>
-            <span class="sep">/</span>
-            <span class="current">{{ page?.title || 'Page Details' }}</span>
-          </div>
-          <h1>{{ page?.title }}</h1>
-          <p class="subtitle">Direct Route: <code>/{{ page?.directUrl }}</code> &bull; {{ page?.pageSections?.length || 0 }} Layout Section Blocks</p>
-        </div>
-        <div class="header-actions">
-          <a [routerLink]="['/content/console/pages/edit', pageId]" class="btn btn-primary">
-            <span class="material-symbols-outlined">edit</span>
-            <span>Edit Page Settings</span>
-          </a>
-          <a routerLink="/content/console/pages" class="btn btn-outline">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Pages</span>
-          </a>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio / All Web Pages"
+        icon="article"
+        [title]="page?.title || 'Page Details'"
+        [subtitle]="headerSubtitle"
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -196,15 +182,6 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .cms-page-container { display: flex; flex-direction: column; gap: 24px; }
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
-    }
-    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .page-header h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
-    .header-actions { display: flex; gap: 10px; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
@@ -298,6 +275,28 @@ export class WebPageDetailsComponent implements OnInit {
   page: any = null;
   loading = false;
   activeTab = 'sections';
+
+  get headerSubtitle(): string {
+    return this.page
+      ? `Direct Route: /${this.page.directUrl || ''} • ${this.page.pageSections?.length || 0} Layout Section Blocks`
+      : 'Page layout sections, metadata, and routing configuration.';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Back to Pages',
+        icon: 'arrow_back',
+        routerLink: '/content/console/pages'
+      },
+      {
+        text: 'Edit Page Settings',
+        icon: 'edit',
+        isPrimary: true,
+        routerLink: `/content/console/pages/edit/${this.pageId}`
+      }
+    ];
+  }
 
   constructor(
     private route: ActivatedRoute,

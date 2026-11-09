@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * Published & Draft Web Pages management console.
@@ -13,35 +14,18 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-web-pages',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Full-Width Page Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <span class="current">All Web Pages</span>
-          </div>
-          <h1>Published & Draft Web Pages</h1>
-          <p class="subtitle">Create, organize layout blocks, and manage SEO metadata for all public website pages.</p>
-        </div>
-        <div class="header-actions">
-          <button type="button" (click)="normalizePageOrders()" class="btn btn-outline" [disabled]="savingPageOrder" title="Normalize and re-space all pages into clean sequential increments (10, 20, 30...)">
-            <span class="material-symbols-outlined" [class.spin]="savingPageOrder">reorder</span>
-            <span>Normalize (10, 20...)</span>
-          </button>
-          <a routerLink="/content/console/pages/create" class="btn btn-primary">
-            <span class="material-symbols-outlined">add_circle</span>
-            <span>New Web Page</span>
-          </a>
-          <button type="button" (click)="loadAll()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio"
+        icon="article"
+        title="Published & Draft Web Pages"
+        subtitle="Create, organize layout blocks, and manage SEO metadata for all public website pages."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- Filter Controls Bar -->
       <div class="filter-bar">
@@ -1113,6 +1097,31 @@ import { ToastService } from '../../../core/services/toast.service';
 export class WebPagesComponent implements OnInit {
   loading = false;
   savingPageOrder = false;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Normalize (10, 20...)',
+        icon: 'reorder',
+        disabled: this.savingPageOrder,
+        loading: this.savingPageOrder,
+        action: () => this.normalizePageOrders()
+      },
+      {
+        text: 'New Web Page',
+        icon: 'add_circle',
+        isPrimary: true,
+        routerLink: '/content/console/pages/create'
+      },
+      {
+        text: 'Refresh',
+        icon: 'refresh',
+        disabled: this.loading,
+        loading: this.loading,
+        action: () => this.loadAll()
+      }
+    ];
+  }
   bulkDeleting = false;
   showBulkDeleteModal = false;
   cascadeSections = true;
@@ -1232,11 +1241,6 @@ export class WebPagesComponent implements OnInit {
   }
 
   sortByZoneAndOrder(a: any, b: any): number {
-    const zoneA = Number(a.menuPosition) || 1;
-    const zoneB = Number(b.menuPosition) || 1;
-    if (zoneA !== zoneB) {
-      return zoneA - zoneB;
-    }
     return (a.sortOrder || 0) - (b.sortOrder || 0);
   }
 
@@ -1407,8 +1411,9 @@ export class WebPagesComponent implements OnInit {
     const parsed = parseInt(newVal, 10);
     if (isNaN(parsed) || parsed === page.sortOrder) return;
     page.sortOrder = parsed;
+    page.mainMenuSortOrder = parsed;
     this.pages.sort((a, b) => this.sortByZoneAndOrder(a, b));
-    const payload = this.pages.map(p => ({ id: p.id, sortOrder: p.sortOrder || 0 }));
+    const payload = this.pages.map(p => ({ id: p.id, sortOrder: p.sortOrder || 0, mainMenuSortOrder: p.sortOrder || 0 }));
     this.savingPageOrder = true;
     this.api.put<any>('ContentApi/pages/reorder', payload).subscribe({
       next: () => {
@@ -1497,14 +1502,18 @@ export class WebPagesComponent implements OnInit {
   }
 
   applyAndSavePageReorder(orderedList: any[], showNotice: boolean = false): void {
-    const payload: Array<{ id: string; sortOrder: number }> = [];
+    const payload: Array<{ id: string; sortOrder: number; mainMenuSortOrder?: number }> = [];
     orderedList.forEach((page, idx) => {
       const newOrder = (idx + 1) * 10;
       page.sortOrder = newOrder;
-      payload.push({ id: page.id, sortOrder: newOrder });
+      page.mainMenuSortOrder = newOrder;
+      payload.push({ id: page.id, sortOrder: newOrder, mainMenuSortOrder: newOrder });
 
       const master = this.pages.find(p => p.id === page.id);
-      if (master) master.sortOrder = newOrder;
+      if (master) {
+        master.sortOrder = newOrder;
+        master.mainMenuSortOrder = newOrder;
+      }
     });
 
     this.pages.sort((a, b) => this.sortByZoneAndOrder(a, b));

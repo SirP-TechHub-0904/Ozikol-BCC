@@ -81,6 +81,27 @@ namespace Ozikol.Central.Services
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Aggregated dashboard metrics.</returns>
         Task<AiKeyPoolSummaryDto> GetPoolSummaryAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Retrieves the global primary AI provider name configured in Central platform settings.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Provider name (e.g. "Gemini", "DeepSeek").</returns>
+        Task<string> GetPrimaryProviderAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Updates the global primary AI provider setting in the Central platform catalog.
+        /// </summary>
+        /// <param name="provider">The provider name to prioritize (e.g. "Gemini", "DeepSeek").</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task SetPrimaryProviderAsync(string provider, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Toggles or sets an API key as the preferred primary key within its provider pool.
+        /// </summary>
+        /// <param name="keyId">The ID of the key to prioritize.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task SetPreferredKeyAsync(Guid keyId, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -96,6 +117,7 @@ namespace Ozikol.Central.Services
         public int TotalDailyCapacity { get; set; }
         public long TotalLifetimeRequests { get; set; }
         public double AverageLatencyMs { get; set; }
+        public string PrimaryProvider { get; set; } = "Gemini";
         public List<MasterAiApiKey> Keys { get; set; } = new List<MasterAiApiKey>();
     }
 }

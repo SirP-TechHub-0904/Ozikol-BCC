@@ -3,6 +3,9 @@
       background: #f8fafc;
       min-height: calc(100vh - 70px);
       font-family: Inter, system-ui, sans-serif;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     /* Top Page Header */
@@ -85,19 +88,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: nowrap !important;
-      overflow-x: auto;
-      scrollbar-width: thin;
-      padding-bottom: 2px;
+      flex-wrap: wrap;
       width: 100%;
-
-      &::-webkit-scrollbar {
-        height: 4px;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-      }
     }
 
     .badge-soon {
@@ -2658,7 +2650,7 @@
       border-radius: 12px;
       border: 1px solid #e2e8f0;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-      overflow-x: auto;
+      flex-wrap: wrap;
     }
     .main-tab-item {
       display: inline-flex;
@@ -2737,6 +2729,7 @@
       margin-bottom: 20px;
       color: #ffffff;
       box-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+      gap: 16px;
     }
     .zone-banner-left {
       display: flex;
@@ -2759,10 +2752,9 @@
 
     .zone-banner-actions {
       display: flex;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       align-items: center;
       gap: 10px;
-      flex-shrink: 0;
     }
 
     .zone-toolbar-btn {
@@ -4275,6 +4267,186 @@
     tr.row-drag-over {
       border-top: 2.5px solid #4f46e5 !important;
       background: #eef2ff !important;
+    }
+
+    /* ==========================================================================
+       Responsive Overhaul for My Templates Console
+       ========================================================================== */
+
+    @media (max-width: 1024px) {
+      .zone-banner-card {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 16px !important;
+        padding: 20px !important;
+      }
+
+      .zone-banner-actions {
+        width: 100% !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+
+      .zone-toolbar-btn {
+        flex: 1 1 calc(50% - 8px) !important;
+        min-width: 130px !important;
+        justify-content: center !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .my-templates-container {
+        padding: 14px !important;
+      }
+
+      .page-header-card {
+        padding: 14px 16px !important;
+      }
+
+      .page-title {
+        font-size: 18px !important;
+      }
+
+      .page-subtitle {
+        display: none !important;
+      }
+
+      .header-actions {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+
+        .btn, a.btn {
+          flex: 1 1 calc(50% - 6px) !important;
+          min-width: 130px !important;
+          justify-content: center !important;
+          font-size: 11.5px !important;
+          padding: 0 10px !important;
+          height: 36px !important;
+        }
+      }
+
+      .mytemplates-main-tabs {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 4px !important;
+        margin-bottom: 16px !important;
+
+        .main-tab-item {
+          flex: 1 1 calc(50% - 6px) !important;
+          justify-content: center !important;
+          padding: 8px 10px !important;
+          font-size: 12px !important;
+        }
+      }
+
+      .zone-banner-card {
+        padding: 16px !important;
+        border-radius: 12px !important;
+
+        .zone-title {
+          font-size: 16px !important;
+        }
+
+        .zone-desc {
+          display: none !important;
+        }
+      }
+
+      .zone-banner-actions {
+        .zone-toolbar-btn {
+          flex: 1 1 calc(50% - 6px) !important;
+          min-width: 120px !important;
+          font-size: 12px !important;
+          padding: 0 8px !important;
+          height: 38px !important;
+        }
+      }
+
+      .theme-suite-manager-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+
+        .theme-switcher-control {
+          width: 100% !important;
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 8px !important;
+
+          .suite-dropdown-select {
+            width: 100% !important;
+          }
+
+          .btn-activate-suite-primary {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+        }
+      }
+
+      .theme-suite-filter-bar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+
+        .suite-chips {
+          flex-wrap: wrap !important;
+        }
+      }
+
+      .toolbar-top-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+
+        .search-input-wrap {
+          width: 100% !important;
+          min-width: 0 !important;
+        }
+
+        .view-mode-toggle {
+          width: 100% !important;
+          justify-content: stretch !important;
+
+          .toggle-btn {
+            flex: 1 1 50% !important;
+            justify-content: center !important;
+          }
+        }
+      }
+
+      .installed-table-card {
+        border-radius: 12px !important;
+        margin: 0 !important;
+
+        .table-responsive {
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+
+        .code-preview-cell {
+          max-width: 140px !important;
+        }
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-actions {
+        .btn, a.btn {
+          flex: 1 1 100% !important;
+        }
+      }
+
+      .mytemplates-main-tabs {
+        .main-tab-item {
+          flex: 1 1 100% !important;
+        }
+      }
+
+      .zone-banner-actions {
+        .zone-toolbar-btn {
+          flex: 1 1 100% !important;
+        }
+      }
     }
 
 

@@ -1,5 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -74,6 +76,75 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         }
 
         /// <summary>
+        /// Handles HTTP POST requests to test live connectivity of candidate connection string before saving.
+        /// </summary>
+        /// <param name="request">The test connection request containing candidate connection string.</param>
+        /// <returns>JSON result with ping latency, server version, and connectivity status.</returns>
+        public async Task<IActionResult> OnPostTestConnectionAsync([FromBody] TestConnectionRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.ConnectionString))
+            {
+                return new JsonResult(new { success = false, message = "Connection string cannot be empty." });
+            }
+
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                using var conn = new SqlConnection(request.ConnectionString.Trim());
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
+                await conn.OpenAsync(cts.Token);
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT @@VERSION;";
+                var versionObj = await cmd.ExecuteScalarAsync(cts.Token);
+                sw.Stop();
+
+                var fullVersion = versionObj?.ToString() ?? "SQL Server";
+                var firstLine = fullVersion.Split('\n')[0].Trim();
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    latencyMs = sw.ElapsedMilliseconds,
+                    serverVersion = firstLine,
+                    databaseName = conn.Database,
+                    dataSource = conn.DataSource,
+                    message = $"Connection verified in {sw.ElapsedMilliseconds}ms! Connected to {conn.DataSource} [Database: {conn.Database}]."
+                });
+            }
+            catch (SqlException ex)
+            {
+                sw.Stop();
+                string hint = ex.Number switch
+                {
+                    18456 => "Login failed for user. Please check your SQL Username and Password in the connection string.",
+                    4060 => "Database does not exist or cannot be opened on this SQL instance.",
+                    53 => "Network path not found. Please verify the Server host IP/name and ensure port 1433 is open.",
+                    _ when ex.Message.Contains("actively refused it") => "Port 1433 actively refused. Verify that SQL Server is running on that IP and firewall allows port 1433.",
+                    _ => ex.Message
+                };
+
+                return new JsonResult(new
+                {
+                    success = false,
+                    latencyMs = sw.ElapsedMilliseconds,
+                    errorCode = ex.Number,
+                    message = hint
+                });
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                return new JsonResult(new
+                {
+                    success = false,
+                    latencyMs = sw.ElapsedMilliseconds,
+                    message = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
         /// Handles HTTP POST requests to update tenant configuration with audit trail logging.
         /// </summary>
         public async Task<IActionResult> OnPostAsync()
@@ -142,14 +213,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             await _dbContext.SaveChangesAsync();
 
-            // Evict tenant cache so the API immediately switches to the new connection string
+            // Evict tenant cache across cluster so API picks up the new connection string immediately
             var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
             if (cacheInvalidator != null)
             {
                 await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
             }
 
-            TempData["Success"] = $"Tenant '{tenant.OrganizationName}' updated successfully.";
+            TempData["Success"] = $"Tenant '{tenant.OrganizationName}' updated and connection string encrypted successfully.";
             return RedirectToPage("/Tenants/Details", new { id = tenant.Id });
         }
 
@@ -192,6 +263,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             /// Dedicated database connection string (decrypted in memory, transparently encrypted at rest).
             /// </summary>
             [Display(Name = "Dedicated Database Connection String")]
+            public string? ConnectionString { get; set; }
+        }
+
+        /// <summary>
+        /// Request model for testing candidate connection strings via AJAX.
+        /// </summary>
+        public class TestConnectionRequest
+        {
+            /// <summary>
+            /// The candidate connection string to test.
+            /// </summary>
             public string? ConnectionString { get; set; }
         }
     }

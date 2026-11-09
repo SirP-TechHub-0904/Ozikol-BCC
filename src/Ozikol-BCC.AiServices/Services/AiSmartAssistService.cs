@@ -142,11 +142,12 @@ namespace Ozikol_BCC.AiServices.Services
                 }
             }
 
-            // 3. Filter and order by least-used first
+            // 3. Filter and order by preferred key first, then least-used
             var availableKeys = candidateKeys
                 .Where(k => (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                          && k.TodayRequestsCount < k.DailyQuotaLimit)
-                .OrderBy(k => k.TodayRequestsCount)
+                .OrderByDescending(k => k.IsPreferred)
+                .ThenBy(k => k.TodayRequestsCount)
                 .ThenBy(k => k.LastUsedAtUtc ?? DateTime.MinValue)
                 .ToList();
 
@@ -424,12 +425,15 @@ namespace Ozikol_BCC.AiServices.Services
                             }
                         }
 
+                        TryAdd("gemini-3.8-flash");
+                        TryAdd("gemini-3.5-flash");
+                        TryAdd("gemini-3.7-flash");
+                        TryAdd("gemini-flash-latest");
                         TryAdd("gemini-2.5-flash");
                         TryAdd("gemini-2.0-flash");
                         TryAdd("gemini-2.0-flash-lite");
                         TryAdd("gemini-1.5-flash");
                         TryAdd("gemini-1.5-flash-8b");
-                        TryAdd("gemini-flash-latest");
 
                         // Add any other active flash models
                         foreach (var m in validModels.Where(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase)))
@@ -452,6 +456,9 @@ namespace Ozikol_BCC.AiServices.Services
 
             if (!discoveredModels.Any())
             {
+                discoveredModels.Add("gemini-3.8-flash");
+                discoveredModels.Add("gemini-3.5-flash");
+                discoveredModels.Add("gemini-flash-latest");
                 discoveredModels.Add("gemini-2.5-flash");
                 discoveredModels.Add("gemini-2.0-flash");
                 discoveredModels.Add("gemini-1.5-flash");

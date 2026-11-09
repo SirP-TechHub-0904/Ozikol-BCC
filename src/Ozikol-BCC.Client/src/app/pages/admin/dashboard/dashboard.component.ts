@@ -2,30 +2,22 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PageHeaderComponent],
   template: `
     <div class="console-dashboard-container">
-      <!-- Header / Command Strip -->
-      <section class="console-head">
-        <div>
-          <h1 class="console-title">Console Dashboard</h1>
-          <p class="console-subtitle">Multi-tenant workspace command center, membership telemetry, and dynamic CMS studio.</p>
-        </div>
-        <div class="console-actions">
-          <button type="button" class="console-btn" (click)="loadMetrics()">
-            <span class="material-symbols-outlined" [class.spinning]="loading">refresh</span>
-            <span>Refresh Telemetry</span>
-          </button>
-          <a routerLink="/admin/content" class="console-btn primary">
-            <span class="material-symbols-outlined">add</span>
-            <span>New Web Page</span>
-          </a>
-        </div>
-      </section>
+      <!-- Universal Responsive Page Header -->
+      <app-page-header
+        title="Console Dashboard"
+        subtitle="Multi-tenant workspace command center, membership telemetry, and dynamic CMS studio."
+        icon="space_dashboard"
+        [buttons]="headerButtons"
+        [loading]="loading">
+      </app-page-header>
 
       <!-- Main Widget Grid (12-column system) -->
       <div class="console-grid">
@@ -90,7 +82,7 @@ import { ApiService } from '../../../core/services/api.service';
             </div>
             <a routerLink="/admin/users" class="info-link">View Directory &rarr;</a>
           </div>
-          <div class="widget-body" style="padding:0;">
+          <div class="widget-body table-responsive" style="padding:0;">
             <table class="table-clean">
               <thead>
                 <tr>
@@ -189,7 +181,7 @@ import { ApiService } from '../../../core/services/api.service';
             </div>
             <span class="status-pill muted">Telemetry Log</span>
           </div>
-          <div class="widget-body" style="padding:0;">
+          <div class="widget-body table-responsive" style="padding:0;">
             <table class="table-clean">
               <thead>
                 <tr>
@@ -225,8 +217,14 @@ import { ApiService } from '../../../core/services/api.service';
     .spinning { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
     .table-clean {
       width: 100%;
+      min-width: 480px;
       border-collapse: collapse;
       font-size: 13px;
     }
@@ -320,6 +318,23 @@ import { ApiService } from '../../../core/services/api.service';
 export class DashboardComponent implements OnInit {
   metrics: any = null;
   loading = false;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Refresh Telemetry',
+        icon: 'refresh',
+        loading: this.loading,
+        action: () => this.loadMetrics()
+      },
+      {
+        text: 'New Web Page',
+        icon: 'add',
+        isPrimary: true,
+        routerLink: '/admin/content'
+      }
+    ];
+  }
 
   constructor(private api: ApiService) { }
 

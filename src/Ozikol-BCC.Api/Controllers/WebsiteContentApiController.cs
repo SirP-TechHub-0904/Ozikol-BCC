@@ -358,6 +358,12 @@ namespace Ozikol_BCC.Api.Controllers
                 ? siteSetting.CompanyIconUrl
                 : faviconUrl;
 
+            var brandIconUrl = !string.IsNullOrWhiteSpace(siteSetting?.CompanyIconUrl)
+                ? siteSetting.CompanyIconUrl
+                : (!string.IsNullOrWhiteSpace(siteSetting?.FaviconUrl)
+                    ? siteSetting.FaviconUrl
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.LogoUrl) ? siteSetting.LogoUrl : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : "/favicon.ico")));
+
             var logoUrl = !string.IsNullOrWhiteSpace(siteSetting?.LogoUrl)
                 ? siteSetting.LogoUrl
                 : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : faviconUrl);
@@ -395,7 +401,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var resolvedImageUrl = targetPage != null && !string.IsNullOrWhiteSpace(targetPage.ImageUrl)
                 ? targetPage.ImageUrl
-                : logoUrl;
+                : brandIconUrl;
 
             var resolvedCanonicalUrl = targetPage != null && !string.IsNullOrWhiteSpace(targetPage.DirectUrl) && targetPage.DirectUrl != "/"
                 ? $"{baseUrl}/{targetPage.DirectUrl.TrimStart('/')}"
@@ -412,6 +418,7 @@ namespace Ozikol_BCC.Api.Controllers
                     .Replace("{{ AppleTouchIconUrl }}", appleTouchIconUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ Icon32Url }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ Icon16Url }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ IconUrl }}", brandIconUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ LogoUrl }}", logoUrl, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ BrandName }}", brandName, StringComparison.OrdinalIgnoreCase)
                     .Replace("{{ ThemeColor }}", themeColor, StringComparison.OrdinalIgnoreCase)

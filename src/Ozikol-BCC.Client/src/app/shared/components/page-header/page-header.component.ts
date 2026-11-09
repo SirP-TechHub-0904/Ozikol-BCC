@@ -21,6 +21,7 @@ export interface PageHeaderButton {
     <section class="bcp-page-header" [class.is-loading]="loading">
       <div class="bcp-page-header-main">
         <div class="bcp-header-eyebrow" *ngIf="eyebrow">{{ eyebrow }}</div>
+        <ng-content select="[eyebrow]"></ng-content>
         <div class="bcp-header-title-row">
           <span class="bcp-header-icon material-symbols-outlined" *ngIf="icon">{{ icon }}</span>
           <h1 class="bcp-page-title">{{ title }}</h1>
@@ -44,6 +45,8 @@ export interface PageHeaderButton {
           </a>
         </ng-container>
       </div>
+      <ng-content select="[actions]"></ng-content>
+      <ng-content></ng-content>
 
       <!-- Top Indeterminate Progress Line -->
       <div class="header-loader-line" *ngIf="loading">
@@ -170,6 +173,52 @@ export interface PageHeaderButton {
     @keyframes headerIndeterminate {
       0% { transform: translateX(-100%); }
       100% { transform: translateX(300%); }
+    }
+
+    @media (max-width: 640px) {
+      .bcp-page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .bcp-page-title {
+        font-size: 19px;
+        line-height: 25px;
+      }
+      .bcp-header-icon {
+        font-size: 22px;
+      }
+      .bcp-page-subtitle {
+        display: none !important; /* Hide description on mobile screens for clean responsive display */
+      }
+      .bcp-page-actions {
+        display: flex;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      .btn-custom {
+        flex: 1 1 calc(50% - 1px);
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .bcp-page-title {
+        font-size: 17px;
+        line-height: 22px;
+      }
+      .btn-custom {
+        font-size: 11px;
+        padding: 7px 6px;
+        gap: 4px;
+      }
+      .btn-custom .material-symbols-outlined {
+        font-size: 16px;
+      }
     }
   `]
 })

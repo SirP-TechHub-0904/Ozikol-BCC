@@ -247,6 +247,13 @@ namespace Ozikol.MasterDomain.Models
         public string? OneSignalRestApiKey { get; set; }
 
         /// <summary>
+        /// Gets or sets the preferred primary AI engine/provider to use first across all dispatches (e.g. "Gemini", "DeepSeek").
+        /// Defaults to "Gemini".
+        /// </summary>
+        [MaxLength(50)]
+        public string PrimaryAiProvider { get; set; } = "Gemini";
+
+        /// <summary>
         /// Gets or sets the base URL for the Ozi AI Gateway and intelligence microservice.
         /// </summary>
         [MaxLength(500)]

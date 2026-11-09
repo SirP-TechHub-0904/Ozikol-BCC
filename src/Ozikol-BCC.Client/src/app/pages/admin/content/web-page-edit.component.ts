@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * System page descriptor representing built-in application routes.
@@ -30,46 +31,18 @@ interface SystemPageOption {
 @Component({
   selector: 'app-web-page-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Full-Width Page Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/content/console">CMS Studio</a>
-            <span class="sep">/</span>
-            <a routerLink="/content/console/pages">All Web Pages</a>
-            <span class="sep">/</span>
-            <span class="current">{{ isEditMode ? 'Edit Web Page' : 'Create Web Page' }}</span>
-          </div>
-          <h1>{{ isEditMode ? ('Edit Page: ' + (page?.title || '')) : 'Create Dynamic Web Page' }}</h1>
-          <p class="subtitle">
-            {{ isEditMode 
-              ? 'Complete configuration of SEO parameters, multi-zone navigation visibility, direct routing, and banner assets.' 
-              : 'Add a new navigable webpage, configure URL routing, and set navigation placements.' }}
-          </p>
-        </div>
-        <div class="header-actions">
-          <a *ngIf="isEditMode" [href]="livePageUrl" target="_blank" class="btn btn-outline" title="Open live published page in a new browser tab">
-            <span class="material-symbols-outlined">open_in_new</span>
-            <span>View Live Page ↗</span>
-          </a>
-          <a *ngIf="isEditMode" [routerLink]="['/content/console/pages/details', pageId]" class="btn btn-outline">
-            <span class="material-symbols-outlined">layers</span>
-            <span>Manage Sections</span>
-          </a>
-          <a routerLink="/content/console/pages" class="btn btn-outline">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Pages</span>
-          </a>
-          <button type="button" class="btn btn-primary" (click)="savePage()" [disabled]="saving || loading">
-            <span class="material-symbols-outlined">save</span>
-            <span *ngIf="!saving">{{ isEditMode ? 'Save Page Changes' : 'Create Web Page' }}</span>
-            <span *ngIf="saving">Saving...</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="CMS Studio / All Web Pages"
+        icon="article"
+        [title]="headerTitle"
+        [subtitle]="headerSubtitle"
+        [buttons]="headerButtons"
+        [loading]="saving"
+      ></app-page-header>
 
       <!-- Loading State -->
       <div class="loading-box" *ngIf="loading">
@@ -81,21 +54,21 @@ interface SystemPageOption {
       <div class="cards-stack" *ngIf="!loading && page">
 
         <!-- ======================================================== -->
-        <!-- ROW 1: Page Title & Auto-Generated Direct URL (Slug)     -->
+        <!-- ROW 1: Page Title                                        -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
             <div class="row-num-tag">1</div>
             <div class="row-title-box">
               <div class="row-title-heading">
-                <h3>Page Title &amp; Direct URL Slug</h3>
+                <h3>Page Title</h3>
                 <button type="button" class="btn-info-pop" [class.active]="isDescOpen(1)" (click)="toggleDesc(1)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
               <div class="row-desc-drawer" *ngIf="isDescOpen(1)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
-                <span>Primary naming and browser address path for visitors.</span>
+                <span>Primary naming and browser address path for visitors. The URL slug is automatically generated from the title.</span>
               </div>
             </div>
             <span class="badge-status" [class.published]="page.publish" [class.draft]="!page.publish">
@@ -117,83 +90,192 @@ interface SystemPageOption {
               </div>
             </div>
 
-            <div class="form-grid-2">
-              <!-- Page Title -->
-              <div class="form-group">
-                <label class="form-label">
-                  PAGE TITLE <span class="req">*</span>
-                </label>
-                <div class="input-with-icon">
-                  <span class="material-symbols-outlined input-icon">title</span>
-                  <input 
-                    type="text" 
-                    [(ngModel)]="page.title" 
-                    (input)="onTitleInput()" 
-                    class="form-control" 
-                    placeholder="e.g. About Our Mission"
-                  />
-                </div>
-                <small class="help-text">Human-readable label shown in menus, page banners, and search lists.</small>
-              </div>
-
-              <!-- Direct URL Slug -->
-              <div class="form-group">
-                <label class="form-label">
-                  DIRECT URL SLUG <span class="req">*</span>
-                </label>
-                <div class="url-input-addon-group">
-                  <span class="addon-prefix">https://{{ activeHost }}</span>
-                  <input 
-                    type="text" 
-                    [(ngModel)]="page.directUrl" 
-                    (input)="onSlugManualEdit()"
-                    class="form-control url-input-control" 
-                    placeholder="/about-our-mission"
-                  />
-                </div>
-                <small class="help-text">
-                  Auto-generated from title. Checks existing pages and appends <code>-1</code>, <code>-2</code> if a collision is found.
-                </small>
+            <!-- Page Title Input -->
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label">
+                PAGE TITLE <span class="req">*</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">title</span>
+                <input 
+                  type="text" 
+                  [(ngModel)]="page.title" 
+                  (input)="onTitleInput()" 
+                  class="form-control" 
+                  placeholder="e.g. About Our Mission"
+                />
               </div>
             </div>
 
-            <!-- Live URL Preview Pill -->
-            <div class="live-url-banner">
-              <div class="url-meta">
-                <span class="material-symbols-outlined text-blue">link</span>
-                <span class="url-label">Live Visitor URL:</span>
-                <code class="url-value">{{ livePageUrl }}</code>
-              </div>
-              <div class="url-badges">
-                <a *ngIf="isEditMode" [href]="livePageUrl" target="_blank" class="btn-live-link" title="Open live page in a new browser tab">
-                  <span class="material-symbols-outlined icon-sm">open_in_new</span>
-                  <span>View Page ↗</span>
-                </a>
-                <span class="pill pill-success" *ngIf="!slugHasCollision && page.directUrl">
-                  <span class="material-symbols-outlined icon-sm">check_circle</span> Unique URL
+            <!-- Auto-generated Slug Text Display Under Title -->
+            <div class="slug-info-text-box" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 8px 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-top: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #475569;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">link</span>
+                <span>Direct URL Slug:</span>
+                <code style="background: #e2e8f0; color: #0f172a; padding: 2px 8px; border-radius: 4px; font-weight: 600;">{{ livePageUrl }}</code>
+                <span *ngIf="slugHasCollision" style="font-size: 11px; color: #b45309; background: #fef3c7; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+                  (Duplicate resolved with 6-char GUID)
                 </span>
-                <span class="pill pill-warning" *ngIf="slugHasCollision">
-                  <span class="material-symbols-outlined icon-sm">auto_fix</span> Auto-Incremented Collision Free
+                <span *ngIf="page.isHomePage" style="font-size: 11px; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+                  (Root Landing Page /)
                 </span>
               </div>
+              <a *ngIf="isEditMode" [href]="livePageUrl" target="_blank" class="btn-live-link" style="font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;" title="Open live page in a new browser tab">
+                <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                <span>View Page ↗</span>
+              </a>
             </div>
           </div>
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 2: Category & Hierarchy                              -->
+        <!-- ROW 2: Destination Type (Section vs. System vs. Direct)  -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
             <div class="row-num-tag">2</div>
             <div class="row-title-box">
               <div class="row-title-heading">
-                <h3>Menu Category &amp; Page Hierarchy</h3>
+                <h3>Page Destination &amp; Content Type</h3>
                 <button type="button" class="btn-info-pop" [class.active]="isDescOpen(2)" (click)="toggleDesc(2)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
               <div class="row-desc-drawer" *ngIf="isDescOpen(2)">
+                <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
+                <span>Choose if this is a custom CMS section page, a built-in system app (login, blog, store), or a direct URL.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row-card-body">
+            <!-- 3-Way Choice Cards -->
+            <div class="dest-type-grid">
+              <!-- Type 1: Modular Section Page -->
+              <div 
+                class="dest-card" 
+                [class.selected]="destinationType === 'section'"
+                (click)="setDestinationType('section')"
+              >
+                <div class="dest-icon-box bg-blue">
+                  <span class="material-symbols-outlined">view_quilt</span>
+                </div>
+                <div class="dest-card-content">
+                  <h4>Modular Section Page</h4>
+                  <p>Build custom content with hero blocks, feature grids, media showcases, and forms.</p>
+                  <span class="dest-badge">CMS Page Builder</span>
+                </div>
+                <span class="radio-indicator"></span>
+              </div>
+
+              <!-- Type 2: Built-in System Feature Page -->
+              <div 
+                class="dest-card" 
+                [class.selected]="destinationType === 'system'"
+                (click)="setDestinationType('system')"
+              >
+                <div class="dest-icon-box bg-purple">
+                  <span class="material-symbols-outlined">apps</span>
+                </div>
+                <div class="dest-card-content">
+                  <h4>Built-in System Page</h4>
+                  <p>Link directly to core apps like Blog, Storefront, Member Login, or Registration.</p>
+                  <span class="dest-badge bg-purple-light">Ready-Made App</span>
+                </div>
+                <span class="radio-indicator"></span>
+              </div>
+
+              <!-- Type 3: Direct URL / External Redirect -->
+              <div 
+                class="dest-card" 
+                [class.selected]="destinationType === 'direct'"
+                (click)="setDestinationType('direct')"
+              >
+                <div class="dest-icon-box bg-amber">
+                  <span class="material-symbols-outlined">open_in_new</span>
+                </div>
+                <div class="dest-card-content">
+                  <h4>Direct URL / External Link</h4>
+                  <p>Direct navigation to an external website or custom standalone route.</p>
+                  <span class="dest-badge bg-amber-light">Direct Route</span>
+                </div>
+                <span class="radio-indicator"></span>
+              </div>
+            </div>
+
+            <!-- Dynamic Settings for System Page -->
+            <div class="sub-config-box" *ngIf="destinationType === 'system'">
+              <div class="form-group">
+                <label class="form-label">
+                  SELECT BUILT-IN SYSTEM FEATURE <span class="req">*</span>
+                </label>
+                <div class="system-page-select-wrapper">
+                  <select 
+                    class="form-control select-lg" 
+                    [(ngModel)]="selectedSystemPage" 
+                    (change)="onSystemPageSelect(selectedSystemPage)"
+                  >
+                    <option *ngFor="let sp of systemPages" [value]="sp.slug">
+                      {{ sp.title }} ({{ sp.slug }}) — {{ sp.desc }}
+                    </option>
+                  </select>
+                </div>
+                <small class="help-text">
+                  Selecting a system feature auto-populates the direct route and sets up seamless client-side routing.
+                </small>
+
+                <!-- Registration Form Builder Notice & Direct Adjustment Link -->
+                <div *ngIf="selectedSystemPage === registrationSlug || selectedSystemPage === '/register'" class="system-page-hint-banner">
+                  <div class="hint-banner-left">
+                    <span class="material-symbols-outlined hint-icon">tune</span>
+                    <div>
+                      <strong>Dynamic Onboarding Form Connected</strong>
+                      <p>This page automatically renders the live onboarding form configured in <strong>User Manager &gt; Registration Form Builder</strong>. If you want to customize questions, required fields, sector archetypes, or presentation layout, adjust it in the form builder.</p>
+                    </div>
+                  </div>
+                  <a routerLink="/admin/users/registration-form" target="_blank" class="btn-jump-form-builder">
+                    <span class="material-symbols-outlined">edit_document</span>
+                    <span>Adjust in Form Builder</span>
+                    <span class="material-symbols-outlined jump-arrow">open_in_new</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Settings for Direct URL -->
+            <div class="sub-config-box" *ngIf="destinationType === 'direct'">
+              <div class="form-group">
+                <label class="form-label">
+                  CUSTOM DIRECT / EXTERNAL URL <span class="req">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="page.directUrl" 
+                  class="form-control" 
+                  placeholder="https://example.com/resource or /custom-route"
+                />
+                <small class="help-text">
+                  Enter full external URL starting with <code>https://</code> or relative path (e.g. <code>/downloads</code>).
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 3: Category & Hierarchy                              -->
+        <!-- ======================================================== -->
+        <div class="row-card">
+          <div class="row-card-header">
+            <div class="row-num-tag">3</div>
+            <div class="row-title-box">
+              <div class="row-title-heading">
+                <h3>Menu Category &amp; Page Hierarchy</h3>
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(3)" (click)="toggleDesc(3)" title="Click to view explanation for this section">
+                  <span class="material-symbols-outlined">info</span>
+                </button>
+              </div>
+              <div class="row-desc-drawer" *ngIf="isDescOpen(3)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Group this page inside a dropdown menu or nest it beneath a parent page.</span>
               </div>
@@ -232,19 +314,19 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 3: Positions & Navigation Placements                 -->
+        <!-- ROW 4: Positions & Navigation Placements                 -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
-            <div class="row-num-tag">3</div>
+            <div class="row-num-tag">4</div>
             <div class="row-title-box">
               <div class="row-title-heading">
                 <h3>Navigation Placements &amp; Positions</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(3)" (click)="toggleDesc(3)" title="Click to view explanation for this section">
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(4)" (click)="toggleDesc(4)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(3)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(4)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Select which zones and website headers/footers will render this page link.</span>
               </div>
@@ -409,7 +491,7 @@ interface SystemPageOption {
 
                   <div class="cta-route-indicator">
                     <span class="material-symbols-outlined icon-route">alt_route</span>
-                    <span>Target Route: <strong>/{{ page.directUrl || 'route' }}</strong> (Inherited directly from Section 4: Page Destination)</span>
+                    <span>Target Route: <strong>/{{ page.directUrl || 'route' }}</strong> (Inherited directly from Section 2: Page Destination)</span>
                   </div>
 
                   <!-- Contextual notice when page points to registration -->
@@ -428,140 +510,6 @@ interface SystemPageOption {
                     </a>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- ROW 4: Destination Type (Section vs. System vs. Direct)  -->
-        <!-- ======================================================== -->
-        <div class="row-card">
-          <div class="row-card-header">
-            <div class="row-num-tag">4</div>
-            <div class="row-title-box">
-              <div class="row-title-heading">
-                <h3>Page Destination &amp; Content Type</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(4)" (click)="toggleDesc(4)" title="Click to view explanation for this section">
-                  <span class="material-symbols-outlined">info</span>
-                </button>
-              </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(4)">
-                <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
-                <span>Choose if this is a custom CMS section page, a built-in system app (login, blog, store), or a direct URL.</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="row-card-body">
-            <!-- 3-Way Choice Cards -->
-            <div class="dest-type-grid">
-              <!-- Type 1: Modular Section Page -->
-              <div 
-                class="dest-card" 
-                [class.selected]="destinationType === 'section'"
-                (click)="setDestinationType('section')"
-              >
-                <div class="dest-icon-box bg-blue">
-                  <span class="material-symbols-outlined">view_quilt</span>
-                </div>
-                <div class="dest-card-content">
-                  <h4>Modular Section Page</h4>
-                  <p>Build custom content with hero blocks, feature grids, media showcases, and forms.</p>
-                  <span class="dest-badge">CMS Page Builder</span>
-                </div>
-                <span class="radio-indicator"></span>
-              </div>
-
-              <!-- Type 2: Built-in System Feature Page -->
-              <div 
-                class="dest-card" 
-                [class.selected]="destinationType === 'system'"
-                (click)="setDestinationType('system')"
-              >
-                <div class="dest-icon-box bg-purple">
-                  <span class="material-symbols-outlined">apps</span>
-                </div>
-                <div class="dest-card-content">
-                  <h4>Built-in System Page</h4>
-                  <p>Link directly to core apps like Blog, Storefront, Member Login, or Registration.</p>
-                  <span class="dest-badge bg-purple-light">Ready-Made App</span>
-                </div>
-                <span class="radio-indicator"></span>
-              </div>
-
-              <!-- Type 3: Direct URL / External Redirect -->
-              <div 
-                class="dest-card" 
-                [class.selected]="destinationType === 'direct'"
-                (click)="setDestinationType('direct')"
-              >
-                <div class="dest-icon-box bg-amber">
-                  <span class="material-symbols-outlined">open_in_new</span>
-                </div>
-                <div class="dest-card-content">
-                  <h4>Direct URL / External Link</h4>
-                  <p>Direct navigation to an external website or custom standalone route.</p>
-                  <span class="dest-badge bg-amber-light">Direct Route</span>
-                </div>
-                <span class="radio-indicator"></span>
-              </div>
-            </div>
-
-            <!-- Dynamic Settings for System Page -->
-            <div class="sub-config-box" *ngIf="destinationType === 'system'">
-              <div class="form-group">
-                <label class="form-label">
-                  SELECT BUILT-IN SYSTEM FEATURE <span class="req">*</span>
-                </label>
-                <div class="system-page-select-wrapper">
-                  <select 
-                    class="form-control select-lg" 
-                    [(ngModel)]="selectedSystemPage" 
-                    (change)="onSystemPageSelect(selectedSystemPage)"
-                  >
-                    <option *ngFor="let sp of systemPages" [value]="sp.slug">
-                      {{ sp.title }} ({{ sp.slug }}) — {{ sp.desc }}
-                    </option>
-                  </select>
-                </div>
-                <small class="help-text">
-                  Selecting a system feature auto-populates the direct route and sets up seamless client-side routing.
-                </small>
-
-                <!-- Registration Form Builder Notice & Direct Adjustment Link -->
-                <div *ngIf="selectedSystemPage === registrationSlug || selectedSystemPage === '/register'" class="system-page-hint-banner">
-                  <div class="hint-banner-left">
-                    <span class="material-symbols-outlined hint-icon">tune</span>
-                    <div>
-                      <strong>Dynamic Onboarding Form Connected</strong>
-                      <p>This page automatically renders the live onboarding form configured in <strong>User Manager &gt; Registration Form Builder</strong>. If you want to customize questions, required fields, sector archetypes, or presentation layout, adjust it in the form builder.</p>
-                    </div>
-                  </div>
-                  <a routerLink="/admin/users/registration-form" target="_blank" class="btn-jump-form-builder">
-                    <span class="material-symbols-outlined">edit_document</span>
-                    <span>Adjust in Form Builder</span>
-                    <span class="material-symbols-outlined jump-arrow">open_in_new</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dynamic Settings for Direct URL -->
-            <div class="sub-config-box" *ngIf="destinationType === 'direct'">
-              <div class="form-group">
-                <label class="form-label">
-                  CUSTOM DIRECT / EXTERNAL URL <span class="req">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  [(ngModel)]="page.directUrl" 
-                  class="form-control" 
-                  placeholder="https://example.com/resource or /custom-route"
-                />
-                <small class="help-text">
-                  Enter full external URL starting with <code>https://</code> or relative path (e.g. <code>/downloads</code>).
-                </small>
               </div>
             </div>
           </div>
@@ -662,7 +610,7 @@ interface SystemPageOption {
 
               <!-- Website Root Home Page -->
               <label class="toggle-card-item" [class.checked]="page.isHomePage">
-                <input type="checkbox" [(ngModel)]="page.isHomePage">
+                <input type="checkbox" [(ngModel)]="page.isHomePage" (change)="onHomePageToggle()">
                 <div class="toggle-card-details">
                   <strong>Website Root Landing Page (/)</strong>
                   <p>When enabled, acts as the primary root homepage of your tenant domain.</p>
@@ -984,74 +932,6 @@ interface SystemPageOption {
       width: 100%;
       box-sizing: border-box;
       padding-bottom: 40px;
-    }
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #ffffff;
-      padding: 20px 28px;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
-      gap: 20px;
-    }
-    .header-titles {
-      flex: 1;
-      min-width: 0;
-    }
-    .breadcrumb {
-      font-size: 13px;
-      color: #64748b;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .breadcrumb a {
-      color: #0050e5;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .breadcrumb a:hover {
-      text-decoration: underline;
-    }
-    .breadcrumb .sep {
-      color: #94a3b8;
-    }
-    .breadcrumb .current {
-      color: #334155;
-      font-weight: 500;
-    }
-    .page-header h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0 0 4px;
-    }
-    .subtitle {
-      color: #64748b;
-      font-size: 13.5px;
-      margin: 0;
-      line-height: 1.4;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-    .header-actions .btn {
-      margin-left: 6px;
-    }
-    .header-actions .btn:first-child {
-      margin-left: 0;
-    }
-    .header-actions .btn-primary {
-      margin-left: 14px;
     }
 
     /* Cards Stack Layout */
@@ -2211,6 +2091,48 @@ export class WebPageEditComponent implements OnInit {
   saving = false;
   uploading = false;
 
+  get headerTitle(): string {
+    return this.isEditMode
+      ? `Edit Page: ${this.page?.title || ''}`
+      : 'Create Dynamic Web Page';
+  }
+
+  get headerSubtitle(): string {
+    return this.isEditMode
+      ? 'Complete configuration of SEO parameters, multi-zone navigation visibility, direct routing, and banner assets.'
+      : 'Add a new navigable webpage, configure URL routing, and set navigation placements.';
+  }
+
+  get headerButtons(): PageHeaderButton[] {
+    const btns: PageHeaderButton[] = [];
+    if (this.isEditMode) {
+      btns.push({
+        text: 'View Live Page ↗',
+        icon: 'open_in_new',
+        url: this.livePageUrl
+      });
+      btns.push({
+        text: 'Manage Sections',
+        icon: 'layers',
+        routerLink: `/content/console/pages/details/${this.pageId}`
+      });
+    }
+    btns.push({
+      text: 'Back to Pages',
+      icon: 'arrow_back',
+      routerLink: '/content/console/pages'
+    });
+    btns.push({
+      text: this.saving ? 'Saving...' : (this.isEditMode ? 'Save Page Changes' : 'Create Web Page'),
+      icon: 'save',
+      isPrimary: true,
+      disabled: this.saving || this.loading,
+      loading: this.saving,
+      action: () => this.savePage()
+    });
+    return btns;
+  }
+
   // Interactive Row Description Popups
   openRowDescs: { [row: number]: boolean } = {};
 
@@ -2282,8 +2204,12 @@ export class WebPageEditComponent implements OnInit {
   }
 
   get livePageUrl(): string {
+    if (this.page?.isHomePage) return `${this.protocol}//${this.activeHost}/`;
     if (!this.page?.directUrl) return `${this.protocol}//${this.activeHost}/`;
     const val = this.page.directUrl.trim();
+    if (val === '/' || val === 'home' || val === '/home') {
+      return `${this.protocol}//${this.activeHost}/`;
+    }
     if (val.startsWith('http://') || val.startsWith('https://')) {
       return val;
     }
@@ -2400,33 +2326,59 @@ export class WebPageEditComponent implements OnInit {
     if (!this.page?.title?.trim()) {
       return;
     }
-    // Only auto-generate slug in create mode or when destination is section
-    if (!this.isEditMode || !this.page.directUrl || this.destinationType === 'section') {
-      this.generateUniqueSlug(this.page.title);
+    this.generateUniqueSlug(this.page.title);
+  }
+
+  onHomePageToggle(): void {
+    if (this.page.isHomePage) {
+      this.page.directUrl = '/';
+      this.isSlugAutoGenerated = true;
+      this.slugHasCollision = false;
+    } else {
+      this.generateUniqueSlug(this.page.title || 'page');
     }
   }
 
+  private generateShortGuid(length: number = 6): string {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID().replace(/-/g, '').substring(0, length).toLowerCase();
+    }
+    return Math.random().toString(36).substring(2, 2 + length).toLowerCase();
+  }
+
   generateUniqueSlug(title: string): void {
+    if (this.page.isHomePage) {
+      this.page.directUrl = '/';
+      this.isSlugAutoGenerated = true;
+      this.slugHasCollision = false;
+      return;
+    }
+
     let base = this.slugify(title);
     if (!base) base = 'page';
 
     // Disallow collision with existing pages
     const existingSlugs = new Set(
       this.otherPages
+        .filter(p => p.id !== this.page?.id)
         .map(p => (p.directUrl || p.slug || '').toLowerCase().replace(/^https?:\/\/[^\/]+/i, '').replace(/^\/+/, '').trim())
-        .filter(s => !!s)
+        .filter(s => !!s && s !== 'home' && s !== '')
     );
 
     let candidate = base;
-    let counter = 1;
-    while (existingSlugs.has(candidate)) {
-      candidate = `${base}-${counter}`;
-      counter++;
+    let hasCollision = false;
+
+    if (existingSlugs.has(candidate)) {
+      hasCollision = true;
+      candidate = `${base}-${this.generateShortGuid(6)}`;
+      while (existingSlugs.has(candidate)) {
+        candidate = `${base}-${this.generateShortGuid(6)}`;
+      }
     }
 
     this.page.directUrl = '/' + candidate;
     this.isSlugAutoGenerated = true;
-    this.slugHasCollision = (candidate !== base);
+    this.slugHasCollision = hasCollision;
   }
 
   onSlugManualEdit(): void {
@@ -2533,6 +2485,12 @@ export class WebPageEditComponent implements OnInit {
             this.destinationType = 'direct';
           } else {
             this.destinationType = 'section';
+          }
+
+          // If page is root homepage or directUrl is / or home, enforce homepage flag & '/' directUrl
+          if (this.page.isHomePage || direct === '/' || direct === 'home' || direct === '/home') {
+            this.page.isHomePage = true;
+            this.page.directUrl = '/';
           }
 
           this.tagsList = (this.page.tags || '')
@@ -2663,9 +2621,11 @@ export class WebPageEditComponent implements OnInit {
       return;
     }
 
-    if (!this.page?.directUrl?.trim()) {
-      this.toast.warning('Direct URL Slug is required.');
-      return;
+    // Auto-ensure slug is set
+    if (this.page.isHomePage) {
+      this.page.directUrl = '/';
+    } else if (!this.page?.directUrl?.trim()) {
+      this.generateUniqueSlug(this.page.title);
     }
 
     // Set enableDirectUrl accordingly

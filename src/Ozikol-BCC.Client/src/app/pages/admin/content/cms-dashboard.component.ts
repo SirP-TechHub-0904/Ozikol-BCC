@@ -2,39 +2,23 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-cms-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PageHeaderComponent],
   template: `
     <div class="cms-page-container">
-      <!-- Top Header -->
-      <div class="page-header">
-        <div class="header-titles">
-          <div class="breadcrumb">
-            <a routerLink="/admin/dashboard">Command Center</a>
-            <span class="sep">/</span>
-            <span class="current">CMS Studio Dashboard</span>
-          </div>
-          <h1>Dynamic Content & CMS Intelligence</h1>
-          <p class="subtitle">Real-time statistics, traffic density analytics, device breakdown, and web structure monitoring.</p>
-        </div>
-        <div class="header-actions">
-          <a [href]="liveWebsiteUrl" target="_blank" class="btn btn-outline visit-site-btn" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Open live public website in new tab'">
-            <span class="material-symbols-outlined">open_in_new</span>
-            <span>Visit Website</span>
-          </a>
-          <a routerLink="/admin/content/pages" class="btn btn-primary">
-            <span class="material-symbols-outlined">add_circle</span>
-            <span>New Web Page</span>
-          </a>
-          <button type="button" (click)="loadStats()" class="btn btn-outline" [disabled]="loading">
-            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
-            <span>Refresh Analytics</span>
-          </button>
-        </div>
-      </div>
+      <!-- Standardized Reusable Page Header -->
+      <app-page-header
+        eyebrow="Command Center"
+        icon="dashboard"
+        title="Dynamic Content & CMS Intelligence"
+        subtitle="Real-time statistics, traffic density analytics, device breakdown, and web structure monitoring."
+        [buttons]="headerButtons"
+        [loading]="loading"
+      ></app-page-header>
 
       <!-- 1. Clickable 5 Comprehensive Smart Cards Grid -->
       <div class="metrics-grid">
@@ -980,6 +964,29 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class CmsDashboardComponent implements OnInit {
   loading = false;
+
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: 'Visit Website',
+        icon: 'open_in_new',
+        url: this.liveWebsiteUrl
+      },
+      {
+        text: 'New Web Page',
+        icon: 'add_circle',
+        isPrimary: true,
+        routerLink: '/content/console/pages/create'
+      },
+      {
+        text: 'Refresh Analytics',
+        icon: 'refresh',
+        disabled: this.loading,
+        loading: this.loading,
+        action: () => this.loadStats()
+      }
+    ];
+  }
   showDiagnosticModal = false;
   selectedRange = '24h';
   metrics: any = null;
