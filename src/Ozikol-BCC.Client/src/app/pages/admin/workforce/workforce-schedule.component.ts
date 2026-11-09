@@ -198,7 +198,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     </div>
                   </td>
                   <td>
-                    <span class="rate-badge">{{ s.hourlyPayRate ? '£' + (s.hourlyPayRate | number:'1.2-2') + '/h' : '—' }}</span>
+                    <span class="rate-badge">{{ s.hourlyPayRate ? currencySymbol + (s.hourlyPayRate | number:'1.2-2') + '/h' : '—' }}</span>
                   </td>
                   <td>
                     <span class="badge-status accepted" *ngIf="s.isConfirmedByGuard">Accepted</span>
@@ -290,7 +290,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     <span class="text-muted-mini" *ngIf="!s.isClockedIn && !s.isClockedOut">—</span>
                   </td>
                   <td>
-                    <span class="rate-bold">{{ s.hourlyPayRate ? '£' + (s.hourlyPayRate | number:'1.2-2') : '£10.00' }}</span>
+                    <span class="rate-bold">{{ s.hourlyPayRate ? currencySymbol + (s.hourlyPayRate | number:'1.2-2') : (currencySymbol + '10.00') }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -460,7 +460,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
             <div class="form-row-triple">
               <div class="form-group">
-                <label class="form-label">Pay Rate (£/hr)</label>
+                <label class="form-label">Pay Rate ({{ currencySymbol }}/hr)</label>
                 <input
                   type="number"
                   step="0.5"
@@ -1498,6 +1498,7 @@ export class WorkforceScheduleComponent implements OnInit {
   isSubmitting = false;
   showCreateModal = false;
   showInfoModal = false;
+  currencySymbol = '₦';
 
   activeView: 'list' | 'timesheet' | 'calendar' = 'list';
   selectedSiteId = '';
@@ -1540,6 +1541,15 @@ export class WorkforceScheduleComponent implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+    this.workforceService.getTenantCurrency().subscribe({
+      next: (res: any) => {
+        if (res?.data?.currencySymbol) {
+          this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
+
     this.workforceService.getSites().subscribe({
       next: (res: any) => {
         this.sites = res?.data || [];

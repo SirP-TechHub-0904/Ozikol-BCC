@@ -130,7 +130,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
               <div class="form-row-dual">
                 <div class="form-group">
-                  <label class="form-label">Default Hourly Rate (£)</label>
+                  <label class="form-label">Default Hourly Rate ({{ currencySymbol }})</label>
                   <input
                     type="number"
                     step="0.25"
@@ -358,7 +358,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Default Hourly Pay Rate (£) <span class="required">*</span></label>
+                  <label class="form-label">Default Hourly Pay Rate ({{ currencySymbol }}) <span class="required">*</span></label>
                   <input
                     type="number"
                     step="0.25"
@@ -978,6 +978,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class WorkforceEnrollComponent implements OnInit {
   activeTab: 'invite' | 'direct' = 'invite';
   isSubmitting = false;
+  currencySymbol = '₦';
 
   inviteModel = {
     fullName: '',
@@ -1022,7 +1023,16 @@ export class WorkforceEnrollComponent implements OnInit {
     private readonly router: Router
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.workforceService.getTenantCurrency().subscribe({
+      next: (res: any) => {
+        if (res?.data?.currencySymbol) {
+          this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
+  }
 
   sendInvite(): void {
     if (!this.inviteModel.fullName?.trim() || !this.inviteModel.email?.trim()) {

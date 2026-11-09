@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
@@ -32,6 +34,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class WorkforceRotaApiController : ControllerBase
     {
         private readonly DashboardDbContext _db;
+        private readonly MasterCatalogDbContext? _master;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ITenantProvider? _tenantProvider;
         private readonly ITenantFeatureGateService? _featureGateService;
@@ -42,12 +45,14 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         public WorkforceRotaApiController(
             DashboardDbContext db,
+            MasterCatalogDbContext? master = null,
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ITenantProvider? tenantProvider = null,
             ITenantFeatureGateService? featureGateService = null,
             UserManager<Profile>? userManager = null)
         {
             _db = db;
+            _master = master;
             _notificationDispatcher = notificationDispatcher;
             _tenantProvider = tenantProvider;
             _featureGateService = featureGateService;
@@ -57,6 +62,35 @@ namespace Ozikol_BCC.Api.Controllers
         private string CurrentTenantKey => ResolveCurrentTenantKey();
         private string CurrentUserId => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
         private string CurrentUserName => User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst("name")?.Value ?? "Staff Member";
+
+        /// <summary>
+        /// Resolves the active running currency code and symbol for the current tenant from the Central Master Catalog database.
+        /// Defaults to NGN / ₦ if unconfigured or unreachable.
+        /// </summary>
+        private async Task<(string Code, string Symbol)> ResolveTenantCurrencyAsync(CancellationToken ct = default)
+        {
+            if (_master == null) return ("NGN", "₦");
+            try
+            {
+                var tenantKey = CurrentTenantKey;
+                var tenant = await _master.MasterTenantCatalogs.AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.TenantKey.ToLower() == tenantKey.ToLower(), ct);
+
+                var currCode = !string.IsNullOrWhiteSpace(tenant?.DefaultCurrencyCode)
+                    ? tenant.DefaultCurrencyCode.Trim().ToUpperInvariant()
+                    : "NGN";
+
+                var rateObj = await _master.MasterCurrencyRates.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToUpper() == currCode, ct);
+
+                var symbol = rateObj?.CurrencySymbol ?? (currCode == "NGN" ? "₦" : "$");
+                return (currCode, symbol);
+            }
+            catch
+            {
+                return ("NGN", "₦");
+            }
+        }
 
         private string ResolveCurrentTenantKey()
         {
@@ -1251,8 +1285,12 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderByDescending(b => b.TotalHours)
                 .ToList();
 
+            var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+
             var dto = new WorkforceAnalyticsDto
             {
+                CurrencyCode = currCode,
+                CurrencySymbol = currSymbol,
                 ShiftFulfillmentRatePercent = fulfillmentRate,
                 OverallPunctualityPercent = punctualityPercent,
                 ActiveOnDutyCount = activeOnDuty,
@@ -1274,6 +1312,16 @@ namespace Ozikol_BCC.Api.Controllers
             };
 
             return Ok(ApiResponse<WorkforceAnalyticsDto>.SuccessResponse(dto, "Workforce graphical analytics computed successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves the active tenant running currency code and symbol configured in the Central Master Catalog.
+        /// </summary>
+        [HttpGet("currency")]
+        public async Task<ActionResult<ApiResponse<object>>> GetTenantCurrency(CancellationToken ct)
+        {
+            var (code, symbol) = await ResolveTenantCurrencyAsync(ct);
+            return Ok(ApiResponse<object>.SuccessResponse(new { currencyCode = code, currencySymbol = symbol }, "Tenant currency resolved successfully."));
         }
 
         // =========================================================================
@@ -1727,6 +1775,8 @@ namespace Ozikol_BCC.Api.Controllers
 
     public class WorkforceAnalyticsDto
     {
+        public string CurrencyCode { get; set; } = "NGN";
+        public string CurrencySymbol { get; set; } = "₦";
         public decimal ShiftFulfillmentRatePercent { get; set; }
         public decimal OverallPunctualityPercent { get; set; }
         public int ActiveOnDutyCount { get; set; }

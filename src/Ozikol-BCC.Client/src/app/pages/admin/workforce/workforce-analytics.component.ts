@@ -156,7 +156,7 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
               <span class="card-chip chip-amber">30-Day Period</span>
             </div>
-            <div class="card-value">£{{ (analytics?.totalGrossLaborSpend ?? 0) | number:'1.2-2' }}</div>
+            <div class="card-value">{{ currencySymbol }}{{ (analytics?.totalGrossLaborSpend ?? 0) | number:'1.2-2' }}</div>
             <div class="card-label">Gross Labor Spend</div>
             <div class="card-sub-info mt-auto">
               <strong>{{ (analytics?.totalWorkedHours ?? 0) | number:'1.1-1' }} hrs</strong> worked / {{ (analytics?.totalScheduledHours ?? 0) | number:'1.1-1' }} planned
@@ -211,7 +211,7 @@ import { ToastService } from '../../../core/services/toast.service';
                       <span class="bullet">&bull;</span>
                       {{ site.shiftCount }} shifts
                       <span class="bullet">&bull;</span>
-                      £{{ site.totalSpend | number:'1.2-2' }}
+                      {{ currencySymbol }}{{ site.totalSpend | number:'1.2-2' }}
                     </span>
                   </div>
                 </div>
@@ -354,7 +354,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </td>
                   <td>
                     <span class="rate-text">
-                      {{ m.defaultHourlyRate ? ('£' + (m.defaultHourlyRate | number:'1.2-2') + '/h') : 'Standard Rate' }}
+                      {{ m.defaultHourlyRate ? (currencySymbol + (m.defaultHourlyRate | number:'1.2-2') + '/h') : 'Standard Rate' }}
                     </span>
                   </td>
                   <td>
@@ -1402,6 +1402,10 @@ export class WorkforceAnalyticsComponent implements OnInit {
   isSubmitting = false;
   analytics: any = null;
   staffMembers: any[] = [];
+
+  get currencySymbol(): string {
+    return this.analytics?.currencySymbol || '₦';
+  }
 
   // Filter & Search states
   searchQuery = '';

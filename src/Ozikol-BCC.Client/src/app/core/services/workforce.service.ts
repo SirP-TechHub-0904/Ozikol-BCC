@@ -220,6 +220,13 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/analytics');
   }
 
+  /**
+   * Retrieves active running currency configured in Central for the tenant.
+   */
+  getTenantCurrency(): Observable<any> {
+    return this.apiService.get<any>('workforce/currency');
+  }
+
   // --- RATINGS & REVIEWS ---
   submitRating(rating: any): Observable<any> {
     return this.apiService.post<any>('workforce/ratings', rating);

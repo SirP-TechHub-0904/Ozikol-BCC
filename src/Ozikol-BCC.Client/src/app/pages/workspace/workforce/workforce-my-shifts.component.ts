@@ -96,7 +96,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </div>
                   <div class="d-flex justify-content-between small mt-1">
                     <span class="text-muted">Pay Rate:</span>
-                    <span class="fw-bold text-success">{{ s.hourlyPayRate ? '£' + s.hourlyPayRate + '/hr' : '£10.00/hr' }}</span>
+                    <span class="fw-bold text-success">{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
                   </div>
                   <div class="d-flex justify-content-between small mt-1" *ngIf="s.requiredWorkspaceStationName">
                     <span class="text-muted">Workstation:</span>
@@ -691,6 +691,7 @@ export class WorkforceMyShiftsComponent implements OnInit {
   shifts: Shift[] = [];
   isLoading = false;
   isActionLoading = false;
+  currencySymbol = '₦';
 
   activeTab: 'shifts' | 'availability' | 'documents' | 'reminders' = 'shifts';
 
@@ -739,6 +740,14 @@ export class WorkforceMyShiftsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.workforceService.getTenantCurrency().subscribe({
+      next: (res: any) => {
+        if (res?.data?.currencySymbol) {
+          this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
     this.loadMyShifts();
   }
 
