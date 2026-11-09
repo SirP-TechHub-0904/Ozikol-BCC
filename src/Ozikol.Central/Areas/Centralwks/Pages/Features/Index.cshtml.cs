@@ -402,10 +402,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public async Task<IActionResult> OnPostTogglePublishAsync(Guid id)
         {
             var feature = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.Id == id)
-                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsCompulsory, f.IsActive, f.IsAvailableForUse, f.MonthlyPrice, f.YearlyPrice })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(f => f.Id == id);
 
             if (feature == null)
             {
@@ -431,11 +428,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
             }
 
-            await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.Id == id)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(f => f.IsActive, newActive)
-                    .SetProperty(f => f.IsPublished, newActive));
+            feature.IsActive = newActive;
+            feature.IsPublished = newActive;
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -480,10 +474,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public async Task<IActionResult> OnPostToggleAvailabilityAsync(Guid id)
         {
             var feature = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.Id == id)
-                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(f => f.Id == id);
 
             if (feature == null)
             {
@@ -496,11 +487,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             var newAvailable = !feature.IsAvailableForUse;
-
-            await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.Id == id)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(f => f.IsAvailableForUse, newAvailable));
+            feature.IsAvailableForUse = newAvailable;
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {

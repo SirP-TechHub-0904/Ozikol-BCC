@@ -319,6 +319,7 @@
                                         @* 1. Visibility Toggle: Published vs Unpublished *@
                                         <form method="post" asp-page-handler="TogglePublish" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'publish', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
                                             @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@feat.Id" />
                                             <button type="submit"
                                                     class="status-toggle-pill @(feat.IsActive ? "pill-published" : "pill-unpublished")"
                                                     data-feature-id="@feat.Id"
@@ -337,6 +338,7 @@
                                         @* 2. Readiness Toggle: Available for Use vs Coming Soon *@
                                         <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'availability', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
                                             @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@feat.Id" />
                                             <button type="submit"
                                                     class="status-toggle-pill @(feat.IsAvailableForUse ? "pill-available" : "pill-coming-soon")"
                                                     data-feature-id="@feat.Id"
@@ -609,6 +611,7 @@ else
                                 <td>
                                     <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'availability', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
                                         @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@feat.Id" />
                                         <button type="submit"
                                                 class="status-toggle-pill @(feat.IsAvailableForUse ? "pill-available" : "pill-coming-soon")"
                                                 data-feature-id="@feat.Id"
@@ -624,6 +627,7 @@ else
                                 <td>
                                     <form method="post" asp-page-handler="TogglePublish" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'publish', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
                                         @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@feat.Id" />
                                         <button type="submit"
                                                 class="status-toggle-pill @(feat.IsActive ? "pill-published" : "pill-unpublished")"
                                                 data-feature-id="@feat.Id"
