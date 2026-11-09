@@ -229,6 +229,10 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/currency');
   }
 
+  getCurrency(): Observable<any> {
+    return this.getTenantCurrency();
+  }
+
   // --- RATINGS & REVIEWS ---
   submitRating(rating: any): Observable<any> {
     return this.apiService.post<any>('workforce/ratings', rating);

@@ -119,7 +119,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="form-group">
                   <label class="form-label">Designated Job Title <span class="required">*</span></label>
                   <select class="form-control" [(ngModel)]="inviteModel.jobTitle">
-                    <option *ngFor="let role of (jobRoles.length ? jobRoles : fallbackJobRoles)" [value]="role.title">
+                    <option *ngFor="let role of availableJobRoles" [value]="role.title">
                       {{ role.title }} ({{ role.code }})
                     </option>
                   </select>
@@ -355,7 +355,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="form-group">
                   <label class="form-label">Designated Job Title <span class="required">*</span></label>
                   <select class="form-control" [(ngModel)]="directModel.jobTitle">
-                    <option *ngFor="let role of (jobRoles.length ? jobRoles : fallbackJobRoles)" [value]="role.title">
+                    <option *ngFor="let role of availableJobRoles" [value]="role.title">
                       {{ role.title }} ({{ role.code }})
                     </option>
                   </select>
@@ -422,7 +422,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="form-group">
                   <label class="form-label">Credential / Document Category</label>
                   <select class="form-control" [(ngModel)]="directModel.siaLicenseSector">
-                    <option *ngFor="let cat of (documentCategories.length ? documentCategories : fallbackCategories)" [value]="cat.name">
+                    <option *ngFor="let cat of availableCategories" [value]="cat.name">
                       {{ cat.name }} ({{ cat.code }})
                     </option>
                   </select>
@@ -1004,6 +1004,18 @@ export class WorkforceEnrollComponent implements OnInit {
     { name: 'Background Check / DBS', code: 'DBS' },
     { name: 'Training & Certifications', code: 'TRN' }
   ];
+
+  get availableCategories(): any[] {
+    return this.documentCategories && this.documentCategories.length > 0
+      ? this.documentCategories
+      : this.fallbackCategories;
+  }
+
+  get availableJobRoles(): any[] {
+    return this.jobRoles && this.jobRoles.length > 0
+      ? this.jobRoles
+      : this.fallbackJobRoles;
+  }
 
   inviteModel = {
     fullName: '',

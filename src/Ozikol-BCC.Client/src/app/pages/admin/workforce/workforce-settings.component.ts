@@ -2163,7 +2163,7 @@ export class WorkforceSettingsComponent implements OnInit {
   }
 
   loadCurrency(): void {
-    this.workforceService.getCurrency().subscribe({
+    this.workforceService.getTenantCurrency().subscribe({
       next: (res: any) => {
         if (res && res.data) {
           this.currencyCode = res.data.currencyCode || 'NGN';

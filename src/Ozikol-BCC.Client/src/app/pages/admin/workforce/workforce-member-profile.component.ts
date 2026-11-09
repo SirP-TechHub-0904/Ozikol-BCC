@@ -165,7 +165,7 @@ interface StaffMemberDetail {
           >
             <span class="material-symbols-outlined">verified_user</span>
             <span>Document Vault &amp; Credentials</span>
-            <span class="tab-count">{{ member.documents?.length || 0 }}</span>
+            <span class="tab-count">{{ member.documents.length || 0 }}</span>
           </button>
 
           <button
@@ -186,7 +186,7 @@ interface StaffMemberDetail {
           >
             <span class="material-symbols-outlined">history</span>
             <span>Shift History &amp; Timesheets</span>
-            <span class="tab-count">{{ member.recentShifts?.length || 0 }}</span>
+            <span class="tab-count">{{ member.recentShifts.length || 0 }}</span>
           </button>
         </div>
 
@@ -634,7 +634,7 @@ interface StaffMemberDetail {
             <div class="form-group">
               <label class="form-label">Document Category <span class="required">*</span></label>
               <select class="form-control" [(ngModel)]="uploadForm.documentType">
-                <option *ngFor="let cat of (documentCategories.length ? documentCategories : fallbackCategories)" [value]="cat.name">
+                <option *ngFor="let cat of availableCategories" [value]="cat.name">
                   {{ cat.name }} ({{ cat.code }})
                 </option>
               </select>
@@ -1342,6 +1342,12 @@ export class WorkforceMemberProfileComponent implements OnInit {
 
   get jobRoleTitles(): string[] {
     return this.jobRoles.map(r => r.title);
+  }
+
+  get availableCategories(): any[] {
+    return this.documentCategories && this.documentCategories.length > 0
+      ? this.documentCategories
+      : this.fallbackCategories;
   }
 
   getInitials(name: string): string {
