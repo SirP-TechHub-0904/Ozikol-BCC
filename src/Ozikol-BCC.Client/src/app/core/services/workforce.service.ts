@@ -138,6 +138,10 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/sites');
   }
 
+  getSiteById(id: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/sites/${id}`);
+  }
+
   upsertSite(site: Partial<ClientSite>): Observable<any> {
     return this.apiService.post<any>('workforce/sites', site);
   }

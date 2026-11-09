@@ -103,6 +103,42 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Retrieves a single client operating site by ID.
+        /// </summary>
+        [HttpGet("sites/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<ClientSiteDto>>> GetSiteById(Guid id, CancellationToken ct)
+        {
+            var s = await _db.BcpClientSites
+                .AsNoTracking()
+                .Where(s => s.TenantKey == CurrentTenantKey && s.Id == id && s.IsActive)
+                .Select(s => new ClientSiteDto
+                {
+                    Id = s.Id,
+                    SiteCode = s.SiteCode,
+                    SiteName = s.SiteName,
+                    Address = s.Address,
+                    City = s.City,
+                    PostalCode = s.PostalCode,
+                    Latitude = s.Latitude,
+                    Longitude = s.Longitude,
+                    GeofenceRadiusMeters = s.GeofenceRadiusMeters,
+                    EmergencyContactName = s.EmergencyContactName,
+                    EmergencyContactPhone = s.EmergencyContactPhone,
+                    SiteAssignmentInstructions = s.SiteAssignmentInstructions,
+                    RequiredSiaLicenceType = s.RequiredSiaLicenceType,
+                    ActiveShiftsCount = s.Shifts.Count(sh => sh.Status == "Scheduled" || sh.Status == "InProgress")
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (s == null)
+            {
+                return NotFound(ApiResponse<ClientSiteDto>.FailureResponse("Client site not found.", errorCode: "ERR-2004"));
+            }
+
+            return Ok(ApiResponse<ClientSiteDto>.SuccessResponse(s, "Client site retrieved successfully."));
+        }
+
+        /// <summary>
         /// Creates or updates a client site profile, including GPS geofence boundary coordinates and emergency contact details.
         /// </summary>
         [HttpPost("sites")]

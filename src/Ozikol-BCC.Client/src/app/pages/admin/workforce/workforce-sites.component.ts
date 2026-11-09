@@ -40,10 +40,10 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
-          <button type="button" class="btn btn-primary" (click)="openAddModal()">
+          <a routerLink="/workforce/console/sites/create" class="btn btn-primary">
             <span class="material-symbols-outlined">add_location_alt</span>
             <span>Add Client Site</span>
-          </button>
+          </a>
         </div>
       </div>
 
@@ -150,10 +150,10 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <div class="site-card-actions">
-            <button type="button" class="btn btn-outline full-width" (click)="editSite(s)">
+            <a [routerLink]="['/workforce/console/sites/edit', s.id]" class="btn btn-outline full-width">
               <span class="material-symbols-outlined">tune</span>
               <span>Edit Geofence &amp; Orders</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -206,10 +206,10 @@ import { ToastService } from '../../../core/services/toast.service';
                   <span class="status-badge idle" *ngIf="s.activeShiftsCount === 0">0 Active</span>
                 </td>
                 <td style="text-align: right;">
-                  <button type="button" class="btn-action-sm" (click)="editSite(s)">
+                  <a [routerLink]="['/workforce/console/sites/edit', s.id]" class="btn-action-sm">
                     <span class="material-symbols-outlined">edit</span>
                     <span>Edit</span>
-                  </button>
+                  </a>
                 </td>
               </tr>
             </tbody>
@@ -225,181 +225,13 @@ import { ToastService } from '../../../core/services/toast.service';
         <h3>No Operating Sites Found</h3>
         <p *ngIf="searchQuery || selectedLicenceFilter">No client sites match the current search filters. Clear your filters to see all sites.</p>
         <p *ngIf="!searchQuery && !selectedLicenceFilter">Add your customer posts and geofence locations to begin scheduling shifts and enforcing check-in bounds.</p>
-        <button type="button" class="btn btn-primary" (click)="openAddModal()" *ngIf="!searchQuery && !selectedLicenceFilter">
+        <a routerLink="/workforce/console/sites/create" class="btn btn-primary" *ngIf="!searchQuery && !selectedLicenceFilter">
           <span class="material-symbols-outlined">add_location_alt</span>
           <span>Add Client Site</span>
-        </button>
+        </a>
       </div>
 
-      <!-- 6. Add/Edit Site Modal -->
-      <div class="modal-backdrop" *ngIf="showModal" (click)="showModal = false">
-        <div class="modal-card modal-large" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">add_location_alt</span>
-              <div>
-                <h3>{{ editingSite.id ? 'Edit Client Site & Geofence' : 'Add Client Site & Geofence' }}</h3>
-                <p class="modal-subtitle">Configure venue location, GPS coordinates, geofence radius, and Assignment Instructions.</p>
-              </div>
-            </div>
-            <button type="button" class="btn-close" (click)="showModal = false">&times;</button>
-          </div>
-
-          <div class="modal-body">
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Site Code <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="editingSite.siteCode"
-                  placeholder="e.g. SITE-101"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Site Name <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="editingSite.siteName"
-                  placeholder="e.g. Canary Wharf Tower"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Street Address <span class="required">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="editingSite.address"
-                placeholder="e.g. 1 Canada Square"
-              />
-            </div>
-
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">City <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="editingSite.city"
-                  placeholder="e.g. London"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Postal Code</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="editingSite.postalCode"
-                  placeholder="e.g. E14 5AA"
-                />
-              </div>
-            </div>
-
-            <!-- GPS Geofence Configuration Box -->
-            <div class="gps-config-panel">
-              <div class="gps-config-header">
-                <div>
-                  <strong>GPS Geofence Boundary</strong>
-                  <p class="sub">Guards must clock in within this radius of the post center.</p>
-                </div>
-                <button type="button" class="btn-detect-gps" (click)="detectAdminGps()">
-                  <span class="material-symbols-outlined">my_location</span>
-                  <span>Detect My GPS</span>
-                </button>
-              </div>
-
-              <div class="form-row-triple">
-                <div class="form-group">
-                  <label class="form-label">Latitude</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    class="form-control"
-                    [(ngModel)]="editingSite.latitude"
-                    placeholder="e.g. 51.5049"
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Longitude</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    class="form-control"
-                    [(ngModel)]="editingSite.longitude"
-                    placeholder="e.g. -0.0195"
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Radius (Meters)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10000"
-                    class="form-control"
-                    [(ngModel)]="editingSite.geofenceRadiusMeters"
-                    placeholder="e.g. 4 or 50"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Duty Contact Person</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="editingSite.emergencyContactName"
-                  placeholder="e.g. First Last"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Duty Phone (24/7)</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="editingSite.emergencyContactPhone"
-                  placeholder="e.g. +44 20 7946 0000"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Required SIA Licence</label>
-              <select class="form-control" [(ngModel)]="editingSite.requiredSiaLicenceType">
-                <option value="">No SIA licence required</option>
-                <option value="Door Supervision">Door Supervision</option>
-                <option value="Security Guarding">Security Guarding</option>
-                <option value="CCTV (Public Space Surveillance)">CCTV (Public Space Surveillance)</option>
-                <option value="Close Protection">Close Protection</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Site Assignment Instructions (SIs / Post Orders)</label>
-              <textarea
-                class="form-control"
-                rows="3"
-                [(ngModel)]="editingSite.siteAssignmentInstructions"
-                placeholder="Post orders, lockup routines, patrol routes, and handover procedures..."
-              ></textarea>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="showModal = false">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveSite()" [disabled]="isSaving">
-              <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
-              <span>{{ isSaving ? 'Saving...' : 'Save Site' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 7. Info Modal (i) -->
+      <!-- 6. Info Modal (i) -->
       <div class="modal-backdrop" *ngIf="showInfoModal" (click)="showInfoModal = false">
         <div class="modal-card modal-large" (click)="$event.stopPropagation()">
           <div class="modal-header">
@@ -1195,24 +1027,12 @@ import { ToastService } from '../../../core/services/toast.service';
 export class WorkforceSitesComponent implements OnInit {
   sites: ClientSite[] = [];
   isLoading = false;
-  isSaving = false;
-  showModal = false;
   showInfoModal = false;
 
   // Search & Filter
   searchQuery = '';
   selectedLicenceFilter = '';
   viewMode: 'cards' | 'table' = 'cards';
-
-  editingSite: Partial<ClientSite> = {
-    siteCode: '',
-    siteName: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    geofenceRadiusMeters: 50,
-    requiredSiaLicenceType: 'Door Supervision'
-  };
 
   constructor(
     private readonly workforceService: WorkforceService,
@@ -1252,63 +1072,5 @@ export class WorkforceSitesComponent implements OnInit {
       );
     }
     return list;
-  }
-
-  openAddModal(): void {
-    this.editingSite = {
-      siteCode: `SITE-${this.sites.length + 101}`,
-      siteName: '',
-      address: '',
-      city: '',
-      postalCode: '',
-      geofenceRadiusMeters: 50,
-      requiredSiaLicenceType: 'Door Supervision'
-    };
-    this.showModal = true;
-  }
-
-  detectAdminGps(): void {
-    if ('geolocation' in navigator) {
-      this.toast.info('Detecting current GPS coordinates...');
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          this.editingSite.latitude = Number(pos.coords.latitude.toFixed(6));
-          this.editingSite.longitude = Number(pos.coords.longitude.toFixed(6));
-          this.toast.success(`Pinned: ${this.editingSite.latitude}, ${this.editingSite.longitude} (±${Math.round(pos.coords.accuracy)}m)`);
-        },
-        (err) => {
-          this.toast.error('Unable to detect location: ' + err.message);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      this.toast.error('Geolocation is not supported by your browser.');
-    }
-  }
-
-  editSite(site: ClientSite): void {
-    this.editingSite = { ...site };
-    this.showModal = true;
-  }
-
-  saveSite(): void {
-    if (!this.editingSite.siteName || !this.editingSite.siteCode) {
-      this.toast.warning('Site code and site name are required.');
-      return;
-    }
-
-    this.isSaving = true;
-    this.workforceService.upsertSite(this.editingSite).subscribe({
-      next: () => {
-        this.isSaving = false;
-        this.showModal = false;
-        this.toast.success('Site profile saved.');
-        this.loadSites();
-      },
-      error: (err: any) => {
-        this.isSaving = false;
-        this.toast.error(err?.error?.message || 'Failed to save site.');
-      }
-    });
   }
 }
