@@ -76,7 +76,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <div class="action-buttons">
                     <a [routerLink]="['/content/console/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
                       <span class="material-symbols-outlined">edit</span>
-                      <span>Edit Page</span>
+                      <span>Edit</span>
                     </a>
                     <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: '/content/console/sections/details/' + sectionId }" class="btn-action btn-delete" title="Delete Item">
                       <span class="material-symbols-outlined">delete</span>
