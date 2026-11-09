@@ -1461,3 +1461,4 @@ export class WorkforceMemberProfileComponent implements OnInit {
     });
   }
 }
+

@@ -159,3 +159,4 @@ namespace Ozikol_BCC.Domain.Models
         public DateTime? UpdatedUtc { get; set; }
     }
 }
+

@@ -102,3 +102,4 @@ namespace Ozikol_BCC.Domain.Models
         public virtual ICollection<BcpClientSite> Sites { get; set; } = new List<BcpClientSite>();
     }
 }
+
