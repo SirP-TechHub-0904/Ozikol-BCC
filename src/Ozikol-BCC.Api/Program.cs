@@ -362,6 +362,7 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
             app.UseForwardedHeaders();
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
             app.UseSecurityHeaders();
+            app.UseStaticFiles();
 
             app.UseCors("AllowAngularApp");
             app.UseRateLimiter();
