@@ -127,16 +127,21 @@ import { ToastService } from '../../../core/services/toast.service';
                   <input type="text" class="form-control" [(ngModel)]="editingSite.postalCode" placeholder="e.g. E14 5AA" />
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label">GPS Latitude</label>
-                  <input type="number" class="form-control" [(ngModel)]="editingSite.latitude" step="0.0001" placeholder="e.g. 51.5049" />
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-0">GPS Latitude</label>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" (click)="detectAdminGps()" style="font-size: 11px;">
+                      📍 Detect Pin
+                    </button>
+                  </div>
+                  <input type="number" class="form-control mt-1" [(ngModel)]="editingSite.latitude" step="0.000001" placeholder="e.g. 51.5049" />
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">GPS Longitude</label>
-                  <input type="number" class="form-control" [(ngModel)]="editingSite.longitude" step="0.0001" placeholder="e.g. -0.0195" />
+                  <input type="number" class="form-control" [(ngModel)]="editingSite.longitude" step="0.000001" placeholder="e.g. -0.0195" />
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Geofence Radius (Meters)</label>
-                  <input type="number" class="form-control" [(ngModel)]="editingSite.geofenceRadiusMeters" min="50" max="1000" step="25" />
+                  <input type="number" class="form-control" [(ngModel)]="editingSite.geofenceRadiusMeters" min="1" max="10000" step="1" placeholder="e.g. 4 or 50" />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Emergency Contact Person</label>
@@ -585,6 +590,25 @@ export class WorkforceSitesComponent implements OnInit {
       requiredSiaLicenceType: 'Door Supervision'
     };
     this.showModal = true;
+  }
+
+  detectAdminGps(): void {
+    if ('geolocation' in navigator) {
+      this.toast.info('Detecting current GPS coordinates...');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.editingSite.latitude = Number(pos.coords.latitude.toFixed(6));
+          this.editingSite.longitude = Number(pos.coords.longitude.toFixed(6));
+          this.toast.success(`Pinned: ${this.editingSite.latitude}, ${this.editingSite.longitude} (±${Math.round(pos.coords.accuracy)}m)`);
+        },
+        (err) => {
+          this.toast.error('Unable to detect location: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      this.toast.error('Geolocation is not supported by your browser.');
+    }
   }
 
   editSite(site: ClientSite): void {
