@@ -515,6 +515,53 @@ END";
                 );
             }
 
+            // 7. Seed Compulsory Staff Types for Workforce Rota
+            if (!await dbContext.BcpStaffTypes.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpStaffTypes.AddRange(
+                    new BcpStaffType
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Permanent",
+                        Code = "permanent",
+                        Description = "Permanent contract staff member with standardized full-time or part-time baseline hours.",
+                        DefaultContractedHours = 40.0m,
+                        IsCompulsory = true,
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpStaffType
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Temporary",
+                        Code = "temporary",
+                        Description = "Temporary, casual, or zero-hours staff assigned to seasonal or flexible shift deployments.",
+                        DefaultContractedHours = 0.0m,
+                        IsCompulsory = true,
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpStaffType
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Contractor",
+                        Code = "contractor",
+                        Description = "External agency contractor or freelance specialist deployed for targeted customer post orders.",
+                        DefaultContractedHours = 0.0m,
+                        IsCompulsory = false,
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                );
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
     }

@@ -279,4 +279,21 @@ export class WorkforceService {
   completeOnboarding(data: any): Observable<any> {
     return this.apiService.post<any>('workforce/members/complete-onboarding', data);
   }
+
+  // --- STAFF TYPES GOVERNANCE ---
+  getStaffTypes(): Observable<any> {
+    return this.apiService.get<any>('workforce/staff-types');
+  }
+
+  createStaffType(type: { name: string; code?: string; description?: string; defaultContractedHours?: number; sortOrder?: number }): Observable<any> {
+    return this.apiService.post<any>('workforce/staff-types', type);
+  }
+
+  updateStaffType(id: string, type: { name: string; description?: string; defaultContractedHours?: number; isActive?: boolean; sortOrder?: number }): Observable<any> {
+    return this.apiService.put<any>(`workforce/staff-types/${id}`, type);
+  }
+
+  deleteStaffType(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/staff-types/${id}`);
+  }
 }

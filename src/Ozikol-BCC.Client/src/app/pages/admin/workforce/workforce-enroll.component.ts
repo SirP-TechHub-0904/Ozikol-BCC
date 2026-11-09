@@ -115,17 +115,28 @@ import { ToastService } from '../../../core/services/toast.service';
                 <span class="field-hint">The invitation and secure access token will be dispatched to this inbox.</span>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Designated Job Title <span class="required">*</span></label>
-                <select class="form-control" [(ngModel)]="inviteModel.jobTitle">
-                  <option value="SIA Door Supervisor">SIA Door Supervisor</option>
-                  <option value="Security Guard">Security Guard</option>
-                  <option value="CCTV Controller">CCTV Controller</option>
-                  <option value="Event Steward">Event Steward</option>
-                  <option value="Care Assistant">Care Assistant</option>
-                  <option value="Healthcare Worker">Healthcare Worker</option>
-                  <option value="Operations Supervisor">Operations Supervisor</option>
-                </select>
+              <div class="form-row-dual">
+                <div class="form-group">
+                  <label class="form-label">Designated Job Title <span class="required">*</span></label>
+                  <select class="form-control" [(ngModel)]="inviteModel.jobTitle">
+                    <option value="SIA Door Supervisor">SIA Door Supervisor</option>
+                    <option value="Security Guard">Security Guard</option>
+                    <option value="CCTV Controller">CCTV Controller</option>
+                    <option value="Event Steward">Event Steward</option>
+                    <option value="Care Assistant">Care Assistant</option>
+                    <option value="Healthcare Worker">Healthcare Worker</option>
+                    <option value="Operations Supervisor">Operations Supervisor</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Staff Classification Type <span class="required">*</span></label>
+                  <select class="form-control" [(ngModel)]="inviteModel.staffTypeId" (change)="onStaffTypeChange(inviteModel)">
+                    <option *ngFor="let st of staffTypes" [value]="st.id">
+                      {{ st.name }} {{ st.isCompulsory ? '(Compulsory)' : '' }} &bull; {{ st.defaultContractedHours }} hrs/wk
+                    </option>
+                  </select>
+                  <span class="field-hint">Defines baseline duty capacity and rota contract rules.</span>
+                </div>
               </div>
 
               <div class="form-row-dual">
@@ -344,7 +355,7 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
 
             <div class="card-body">
-              <div class="form-row-dual">
+              <div class="form-row-triple">
                 <div class="form-group">
                   <label class="form-label">Designated Job Title <span class="required">*</span></label>
                   <select class="form-control" [(ngModel)]="directModel.jobTitle">
@@ -355,6 +366,14 @@ import { ToastService } from '../../../core/services/toast.service';
                     <option value="Care Assistant">Care Assistant</option>
                     <option value="Healthcare Worker">Healthcare Worker</option>
                     <option value="Operations Supervisor">Operations Supervisor</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Staff Classification Type <span class="required">*</span></label>
+                  <select class="form-control" [(ngModel)]="directModel.staffTypeId" (change)="onStaffTypeChange(directModel)">
+                    <option *ngFor="let st of staffTypes" [value]="st.id">
+                      {{ st.name }} {{ st.isCompulsory ? '(Compulsory)' : '' }}
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -979,11 +998,14 @@ export class WorkforceEnrollComponent implements OnInit {
   activeTab: 'invite' | 'direct' = 'invite';
   isSubmitting = false;
   currencySymbol = '₦';
+  staffTypes: any[] = [];
 
   inviteModel = {
     fullName: '',
     email: '',
     jobTitle: 'SIA Door Supervisor',
+    staffTypeId: '',
+    staffTypeName: 'Permanent',
     defaultHourlyRate: 15.0,
     contractedWeeklyHours: 40,
     welcomeNote: '',
@@ -1002,6 +1024,8 @@ export class WorkforceEnrollComponent implements OnInit {
     password: '',
     mustChangePassword: true,
     jobTitle: 'SIA Door Supervisor',
+    staffTypeId: '',
+    staffTypeName: 'Permanent',
     defaultHourlyRate: 15.0,
     contractedWeeklyHours: 40,
     nationalInsuranceNumber: '',
@@ -1032,6 +1056,37 @@ export class WorkforceEnrollComponent implements OnInit {
       },
       error: () => {}
     });
+
+    this.workforceService.getStaffTypes().subscribe({
+      next: (res: any) => {
+        this.staffTypes = res?.data || [];
+        const defaultType = this.staffTypes.find(t => t.code === 'permanent') || this.staffTypes[0];
+        if (defaultType) {
+          if (!this.inviteModel.staffTypeId) {
+            this.inviteModel.staffTypeId = defaultType.id;
+            this.inviteModel.staffTypeName = defaultType.name;
+            this.inviteModel.contractedWeeklyHours = defaultType.defaultContractedHours;
+          }
+          if (!this.directModel.staffTypeId) {
+            this.directModel.staffTypeId = defaultType.id;
+            this.directModel.staffTypeName = defaultType.name;
+            this.directModel.contractedWeeklyHours = defaultType.defaultContractedHours;
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  onStaffTypeChange(model: any): void {
+    const selected = this.staffTypes.find(t => t.id === model.staffTypeId);
+    if (selected) {
+      model.staffTypeId = selected.id;
+      model.staffTypeName = selected.name;
+      if (selected.defaultContractedHours !== undefined) {
+        model.contractedWeeklyHours = selected.defaultContractedHours;
+      }
+    }
   }
 
   sendInvite(): void {

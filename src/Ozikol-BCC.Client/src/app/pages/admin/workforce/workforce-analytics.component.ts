@@ -40,6 +40,10 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
+          <a routerLink="/workforce/console/settings" class="btn btn-outline" title="Manage Staff Classifications, Baseline Hours & Rules">
+            <span class="material-symbols-outlined">settings</span>
+            <span>Staff Types</span>
+          </a>
           <a routerLink="/workforce/console/enroll" class="btn btn-primary">
             <span class="material-symbols-outlined">person_add</span>
             <span>Enroll Member</span>
@@ -351,6 +355,9 @@ import { ToastService } from '../../../core/services/toast.service';
                   </td>
                   <td>
                     <span class="job-title-pill">{{ m.jobTitle }}</span>
+                    <span class="staff-type-pill" [class.type-temp]="m.staffTypeName?.toLowerCase()?.includes('temp')" [class.type-contract]="m.staffTypeName?.toLowerCase()?.includes('contract')">
+                      {{ m.staffTypeName || 'Permanent' }}
+                    </span>
                   </td>
                   <td>
                     <span class="rate-text">
@@ -1085,6 +1092,27 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 4px 10px;
       border-radius: 6px;
       border: 1px solid #e2e8f0;
+    }
+    .staff-type-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-left: 6px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #dbeafe;
+    }
+    .staff-type-pill.type-temp {
+      background: #fef3c7;
+      color: #d97706;
+      border-color: #fde68a;
+    }
+    .staff-type-pill.type-contract {
+      background: #f5f3ff;
+      color: #7c3aed;
+      border-color: #ddd6fe;
     }
     .rate-text {
       font-weight: 600;

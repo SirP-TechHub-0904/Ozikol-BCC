@@ -911,6 +911,8 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             staffProfile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
+            staffProfile.StaffTypeId = request.StaffTypeId;
+            staffProfile.StaffTypeName = !string.IsNullOrWhiteSpace(request.StaffTypeName) ? request.StaffTypeName.Trim() : "Permanent";
             staffProfile.DefaultHourlyRate = request.DefaultHourlyRate;
             staffProfile.ContractedWeeklyHours = request.ContractedWeeklyHours;
             staffProfile.IsActive = true;
@@ -1138,6 +1140,14 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 staffProfile.JobTitle = request.JobTitle.Trim();
             }
+            if (request.StaffTypeId.HasValue)
+            {
+                staffProfile.StaffTypeId = request.StaffTypeId.Value;
+            }
+            if (!string.IsNullOrWhiteSpace(request.StaffTypeName))
+            {
+                staffProfile.StaffTypeName = request.StaffTypeName.Trim();
+            }
             staffProfile.IsActive = true;
             staffProfile.UpdatedUtc = DateTime.UtcNow;
 
@@ -1208,6 +1218,8 @@ namespace Ozikol_BCC.Api.Controllers
                     Email = u?.Email ?? string.Empty,
                     PhoneNumber = u?.PhoneNumber,
                     JobTitle = p.JobTitle,
+                    StaffTypeId = p.StaffTypeId,
+                    StaffTypeName = p.StaffTypeName,
                     DefaultHourlyRate = p.DefaultHourlyRate,
                     ContractedWeeklyHours = p.ContractedWeeklyHours,
                     AverageRating = p.AverageRating,
@@ -1622,6 +1634,256 @@ namespace Ozikol_BCC.Api.Controllers
             await _db.SaveChangesAsync(ct);
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift reminder preferences updated successfully."));
         }
+
+        // =========================================================================
+        // 11. STAFF TYPES GOVERNANCE & SETTINGS
+        // =========================================================================
+
+        /// <summary>
+        /// Ensures compulsory baseline staff types (Permanent, Temporary, Contractor) exist for the tenant.
+        /// Invoked dynamically upon first query or staff enrollment to guarantee 100% availability.
+        /// </summary>
+        private async Task EnsureDefaultStaffTypesAsync(string tenantKey, CancellationToken ct = default)
+        {
+            if (await _db.BcpStaffTypes.AnyAsync(t => t.TenantKey == tenantKey, ct))
+            {
+                return;
+            }
+
+            var cleanKey = tenantKey.Trim().ToLowerInvariant();
+            var defaults = new List<BcpStaffType>
+            {
+                new BcpStaffType
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = cleanKey,
+                    Name = "Permanent",
+                    Code = "permanent",
+                    Description = "Permanent contract staff member with guaranteed full-time or part-time baseline hours.",
+                    DefaultContractedHours = 40.0m,
+                    IsCompulsory = true,
+                    IsActive = true,
+                    SortOrder = 1,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new BcpStaffType
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = cleanKey,
+                    Name = "Temporary",
+                    Code = "temporary",
+                    Description = "Temporary, casual, or zero-hours staff assigned to flexible shifts or seasonal post demands.",
+                    DefaultContractedHours = 0.0m,
+                    IsCompulsory = true,
+                    IsActive = true,
+                    SortOrder = 2,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new BcpStaffType
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = cleanKey,
+                    Name = "Contractor",
+                    Code = "contractor",
+                    Description = "External agency contractor or self-employed specialist engaged on specific assignments.",
+                    DefaultContractedHours = 0.0m,
+                    IsCompulsory = false,
+                    IsActive = true,
+                    SortOrder = 3,
+                    CreatedUtc = DateTime.UtcNow
+                }
+            };
+
+            _db.BcpStaffTypes.AddRange(defaults);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Retrieves all configured staff employment types (Permanent, Temporary, Contractor, etc.) for the current tenant.
+        /// Automatically seeds compulsory types if not yet initialized.
+        /// </summary>
+        [HttpGet("staff-types")]
+        public async Task<ActionResult<ApiResponse<List<BcpStaffTypeDto>>>> GetStaffTypes(CancellationToken ct)
+        {
+            await EnsureDefaultStaffTypesAsync(CurrentTenantKey, ct);
+
+            var types = await _db.BcpStaffTypes
+                .AsNoTracking()
+                .Where(t => t.TenantKey == CurrentTenantKey)
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name)
+                .ToListAsync(ct);
+
+            // Calculate staff count per type
+            var counts = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive)
+                .GroupBy(p => p.StaffTypeId)
+                .Select(g => new { StaffTypeId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.StaffTypeId, x => x.Count, ct);
+
+            var dtos = types.Select(t => new BcpStaffTypeDto
+            {
+                Id = t.Id,
+                Name = t.Name,
+                Code = t.Code,
+                Description = t.Description,
+                DefaultContractedHours = t.DefaultContractedHours,
+                IsCompulsory = t.IsCompulsory,
+                IsActive = t.IsActive,
+                SortOrder = t.SortOrder,
+                EnrolledStaffCount = counts.TryGetValue(t.Id, out var c) ? c : 0
+            }).ToList();
+
+            return Ok(ApiResponse<List<BcpStaffTypeDto>>.SuccessResponse(dtos, "Staff types retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Creates a new custom staff employment type for the tenant workspace.
+        /// </summary>
+        [HttpPost("staff-types")]
+        public async Task<ActionResult<ApiResponse<BcpStaffTypeDto>>> CreateStaffType([FromBody] CreateStaffTypeRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(ApiResponse<BcpStaffTypeDto>.FailureResponse("Staff type name is required."));
+            }
+
+            var cleanName = request.Name.Trim();
+            var cleanCode = !string.IsNullOrWhiteSpace(request.Code)
+                ? request.Code.Trim().ToLowerInvariant().Replace(" ", "-")
+                : cleanName.ToLowerInvariant().Replace(" ", "-");
+
+            bool exists = await _db.BcpStaffTypes
+                .AnyAsync(t => t.TenantKey == CurrentTenantKey && (t.Name.ToLower() == cleanName.ToLower() || t.Code == cleanCode), ct);
+
+            if (exists)
+            {
+                return BadRequest(ApiResponse<BcpStaffTypeDto>.FailureResponse($"A staff type with name '{cleanName}' or code '{cleanCode}' already exists."));
+            }
+
+            var staffType = new BcpStaffType
+            {
+                Id = Guid.CreateVersion7(),
+                TenantKey = CurrentTenantKey,
+                Name = cleanName,
+                Code = cleanCode,
+                Description = request.Description?.Trim() ?? string.Empty,
+                DefaultContractedHours = request.DefaultContractedHours >= 0 ? request.DefaultContractedHours : 0m,
+                IsCompulsory = false,
+                IsActive = true,
+                SortOrder = request.SortOrder,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpStaffTypes.Add(staffType);
+            await _db.SaveChangesAsync(ct);
+
+            var dto = new BcpStaffTypeDto
+            {
+                Id = staffType.Id,
+                Name = staffType.Name,
+                Code = staffType.Code,
+                Description = staffType.Description,
+                DefaultContractedHours = staffType.DefaultContractedHours,
+                IsCompulsory = staffType.IsCompulsory,
+                IsActive = staffType.IsActive,
+                SortOrder = staffType.SortOrder,
+                EnrolledStaffCount = 0
+            };
+
+            return Ok(ApiResponse<BcpStaffTypeDto>.SuccessResponse(dto, "Staff type created successfully."));
+        }
+
+        /// <summary>
+        /// Updates an existing staff employment type's name, description, default hours, and status.
+        /// </summary>
+        [HttpPut("staff-types/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<BcpStaffTypeDto>>> UpdateStaffType(Guid id, [FromBody] UpdateStaffTypeRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(ApiResponse<BcpStaffTypeDto>.FailureResponse("Staff type name is required."));
+            }
+
+            var staffType = await _db.BcpStaffTypes
+                .FirstOrDefaultAsync(t => t.Id == id && t.TenantKey == CurrentTenantKey, ct);
+
+            if (staffType == null)
+            {
+                return NotFound(ApiResponse<BcpStaffTypeDto>.FailureResponse("Staff type not found."));
+            }
+
+            staffType.Name = request.Name.Trim();
+            staffType.Description = request.Description?.Trim() ?? string.Empty;
+            staffType.DefaultContractedHours = request.DefaultContractedHours >= 0 ? request.DefaultContractedHours : 0m;
+
+            // Compulsory types cannot be disabled
+            if (staffType.IsCompulsory)
+            {
+                staffType.IsActive = true;
+            }
+            else
+            {
+                staffType.IsActive = request.IsActive;
+            }
+
+            staffType.SortOrder = request.SortOrder;
+            staffType.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            var count = await _db.BcpShiftStaffProfiles
+                .CountAsync(p => p.TenantKey == CurrentTenantKey && p.StaffTypeId == staffType.Id && p.IsActive, ct);
+
+            var dto = new BcpStaffTypeDto
+            {
+                Id = staffType.Id,
+                Name = staffType.Name,
+                Code = staffType.Code,
+                Description = staffType.Description,
+                DefaultContractedHours = staffType.DefaultContractedHours,
+                IsCompulsory = staffType.IsCompulsory,
+                IsActive = staffType.IsActive,
+                SortOrder = staffType.SortOrder,
+                EnrolledStaffCount = count
+            };
+
+            return Ok(ApiResponse<BcpStaffTypeDto>.SuccessResponse(dto, "Staff type updated successfully."));
+        }
+
+        /// <summary>
+        /// Deletes a non-compulsory staff type. Platform compulsory types (Permanent, Temporary) cannot be removed.
+        /// </summary>
+        [HttpDelete("staff-types/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteStaffType(Guid id, CancellationToken ct)
+        {
+            var staffType = await _db.BcpStaffTypes
+                .FirstOrDefaultAsync(t => t.Id == id && t.TenantKey == CurrentTenantKey, ct);
+
+            if (staffType == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Staff type not found."));
+            }
+
+            if (staffType.IsCompulsory)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse($"'{staffType.Name}' is a compulsory platform staff type and cannot be deleted."));
+            }
+
+            bool inUse = await _db.BcpShiftStaffProfiles
+                .AnyAsync(p => p.TenantKey == CurrentTenantKey && p.StaffTypeId == id && p.IsActive, ct);
+
+            if (inUse)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse($"Cannot delete '{staffType.Name}' because active staff members are currently assigned to this type. Reassign staff before deleting."));
+            }
+
+            _db.BcpStaffTypes.Remove(staffType);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, $"Staff type '{staffType.Name}' deleted successfully."));
+        }
     }
 
     // =========================================================================
@@ -1762,6 +2024,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string JobTitle { get; set; } = "Staff Member";
+        public Guid? StaffTypeId { get; set; }
+        public string StaffTypeName { get; set; } = "Permanent";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public decimal AverageRating { get; set; }
@@ -1908,6 +2172,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string JobTitle { get; set; } = "Staff Member";
+        public Guid? StaffTypeId { get; set; }
+        public string StaffTypeName { get; set; } = "Permanent";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? WelcomeNote { get; set; }
@@ -1928,6 +2194,8 @@ namespace Ozikol_BCC.Api.Controllers
         public bool MustChangePassword { get; set; } = true;
 
         public string JobTitle { get; set; } = "Staff Member";
+        public Guid? StaffTypeId { get; set; }
+        public string StaffTypeName { get; set; } = "Permanent";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public Guid? AssignedSiteId { get; set; }
@@ -1956,6 +2224,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FullName { get; set; }
         public string? PhoneNumber { get; set; }
         public string? JobTitle { get; set; }
+        public Guid? StaffTypeId { get; set; }
+        public string? StaffTypeName { get; set; }
 
         public string? SiaLicenseNumber { get; set; }
         public string? SiaLicenseSector { get; set; }
@@ -1970,6 +2240,37 @@ namespace Ozikol_BCC.Api.Controllers
         public string? SortCode { get; set; }
         public string? AccountNumber { get; set; }
         public string? NationalInsuranceNumber { get; set; }
+    }
+
+    public class BcpStaffTypeDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal DefaultContractedHours { get; set; }
+        public bool IsCompulsory { get; set; }
+        public bool IsActive { get; set; }
+        public int SortOrder { get; set; }
+        public int EnrolledStaffCount { get; set; }
+    }
+
+    public class CreateStaffTypeRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Code { get; set; }
+        public string? Description { get; set; }
+        public decimal DefaultContractedHours { get; set; } = 40.0m;
+        public int SortOrder { get; set; } = 0;
+    }
+
+    public class UpdateStaffTypeRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public decimal DefaultContractedHours { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; } = 0;
     }
 }
 

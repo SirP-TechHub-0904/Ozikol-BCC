@@ -39,6 +39,24 @@ namespace Ozikol_BCC.Domain.Models
         public string JobTitle { get; set; } = "Staff Member";
 
         /// <summary>
+        /// Foreign key identifier referencing the tenant's configured staff type (<see cref="BcpStaffType"/>).
+        /// </summary>
+        public Guid? StaffTypeId { get; set; }
+
+        /// <summary>
+        /// Display title or classification of the employment category (e.g., "Permanent", "Temporary", "Contractor").
+        /// </summary>
+        [Required]
+        [StringLength(100)]
+        public string StaffTypeName { get; set; } = "Permanent";
+
+        /// <summary>
+        /// Navigation property referencing the associated staff type record.
+        /// </summary>
+        [ForeignKey(nameof(StaffTypeId))]
+        public virtual BcpStaffType? StaffType { get; set; }
+
+        /// <summary>
         /// Default hourly wage rate for standard duty hours.
         /// </summary>
         [Column(TypeName = "decimal(18,2)")]

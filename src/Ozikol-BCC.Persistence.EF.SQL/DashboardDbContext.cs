@@ -125,6 +125,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpShiftAvailability> BcpShiftAvailabilities { get; set; } = null!;
     public DbSet<BcpShiftDocument> BcpShiftDocuments { get; set; } = null!;
     public DbSet<BcpShiftStaffProfile> BcpShiftStaffProfiles { get; set; } = null!;
+    public DbSet<BcpStaffType> BcpStaffTypes { get; set; } = null!;
     public DbSet<BcpShiftStaffRating> BcpShiftStaffRatings { get; set; } = null!;
     public DbSet<BcpShiftNotificationPreference> BcpShiftNotificationPreferences { get; set; } = null!;
 
@@ -946,10 +947,22 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             entity.HasIndex(d => new { d.TenantKey, d.IsVerified });
         });
 
+        modelBuilder.Entity<BcpStaffType>(entity =>
+        {
+            entity.HasIndex(t => new { t.TenantKey, t.Code }).IsUnique();
+            entity.HasIndex(t => new { t.TenantKey, t.IsActive });
+            entity.HasIndex(t => new { t.TenantKey, t.SortOrder });
+        });
+
         modelBuilder.Entity<BcpShiftStaffProfile>(entity =>
         {
             entity.HasIndex(p => new { p.TenantKey, p.UserId }).IsUnique();
             entity.HasIndex(p => new { p.TenantKey, p.IsActive });
+            entity.HasIndex(p => new { p.TenantKey, p.StaffTypeId });
+            entity.HasOne(p => p.StaffType)
+                .WithMany()
+                .HasForeignKey(p => p.StaffTypeId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<BcpShiftStaffRating>(entity =>
