@@ -998,14 +998,14 @@ else
             const currentState = btn.getAttribute('data-state') === 'true';
             const nextState = !currentState;
 
-            // Guard: If amount is 0, do not publish!
+            // Guard: Both Monthly and Yearly amounts are compulsory (> $0.00) before publishing!
             if (kind === 'publish' && nextState === true) {
                 const mPrice = parseFloat(btn.getAttribute('data-monthly') || '0');
                 const yPrice = parseFloat(btn.getAttribute('data-yearly') || '0');
-                if (mPrice <= 0 && yPrice <= 0) {
-                    showInstantToast(`Cannot publish "${featureName}" because amount is ₦0.00 / $0.00. Assign a price first.`, false);
+                if (mPrice <= 0 || yPrice <= 0) {
+                    showInstantToast(`Cannot publish "${featureName}" because both Monthly and Yearly amounts are compulsory (> ₦0.00 / $0.00). Please assign both prices.`, false);
                     const trialDays = parseInt(btn.getAttribute('data-trial-days') || '14', 10);
-                    openFreeTrialDaysModal(featureId, featureName, trialDays, '0.00', '0.00');
+                    openFreeTrialDaysModal(featureId, featureName, trialDays, (mPrice > 0 ? mPrice.toFixed(2) : '0.00'), (yPrice > 0 ? yPrice.toFixed(2) : '0.00'));
                     return false;
                 }
             }
@@ -1050,6 +1050,12 @@ else
                     updateKpiDelta('kpiPublishedCount', 'kpiUnpublishedCount', currentState);
                 }
                 showInstantToast(err.message || `Could not update ${featureName}. Please try again.`, false);
+                if (kind === 'publish' && err.message && (err.message.includes('Monthly') || err.message.includes('Yearly') || err.message.toLowerCase().includes('price'))) {
+                    const mPrice = parseFloat(btn.getAttribute('data-monthly') || '0');
+                    const yPrice = parseFloat(btn.getAttribute('data-yearly') || '0');
+                    const trialDays = parseInt(btn.getAttribute('data-trial-days') || '14', 10);
+                    openFreeTrialDaysModal(featureId, featureName, trialDays, (mPrice > 0 ? mPrice.toFixed(2) : '0.00'), (yPrice > 0 ? yPrice.toFixed(2) : '0.00'));
+                }
             })
             .finally(() => {
                 allMatchingPills.forEach(p => p.classList.remove('is-saving'));
