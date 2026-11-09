@@ -1910,6 +1910,62 @@ export interface SuiteInfoDetail {
     </div>
   `,
   styles: [`
+    .sidebar-close-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      padding: 0;
+      border: 1px solid var(--sidebar-border, #e2e8f0);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+      margin-left: auto;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .sidebar-close-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #ef4444;
+      transform: scale(1.05);
+    }
+    .sidebar-close-btn .material-symbols-outlined {
+      font-size: 18px !important;
+      line-height: 1 !important;
+      color: inherit;
+    }
+    :host-context(.dark-mode) .sidebar-close-btn {
+      background: #1e293b;
+      border-color: #334155;
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .sidebar-close-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+    .sidebar-mobile-backdrop {
+      display: none;
+    }
+    @media (max-width: 900px) {
+      .sidebar-close-btn {
+        display: flex !important;
+      }
+      .sidebar-mobile-backdrop {
+        display: block !important;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        z-index: 1040;
+        cursor: pointer;
+      }
+    }
     .feature-locked {
       opacity: 0.78;
     }
