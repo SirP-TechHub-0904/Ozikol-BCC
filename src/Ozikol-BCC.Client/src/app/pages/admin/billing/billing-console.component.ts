@@ -1126,6 +1126,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   getFeatureDurationLabel(feat: BillingFeatureItem): string {
     if (!feat) return 'Monthly';
+    if (this.snapshot?.hasFlatRatePlan || feat.isIncludedInFlatRatePlan) {
+      return this.snapshot?.flatRateCadence || 'Yearly';
+    }
     const cadence = (feat.billingCadence || '').trim().toLowerCase();
     if (cadence === 'yearly' || (feat.monthlyPrice <= 0 && feat.yearlyPrice > 0)) {
       return 'Yearly';

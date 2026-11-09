@@ -75,6 +75,10 @@ namespace Ozikol_BCC.Api.Services
             };
 
             var now = DateTime.UtcNow;
+            bool isFlatRateActive = (tenant?.HasFlatRatePlan == true) && (!tenant.FlatRateExpiresAtUtc.HasValue || tenant.FlatRateExpiresAtUtc.Value > now);
+            int? flatRateDaysRemaining = (isFlatRateActive && tenant?.FlatRateExpiresAtUtc.HasValue == true)
+                ? (int)Math.Ceiling((tenant.FlatRateExpiresAtUtc.Value - now).TotalDays)
+                : null;
             var subscriptionsByFeatureCode = tenant?.FeatureSubscriptions?
                 .Where(s => s.MasterFeatureCatalog != null)
                 .GroupBy(s => s.MasterFeatureCatalog.FeatureCode, StringComparer.OrdinalIgnoreCase)
@@ -156,7 +160,8 @@ namespace Ozikol_BCC.Api.Services
                 };
 
                 // Build expiration notice if applicable (strictly for non-compulsory, paid capabilities or active free trials within 30 days of expiry)
-                if (isSubscribed && sub != null && sub.IsActive &&
+                // When an All-Inclusive Flat-Rate Plan is active, individual features are 100% included without separate bills or trial notices
+                if (!isFlatRateActive && isSubscribed && sub != null && sub.IsActive &&
                     !isFreeCapability &&
                     !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
@@ -197,6 +202,29 @@ namespace Ozikol_BCC.Api.Services
                         });
                     }
                 }
+            }
+
+            // If tenant is on an active Flat-Rate Master Plan, only track renewal for the master plan itself if expiring within 30 days
+            if (isFlatRateActive && flatRateDaysRemaining.HasValue && flatRateDaysRemaining.Value <= 30)
+            {
+                entitlements.ExpirationNotices.Add(new FeatureExpirationNoticeDto
+                {
+                    FeatureCode = "flat-rate-master-plan",
+                    FeatureName = tenant?.FlatRatePlanName ?? "All-Inclusive Master Plan",
+                    Category = "Master Plan",
+                    ExpiresAtUtc = tenant?.FlatRateExpiresAtUtc ?? now,
+                    DaysRemaining = flatRateDaysRemaining.Value,
+                    IsExpired = flatRateDaysRemaining.Value <= 0,
+                    Severity = flatRateDaysRemaining.Value <= 0 ? "Critical" : (flatRateDaysRemaining.Value <= 3 ? "Urgent" : "Warning"),
+                    NoticeMessage = flatRateDaysRemaining.Value <= 0
+                        ? $"Your {tenant?.FlatRatePlanName ?? "All-Inclusive Master Plan"} has expired. Please renew your master subscription to maintain uninterrupted access."
+                        : $"Your {tenant?.FlatRatePlanName ?? "All-Inclusive Master Plan"} renews in {flatRateDaysRemaining.Value} days.",
+                    RenewalPrice = tenant?.FlatRatePrice.HasValue == true ? Math.Round(tenant.FlatRatePrice.Value * currRate, 2) : 0m,
+                    CurrencyCode = currCode,
+                    CurrencySymbol = currSymbol,
+                    BillingCadence = tenant?.FlatRateCadence.ToString() ?? "Yearly",
+                    IsTrialPeriod = false
+                });
             }
 
             entitlements.ExpirationNotices = entitlements.ExpirationNotices

@@ -528,7 +528,7 @@
                       @if (feat.isActive) {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active' }}</span>
+                          <span>{{ (!snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && feat.isTrialPeriod) ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active' }}</span>
                         </span>
                       } @else if (feat.isAvailableForUse) {
                         <span class="badge-pill-md badge-optional">
@@ -890,7 +890,7 @@
                           @if (feat.isActive) {
                             <span class="badge-pill-md badge-available">
                               <span class="material-symbols-outlined">check_circle</span>
-                              <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active in Menu' }}</span>
+                              <span>{{ (!snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && feat.isTrialPeriod) ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active in Menu' }}</span>
                             </span>
                             @if (hasFeatureExpirationInfo(feat)) {
                               <span class="badge-pill-md" [style.background]="isFeatureExpiringWithinMonth(feat) ? 'rgba(245, 158, 11, 0.14)' : '#f1f5f9'" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'" [style.border]="isFeatureExpiringWithinMonth(feat) ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #cbd5e1'">
@@ -1301,7 +1301,7 @@
                           <span class="material-symbols-outlined">error</span>
                           <span>{{ (feat.daysRemaining ?? 0) < 0 ? (((feat.daysRemaining || 0) * -1) + 'd Overdue — Payment Due') : 'Expired Today — Payment Due' }}</span>
                         </span>
-                      } @else if (!feat.isCompulsory && (feat.daysRemaining ?? 999) <= 30) {
+                      } @else if (!feat.isCompulsory && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && (feat.daysRemaining ?? 999) <= 30) {
                         <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
                           <span class="material-symbols-outlined">schedule</span>
                           <span>{{ feat.isTrialPeriod ? 'Free Trial' : 'Active' }} &bull; {{ feat.daysRemaining }}d Left</span>
@@ -1309,7 +1309,7 @@
                       } @else {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || 7) + 'd left)') : 'Active' }}</span>
+                          <span>{{ (!snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && feat.isTrialPeriod) ? ('Active Trial (' + (feat.daysRemaining || 7) + 'd left)') : 'Active' }}</span>
                         </span>
                       }
                       @if (hasFeatureExpirationInfo(feat)) {

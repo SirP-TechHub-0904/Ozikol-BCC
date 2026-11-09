@@ -456,7 +456,6 @@ namespace Ozikol_BCC.Api.Services
                     ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
                     : catalogTrialDays;
                 bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
-                bool isTrialPeriod = ((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now);
                 bool isEligibleForFreeTrial = !isFlatRateActive && !hasUsedTrial && effectiveTrialDays > 0;
                 bool isTrialPeriod = !isFlatRateActive && (((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now));
 

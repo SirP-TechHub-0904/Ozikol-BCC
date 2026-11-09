@@ -3899,6 +3899,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   currentConsoleMode: 'console' | 'workspace' = (localStorage.getItem('bcp_console_mode') as any) || 'console';
   expiringFeatures: any[] = [];
   isExpirationBannerDismissed = false;
+  hasFlatRatePlan = false;
 
   committeeAliases: {
     aliasSingular: string;
@@ -3996,6 +3997,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
           this.expiringFeatures = res.data.filter((f: any) =>
+            (!this.hasFlatRatePlan || f.featureCode === 'flat-rate-master-plan') &&
             (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
             f.daysRemaining !== null && f.daysRemaining !== undefined
           );
@@ -4826,8 +4828,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     localStorage.removeItem('bcp_expired_feature_codes');
     localStorage.removeItem('bcp_visible_feature_codes_v4');
     localStorage.removeItem('bcp_available_feature_codes_v4');
+    this.hasFlatRatePlan = Boolean(d.hasFlatRatePlan);
     if (Array.isArray(d.notices)) {
       this.expiringFeatures = d.notices.filter((f: any) =>
+        (!this.hasFlatRatePlan || f.featureCode === 'flat-rate-master-plan') &&
         (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
         f.daysRemaining !== null && f.daysRemaining !== undefined
       );
