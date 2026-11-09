@@ -932,11 +932,48 @@ namespace Ozikol_BCC.Api.Controllers
             staffProfile.IsActive = true;
             staffProfile.UpdatedUtc = DateTime.UtcNow;
 
-            // Provision SIA compliance record if provided
-            if (!string.IsNullOrWhiteSpace(request.SiaLicenseNumber))
+            // Provision compliance documents & credentials dynamically (Zero Hardcoding)
+            if (request.ComplianceDocuments != null && request.ComplianceDocuments.Count > 0)
             {
+                foreach (var item in request.ComplianceDocuments)
+                {
+                    if (string.IsNullOrWhiteSpace(item.DocumentType)) continue;
+
+                    var docType = item.DocumentType.Trim();
+                    var doc = await _db.BcpShiftDocuments
+                        .FirstOrDefaultAsync(d => d.TenantKey == CurrentTenantKey && d.UserId == userId && d.DocumentType == docType, ct);
+
+                    if (doc == null)
+                    {
+                        doc = new BcpShiftDocument
+                        {
+                            Id = Guid.CreateVersion7(),
+                            TenantKey = CurrentTenantKey,
+                            UserId = userId,
+                            DocumentType = docType,
+                            UploadedBy = "Company",
+                            CreatedUtc = DateTime.UtcNow
+                        };
+                        _db.BcpShiftDocuments.Add(doc);
+                    }
+
+                    doc.DocumentName = !string.IsNullOrWhiteSpace(item.DocumentName)
+                        ? item.DocumentName.Trim()
+                        : $"{docType}_{item.ReferenceNumber ?? "Record"}";
+                    doc.Description = item.Description ?? $"{docType} credential record";
+                    doc.ReferenceNumber = item.ReferenceNumber?.Trim();
+                    doc.FileUrl = !string.IsNullOrWhiteSpace(item.FileUrl) ? item.FileUrl : "verified://admin-record";
+                    doc.ExpiryDateUtc = item.ExpiryDateUtc;
+                    doc.IsVerified = item.IsVerified;
+                    doc.UpdatedUtc = DateTime.UtcNow;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(request.SiaLicenseNumber))
+            {
+                // Backward-compatible fallback for legacy payloads
+                var docType = !string.IsNullOrWhiteSpace(request.SiaLicenseSector) ? request.SiaLicenseSector.Trim() : "Professional License";
                 var doc = await _db.BcpShiftDocuments
-                    .FirstOrDefaultAsync(d => d.TenantKey == CurrentTenantKey && d.UserId == userId && d.DocumentType == "SIA License", ct);
+                    .FirstOrDefaultAsync(d => d.TenantKey == CurrentTenantKey && d.UserId == userId && (d.DocumentType == docType || d.DocumentType == "SIA License"), ct);
 
                 if (doc == null)
                 {
@@ -945,15 +982,17 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.CreateVersion7(),
                         TenantKey = CurrentTenantKey,
                         UserId = userId,
-                        DocumentType = "SIA License",
+                        DocumentType = docType,
                         UploadedBy = "Company",
                         CreatedUtc = DateTime.UtcNow
                     };
                     _db.BcpShiftDocuments.Add(doc);
                 }
 
-                doc.DocumentName = $"SIA_{request.SiaLicenseSector ?? "Badge"}_{request.SiaLicenseNumber.Trim()}";
-                doc.Description = $"SIA License Number: {request.SiaLicenseNumber.Trim()}. Sector: {request.SiaLicenseSector ?? "Security"}";
+                doc.DocumentType = docType;
+                doc.DocumentName = $"{docType}_{request.SiaLicenseNumber.Trim()}";
+                doc.Description = $"License / Credential: {request.SiaLicenseNumber.Trim()}";
+                doc.ReferenceNumber = request.SiaLicenseNumber.Trim();
                 doc.FileUrl = "verified://admin-record";
                 doc.ExpiryDateUtc = request.SiaLicenseExpiryDate;
                 doc.UpdatedUtc = DateTime.UtcNow;
@@ -1165,11 +1204,47 @@ namespace Ozikol_BCC.Api.Controllers
             staffProfile.IsActive = true;
             staffProfile.UpdatedUtc = DateTime.UtcNow;
 
-            // Provision SIA compliance record if provided
-            if (!string.IsNullOrWhiteSpace(request.SiaLicenseNumber))
+            // Provision compliance documents & credentials dynamically (Zero Hardcoding)
+            if (request.ComplianceDocuments != null && request.ComplianceDocuments.Count > 0)
             {
+                foreach (var item in request.ComplianceDocuments)
+                {
+                    if (string.IsNullOrWhiteSpace(item.DocumentType)) continue;
+
+                    var docType = item.DocumentType.Trim();
+                    var doc = await _db.BcpShiftDocuments
+                        .FirstOrDefaultAsync(d => d.TenantKey == tenantKey && d.UserId == user.Id && d.DocumentType == docType, ct);
+
+                    if (doc == null)
+                    {
+                        doc = new BcpShiftDocument
+                        {
+                            Id = Guid.CreateVersion7(),
+                            TenantKey = tenantKey,
+                            UserId = user.Id,
+                            DocumentType = docType,
+                            UploadedBy = "Staff",
+                            CreatedUtc = DateTime.UtcNow
+                        };
+                        _db.BcpShiftDocuments.Add(doc);
+                    }
+
+                    doc.DocumentName = !string.IsNullOrWhiteSpace(item.DocumentName)
+                        ? item.DocumentName.Trim()
+                        : $"{docType}_{item.ReferenceNumber ?? "Record"}";
+                    doc.Description = item.Description ?? $"{docType} self-declaration record";
+                    doc.ReferenceNumber = item.ReferenceNumber?.Trim();
+                    doc.FileUrl = !string.IsNullOrWhiteSpace(item.FileUrl) ? item.FileUrl : "verified://staff-self-declaration";
+                    doc.ExpiryDateUtc = item.ExpiryDateUtc;
+                    doc.UpdatedUtc = DateTime.UtcNow;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(request.SiaLicenseNumber))
+            {
+                // Backward-compatible fallback for legacy forms
+                var docType = !string.IsNullOrWhiteSpace(request.SiaLicenseSector) ? request.SiaLicenseSector.Trim() : "Professional License";
                 var doc = await _db.BcpShiftDocuments
-                    .FirstOrDefaultAsync(d => d.TenantKey == tenantKey && d.UserId == user.Id && d.DocumentType == "SIA License", ct);
+                    .FirstOrDefaultAsync(d => d.TenantKey == tenantKey && d.UserId == user.Id && (d.DocumentType == docType || d.DocumentType == "SIA License"), ct);
 
                 if (doc == null)
                 {
@@ -1178,15 +1253,17 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.CreateVersion7(),
                         TenantKey = tenantKey,
                         UserId = user.Id,
-                        DocumentType = "SIA License",
+                        DocumentType = docType,
                         UploadedBy = "Staff",
                         CreatedUtc = DateTime.UtcNow
                     };
                     _db.BcpShiftDocuments.Add(doc);
                 }
 
-                doc.DocumentName = $"SIA_{request.SiaLicenseSector ?? "Badge"}_{request.SiaLicenseNumber.Trim()}";
-                doc.Description = $"SIA License: {request.SiaLicenseNumber.Trim()}. Sector: {request.SiaLicenseSector ?? "Security"}";
+                doc.DocumentType = docType;
+                doc.DocumentName = $"{docType}_{request.SiaLicenseNumber.Trim()}";
+                doc.Description = $"License / Credential: {request.SiaLicenseNumber.Trim()}";
+                doc.ReferenceNumber = request.SiaLicenseNumber.Trim();
                 doc.FileUrl = "verified://staff-self-declaration";
                 doc.ExpiryDateUtc = request.SiaLicenseExpiryDate;
                 doc.UpdatedUtc = DateTime.UtcNow;
@@ -1534,6 +1611,7 @@ namespace Ozikol_BCC.Api.Controllers
                     DocumentType = d.DocumentType,
                     DocumentName = d.DocumentName,
                     Description = d.Description,
+                    ReferenceNumber = d.ReferenceNumber,
                     FileUrl = d.FileUrl,
                     UploadedBy = d.UploadedBy,
                     ExpiryDateUtc = d.ExpiryDateUtc,
@@ -1556,14 +1634,17 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<Guid>.FailureResponse("Document name and file URL are mandatory.", errorCode: "ERR-2002"));
             }
 
+            var targetUserId = !string.IsNullOrWhiteSpace(request.UserId) ? request.UserId.Trim() : CurrentUserId;
+
             var doc = new BcpShiftDocument
             {
                 Id = Guid.CreateVersion7(),
                 TenantKey = CurrentTenantKey,
-                UserId = CurrentUserId,
+                UserId = targetUserId,
                 DocumentType = string.IsNullOrWhiteSpace(request.DocumentType) ? "General" : request.DocumentType.Trim(),
                 DocumentName = request.DocumentName.Trim(),
                 Description = request.Description?.Trim(),
+                ReferenceNumber = request.ReferenceNumber?.Trim(),
                 FileUrl = request.FileUrl.Trim(),
                 UploadedBy = CurrentUserName,
                 ExpiryDateUtc = request.ExpiryDateUtc,
@@ -2265,6 +2346,281 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         // =========================================================================
+        // 13B. DOCUMENT CATEGORIES & REGULATORY COMPLIANCE POLICIES
+        // =========================================================================
+
+        private async Task EnsureDefaultDocumentCategoriesAsync(string tenantKey, CancellationToken ct = default)
+        {
+            var cleanKey = tenantKey.Trim().ToLowerInvariant();
+
+            if (!await _db.BcpDocumentCategories.AnyAsync(c => c.TenantKey == cleanKey, ct))
+            {
+                var defaults = new List<BcpDocumentCategory>
+                {
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Right to Work / Passport",
+                        Code = "RTW",
+                        Description = "Proof of nationality, passport scan, immigration share code, or verified national ID.",
+                        IsMandatory = true,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Proof of Address",
+                        Code = "POA",
+                        Description = "Recent utility bill, bank statement, or council tax bill issued within the last 3 months.",
+                        IsMandatory = true,
+                        RequiresExpiryDate = false,
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Professional License / Registration",
+                        Code = "LIC",
+                        Description = "Sector badge, statutory operating licence, or professional regulatory body registration.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Background Check / DBS",
+                        Code = "DBS",
+                        Description = "Criminal record disclosure certificate, basic/enhanced DBS, or police vetting clearance.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 4,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Training & Certifications",
+                        Code = "TRN",
+                        Description = "First aid at work, fire safety, health & safety certifications, or accredited diplomas.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 5,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                };
+
+                _db.BcpDocumentCategories.AddRange(defaults);
+                await _db.SaveChangesAsync(ct);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all configured compliance document categories for the tenant workspace.
+        /// </summary>
+        [HttpGet("document-categories")]
+        public async Task<ActionResult<ApiResponse<List<BcpDocumentCategoryDto>>>> GetDocumentCategories(CancellationToken ct)
+        {
+            await EnsureDefaultDocumentCategoriesAsync(CurrentTenantKey, ct);
+
+            var categories = await _db.BcpDocumentCategories
+                .AsNoTracking()
+                .Where(c => c.TenantKey == CurrentTenantKey)
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.Name)
+                .ToListAsync(ct);
+
+            var docCounts = await _db.BcpShiftDocuments
+                .AsNoTracking()
+                .Where(d => d.TenantKey == CurrentTenantKey)
+                .GroupBy(d => d.DocumentType)
+                .Select(g => new { DocumentType = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.DocumentType, x => x.Count, ct);
+
+            var dtos = categories.Select(c => new BcpDocumentCategoryDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Code = c.Code,
+                Description = c.Description,
+                IsMandatory = c.IsMandatory,
+                RequiresExpiryDate = c.RequiresExpiryDate,
+                IsActive = c.IsActive,
+                SortOrder = c.SortOrder,
+                UploadedDocumentsCount = (docCounts.TryGetValue(c.Name, out var countByName) ? countByName : 0)
+                    + (docCounts.TryGetValue(c.Code, out var countByCode) ? countByCode : 0)
+            }).ToList();
+
+            return Ok(ApiResponse<List<BcpDocumentCategoryDto>>.SuccessResponse(dtos, "Document categories retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Creates a new compliance document category for the tenant.
+        /// </summary>
+        [HttpPost("document-categories")]
+        public async Task<ActionResult<ApiResponse<BcpDocumentCategoryDto>>> CreateDocumentCategory(
+            [FromBody] CreateDocumentCategoryRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(ApiResponse<BcpDocumentCategoryDto>.FailureResponse("Document category name is required."));
+            }
+
+            var cleanName = request.Name.Trim();
+            var cleanCode = !string.IsNullOrWhiteSpace(request.Code)
+                ? request.Code.Trim().ToUpperInvariant()
+                : cleanName.Replace(" ", "").ToUpperInvariant()[..Math.Min(4, cleanName.Replace(" ", "").Length)];
+
+            var exists = await _db.BcpDocumentCategories
+                .AnyAsync(c => c.TenantKey == CurrentTenantKey && (c.Code == cleanCode || c.Name.ToLower() == cleanName.ToLower()), ct);
+
+            if (exists)
+            {
+                return BadRequest(ApiResponse<BcpDocumentCategoryDto>.FailureResponse($"A document category with name '{cleanName}' or code '{cleanCode}' already exists."));
+            }
+
+            var category = new BcpDocumentCategory
+            {
+                Id = Guid.CreateVersion7(),
+                TenantKey = CurrentTenantKey,
+                Name = cleanName,
+                Code = cleanCode,
+                Description = request.Description?.Trim(),
+                IsMandatory = request.IsMandatory,
+                RequiresExpiryDate = request.RequiresExpiryDate,
+                IsActive = true,
+                SortOrder = request.SortOrder,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpDocumentCategories.Add(category);
+            await _db.SaveChangesAsync(ct);
+
+            var dto = new BcpDocumentCategoryDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Code = category.Code,
+                Description = category.Description,
+                IsMandatory = category.IsMandatory,
+                RequiresExpiryDate = category.RequiresExpiryDate,
+                IsActive = category.IsActive,
+                SortOrder = category.SortOrder,
+                UploadedDocumentsCount = 0
+            };
+
+            return Ok(ApiResponse<BcpDocumentCategoryDto>.SuccessResponse(dto, $"Document category '{category.Name}' created successfully."));
+        }
+
+        /// <summary>
+        /// Updates an existing compliance document category.
+        /// </summary>
+        [HttpPut("document-categories/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<BcpDocumentCategoryDto>>> UpdateDocumentCategory(
+            Guid id,
+            [FromBody] UpdateDocumentCategoryRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(ApiResponse<BcpDocumentCategoryDto>.FailureResponse("Document category name is required."));
+            }
+
+            var category = await _db.BcpDocumentCategories
+                .FirstOrDefaultAsync(c => c.TenantKey == CurrentTenantKey && c.Id == id, ct);
+
+            if (category == null)
+            {
+                return NotFound(ApiResponse<BcpDocumentCategoryDto>.FailureResponse("Document category not found."));
+            }
+
+            var cleanName = request.Name.Trim();
+            var cleanCode = !string.IsNullOrWhiteSpace(request.Code)
+                ? request.Code.Trim().ToUpperInvariant()
+                : category.Code;
+
+            var duplicate = await _db.BcpDocumentCategories
+                .AnyAsync(c => c.TenantKey == CurrentTenantKey && c.Id != id && (c.Code == cleanCode || c.Name.ToLower() == cleanName.ToLower()), ct);
+
+            if (duplicate)
+            {
+                return BadRequest(ApiResponse<BcpDocumentCategoryDto>.FailureResponse($"Another document category already uses the name '{cleanName}' or code '{cleanCode}'."));
+            }
+
+            category.Name = cleanName;
+            category.Code = cleanCode;
+            category.Description = request.Description?.Trim();
+            category.IsMandatory = request.IsMandatory;
+            category.RequiresExpiryDate = request.RequiresExpiryDate;
+            category.IsActive = request.IsActive;
+            category.SortOrder = request.SortOrder;
+            category.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            var docCount = await _db.BcpShiftDocuments
+                .CountAsync(d => d.TenantKey == CurrentTenantKey && (d.DocumentType == category.Name || d.DocumentType == category.Code), ct);
+
+            var dto = new BcpDocumentCategoryDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Code = category.Code,
+                Description = category.Description,
+                IsMandatory = category.IsMandatory,
+                RequiresExpiryDate = category.RequiresExpiryDate,
+                IsActive = category.IsActive,
+                SortOrder = category.SortOrder,
+                UploadedDocumentsCount = docCount
+            };
+
+            return Ok(ApiResponse<BcpDocumentCategoryDto>.SuccessResponse(dto, $"Document category '{category.Name}' updated successfully."));
+        }
+
+        /// <summary>
+        /// Deletes a compliance document category if no staff member documents are assigned to it.
+        /// </summary>
+        [HttpDelete("document-categories/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteDocumentCategory(Guid id, CancellationToken ct)
+        {
+            var category = await _db.BcpDocumentCategories
+                .FirstOrDefaultAsync(c => c.TenantKey == CurrentTenantKey && c.Id == id, ct);
+
+            if (category == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Document category not found."));
+            }
+
+            bool inUse = await _db.BcpShiftDocuments
+                .AnyAsync(d => d.TenantKey == CurrentTenantKey && (d.DocumentType == category.Name || d.DocumentType == category.Code), ct);
+
+            if (inUse)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse($"Cannot delete document category '{category.Name}' because active documents are registered under it. Deactivate it instead."));
+            }
+
+            _db.BcpDocumentCategories.Remove(category);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, $"Document category '{category.Name}' deleted successfully."));
+        }
+
+        // =========================================================================
         // 14. CLIENT ORGANIZATIONS & OPERATING SITES HIERARCHY
         // =========================================================================
 
@@ -2934,8 +3290,10 @@ namespace Ozikol_BCC.Api.Controllers
 
     public class UploadDocumentRequest
     {
+        public string? UserId { get; set; }
         public string DocumentType { get; set; } = "General";
         public string DocumentName { get; set; } = string.Empty;
+        public string? ReferenceNumber { get; set; }
         public string? Description { get; set; }
         public string FileUrl { get; set; } = string.Empty;
         public DateTime? ExpiryDateUtc { get; set; }
@@ -2947,12 +3305,71 @@ namespace Ozikol_BCC.Api.Controllers
         public string UserId { get; set; } = string.Empty;
         public string DocumentType { get; set; } = "General";
         public string DocumentName { get; set; } = string.Empty;
+        public string? ReferenceNumber { get; set; }
         public string? Description { get; set; }
         public string FileUrl { get; set; } = string.Empty;
         public string UploadedBy { get; set; } = "Staff";
         public DateTime? ExpiryDateUtc { get; set; }
         public bool IsVerified { get; set; }
         public DateTime CreatedUtc { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a dynamic compliance document submission during enrollment or onboarding.
+    /// </summary>
+    public class StaffDocumentSubmissionDto
+    {
+        public Guid? CategoryId { get; set; }
+        public string DocumentType { get; set; } = "General";
+        public string? DocumentName { get; set; }
+        public string? ReferenceNumber { get; set; }
+        public string? Description { get; set; }
+        public string? FileUrl { get; set; }
+        public DateTime? ExpiryDateUtc { get; set; }
+        public bool IsVerified { get; set; }
+    }
+
+    /// <summary>
+    /// Data transfer object for tenant-governed compliance document categories.
+    /// </summary>
+    public class BcpDocumentCategoryDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsMandatory { get; set; }
+        public bool RequiresExpiryDate { get; set; }
+        public bool IsActive { get; set; }
+        public int SortOrder { get; set; }
+        public int UploadedDocumentsCount { get; set; }
+    }
+
+    /// <summary>
+    /// Request contract for creating a document category.
+    /// </summary>
+    public class CreateDocumentCategoryRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Code { get; set; }
+        public string? Description { get; set; }
+        public bool IsMandatory { get; set; }
+        public bool RequiresExpiryDate { get; set; } = true;
+        public int SortOrder { get; set; } = 0;
+    }
+
+    /// <summary>
+    /// Request contract for updating a document category.
+    /// </summary>
+    public class UpdateDocumentCategoryRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Code { get; set; }
+        public string? Description { get; set; }
+        public bool IsMandatory { get; set; }
+        public bool RequiresExpiryDate { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; } = 0;
     }
 
     public class UpdateNotificationPreferenceRequest
@@ -2995,6 +3412,7 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? WelcomeNote { get; set; }
+        public List<Guid>? RequiredDocumentCategoryIds { get; set; }
         public bool RequireSiaLicense { get; set; } = true;
         public bool RequireEmergencyContact { get; set; } = true;
         public bool RequireBankDetails { get; set; } = true;
@@ -3018,6 +3436,7 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal? ContractedWeeklyHours { get; set; }
         public Guid? AssignedSiteId { get; set; }
 
+        public List<StaffDocumentSubmissionDto>? ComplianceDocuments { get; set; }
         public string? SiaLicenseNumber { get; set; }
         public string? SiaLicenseSector { get; set; }
         public DateTime? SiaLicenseExpiryDate { get; set; }
@@ -3045,6 +3464,7 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? StaffTypeId { get; set; }
         public string? StaffTypeName { get; set; }
 
+        public List<StaffDocumentSubmissionDto>? ComplianceDocuments { get; set; }
         public string? SiaLicenseNumber { get; set; }
         public string? SiaLicenseSector { get; set; }
         public DateTime? SiaLicenseExpiryDate { get; set; }

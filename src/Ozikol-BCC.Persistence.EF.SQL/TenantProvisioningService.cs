@@ -691,6 +691,79 @@ END";
                 });
             }
 
+            // 10. Seed Baseline Compliance Document Categories
+            if (!await dbContext.BcpDocumentCategories.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpDocumentCategories.AddRange(
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Right to Work / Passport",
+                        Code = "RTW",
+                        Description = "Proof of legal eligibility to work (Passport scan, Share Code, Biometric Residence Permit).",
+                        IsMandatory = true,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Proof of Address",
+                        Code = "POA",
+                        Description = "Official proof of residential address issued within the last 3 months (Utility bill, bank statement, council tax).",
+                        IsMandatory = false,
+                        RequiresExpiryDate = false,
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Professional License / Registration",
+                        Code = "LIC",
+                        Description = "Industry license, badge, or regulatory registration (e.g. SIA License, CSCS Card, Nursing PIN, Driver License).",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Background Check / DBS",
+                        Code = "VET",
+                        Description = "Criminal record vetting, DBS disclosure, or police clearance documentation.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 4,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Training & Certifications",
+                        Code = "TRN",
+                        Description = "Vocational certifications, First Aid at Work, Fire Safety, and specialist qualifications.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 5,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                );
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
     }

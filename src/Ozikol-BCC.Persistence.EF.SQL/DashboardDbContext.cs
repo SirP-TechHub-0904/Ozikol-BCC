@@ -126,6 +126,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpShiftDocument> BcpShiftDocuments { get; set; } = null!;
     public DbSet<BcpShiftStaffProfile> BcpShiftStaffProfiles { get; set; } = null!;
     public DbSet<BcpStaffType> BcpStaffTypes { get; set; } = null!;
+    public DbSet<BcpDocumentCategory> BcpDocumentCategories { get; set; } = null!;
     public DbSet<BcpJobRole> BcpJobRoles { get; set; } = null!;
     public DbSet<BcpWorkforcePolicySetting> BcpWorkforcePolicySettings { get; set; } = null!;
     public DbSet<BcpClientOrganization> BcpClientOrganizations { get; set; } = null!;
@@ -919,6 +920,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         modelBuilder.Entity<BcpWorkforcePolicySetting>(entity =>
         {
             entity.HasIndex(p => p.TenantKey).IsUnique();
+        });
+
+        modelBuilder.Entity<BcpDocumentCategory>(entity =>
+        {
+            entity.HasIndex(c => new { c.TenantKey, c.Code }).IsUnique();
+            entity.HasIndex(c => new { c.TenantKey, c.IsActive });
+            entity.HasIndex(c => new { c.TenantKey, c.SortOrder });
         });
 
         modelBuilder.Entity<BcpShift>(entity =>

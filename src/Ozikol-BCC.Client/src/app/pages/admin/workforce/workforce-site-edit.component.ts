@@ -160,7 +160,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <span class="material-symbols-outlined text-purple">badge</span>
                 <div>
                   <h3>Operations &amp; Compliance</h3>
-                  <p class="card-subtitle">Duty point of contact and mandatory SIA license requirements.</p>
+                  <p class="card-subtitle">Duty point of contact and mandatory credential/qualification requirements.</p>
                 </div>
               </div>
             </div>
@@ -193,15 +193,14 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="form-group">
-                <label class="form-label">Required SIA Licence</label>
+                <label class="form-label">Required Credential / Document Category</label>
                 <select class="form-control" [(ngModel)]="site.requiredSiaLicenceType" name="requiredSiaLicenceType">
-                  <option value="">No SIA licence required</option>
-                  <option value="Door Supervision">Door Supervision</option>
-                  <option value="Security Guarding">Security Guarding</option>
-                  <option value="CCTV (Public Space Surveillance)">CCTV (Public Space Surveillance)</option>
-                  <option value="Close Protection">Close Protection</option>
+                  <option value="">No credential required</option>
+                  <option *ngFor="let cat of documentCategories" [value]="cat.name">
+                    {{ cat.name }} ({{ cat.code }})
+                  </option>
                 </select>
-                <span class="field-hint">Officers dispatched to this site must hold an active badge in this sector.</span>
+                <span class="field-hint">Personnel dispatched to this site must hold an active verified document under this category.</span>
               </div>
             </div>
           </div>
@@ -896,8 +895,10 @@ export class WorkforceSiteEditComponent implements OnInit {
     city: '',
     postalCode: '',
     geofenceRadiusMeters: 50,
-    requiredSiaLicenceType: 'Door Supervision'
+    requiredSiaLicenceType: ''
   };
+
+  documentCategories: any[] = [];
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -908,6 +909,7 @@ export class WorkforceSiteEditComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadClientOrganizations();
+    this.loadDocumentCategories();
     const siteId = this.route.snapshot.paramMap.get('id');
     if (siteId) {
       this.isEditMode = true;
@@ -916,6 +918,17 @@ export class WorkforceSiteEditComponent implements OnInit {
       this.isEditMode = false;
       this.prepareNewSiteCode();
     }
+  }
+
+  loadDocumentCategories(): void {
+    this.workforceService.getDocumentCategories().subscribe({
+      next: (res: any) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.documentCategories = res.data;
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadClientOrganizations(): void {

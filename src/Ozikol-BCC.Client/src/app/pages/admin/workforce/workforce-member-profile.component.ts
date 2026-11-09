@@ -164,7 +164,7 @@ interface StaffMemberDetail {
             (click)="activeTab = 'documents'"
           >
             <span class="material-symbols-outlined">verified_user</span>
-            <span>SIA &amp; Document Vault</span>
+            <span>Document Vault &amp; Credentials</span>
             <span class="tab-count">{{ member.documents?.length || 0 }}</span>
           </button>
 
@@ -392,7 +392,7 @@ interface StaffMemberDetail {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- TAB 3: SIA & DOCUMENT VAULT -->
+        <!-- TAB 3: DOCUMENT VAULT & CREDENTIALS -->
         <!-- ========================================================================= -->
         <div class="tab-pane" *ngIf="activeTab === 'documents'">
           <div class="content-card">
@@ -400,8 +400,8 @@ interface StaffMemberDetail {
               <div class="header-bar-left">
                 <span class="material-symbols-outlined text-blue">verified_user</span>
                 <div>
-                  <h3 class="card-heading">Compliance Documents &amp; SIA Badges</h3>
-                  <p class="card-sub">Right to work documents, SIA license verification, and training certificates.</p>
+                  <h3 class="card-heading">Compliance Documents &amp; Credentials</h3>
+                  <p class="card-sub">Right to work documents, statutory licenses, and training certificates.</p>
                 </div>
               </div>
               <button type="button" class="btn btn-primary btn-sm" (click)="openUploadModal()">
@@ -624,7 +624,7 @@ interface StaffMemberDetail {
               <span class="material-symbols-outlined text-blue">upload_file</span>
               <div>
                 <h3>Upload Compliance Document</h3>
-                <p class="modal-subtitle">Add SIA badge, proof of address, or certification to member's vault.</p>
+                <p class="modal-subtitle">Add official credential, proof of address, or certification to member's vault.</p>
               </div>
             </div>
             <button type="button" class="btn-close" (click)="showUploadModal = false">&times;</button>
@@ -632,21 +632,22 @@ interface StaffMemberDetail {
 
           <div class="modal-body">
             <div class="form-group">
-              <label class="form-label">Document Type <span class="required">*</span></label>
+              <label class="form-label">Document Category <span class="required">*</span></label>
               <select class="form-control" [(ngModel)]="uploadForm.documentType">
-                <option value="SIA License">SIA License</option>
-                <option value="Right to Work">Right to Work (Passport / Share Code)</option>
-                <option value="Proof of Address">Proof of Address</option>
-                <option value="First Aid Certificate">First Aid at Work Certificate</option>
-                <option value="ACT E-Learning">ACT E-Learning Certificate</option>
-                <option value="Fire Marshal">Fire Marshal Certificate</option>
-                <option value="Other Certification">Other Certification</option>
+                <option *ngFor="let cat of (documentCategories.length ? documentCategories : fallbackCategories)" [value]="cat.name">
+                  {{ cat.name }} ({{ cat.code }})
+                </option>
               </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">Document Name / Title <span class="required">*</span></label>
-              <input type="text" class="form-control" [(ngModel)]="uploadForm.documentName" placeholder="e.g. SIA Door Supervision Badge (Front & Back)" />
+              <input type="text" class="form-control" [(ngModel)]="uploadForm.documentName" placeholder="e.g. Identity Document / License (Front & Back)" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Reference / License Number</label>
+              <input type="text" class="form-control" [(ngModel)]="uploadForm.referenceNumber" placeholder="e.g. License #, Certificate ID, or Registration code" />
             </div>
 
             <div class="form-group">
@@ -1300,12 +1301,22 @@ export class WorkforceMemberProfileComponent implements OnInit {
 
   jobRoles: any[] = [];
   staffTypes: any[] = [];
+  documentCategories: any[] = [];
+  fallbackCategories = [
+    { name: 'Right to Work / Passport', code: 'RTW' },
+    { name: 'Proof of Address', code: 'POA' },
+    { name: 'Professional License / Registration', code: 'LIC' },
+    { name: 'Background Check / DBS', code: 'DBS' },
+    { name: 'Training & Certifications', code: 'TRN' }
+  ];
 
   showUploadModal = false;
   isUploading = false;
   uploadForm = {
-    documentType: 'SIA License',
+    userId: '',
+    documentType: 'Right to Work / Passport',
     documentName: '',
+    referenceNumber: '',
     fileUrl: '',
     expiryDateUtc: ''
   };
@@ -1376,6 +1387,15 @@ export class WorkforceMemberProfileComponent implements OnInit {
       },
       error: () => {}
     });
+
+    this.workforceService.getDocumentCategories().subscribe({
+      next: (res: any) => {
+        if (res && res.data && Array.isArray(res.data)) {
+          this.documentCategories = res.data;
+        }
+      },
+      error: () => {}
+    });
   }
 
   onStaffTypeChange(): void {
@@ -1431,9 +1451,15 @@ export class WorkforceMemberProfileComponent implements OnInit {
   }
 
   openUploadModal(): void {
+    const defaultCategory = this.documentCategories.length > 0
+      ? this.documentCategories[0].name
+      : this.fallbackCategories[0].name;
+
     this.uploadForm = {
-      documentType: 'SIA License',
+      userId: this.userId,
+      documentType: defaultCategory,
       documentName: '',
+      referenceNumber: '',
       fileUrl: '',
       expiryDateUtc: ''
     };
@@ -1446,6 +1472,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
       return;
     }
 
+    this.uploadForm.userId = this.userId;
     this.isUploading = true;
     this.workforceService.uploadDocument(this.uploadForm).subscribe({
       next: () => {

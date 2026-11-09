@@ -17,6 +17,18 @@ interface StaffTypeItem {
   enrolledStaffCount: number;
 }
 
+interface DocumentCategoryItem {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  isMandatory: boolean;
+  requiresExpiryDate: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  uploadedDocumentsCount: number;
+}
+
 interface JobRoleItem {
   id: string;
   title: string;
@@ -112,6 +124,14 @@ interface WorkforcePolicies {
           <button
             type="button"
             class="btn btn-primary"
+            *ngIf="activeTab === 'documents'"
+            (click)="openCategoryModal()"
+          >
+            <span class="material-symbols-outlined">add</span> + Add Document Category
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
             *ngIf="activeTab === 'hours' || activeTab === 'breaks' || activeTab === 'forms'"
             (click)="savePolicies()"
             [disabled]="isSavingPolicies"
@@ -176,6 +196,17 @@ interface WorkforcePolicies {
           <span>Staff Classifications</span>
           <span class="tab-count">{{ staffTypes.length }}</span>
         </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'documents'"
+          (click)="activeTab = 'documents'"
+        >
+          <span class="material-symbols-outlined">folder_shared</span>
+          <span>Document Categories &amp; Credentials</span>
+          <span class="tab-count">{{ documentCategories.length }}</span>
+        </button>
       </div>
 
       <!-- ========================================================================= -->
@@ -221,7 +252,7 @@ interface WorkforcePolicies {
               <span class="material-symbols-outlined text-blue">work</span>
               <div>
                 <h3 class="card-heading">Configured Job Roles &amp; Charging Matrix</h3>
-                <p class="card-sub">Roles dictate default wage disbursements, client billing charge rates, and required SIA license categories.</p>
+                <p class="card-sub">Roles dictate default wage disbursements, client billing charge rates, and required credential categories.</p>
               </div>
             </div>
             <button type="button" class="btn btn-primary btn-sm" (click)="openRoleModal()">
@@ -238,7 +269,7 @@ interface WorkforcePolicies {
                   <th>Code</th>
                   <th>Base Wage Rate</th>
                   <th>Client Charge Rate</th>
-                  <th>Mandatory SIA Sector</th>
+                  <th>Required Qualification</th>
                   <th>Assigned Staff</th>
                   <th>Status</th>
                   <th style="text-align: right; width: 140px;">Actions</th>
@@ -788,6 +819,94 @@ interface WorkforcePolicies {
       </div>
 
       <!-- ========================================================================= -->
+      <!-- TAB 6: DOCUMENT CATEGORIES & COMPLIANCE VAULT -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'documents'">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div class="header-bar-left">
+              <span class="material-symbols-outlined text-blue">folder_shared</span>
+              <div>
+                <h3 class="card-heading">Compliance Document Categories &amp; Regulatory Policies</h3>
+                <p class="card-sub">Define the specific compliance credentials, certificates, and ID documents your staff must provide.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openCategoryModal()">
+              <span class="material-symbols-outlined">add</span> + Add Category
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Category Name</th>
+                  <th>Code</th>
+                  <th>Purpose / Description</th>
+                  <th>Mandatory</th>
+                  <th>Expiry Tracking</th>
+                  <th>Status</th>
+                  <th>Filed Records</th>
+                  <th style="text-align: right; width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of documentCategories">
+                  <td>
+                    <div class="title-cell">
+                      <strong>{{ c.name }}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="code-badge">{{ c.code }}</span>
+                  </td>
+                  <td>
+                    <span class="desc-muted">{{ c.description || 'No description provided.' }}</span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="c.isMandatory ? 'active' : 'idle'">
+                      {{ c.isMandatory ? 'Mandatory' : 'Optional' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="c.requiresExpiryDate ? 'warning' : 'idle'">
+                      {{ c.requiresExpiryDate ? 'Expiry Tracked' : 'No Expiry' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="c.isActive ? 'active' : 'idle'">
+                      {{ c.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="staff-count-pill">{{ c.uploadedDocumentsCount }} records</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="action-btn" (click)="editCategory(c)" title="Edit Category">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn text-danger"
+                      (click)="deleteCategory(c)"
+                      title="Delete Category"
+                    >
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="documentCategories.length === 0">
+                  <td colspan="8" class="empty-state-cell">
+                    <p>No compliance document categories configured yet. Click "+ Add Category" to create one.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
       <!-- MODAL: ADD / EDIT JOB ROLE -->
       <!-- ========================================================================= -->
       <div class="modal-backdrop" *ngIf="showRoleModal" (click)="closeRoleModal()">
@@ -797,7 +916,7 @@ interface WorkforcePolicies {
               <span class="material-symbols-outlined text-blue">badge</span>
               <div>
                 <h3>{{ isEditingRole ? 'Edit Job Role' : 'Add New Job Role' }}</h3>
-                <p class="modal-subtitle">Specify role title, base wage, billing charge rate, and SIA license requirements.</p>
+                <p class="modal-subtitle">Specify role title, base wage, billing charge rate, and qualification requirements.</p>
               </div>
             </div>
             <button type="button" class="btn-close" (click)="closeRoleModal()">&times;</button>
@@ -811,7 +930,7 @@ interface WorkforcePolicies {
                   type="text"
                   class="form-control"
                   [(ngModel)]="roleForm.title"
-                  placeholder="e.g. SIA Door Supervisor"
+                  placeholder="e.g. Operations Supervisor, Team Lead, Specialist"
                   required
                 />
               </div>
@@ -822,7 +941,7 @@ interface WorkforcePolicies {
                   type="text"
                   class="form-control"
                   [(ngModel)]="roleForm.code"
-                  placeholder="e.g. DS"
+                  placeholder="e.g. OPS"
                   required
                 />
               </div>
@@ -866,13 +985,12 @@ interface WorkforcePolicies {
 
             <div class="form-row-dual">
               <div class="form-group">
-                <label class="form-label">Mandatory SIA License Sector</label>
+                <label class="form-label">Required Qualification / Credential</label>
                 <select class="form-control" [(ngModel)]="roleForm.mandatorySiaSector">
-                  <option value="None">None (Unlicensed)</option>
-                  <option value="Door Supervision">Door Supervision</option>
-                  <option value="Security Guarding">Security Guarding</option>
-                  <option value="CCTV">CCTV (Public Space Surveillance)</option>
-                  <option value="Close Protection">Close Protection</option>
+                  <option value="None">None (Unrestricted / General Duty)</option>
+                  <option *ngFor="let cat of documentCategories" [value]="cat.name">
+                    {{ cat.name }} ({{ cat.code }})
+                  </option>
                 </select>
               </div>
 
@@ -971,6 +1089,113 @@ interface WorkforcePolicies {
               <span class="material-symbols-outlined" *ngIf="!isSavingStaffType">save</span>
               <span class="material-symbols-outlined spin" *ngIf="isSavingStaffType">sync</span>
               {{ isSavingStaffType ? 'Saving...' : 'Save Classification' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- MODAL: ADD / EDIT DOCUMENT CATEGORY -->
+      <!-- ========================================================================= -->
+      <div class="modal-backdrop" *ngIf="showCategoryModal" (click)="closeCategoryModal()">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">folder_shared</span>
+              <div>
+                <h3>{{ isEditingCategory ? 'Edit Document Category' : 'Add Document Category' }}</h3>
+                <p class="modal-subtitle">Configure compliance document category, mandatory requirements, and expiration tracking.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="closeCategoryModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Category Name <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="categoryForm.name"
+                  placeholder="e.g. Professional License / Registration"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Short Code <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control text-uppercase"
+                  [(ngModel)]="categoryForm.code"
+                  placeholder="e.g. LIC, RTW, DBS, CSCS"
+                  maxlength="20"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Compliance Purpose &amp; Accepted Documents</label>
+              <textarea
+                class="form-control"
+                rows="2"
+                [(ngModel)]="categoryForm.description"
+                placeholder="Explain why this document is required and which official proofs are accepted..."
+              ></textarea>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Mandatory for Staff Onboarding</label>
+                <div class="checkbox-row" style="margin-top: 8px;">
+                  <input type="checkbox" id="catMandatory" [(ngModel)]="categoryForm.isMandatory" />
+                  <label for="catMandatory" style="cursor: pointer; font-size: 0.875rem;">Required before staff deployment</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Track Expiration &amp; Alerts</label>
+                <div class="checkbox-row" style="margin-top: 8px;">
+                  <input type="checkbox" id="catExpiry" [(ngModel)]="categoryForm.requiresExpiryDate" />
+                  <label for="catExpiry" style="cursor: pointer; font-size: 0.875rem;">Alert managers before document expires</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Display Sort Order</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="categoryForm.sortOrder"
+                  min="0"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <div class="checkbox-row" style="margin-top: 8px;">
+                  <input type="checkbox" id="catActive" [(ngModel)]="categoryForm.isActive" />
+                  <label for="catActive" style="cursor: pointer; font-size: 0.875rem;">Active for selection</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeCategoryModal()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="saveCategory()"
+              [disabled]="isSavingCategory"
+            >
+              <span class="material-symbols-outlined" *ngIf="!isSavingCategory">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSavingCategory">sync</span>
+              {{ isSavingCategory ? 'Saving...' : (isEditingCategory ? 'Update Category' : 'Create Category') }}
             </button>
           </div>
         </div>
@@ -1831,7 +2056,7 @@ interface WorkforcePolicies {
   `]
 })
 export class WorkforceSettingsComponent implements OnInit {
-  activeTab: 'roles' | 'hours' | 'breaks' | 'forms' | 'staff-types' = 'roles';
+  activeTab: 'roles' | 'hours' | 'breaks' | 'forms' | 'staff-types' | 'documents' = 'roles';
   isLoading = false;
 
   currencyCode = 'NGN';
@@ -1851,6 +2076,21 @@ export class WorkforceSettingsComponent implements OnInit {
     mandatorySiaSector: 'None',
     badgeColor: '#0050E5',
     isActive: true
+  };
+
+  // Document Categories State
+  documentCategories: DocumentCategoryItem[] = [];
+  showCategoryModal = false;
+  isEditingCategory = false;
+  isSavingCategory = false;
+  categoryForm: Partial<DocumentCategoryItem> = {
+    name: '',
+    code: '',
+    description: '',
+    isMandatory: false,
+    requiresExpiryDate: true,
+    isActive: true,
+    sortOrder: 0
   };
 
   // Workforce Policies State
@@ -1919,6 +2159,7 @@ export class WorkforceSettingsComponent implements OnInit {
     this.loadJobRoles();
     this.loadPolicies();
     this.loadStaffTypes();
+    this.loadDocumentCategories();
   }
 
   loadCurrency(): void {
@@ -2132,6 +2373,92 @@ export class WorkforceSettingsComponent implements OnInit {
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to delete classification.');
+      }
+    });
+  }
+
+  // --- DOCUMENT CATEGORIES LOGIC ---
+  loadDocumentCategories(): void {
+    this.workforceService.getDocumentCategories().subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.documentCategories = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  openCategoryModal(): void {
+    this.isEditingCategory = false;
+    this.categoryForm = {
+      name: '',
+      code: '',
+      description: '',
+      isMandatory: false,
+      requiresExpiryDate: true,
+      isActive: true,
+      sortOrder: this.documentCategories.length + 1
+    };
+    this.showCategoryModal = true;
+  }
+
+  editCategory(cat: DocumentCategoryItem): void {
+    this.isEditingCategory = true;
+    this.categoryForm = { ...cat };
+    this.showCategoryModal = true;
+  }
+
+  closeCategoryModal(): void {
+    this.showCategoryModal = false;
+  }
+
+  saveCategory(): void {
+    if (!this.categoryForm.name?.trim()) {
+      this.toast.error('Please enter a document category name.');
+      return;
+    }
+
+    this.isSavingCategory = true;
+    if (this.isEditingCategory && this.categoryForm.id) {
+      this.workforceService.updateDocumentCategory(this.categoryForm.id, this.categoryForm).subscribe({
+        next: () => {
+          this.isSavingCategory = false;
+          this.showCategoryModal = false;
+          this.toast.success('Document category updated successfully.');
+          this.loadDocumentCategories();
+        },
+        error: (err: any) => {
+          this.isSavingCategory = false;
+          this.toast.error(err?.error?.message || 'Failed to update document category.');
+        }
+      });
+    } else {
+      this.workforceService.createDocumentCategory(this.categoryForm).subscribe({
+        next: () => {
+          this.isSavingCategory = false;
+          this.showCategoryModal = false;
+          this.toast.success('New document category created.');
+          this.loadDocumentCategories();
+        },
+        error: (err: any) => {
+          this.isSavingCategory = false;
+          this.toast.error(err?.error?.message || 'Failed to create document category.');
+        }
+      });
+    }
+  }
+
+  deleteCategory(cat: DocumentCategoryItem): void {
+    if (!confirm(`Are you sure you want to delete category '${cat.name}'?`)) return;
+
+    this.workforceService.deleteDocumentCategory(cat.id).subscribe({
+      next: () => {
+        this.toast.success(`Category '${cat.name}' removed.`);
+        this.loadDocumentCategories();
+      },
+      error: (err: any) => {
+        this.toast.error(err?.error?.message || 'Failed to delete category.');
       }
     });
   }

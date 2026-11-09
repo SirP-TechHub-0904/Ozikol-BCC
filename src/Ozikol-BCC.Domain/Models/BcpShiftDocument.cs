@@ -52,6 +52,12 @@ namespace Ozikol_BCC.Domain.Models
         public string? Description { get; set; }
 
         /// <summary>
+        /// Optional credential registration or reference number (e.g., license number, passport number, certificate ID).
+        /// </summary>
+        [StringLength(100)]
+        public string? ReferenceNumber { get; set; }
+
+        /// <summary>
         /// Cloud storage location URL (Cloudflare R2 or S3) where the encrypted document file resides.
         /// </summary>
         [Required]

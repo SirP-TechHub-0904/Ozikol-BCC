@@ -350,4 +350,21 @@ export class WorkforceService {
   updateMemberDetail(userId: string, data: any): Observable<any> {
     return this.apiService.put<any>(`workforce/members/${userId}`, data);
   }
+
+  // --- DOCUMENT CATEGORIES & COMPLIANCE POLICIES ---
+  getDocumentCategories(): Observable<any> {
+    return this.apiService.get<any>('workforce/document-categories');
+  }
+
+  createDocumentCategory(category: any): Observable<any> {
+    return this.apiService.post<any>('workforce/document-categories', category);
+  }
+
+  updateDocumentCategory(id: string, category: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/document-categories/${id}`, category);
+  }
+
+  deleteDocumentCategory(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/document-categories/${id}`);
+  }
 }

@@ -10,7 +10,7 @@ import { ToastService } from '../../../core/services/toast.service';
  * Route: `/workforce/console/enroll`
  * Supports two distinct onboarding paths:
  * 1. Self-Service Invite Link: Worker completes compliance details & sets password.
- * 2. Direct Admin Pre-Enrollment: Admin fills full identity, SIA license, emergency contact & bank info upfront.
+ * 2. Direct Admin Pre-Enrollment: Admin fills full identity, credentials, emergency contact & bank info upfront.
  */
 @Component({
   selector: 'app-workforce-enroll',
@@ -119,13 +119,9 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="form-group">
                   <label class="form-label">Designated Job Title <span class="required">*</span></label>
                   <select class="form-control" [(ngModel)]="inviteModel.jobTitle">
-                    <option value="SIA Door Supervisor">SIA Door Supervisor</option>
-                    <option value="Security Guard">Security Guard</option>
-                    <option value="CCTV Controller">CCTV Controller</option>
-                    <option value="Event Steward">Event Steward</option>
-                    <option value="Care Assistant">Care Assistant</option>
-                    <option value="Healthcare Worker">Healthcare Worker</option>
-                    <option value="Operations Supervisor">Operations Supervisor</option>
+                    <option *ngFor="let role of (jobRoles.length ? jobRoles : fallbackJobRoles)" [value]="role.title">
+                      {{ role.title }} ({{ role.code }})
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -167,7 +163,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   class="form-control"
                   rows="3"
                   [(ngModel)]="inviteModel.welcomeNote"
-                  placeholder="Welcome to the team! Please complete your onboarding details and upload your SIA badge..."
+                  placeholder="Welcome to the team! Please complete your onboarding details and upload your credentials..."
                 ></textarea>
               </div>
             </div>
@@ -191,8 +187,8 @@ import { ToastService } from '../../../core/services/toast.service';
                   <input type="checkbox" id="reqSia" [(ngModel)]="inviteModel.requireSiaLicense" />
                 </div>
                 <label for="reqSia" class="req-label">
-                  <strong>SIA License &amp; Expiry Date</strong>
-                  <p>Worker must submit their 16-digit SIA badge number, sector, and valid expiry date.</p>
+                  <strong>Professional License / Registration Credential</strong>
+                  <p>Worker must submit their regulatory credential/license number and valid expiry date.</p>
                 </label>
               </div>
 
@@ -359,13 +355,9 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="form-group">
                   <label class="form-label">Designated Job Title <span class="required">*</span></label>
                   <select class="form-control" [(ngModel)]="directModel.jobTitle">
-                    <option value="SIA Door Supervisor">SIA Door Supervisor</option>
-                    <option value="Security Guard">Security Guard</option>
-                    <option value="CCTV Controller">CCTV Controller</option>
-                    <option value="Event Steward">Event Steward</option>
-                    <option value="Care Assistant">Care Assistant</option>
-                    <option value="Healthcare Worker">Healthcare Worker</option>
-                    <option value="Operations Supervisor">Operations Supervisor</option>
+                    <option *ngFor="let role of (jobRoles.length ? jobRoles : fallbackJobRoles)" [value]="role.title">
+                      {{ role.title }} ({{ role.code }})
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -406,21 +398,21 @@ import { ToastService } from '../../../core/services/toast.service';
                     type="text"
                     class="form-control"
                     [(ngModel)]="directModel.nationalInsuranceNumber"
-                    placeholder="e.g. QQ123456C"
+                    placeholder="e.g. Tax / ID Number"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Section 3: SIA License & Regulatory Compliance -->
+          <!-- Section 3: Compliance Credential & Professional License -->
           <div class="cms-card">
             <div class="card-header">
               <div class="card-title-group">
                 <span class="material-symbols-outlined text-purple">badge</span>
                 <div>
-                  <h3>3. SIA License &amp; Security Compliance</h3>
-                  <p class="card-subtitle">Mandatory licensing sector and badge expiry tracking.</p>
+                  <h3>3. Compliance Credential &amp; Professional License</h3>
+                  <p class="card-subtitle">Mandatory licensing sector, qualification badge, or statutory registration.</p>
                 </div>
               </div>
             </div>
@@ -428,26 +420,24 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-body">
               <div class="form-row-triple">
                 <div class="form-group">
-                  <label class="form-label">SIA License Number (16 Digits)</label>
+                  <label class="form-label">Credential / Document Category</label>
+                  <select class="form-control" [(ngModel)]="directModel.siaLicenseSector">
+                    <option *ngFor="let cat of (documentCategories.length ? documentCategories : fallbackCategories)" [value]="cat.name">
+                      {{ cat.name }} ({{ cat.code }})
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">License / Reference Number</label>
                   <input
                     type="text"
                     class="form-control"
                     [(ngModel)]="directModel.siaLicenseNumber"
-                    placeholder="e.g. 1000200030004000"
-                    maxlength="16"
+                    placeholder="e.g. License #, Certificate ID, or Registration code"
                   />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">License Sector</label>
-                  <select class="form-control" [(ngModel)]="directModel.siaLicenseSector">
-                    <option value="Door Supervision">Door Supervision</option>
-                    <option value="Security Guarding">Security Guarding</option>
-                    <option value="CCTV (Public Space Surveillance)">CCTV (Public Space Surveillance)</option>
-                    <option value="Close Protection">Close Protection</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">License Expiry Date</label>
+                  <label class="form-label">Expiration Date</label>
                   <input
                     type="date"
                     class="form-control"
@@ -999,11 +989,26 @@ export class WorkforceEnrollComponent implements OnInit {
   isSubmitting = false;
   currencySymbol = '₦';
   staffTypes: any[] = [];
+  jobRoles: any[] = [];
+  documentCategories: any[] = [];
+
+  fallbackJobRoles = [
+    { title: 'Operations Supervisor', code: 'OPS' },
+    { title: 'Shift Specialist', code: 'SPEC' },
+    { title: 'General Staff Member', code: 'STAFF' }
+  ];
+
+  fallbackCategories = [
+    { name: 'Professional License / Registration', code: 'LIC' },
+    { name: 'Right to Work / Passport', code: 'RTW' },
+    { name: 'Background Check / DBS', code: 'DBS' },
+    { name: 'Training & Certifications', code: 'TRN' }
+  ];
 
   inviteModel = {
     fullName: '',
     email: '',
-    jobTitle: 'SIA Door Supervisor',
+    jobTitle: 'Operations Supervisor',
     staffTypeId: '',
     staffTypeName: 'Permanent',
     defaultHourlyRate: 15.0,
@@ -1023,14 +1028,14 @@ export class WorkforceEnrollComponent implements OnInit {
     phoneNumber: '',
     password: '',
     mustChangePassword: true,
-    jobTitle: 'SIA Door Supervisor',
+    jobTitle: 'Operations Supervisor',
     staffTypeId: '',
     staffTypeName: 'Permanent',
     defaultHourlyRate: 15.0,
     contractedWeeklyHours: 40,
     nationalInsuranceNumber: '',
     siaLicenseNumber: '',
-    siaLicenseSector: 'Door Supervision',
+    siaLicenseSector: 'Professional License / Registration',
     siaLicenseExpiryDate: '',
     emergencyContactName: '',
     emergencyContactRelationship: '',
@@ -1052,6 +1057,32 @@ export class WorkforceEnrollComponent implements OnInit {
       next: (res: any) => {
         if (res?.data?.currencySymbol) {
           this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
+
+    this.workforceService.getJobRoles().subscribe({
+      next: (res: any) => {
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          this.jobRoles = res.data;
+          this.inviteModel.jobTitle = this.jobRoles[0].title;
+          this.directModel.jobTitle = this.jobRoles[0].title;
+          if (this.jobRoles[0].defaultHourlyRate) {
+            this.inviteModel.defaultHourlyRate = this.jobRoles[0].defaultHourlyRate;
+            this.directModel.defaultHourlyRate = this.jobRoles[0].defaultHourlyRate;
+          }
+        }
+      },
+      error: () => {}
+    });
+
+    this.workforceService.getDocumentCategories().subscribe({
+      next: (res: any) => {
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          this.documentCategories = res.data;
+          const expCat = this.documentCategories.find((c: any) => c.requiresExpiryDate) || this.documentCategories[0];
+          this.directModel.siaLicenseSector = expCat.name;
         }
       },
       error: () => {}

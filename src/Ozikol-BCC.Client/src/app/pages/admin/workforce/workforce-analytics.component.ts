@@ -318,13 +318,8 @@ import { ToastService } from '../../../core/services/toast.service';
                 </button>
               </div>
               <select class="filter-dropdown" [(ngModel)]="selectedRoleFilter">
-                <option value="">All Job Titles</option>
-                <option value="Security Guard">Security Guard</option>
-                <option value="SIA Door Supervisor">SIA Door Supervisor</option>
-                <option value="Event Steward">Event Steward</option>
-                <option value="Care Assistant">Care Assistant</option>
-                <option value="Healthcare Worker">Healthcare Worker</option>
-                <option value="Operations Supervisor">Operations Supervisor</option>
+                <option value="">All Job Roles</option>
+                <option *ngFor="let role of availableJobRoles" [value]="role">{{ role }}</option>
               </select>
             </div>
           </div>
@@ -1444,6 +1439,7 @@ export class WorkforceAnalyticsComponent implements OnInit {
   // Filter & Search states
   searchQuery = '';
   selectedRoleFilter = '';
+  availableJobRoles: string[] = [];
 
   // Modals
   showRateModal = false;
@@ -1461,7 +1457,7 @@ export class WorkforceAnalyticsComponent implements OnInit {
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadAll();
@@ -1469,6 +1465,7 @@ export class WorkforceAnalyticsComponent implements OnInit {
 
   loadAll(): void {
     this.isLoading = true;
+    this.loadJobRoles();
     this.workforceService.getAnalytics().subscribe({
       next: (res: any) => {
         if (res.isSuccess) {
@@ -1482,12 +1479,28 @@ export class WorkforceAnalyticsComponent implements OnInit {
     });
   }
 
+  loadJobRoles(): void {
+    this.workforceService.getJobRoles().subscribe({
+      next: (res: any) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.availableJobRoles = res.data.map((r: any) => r.title);
+        }
+      },
+      error: () => {}
+    });
+  }
+
   loadMembers(): void {
     this.workforceService.getMembers().subscribe({
       next: (res: any) => {
         this.isLoading = false;
         if (res.isSuccess) {
           this.staffMembers = res.data || [];
+          if (this.availableJobRoles.length === 0) {
+            const roleSet = new Set<string>();
+            this.staffMembers.forEach(m => { if (m.jobTitle) roleSet.add(m.jobTitle); });
+            this.availableJobRoles = Array.from(roleSet);
+          }
         }
       },
       error: () => {

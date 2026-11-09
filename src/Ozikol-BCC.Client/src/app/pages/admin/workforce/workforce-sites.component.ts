@@ -61,11 +61,8 @@ import { ToastService } from '../../../core/services/toast.service';
             <button type="button" class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''">&times;</button>
           </div>
           <select class="filter-dropdown" [(ngModel)]="selectedLicenceFilter">
-            <option value="">All Licence Requirements</option>
-            <option value="Door Supervision">Door Supervision</option>
-            <option value="Security Guarding">Security Guarding</option>
-            <option value="CCTV (Public Space Surveillance)">CCTV</option>
-            <option value="Close Protection">Close Protection</option>
+            <option value="">All Credential Requirements</option>
+            <option *ngFor="let cat of documentCategories" [value]="cat.name">{{ cat.name }}</option>
           </select>
         </div>
         <div class="toolbar-right">
@@ -175,7 +172,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <th>CITY</th>
                 <th>GEOFENCE RADIUS</th>
                 <th>GPS COORDINATES</th>
-                <th>SIA REQUIREMENT</th>
+                <th>REQUIRED CREDENTIAL</th>
                 <th>ACTIVE SHIFTS</th>
                 <th style="text-align: right;">ACTIONS</th>
               </tr>
@@ -1077,6 +1074,7 @@ export class WorkforceSitesComponent implements OnInit {
   searchQuery = '';
   selectedLicenceFilter = '';
   viewMode: 'cards' | 'table' = 'cards';
+  documentCategories: any[] = [];
 
   constructor(
     private readonly workforceService: WorkforceService,
@@ -1085,6 +1083,18 @@ export class WorkforceSitesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSites();
+    this.loadDocumentCategories();
+  }
+
+  loadDocumentCategories(): void {
+    this.workforceService.getDocumentCategories().subscribe({
+      next: (res: any) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.documentCategories = res.data;
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadSites(): void {
