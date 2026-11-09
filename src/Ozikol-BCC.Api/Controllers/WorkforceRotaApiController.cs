@@ -1812,8 +1812,8 @@ namespace Ozikol_BCC.Api.Controllers
             // Calculate staff count per type
             var counts = await _db.BcpShiftStaffProfiles
                 .AsNoTracking()
-                .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive)
-                .GroupBy(p => p.StaffTypeId)
+                .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive && p.StaffTypeId != null)
+                .GroupBy(p => p.StaffTypeId!.Value)
                 .Select(g => new { StaffTypeId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.StaffTypeId, x => x.Count, ct);
 
