@@ -84,11 +84,11 @@ public class CentralEmailService : ICentralEmailService
             return false;
         }
 
-        var effectiveProvider = provider ?? "Postmark";
+        var effectiveProvider = provider;
         try
         {
             var platformSetting = await _masterCatalogDbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
-            if (provider == null && platformSetting != null && !string.IsNullOrWhiteSpace(platformSetting.EmailProvider))
+            if (effectiveProvider == null && platformSetting != null && !string.IsNullOrWhiteSpace(platformSetting.EmailProvider))
             {
                 effectiveProvider = platformSetting.EmailProvider;
             }
@@ -96,6 +96,16 @@ public class CentralEmailService : ICentralEmailService
         catch
         {
             // Graceful fallback if MasterPlatformSettings is transiently unreachable
+        }
+
+        // If no provider explicitly set in MasterPlatformSettings, detect whether Postmark token exists; otherwise default to Mailcow
+        if (string.IsNullOrWhiteSpace(effectiveProvider))
+        {
+            var postmarkToken = _configuration["PostmarkSettings:ServerToken"]
+                ?? _configuration["EmailSettings:ApiKey"]
+                ?? Environment.GetEnvironmentVariable("POSTMARK_SERVER_TOKEN");
+
+            effectiveProvider = !string.IsNullOrWhiteSpace(postmarkToken) ? "Postmark" : "Mailcow";
         }
 
         var log = new MasterEmailLog
@@ -129,9 +139,31 @@ public class CentralEmailService : ICentralEmailService
                 }
                 else
                 {
-                    log.Status = "Failed";
-                    log.ErrorMessage = response.Message ?? "Postmark delivery status returned non-success.";
-                    _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}", toEmail, response.Message);
+                    _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}. Engaging automated Mailcow SMTP failover...", toEmail, response.Message);
+
+                    // Automated Failover: Fall back to Mailcow SMTP when Postmark returns non-success
+                    var failoverDelivered = await _smtpEmailDispatcher.SendEmailAsync(
+                        toEmail: toEmail,
+                        subject: subject,
+                        htmlBody: htmlBody,
+                        fromEmail: "noreply@ozikol.cloud",
+                        fromName: "Ozikol Business Command Center",
+                        isCentralPlatformEmail: true,
+                        cancellationToken: cancellationToken);
+
+                    if (failoverDelivered)
+                    {
+                        log.Provider = "Mailcow (Failover)";
+                        log.Status = "Sent";
+                        log.ErrorMessage = null;
+                        _logger.LogInformation("✅ [CentralEmailService] Mailcow failover successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
+                    }
+                    else
+                    {
+                        log.Status = "Failed";
+                        log.ErrorMessage = $"Postmark failed ({response.Message}) and Mailcow SMTP failover also returned failure. Verify Mailcow credentials.";
+                        _logger.LogWarning("⚠️ [CentralEmailService] Mailcow failover also failed for [{Recipient}].", toEmail);
+                    }
                 }
             }
             else
@@ -151,6 +183,7 @@ public class CentralEmailService : ICentralEmailService
                 {
                     log.Status = "Sent";
                     log.ErrorMessage = null;
+                    log.Provider = "Mailcow";
                     _logger.LogInformation("✅ [CentralEmailService] Mailcow successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
                 }
                 else
