@@ -60,6 +60,9 @@ export interface SuiteInfoDetail {
           <img [src]="brandLogoUrl" [alt]="brandName" class="brand-logo-img" *ngIf="brandLogoUrl">
           <span *ngIf="!brandLogoUrl" class="brand-logo-text">{{ brandName || 'Workspace' }}</span>
         </a>
+        <button type="button" class="sidebar-close-btn" (click)="closeSidebarMobile()" title="Close Navigation Drawer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
       </div>
 
       <nav class="sidebar-nav">
@@ -1342,6 +1345,9 @@ export interface SuiteInfoDetail {
         </div>
       </div>
     </aside>
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-mobile-backdrop" *ngIf="!sidebarCollapsed" (click)="closeSidebarMobile()"></div>
 
     <!-- Main Shell -->
     <main id="main-content" [class.sidebar-collapsed]="sidebarCollapsed">
@@ -4202,11 +4208,20 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     this.updateActiveMenu(this.currentRoute);
     this.handleRouteTab(this.currentRoute);
 
-    // Track router changes for dynamic tabs and active sidebar menu
+    // Auto-collapse navigation sidebar on mobile screens (<= 900px)
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      this.sidebarCollapsed = true;
+      document.body.classList.add('sidebar-closed');
+    }
+
+    // Track router changes for dynamic tabs, active sidebar menu, and auto-closing mobile sidebar
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       this.currentRoute = e.urlAfterRedirects || e.url;
       this.updateActiveMenu(this.currentRoute);
       this.handleRouteTab(this.currentRoute);
+      if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+        this.closeSidebarMobile();
+      }
     });
 
     this.loadTenantInfo();
@@ -5218,6 +5233,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       },
       error: () => {}
     });
+  }
+
+  closeSidebarMobile(): void {
+    this.sidebarCollapsed = true;
+    document.body.classList.add('sidebar-closed');
   }
 
   toggleSidebar(): void {

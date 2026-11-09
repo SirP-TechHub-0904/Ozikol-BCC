@@ -20,16 +20,27 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
 
   const rawMenus = ctx.navigationMenu || [];
   const activeMenus = rawMenus.filter(m => m.publish !== false && m.showInMainMenu !== false);
+  const sortedAll = [...activeMenus].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  // Check if template places multiple zone tags inside the same continuous navbar list (e.g. NavItems="first" followed by NavItems="middle").
+  // When contiguous, render all items in the first loop in exact sequential sortOrder so that moving pages up/down in the Admin Console
+  // moves them immediately and directly on the live website without artificial zone-boundary stalls.
+  const hasContiguousZones = /\{\{#each\s+NavItems(?:=|\s+)["']first["']\}\}[\s\S]*?\{\{#each\s+NavItems(?:=|\s+)["']middle["']\}\}/i.test(template);
+
   const firstZone = activeMenus.filter(m => (m.zone || 'first').toLowerCase() === 'first');
   const middleZone = activeMenus.filter(m => (m.zone || 'first').toLowerCase() === 'middle');
   const lastZone = activeMenus.filter(m => (m.zone || 'first').toLowerCase() === 'last');
 
+  const effectiveFirstZone = hasContiguousZones ? sortedAll : firstZone;
+  const effectiveMiddleZone = hasContiguousZones ? [] : middleZone;
+  const effectiveLastZone = hasContiguousZones ? [] : lastZone;
+
   let output = template;
 
   // 1. Zone Conditionals
-  output = resolveDepthAwareIf(output, 'HasNavItemsFirst', firstZone.length > 0);
-  output = resolveDepthAwareIf(output, 'HasNavItemsMiddle', middleZone.length > 0);
-  output = resolveDepthAwareIf(output, 'HasNavItemsLast', lastZone.length > 0);
+  output = resolveDepthAwareIf(output, 'HasNavItemsFirst', effectiveFirstZone.length > 0);
+  output = resolveDepthAwareIf(output, 'HasNavItemsMiddle', effectiveMiddleZone.length > 0);
+  output = resolveDepthAwareIf(output, 'HasNavItemsLast', effectiveLastZone.length > 0);
   output = resolveDepthAwareIf(output, 'HasNavItems', activeMenus.length > 0);
 
   // 2. TopBar, Contact Info & Social Media Conditionals
@@ -62,7 +73,7 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
     return /\{\{#each\s+NavItems(?:=|\s+)["']first["']\}\}/i.test(openTag) ? { matched: true } : null;
   };
   output = replaceDepthAwareEach(output, zoneFirstMatcher, (innerTemplate) => {
-    return renderNavList(firstZone, innerTemplate);
+    return renderNavList(effectiveFirstZone, innerTemplate);
   });
 
   // 4. Zone 2: Middle
@@ -70,7 +81,7 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
     return /\{\{#each\s+NavItems(?:=|\s+)["']middle["']\}\}/i.test(openTag) ? { matched: true } : null;
   };
   output = replaceDepthAwareEach(output, zoneMiddleMatcher, (innerTemplate) => {
-    return renderNavList(middleZone, innerTemplate);
+    return renderNavList(effectiveMiddleZone, innerTemplate);
   });
 
   // 5. Zone 3: Last
@@ -78,7 +89,7 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
     return /\{\{#each\s+NavItems(?:=|\s+)["']last["']\}\}/i.test(openTag) ? { matched: true } : null;
   };
   output = replaceDepthAwareEach(output, zoneLastMatcher, (innerTemplate) => {
-    return renderNavList(lastZone, innerTemplate);
+    return renderNavList(effectiveLastZone, innerTemplate);
   });
 
   // 6. Global Unzoned NavItems (if template uses simple {{#each NavItems}})

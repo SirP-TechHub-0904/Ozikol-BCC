@@ -1232,11 +1232,6 @@ export class WebPagesComponent implements OnInit {
   }
 
   sortByZoneAndOrder(a: any, b: any): number {
-    const zoneA = Number(a.menuPosition) || 1;
-    const zoneB = Number(b.menuPosition) || 1;
-    if (zoneA !== zoneB) {
-      return zoneA - zoneB;
-    }
     return (a.sortOrder || 0) - (b.sortOrder || 0);
   }
 
@@ -1407,8 +1402,9 @@ export class WebPagesComponent implements OnInit {
     const parsed = parseInt(newVal, 10);
     if (isNaN(parsed) || parsed === page.sortOrder) return;
     page.sortOrder = parsed;
+    page.mainMenuSortOrder = parsed;
     this.pages.sort((a, b) => this.sortByZoneAndOrder(a, b));
-    const payload = this.pages.map(p => ({ id: p.id, sortOrder: p.sortOrder || 0 }));
+    const payload = this.pages.map(p => ({ id: p.id, sortOrder: p.sortOrder || 0, mainMenuSortOrder: p.sortOrder || 0 }));
     this.savingPageOrder = true;
     this.api.put<any>('ContentApi/pages/reorder', payload).subscribe({
       next: () => {
@@ -1497,14 +1493,18 @@ export class WebPagesComponent implements OnInit {
   }
 
   applyAndSavePageReorder(orderedList: any[], showNotice: boolean = false): void {
-    const payload: Array<{ id: string; sortOrder: number }> = [];
+    const payload: Array<{ id: string; sortOrder: number; mainMenuSortOrder?: number }> = [];
     orderedList.forEach((page, idx) => {
       const newOrder = (idx + 1) * 10;
       page.sortOrder = newOrder;
-      payload.push({ id: page.id, sortOrder: newOrder });
+      page.mainMenuSortOrder = newOrder;
+      payload.push({ id: page.id, sortOrder: newOrder, mainMenuSortOrder: newOrder });
 
       const master = this.pages.find(p => p.id === page.id);
-      if (master) master.sortOrder = newOrder;
+      if (master) {
+        master.sortOrder = newOrder;
+        master.mainMenuSortOrder = newOrder;
+      }
     });
 
     this.pages.sort((a, b) => this.sortByZoneAndOrder(a, b));

@@ -452,7 +452,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ? request.Slug
                     : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
 
-                var uniqueSlug = await GenerateUniqueSlugAsync(rawSlug);
+                var uniqueSlug = request.IsHomePage
+                    ? "/"
+                    : await GenerateUniqueSlugAsync(rawSlug, null, request.IsHomePage);
 
                 Guid? categoryId = request.PageCategoryId;
                 if (categoryId == Guid.Empty) categoryId = null;
@@ -528,11 +530,18 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
-            // Ensure unique slug if modified
-            var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) ? updated.DirectUrl : updated.Title;
-            if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+            // Ensure unique slug or root homepage path
+            if (updated.IsHomePage)
             {
-                existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id);
+                existing.DirectUrl = "/";
+            }
+            else
+            {
+                var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) && updated.DirectUrl != "/" ? updated.DirectUrl : updated.Title;
+                if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                {
+                    existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                }
             }
 
             existing.Title = updated.Title;
@@ -600,6 +609,7 @@ namespace Ozikol_BCC.Api.Controllers
                 if (itemMap.TryGetValue(page.Id, out var newSortOrder))
                 {
                     page.SortOrder = newSortOrder;
+                    page.MainMenuSortOrder = newSortOrder;
                     page.UpdatedAtUtc = DateTime.UtcNow;
                 }
             }
@@ -942,8 +952,13 @@ Reply ONLY with the valid JSON object.";
 
 
 
-        private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null)
+        private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null, bool isHomePage = false)
         {
+            if (isHomePage || rawInput?.Trim() == "/")
+            {
+                return "/";
+            }
+
             if (string.IsNullOrWhiteSpace(rawInput)) rawInput = "page";
             // Strip leading / trailing slashes and normalize
             var cleaned = rawInput.Trim().Trim('/');
@@ -952,11 +967,10 @@ Reply ONLY with the valid JSON object.";
             if (string.IsNullOrEmpty(baseSlug)) baseSlug = "page";
 
             var slug = baseSlug;
-            int counter = 2;
             while (await _context.WebPages.AnyAsync(p => p.DirectUrl == slug && (!excludePageId.HasValue || p.Id != excludePageId.Value)))
             {
-                slug = $"{baseSlug}-{counter}";
-                counter++;
+                var shortGuid = Guid.NewGuid().ToString("N")[..6];
+                slug = $"{baseSlug}-{shortGuid}";
             }
             return slug;
         }
@@ -3826,17 +3840,17 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    - Dynamic Form Embeds (Contact Us, Newsletter, Quote Request): {{{{ Form ""Contact_Us"" }}}} or {{{{ FormEmbed }}}}
    - Custom Container Class: {{{{ CustomClass }}}}
 
-3. Repeatable Child Cards (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials):
+3. Repeatable Child Cards / Slides (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials, Hero Sliders):
    Wrap repeating cards/items in:
    {{{{#each PageSectionLists}}}}
      <div class=""card"">
-       <i class=""{{{{ IconText }}}}""></i>
-       <span class=""badge"">{{{{ MiniTitle }}}}</span>
-       <img src=""{{{{ ImageUrl }}}}"" alt=""{{{{ Title }}}}"" />
-       <h3>{{{{ Title }}}}</h3>
-       <p>{{{{ Description }}}}</p>
-       <small>{{{{ MoreDescription }}}}</small>
-       <a href=""{{{{ ButtonLink }}}}"" class=""btn"">{{{{ ButtonText }}}}</a>
+       <i class=""{{{{ PageSectionList.IconText }}}}""></i>
+       <span class=""badge"">{{{{ PageSectionList.MiniTitle }}}}</span>
+       <img src=""{{{{ PageSectionList.ImageUrl }}}}"" alt=""{{{{ PageSectionList.Title }}}}"" />
+       <h3>{{{{ PageSectionList.Title }}}}</h3>
+       <p>{{{{ PageSectionList.Description }}}}</p>
+       <small>{{{{ PageSectionList.MoreDescription }}}}</small>
+       <a href=""{{{{ PageSectionList.ButtonLink }}}}"" class=""btn"">{{{{ PageSectionList.ButtonText }}}}</a>
      </div>
    {{{{/each}}}}
 

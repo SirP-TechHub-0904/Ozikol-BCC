@@ -3669,6 +3669,15 @@ export class LandingComponent implements OnInit, OnDestroy {
           };
         });
 
+        // Category sort order:
+        // When child pages exist, derive the category's navbar position from its earliest child page's sortOrder
+        // so that reordering pages in the Admin Console naturally positions the parent category dropdown.
+        const childSortOrders = childPages.map((p: any) => p.sortOrder ?? p.SortOrder ?? 9999);
+        const minChildSort = childSortOrders.length > 0 ? Math.min(...childSortOrders) : 9999;
+        const effectiveCatSortOrder = minChildSort !== 9999
+          ? minChildSort
+          : (c.menuSortOrder !== undefined && c.menuSortOrder > 2 ? c.menuSortOrder : (c.sortOrder || 0));
+
         dropdownItems.push({
           title: catTitle,
           url: '#',
@@ -3677,7 +3686,7 @@ export class LandingComponent implements OnInit, OnDestroy {
           showInMainMenu: true,
           pages: pagesList,
           zone: normalizeZone(c.menuPosition ?? c.MenuPosition ?? 1),
-          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : (c.sortOrder || 0)),
+          sortOrder: effectiveCatSortOrder,
           customClass: c.customClass || c.CustomClass || ''
         });
       });
@@ -3699,6 +3708,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         usedUrls.add(pLower);
 
         const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+        const pSort = (p.sortOrder !== undefined && p.sortOrder !== null) ? p.sortOrder : (p.SortOrder ?? 0);
         standaloneItems.push({
           title: pTitle,
           url: pUrl,
@@ -3707,7 +3717,7 @@ export class LandingComponent implements OnInit, OnDestroy {
           showInMainMenu: true,
           pages: [],
           zone: normalizeZone(p.menuPosition ?? p.MenuPosition ?? 1),
-          sortOrder: (p.mainMenuSortOrder !== undefined && p.mainMenuSortOrder !== 0) ? p.mainMenuSortOrder : ((p.MainMenuSortOrder !== undefined && p.MainMenuSortOrder !== 0) ? p.MainMenuSortOrder : (p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0))),
+          sortOrder: pSort,
           customClass: p.customClass || p.CustomClass || ''
         });
       });

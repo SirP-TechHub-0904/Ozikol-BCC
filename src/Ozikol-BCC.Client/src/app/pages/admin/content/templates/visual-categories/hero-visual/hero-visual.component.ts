@@ -1165,11 +1165,16 @@ export class HeroVisualComponent implements OnInit {
   sampleContent: any = {};
 
   heroTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    { label: 'Slider Track Loop', token: '{{#each PageSectionLists}}\n<div class="slide">\n  <h1>{{ Title }}</h1>\n  <p>{{ Description }}</p>\n</div>\n{{/each}}', description: 'Multi-slide responsive carousel iteration.' },
-    { label: 'Title', token: '{{ Title }}', description: 'Primary hero headline text.' },
-    { label: 'MiniTitle', token: '{{ MiniTitle }}', description: 'Category label or eyebrow badge.' },
-    { label: 'Description', token: '{{ Description }}', description: 'Introductory narrative text.' },
-    { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Showcase background or slide visual URL.' },
+    { label: 'Slider Track Loop', token: '{{#each PageSectionLists}}\n<div class="slide">\n  <h1>{{ PageSectionList.Title }}</h1>\n  <p>{{ PageSectionList.Description }}</p>\n</div>\n{{/each}}', description: 'Multi-slide responsive carousel iteration.' },
+    { label: 'Slide Title', token: '{{ PageSectionList.Title }}', description: 'Current slide headline in PageSectionList.' },
+    { label: 'Slide Subtitle', token: '{{ PageSectionList.MiniTitle }}', description: 'Current slide kicker badge in PageSectionList.' },
+    { label: 'Slide Description', token: '{{ PageSectionList.Description }}', description: 'Current slide narrative text in PageSectionList.' },
+    { label: 'Slide Image', token: '{{ PageSectionList.ImageUrl }}', description: 'Current slide background visual in PageSectionList.' },
+    { label: 'Slide Button', token: '{{ PageSectionList.ButtonText }}', description: 'Current slide action button in PageSectionList.' },
+    { label: 'Section Title', token: '{{ PageSection.Title }}', description: 'Parent section title.' },
+    { label: 'Section MiniTitle', token: '{{ PageSection.MiniTitle }}', description: 'Parent section category label or eyebrow badge.' },
+    { label: 'Section Description', token: '{{ PageSection.Description }}', description: 'Parent section introductory narrative text.' },
+    { label: 'Section ImageUrl', token: '{{ PageSection.ImageUrl }}', description: 'Parent section showcase background or visual URL.' },
     { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button label.' },
     { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination link.' },
     { label: 'SecondaryButtonText', token: '{{ SecondaryButtonText }}', description: 'Secondary button label.' },

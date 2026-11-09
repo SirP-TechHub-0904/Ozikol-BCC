@@ -8,6 +8,23 @@ export class BodySectionsAiRule implements ICategoryAiRule {
   readonly displayName = 'Body Section';
 
   readonly targetPlaceholders: string[] = [
+    '{{ PageSection.Title }}',
+    '{{ PageSection.MiniTitle }}',
+    '{{ PageSection.Description }}',
+    '{{ PageSection.FullDescription }}',
+    '{{ PageSection.ImageUrl }}',
+    '{{ PageSection.ButtonText }}',
+    '{{ PageSection.ButtonLink }}',
+    '{{#each PageSectionLists}}',
+    '{{ PageSectionList.Title }}',
+    '{{ PageSectionList.MiniTitle }}',
+    '{{ PageSectionList.Description }}',
+    '{{ PageSectionList.MoreDescription }}',
+    '{{ PageSectionList.ImageUrl }}',
+    '{{ PageSectionList.IconText }}',
+    '{{ PageSectionList.ButtonText }}',
+    '{{ PageSectionList.ButtonLink }}',
+    '{{ PageSectionList.SortOrder }}',
     '{{ Title }}',
     '{{ MiniTitle }}',
     '{{ Description }}',
@@ -23,7 +40,6 @@ export class BodySectionsAiRule implements ICategoryAiRule {
     '{{ SecondButtonText }}',
     '{{ SecondButtonLink }}',
     '{{ DirectUrl }}',
-    '{{#each PageSectionLists}}',
     '{{ MoreDescription }}',
     '{{ SortOrder }}',
     '{{ Form "Contact_Us" }}',
@@ -68,34 +84,35 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
    - YouTube / Video Popup Link:
      {{#if YoutubeUrlLink}}<a href="{{ YoutubeUrlLink }}" class="[original video-btn classes]">{{/if}}
 
-4. REPEATABLE CHILD ITEMS LOOP (PageSectionLists):
+4. REPEATABLE CHILD ITEMS LOOP (PageSectionLists - MANDATORY SCOPING):
    Detect repeating sibling elements in grids, rows, accordions, or carousels (e.g. 3, 4, or 6 feature columns, service boxes, pricing tier cards, testimonial cards, process step boxes, FAQ items).
-   KEEP ONLY ONE representative item wrapped in {{#each PageSectionLists}} ... {{/each}} and REMOVE all duplicate static sibling items:
+   KEEP ONLY ONE representative item wrapped in {{#each PageSectionLists}} ... {{/each}} and REMOVE all duplicate static sibling items.
+   Inside {{#each PageSectionLists}}, ALWAYS prefix repeating child properties with PageSectionList. so they are never confused with parent PageSection:
    {{#each PageSectionLists}}
      <div class="[original card/col classes]">
-       {{#if IconText}}
-         <i class="{{ IconText }}"></i>
+       {{#if PageSectionList.IconText}}
+         <i class="{{ PageSectionList.IconText }}"></i>
        {{/if}}
-       {{#if MiniTitle}}
-         <span class="[original badge/price classes]">{{ MiniTitle }}</span>
+       {{#if PageSectionList.MiniTitle}}
+         <span class="[original badge/price classes]">{{ PageSectionList.MiniTitle }}</span>
        {{/if}}
-       {{#if ImageUrl}}
-         <img src="{{ ImageUrl }}" alt="{{ Title }}" class="[original img classes]" />
+       {{#if PageSectionList.ImageUrl}}
+         <img src="{{ PageSectionList.ImageUrl }}" alt="{{ PageSectionList.Title }}" class="[original img classes]" />
        {{/if}}
-       <h3 class="[original card title classes]">{{ Title }}</h3>
-       <p class="[original card desc classes]">{{ Description }}</p>
-       {{#if MoreDescription}}
-         <div class="[original extra classes]">{{{ MoreDescription }}}</div>
+       <h3 class="[original card title classes]">{{ PageSectionList.Title }}</h3>
+       <p class="[original card desc classes]">{{ PageSectionList.Description }}</p>
+       {{#if PageSectionList.MoreDescription}}
+         <div class="[original extra classes]">{{{ PageSectionList.MoreDescription }}}</div>
        {{/if}}
-       {{#if ButtonText}}
-         <a href="{{ ButtonLink }}" class="[original card btn classes]">{{ ButtonText }}</a>
+       {{#if PageSectionList.ButtonText}}
+         <a href="{{ PageSectionList.ButtonLink }}" class="[original card btn classes]">{{ PageSectionList.ButtonText }}</a>
        {{/if}}
      </div>
    {{/each}}
 
-   - For Process Steps with numbers (e.g. 01, 02, 03): use {{ SortOrder }} for the number badge.
-   - For FAQ Accordions: use {{ Title }} for the question and {{ Description }} for the collapsible answer.
-   - For Pricing Tables: use {{ Title }} for tier name, {{ MiniTitle }} for price (e.g. $49/mo), {{ Description }} for subtitle, and {{ ButtonText }} for plan CTA.
+   - For Process Steps with numbers (e.g. 01, 02, 03): use {{ PageSectionList.SortOrder }} for the number badge.
+   - For FAQ Accordions: use {{ PageSectionList.Title }} for the question and {{ PageSectionList.Description }} for the collapsible answer.
+   - For Pricing Tables: use {{ PageSectionList.Title }} for tier name, {{ PageSectionList.MiniTitle }} for price (e.g. $49/mo), {{ PageSectionList.Description }} for subtitle, and {{ PageSectionList.ButtonText }} for plan CTA.
 
 5. DYNAMIC FORM EMBEDS (Lead Generation & Inquiries):
    If the section contains an embedded form (e.g. "Contact Us", "Request a Quote", consultation form, or inquiry inputs):

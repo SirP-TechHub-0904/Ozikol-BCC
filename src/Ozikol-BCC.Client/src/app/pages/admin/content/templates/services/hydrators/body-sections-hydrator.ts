@@ -51,48 +51,63 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
     return activeItems.map((item: any, idx: number) => {
       let rendered = innerTemplate;
 
-      // Item Card Conditionals
-      rendered = resolveDepthAwareIf(rendered, 'ImageUrl', Boolean(item.imageUrl && item.imageUrl.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'Icon', Boolean(item.icon && item.icon.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'IconText', Boolean(item.iconText && item.iconText.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'MoreDescription', Boolean(item.moreDescription && item.moreDescription.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'MiniTitle', Boolean(item.miniTitle && item.miniTitle.trim().length > 0));
+      // Parent PageSection conditionals inside loop
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)MiniTitle', Boolean(ctx.miniTitle || ctx.subTitle));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ImageUrl', Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)Description', Boolean(ctx.description && ctx.description.trim().length > 0));
 
-      // Item Card Scalars
-      rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
-      rendered = rendered.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
-      rendered = rendered.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
-      rendered = rendered.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
-      rendered = rendered.replace(/\{\{\s*Icon\s*\}\}/gi, item.icon || 'verified');
-      rendered = rendered.replace(/\{\{\s*IconText\s*\}\}/gi, item.iconText || item.icon || 'verified');
-      rendered = rendered.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');
-      rendered = rendered.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || '#');
-      rendered = rendered.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || '');
-      rendered = rendered.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
-      rendered = rendered.replace(/\{\{\s*DirectUrl\s*\}\}/gi, item.directUrl || '#');
-      rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, item.customClass || '');
+      // Parent PageSection tokens accessible inside loop via PageSection. or ../
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)Title\s*\}\}/gi, ctx.title || '');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)Description\s*\}?\}\}/gi, ctx.description || '');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, ctx.buttonText || '');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+
+      // Item Card Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ImageUrl', Boolean(item.imageUrl && item.imageUrl.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Icon', Boolean(item.icon && item.icon.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?IconText', Boolean(item.iconText && item.iconText.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MoreDescription', Boolean(item.moreDescription && item.moreDescription.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MiniTitle', Boolean(item.miniTitle && item.miniTitle.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Description', Boolean(item.description && item.description.trim().length > 0));
+
+      // Item Card Scalars (supports {{ Title }}, {{ PageSectionList.Title }}, {{ this.Title }})
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Title\s*\}\}/gi, item.title || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, item.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || 'verified');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || item.icon || 'verified');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ImageUrl\s*\}\}/gi, item.imageUrl || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?DirectUrl\s*\}\}/gi, item.directUrl || '#');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?CustomClass\s*\}\}/gi, item.customClass || '');
       rendered = rendered.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(item.sortOrder ?? idx + 1));
 
       return rendered;
     }).join('\n');
   });
 
-  // 4. Section Level Scalars
-  output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
-  output = output.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
-  output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
-  output = output.replace(/\{\{\{?\s*FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
-  output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || '');
-  output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || '');
-  output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
-  output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-  output = output.replace(/\{\{\s*SecondButtonText\s*\}\}/gi, ctx.secondButtonText || '');
-  output = output.replace(/\{\{\s*SecondButtonLink\s*\}\}/gi, ctx.secondButtonLink || '#');
-  output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
-  output = output.replace(/\{\{\s*SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
-  output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
-  output = output.replace(/\{\{\s*YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
+  // 4. Section Level Scalars (supports {{ Title }} or {{ PageSection.Title }})
+  output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?Description\s*\}\}/gi, ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?Quote\s*\}\}/gi, ctx.quote || ctx.qoute || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, ctx.buttonText || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondButtonText\s*\}\}/gi, ctx.secondButtonText || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondButtonLink\s*\}\}/gi, ctx.secondButtonLink || '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
   output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
   output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
   output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');

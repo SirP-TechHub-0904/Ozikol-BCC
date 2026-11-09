@@ -8,6 +8,21 @@ export class HeroAiRule implements ICategoryAiRule {
   readonly displayName = 'Hero Section';
 
   readonly targetPlaceholders: string[] = [
+    '{{ PageSection.Title }}',
+    '{{ PageSection.MiniTitle }}',
+    '{{ PageSection.Description }}',
+    '{{ PageSection.ImageUrl }}',
+    '{{ PageSection.ButtonText }}',
+    '{{ PageSection.ButtonLink }}',
+    '{{#each PageSectionLists}}',
+    '{{ PageSectionList.Title }}',
+    '{{ PageSectionList.MiniTitle }}',
+    '{{ PageSectionList.Description }}',
+    '{{ PageSectionList.ImageUrl }}',
+    '{{ PageSectionList.ButtonText }}',
+    '{{ PageSectionList.ButtonLink }}',
+    '{{ PageSectionList.SecondaryButtonText }}',
+    '{{ PageSectionList.SecondaryButtonLink }}',
     '{{ Title }}',
     '{{ MiniTitle }}',
     '{{ SubTitle }}',
@@ -21,7 +36,6 @@ export class HeroAiRule implements ICategoryAiRule {
     '{{ SecondImageUrl }}',
     '{{ VideoUrl }}',
     '{{ YoutubeUrlLink }}',
-    '{{#each PageSectionLists}}',
     '{{ CustomClass }}'
   ];
 
@@ -80,13 +94,15 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
    d. STRIP RUNTIME DYNAMIC IDS & ARIA ARTIFACTS:
       - Remove auto-generated IDs (e.g. id="swiper-wrapper-1fcbd...").
       - Remove runtime slide indexes and aria states (e.g. data-swiper-slide-index="...", aria-label="1 / 2", aria-controls="swiper-wrapper-...").
-   e. SURGICAL CONTENT REPLACEMENT INSIDE THE SLIDE TEMPLATE:
-      - Background: style="background-image: url('{{ ImageUrl }}');"
-      - Badge / Eyebrow: {{#if MiniTitle}}<span class="[original classes]">{{ MiniTitle }}</span>{{/if}}
-      - Headline: <h1 class="[original classes]">{{ Title }}</h1>
-      - Paragraph: <p class="[original classes]">{{ Description }}</p>
-      - Primary CTA: {{#if ButtonText}}<a href="{{ ButtonLink }}" class="[original classes]">{{ ButtonText }} [keep original icon/spans]</a>{{/if}}
-      - Secondary CTA: {{#if SecondaryButtonText}}<a href="{{ SecondaryButtonLink }}" class="[original classes]">{{ SecondaryButtonText }} [keep original icon/spans]</a>{{/if}}
+   e. SURGICAL CONTENT REPLACEMENT INSIDE THE SLIDE TEMPLATE (MANDATORY SCOPING):
+      Inside {{#each PageSectionLists}}, ALWAYS prefix repeating slide properties with PageSectionList. so they are never confused with the parent PageSection:
+      - Background Image: {{#if PageSectionList.ImageUrl}}style="background-image: url('{{ PageSectionList.ImageUrl }}');"{{/if}}
+      - Image Tag: {{#if PageSectionList.ImageUrl}}<img src="{{ PageSectionList.ImageUrl }}" alt="{{ PageSectionList.Title }}" />{{/if}}
+      - Badge / Eyebrow: {{#if PageSectionList.MiniTitle}}<span class="[original classes]">{{ PageSectionList.MiniTitle }}</span>{{/if}}
+      - Slide Headline: <h1 class="[original classes]">{{ PageSectionList.Title }}</h1>
+      - Slide Paragraph: <p class="[original classes]">{{ PageSectionList.Description }}</p>
+      - Primary CTA: {{#if PageSectionList.ButtonText}}<a href="{{ PageSectionList.ButtonLink }}" class="[original classes]">{{ PageSectionList.ButtonText }} [keep original icon/spans]</a>{{/if}}
+      - Secondary CTA: {{#if PageSectionList.SecondaryButtonText}}<a href="{{ PageSectionList.SecondaryButtonLink }}" class="[original classes]">{{ PageSectionList.SecondaryButtonText }} [keep original icon/spans]</a>{{/if}}
    f. NAVIGATION CONTROLS:
       - Keep navigation arrows (e.g. .swiper-button-prev, .swiper-button-next, .slick-prev, .slick-next) and pagination dots (.swiper-pagination, .owl-dots) clean without runtime active states.
 
