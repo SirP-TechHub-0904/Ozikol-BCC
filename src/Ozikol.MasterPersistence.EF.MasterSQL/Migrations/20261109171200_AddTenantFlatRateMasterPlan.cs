@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -50,21 +50,6 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                 type: "bit",
                 nullable: false,
                 defaultValue: false);
-
-            migrationBuilder.AddColumn<string>(
-                name: "PrimaryAiProvider",
-                table: "MasterPlatformSettings",
-                type: "nvarchar(50)",
-                maxLength: 50,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPreferred",
-                table: "MasterAiApiKeys",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
         }
 
         /// <inheritdoc />
@@ -93,14 +78,6 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
             migrationBuilder.DropColumn(
                 name: "HasFlatRatePlan",
                 table: "MasterTenantCatalogs");
-
-            migrationBuilder.DropColumn(
-                name: "PrimaryAiProvider",
-                table: "MasterPlatformSettings");
-
-            migrationBuilder.DropColumn(
-                name: "IsPreferred",
-                table: "MasterAiApiKeys");
         }
     }
 }
