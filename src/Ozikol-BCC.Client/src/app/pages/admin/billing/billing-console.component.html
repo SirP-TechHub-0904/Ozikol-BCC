@@ -311,6 +311,12 @@
       </div>
 
       <div class="features-mode-tabs-right">
+        @if (snapshot.hasFlatRatePlan) {
+          <span class="badge-pill-md" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; border: 1.5px solid rgba(0, 80, 229, 0.35); font-weight: 800;" title="All-Inclusive Master Plan Active">
+            <span class="material-symbols-outlined">workspace_premium</span>
+            <span>{{ snapshot.flatRatePlanName || 'All-Inclusive Master Plan' }} Active</span>
+          </span>
+        }
         @if (snapshot.useCustomAvailability) {
           <span class="badge-pill-md badge-available" title="Custom Availability policy is active for this workspace">
             <span class="material-symbols-outlined">verified</span>
@@ -325,6 +331,35 @@
         }
       </div>
     </div>
+    }
+
+    <!-- ── ALL-INCLUSIVE MASTER PLAN BANNER (When Active) ── -->
+    @if (!selectedFeatureDetail && snapshot.hasFlatRatePlan) {
+      <div class="toolbar-card" style="margin-bottom: 16px; padding: 14px 20px; background: rgba(0, 80, 229, 0.04); border: 1.5px solid rgba(0, 80, 229, 0.25); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(0, 80, 229, 0.12); color: #0050e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 26px;">stars</span>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 15px; font-weight: 800; color: #0f172a;">{{ snapshot.flatRatePlanName || 'All-Inclusive Master Plan' }}</span>
+              <span class="badge" style="background: #0050e5; color: #ffffff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+                {{ currencySymbol }}{{ (snapshot.flatRatePrice || 0) | number:'1.2-2' }} / {{ snapshot.flatRateCadence || 'Yearly' }}
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+              All modular capabilities are 100% unlocked and included without individual feature charges.
+              @if (snapshot.flatRateExpiresAtUtc) {
+                <span>• Renews on <strong>{{ snapshot.flatRateExpiresAtUtc | date:'longDate' }}</strong> ({{ snapshot.flatRateDaysRemaining }} days remaining).</span>
+              }
+            </div>
+          </div>
+        </div>
+        <span class="badge-pill-md badge-available" style="font-weight: 800;">
+          <span class="material-symbols-outlined">verified</span>
+          <span>All Capabilities Unlocked</span>
+        </span>
+      </div>
     }
 
     <!-- ════════════════════════════════════════════════════════════════════════ -->

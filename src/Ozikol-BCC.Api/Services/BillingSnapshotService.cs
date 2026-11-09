@@ -383,6 +383,11 @@ namespace Ozikol_BCC.Api.Services
                 if (string.IsNullOrWhiteSpace(currCode)) currCode = "USD";
             }
 
+            bool isFlatRateActive = (tenant?.HasFlatRatePlan == true) && (!tenant.FlatRateExpiresAtUtc.HasValue || tenant.FlatRateExpiresAtUtc.Value > now);
+            int? flatRateDaysRemaining = (isFlatRateActive && tenant?.FlatRateExpiresAtUtc.HasValue == true)
+                ? (int)Math.Ceiling((tenant.FlatRateExpiresAtUtc.Value - now).TotalDays)
+                : null;
+
             var snapshot = new BillingFeaturesSnapshotDto
             {
                 TenantKey = tenant?.TenantKey ?? key,
@@ -391,6 +396,13 @@ namespace Ozikol_BCC.Api.Services
                 ExchangeRateFromUsd = currRate,
                 UseCustomPricing = tenant?.UseCustomPricing ?? false,
                 UseCustomAvailability = tenant?.UseCustomAvailability ?? false,
+                HasFlatRatePlan = isFlatRateActive,
+                FlatRatePrice = (tenant?.FlatRatePrice.HasValue == true) ? Math.Round(tenant.FlatRatePrice.Value * currRate, 2) : null,
+                FlatRateCadence = tenant?.FlatRateCadence.ToString() ?? "Yearly",
+                FlatRateExpiresAtUtc = tenant?.FlatRateExpiresAtUtc,
+                FlatRateDaysRemaining = flatRateDaysRemaining,
+                FlatRatePlanName = tenant?.FlatRatePlanName ?? "All-Inclusive Master Plan",
+                FlatRateAutoRenew = tenant?.FlatRateAutoRenew ?? true,
                 ServerTimeUtc = now
             };
 
@@ -487,6 +499,27 @@ namespace Ozikol_BCC.Api.Services
                     item.BillingCadence = defaultCadence;
                     item.EffectivePrice = defaultEffectivePrice;
                     snapshot.Available.Add(item);
+                    continue;
+                }
+
+                // If tenant is on an active All-Inclusive Flat-Rate Plan, all available capabilities are 100% included without individual charges
+                if (isFlatRateActive)
+                {
+                    item.IsIncludedInFlatRatePlan = true;
+                    item.IsSubscribed = true;
+                    item.IsActive = sub != null ? sub.IsActive : true;
+                    item.Status = (sub != null && !sub.IsActive) ? "Available" : "Active";
+                    item.BillingCadence = "Included";
+                    item.EffectivePrice = 0.00m;
+                    item.SubscriptionId = sub?.Id;
+                    item.ExpiresAtUtc = tenant?.FlatRateExpiresAtUtc;
+                    item.DaysRemaining = flatRateDaysRemaining;
+                    item.Severity = "None";
+
+                    if (item.IsActive)
+                        snapshot.Subscribed.Add(item);
+                    else
+                        snapshot.Available.Add(item);
                     continue;
                 }
 
@@ -614,6 +647,39 @@ namespace Ozikol_BCC.Api.Services
             }
 
             snapshot.TotalRecurringMonthly = Math.Round(snapshot.TotalRecurringMonthly, 2);
+
+            if (isFlatRateActive && snapshot.FlatRatePrice.HasValue)
+            {
+                snapshot.TotalRecurringMonthly = tenant?.FlatRateCadence switch
+                {
+                    SubscriptionBillingDuration.Yearly => Math.Round(snapshot.FlatRatePrice.Value / 12m, 2),
+                    SubscriptionBillingDuration.Quarterly => Math.Round(snapshot.FlatRatePrice.Value / 3m, 2),
+                    _ => snapshot.FlatRatePrice.Value
+                };
+
+                if (flatRateDaysRemaining.HasValue && flatRateDaysRemaining.Value <= 30)
+                {
+                    snapshot.Notices.Add(new FeatureExpirationNoticeDto
+                    {
+                        FeatureCode = "flat-rate-master-plan",
+                        FeatureName = snapshot.FlatRatePlanName,
+                        Category = "Master Plan",
+                        ExpiresAtUtc = tenant?.FlatRateExpiresAtUtc ?? now,
+                        DaysRemaining = flatRateDaysRemaining.Value,
+                        IsExpired = flatRateDaysRemaining.Value <= 0,
+                        Severity = SeverityFor(flatRateDaysRemaining.Value),
+                        NoticeMessage = flatRateDaysRemaining.Value <= 0
+                            ? $"Your {snapshot.FlatRatePlanName} has expired. Please renew your master subscription to maintain uninterrupted access."
+                            : $"Your {snapshot.FlatRatePlanName} renews in {flatRateDaysRemaining.Value} days.",
+                        RenewalPrice = snapshot.FlatRatePrice ?? 0m,
+                        CurrencyCode = currCode,
+                        CurrencySymbol = currSymbol,
+                        BillingCadence = snapshot.FlatRateCadence,
+                        IsTrialPeriod = false
+                    });
+                }
+            }
+
             snapshot.Notices = snapshot.Notices.OrderBy(n => n.DaysRemaining).ToList();
             return snapshot;
         }

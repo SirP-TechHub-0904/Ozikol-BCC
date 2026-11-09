@@ -77,6 +77,9 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>True when the tenant can activate and test this capability for <see cref="EffectiveFreeTrialDays"/> free days before payment.</summary>
         public bool IsEligibleForFreeTrial { get; set; }
 
+        /// <summary>True when this capability is unlocked and fully included as part of the tenant's All-Inclusive Flat-Rate Master Plan.</summary>
+        public bool IsIncludedInFlatRatePlan { get; set; }
+
         /// <summary>Canonical sort order of the parent suite (1..11).</summary>
         public int SuiteSortOrder { get; set; }
 
@@ -146,6 +149,27 @@ namespace Ozikol_BCC.Api.Models
 
         /// <summary>True when Central has enabled Custom Tenant Availability for this workspace.</summary>
         public bool UseCustomAvailability { get; set; }
+
+        /// <summary>True when this tenant is on an active All-Inclusive Flat-Rate Master Plan.</summary>
+        public bool HasFlatRatePlan { get; set; }
+
+        /// <summary>Flat-rate master plan recurring price in tenant currency.</summary>
+        public decimal? FlatRatePrice { get; set; }
+
+        /// <summary>Cadence of the master plan (Monthly, Quarterly, Yearly).</summary>
+        public string? FlatRateCadence { get; set; }
+
+        /// <summary>UTC expiration/renewal timestamp of the master plan.</summary>
+        public DateTime? FlatRateExpiresAtUtc { get; set; }
+
+        /// <summary>Days remaining until the master plan renews; negative if expired.</summary>
+        public int? FlatRateDaysRemaining { get; set; }
+
+        /// <summary>Display package name (e.g., "All-Access Enterprise Bundle").</summary>
+        public string? FlatRatePlanName { get; set; }
+
+        /// <summary>Whether the master plan is configured to auto-renew.</summary>
+        public bool FlatRateAutoRenew { get; set; }
 
         /// <summary>Server clock (UTC) when the snapshot was generated, so clients can correct countdown drift.</summary>
         public DateTime ServerTimeUtc { get; set; } = DateTime.UtcNow;

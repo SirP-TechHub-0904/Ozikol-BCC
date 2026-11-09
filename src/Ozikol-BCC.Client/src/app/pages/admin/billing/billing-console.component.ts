@@ -356,7 +356,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
     // If activating or renewing a paid capability when no first-time free trial applies,
     // launch the Central Paystack Inline Checkout instead of bypassing payment.
-    if (desiredState && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
+    // (Bypassed if tenant holds an active All-Inclusive Flat-Rate Plan)
+    if (desiredState && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial && !this.snapshot?.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) {
       this.payAndRenewFeature(feat);
       return;
     }
@@ -1106,6 +1107,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   getFeatureDisplayAmount(feat: BillingFeatureItem): number {
     if (!feat) return 0;
+    if (this.snapshot?.hasFlatRatePlan || feat.isIncludedInFlatRatePlan) return 0;
     if (feat.effectivePrice && feat.effectivePrice > 0) {
       return Number(feat.effectivePrice);
     }
