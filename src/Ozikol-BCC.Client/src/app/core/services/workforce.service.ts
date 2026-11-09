@@ -17,6 +17,8 @@ export interface ClientSite {
   siteAssignmentInstructions?: string;
   requiredSiaLicenceType?: string;
   activeShiftsCount: number;
+  clientOrganizationId?: string;
+  clientOrganizationName?: string;
 }
 
 export interface Shift {
@@ -295,5 +297,57 @@ export class WorkforceService {
 
   deleteStaffType(id: string): Observable<any> {
     return this.apiService.delete<any>(`workforce/staff-types/${id}`);
+  }
+
+  // --- JOB ROLES & PAY RATES ---
+  getJobRoles(): Observable<any> {
+    return this.apiService.get<any>('workforce/job-roles');
+  }
+
+  createJobRole(role: any): Observable<any> {
+    return this.apiService.post<any>('workforce/job-roles', role);
+  }
+
+  updateJobRole(id: string, role: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/job-roles/${id}`, role);
+  }
+
+  deleteJobRole(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/job-roles/${id}`);
+  }
+
+  // --- WORKFORCE OPERATIONAL POLICIES ---
+  getWorkforcePolicies(): Observable<any> {
+    return this.apiService.get<any>('workforce/settings/policies');
+  }
+
+  updateWorkforcePolicies(policy: any): Observable<any> {
+    return this.apiService.put<any>('workforce/settings/policies', policy);
+  }
+
+  // --- CLIENT ORGANIZATIONS ---
+  getClientOrganizations(): Observable<any> {
+    return this.apiService.get<any>('workforce/client-organizations');
+  }
+
+  createClientOrganization(org: any): Observable<any> {
+    return this.apiService.post<any>('workforce/client-organizations', org);
+  }
+
+  updateClientOrganization(id: string, org: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/client-organizations/${id}`, org);
+  }
+
+  deleteClientOrganization(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/client-organizations/${id}`);
+  }
+
+  // --- DEDICATED STAFF MEMBER PROFILE HUB ---
+  getMemberDetail(userId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/members/${userId}`);
+  }
+
+  updateMemberDetail(userId: string, data: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/members/${userId}`, data);
   }
 }

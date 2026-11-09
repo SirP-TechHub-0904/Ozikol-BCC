@@ -26,6 +26,23 @@ namespace Ozikol_BCC.Domain.Models
         public string TenantKey { get; set; } = string.Empty;
 
         /// <summary>
+        /// Optional foreign key identifier referencing the master client organization (<see cref="BcpClientOrganization"/>).
+        /// </summary>
+        public Guid? ClientOrganizationId { get; set; }
+
+        /// <summary>
+        /// Cached display name of the parent client enterprise organization.
+        /// </summary>
+        [StringLength(200)]
+        public string? ClientOrganizationName { get; set; }
+
+        /// <summary>
+        /// Navigation property referencing the parent client enterprise organization.
+        /// </summary>
+        [ForeignKey(nameof(ClientOrganizationId))]
+        public virtual BcpClientOrganization? ClientOrganization { get; set; }
+
+        /// <summary>
         /// Unique short code identifier for the site (e.g., "SITE-101", "LDN-HQ").
         /// </summary>
         [Required]

@@ -136,7 +136,9 @@ namespace Ozikol_BCC.Api.Controllers
                     EmergencyContactPhone = s.EmergencyContactPhone,
                     SiteAssignmentInstructions = s.SiteAssignmentInstructions,
                     RequiredSiaLicenceType = s.RequiredSiaLicenceType,
-                    ActiveShiftsCount = s.Shifts.Count(sh => sh.Status == "Scheduled" || sh.Status == "InProgress")
+                    ActiveShiftsCount = s.Shifts.Count(sh => sh.Status == "Scheduled" || sh.Status == "InProgress"),
+                    ClientOrganizationId = s.ClientOrganizationId,
+                    ClientOrganizationName = s.ClientOrganizationName
                 })
                 .ToListAsync(ct);
 
@@ -167,7 +169,9 @@ namespace Ozikol_BCC.Api.Controllers
                     EmergencyContactPhone = s.EmergencyContactPhone,
                     SiteAssignmentInstructions = s.SiteAssignmentInstructions,
                     RequiredSiaLicenceType = s.RequiredSiaLicenceType,
-                    ActiveShiftsCount = s.Shifts.Count(sh => sh.Status == "Scheduled" || sh.Status == "InProgress")
+                    ActiveShiftsCount = s.Shifts.Count(sh => sh.Status == "Scheduled" || sh.Status == "InProgress"),
+                    ClientOrganizationId = s.ClientOrganizationId,
+                    ClientOrganizationName = s.ClientOrganizationName
                 })
                 .FirstOrDefaultAsync(ct);
 
@@ -222,6 +226,16 @@ namespace Ozikol_BCC.Api.Controllers
             site.EmergencyContactPhone = request.EmergencyContactPhone?.Trim();
             site.SiteAssignmentInstructions = request.SiteAssignmentInstructions?.Trim();
             site.RequiredSiaLicenceType = request.RequiredSiaLicenceType?.Trim();
+            site.ClientOrganizationId = request.ClientOrganizationId;
+            if (request.ClientOrganizationId.HasValue && request.ClientOrganizationId != Guid.Empty)
+            {
+                var org = await _db.BcpClientOrganizations.FirstOrDefaultAsync(o => o.Id == request.ClientOrganizationId.Value && o.TenantKey == CurrentTenantKey, ct);
+                site.ClientOrganizationName = org?.Name;
+            }
+            else
+            {
+                site.ClientOrganizationName = null;
+            }
             site.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -1884,6 +1898,804 @@ namespace Ozikol_BCC.Api.Controllers
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, $"Staff type '{staffType.Name}' deleted successfully."));
         }
+
+        // =========================================================================
+        // 12. JOB ROLES & PAY RATES
+        // =========================================================================
+
+        private async Task EnsureDefaultJobRolesAndPoliciesAsync(string tenantKey, CancellationToken ct = default)
+        {
+            var cleanKey = tenantKey.Trim().ToLowerInvariant();
+
+            if (!await _db.BcpJobRoles.AnyAsync(r => r.TenantKey == cleanKey, ct))
+            {
+                var defaults = new List<BcpJobRole>
+                {
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "SIA Door Supervisor", Code = "DS", Description = "Licensed door supervisor managing access control, patron safety, and front-of-house security.", DefaultHourlyRate = 15.00m, BillingChargeRate = 22.50m, MandatorySiaSector = "Door Supervision", BadgeColor = "#0050E5", IsActive = true, SortOrder = 1, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Static Security Guard", Code = "SG", Description = "Manned guarding for corporate offices, reception desks, and perimeter patrol routes.", DefaultHourlyRate = 13.50m, BillingChargeRate = 20.00m, MandatorySiaSector = "Security Guarding", BadgeColor = "#059669", IsActive = true, SortOrder = 2, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "CCTV Controller", Code = "CCTV", Description = "Licensed control room operator monitoring live video feeds, intrusion alarms, and remote dispatches.", DefaultHourlyRate = 16.00m, BillingChargeRate = 24.00m, MandatorySiaSector = "CCTV", BadgeColor = "#7C3AED", IsActive = true, SortOrder = 3, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Mobile Patrol Officer", Code = "MPO", Description = "Vehicle-equipped patrol specialist conducting scheduled lockups, unlocks, and alarm responses.", DefaultHourlyRate = 14.50m, BillingChargeRate = 21.50m, MandatorySiaSector = "Security Guarding", BadgeColor = "#2563EB", IsActive = true, SortOrder = 4, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Event Steward", Code = "ES", Description = "Crowd management, ticket verification, and hospitality guidance for events and festivals.", DefaultHourlyRate = 12.50m, BillingChargeRate = 18.00m, MandatorySiaSector = "None", BadgeColor = "#D97706", IsActive = true, SortOrder = 5, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Healthcare / Care Worker", Code = "HCW", Description = "Certified care worker providing residential and post care support.", DefaultHourlyRate = 16.50m, BillingChargeRate = 25.00m, MandatorySiaSector = "None", BadgeColor = "#EC4899", IsActive = true, SortOrder = 6, CreatedUtc = DateTime.UtcNow }
+                };
+                _db.BcpJobRoles.AddRange(defaults);
+            }
+
+            if (!await _db.BcpWorkforcePolicySettings.AnyAsync(p => p.TenantKey == cleanKey, ct))
+            {
+                _db.BcpWorkforcePolicySettings.Add(new BcpWorkforcePolicySetting
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = cleanKey,
+                    StandardWeeklyHours = 40.0m,
+                    MaxPermissibleWeeklyHours = 48.0m,
+                    MaxConsecutiveWorkingDays = 6,
+                    Enforce48HourWeeklyCap = true,
+                    DayShiftStart = "07:00",
+                    DayShiftEnd = "19:00",
+                    NightShiftStart = "19:00",
+                    NightShiftEnd = "07:00",
+                    NightPremiumHourlyAllowance = 1.50m,
+                    EnableNightPremium = false,
+                    BreakMinutesFor6Hours = 30,
+                    BreakMinutesFor8Hours = 45,
+                    BreakMinutesFor12Hours = 60,
+                    IsBreakPaid = false,
+                    BreakLoggingMode = "AutomaticDeduction",
+                    RequireUniformSizes = true,
+                    RequireDrivingLicense = true,
+                    RequireMedicalAllergies = true,
+                    RequireDbsCriminalDisclosure = true,
+                    CreatedUtc = DateTime.UtcNow
+                });
+            }
+
+            await _db.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Retrieves all configured job roles for the tenant workspace.
+        /// </summary>
+        [HttpGet("job-roles")]
+        public async Task<ActionResult<ApiResponse<List<BcpJobRoleDto>>>> GetJobRoles(CancellationToken ct)
+        {
+            await EnsureDefaultJobRolesAndPoliciesAsync(CurrentTenantKey, ct);
+
+            var roles = await _db.BcpJobRoles
+                .AsNoTracking()
+                .Where(r => r.TenantKey == CurrentTenantKey)
+                .OrderBy(r => r.SortOrder)
+                .ThenBy(r => r.Title)
+                .ToListAsync(ct);
+
+            var counts = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive)
+                .GroupBy(p => p.JobTitle)
+                .Select(g => new { JobTitle = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.JobTitle, x => x.Count, ct);
+
+            var dtos = roles.Select(r => new BcpJobRoleDto
+            {
+                Id = r.Id,
+                Title = r.Title,
+                Code = r.Code,
+                Description = r.Description,
+                DefaultHourlyRate = r.DefaultHourlyRate,
+                BillingChargeRate = r.BillingChargeRate,
+                MandatorySiaSector = r.MandatorySiaSector,
+                BadgeColor = r.BadgeColor,
+                IsActive = r.IsActive,
+                SortOrder = r.SortOrder,
+                EnrolledStaffCount = counts.TryGetValue(r.Title, out var c) ? c : 0
+            }).ToList();
+
+            return Ok(ApiResponse<List<BcpJobRoleDto>>.SuccessResponse(dtos, "Job roles retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Creates a new operational job role.
+        /// </summary>
+        [HttpPost("job-roles")]
+        public async Task<ActionResult<ApiResponse<BcpJobRoleDto>>> CreateJobRole([FromBody] CreateJobRoleRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title))
+            {
+                return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse("Job role title is required."));
+            }
+
+            var cleanTitle = request.Title.Trim();
+            var cleanCode = !string.IsNullOrWhiteSpace(request.Code)
+                ? request.Code.Trim().ToUpperInvariant()
+                : cleanTitle[..Math.Min(4, cleanTitle.Length)].ToUpperInvariant();
+
+            bool exists = await _db.BcpJobRoles
+                .AnyAsync(r => r.TenantKey == CurrentTenantKey && r.Title.ToLower() == cleanTitle.ToLower(), ct);
+
+            if (exists)
+            {
+                return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse($"A job role with title '{cleanTitle}' already exists."));
+            }
+
+            var role = new BcpJobRole
+            {
+                Id = Guid.CreateVersion7(),
+                TenantKey = CurrentTenantKey,
+                Title = cleanTitle,
+                Code = cleanCode,
+                Description = request.Description?.Trim() ?? string.Empty,
+                DefaultHourlyRate = request.DefaultHourlyRate,
+                BillingChargeRate = request.BillingChargeRate,
+                MandatorySiaSector = request.MandatorySiaSector?.Trim() ?? "None",
+                BadgeColor = !string.IsNullOrWhiteSpace(request.BadgeColor) ? request.BadgeColor.Trim() : "#0050E5",
+                IsActive = true,
+                SortOrder = request.SortOrder,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpJobRoles.Add(role);
+            await _db.SaveChangesAsync(ct);
+
+            var dto = new BcpJobRoleDto
+            {
+                Id = role.Id,
+                Title = role.Title,
+                Code = role.Code,
+                Description = role.Description,
+                DefaultHourlyRate = role.DefaultHourlyRate,
+                BillingChargeRate = role.BillingChargeRate,
+                MandatorySiaSector = role.MandatorySiaSector,
+                BadgeColor = role.BadgeColor,
+                IsActive = role.IsActive,
+                SortOrder = role.SortOrder,
+                EnrolledStaffCount = 0
+            };
+
+            return Ok(ApiResponse<BcpJobRoleDto>.SuccessResponse(dto, "Job role created successfully."));
+        }
+
+        /// <summary>
+        /// Updates an operational job role.
+        /// </summary>
+        [HttpPut("job-roles/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<BcpJobRoleDto>>> UpdateJobRole(Guid id, [FromBody] UpdateJobRoleRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title))
+            {
+                return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse("Job role title is required."));
+            }
+
+            var role = await _db.BcpJobRoles
+                .FirstOrDefaultAsync(r => r.Id == id && r.TenantKey == CurrentTenantKey, ct);
+
+            if (role == null)
+            {
+                return NotFound(ApiResponse<BcpJobRoleDto>.FailureResponse("Job role not found."));
+            }
+
+            role.Title = request.Title.Trim();
+            role.Code = !string.IsNullOrWhiteSpace(request.Code) ? request.Code.Trim().ToUpperInvariant() : role.Code;
+            role.Description = request.Description?.Trim() ?? string.Empty;
+            role.DefaultHourlyRate = request.DefaultHourlyRate;
+            role.BillingChargeRate = request.BillingChargeRate;
+            role.MandatorySiaSector = request.MandatorySiaSector?.Trim() ?? "None";
+            role.BadgeColor = !string.IsNullOrWhiteSpace(request.BadgeColor) ? request.BadgeColor.Trim() : role.BadgeColor;
+            role.IsActive = request.IsActive;
+            role.SortOrder = request.SortOrder;
+            role.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            var count = await _db.BcpShiftStaffProfiles
+                .CountAsync(p => p.TenantKey == CurrentTenantKey && p.JobTitle == role.Title && p.IsActive, ct);
+
+            var dto = new BcpJobRoleDto
+            {
+                Id = role.Id,
+                Title = role.Title,
+                Code = role.Code,
+                Description = role.Description,
+                DefaultHourlyRate = role.DefaultHourlyRate,
+                BillingChargeRate = role.BillingChargeRate,
+                MandatorySiaSector = role.MandatorySiaSector,
+                BadgeColor = role.BadgeColor,
+                IsActive = role.IsActive,
+                SortOrder = role.SortOrder,
+                EnrolledStaffCount = count
+            };
+
+            return Ok(ApiResponse<BcpJobRoleDto>.SuccessResponse(dto, "Job role updated successfully."));
+        }
+
+        /// <summary>
+        /// Deletes an operational job role if no active staff profiles are currently assigned.
+        /// </summary>
+        [HttpDelete("job-roles/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteJobRole(Guid id, CancellationToken ct)
+        {
+            var role = await _db.BcpJobRoles
+                .FirstOrDefaultAsync(r => r.Id == id && r.TenantKey == CurrentTenantKey, ct);
+
+            if (role == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Job role not found."));
+            }
+
+            bool inUse = await _db.BcpShiftStaffProfiles
+                .AnyAsync(p => p.TenantKey == CurrentTenantKey && p.JobTitle == role.Title && p.IsActive, ct);
+
+            if (inUse)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse($"Cannot delete '{role.Title}' because active staff members are currently assigned to this role."));
+            }
+
+            _db.BcpJobRoles.Remove(role);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, $"Job role '{role.Title}' deleted successfully."));
+        }
+
+        // =========================================================================
+        // 13. WORKFORCE OPERATIONAL POLICIES
+        // =========================================================================
+
+        /// <summary>
+        /// Retrieves the current tenant's working hours, Day/Night windows, meal break deductions, and custom onboarding questionnaires.
+        /// </summary>
+        [HttpGet("settings/policies")]
+        public async Task<ActionResult<ApiResponse<BcpWorkforcePolicySettingDto>>> GetWorkforcePolicies(CancellationToken ct)
+        {
+            await EnsureDefaultJobRolesAndPoliciesAsync(CurrentTenantKey, ct);
+
+            var policy = await _db.BcpWorkforcePolicySettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+
+            var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+
+            var dto = new BcpWorkforcePolicySettingDto
+            {
+                CurrencyCode = currCode,
+                CurrencySymbol = currSymbol,
+                StandardWeeklyHours = policy?.StandardWeeklyHours ?? 40.0m,
+                MaxPermissibleWeeklyHours = policy?.MaxPermissibleWeeklyHours ?? 48.0m,
+                MaxConsecutiveWorkingDays = policy?.MaxConsecutiveWorkingDays ?? 6,
+                Enforce48HourWeeklyCap = policy?.Enforce48HourWeeklyCap ?? true,
+                DayShiftStart = policy?.DayShiftStart ?? "07:00",
+                DayShiftEnd = policy?.DayShiftEnd ?? "19:00",
+                NightShiftStart = policy?.NightShiftStart ?? "19:00",
+                NightShiftEnd = policy?.NightShiftEnd ?? "07:00",
+                NightPremiumHourlyAllowance = policy?.NightPremiumHourlyAllowance ?? 1.50m,
+                EnableNightPremium = policy?.EnableNightPremium ?? false,
+                BreakMinutesFor6Hours = policy?.BreakMinutesFor6Hours ?? 30,
+                BreakMinutesFor8Hours = policy?.BreakMinutesFor8Hours ?? 45,
+                BreakMinutesFor12Hours = policy?.BreakMinutesFor12Hours ?? 60,
+                IsBreakPaid = policy?.IsBreakPaid ?? false,
+                BreakLoggingMode = policy?.BreakLoggingMode ?? "AutomaticDeduction",
+                RequireUniformSizes = policy?.RequireUniformSizes ?? true,
+                RequireDrivingLicense = policy?.RequireDrivingLicense ?? true,
+                RequireMedicalAllergies = policy?.RequireMedicalAllergies ?? true,
+                RequireDbsCriminalDisclosure = policy?.RequireDbsCriminalDisclosure ?? true,
+                CustomQuestionsJson = policy?.CustomQuestionsJson
+            };
+
+            return Ok(ApiResponse<BcpWorkforcePolicySettingDto>.SuccessResponse(dto, "Workforce policies retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Updates the tenant's operational workforce policies (Working hours, shift windows, breaks, custom forms).
+        /// </summary>
+        [HttpPut("settings/policies")]
+        public async Task<ActionResult<ApiResponse<BcpWorkforcePolicySettingDto>>> UpdateWorkforcePolicies(
+            [FromBody] UpdateWorkforcePolicyRequest request,
+            CancellationToken ct)
+        {
+            await EnsureDefaultJobRolesAndPoliciesAsync(CurrentTenantKey, ct);
+
+            var policy = await _db.BcpWorkforcePolicySettings
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+
+            if (policy == null)
+            {
+                policy = new BcpWorkforcePolicySetting
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpWorkforcePolicySettings.Add(policy);
+            }
+
+            policy.StandardWeeklyHours = Math.Clamp(request.StandardWeeklyHours, 10m, 80m);
+            policy.MaxPermissibleWeeklyHours = Math.Clamp(request.MaxPermissibleWeeklyHours, 20m, 100m);
+            policy.MaxConsecutiveWorkingDays = Math.Clamp(request.MaxConsecutiveWorkingDays, 1, 14);
+            policy.Enforce48HourWeeklyCap = request.Enforce48HourWeeklyCap;
+
+            policy.DayShiftStart = !string.IsNullOrWhiteSpace(request.DayShiftStart) ? request.DayShiftStart.Trim() : "07:00";
+            policy.DayShiftEnd = !string.IsNullOrWhiteSpace(request.DayShiftEnd) ? request.DayShiftEnd.Trim() : "19:00";
+            policy.NightShiftStart = !string.IsNullOrWhiteSpace(request.NightShiftStart) ? request.NightShiftStart.Trim() : "19:00";
+            policy.NightShiftEnd = !string.IsNullOrWhiteSpace(request.NightShiftEnd) ? request.NightShiftEnd.Trim() : "07:00";
+            policy.NightPremiumHourlyAllowance = Math.Max(0m, request.NightPremiumHourlyAllowance);
+            policy.EnableNightPremium = request.EnableNightPremium;
+
+            policy.BreakMinutesFor6Hours = Math.Clamp(request.BreakMinutesFor6Hours, 0, 120);
+            policy.BreakMinutesFor8Hours = Math.Clamp(request.BreakMinutesFor8Hours, 0, 180);
+            policy.BreakMinutesFor12Hours = Math.Clamp(request.BreakMinutesFor12Hours, 0, 240);
+            policy.IsBreakPaid = request.IsBreakPaid;
+            policy.BreakLoggingMode = !string.IsNullOrWhiteSpace(request.BreakLoggingMode) ? request.BreakLoggingMode.Trim() : "AutomaticDeduction";
+
+            policy.RequireUniformSizes = request.RequireUniformSizes;
+            policy.RequireDrivingLicense = request.RequireDrivingLicense;
+            policy.RequireMedicalAllergies = request.RequireMedicalAllergies;
+            policy.RequireDbsCriminalDisclosure = request.RequireDbsCriminalDisclosure;
+            policy.CustomQuestionsJson = request.CustomQuestionsJson;
+            policy.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+
+            var dto = new BcpWorkforcePolicySettingDto
+            {
+                CurrencyCode = currCode,
+                CurrencySymbol = currSymbol,
+                StandardWeeklyHours = policy.StandardWeeklyHours,
+                MaxPermissibleWeeklyHours = policy.MaxPermissibleWeeklyHours,
+                MaxConsecutiveWorkingDays = policy.MaxConsecutiveWorkingDays,
+                Enforce48HourWeeklyCap = policy.Enforce48HourWeeklyCap,
+                DayShiftStart = policy.DayShiftStart,
+                DayShiftEnd = policy.DayShiftEnd,
+                NightShiftStart = policy.NightShiftStart,
+                NightShiftEnd = policy.NightShiftEnd,
+                NightPremiumHourlyAllowance = policy.NightPremiumHourlyAllowance,
+                EnableNightPremium = policy.EnableNightPremium,
+                BreakMinutesFor6Hours = policy.BreakMinutesFor6Hours,
+                BreakMinutesFor8Hours = policy.BreakMinutesFor8Hours,
+                BreakMinutesFor12Hours = policy.BreakMinutesFor12Hours,
+                IsBreakPaid = policy.IsBreakPaid,
+                BreakLoggingMode = policy.BreakLoggingMode,
+                RequireUniformSizes = policy.RequireUniformSizes,
+                RequireDrivingLicense = policy.RequireDrivingLicense,
+                RequireMedicalAllergies = policy.RequireMedicalAllergies,
+                RequireDbsCriminalDisclosure = policy.RequireDbsCriminalDisclosure,
+                CustomQuestionsJson = policy.CustomQuestionsJson
+            };
+
+            return Ok(ApiResponse<BcpWorkforcePolicySettingDto>.SuccessResponse(dto, "Workforce operational policies updated successfully."));
+        }
+
+        // =========================================================================
+        // 14. CLIENT ORGANIZATIONS & OPERATING SITES HIERARCHY
+        // =========================================================================
+
+        /// <summary>
+        /// Retrieves all master client enterprise organizations with their linked operational site counts.
+        /// </summary>
+        [HttpGet("client-organizations")]
+        public async Task<ActionResult<ApiResponse<List<ClientOrganizationDto>>>> GetClientOrganizations(CancellationToken ct)
+        {
+            var orgs = await _db.BcpClientOrganizations
+                .AsNoTracking()
+                .Include(o => o.Sites)
+                .Where(o => o.TenantKey == CurrentTenantKey)
+                .OrderBy(o => o.Name)
+                .ToListAsync(ct);
+
+            var dtos = orgs.Select(o => new ClientOrganizationDto
+            {
+                Id = o.Id,
+                Name = o.Name,
+                OrganizationCode = o.OrganizationCode,
+                BillingEmail = o.BillingEmail,
+                BillingPhone = o.BillingPhone,
+                Address = o.Address,
+                City = o.City,
+                PostalCode = o.PostalCode,
+                PaymentTermsDays = o.PaymentTermsDays,
+                AccountManagerName = o.AccountManagerName,
+                IsActive = o.IsActive,
+                LinkedSitesCount = o.Sites.Count(s => s.IsActive),
+                CreatedUtc = o.CreatedUtc
+            }).ToList();
+
+            return Ok(ApiResponse<List<ClientOrganizationDto>>.SuccessResponse(dtos, "Client organizations retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Creates a new master client enterprise organization.
+        /// </summary>
+        [HttpPost("client-organizations")]
+        public async Task<ActionResult<ApiResponse<ClientOrganizationDto>>> CreateClientOrganization(
+            [FromBody] CreateClientOrganizationRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(ApiResponse<ClientOrganizationDto>.FailureResponse("Organization name is required."));
+            }
+
+            var cleanName = request.Name.Trim();
+            var cleanCode = !string.IsNullOrWhiteSpace(request.OrganizationCode)
+                ? request.OrganizationCode.Trim().ToUpperInvariant()
+                : cleanName[..Math.Min(4, cleanName.Length)].ToUpperInvariant();
+
+            var org = new BcpClientOrganization
+            {
+                Id = Guid.CreateVersion7(),
+                TenantKey = CurrentTenantKey,
+                Name = cleanName,
+                OrganizationCode = cleanCode,
+                BillingEmail = !string.IsNullOrWhiteSpace(request.BillingEmail) ? request.BillingEmail.Trim().ToLowerInvariant() : "billing@company.com",
+                BillingPhone = request.BillingPhone?.Trim(),
+                Address = request.Address?.Trim(),
+                City = request.City?.Trim(),
+                PostalCode = request.PostalCode?.Trim(),
+                PaymentTermsDays = request.PaymentTermsDays > 0 ? request.PaymentTermsDays : 30,
+                AccountManagerName = request.AccountManagerName?.Trim(),
+                IsActive = true,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpClientOrganizations.Add(org);
+            await _db.SaveChangesAsync(ct);
+
+            var dto = new ClientOrganizationDto
+            {
+                Id = org.Id,
+                Name = org.Name,
+                OrganizationCode = org.OrganizationCode,
+                BillingEmail = org.BillingEmail,
+                BillingPhone = org.BillingPhone,
+                Address = org.Address,
+                City = org.City,
+                PostalCode = org.PostalCode,
+                PaymentTermsDays = org.PaymentTermsDays,
+                AccountManagerName = org.AccountManagerName,
+                IsActive = org.IsActive,
+                LinkedSitesCount = 0,
+                CreatedUtc = org.CreatedUtc
+            };
+
+            return Ok(ApiResponse<ClientOrganizationDto>.SuccessResponse(dto, "Client organization created successfully."));
+        }
+
+        /// <summary>
+        /// Updates a master client enterprise organization.
+        /// </summary>
+        [HttpPut("client-organizations/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<ClientOrganizationDto>>> UpdateClientOrganization(
+            Guid id,
+            [FromBody] CreateClientOrganizationRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(ApiResponse<ClientOrganizationDto>.FailureResponse("Organization name is required."));
+            }
+
+            var org = await _db.BcpClientOrganizations
+                .FirstOrDefaultAsync(o => o.Id == id && o.TenantKey == CurrentTenantKey, ct);
+
+            if (org == null)
+            {
+                return NotFound(ApiResponse<ClientOrganizationDto>.FailureResponse("Client organization not found."));
+            }
+
+            org.Name = request.Name.Trim();
+            org.OrganizationCode = !string.IsNullOrWhiteSpace(request.OrganizationCode) ? request.OrganizationCode.Trim().ToUpperInvariant() : org.OrganizationCode;
+            org.BillingEmail = !string.IsNullOrWhiteSpace(request.BillingEmail) ? request.BillingEmail.Trim().ToLowerInvariant() : org.BillingEmail;
+            org.BillingPhone = request.BillingPhone?.Trim();
+            org.Address = request.Address?.Trim();
+            org.City = request.City?.Trim();
+            org.PostalCode = request.PostalCode?.Trim();
+            org.PaymentTermsDays = request.PaymentTermsDays > 0 ? request.PaymentTermsDays : 30;
+            org.AccountManagerName = request.AccountManagerName?.Trim();
+            org.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            int sitesCount = await _db.BcpClientSites
+                .CountAsync(s => s.TenantKey == CurrentTenantKey && s.ClientOrganizationId == org.Id && s.IsActive, ct);
+
+            var dto = new ClientOrganizationDto
+            {
+                Id = org.Id,
+                Name = org.Name,
+                OrganizationCode = org.OrganizationCode,
+                BillingEmail = org.BillingEmail,
+                BillingPhone = org.BillingPhone,
+                Address = org.Address,
+                City = org.City,
+                PostalCode = org.PostalCode,
+                PaymentTermsDays = org.PaymentTermsDays,
+                AccountManagerName = org.AccountManagerName,
+                IsActive = org.IsActive,
+                LinkedSitesCount = sitesCount,
+                CreatedUtc = org.CreatedUtc
+            };
+
+            return Ok(ApiResponse<ClientOrganizationDto>.SuccessResponse(dto, "Client organization updated successfully."));
+        }
+
+        /// <summary>
+        /// Deletes a client organization if no active client sites are linked.
+        /// </summary>
+        [HttpDelete("client-organizations/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteClientOrganization(Guid id, CancellationToken ct)
+        {
+            var org = await _db.BcpClientOrganizations
+                .FirstOrDefaultAsync(o => o.Id == id && o.TenantKey == CurrentTenantKey, ct);
+
+            if (org == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Client organization not found."));
+            }
+
+            bool inUse = await _db.BcpClientSites
+                .AnyAsync(s => s.TenantKey == CurrentTenantKey && s.ClientOrganizationId == id && s.IsActive, ct);
+
+            if (inUse)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse($"Cannot delete '{org.Name}' because active client operating sites are currently linked to this organization."));
+            }
+
+            _db.BcpClientOrganizations.Remove(org);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, $"Client organization '{org.Name}' deleted successfully."));
+        }
+
+        // =========================================================================
+        // 15. DEDICATED STAFF MEMBER PROFILE & COMPLIANCE HUB
+        // =========================================================================
+
+        /// <summary>
+        /// Retrieves complete detailed profile for a staff member including personal details,
+        /// emergency contacts, payroll/banking, SIA licenses, custom form answers, and shift history statistics.
+        /// </summary>
+        [HttpGet("members/{userId}")]
+        public async Task<ActionResult<ApiResponse<StaffMemberDetailDto>>> GetStaffMemberDetail(string userId, CancellationToken ct)
+        {
+            var profile = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .Include(p => p.StaffType)
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            var user = await _db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+            if (profile == null && user == null)
+            {
+                return NotFound(ApiResponse<StaffMemberDetailDto>.FailureResponse("Staff member profile not found."));
+            }
+
+            // Documents
+            var docs = await _db.BcpShiftDocuments
+                .AsNoTracking()
+                .Where(d => d.TenantKey == CurrentTenantKey && d.UserId == userId)
+                .OrderByDescending(d => d.CreatedUtc)
+                .ToListAsync(ct);
+
+            // Recent Shifts
+            var recentShifts = await _db.BcpShifts
+                .AsNoTracking()
+                .Include(s => s.ClientSite)
+                .Include(s => s.AttendanceRecord)
+                .Where(s => s.TenantKey == CurrentTenantKey && s.AssignedUserId == userId)
+                .OrderByDescending(s => s.StartsAtUtc)
+                .Take(20)
+                .ToListAsync(ct);
+
+            // Parse Custom Attributes JSON (Emergency Contact, Banking, Custom Forms)
+            var customJson = user?.CustomAttributesJson;
+            JsonElement customObj = default;
+            if (!string.IsNullOrWhiteSpace(customJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(customJson);
+                    customObj = doc.RootElement.Clone();
+                }
+                catch { }
+            }
+
+            var emergencyName = string.Empty;
+            var emergencyRel = string.Empty;
+            var emergencyPhone = string.Empty;
+            var bankName = string.Empty;
+            var accountHolder = string.Empty;
+            var sortCode = string.Empty;
+            var accountNumber = string.Empty;
+            var nationalInsurance = string.Empty;
+            var uniformSizes = string.Empty;
+            var drivingLicenseStatus = string.Empty;
+            var medicalDisclosures = string.Empty;
+            var dbsDisclosure = string.Empty;
+            var optOut48Hours = false;
+
+            if (customObj.ValueKind == JsonValueKind.Object)
+            {
+                if (customObj.TryGetProperty("emergencyContact", out var ec))
+                {
+                    if (ec.TryGetProperty("name", out var n)) emergencyName = n.GetString() ?? "";
+                    if (ec.TryGetProperty("relationship", out var r)) emergencyRel = r.GetString() ?? "";
+                    if (ec.TryGetProperty("phone", out var p)) emergencyPhone = p.GetString() ?? "";
+                }
+                if (customObj.TryGetProperty("bankDetails", out var bd))
+                {
+                    if (bd.TryGetProperty("bankName", out var b)) bankName = b.GetString() ?? "";
+                    if (bd.TryGetProperty("accountHolder", out var ah)) accountHolder = ah.GetString() ?? "";
+                    if (bd.TryGetProperty("sortCode", out var sc)) sortCode = sc.GetString() ?? "";
+                    if (bd.TryGetProperty("accountNumber", out var an)) accountNumber = an.GetString() ?? "";
+                    if (bd.TryGetProperty("nationalInsurance", out var ni)) nationalInsurance = ni.GetString() ?? "";
+                }
+                if (customObj.TryGetProperty("uniformSizes", out var u)) uniformSizes = u.GetString() ?? "";
+                if (customObj.TryGetProperty("drivingLicenseStatus", out var dl)) drivingLicenseStatus = dl.GetString() ?? "";
+                if (customObj.TryGetProperty("medicalDisclosures", out var md)) medicalDisclosures = md.GetString() ?? "";
+                if (customObj.TryGetProperty("dbsDisclosure", out var dd)) dbsDisclosure = dd.GetString() ?? "";
+                if (customObj.TryGetProperty("optOut48Hours", out var opt)) optOut48Hours = opt.GetBoolean();
+            }
+
+            var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+
+            var dto = new StaffMemberDetailDto
+            {
+                UserId = userId,
+                ProfileId = profile?.Id ?? Guid.Empty,
+                FirstName = user?.FirstName ?? "Staff",
+                LastName = user?.LastName ?? "Member",
+                FullName = user?.FullName ?? $"{user?.FirstName} {user?.LastName}".Trim(),
+                Email = user?.Email ?? "",
+                PhoneNumber = user?.PhoneNumber,
+                MemberId = user?.MemberId ?? "WRK-0000",
+                JobTitle = profile?.JobTitle ?? user?.Designation ?? "Staff Member",
+                StaffTypeId = profile?.StaffTypeId,
+                StaffTypeName = profile?.StaffTypeName ?? "Permanent",
+                DefaultHourlyRate = profile?.DefaultHourlyRate,
+                ContractedWeeklyHours = profile?.ContractedWeeklyHours ?? 40.0m,
+                AverageRating = profile?.AverageRating ?? 5.0m,
+                TotalRatingsCount = profile?.TotalRatingsCount ?? 0,
+                TotalShiftsCompleted = profile?.TotalShiftsCompleted ?? 0,
+                PunctualityScorePercent = profile?.PunctualityScorePercent ?? 100.0m,
+                NoShowCount = profile?.NoShowCount ?? 0,
+                IsActive = profile?.IsActive ?? true,
+                EnrolledUtc = profile?.CreatedUtc ?? user?.JoinDate ?? DateTime.UtcNow,
+                CurrencyCode = currCode,
+                CurrencySymbol = currSymbol,
+
+                EmergencyContactName = emergencyName,
+                EmergencyContactRelationship = emergencyRel,
+                EmergencyContactPhone = emergencyPhone,
+
+                BankName = bankName,
+                AccountHolderName = accountHolder,
+                SortCode = sortCode,
+                AccountNumber = accountNumber,
+                NationalInsuranceNumber = nationalInsurance,
+
+                UniformSizes = uniformSizes,
+                DrivingLicenseStatus = drivingLicenseStatus,
+                MedicalDisclosures = medicalDisclosures,
+                DbsDisclosure = dbsDisclosure,
+                OptOut48Hours = optOut48Hours,
+
+                Documents = docs.Select(d => new StaffDocumentDto
+                {
+                    Id = d.Id,
+                    UserId = d.UserId,
+                    DocumentType = d.DocumentType,
+                    DocumentName = d.DocumentName,
+                    Description = d.Description,
+                    FileUrl = d.FileUrl,
+                    ExpiryDateUtc = d.ExpiryDateUtc,
+                    IsVerified = d.IsVerified,
+                    CreatedUtc = d.CreatedUtc
+                }).ToList(),
+
+                RecentShifts = recentShifts.Select(s => new ShiftDto
+                {
+                    Id = s.Id,
+                    ClientSiteId = s.ClientSiteId,
+                    ClientSiteName = s.ClientSite?.SiteName ?? "Unassigned Site",
+                    PostName = s.PostName,
+                    StartsAtUtc = s.StartsAtUtc,
+                    EndsAtUtc = s.EndsAtUtc,
+                    PlannedDurationHours = s.PlannedDurationHours,
+                    BreakMinutes = s.BreakMinutes,
+                    HourlyPayRate = s.HourlyPayRate,
+                    Status = s.Status,
+                    IsConfirmedByGuard = s.IsConfirmedByGuard
+                }).ToList()
+            };
+
+            return Ok(ApiResponse<StaffMemberDetailDto>.SuccessResponse(dto, "Staff member profile retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Updates a staff member's complete profile information, including emergency contacts,
+        /// banking remittance, job role designation, contracted hours override, and 48-hour opt-out status.
+        /// </summary>
+        [HttpPut("members/{userId}")]
+        public async Task<ActionResult<ApiResponse<bool>>> UpdateStaffMemberDetail(
+            string userId,
+            [FromBody] UpdateStaffMemberDetailRequest request,
+            CancellationToken ct)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+            var profile = await _db.BcpShiftStaffProfiles.FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            if (user == null && profile == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Staff member not found."));
+            }
+
+            if (user != null)
+            {
+                if (!string.IsNullOrWhiteSpace(request.FirstName)) user.FirstName = request.FirstName.Trim();
+                if (!string.IsNullOrWhiteSpace(request.LastName)) user.LastName = request.LastName.Trim();
+                if (!string.IsNullOrWhiteSpace(request.PhoneNumber)) user.PhoneNumber = request.PhoneNumber.Trim();
+
+                // Parse and update custom attributes
+                var customDict = new Dictionary<string, object>();
+                if (!string.IsNullOrWhiteSpace(user.CustomAttributesJson))
+                {
+                    try
+                    {
+                        var parsed = JsonSerializer.Deserialize<Dictionary<string, object>>(user.CustomAttributesJson);
+                        if (parsed != null) customDict = parsed;
+                    }
+                    catch { }
+                }
+
+                customDict["emergencyContact"] = new
+                {
+                    name = request.EmergencyContactName?.Trim(),
+                    relationship = request.EmergencyContactRelationship?.Trim(),
+                    phone = request.EmergencyContactPhone?.Trim()
+                };
+
+                customDict["bankDetails"] = new
+                {
+                    bankName = request.BankName?.Trim(),
+                    accountHolder = request.AccountHolderName?.Trim() ?? user.FullName,
+                    sortCode = request.SortCode?.Trim(),
+                    accountNumber = request.AccountNumber?.Trim(),
+                    nationalInsurance = request.NationalInsuranceNumber?.Trim()
+                };
+
+                if (request.UniformSizes != null) customDict["uniformSizes"] = request.UniformSizes.Trim();
+                if (request.DrivingLicenseStatus != null) customDict["drivingLicenseStatus"] = request.DrivingLicenseStatus.Trim();
+                if (request.MedicalDisclosures != null) customDict["medicalDisclosures"] = request.MedicalDisclosures.Trim();
+                if (request.DbsDisclosure != null) customDict["dbsDisclosure"] = request.DbsDisclosure.Trim();
+                customDict["optOut48Hours"] = request.OptOut48Hours;
+
+                user.CustomAttributesJson = JsonSerializer.Serialize(customDict);
+            }
+
+            if (profile == null)
+            {
+                profile = new BcpShiftStaffProfile
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    UserId = userId,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpShiftStaffProfiles.Add(profile);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.JobTitle)) profile.JobTitle = request.JobTitle.Trim();
+            if (request.StaffTypeId.HasValue) profile.StaffTypeId = request.StaffTypeId.Value;
+            if (!string.IsNullOrWhiteSpace(request.StaffTypeName)) profile.StaffTypeName = request.StaffTypeName.Trim();
+            if (request.DefaultHourlyRate.HasValue) profile.DefaultHourlyRate = request.DefaultHourlyRate.Value;
+            if (request.ContractedWeeklyHours.HasValue) profile.ContractedWeeklyHours = request.ContractedWeeklyHours.Value;
+            profile.IsActive = request.IsActive;
+            profile.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Staff member profile updated successfully."));
+        }
     }
 
     // =========================================================================
@@ -1906,6 +2718,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string? SiteAssignmentInstructions { get; set; }
         public string? RequiredSiaLicenceType { get; set; }
         public int ActiveShiftsCount { get; set; }
+        public Guid? ClientOrganizationId { get; set; }
+        public string? ClientOrganizationName { get; set; }
     }
 
     public class UpsertClientSiteRequest
@@ -1923,6 +2737,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string? EmergencyContactPhone { get; set; }
         public string? SiteAssignmentInstructions { get; set; }
         public string? RequiredSiaLicenceType { get; set; }
+        public Guid? ClientOrganizationId { get; set; }
+        public string? ClientOrganizationName { get; set; }
     }
 
     public class ShiftDto
@@ -2271,6 +3087,203 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal DefaultContractedHours { get; set; }
         public bool IsActive { get; set; } = true;
         public int SortOrder { get; set; } = 0;
+    }
+
+    public class BcpJobRoleDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? BillingChargeRate { get; set; }
+        public string MandatorySiaSector { get; set; } = "None";
+        public string BadgeColor { get; set; } = "#0050E5";
+        public bool IsActive { get; set; }
+        public int SortOrder { get; set; }
+        public int EnrolledStaffCount { get; set; }
+    }
+
+    public class CreateJobRoleRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Code { get; set; }
+        public string? Description { get; set; }
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? BillingChargeRate { get; set; }
+        public string? MandatorySiaSector { get; set; }
+        public string? BadgeColor { get; set; }
+        public int SortOrder { get; set; } = 0;
+    }
+
+    public class UpdateJobRoleRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Code { get; set; }
+        public string? Description { get; set; }
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? BillingChargeRate { get; set; }
+        public string? MandatorySiaSector { get; set; }
+        public string? BadgeColor { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; } = 0;
+    }
+
+    public class BcpWorkforcePolicySettingDto
+    {
+        public string CurrencyCode { get; set; } = "NGN";
+        public string CurrencySymbol { get; set; } = "₦";
+        public decimal StandardWeeklyHours { get; set; }
+        public decimal MaxPermissibleWeeklyHours { get; set; }
+        public int MaxConsecutiveWorkingDays { get; set; }
+        public bool Enforce48HourWeeklyCap { get; set; }
+        public string DayShiftStart { get; set; } = "07:00";
+        public string DayShiftEnd { get; set; } = "19:00";
+        public string NightShiftStart { get; set; } = "19:00";
+        public string NightShiftEnd { get; set; } = "07:00";
+        public decimal NightPremiumHourlyAllowance { get; set; }
+        public bool EnableNightPremium { get; set; }
+        public int BreakMinutesFor6Hours { get; set; }
+        public int BreakMinutesFor8Hours { get; set; }
+        public int BreakMinutesFor12Hours { get; set; }
+        public bool IsBreakPaid { get; set; }
+        public string BreakLoggingMode { get; set; } = "AutomaticDeduction";
+        public bool RequireUniformSizes { get; set; }
+        public bool RequireDrivingLicense { get; set; }
+        public bool RequireMedicalAllergies { get; set; }
+        public bool RequireDbsCriminalDisclosure { get; set; }
+        public string? CustomQuestionsJson { get; set; }
+    }
+
+    public class UpdateWorkforcePolicyRequest
+    {
+        public decimal StandardWeeklyHours { get; set; } = 40.0m;
+        public decimal MaxPermissibleWeeklyHours { get; set; } = 48.0m;
+        public int MaxConsecutiveWorkingDays { get; set; } = 6;
+        public bool Enforce48HourWeeklyCap { get; set; } = true;
+        public string? DayShiftStart { get; set; }
+        public string? DayShiftEnd { get; set; }
+        public string? NightShiftStart { get; set; }
+        public string? NightShiftEnd { get; set; }
+        public decimal NightPremiumHourlyAllowance { get; set; }
+        public bool EnableNightPremium { get; set; }
+        public int BreakMinutesFor6Hours { get; set; } = 30;
+        public int BreakMinutesFor8Hours { get; set; } = 45;
+        public int BreakMinutesFor12Hours { get; set; } = 60;
+        public bool IsBreakPaid { get; set; }
+        public string? BreakLoggingMode { get; set; }
+        public bool RequireUniformSizes { get; set; } = true;
+        public bool RequireDrivingLicense { get; set; } = true;
+        public bool RequireMedicalAllergies { get; set; } = true;
+        public bool RequireDbsCriminalDisclosure { get; set; } = true;
+        public string? CustomQuestionsJson { get; set; }
+    }
+
+    public class ClientOrganizationDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string OrganizationCode { get; set; } = string.Empty;
+        public string BillingEmail { get; set; } = string.Empty;
+        public string? BillingPhone { get; set; }
+        public string? Address { get; set; }
+        public string? City { get; set; }
+        public string? PostalCode { get; set; }
+        public int PaymentTermsDays { get; set; } = 30;
+        public string? AccountManagerName { get; set; }
+        public bool IsActive { get; set; }
+        public int LinkedSitesCount { get; set; }
+        public DateTime CreatedUtc { get; set; }
+    }
+
+    public class CreateClientOrganizationRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? OrganizationCode { get; set; }
+        public string? BillingEmail { get; set; }
+        public string? BillingPhone { get; set; }
+        public string? Address { get; set; }
+        public string? City { get; set; }
+        public string? PostalCode { get; set; }
+        public int PaymentTermsDays { get; set; } = 30;
+        public string? AccountManagerName { get; set; }
+    }
+
+    public class StaffMemberDetailDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public Guid ProfileId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string MemberId { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = "Staff Member";
+        public Guid? StaffTypeId { get; set; }
+        public string StaffTypeName { get; set; } = "Permanent";
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal ContractedWeeklyHours { get; set; }
+        public decimal AverageRating { get; set; }
+        public int TotalRatingsCount { get; set; }
+        public int TotalShiftsCompleted { get; set; }
+        public decimal PunctualityScorePercent { get; set; }
+        public int NoShowCount { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime EnrolledUtc { get; set; }
+        public string CurrencyCode { get; set; } = "NGN";
+        public string CurrencySymbol { get; set; } = "₦";
+
+        // Emergency Contact
+        public string EmergencyContactName { get; set; } = string.Empty;
+        public string EmergencyContactRelationship { get; set; } = string.Empty;
+        public string EmergencyContactPhone { get; set; } = string.Empty;
+
+        // Payroll & Banking
+        public string BankName { get; set; } = string.Empty;
+        public string AccountHolderName { get; set; } = string.Empty;
+        public string SortCode { get; set; } = string.Empty;
+        public string AccountNumber { get; set; } = string.Empty;
+        public string NationalInsuranceNumber { get; set; } = string.Empty;
+
+        // Custom Onboarding Responses
+        public string UniformSizes { get; set; } = string.Empty;
+        public string DrivingLicenseStatus { get; set; } = string.Empty;
+        public string MedicalDisclosures { get; set; } = string.Empty;
+        public string DbsDisclosure { get; set; } = string.Empty;
+        public bool OptOut48Hours { get; set; }
+
+        public List<StaffDocumentDto> Documents { get; set; } = new();
+        public List<ShiftDto> RecentShifts { get; set; } = new();
+    }
+
+    public class UpdateStaffMemberDetailRequest
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? JobTitle { get; set; }
+        public Guid? StaffTypeId { get; set; }
+        public string? StaffTypeName { get; set; }
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
+        public bool IsActive { get; set; } = true;
+
+        public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactRelationship { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+
+        public string? BankName { get; set; }
+        public string? AccountHolderName { get; set; }
+        public string? SortCode { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? NationalInsuranceNumber { get; set; }
+
+        public string? UniformSizes { get; set; }
+        public string? DrivingLicenseStatus { get; set; }
+        public string? MedicalDisclosures { get; set; }
+        public string? DbsDisclosure { get; set; }
+        public bool OptOut48Hours { get; set; }
     }
 }
 

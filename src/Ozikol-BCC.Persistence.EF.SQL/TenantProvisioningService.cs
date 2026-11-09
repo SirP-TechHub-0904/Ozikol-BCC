@@ -562,6 +562,135 @@ END";
                 );
             }
 
+            // 8. Seed Default Operational Job Roles
+            if (!await dbContext.BcpJobRoles.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpJobRoles.AddRange(
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "SIA Door Supervisor",
+                        Code = "DS",
+                        Description = "Licensed door supervisor managing access control, patron safety, and front-of-house security.",
+                        DefaultHourlyRate = 15.00m,
+                        BillingChargeRate = 22.50m,
+                        MandatorySiaSector = "Door Supervision",
+                        BadgeColor = "#0050E5",
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Static Security Guard",
+                        Code = "SG",
+                        Description = "Manned guarding for corporate offices, reception desks, and perimeter patrol routes.",
+                        DefaultHourlyRate = 13.50m,
+                        BillingChargeRate = 20.00m,
+                        MandatorySiaSector = "Security Guarding",
+                        BadgeColor = "#059669",
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "CCTV Controller",
+                        Code = "CCTV",
+                        Description = "Licensed control room operator monitoring live video feeds, intrusion alarms, and remote dispatches.",
+                        DefaultHourlyRate = 16.00m,
+                        BillingChargeRate = 24.00m,
+                        MandatorySiaSector = "CCTV",
+                        BadgeColor = "#7C3AED",
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Mobile Patrol Officer",
+                        Code = "MPO",
+                        Description = "Vehicle-equipped patrol specialist conducting scheduled lockups, unlocks, and alarm responses.",
+                        DefaultHourlyRate = 14.50m,
+                        BillingChargeRate = 21.50m,
+                        MandatorySiaSector = "Security Guarding",
+                        BadgeColor = "#2563EB",
+                        IsActive = true,
+                        SortOrder = 4,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Event Steward",
+                        Code = "ES",
+                        Description = "Crowd management, ticket verification, and hospitality guidance for events and festivals.",
+                        DefaultHourlyRate = 12.50m,
+                        BillingChargeRate = 18.00m,
+                        MandatorySiaSector = "None",
+                        BadgeColor = "#D97706",
+                        IsActive = true,
+                        SortOrder = 5,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Healthcare / Care Worker",
+                        Code = "HCW",
+                        Description = "Certified care worker providing residential and post care support.",
+                        DefaultHourlyRate = 16.50m,
+                        BillingChargeRate = 25.00m,
+                        MandatorySiaSector = "None",
+                        BadgeColor = "#EC4899",
+                        IsActive = true,
+                        SortOrder = 6,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                );
+            }
+
+            // 9. Seed Default Workforce Policy Setting
+            if (!await dbContext.BcpWorkforcePolicySettings.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpWorkforcePolicySettings.Add(new BcpWorkforcePolicySetting
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = cleanKey,
+                    StandardWeeklyHours = 40.0m,
+                    MaxPermissibleWeeklyHours = 48.0m,
+                    MaxConsecutiveWorkingDays = 6,
+                    Enforce48HourWeeklyCap = true,
+                    DayShiftStart = "07:00",
+                    DayShiftEnd = "19:00",
+                    NightShiftStart = "19:00",
+                    NightShiftEnd = "07:00",
+                    NightPremiumHourlyAllowance = 1.50m,
+                    EnableNightPremium = false,
+                    BreakMinutesFor6Hours = 30,
+                    BreakMinutesFor8Hours = 45,
+                    BreakMinutesFor12Hours = 60,
+                    IsBreakPaid = false,
+                    BreakLoggingMode = "AutomaticDeduction",
+                    RequireUniformSizes = true,
+                    RequireDrivingLicense = true,
+                    RequireMedicalAllergies = true,
+                    RequireDbsCriminalDisclosure = true,
+                    CreatedUtc = DateTime.UtcNow
+                });
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
     }

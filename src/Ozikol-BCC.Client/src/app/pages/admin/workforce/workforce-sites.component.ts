@@ -113,6 +113,12 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <h3 class="site-title">{{ s.siteName }}</h3>
+          <div class="org-pill-row" *ngIf="s.clientOrganizationName">
+            <span class="org-pill">
+              <span class="material-symbols-outlined">corporate_fare</span>
+              {{ s.clientOrganizationName }}
+            </span>
+          </div>
           <p class="site-location">
             <span class="material-symbols-outlined pin-icon">pin_drop</span>
             <span>{{ s.address }}, {{ s.city }}</span>
@@ -182,6 +188,10 @@ import { ToastService } from '../../../core/services/toast.service';
                 <td>
                   <div class="site-table-cell">
                     <strong>{{ s.siteName }}</strong>
+                    <span class="org-pill-sm" *ngIf="s.clientOrganizationName">
+                      <span class="material-symbols-outlined">corporate_fare</span>
+                      {{ s.clientOrganizationName }}
+                    </span>
                     <span class="address-sub">{{ s.address }}</span>
                   </div>
                 </td>
@@ -540,6 +550,40 @@ import { ToastService } from '../../../core/services/toast.service';
       border: 1px solid #bfdbfe;
       padding: 3px 8px;
       border-radius: 6px;
+    }
+    .org-pill-row {
+      margin-bottom: 6px;
+    }
+    .org-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0369a1;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 2px 7px;
+      border-radius: 9999px;
+    }
+    .org-pill .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .org-pill-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #0369a1;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+    }
+    .org-pill-sm .material-symbols-outlined {
+      font-size: 12px;
     }
     .status-badge {
       display: inline-flex;

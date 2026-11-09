@@ -126,6 +126,9 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpShiftDocument> BcpShiftDocuments { get; set; } = null!;
     public DbSet<BcpShiftStaffProfile> BcpShiftStaffProfiles { get; set; } = null!;
     public DbSet<BcpStaffType> BcpStaffTypes { get; set; } = null!;
+    public DbSet<BcpJobRole> BcpJobRoles { get; set; } = null!;
+    public DbSet<BcpWorkforcePolicySetting> BcpWorkforcePolicySettings { get; set; } = null!;
+    public DbSet<BcpClientOrganization> BcpClientOrganizations { get; set; } = null!;
     public DbSet<BcpShiftStaffRating> BcpShiftStaffRatings { get; set; } = null!;
     public DbSet<BcpShiftNotificationPreference> BcpShiftNotificationPreferences { get; set; } = null!;
 
@@ -889,10 +892,33 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         });
 
         // --- BCP: Unified Workforce, Rota & Attendance Suite ---
+        modelBuilder.Entity<BcpClientOrganization>(entity =>
+        {
+            entity.HasIndex(o => new { o.TenantKey, o.OrganizationCode }).IsUnique();
+            entity.HasIndex(o => new { o.TenantKey, o.IsActive });
+        });
+
         modelBuilder.Entity<BcpClientSite>(entity =>
         {
             entity.HasIndex(s => new { s.TenantKey, s.SiteCode }).IsUnique();
             entity.HasIndex(s => new { s.TenantKey, s.IsActive });
+            entity.HasIndex(s => new { s.TenantKey, s.ClientOrganizationId });
+            entity.HasOne(s => s.ClientOrganization)
+                .WithMany(o => o.Sites)
+                .HasForeignKey(s => s.ClientOrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<BcpJobRole>(entity =>
+        {
+            entity.HasIndex(r => new { r.TenantKey, r.Code }).IsUnique();
+            entity.HasIndex(r => new { r.TenantKey, r.IsActive });
+            entity.HasIndex(r => new { r.TenantKey, r.SortOrder });
+        });
+
+        modelBuilder.Entity<BcpWorkforcePolicySetting>(entity =>
+        {
+            entity.HasIndex(p => p.TenantKey).IsUnique();
         });
 
         modelBuilder.Entity<BcpShift>(entity =>

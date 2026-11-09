@@ -101,6 +101,19 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
               </div>
 
+              <!-- Parent Client Organization -->
+              <div class="form-group">
+                <div class="field-header-row">
+                  <label class="form-label mb-0">Parent Client Organization</label>
+                  <button type="button" class="btn-text-action" (click)="openAddOrgModal()">+ Add New Organization</button>
+                </div>
+                <select class="form-control" [(ngModel)]="site.clientOrganizationId" name="clientOrganizationId" (change)="onOrgChanged()">
+                  <option [ngValue]="null">-- Standalone Venue / Unassigned --</option>
+                  <option *ngFor="let org of clientOrganizations" [value]="org.id">{{ org.name }} ({{ org.organizationCode }})</option>
+                </select>
+                <span class="field-hint">Groups multiple customer venue posts under an umbrella corporate client for unified billing.</span>
+              </div>
+
               <div class="form-group">
                 <label class="form-label">Street Address <span class="required">*</span></label>
                 <input
@@ -313,6 +326,66 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
             <span>{{ isSaving ? 'Saving...' : (isEditMode ? 'Update Site' : 'Save Site') }}</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Quick Create Organization Modal -->
+      <div class="modal-backdrop" *ngIf="showAddOrgModal" (click)="showAddOrgModal = false">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">corporate_fare</span>
+              <div>
+                <h3>Add Client Organization</h3>
+                <p class="modal-subtitle">Register parent client account for invoicing and site grouping.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="showAddOrgModal = false">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Company Name <span class="required">*</span></label>
+                <input type="text" class="form-control" [(ngModel)]="orgForm.name" placeholder="e.g. Commercial Property Group" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Client Code</label>
+                <input type="text" class="form-control" [(ngModel)]="orgForm.organizationCode" placeholder="e.g. CPG-CORP" />
+              </div>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Billing Email Address <span class="required">*</span></label>
+                <input type="email" class="form-control" [(ngModel)]="orgForm.billingEmail" placeholder="name@company.com" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Billing Phone Number</label>
+                <input type="tel" class="form-control" [(ngModel)]="orgForm.billingPhone" placeholder="e.g. +44 20 7946 0000" />
+              </div>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Account Manager</label>
+                <input type="text" class="form-control" [(ngModel)]="orgForm.accountManagerName" placeholder="e.g. First Last" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Payment Terms (Days)</label>
+                <input type="number" class="form-control" [(ngModel)]="orgForm.paymentTermsDays" placeholder="30" />
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="showAddOrgModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveOrganization()" [disabled]="isSavingOrg">
+              <span class="material-symbols-outlined" *ngIf="!isSavingOrg">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSavingOrg">sync</span>
+              <span>{{ isSavingOrg ? 'Saving...' : 'Create Organization' }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -688,6 +761,88 @@ import { ToastService } from '../../../core/services/toast.service';
       color: #64748b;
     }
 
+    .field-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .btn-text-action {
+      background: none;
+      border: none;
+      color: #0050e5;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+    .btn-text-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Modal Backdrop & Card */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-title-group h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .modal-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-body {
+      padding: 20px 24px;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 14px 24px;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
     /* Responsive */
     @media (max-width: 992px) {
       .site-form-layout {
@@ -722,6 +877,18 @@ export class WorkforceSiteEditComponent implements OnInit {
   isSaving = false;
   isDetectingGps = false;
 
+  clientOrganizations: any[] = [];
+  showAddOrgModal = false;
+  isSavingOrg = false;
+  orgForm: any = {
+    name: '',
+    organizationCode: '',
+    billingEmail: '',
+    billingPhone: '',
+    accountManagerName: '',
+    paymentTermsDays: 30
+  };
+
   site: Partial<ClientSite> = {
     siteCode: '',
     siteName: '',
@@ -740,6 +907,7 @@ export class WorkforceSiteEditComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadClientOrganizations();
     const siteId = this.route.snapshot.paramMap.get('id');
     if (siteId) {
       this.isEditMode = true;
@@ -748,6 +916,59 @@ export class WorkforceSiteEditComponent implements OnInit {
       this.isEditMode = false;
       this.prepareNewSiteCode();
     }
+  }
+
+  loadClientOrganizations(): void {
+    this.workforceService.getClientOrganizations().subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.clientOrganizations = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  openAddOrgModal(): void {
+    this.orgForm = {
+      name: '',
+      organizationCode: '',
+      billingEmail: '',
+      billingPhone: '',
+      accountManagerName: '',
+      paymentTermsDays: 30
+    };
+    this.showAddOrgModal = true;
+  }
+
+  saveOrganization(): void {
+    if (!this.orgForm.name?.trim() || !this.orgForm.billingEmail?.trim()) {
+      this.toast.warning('Company Name and Billing Email are required.');
+      return;
+    }
+
+    this.isSavingOrg = true;
+    this.workforceService.createClientOrganization(this.orgForm).subscribe({
+      next: (res: any) => {
+        this.isSavingOrg = false;
+        this.showAddOrgModal = false;
+        this.toast.success(`Client organization '${this.orgForm.name}' created.`);
+        this.loadClientOrganizations();
+        if (res && res.data) {
+          this.site.clientOrganizationId = res.data.id;
+          this.site.clientOrganizationName = res.data.name;
+        }
+      },
+      error: (err: any) => {
+        this.isSavingOrg = false;
+        this.toast.error(err?.error?.message || 'Failed to create organization.');
+      }
+    });
+  }
+
+  onOrgChanged(): void {
+    const selected = this.clientOrganizations.find(o => o.id === this.site.clientOrganizationId);
+    this.site.clientOrganizationName = selected ? selected.name : undefined;
   }
 
   private loadSite(id: string): void {

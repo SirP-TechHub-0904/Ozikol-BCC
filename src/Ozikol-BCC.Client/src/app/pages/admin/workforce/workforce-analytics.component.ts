@@ -348,7 +348,9 @@ import { ToastService } from '../../../core/services/toast.service';
                     <div class="staff-user-cell">
                       <div class="avatar-circle">{{ getInitials(m.fullName) }}</div>
                       <div class="user-info">
-                        <div class="user-name">{{ m.fullName }}</div>
+                        <a [routerLink]="['/workforce/console/members', m.userId]" class="user-name clickable-profile-link" title="Click to view full staff profile & documents">
+                          {{ m.fullName }}
+                        </a>
                         <div class="user-email">{{ m.email }}</div>
                       </div>
                     </div>
@@ -384,6 +386,10 @@ import { ToastService } from '../../../core/services/toast.service';
                     </span>
                   </td>
                   <td style="text-align: right;">
+                    <a [routerLink]="['/workforce/console/members', m.userId]" class="btn-action-sm mr-2" title="View Full Profile & Vault">
+                      <span class="material-symbols-outlined">badge</span>
+                      <span>Profile</span>
+                    </a>
                     <button type="button" class="btn-action-sm" (click)="openRateModal(m)">
                       <span class="material-symbols-outlined">rate_review</span>
                       <span>Rate Duty</span>

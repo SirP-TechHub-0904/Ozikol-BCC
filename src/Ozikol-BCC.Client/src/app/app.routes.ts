@@ -26,6 +26,7 @@ import { WorkforceSitesComponent } from './pages/admin/workforce/workforce-sites
 import { WorkforceSiteEditComponent } from './pages/admin/workforce/workforce-site-edit.component';
 import { WorkforceEnrollComponent } from './pages/admin/workforce/workforce-enroll.component';
 import { WorkforceSettingsComponent } from './pages/admin/workforce/workforce-settings.component';
+import { WorkforceMemberProfileComponent } from './pages/admin/workforce/workforce-member-profile.component';
 import { WorkforceAttendanceLiveComponent } from './pages/admin/workforce/workforce-attendance-live.component';
 import { WorkforceMyShiftsComponent } from './pages/workspace/workforce/workforce-my-shifts.component';
 import { WorkforceClockComponent } from './pages/workspace/workforce/workforce-clock.component';
@@ -304,6 +305,7 @@ export const routes: Routes = [
       { path: 'workforce/console/sites/create', component: WorkforceSiteEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/sites/edit/:id', component: WorkforceSiteEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/enroll', component: WorkforceEnrollComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/members/:id', component: WorkforceMemberProfileComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/settings', component: WorkforceSettingsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'attendance/console', redirectTo: 'attendance/console/live', pathMatch: 'full' },
       { path: 'attendance/console/live', component: WorkforceAttendanceLiveComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },

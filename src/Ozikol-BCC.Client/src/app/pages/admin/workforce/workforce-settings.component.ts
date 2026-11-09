@@ -17,6 +17,44 @@ interface StaffTypeItem {
   enrolledStaffCount: number;
 }
 
+interface JobRoleItem {
+  id: string;
+  title: string;
+  code: string;
+  description?: string;
+  defaultHourlyRate: number;
+  billingChargeRate: number;
+  mandatorySiaSector?: string;
+  badgeColor?: string;
+  isActive: boolean;
+  sortOrder: number;
+  assignedStaffCount: number;
+}
+
+interface WorkforcePolicies {
+  id?: string;
+  standardWeeklyHours: number;
+  maxPermissibleWeeklyHours: number;
+  maxConsecutiveWorkingDays: number;
+  enforce48HourWeeklyCap: boolean;
+  dayShiftStart: string;
+  dayShiftEnd: string;
+  nightShiftStart: string;
+  nightShiftEnd: string;
+  nightPremiumHourlyAllowance: number;
+  enableNightPremium: boolean;
+  breakMinutesFor6Hours: number;
+  breakMinutesFor8Hours: number;
+  breakMinutesFor12Hours: number;
+  isBreakPaid: boolean;
+  breakLoggingMode: string;
+  requireUniformSizes: boolean;
+  requireDrivingLicense: boolean;
+  requireMedicalAllergies: boolean;
+  requireDbsCriminalDisclosure: boolean;
+  customOnboardingQuestionsJson?: string;
+}
+
 @Component({
   selector: 'app-workforce-settings',
   standalone: true,
@@ -29,14 +67,14 @@ interface StaffTypeItem {
         <span class="crumb-sep">/</span>
         <span class="crumb-parent">Workforce &amp; Shifts</span>
         <span class="crumb-sep">/</span>
-        <span class="crumb-active">Staff Types &amp; Workforce Settings</span>
+        <span class="crumb-active">Workforce &amp; Shift Settings Hub</span>
       </nav>
 
       <!-- Main Title Bar -->
       <div class="page-header">
         <div class="header-left">
           <div class="title-row">
-            <h1 class="page-title">Workforce Staff Types &amp; Policies</h1>
+            <h1 class="page-title">Workforce &amp; Shift Settings</h1>
             <button
               type="button"
               class="info-badge-btn"
@@ -48,270 +86,931 @@ interface StaffTypeItem {
             <span class="suite-pill">SUITE: WORKFORCE &amp; SHIFTS</span>
           </div>
           <p class="page-subtitle">
-            Govern employment classifications (Permanent, Temporary, Contractor), baseline weekly duty hours, and compulsory tenant defaults.
+            Configure job roles, pay &amp; billing charge rates, day/night shift windows, break deduction policies, and custom onboarding questionnaires.
           </p>
         </div>
         <div class="header-actions">
-          <button type="button" class="btn btn-outline" (click)="loadStaffTypes()">
-            <span class="material-symbols-outlined">refresh</span> Refresh
+          <button type="button" class="btn btn-outline" (click)="loadAllData()">
+            <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span> Refresh
           </button>
-          <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+          <button
+            type="button"
+            class="btn btn-primary"
+            *ngIf="activeTab === 'roles'"
+            (click)="openRoleModal()"
+          >
+            <span class="material-symbols-outlined">add</span> + Add Job Role
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            *ngIf="activeTab === 'staff-types'"
+            (click)="openStaffTypeModal()"
+          >
             <span class="material-symbols-outlined">add</span> + Add Staff Type
           </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            *ngIf="activeTab === 'hours' || activeTab === 'breaks' || activeTab === 'forms'"
+            (click)="savePolicies()"
+            [disabled]="isSavingPolicies"
+          >
+            <span class="material-symbols-outlined" *ngIf="!isSavingPolicies">save</span>
+            <span class="material-symbols-outlined spin" *ngIf="isSavingPolicies">sync</span>
+            {{ isSavingPolicies ? 'Saving...' : 'Save Policies' }}
+          </button>
         </div>
       </div>
 
-      <!-- Overview Metric Cards -->
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="card-icon bg-blue">
-            <span class="material-symbols-outlined">badge</span>
+      <!-- Navigation Tabs -->
+      <div class="settings-tabs-bar">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'roles'"
+          (click)="activeTab = 'roles'"
+        >
+          <span class="material-symbols-outlined">badge</span>
+          <span>Job Roles &amp; Pay Rates</span>
+          <span class="tab-count">{{ jobRoles.length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'hours'"
+          (click)="activeTab = 'hours'"
+        >
+          <span class="material-symbols-outlined">schedule</span>
+          <span>Working Hours &amp; Shift Windows</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'breaks'"
+          (click)="activeTab = 'breaks'"
+        >
+          <span class="material-symbols-outlined">coffee</span>
+          <span>Meal &amp; Rest Breaks</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'forms'"
+          (click)="activeTab = 'forms'"
+        >
+          <span class="material-symbols-outlined">fact_check</span>
+          <span>Custom Forms &amp; Onboarding</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'staff-types'"
+          (click)="activeTab = 'staff-types'"
+        >
+          <span class="material-symbols-outlined">groups</span>
+          <span>Staff Classifications</span>
+          <span class="tab-count">{{ staffTypes.length }}</span>
+        </button>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 1: JOB ROLES & PAY RATES -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'roles'">
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="card-icon bg-blue">
+              <span class="material-symbols-outlined">badge</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-val">{{ jobRoles.length }}</div>
+              <div class="metric-label">Operational Job Roles</div>
+            </div>
           </div>
-          <div class="metric-body">
-            <div class="metric-val">{{ staffTypes.length }}</div>
-            <div class="metric-label">Configured Staff Types</div>
+
+          <div class="metric-card">
+            <div class="card-icon bg-emerald">
+              <span class="material-symbols-outlined">payments</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-val">{{ currencySymbol }}{{ averageHourlyWage | number:'1.2-2' }}</div>
+              <div class="metric-label">Average Base Hourly Wage</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-icon bg-purple">
+              <span class="material-symbols-outlined">price_check</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-val">{{ currencySymbol }}{{ averageChargeRate | number:'1.2-2' }}</div>
+              <div class="metric-label">Average Client Billing Rate</div>
+            </div>
           </div>
         </div>
 
-        <div class="metric-card">
-          <div class="card-icon bg-emerald">
-            <span class="material-symbols-outlined">verified_user</span>
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div class="header-bar-left">
+              <span class="material-symbols-outlined text-blue">work</span>
+              <div>
+                <h3 class="card-heading">Configured Job Roles &amp; Charging Matrix</h3>
+                <p class="card-sub">Roles dictate default wage disbursements, client billing charge rates, and required SIA license categories.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openRoleModal()">
+              <span class="material-symbols-outlined">add</span> + Add Role
+            </button>
           </div>
-          <div class="metric-body">
-            <div class="metric-val">{{ compulsoryCount }}</div>
-            <div class="metric-label">Compulsory Defaults (Permanent &amp; Temporary)</div>
-          </div>
-        </div>
 
-        <div class="metric-card">
-          <div class="card-icon bg-purple">
-            <span class="material-symbols-outlined">groups</span>
-          </div>
-          <div class="metric-body">
-            <div class="metric-val">{{ totalEnrolledStaff }}</div>
-            <div class="metric-label">Enrolled Workers Classified</div>
+          <div class="table-responsive">
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">Color</th>
+                  <th>Role Title</th>
+                  <th>Code</th>
+                  <th>Base Wage Rate</th>
+                  <th>Client Charge Rate</th>
+                  <th>Mandatory SIA Sector</th>
+                  <th>Assigned Staff</th>
+                  <th>Status</th>
+                  <th style="text-align: right; width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of jobRoles">
+                  <td>
+                    <span class="color-dot" [style.backgroundColor]="r.badgeColor || '#0050E5'"></span>
+                  </td>
+                  <td>
+                    <div class="title-cell">
+                      <strong>{{ r.title }}</strong>
+                      <span class="desc-muted" *ngIf="r.description">{{ r.description }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="code-badge">{{ r.code }}</span>
+                  </td>
+                  <td>
+                    <span class="wage-tag">{{ currencySymbol }}{{ r.defaultHourlyRate | number:'1.2-2' }}/hr</span>
+                  </td>
+                  <td>
+                    <span class="charge-tag">{{ currencySymbol }}{{ r.billingChargeRate | number:'1.2-2' }}/hr</span>
+                  </td>
+                  <td>
+                    <span class="sia-badge" [class.none]="!r.mandatorySiaSector || r.mandatorySiaSector === 'None'">
+                      {{ r.mandatorySiaSector || 'None' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="staff-count-pill">{{ r.assignedStaffCount }} staff</span>
+                  </td>
+                  <td>
+                    <span class="status-pill active" *ngIf="r.isActive">Active</span>
+                    <span class="status-pill disabled" *ngIf="!r.isActive">Inactive</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="action-btn" (click)="editRole(r)" title="Edit Role">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button type="button" class="action-btn text-danger" (click)="deleteRole(r)" title="Delete Role">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="jobRoles.length === 0 && !isLoading">
+                  <td colspan="9" class="empty-state">
+                    No job roles configured yet. Click "+ Add Job Role" to create your first operational role.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Main Staff Types Table Card -->
-      <div class="content-card">
-        <div class="card-header-bar">
-          <div class="header-bar-left">
-            <h2 class="card-title">Configured Staff Employment Classifications</h2>
-            <span class="card-desc">
-              Permanent and Temporary staff types are platform-compulsory seeded upon workspace creation.
-            </span>
+      <!-- ========================================================================= -->
+      <!-- TAB 2: WORKING HOURS & SHIFT WINDOWS -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'hours'">
+        <div class="policy-grid">
+          <!-- Standard Working Hours Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">timer</span>
+                <div>
+                  <h3 class="card-heading">Standard Company Working Hours</h3>
+                  <p class="card-sub">Baseline hours applied across the rota. Individual staff profiles can override this default.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="policy-form">
+              <div class="form-row-dual">
+                <div class="form-group">
+                  <label class="form-label">Standard Full-Time Week (Hours) <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    [(ngModel)]="policies.standardWeeklyHours"
+                    name="standardWeeklyHours"
+                    placeholder="e.g. 40"
+                    min="1"
+                    max="80"
+                  />
+                  <span class="field-hint">Default contracted target for full-time personnel (e.g. 37.5 or 40.0 hrs).</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Max Permissible Weekly Hours <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    [(ngModel)]="policies.maxPermissibleWeeklyHours"
+                    name="maxPermissibleWeeklyHours"
+                    placeholder="e.g. 48"
+                    min="10"
+                    max="100"
+                  />
+                  <span class="field-hint">Statutory ceiling (e.g. 48 hrs under UK Working Time Regulations).</span>
+                </div>
+              </div>
+
+              <div class="form-row-dual">
+                <div class="form-group">
+                  <label class="form-label">Max Consecutive Working Days <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    [(ngModel)]="policies.maxConsecutiveWorkingDays"
+                    name="maxConsecutiveWorkingDays"
+                    placeholder="e.g. 6"
+                    min="1"
+                    max="14"
+                  />
+                  <span class="field-hint">Triggers fatigue burnout warnings when auto-scheduling.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Working Time Regulations Enforcement</label>
+                  <div class="toggle-card">
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="policies.enforce48HourWeeklyCap"
+                        name="enforce48HourWeeklyCap"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <div class="toggle-info">
+                      <strong>Enforce 48-Hour Weekly Cap</strong>
+                      <span>Warn or block allocations exceeding 48h unless opt-out signed.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="badge-compulsory-note">
-            <span class="material-symbols-outlined">lock</span> Compulsory on Tenant Creation
+
+          <!-- Day Shift vs Night Shift Windows Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">bedtime</span>
+                <div>
+                  <h3 class="card-heading">Day Shift vs. Night Shift Windows</h3>
+                  <p class="card-sub">Shift classification boundaries and nocturnal pay differentials.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="policy-form">
+              <div class="form-row-dual">
+                <div class="form-group">
+                  <label class="form-label">Day Shift Window <span class="required">*</span></label>
+                  <div class="time-range-group">
+                    <input
+                      type="time"
+                      class="form-control"
+                      [(ngModel)]="policies.dayShiftStart"
+                      name="dayShiftStart"
+                    />
+                    <span class="time-sep">to</span>
+                    <input
+                      type="time"
+                      class="form-control"
+                      [(ngModel)]="policies.dayShiftEnd"
+                      name="dayShiftEnd"
+                    />
+                  </div>
+                  <span class="field-hint">Standard daytime hours (e.g. 07:00 to 19:00).</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Night Shift Window <span class="required">*</span></label>
+                  <div class="time-range-group">
+                    <input
+                      type="time"
+                      class="form-control"
+                      [(ngModel)]="policies.nightShiftStart"
+                      name="nightShiftStart"
+                    />
+                    <span class="time-sep">to</span>
+                    <input
+                      type="time"
+                      class="form-control"
+                      [(ngModel)]="policies.nightShiftEnd"
+                      name="nightShiftEnd"
+                    />
+                  </div>
+                  <span class="field-hint">Overnight window spanning midnight (e.g. 19:00 to 07:00).</span>
+                </div>
+              </div>
+
+              <div class="night-premium-box">
+                <div class="toggle-card">
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="policies.enableNightPremium"
+                      name="enableNightPremium"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                  <div class="toggle-info">
+                    <strong>Enable Night Premium Differential</strong>
+                    <span>Apply extra hourly allowance when a shift falls inside the night window.</span>
+                  </div>
+                </div>
+
+                <div class="form-group mt-3" *ngIf="policies.enableNightPremium">
+                  <label class="form-label">Night Premium Hourly Allowance ({{ currencySymbol }}/hr)</label>
+                  <input
+                    type="number"
+                    step="0.50"
+                    class="form-control"
+                    [(ngModel)]="policies.nightPremiumHourlyAllowance"
+                    name="nightPremiumHourlyAllowance"
+                    placeholder="e.g. 1.50"
+                  />
+                  <span class="field-hint">Added automatically to gross wages for hours worked within night window.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="table-responsive" *ngIf="!isLoading && staffTypes.length">
-          <table class="modern-table">
-            <thead>
-              <tr>
-                <th>Classification Name</th>
-                <th>System Code</th>
-                <th>Description &amp; Scheduling Rule</th>
-                <th>Contracted Hours / Wk</th>
-                <th>Enrolled Staff</th>
-                <th>Status</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of staffTypes">
-                <td>
-                  <div class="type-name-cell">
-                    <span class="name-text">{{ item.name }}</span>
-                    <span class="compulsory-chip" *ngIf="item.isCompulsory" title="Platform compulsory standard for all tenants">
+      <!-- ========================================================================= -->
+      <!-- TAB 3: MEAL & REST BREAKS -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'breaks'">
+        <div class="policy-grid">
+          <!-- Break Duration Matrix Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">free_breakfast</span>
+                <div>
+                  <h3 class="card-heading">Break Duration Matrix</h3>
+                  <p class="card-sub">Automatic break allocations based on scheduled shift duration.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="policy-form">
+              <div class="break-tier-row">
+                <div class="tier-label">
+                  <strong>Shifts &ge; 6 Hours</strong>
+                  <span>Short shift break entitlement</span>
+                </div>
+                <div class="tier-input">
+                  <input
+                    type="number"
+                    class="form-control text-center"
+                    [(ngModel)]="policies.breakMinutesFor6Hours"
+                    name="breakMinutesFor6Hours"
+                    min="0"
+                    max="120"
+                    placeholder="e.g. 30"
+                  />
+                  <span class="input-suffix">minutes</span>
+                </div>
+              </div>
+
+              <div class="break-tier-row">
+                <div class="tier-label">
+                  <strong>Shifts &ge; 8 Hours</strong>
+                  <span>Standard 8-hour shift rest break</span>
+                </div>
+                <div class="tier-input">
+                  <input
+                    type="number"
+                    class="form-control text-center"
+                    [(ngModel)]="policies.breakMinutesFor8Hours"
+                    name="breakMinutesFor8Hours"
+                    min="0"
+                    max="120"
+                    placeholder="e.g. 45"
+                  />
+                  <span class="input-suffix">minutes</span>
+                </div>
+              </div>
+
+              <div class="break-tier-row">
+                <div class="tier-label">
+                  <strong>Shifts &ge; 12 Hours</strong>
+                  <span>Extended 12-hour / overnight post break</span>
+                </div>
+                <div class="tier-input">
+                  <input
+                    type="number"
+                    class="form-control text-center"
+                    [(ngModel)]="policies.breakMinutesFor12Hours"
+                    name="breakMinutesFor12Hours"
+                    min="0"
+                    max="180"
+                    placeholder="e.g. 60"
+                  />
+                  <span class="input-suffix">minutes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Break Payment & Logging Policy Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">policy</span>
+                <div>
+                  <h3 class="card-heading">Remuneration &amp; Logging Policy</h3>
+                  <p class="card-sub">Control whether breaks are paid and how timesheets account for rest time.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="policy-form">
+              <div class="toggle-card">
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="policies.isBreakPaid"
+                    name="isBreakPaid"
+                  />
+                  <span class="slider round"></span>
+                </label>
+                <div class="toggle-info">
+                  <strong>Paid Break Policy</strong>
+                  <span>{{ policies.isBreakPaid ? 'Breaks are PAID (no deduction from gross wages).' : 'Breaks are UNPAID (break minutes are deducted from billable hours).' }}</span>
+                </div>
+              </div>
+
+              <div class="form-group mt-4">
+                <label class="form-label">Timesheet Break Logging Mode <span class="required">*</span></label>
+                <div class="radio-card-group">
+                  <label class="radio-card" [class.selected]="policies.breakLoggingMode === 'AutomaticDeduction'">
+                    <input
+                      type="radio"
+                      name="breakLoggingMode"
+                      value="AutomaticDeduction"
+                      [(ngModel)]="policies.breakLoggingMode"
+                    />
+                    <div class="radio-content">
+                      <span class="material-symbols-outlined">auto_mode</span>
+                      <div>
+                        <strong>Automatic Timesheet Deduction</strong>
+                        <p>Deducts matrix break duration automatically from shift length.</p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label class="radio-card" [class.selected]="policies.breakLoggingMode === 'GuardClocking'">
+                    <input
+                      type="radio"
+                      name="breakLoggingMode"
+                      value="GuardClocking"
+                      [(ngModel)]="policies.breakLoggingMode"
+                    />
+                    <div class="radio-content">
+                      <span class="material-symbols-outlined">touch_app</span>
+                      <div>
+                        <strong>In-App Guard Clocking</strong>
+                        <p>Staff members tap "Start Break" and "End Break" on the mobile/web terminal.</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 4: CUSTOM FORMS & ONBOARDING -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'forms'">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div class="header-bar-left">
+              <span class="material-symbols-outlined text-blue">dynamic_form</span>
+              <div>
+                <h3 class="card-heading">Mandatory Onboarding Questionnaire Fields</h3>
+                <p class="card-sub">Decide what information your staff members must provide during self-enrollment or profile completion.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="policy-form">
+            <div class="custom-fields-list">
+              <div class="field-item-card">
+                <div class="field-item-left">
+                  <span class="material-symbols-outlined text-blue">apparel</span>
+                  <div>
+                    <strong>Uniform &amp; PPE Sizing</strong>
+                    <p>Collects Jacket Size (S-XXL), Trouser Waist/Inseam, and Safety Boot Shoe Size.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="policies.requireUniformSizes"
+                    name="requireUniformSizes"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="field-item-card">
+                <div class="field-item-left">
+                  <span class="material-symbols-outlined text-blue">directions_car</span>
+                  <div>
+                    <strong>Driving License &amp; Vehicle Access</strong>
+                    <p>Checks if the staff member holds a valid driving license and has access to a vehicle for mobile patrol shifts.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="policies.requireDrivingLicense"
+                    name="requireDrivingLicense"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="field-item-card">
+                <div class="field-item-left">
+                  <span class="material-symbols-outlined text-blue">medical_information</span>
+                  <div>
+                    <strong>Emergency Medical Conditions &amp; Allergies</strong>
+                    <p>Captures critical health disclosures so dispatchers can respond appropriately in an emergency.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="policies.requireMedicalAllergies"
+                    name="requireMedicalAllergies"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="field-item-card">
+                <div class="field-item-left">
+                  <span class="material-symbols-outlined text-blue">shield_person</span>
+                  <div>
+                    <strong>DBS Criminal Record &amp; Vetting Disclosure</strong>
+                    <p>Standard security screening questions in compliance with BS 7858 security vetting standards.</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="policies.requireDbsCriminalDisclosure"
+                    name="requireDbsCriminalDisclosure"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 5: STAFF CLASSIFICATIONS (STAFF TYPES) -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'staff-types'">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div class="header-bar-left">
+              <span class="material-symbols-outlined text-blue">groups</span>
+              <div>
+                <h3 class="card-heading">Staff Employment Classifications</h3>
+                <p class="card-sub">Permanent, Temporary, and Contractor tiers. Compulsory types cannot be deleted to ensure data integrity.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openStaffTypeModal()">
+              <span class="material-symbols-outlined">add</span> + Add Classification
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Classification Name</th>
+                  <th>Code</th>
+                  <th>Contracted Target</th>
+                  <th>Compulsory</th>
+                  <th>Enrolled Staff</th>
+                  <th>Status</th>
+                  <th style="text-align: right; width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of staffTypes">
+                  <td>
+                    <div class="title-cell">
+                      <strong>{{ t.name }}</strong>
+                      <span class="desc-muted" *ngIf="t.description">{{ t.description }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="code-badge">{{ t.code }}</span>
+                  </td>
+                  <td>
+                    <span class="hours-chip">{{ t.defaultContractedHours }} hrs/wk</span>
+                  </td>
+                  <td>
+                    <span class="compulsory-badge" *ngIf="t.isCompulsory">
                       <span class="material-symbols-outlined">lock</span> Compulsory
                     </span>
-                  </div>
-                </td>
-                <td>
-                  <code class="code-pill">{{ item.code }}</code>
-                </td>
-                <td>
-                  <span class="desc-text">{{ item.description || 'Standard employment classification' }}</span>
-                </td>
-                <td>
-                  <span class="hours-badge" [class.zero-hours]="item.defaultContractedHours === 0">
-                    <span class="material-symbols-outlined">schedule</span>
-                    {{ item.defaultContractedHours > 0 ? (item.defaultContractedHours | number:'1.1-1') + ' hrs/wk' : 'Zero-Hours (Flexible)' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="count-chip">{{ item.enrolledStaffCount }} staff</span>
-                </td>
-                <td>
-                  <span class="status-badge" [class.active]="item.isActive" [class.inactive]="!item.isActive">
-                    {{ item.isActive ? 'Active' : 'Inactive' }}
-                  </span>
-                </td>
-                <td class="text-end">
-                  <div class="action-btn-group">
-                    <button
-                      type="button"
-                      class="btn-icon"
-                      (click)="openEditModal(item)"
-                      title="Edit Staff Type"
-                    >
+                    <span class="optional-badge" *ngIf="!t.isCompulsory">Custom</span>
+                  </td>
+                  <td>
+                    <span class="staff-count-pill">{{ t.enrolledStaffCount }} staff</span>
+                  </td>
+                  <td>
+                    <span class="status-pill active" *ngIf="t.isActive">Active</span>
+                    <span class="status-pill disabled" *ngIf="!t.isActive">Inactive</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="action-btn" (click)="editStaffType(t)" title="Edit Classification">
                       <span class="material-symbols-outlined">edit</span>
                     </button>
                     <button
                       type="button"
-                      class="btn-icon btn-icon-danger"
-                      [disabled]="item.isCompulsory"
-                      (click)="deleteType(item)"
-                      [title]="item.isCompulsory ? 'Compulsory platform staff types cannot be deleted' : 'Delete Staff Type'"
+                      class="action-btn text-danger"
+                      *ngIf="!t.isCompulsory"
+                      (click)="deleteStaffType(t)"
+                      title="Delete Classification"
                     >
                       <span class="material-symbols-outlined">delete</span>
                     </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Empty State -->
-        <div class="empty-state" *ngIf="!isLoading && !staffTypes.length">
-          <span class="material-symbols-outlined empty-icon">badge</span>
-          <h3>No Staff Types Found</h3>
-          <p>Compulsory defaults are automatically initialized for all workspaces.</p>
-          <button type="button" class="btn btn-primary" (click)="loadStaffTypes()">
-            Initialize Compulsory Types
-          </button>
-        </div>
-
-        <!-- Loading State -->
-        <div class="loading-state" *ngIf="isLoading">
-          <div class="spinner"></div>
-          <span>Loading workforce staff types...</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Add / Edit Modal -->
-      <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+      <!-- ========================================================================= -->
+      <!-- MODAL: ADD / EDIT JOB ROLE -->
+      <!-- ========================================================================= -->
+      <div class="modal-backdrop" *ngIf="showRoleModal" (click)="closeRoleModal()">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <div class="modal-title-row">
-              <span class="material-symbols-outlined modal-header-icon">{{ isEditing ? 'edit' : 'add_circle' }}</span>
-              <h3>{{ isEditing ? 'Edit Staff Type' : 'Add New Staff Type' }}</h3>
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">badge</span>
+              <div>
+                <h3>{{ isEditingRole ? 'Edit Job Role' : 'Add New Job Role' }}</h3>
+                <p class="modal-subtitle">Specify role title, base wage, billing charge rate, and SIA license requirements.</p>
+              </div>
             </div>
-            <button type="button" class="close-btn" (click)="closeModal()">&times;</button>
+            <button type="button" class="btn-close" (click)="closeRoleModal()">&times;</button>
           </div>
 
-          <form (ngSubmit)="saveStaffType()" class="modal-form">
+          <div class="modal-body">
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Role Title <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="roleForm.title"
+                  placeholder="e.g. SIA Door Supervisor"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Role Code <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="roleForm.code"
+                  placeholder="e.g. DS"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea
+                class="form-control"
+                rows="2"
+                [(ngModel)]="roleForm.description"
+                placeholder="Brief summary of duties and responsibilities..."
+              ></textarea>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Default Hourly Wage Rate ({{ currencySymbol }}/hr) <span class="required">*</span></label>
+                <input
+                  type="number"
+                  step="0.25"
+                  class="form-control"
+                  [(ngModel)]="roleForm.defaultHourlyRate"
+                  placeholder="e.g. 15.00"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Client Billing Charge Rate ({{ currencySymbol }}/hr) <span class="required">*</span></label>
+                <input
+                  type="number"
+                  step="0.25"
+                  class="form-control"
+                  [(ngModel)]="roleForm.billingChargeRate"
+                  placeholder="e.g. 22.50"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Mandatory SIA License Sector</label>
+                <select class="form-control" [(ngModel)]="roleForm.mandatorySiaSector">
+                  <option value="None">None (Unlicensed)</option>
+                  <option value="Door Supervision">Door Supervision</option>
+                  <option value="Security Guarding">Security Guarding</option>
+                  <option value="CCTV">CCTV (Public Space Surveillance)</option>
+                  <option value="Close Protection">Close Protection</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Badge Color Identifier</label>
+                <div class="color-picker-row">
+                  <input
+                    type="color"
+                    class="color-input"
+                    [(ngModel)]="roleForm.badgeColor"
+                  />
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="roleForm.badgeColor"
+                    placeholder="#0050E5"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeRoleModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveRole()" [disabled]="isSavingRole">
+              <span class="material-symbols-outlined" *ngIf="!isSavingRole">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSavingRole">sync</span>
+              {{ isSavingRole ? 'Saving...' : 'Save Job Role' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- MODAL: ADD / EDIT STAFF TYPE -->
+      <!-- ========================================================================= -->
+      <div class="modal-backdrop" *ngIf="showStaffTypeModal" (click)="closeStaffTypeModal()">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">groups</span>
+              <div>
+                <h3>{{ isEditingStaffType ? 'Edit Classification' : 'Add Staff Classification' }}</h3>
+                <p class="modal-subtitle">Configure contract type and default weekly hours.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="closeStaffTypeModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
             <div class="form-group">
               <label class="form-label">Classification Name <span class="required">*</span></label>
               <input
                 type="text"
                 class="form-control"
-                [(ngModel)]="activeModel.name"
-                name="name"
-                placeholder="e.g. Temporary, Permanent, Contractor"
+                [(ngModel)]="staffTypeForm.name"
+                placeholder="e.g. Subcontractor Specialist"
                 required
               />
             </div>
 
-            <div class="form-group" *ngIf="!isEditing">
-              <label class="form-label">System Code</label>
+            <div class="form-group">
+              <label class="form-label">Code</label>
               <input
                 type="text"
                 class="form-control"
-                [(ngModel)]="activeModel.code"
-                name="code"
-                placeholder="e.g. temporary, permanent, contractor"
+                [(ngModel)]="staffTypeForm.code"
+                placeholder="e.g. SUB"
               />
-              <small class="form-hint">Used for system classification and automated payroll exports.</small>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Default Baseline Contracted Hours / Week</label>
+              <label class="form-label">Default Contracted Weekly Hours</label>
               <input
                 type="number"
-                step="0.5"
-                min="0"
-                max="80"
                 class="form-control"
-                [(ngModel)]="activeModel.defaultContractedHours"
-                name="defaultContractedHours"
-                placeholder="e.g. 40.0 (or 0 for zero-hours)"
+                [(ngModel)]="staffTypeForm.defaultContractedHours"
+                placeholder="e.g. 40"
               />
-              <small class="form-hint">Set to 0 for casual, zero-hours, or ad-hoc event shifts.</small>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Description &amp; Scheduling Rule</label>
+              <label class="form-label">Description</label>
               <textarea
-                class="form-control textarea"
-                rows="3"
-                [(ngModel)]="activeModel.description"
-                name="description"
-                placeholder="Describe the employment conditions, shift eligibility, or overtime rules..."
+                class="form-control"
+                rows="2"
+                [(ngModel)]="staffTypeForm.description"
+                placeholder="Operational purpose of this classification..."
               ></textarea>
             </div>
+          </div>
 
-            <div class="form-group" *ngIf="isEditing && !activeModel.isCompulsory">
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="activeModel.isActive"
-                  name="isActive"
-                />
-                <span>Active for new staff enrollments and rota assignments</span>
-              </label>
-            </div>
-
-            <div class="compulsory-alert" *ngIf="isEditing && activeModel.isCompulsory">
-              <span class="material-symbols-outlined">info</span>
-              <div>
-                <strong>Compulsory Platform Standard:</strong> This classification was seeded when your workspace was created and cannot be deactivated or deleted.
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline" (click)="closeModal()">Cancel</button>
-              <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || !activeModel.name?.trim()">
-                <span class="material-symbols-outlined">save</span>
-                {{ isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Staff Type') }}
-              </button>
-            </div>
-          </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeStaffTypeModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveStaffType()" [disabled]="isSavingStaffType">
+              <span class="material-symbols-outlined" *ngIf="!isSavingStaffType">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSavingStaffType">sync</span>
+              {{ isSavingStaffType ? 'Saving...' : 'Save Classification' }}
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Info Modal -->
-      <div class="modal-overlay" *ngIf="showInfoModal" (click)="showInfoModal = false">
-        <div class="modal-card info-card" (click)="$event.stopPropagation()">
+      <!-- ========================================================================= -->
+      <!-- MODAL: INFO GUIDE (i) -->
+      <!-- ========================================================================= -->
+      <div class="modal-backdrop" *ngIf="showInfoModal" (click)="showInfoModal = false">
+        <div class="modal-card modal-large" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <div class="modal-title-row">
-              <span class="material-symbols-outlined modal-header-icon text-primary">help</span>
-              <h3>Workforce Staff Types &amp; Tenant Governance</h3>
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">info</span>
+              <div>
+                <h3>Workforce Operational Policies Guide</h3>
+                <p class="modal-subtitle">How job roles, day/night windows, and break policies interact with the live rota.</p>
+              </div>
             </div>
-            <button type="button" class="close-btn" (click)="showInfoModal = false">&times;</button>
+            <button type="button" class="btn-close" (click)="showInfoModal = false">&times;</button>
           </div>
-          <div class="info-modal-body">
-            <div class="info-section">
-              <h4>Why are Staff Types Compulsory?</h4>
-              <p>
-                Every tenant organization has both <strong>Permanent</strong> (guaranteed hours) and <strong>Temporary</strong> (casual / zero-hours) workers.
-                When a new workspace is created, the BCC engine automatically provisions these compulsory classifications so that shift scheduling, attendance compliance, and labor spend analytics function seamlessly out of the box.
-              </p>
+
+          <div class="modal-body info-guide-body">
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-blue">badge</span> Job Roles &amp; Pay Scales</h4>
+              <p>Job roles eliminate free-text discrepancies. When you allocate a staff member under a role, their base hourly pay and client billing charge automatically inherit these configured defaults.</p>
             </div>
-            <div class="info-section">
-              <h4>Custom Staff Classifications</h4>
-              <p>
-                Administrators can create additional custom classifications such as <em>External Agency</em>, <em>Apprentice</em>, or <em>Event Steward</em> to fit specific enterprise contracts.
-              </p>
+
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-blue">schedule</span> Working Hours &amp; 48-Hour Cap</h4>
+              <p>In accordance with UK Working Time Regulations, personnel cannot exceed 48 hours per week unless they have signed an individual 48-Hour Opt-Out Agreement recorded on their staff profile.</p>
+            </div>
+
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-blue">coffee</span> Break Deduction Matrix</h4>
+              <p>Automatic break deduction recalculates net billable hours during timesheet approval, preventing overpayments while ensuring full rest compliance.</p>
             </div>
           </div>
+
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Understood</button>
+            <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Close Guide</button>
           </div>
         </div>
       </div>
@@ -319,361 +1018,744 @@ interface StaffTypeItem {
   `,
   styles: [`
     .settings-page {
-      padding: 1.5rem;
-      max-width: 1400px;
-      margin: 0 auto;
+      padding: 1.5rem 2rem;
+      background-color: #f8fafc;
+      min-height: calc(100vh - 70px);
     }
 
     .breadcrumb-nav {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.825rem;
+      font-size: 0.8125rem;
       color: #64748b;
       margin-bottom: 0.75rem;
     }
-    .crumb-sep { color: #cbd5e1; }
-    .crumb-active { color: #0050e5; font-weight: 600; }
+
+    .crumb-sep {
+      color: #cbd5e1;
+    }
+
+    .crumb-active {
+      color: #0f172a;
+      font-weight: 600;
+    }
 
     .page-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
+      gap: 1.5rem;
     }
+
     .title-row {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      flex-wrap: wrap;
+      margin-bottom: 0.25rem;
     }
+
     .page-title {
-      font-size: 1.625rem;
-      font-weight: 800;
+      font-size: 1.5rem;
+      font-weight: 700;
       color: #0f172a;
+      letter-spacing: -0.02em;
       margin: 0;
     }
+
     .info-badge-btn {
       background: none;
       border: none;
-      padding: 0;
-      color: #64748b;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      transition: color 0.15s;
-    }
-    .info-badge-btn:hover { color: #0050e5; }
-    .suite-pill {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.2rem 0.5rem;
-      border-radius: 9999px;
-      background: #eff6ff;
-      color: #0050e5;
-      letter-spacing: 0.05em;
-    }
-    .page-subtitle {
       color: #64748b;
-      font-size: 0.9rem;
-      margin: 0.375rem 0 0 0;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      border-radius: 50%;
+      transition: color 0.15s ease;
     }
+
+    .info-badge-btn:hover {
+      color: #0050e5;
+    }
+
+    .suite-pill {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #0050e5;
+      background-color: #eff6ff;
+      border: 1px solid #dbeafe;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+    }
+
+    .page-subtitle {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin: 0;
+    }
+
     .header-actions {
       display: flex;
       gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+
+    .btn-outline:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .btn-primary {
+      background: #0050e5;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #003ebd;
+    }
+
+    .btn-sm {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    /* Tabs Bar */
+    .settings-tabs-bar {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: #0f172a;
+    }
+
+    .tab-btn.active {
+      color: #0050e5;
+      border-bottom-color: #0050e5;
+    }
+
+    .tab-count {
+      font-size: 0.6875rem;
+      background: #e2e8f0;
+      color: #475569;
+      padding: 0.1rem 0.45rem;
+      border-radius: 9999px;
+      font-weight: 700;
+    }
+
+    .tab-btn.active .tab-count {
+      background: #eff6ff;
+      color: #0050e5;
     }
 
     /* Metrics Grid */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
+
     .metric-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
+      border-radius: 0.75rem;
       padding: 1.25rem;
       display: flex;
       align-items: center;
       gap: 1rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
+
     .card-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 0.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
     }
+
     .bg-blue { background: #eff6ff; color: #0050e5; }
     .bg-emerald { background: #ecfdf5; color: #059669; }
-    .bg-purple { background: #f5f3ff; color: #7c3aed; }
+    .bg-purple { background: #faf5ff; color: #7c3aed; }
+
     .metric-val {
-      font-size: 1.5rem;
-      font-weight: 800;
+      font-size: 1.35rem;
+      font-weight: 700;
       color: #0f172a;
       line-height: 1.2;
     }
+
     .metric-label {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #64748b;
-      margin-top: 0.2rem;
+      margin-top: 0.15rem;
     }
 
     /* Content Card */
     .content-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      border-radius: 0.75rem;
       overflow: hidden;
+      margin-bottom: 1.5rem;
     }
+
     .card-header-bar {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid #f1f5f9;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #f1f5f9;
+      background: #ffffff;
+    }
+
+    .header-bar-left {
+      display: flex;
+      align-items: center;
       gap: 0.75rem;
     }
-    .card-title {
-      font-size: 1.1rem;
+
+    .card-heading {
+      font-size: 1rem;
       font-weight: 700;
       color: #0f172a;
       margin: 0;
     }
-    .card-desc {
-      font-size: 0.825rem;
-      color: #64748b;
-      display: block;
-      margin-top: 0.25rem;
-    }
-    .badge-compulsory-note {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #059669;
-      background: #ecfdf5;
-      padding: 0.35rem 0.75rem;
-      border-radius: 9999px;
-    }
-    .badge-compulsory-note .material-symbols-outlined { font-size: 1rem; }
 
-    /* Modern Table */
+    .card-sub {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin: 0.15rem 0 0 0;
+    }
+
+    /* Table Styles */
     .table-responsive {
       overflow-x: auto;
     }
-    .modern-table {
+
+    .settings-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.875rem;
     }
-    .modern-table th {
+
+    .settings-table th {
       background: #f8fafc;
-      color: #475569;
-      font-weight: 600;
-      text-align: left;
-      padding: 0.875rem 1.25rem;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.25rem;
       font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
     }
-    .modern-table td {
+
+    .settings-table td {
       padding: 1rem 1.25rem;
       border-bottom: 1px solid #f1f5f9;
       color: #1e293b;
       vertical-align: middle;
     }
-    .modern-table tr:hover { background: #f8fafc; }
 
-    .type-name-cell {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .settings-table tr:hover {
+      background: #f8fafc;
     }
-    .name-text {
-      font-weight: 700;
+
+    .color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #cbd5e1;
+    }
+
+    .title-cell strong {
+      display: block;
       color: #0f172a;
+      font-weight: 600;
     }
-    .compulsory-chip {
+
+    .desc-muted {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.15rem;
+      display: block;
+    }
+
+    .code-badge {
+      font-family: monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      background: #f1f5f9;
+      border-radius: 0.35rem;
+      color: #475569;
+    }
+
+    .wage-tag {
+      font-weight: 700;
+      color: #059669;
+    }
+
+    .charge-tag {
+      font-weight: 700;
+      color: #0050e5;
+    }
+
+    .sia-badge {
+      display: inline-flex;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .sia-badge.none {
+      background: #f8fafc;
+      color: #94a3b8;
+      border-color: #e2e8f0;
+    }
+
+    .compulsory-badge {
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: #0284c7;
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      padding: 0.15rem 0.5rem;
-      border-radius: 6px;
-    }
-    .compulsory-chip .material-symbols-outlined { font-size: 0.85rem; }
-
-    .code-pill {
-      background: #f1f5f9;
-      color: #475569;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 0.8rem;
-    }
-
-    .desc-text {
-      color: #64748b;
-      font-size: 0.825rem;
-      max-width: 320px;
-      display: block;
-      line-height: 1.4;
-    }
-
-    .hours-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.3rem 0.6rem;
-      border-radius: 6px;
-      background: #eff6ff;
-      color: #0050e5;
-    }
-    .hours-badge.zero-hours {
-      background: #fef3c7;
-      color: #d97706;
-    }
-    .hours-badge .material-symbols-outlined { font-size: 0.95rem; }
-
-    .count-chip {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #475569;
-      background: #f1f5f9;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-    }
-
-    .status-badge {
       font-size: 0.75rem;
       font-weight: 600;
-      padding: 0.25rem 0.5rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+
+    .compulsory-badge .material-symbols-outlined {
+      font-size: 13px;
+    }
+
+    .optional-badge {
+      font-size: 0.75rem;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+    }
+
+    .hours-chip {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.35rem;
+      color: #334155;
+    }
+
+    .staff-count-pill {
+      font-size: 0.75rem;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 0.2rem 0.55rem;
       border-radius: 9999px;
     }
-    .status-badge.active { background: #ecfdf5; color: #059669; }
-    .status-badge.inactive { background: #f1f5f9; color: #94a3b8; }
 
-    .action-btn-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.35rem;
+    .status-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
     }
-    .btn-icon {
+
+    .status-pill.active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .status-pill.disabled {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .action-btn {
       background: none;
-      border: 1px solid transparent;
-      padding: 0.4rem;
-      border-radius: 6px;
+      border: none;
       cursor: pointer;
       color: #64748b;
-      display: inline-flex;
-      align-items: center;
-      transition: all 0.15s;
+      padding: 0.3rem;
+      border-radius: 0.35rem;
+      transition: all 0.15s ease;
     }
-    .btn-icon:hover:not(:disabled) {
+
+    .action-btn:hover {
       background: #f1f5f9;
-      color: #0050e5;
+      color: #0f172a;
     }
-    .btn-icon-danger:hover:not(:disabled) {
+
+    .action-btn.text-danger:hover {
       background: #fee2e2;
-      color: #dc2626;
-    }
-    .btn-icon:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
+      color: #ef4444;
     }
 
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.6rem 1.1rem;
-      font-size: 0.875rem;
+    /* Policy Forms Layout */
+    .policy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .policy-grid {
+        grid-template-columns: 1fr;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .policy-form {
+      padding: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8125rem;
       font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.15s;
+      color: #334155;
+      margin-bottom: 0.4rem;
     }
-    .btn-primary {
-      background: #0050e5;
-      color: #ffffff;
-    }
-    .btn-primary:hover:not(:disabled) { background: #003db3; }
-    .btn-outline {
-      background: #ffffff;
-      border-color: #cbd5e1;
-      color: #475569;
-    }
-    .btn-outline:hover { background: #f8fafc; color: #0f172a; }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Modals */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(4px);
+    .form-control {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.875rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      color: #0f172a;
+      transition: border-color 0.15s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.3rem;
+      display: block;
+    }
+
+    .form-row-dual {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .time-range-group {
       display: flex;
       align-items: center;
-      justify-content: center;
-      z-index: 1050;
+      gap: 0.5rem;
+    }
+
+    .time-sep {
+      font-size: 0.8125rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       padding: 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
     }
-    .modal-card {
-      background: #ffffff;
-      border-radius: 14px;
-      width: 100%;
-      max-width: 520px;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-      overflow: hidden;
-      animation: modalSlideIn 0.2s ease-out;
+
+    .toggle-info strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
     }
-    @keyframes modalSlideIn {
-      from { transform: translateY(12px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+
+    .toggle-info span {
+      font-size: 0.75rem;
+      color: #64748b;
     }
-    .modal-header {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid #f1f5f9;
+
+    /* Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+    }
+
+    input:checked + .slider {
+      background-color: #0050e5;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    .slider.round {
+      border-radius: 34px;
+    }
+
+    .slider.round:before {
+      border-radius: 50%;
+    }
+
+    /* Break Matrix */
+    .break-tier-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #f1f5f9;
     }
-    .modal-title-row {
+
+    .break-tier-row:last-child {
+      border-bottom: none;
+    }
+
+    .tier-label strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+
+    .tier-label span {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .tier-input {
       display: flex;
       align-items: center;
-      gap: 0.625rem;
+      gap: 0.5rem;
+      width: 150px;
     }
-    .modal-header-icon {
-      font-size: 1.4rem;
-      color: #0050e5;
+
+    .input-suffix {
+      font-size: 0.8125rem;
+      color: #64748b;
     }
-    .modal-title-row h3 {
-      font-size: 1.15rem;
+
+    /* Radio Cards */
+    .radio-card-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .radio-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .radio-card.selected {
+      border-color: #0050e5;
+      background: #eff6ff;
+    }
+
+    .radio-content {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .radio-content strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+
+    .radio-content p {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin: 0.15rem 0 0 0;
+    }
+
+    /* Custom Fields */
+    .custom-fields-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .field-item-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      background: #f8fafc;
+    }
+
+    .field-item-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .field-item-left strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+
+    .field-item-left p {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin: 0.15rem 0 0 0;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      max-width: 550px;
+      overflow: hidden;
+    }
+
+    .modal-large {
+      max-width: 700px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .modal-title-group h3 {
+      font-size: 1.1rem;
       font-weight: 700;
       color: #0f172a;
       margin: 0;
     }
-    .close-btn {
+
+    .modal-subtitle {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin: 0.1rem 0 0 0;
+    }
+
+    .btn-close {
       background: none;
       border: none;
       font-size: 1.5rem;
@@ -681,277 +1763,375 @@ interface StaffTypeItem {
       cursor: pointer;
       line-height: 1;
     }
-    .close-btn:hover { color: #0f172a; }
-    .modal-form { padding: 1.5rem; }
-    .form-group { margin-bottom: 1.125rem; }
-    .form-label {
-      display: block;
-      font-size: 0.825rem;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 0.35rem;
-    }
-    .required { color: #ef4444; }
-    .form-control {
-      width: 100%;
-      padding: 0.65rem 0.875rem;
-      font-size: 0.875rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
+
+    .btn-close:hover {
       color: #0f172a;
-      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .form-control:focus {
-      outline: none;
-      border-color: #0050e5;
-      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+
+    .modal-body {
+      padding: 1.5rem;
+      max-height: 70vh;
+      overflow-y: auto;
     }
-    .textarea { resize: vertical; }
-    .form-hint {
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-top: 0.3rem;
-      display: block;
-    }
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      color: #334155;
-      cursor: pointer;
-    }
-    .compulsory-alert {
-      display: flex;
-      gap: 0.625rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      background: #eff6ff;
-      border: 1px solid #dbeafe;
-      color: #1e40af;
-      font-size: 0.8rem;
-      margin-bottom: 1.125rem;
-    }
+
     .modal-footer {
       display: flex;
       justify-content: flex-end;
       gap: 0.75rem;
-      padding-top: 1rem;
-      border-top: 1px solid #f1f5f9;
-      margin-top: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
     }
 
-    /* Info Modal */
-    .info-modal-body {
-      padding: 1.5rem;
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    .info-section {
-      margin-bottom: 1.25rem;
+
+    .color-input {
+      width: 40px;
+      height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.35rem;
+      cursor: pointer;
+      padding: 2px;
+      background: #ffffff;
     }
-    .info-section:last-child { margin-bottom: 0; }
-    .info-section h4 {
+
+    .info-guide-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .info-guide-section h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 0.95rem;
-      font-weight: 700;
       color: #0f172a;
       margin: 0 0 0.35rem 0;
     }
-    .info-section p {
-      font-size: 0.85rem;
+
+    .info-guide-section p {
+      font-size: 0.8125rem;
       color: #475569;
       line-height: 1.5;
       margin: 0;
     }
 
-    /* States */
-    .loading-state, .empty-state {
-      padding: 3rem 1.5rem;
-      text-align: center;
-      color: #64748b;
+    .spin {
+      animation: spin 1s linear infinite;
     }
-    .empty-icon {
-      font-size: 3rem;
-      color: #cbd5e1;
-      margin-bottom: 0.5rem;
-    }
-    .empty-state h3 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0 0 0.25rem 0;
-    }
-    .empty-state p {
-      font-size: 0.85rem;
-      margin-bottom: 1rem;
-    }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #e2e8f0;
-      border-top-color: #0050e5;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 0.75rem auto;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 768px) {
-      .settings-page { padding: 1rem; }
-      .header-actions { width: 100%; }
-      .header-actions .btn { flex: 1; justify-content: center; }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
     }
   `]
 })
 export class WorkforceSettingsComponent implements OnInit {
-  isLoading = true;
-  isSubmitting = false;
-  staffTypes: StaffTypeItem[] = [];
+  activeTab: 'roles' | 'hours' | 'breaks' | 'forms' | 'staff-types' = 'roles';
+  isLoading = false;
 
-  showModal = false;
-  showInfoModal = false;
-  isEditing = false;
+  currencyCode = 'NGN';
+  currencySymbol = '₦';
 
-  activeModel: any = {
-    id: '',
-    name: '',
+  // Job Roles State
+  jobRoles: JobRoleItem[] = [];
+  showRoleModal = false;
+  isEditingRole = false;
+  isSavingRole = false;
+  roleForm: Partial<JobRoleItem> = {
+    title: '',
     code: '',
     description: '',
-    defaultContractedHours: 40.0,
-    isCompulsory: false,
+    defaultHourlyRate: 15.0,
+    billingChargeRate: 22.5,
+    mandatorySiaSector: 'None',
+    badgeColor: '#0050E5',
     isActive: true
   };
 
+  // Workforce Policies State
+  policies: WorkforcePolicies = {
+    standardWeeklyHours: 40.0,
+    maxPermissibleWeeklyHours: 48.0,
+    maxConsecutiveWorkingDays: 6,
+    enforce48HourWeeklyCap: true,
+    dayShiftStart: '07:00',
+    dayShiftEnd: '19:00',
+    nightShiftStart: '19:00',
+    nightShiftEnd: '07:00',
+    nightPremiumHourlyAllowance: 1.50,
+    enableNightPremium: false,
+    breakMinutesFor6Hours: 30,
+    breakMinutesFor8Hours: 45,
+    breakMinutesFor12Hours: 60,
+    isBreakPaid: false,
+    breakLoggingMode: 'AutomaticDeduction',
+    requireUniformSizes: true,
+    requireDrivingLicense: true,
+    requireMedicalAllergies: true,
+    requireDbsCriminalDisclosure: true
+  };
+  isSavingPolicies = false;
+
+  // Staff Types State
+  staffTypes: StaffTypeItem[] = [];
+  showStaffTypeModal = false;
+  isEditingStaffType = false;
+  isSavingStaffType = false;
+  staffTypeForm: Partial<StaffTypeItem> = {
+    name: '',
+    code: '',
+    description: '',
+    defaultContractedHours: 40,
+    isActive: true
+  };
+
+  showInfoModal = false;
+
   constructor(
-    private readonly workforceService: WorkforceService,
-    private readonly toast: ToastService
+    private workforceService: WorkforceService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
+    this.loadAllData();
+  }
+
+  get averageHourlyWage(): number {
+    if (this.jobRoles.length === 0) return 0;
+    const total = this.jobRoles.reduce((sum, r) => sum + (r.defaultHourlyRate || 0), 0);
+    return total / this.jobRoles.length;
+  }
+
+  get averageChargeRate(): number {
+    if (this.jobRoles.length === 0) return 0;
+    const total = this.jobRoles.reduce((sum, r) => sum + (r.billingChargeRate || 0), 0);
+    return total / this.jobRoles.length;
+  }
+
+  loadAllData(): void {
+    this.isLoading = true;
+    this.loadCurrency();
+    this.loadJobRoles();
+    this.loadPolicies();
     this.loadStaffTypes();
   }
 
-  get compulsoryCount(): number {
-    return this.staffTypes.filter(t => t.isCompulsory).length;
-  }
-
-  get totalEnrolledStaff(): number {
-    return this.staffTypes.reduce((acc, curr) => acc + (curr.enrolledStaffCount || 0), 0);
-  }
-
-  loadStaffTypes(): void {
-    this.isLoading = true;
-    this.workforceService.getStaffTypes().subscribe({
+  loadCurrency(): void {
+    this.workforceService.getCurrency().subscribe({
       next: (res: any) => {
-        this.staffTypes = res?.data || [];
+        if (res && res.data) {
+          this.currencyCode = res.data.currencyCode || 'NGN';
+          this.currencySymbol = res.data.currencySymbol || '₦';
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  // --- JOB ROLES LOGIC ---
+  loadJobRoles(): void {
+    this.workforceService.getJobRoles().subscribe({
+      next: (res: any) => {
         this.isLoading = false;
+        if (res && res.data) {
+          this.jobRoles = res.data;
+        }
       },
       error: () => {
         this.isLoading = false;
-        this.toast.error('Unable to retrieve workforce staff types.');
       }
     });
   }
 
-  openCreateModal(): void {
-    this.isEditing = false;
-    this.activeModel = {
-      id: '',
-      name: '',
+  openRoleModal(): void {
+    this.isEditingRole = false;
+    this.roleForm = {
+      title: '',
       code: '',
       description: '',
-      defaultContractedHours: 40.0,
-      isCompulsory: false,
+      defaultHourlyRate: 15.0,
+      billingChargeRate: 22.5,
+      mandatorySiaSector: 'None',
+      badgeColor: '#0050E5',
       isActive: true
     };
-    this.showModal = true;
+    this.showRoleModal = true;
   }
 
-  openEditModal(item: StaffTypeItem): void {
-    this.isEditing = true;
-    this.activeModel = {
-      id: item.id,
-      name: item.name,
-      code: item.code,
-      description: item.description,
-      defaultContractedHours: item.defaultContractedHours,
-      isCompulsory: item.isCompulsory,
-      isActive: item.isActive
-    };
-    this.showModal = true;
+  editRole(role: JobRoleItem): void {
+    this.isEditingRole = true;
+    this.roleForm = { ...role };
+    this.showRoleModal = true;
   }
 
-  closeModal(): void {
-    this.showModal = false;
+  closeRoleModal(): void {
+    this.showRoleModal = false;
   }
 
-  saveStaffType(): void {
-    if (!this.activeModel.name?.trim()) {
-      this.toast.warning('Staff classification name is required.');
+  saveRole(): void {
+    if (!this.roleForm.title || !this.roleForm.code) {
+      this.toast.error('Please specify both Role Title and Role Code.');
       return;
     }
 
-    this.isSubmitting = true;
-
-    if (this.isEditing) {
-      this.workforceService.updateStaffType(this.activeModel.id, {
-        name: this.activeModel.name.trim(),
-        description: this.activeModel.description?.trim(),
-        defaultContractedHours: Number(this.activeModel.defaultContractedHours || 0),
-        isActive: this.activeModel.isActive
-      }).subscribe({
+    this.isSavingRole = true;
+    if (this.isEditingRole && this.roleForm.id) {
+      this.workforceService.updateJobRole(this.roleForm.id, this.roleForm).subscribe({
         next: () => {
-          this.isSubmitting = false;
-          this.showModal = false;
-          this.toast.success(`Staff type '${this.activeModel.name}' updated successfully.`);
-          this.loadStaffTypes();
+          this.isSavingRole = false;
+          this.showRoleModal = false;
+          this.toast.success('Job role updated successfully.');
+          this.loadJobRoles();
         },
-        error: (err: any) => {
-          this.isSubmitting = false;
-          this.toast.error(err?.error?.message || 'Failed to update staff type.');
+        error: (err) => {
+          this.isSavingRole = false;
+          this.toast.error(err?.error?.message || 'Failed to update job role.');
         }
       });
     } else {
-      this.workforceService.createStaffType({
-        name: this.activeModel.name.trim(),
-        code: this.activeModel.code?.trim(),
-        description: this.activeModel.description?.trim(),
-        defaultContractedHours: Number(this.activeModel.defaultContractedHours || 0)
-      }).subscribe({
+      this.workforceService.createJobRole(this.roleForm).subscribe({
         next: () => {
-          this.isSubmitting = false;
-          this.showModal = false;
-          this.toast.success(`Staff type '${this.activeModel.name}' created successfully.`);
-          this.loadStaffTypes();
+          this.isSavingRole = false;
+          this.showRoleModal = false;
+          this.toast.success('New job role created successfully.');
+          this.loadJobRoles();
         },
-        error: (err: any) => {
-          this.isSubmitting = false;
-          this.toast.error(err?.error?.message || 'Failed to create staff type.');
+        error: (err) => {
+          this.isSavingRole = false;
+          this.toast.error(err?.error?.message || 'Failed to create job role.');
         }
       });
     }
   }
 
-  deleteType(item: StaffTypeItem): void {
-    if (item.isCompulsory) {
-      this.toast.warning(`'${item.name}' is a compulsory platform standard and cannot be deleted.`);
-      return;
-    }
-
-    if (item.enrolledStaffCount > 0) {
-      this.toast.warning(`Cannot delete '${item.name}' because ${item.enrolledStaffCount} active staff member(s) are assigned to it.`);
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete the staff type '${item.name}'?`)) {
-      return;
-    }
-
-    this.workforceService.deleteStaffType(item.id).subscribe({
+  deleteRole(role: JobRoleItem): void {
+    if (!confirm(`Are you sure you want to delete role '${role.title}'?`)) return;
+    this.workforceService.deleteJobRole(role.id).subscribe({
       next: () => {
-        this.toast.success(`Staff type '${item.name}' deleted.`);
+        this.toast.success(`Role '${role.title}' deleted.`);
+        this.loadJobRoles();
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Failed to delete role.');
+      }
+    });
+  }
+
+  // --- POLICIES LOGIC ---
+  loadPolicies(): void {
+    this.workforceService.getWorkforcePolicies().subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.policies = { ...this.policies, ...res.data };
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  savePolicies(): void {
+    this.isSavingPolicies = true;
+    this.workforceService.updateWorkforcePolicies(this.policies).subscribe({
+      next: () => {
+        this.isSavingPolicies = false;
+        this.toast.success('Workforce operational policies saved successfully.');
+      },
+      error: (err) => {
+        this.isSavingPolicies = false;
+        this.toast.error(err?.error?.message || 'Failed to save policies.');
+      }
+    });
+  }
+
+  // --- STAFF TYPES LOGIC ---
+  loadStaffTypes(): void {
+    this.workforceService.getStaffTypes().subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.staffTypes = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  openStaffTypeModal(): void {
+    this.isEditingStaffType = false;
+    this.staffTypeForm = {
+      name: '',
+      code: '',
+      description: '',
+      defaultContractedHours: 40,
+      isActive: true
+    };
+    this.showStaffTypeModal = true;
+  }
+
+  editStaffType(type: StaffTypeItem): void {
+    this.isEditingStaffType = true;
+    this.staffTypeForm = { ...type };
+    this.showStaffTypeModal = true;
+  }
+
+  closeStaffTypeModal(): void {
+    this.showStaffTypeModal = false;
+  }
+
+  saveStaffType(): void {
+    if (!this.staffTypeForm.name) {
+      this.toast.error('Please enter a classification name.');
+      return;
+    }
+
+    this.isSavingStaffType = true;
+    if (this.isEditingStaffType && this.staffTypeForm.id) {
+      this.workforceService.updateStaffType(this.staffTypeForm.id, this.staffTypeForm as any).subscribe({
+        next: () => {
+          this.isSavingStaffType = false;
+          this.showStaffTypeModal = false;
+          this.toast.success('Classification updated successfully.');
+          this.loadStaffTypes();
+        },
+        error: (err) => {
+          this.isSavingStaffType = false;
+          this.toast.error(err?.error?.message || 'Failed to update classification.');
+        }
+      });
+    } else {
+      this.workforceService.createStaffType(this.staffTypeForm as any).subscribe({
+        next: () => {
+          this.isSavingStaffType = false;
+          this.showStaffTypeModal = false;
+          this.toast.success('New classification added.');
+          this.loadStaffTypes();
+        },
+        error: (err) => {
+          this.isSavingStaffType = false;
+          this.toast.error(err?.error?.message || 'Failed to add classification.');
+        }
+      });
+    }
+  }
+
+  deleteStaffType(type: StaffTypeItem): void {
+    if (type.isCompulsory) {
+      this.toast.error(`Classification '${type.name}' is compulsory and cannot be deleted.`);
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete classification '${type.name}'?`)) return;
+
+    this.workforceService.deleteStaffType(type.id).subscribe({
+      next: () => {
+        this.toast.success(`Classification '${type.name}' removed.`);
         this.loadStaffTypes();
       },
-      error: (err: any) => {
-        this.toast.error(err?.error?.message || 'Failed to delete staff type.');
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Failed to delete classification.');
       }
     });
   }
