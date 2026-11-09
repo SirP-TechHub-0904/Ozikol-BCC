@@ -457,9 +457,10 @@ namespace Ozikol_BCC.Api.Services
                     : catalogTrialDays;
                 bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
                 bool isTrialPeriod = ((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now);
-                bool isEligibleForFreeTrial = !hasUsedTrial && effectiveTrialDays > 0;
+                bool isEligibleForFreeTrial = !isFlatRateActive && !hasUsedTrial && effectiveTrialDays > 0;
+                bool isTrialPeriod = !isFlatRateActive && (((sub?.IsTrialPeriod ?? false) || string.Equals(sub?.Status, "Trial", StringComparison.OrdinalIgnoreCase)) && (sub?.ExpiresAtUtc > now));
 
-                bool isPaidCapability = defaultEffectivePrice > 0m || effectiveYearly > 0m;
+                bool isPaidCapability = !isFlatRateActive && (defaultEffectivePrice > 0m || effectiveYearly > 0m);
                 var item = new BillingFeatureItemDto
                 {
                     FeatureId = f.Id,
@@ -478,17 +479,17 @@ namespace Ozikol_BCC.Api.Services
                     IsInBeta = f.IsInBeta,
                     HasCustomPriceOverride = sub?.CustomPriceOverride != null,
                     HasCustomAvailabilityOverride = sub?.IsAvailableForUseOverride != null,
-                    FreeTrialDays = catalogTrialDays,
-                    EffectiveFreeTrialDays = effectiveTrialDays,
+                    FreeTrialDays = isFlatRateActive ? 0 : catalogTrialDays,
+                    EffectiveFreeTrialDays = isFlatRateActive ? 0 : effectiveTrialDays,
                     HasCustomFreeTrialOverride = hasCustomTrial,
                     HasUsedFreeTrial = hasUsedTrial,
                     IsTrialPeriod = isTrialPeriod,
                     IsEligibleForFreeTrial = isEligibleForFreeTrial,
                     SortOrder = f.SortOrder,
                     BillingType = f.BillingType.ToString(),
-                    MonthlyPrice = effectiveMonthly,
-                    QuarterlyPrice = Math.Round(quarterlyUsd * currRate, 2),
-                    YearlyPrice = effectiveYearly
+                    MonthlyPrice = isFlatRateActive ? 0.00m : effectiveMonthly,
+                    QuarterlyPrice = isFlatRateActive ? 0.00m : Math.Round(quarterlyUsd * currRate, 2),
+                    YearlyPrice = isFlatRateActive ? 0.00m : effectiveYearly
                 };
 
                 if (!isAvailForUse)
@@ -502,15 +503,19 @@ namespace Ozikol_BCC.Api.Services
                     continue;
                 }
 
-                // If tenant is on an active All-Inclusive Flat-Rate Plan, all available capabilities are 100% included without individual charges
+                // If tenant is on an active All-Inclusive Flat-Rate Plan, all available capabilities are 100% included without individual charges or trials
                 if (isFlatRateActive)
                 {
                     item.IsIncludedInFlatRatePlan = true;
                     item.IsSubscribed = true;
-                    item.IsActive = sub != null ? sub.IsActive : true;
-                    item.Status = (sub != null && !sub.IsActive) ? "Available" : "Active";
+                    item.IsActive = sub != null ? sub.IsActive : false;
+                    item.Status = (sub != null && sub.IsActive) ? "Active" : "Available";
                     item.BillingCadence = "Included";
                     item.EffectivePrice = 0.00m;
+                    item.IsEligibleForFreeTrial = false;
+                    item.IsTrialPeriod = false;
+                    item.EffectiveFreeTrialDays = 0;
+                    item.FreeTrialDays = 0;
                     item.SubscriptionId = sub?.Id;
                     item.ExpiresAtUtc = tenant?.FlatRateExpiresAtUtc;
                     item.DaysRemaining = flatRateDaysRemaining;

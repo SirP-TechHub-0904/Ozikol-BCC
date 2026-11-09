@@ -560,10 +560,14 @@
                                         <button type="button"
                                                 onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                 class="badge"
-                                                style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.08)" : "#f1f5f9")); color: @(item.EffectiveFreeTrialDays > 0 || item.HasCustomFreeTrialOverride ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
-                                                title="Click to configure Custom Free Trial Days for @Model.Tenant.OrganizationName (overrides General @(feat.FreeTrialDays)d trial)">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
-                                            @if (item.IsTrialPeriod)
+                                                style="background: @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.1)" : (item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.08)" : "#f1f5f9"))); color: @(Model.Tenant.HasFlatRatePlan ? "#0050e5" : (item.EffectiveFreeTrialDays > 0 || item.HasCustomFreeTrialOverride ? "#6d28d9" : "#64748b")); font-weight: 700; font-size: 11px; border: 1px solid @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.3)" : (item.HasCustomFreeTrialOverride ? "#7c3aed" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0"))); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                                title="Configure Pricing &amp; Free Trial Days for @Model.Tenant.OrganizationName">
+                                            <span class="material-symbols-outlined" style="font-size: 12px;">@(Model.Tenant.HasFlatRatePlan ? "workspace_premium" : "redeem")</span>
+                                            @if (Model.Tenant.HasFlatRatePlan)
+                                            {
+                                                <span>Included with Master Plan</span>
+                                            }
+                                            else if (item.IsTrialPeriod)
                                             {
                                                 <span>Active Free Trial (@(item.EffectiveFreeTrialDays)d)</span>
                                             }
@@ -860,10 +864,14 @@ else
                                 <button type="button"
                                         onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                         class="badge"
-                                        style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : "rgba(124, 58, 237, 0.08)"); color: #6d28d9; font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : "rgba(124, 58, 237, 0.25)"); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
-                                        title="Click to set Custom Free Trial Days for @Model.Tenant.OrganizationName">
-                                    <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
-                                    @if (item.HasCustomFreeTrialOverride)
+                                        style="background: @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.1)" : (item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : "rgba(124, 58, 237, 0.08)")); color: @(Model.Tenant.HasFlatRatePlan ? "#0050e5" : "#6d28d9"); font-weight: 700; font-size: 11px; border: 1px solid @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.3)" : (item.HasCustomFreeTrialOverride ? "#7c3aed" : "rgba(124, 58, 237, 0.25)")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                        title="Configure Pricing &amp; Free Trial Days for @Model.Tenant.OrganizationName">
+                                    <span class="material-symbols-outlined" style="font-size: 12px;">@(Model.Tenant.HasFlatRatePlan ? "workspace_premium" : "redeem")</span>
+                                    @if (Model.Tenant.HasFlatRatePlan)
+                                    {
+                                        <span>Included with Master Plan</span>
+                                    }
+                                    else if (item.HasCustomFreeTrialOverride)
                                     {
                                         <span>@(item.EffectiveFreeTrialDays)d Custom (Overrides @(feat.FreeTrialDays)d)</span>
                                     }
