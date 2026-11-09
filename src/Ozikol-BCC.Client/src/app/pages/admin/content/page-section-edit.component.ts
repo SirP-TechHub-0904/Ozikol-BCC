@@ -391,11 +391,6 @@ import { ToastService } from '../../../core/services/toast.service';
               <label>CUSTOM CSS CLASS INJECTION</label>
               <input type="text" [(ngModel)]="section.customClass" class="form-control" placeholder="bg-slate-50 py-12 border-b">
             </div>
-
-            <div class="form-group" style="margin-top:14px;">
-              <label>BACKGROUND COLOR / THEME OVERRIDE</label>
-              <input type="text" [(ngModel)]="section.backgroundColor" class="form-control" placeholder="#ffffff, #f8fafc, dark">
-            </div>
           </div>
 
           <!-- Placement & Sorting -->
