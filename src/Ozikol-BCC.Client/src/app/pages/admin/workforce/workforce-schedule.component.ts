@@ -31,9 +31,6 @@ import { ToastService } from '../../../core/services/toast.service';
             <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Rota &amp; Scheduling Info">
               <span class="material-symbols-outlined">info</span>
             </button>
-            <button type="button" class="tour-btn" (click)="startTour()" title="Replay Walkthrough Tour">
-              <span class="material-symbols-outlined">help</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">Multi-site shift scheduling, 24/7 overnight rosters, and conflict protection.</p>
@@ -573,7 +570,11 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-outline" (click)="showInfoModal = false; startTour()">
+              <span class="material-symbols-outlined">play_circle</span>
+              <span>Replay Tour</span>
+            </button>
             <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Got it</button>
           </div>
         </div>
