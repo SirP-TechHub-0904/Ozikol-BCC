@@ -200,7 +200,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-header-bar">
               <div>
                 <h3>Button Action & Direct Link</h3>
-                <p class="card-sub">Clickable action triggers and anchor slugs.</p>
+                <p class="card-sub">Clickable action triggers and destination page links.</p>
               </div>
             </div>
             <div class="form-grid">
@@ -209,14 +209,26 @@ import { ToastService } from '../../../core/services/toast.service';
                 <input type="text" [(ngModel)]="item.buttonText" class="form-control" placeholder="e.g. View Program, Learn More">
               </div>
 
-              <div class="form-group">
-                <label>BUTTON LINK</label>
-                <input type="text" [(ngModel)]="item.buttonLink" class="form-control" placeholder="e.g. /programs/health or https://...">
-              </div>
-
               <div class="form-group full-width">
-                <label>DIRECT ROUTE / ANCHOR SLUG</label>
-                <input type="text" [(ngModel)]="item.directUrl" class="form-control" placeholder="e.g. health-program, team-ceo">
+                <label>BUTTON LINK (DESTINATION URL OR PAGE)</label>
+                <div class="input-with-dropdown">
+                  <input
+                    type="text"
+                    [(ngModel)]="item.buttonLink"
+                    class="form-control link-input"
+                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
+                  <select class="form-control link-select" (change)="onButtonLinkSelect($event)">
+                    <option value="">-- Quick Pick Page --</option>
+                    <option value="/">🏠 Root / Home Page (/)</option>
+                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                    </optgroup>
+                    <optgroup label="Ready-Made System Pages">
+                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
               </div>
             </div>
           </div>
@@ -226,24 +238,19 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-header-bar">
               <div>
                 <h3>Media Image & Video Assets</h3>
-                <p class="card-sub">Upload image assets or link video files.</p>
+                <p class="card-sub">Type URL or upload image and video files.</p>
               </div>
             </div>
             <div class="form-grid">
+              <!-- Image Upload / URL -->
               <div class="form-group full-width">
-                <div class="label-with-badge">
-                  <label>IMAGE URL</label>
-                  <span class="key-pill" *ngIf="item.imageKey">
-                    <span class="material-symbols-outlined icon-mini">vpn_key</span>
-                    <span>KEY: {{ item.imageKey }}</span>
-                  </span>
-                </div>
+                <label>IMAGE (TYPE URL OR UPLOAD IMAGE)</label>
                 <div class="input-with-upload">
                   <input type="text" [(ngModel)]="item.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/card-image.jpg">
-                  <label class="btn-upload" [class.uploading]="uploading">
+                  <label class="btn-upload" [class.uploading]="uploadingImage">
                     <input type="file" (change)="uploadImage($event)" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>
-                    <span>{{ uploading ? 'Uploading...' : 'Upload Image' }}</span>
+                    <span>{{ uploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
                   </label>
                 </div>
               </div>
@@ -251,23 +258,29 @@ import { ToastService } from '../../../core/services/toast.service';
               <div class="form-group full-width" *ngIf="item.imageUrl">
                 <div class="image-preview-box">
                   <img [src]="item.imageUrl" alt="Sub-Item Preview">
-                  <button type="button" class="btn-remove-img" (click)="item.imageUrl = ''; item.imageKey = ''">&times;</button>
+                  <button type="button" class="btn-remove-img" (click)="item.imageUrl = ''; item.imageKey = ''" title="Remove Image">&times;</button>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label>MEDIA ASSET KEY</label>
-                <input type="text" [(ngModel)]="item.imageKey" class="form-control" placeholder="e.g. bcp-cms/items/item_01.jpg">
-              </div>
-
-              <div class="form-group">
-                <label>VIDEO FILE URL</label>
-                <input type="text" [(ngModel)]="item.videoUrl" class="form-control" placeholder="Direct MP4 / WebM URL">
-              </div>
-
+              <!-- Video Upload / URL -->
               <div class="form-group full-width">
-                <label>VIDEO ASSET KEY</label>
-                <input type="text" [(ngModel)]="item.videoKey" class="form-control" placeholder="e.g. bcp-cms/videos/clip.mp4">
+                <label>VIDEO (TYPE URL OR UPLOAD VIDEO)</label>
+                <div class="input-with-upload">
+                  <input type="text" [(ngModel)]="item.videoUrl" class="form-control" placeholder="e.g. https://yourdomain.com/clip.mp4">
+                  <label class="btn-upload" [class.uploading]="uploadingVideo">
+                    <input type="file" (change)="uploadVideo($event)" accept="video/*" style="display:none">
+                    <span class="material-symbols-outlined">video_file</span>
+                    <span>{{ uploadingVideo ? 'Uploading...' : 'Upload Video' }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group full-width" *ngIf="item.videoUrl">
+                <div class="video-preview-row">
+                  <span class="material-symbols-outlined" style="color:#0050e5; font-size:20px;">play_circle</span>
+                  <span class="video-preview-url">{{ item.videoUrl }}</span>
+                  <button type="button" class="btn-remove-video" (click)="item.videoUrl = ''; item.videoKey = ''" title="Remove Video">&times;</button>
+                </div>
               </div>
             </div>
           </div>
@@ -438,7 +451,33 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #0f172a; color: #38bdf8; border-color: #1e293b; border-radius: 8px;
     }
 
-    /* Media Uploads */
+    /* Media Uploads & Dropdown Combo */
+    .input-with-dropdown {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .input-with-dropdown .link-input { flex: 1 1 55%; min-width: 0; }
+    .input-with-dropdown .link-select {
+      flex: 1 1 45%; min-width: 0; background-color: #f8fafc; border-color: #cbd5e1;
+      color: #334155; font-weight: 500; cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      .input-with-dropdown { flex-direction: column; align-items: stretch; }
+    }
+
+    .video-preview-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    }
+    .video-preview-url {
+      flex: 1; font-size: 12px; color: #0f172a; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; font-family: monospace;
+    }
+    .btn-remove-video {
+      background: none; border: none; font-size: 20px; color: #dc2626;
+      cursor: pointer; line-height: 1; padding: 0 4px;
+    }
+    .btn-remove-video:hover { color: #b91c1c; }
+
     .input-with-upload { display: flex; gap: 10px; }
     .input-with-upload input { flex: 1; }
     .btn-upload {
@@ -494,7 +533,21 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
   showHtmlSource = false;
   loading = false;
   saving = false;
-  uploading = false;
+  uploadingImage = false;
+  uploadingVideo = false;
+
+  allPages: any[] = [];
+  publishedPagesList: { title: string; url: string }[] = [];
+
+  systemPages: { name: string; url: string }[] = [
+    { name: 'Member Sign In / Portal', url: '/auth/login' },
+    { name: 'Member Registration', url: '/auth/register' },
+    { name: 'News & Blog Articles', url: '/blog' },
+    { name: 'Commerce Storefront', url: '/store' },
+    { name: 'Contact Us', url: '/contact' },
+    { name: 'Service & Project Request', url: '/service-request' },
+    { name: 'Committees & Working Groups', url: '/join-committee' }
+  ];
 
   constructor(
     private route: ActivatedRoute,
@@ -518,6 +571,7 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
     }
 
     this.loadAllSections();
+    this.loadAllPages();
   }
 
   ngAfterViewInit(): void {
@@ -575,6 +629,34 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
       },
       error: () => {}
     });
+  }
+
+  loadAllPages(): void {
+    this.api.get<any>('ContentApi/pages').subscribe({
+      next: (res) => {
+        this.allPages = res?.data || [];
+        this.publishedPagesList = this.allPages.map((p: any) => {
+          let url = p.directUrl || p.slug || '';
+          if (p.isHomePage || url === 'home' || url === 'index') {
+            url = '/';
+          } else if (!url.startsWith('/') && !url.startsWith('http')) {
+            url = `/${url}`;
+          }
+          return {
+            title: p.title || p.metaTitle || 'Page',
+            url: url
+          };
+        });
+      },
+      error: () => {}
+    });
+  }
+
+  onButtonLinkSelect(event: any): void {
+    const val = event.target?.value;
+    if (val) {
+      this.item.buttonLink = val;
+    }
   }
 
   loadItem(): void {
@@ -653,21 +735,45 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    this.uploading = true;
+    this.uploadingImage = true;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', 'bcp-cms/section-items');
 
     this.api.post<any>('ContentApi/upload-media', formData).subscribe({
       next: (res) => {
-        this.uploading = false;
+        this.uploadingImage = false;
         if (res?.data?.url) this.item.imageUrl = res.data.url;
         if (res?.data?.key) this.item.imageKey = res.data.key;
         this.toast.success('Image uploaded successfully!');
       },
       error: (err) => {
-        this.uploading = false;
-        this.toast.error(err?.error?.message || 'Media upload failed.');
+        this.uploadingImage = false;
+        this.toast.error(err?.error?.message || 'Image upload failed.');
+      }
+    });
+  }
+
+  // --- Video Upload ---
+  uploadVideo(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    this.uploadingVideo = true;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'bcp-cms/section-videos');
+
+    this.api.post<any>('ContentApi/upload-media', formData).subscribe({
+      next: (res) => {
+        this.uploadingVideo = false;
+        if (res?.data?.url) this.item.videoUrl = res.data.url;
+        if (res?.data?.key) this.item.videoKey = res.data.key;
+        this.toast.success('Video uploaded successfully!');
+      },
+      error: (err) => {
+        this.uploadingVideo = false;
+        this.toast.error(err?.error?.message || 'Video upload failed.');
       }
     });
   }

@@ -80,14 +80,14 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
             }
 
+            // 1. Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) Cloudinary credentials
+            string? customCloud = null;
+            string? customKey = null;
+            string? customSecret = null;
+
             try
             {
-                // Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) Cloudinary credentials
                 var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
-                string? customCloud = null;
-                string? customKey = null;
-                string? customSecret = null;
-
                 if (config?.UseCustomStorage == true &&
                     !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
                     !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
@@ -97,20 +97,94 @@ namespace Ozikol_BCC.Api.Controllers
                     customKey = config.CustomCloudinaryApiKey;
                     customSecret = config.CustomCloudinaryApiSecret;
                 }
-
-                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
-                return Ok(ApiResponse<object>.SuccessResponse(new
-                {
-                    url = secureUrl,
-                    key = publicId,
-                    fileName = file.FileName,
-                    fileSize = file.Length,
-                    contentType = file.ContentType
-                }, "Media uploaded successfully to Cloudinary."));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Cloudinary upload failed: {ex.Message}"));
+                _logger?.LogWarning(ex, "[ContentApi] Failed to inspect tenant MisConfigurationSettings for custom Cloudinary credentials.");
+            }
+
+            // 2. Primary attempt: Cloudinary (BYOS or Platform credentials)
+            try
+            {
+                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
+                if (!string.IsNullOrWhiteSpace(secureUrl))
+                {
+                    return Ok(ApiResponse<object>.SuccessResponse(new
+                    {
+                        url = secureUrl,
+                        key = publicId,
+                        fileName = file.FileName,
+                        fileSize = file.Length,
+                        contentType = file.ContentType
+                    }, "Media uploaded successfully to Cloudinary."));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[ContentApi] Cloudinary upload unavailable or unconfigured ({Message}). Falling back to Cloudflare R2 / CDN.", ex.Message);
+            }
+
+            // 3. Resilient fallback: Cloudflare R2 Global Edge CDN
+            if (_r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    await using var stream = file.OpenReadStream();
+                    var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+                    var result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folder.TrimStart('/')}");
+
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        return Ok(ApiResponse<object>.SuccessResponse(new
+                        {
+                            url = result.Url,
+                            key = result.SafeFileName ?? file.FileName,
+                            fileName = file.FileName,
+                            fileSize = file.Length,
+                            contentType = file.ContentType
+                        }, "Media uploaded successfully to Cloudflare CDN storage."));
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[ContentApi] Cloudflare R2 upload fallback failed: {Message}. Proceeding to local storage.", r2Ex.Message);
+                }
+            }
+
+            // 4. Local disk fallback: wwwroot/uploads directory so upload never halts development
+            try
+            {
+                var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folder.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(uploadsDir);
+
+                var extension = Path.GetExtension(file.FileName);
+                var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
+                var filePath = Path.Combine(uploadsDir, safeName);
+
+                await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream);
+                }
+
+                var relativeUrl = $"/uploads/{folder.Trim('/')}/{safeName}";
+                var scheme = Request?.Scheme ?? "https";
+                var host = Request?.Host.Value ?? "localhost";
+                var fullUrl = $"{scheme}://{host}{relativeUrl}";
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    url = fullUrl,
+                    key = safeName,
+                    fileName = file.FileName,
+                    fileSize = file.Length,
+                    contentType = file.ContentType
+                }, "Media uploaded successfully."));
+            }
+            catch (Exception finalEx)
+            {
+                _logger?.LogError(finalEx, "[ContentApi] All media upload storage pipelines failed.");
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Media upload failed: {finalEx.Message}"));
             }
         }
 

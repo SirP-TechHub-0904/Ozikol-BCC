@@ -209,18 +209,13 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-header-bar">
               <div>
                 <h3>Action Buttons, Root Icon & Links</h3>
-                <p class="card-sub">Interactive CTA buttons, anchor routing, and section iconography.</p>
+                <p class="card-sub">Interactive CTA buttons, destination page links, and section iconography.</p>
               </div>
             </div>
             <div class="form-grid">
-              <div class="form-group">
+              <div class="form-group full-width">
                 <label>ROOT ICON CLASS (FONT AWESOME / THEME)</label>
                 <input type="text" [(ngModel)]="section.iconText" class="form-control" placeholder="e.g. fa-solid fa-rocket, tji-phone">
-              </div>
-
-              <div class="form-group">
-                <label>DIRECT SECTION URL / ANCHOR SLUG</label>
-                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="e.g. core-programs, overview">
               </div>
 
               <div class="form-group">
@@ -229,18 +224,52 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="form-group">
-                <label>PRIMARY BUTTON TARGET LINK</label>
-                <input type="text" [(ngModel)]="section.buttonLink" class="form-control" placeholder="e.g. /programs or https://...">
-              </div>
-
-              <div class="form-group">
                 <label>SECONDARY BUTTON TEXT (DUAL CTA)</label>
                 <input type="text" [(ngModel)]="section.secondButtonText" class="form-control" placeholder="e.g. Watch Demo, Learn More">
               </div>
 
-              <div class="form-group">
-                <label>SECONDARY BUTTON TARGET LINK</label>
-                <input type="text" [(ngModel)]="section.secondButtonLink" class="form-control" placeholder="e.g. /about or https://...">
+              <div class="form-group full-width">
+                <label>PRIMARY BUTTON TARGET LINK</label>
+                <div class="input-with-dropdown">
+                  <input
+                    type="text"
+                    [(ngModel)]="section.buttonLink"
+                    class="form-control link-input"
+                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
+                  <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'primary')">
+                    <option value="">-- Quick Pick Page --</option>
+                    <option value="/">🏠 Root / Home Page (/)</option>
+                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                    </optgroup>
+                    <optgroup label="Ready-Made System Pages">
+                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
+              </div>
+
+              <div class="form-group full-width">
+                <label>SECONDARY BUTTON TARGET LINK (DUAL CTA)</label>
+                <div class="input-with-dropdown">
+                  <input
+                    type="text"
+                    [(ngModel)]="section.secondButtonLink"
+                    class="form-control link-input"
+                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
+                  <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'secondary')">
+                    <option value="">-- Quick Pick Page --</option>
+                    <option value="/">🏠 Root / Home Page (/)</option>
+                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                    </optgroup>
+                    <optgroup label="Ready-Made System Pages">
+                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
               </div>
 
               <div class="form-group full-width">
@@ -264,13 +293,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="form-grid">
               <!-- Primary Image -->
               <div class="form-group full-width">
-                <div class="label-with-badge">
-                  <label>PRIMARY BACKGROUND / HERO IMAGE</label>
-                  <span class="key-pill" *ngIf="section.imageKey">
-                    <span class="material-symbols-outlined icon-mini">vpn_key</span>
-                    <span>KEY: {{ section.imageKey }}</span>
-                  </span>
-                </div>
+                <label>PRIMARY BACKGROUND / HERO IMAGE (TYPE URL OR UPLOAD IMAGE)</label>
                 <div class="input-with-upload">
                   <input type="text" [(ngModel)]="section.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/feature-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingPrimary">
@@ -289,13 +312,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
               <!-- Secondary Image -->
               <div class="form-group full-width">
-                <div class="label-with-badge">
-                  <label>SECONDARY / ACCENT IMAGE URL</label>
-                  <span class="key-pill" *ngIf="section.secondImageKey">
-                    <span class="material-symbols-outlined icon-mini">vpn_key</span>
-                    <span>KEY: {{ section.secondImageKey }}</span>
-                  </span>
-                </div>
+                <label>SECONDARY / ACCENT IMAGE (TYPE URL OR UPLOAD IMAGE)</label>
                 <div class="input-with-upload">
                   <input type="text" [(ngModel)]="section.secondImageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/secondary-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingSecondary">
@@ -312,17 +329,27 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
               </div>
 
-              <!-- Video & Youtube -->
-              <div class="form-group">
-                <label>VIDEO FILE URL</label>
-                <input type="text" [(ngModel)]="section.videoUrl" class="form-control" placeholder="Direct MP4 / WebM URL">
+              <!-- Video Upload / URL -->
+              <div class="form-group full-width">
+                <label>VIDEO (TYPE URL OR UPLOAD VIDEO)</label>
+                <div class="input-with-upload">
+                  <input type="text" [(ngModel)]="section.videoUrl" class="form-control" placeholder="Direct MP4 / WebM URL">
+                  <label class="btn-upload" [class.uploading]="uploadingVideo">
+                    <input type="file" (change)="uploadVideo($event)" accept="video/*" style="display:none">
+                    <span class="material-symbols-outlined">video_file</span>
+                    <span>{{ uploadingVideo ? 'Uploading...' : 'Upload Video' }}</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-group full-width" *ngIf="section.videoUrl">
+                <div class="video-preview-row">
+                  <span class="material-symbols-outlined">play_circle</span>
+                  <span class="video-preview-url">{{ section.videoUrl }}</span>
+                  <button type="button" class="btn-remove-video" (click)="section.videoUrl = ''; section.videoKey = ''" title="Remove Video">&times;</button>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label>VIDEO ASSET KEY</label>
-                <input type="text" [(ngModel)]="section.videoKey" class="form-control" placeholder="e.g. bcp-cms/videos/hero.mp4">
-              </div>
-
+              <!-- Youtube / Vimeo Embed -->
               <div class="form-group full-width">
                 <label>YOUTUBE / VIMEO EMBED LINK</label>
                 <input type="text" [(ngModel)]="section.youtubeUrlLink" class="form-control" placeholder="https://youtube.com/watch?v=...">
@@ -358,16 +385,6 @@ import { ToastService } from '../../../core/services/toast.service';
                   </option>
                 </optgroup>
               </select>
-
-              <div class="template-key-manual-row" style="margin-top: 8px;">
-                <label style="font-size: 10px; color: #64748b;">OR CUSTOM DESIGN KEY:</label>
-                <input type="text" [(ngModel)]="section.templateKey" class="form-control" placeholder="e.g. feature-block, services-grid">
-              </div>
-
-              <div class="template-selected-badge" *ngIf="section.templateKey">
-                <span class="material-symbols-outlined">style</span>
-                <span>Active Key: <strong>{{ section.templateKey }}</strong></span>
-              </div>
             </div>
 
             <div class="form-group" style="margin-top:14px;">
@@ -595,6 +612,68 @@ import { ToastService } from '../../../core/services/toast.service';
     .btn-upload:hover { background: #dbeafe; }
     .btn-upload.uploading { background: #cbd5e1; cursor: wait; }
 
+    .input-with-dropdown {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .input-with-dropdown .link-input {
+      flex: 1 1 55%;
+      min-width: 0;
+    }
+    .input-with-dropdown .link-select {
+      flex: 1 1 45%;
+      min-width: 0;
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      color: #334155;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      .input-with-dropdown {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+    .help-text {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .video-preview-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .video-preview-url {
+      flex: 1;
+      font-size: 12px;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+    }
+    .btn-remove-video {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #dc2626;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .btn-remove-video:hover {
+      color: #b91c1c;
+    }
+
     .image-preview-box {
       position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; max-height: 180px;
     }
@@ -644,6 +723,19 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
   saving = false;
   uploadingPrimary = false;
   uploadingSecondary = false;
+  uploadingVideo = false;
+
+  publishedPagesList: { title: string; url: string }[] = [];
+
+  systemPages: { name: string; url: string }[] = [
+    { name: 'Member Sign In / Portal', url: '/auth/login' },
+    { name: 'Member Registration', url: '/auth/register' },
+    { name: 'News & Blog Articles', url: '/blog' },
+    { name: 'Commerce Storefront', url: '/store' },
+    { name: 'Contact Us', url: '/contact' },
+    { name: 'Service & Project Request', url: '/service-request' },
+    { name: 'Committees & Working Groups', url: '/join-committee' }
+  ];
 
   // Standard System Section Blueprints
   systemBlueprints = [
@@ -769,9 +861,32 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
     this.api.get<any>('ContentApi/pages').subscribe({
       next: (res) => {
         this.allPages = res?.data || [];
+        this.publishedPagesList = this.allPages.map((p: any) => {
+          let url = p.directUrl || p.slug || '';
+          if (p.isHomePage || url === 'home' || url === 'index') {
+            url = '/';
+          } else if (!url.startsWith('/') && !url.startsWith('http')) {
+            url = `/${url}`;
+          }
+          return {
+            title: p.title || p.metaTitle || 'Page',
+            url: url
+          };
+        });
       },
       error: () => { }
     });
+  }
+
+  onButtonLinkSelect(event: any, field: 'primary' | 'secondary'): void {
+    const val = event.target?.value;
+    if (val) {
+      if (field === 'primary') {
+        this.section.buttonLink = val;
+      } else {
+        this.section.secondButtonLink = val;
+      }
+    }
   }
 
   loadSection(): void {
@@ -895,6 +1010,30 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         this.uploadingPrimary = false;
         this.uploadingSecondary = false;
         this.toast.error(err?.error?.message || 'Media upload failed.');
+      }
+    });
+  }
+
+  // --- Video Upload ---
+  uploadVideo(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    this.uploadingVideo = true;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'bcp-cms/section-videos');
+
+    this.api.post<any>('ContentApi/upload-media', formData).subscribe({
+      next: (res) => {
+        this.uploadingVideo = false;
+        if (res?.data?.url) this.section.videoUrl = res.data.url;
+        if (res?.data?.key) this.section.videoKey = res.data.key;
+        this.toast.success('Video uploaded successfully!');
+      },
+      error: (err) => {
+        this.uploadingVideo = false;
+        this.toast.error(err?.error?.message || 'Video upload failed.');
       }
     });
   }
