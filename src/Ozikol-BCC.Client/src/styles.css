@@ -2656,6 +2656,63 @@ body.sidebar-closed .topbar-brand-logo {
   background: var(--sidebar-active-bg);
 }
 
+@media (max-width: 640px) {
+  .console-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .console-title {
+    font-size: 20px;
+    line-height: 26px;
+  }
+  .console-subtitle {
+    display: none !important; /* Hide description on mobile screens for clean responsive display */
+  }
+  .console-actions {
+    width: 100%;
+    justify-content: flex-start;
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .console-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 120px;
+    height: 38px;
+    justify-content: center;
+    padding: 0 10px;
+    font-size: 11.5px;
+  }
+  .widget-head {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .widget-title {
+    font-size: 13.5px;
+    white-space: normal;
+  }
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .console-title {
+    font-size: 18px;
+    line-height: 24px;
+  }
+  .console-btn {
+    font-size: 11px;
+    padding: 0 8px;
+    min-width: 105px;
+  }
+}
+
 .console-alert {
   border: 1px solid rgba(124, 58, 237, 0.28);
   border-radius: 8px;
