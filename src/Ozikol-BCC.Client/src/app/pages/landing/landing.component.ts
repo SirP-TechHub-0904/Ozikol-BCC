@@ -4057,25 +4057,8 @@ export class LandingComponent implements OnInit, OnDestroy {
       sortOrder: item.sortOrder || idx + 1
     }));
 
-    // If section has no child list items, construct single slide from the parent section
-    const childSlides = listItems.length > 0 ? listItems : (dbHeroSection ? [{
-      title: dbHeroSection.title || this.brandName,
-      Title: dbHeroSection.title || this.brandName,
-      miniTitle: dbHeroSection.miniTitle || '',
-      MiniTitle: dbHeroSection.miniTitle || '',
-      description: dbHeroSection.description || '',
-      Description: dbHeroSection.description || '',
-      imageUrl: dbHeroSection.imageUrl || '',
-      ImageUrl: dbHeroSection.imageUrl || '',
-      buttonText: dbHeroSection.buttonText || '',
-      ButtonText: dbHeroSection.buttonText || '',
-      buttonLink: dbHeroSection.buttonLink || '#',
-      ButtonLink: dbHeroSection.buttonLink || '#',
-      secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
-      SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
-      secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '#',
-      SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '#'
-    }] : []);
+    // Use strictly the real child list items from database (zero synthetic fallback slides)
+    const childSlides = listItems;
 
     const firstSlide = childSlides[0] || {};
     return {
