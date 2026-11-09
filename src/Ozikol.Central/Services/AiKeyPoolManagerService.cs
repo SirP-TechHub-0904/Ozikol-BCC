@@ -286,7 +286,7 @@ namespace Ozikol.Central.Services
                 return cachedModel;
             }
 
-            string selectedModel = "gemini-3.5-flash";
+            string selectedModel = "gemini-3.8-flash";
             try
             {
                 var client = _httpClientFactory.CreateClient();
@@ -325,9 +325,9 @@ namespace Ozikol.Central.Services
                         }
 
                         // Priority order for verified active Flash models from ModelService:
-                        var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.5-flash", StringComparison.OrdinalIgnoreCase))
+                        var preferred = validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.8-flash", StringComparison.OrdinalIgnoreCase))
+                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.5-flash", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.7-flash", StringComparison.OrdinalIgnoreCase))
-                            ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-3.8-flash", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault(m => string.Equals(m, "gemini-flash-latest", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault(m => m.Contains("3.", StringComparison.OrdinalIgnoreCase) && m.Contains("flash", StringComparison.OrdinalIgnoreCase))
                             ?? validModels.FirstOrDefault(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase))

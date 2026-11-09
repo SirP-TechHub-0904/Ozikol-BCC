@@ -4043,7 +4043,7 @@ Instructions:
 
                 if (candidateGeminiKeys.Any())
                 {
-                    var geminiModels = new[] { "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
+                    var geminiModels = new[] { "gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
 
                     foreach (var activeGeminiKey in candidateGeminiKeys)
                     {
@@ -4052,7 +4052,7 @@ Instructions:
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Gemini Key [{activeGeminiKey.KeyAlias}] ...");
                         var geminiTimer = Stopwatch.StartNew();
                         HttpResponseMessage? geminiResponse = null;
-                        string matchedModel = "gemini-2.5-flash";
+                        string matchedModel = "gemini-3.8-flash";
                         string? geminiError = null;
                         int geminiStatusCode = 500;
 
@@ -4771,7 +4771,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 if (!string.IsNullOrWhiteSpace(geminiKey))
                 {
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={geminiKey}";
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={geminiKey}";
                     var geminiPayload = new
                     {
                         contents = new[] { new { parts = new[] { new { text = prompt } } } },

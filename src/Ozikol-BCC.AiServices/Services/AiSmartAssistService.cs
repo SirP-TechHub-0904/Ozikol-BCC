@@ -424,12 +424,15 @@ namespace Ozikol_BCC.AiServices.Services
                             }
                         }
 
+                        TryAdd("gemini-3.8-flash");
+                        TryAdd("gemini-3.5-flash");
+                        TryAdd("gemini-3.7-flash");
+                        TryAdd("gemini-flash-latest");
                         TryAdd("gemini-2.5-flash");
                         TryAdd("gemini-2.0-flash");
                         TryAdd("gemini-2.0-flash-lite");
                         TryAdd("gemini-1.5-flash");
                         TryAdd("gemini-1.5-flash-8b");
-                        TryAdd("gemini-flash-latest");
 
                         // Add any other active flash models
                         foreach (var m in validModels.Where(m => m.Contains("flash", StringComparison.OrdinalIgnoreCase)))
@@ -452,6 +455,9 @@ namespace Ozikol_BCC.AiServices.Services
 
             if (!discoveredModels.Any())
             {
+                discoveredModels.Add("gemini-3.8-flash");
+                discoveredModels.Add("gemini-3.5-flash");
+                discoveredModels.Add("gemini-flash-latest");
                 discoveredModels.Add("gemini-2.5-flash");
                 discoveredModels.Add("gemini-2.0-flash");
                 discoveredModels.Add("gemini-1.5-flash");
