@@ -413,9 +413,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
             NotificationDispatchResult result,
             CancellationToken cancellationToken)
         {
-            if (_smtpEmailDispatcher == null && _emailService == null)
+            if (_smtpEmailDispatcher == null)
             {
-                result.Errors.Add("No transactional email dispatch service (Mailcow SMTP or Postmark) is registered in the service container.");
+                result.Errors.Add("Mailcow SMTP email dispatch service is not registered in the service container.");
                 return;
             }
 
@@ -503,36 +503,41 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         }
                     }
 
-                    if (_smtpEmailDispatcher != null)
+                    // Strictly enforce tenant sender address (noreply@{tenantKey}.ozikol.cloud) with zero fallback
+                    string fromAddress;
+                    if (!string.IsNullOrWhiteSpace(payload.TenantKey))
                     {
-                        var fromAddress = !string.IsNullOrWhiteSpace(payload.TenantKey)
-                            ? $"noreply@{payload.TenantKey}.ozikol.cloud"
-                            : "noreply@ozikol.cloud";
-
-                        var sent = await _smtpEmailDispatcher.SendEmailAsync(
-                            toEmail: email,
-                            subject: safeSubject,
-                            htmlBody: htmlBody,
-                            fromEmail: fromAddress,
-                            fromName: tenantBrand,
-                            replyTo: null,
-                            isCentralPlatformEmail: false,
-                            tenantName: tenantBrand,
-                            tenantAdminEmail: null,
-                            cancellationToken: cancellationToken);
-
-                        if (!sent)
+                        fromAddress = $"noreply@{payload.TenantKey.Trim().ToLowerInvariant()}.ozikol.cloud";
+                    }
+                    else
+                    {
+                        var siteConfig = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                        if (!string.IsNullOrWhiteSpace(siteConfig?.SenderEmail))
                         {
-                            throw new InvalidOperationException($"SMTP delivery to {email} returned non-success.");
+                            fromAddress = siteConfig.SenderEmail.Trim().ToLowerInvariant();
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Tenant sender address is not configured. Expected 'noreply@{tenantKey}.ozikol.cloud'.");
                         }
                     }
-                    else if (_emailService != null)
+
+                    // Dispatch strictly via Mailcow SMTP with zero fallback to external providers
+                    var sent = await _smtpEmailDispatcher.SendEmailAsync(
+                        toEmail: email,
+                        subject: safeSubject,
+                        htmlBody: htmlBody,
+                        fromEmail: fromAddress,
+                        fromName: tenantBrand,
+                        replyTo: null,
+                        isCentralPlatformEmail: false,
+                        tenantName: tenantBrand,
+                        tenantAdminEmail: null,
+                        cancellationToken: cancellationToken);
+
+                    if (!sent)
                     {
-                        await _emailService.SendHtmlEmailAsync(
-                            to: email,
-                            subject: safeSubject,
-                            htmlBody: htmlBody,
-                            tag: $"notification-{severityLabel.ToLowerInvariant()}");
+                        throw new InvalidOperationException($"Mailcow SMTP delivery to '{email}' from '{fromAddress}' returned failure. Please verify Mailcow server connectivity and sender ACL permissions.");
                     }
 
                     _dbContext.BcpEmailQueue.Add(new BcpEmailQueue

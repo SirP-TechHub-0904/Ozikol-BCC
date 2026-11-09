@@ -98,14 +98,10 @@ public class CentralEmailService : ICentralEmailService
             // Graceful fallback if MasterPlatformSettings is transiently unreachable
         }
 
-        // If no provider explicitly set in MasterPlatformSettings, detect whether Postmark token exists; otherwise default to Mailcow
+        // Default strictly to Mailcow SMTP for platform emails
         if (string.IsNullOrWhiteSpace(effectiveProvider))
         {
-            var postmarkToken = _configuration["PostmarkSettings:ServerToken"]
-                ?? _configuration["EmailSettings:ApiKey"]
-                ?? Environment.GetEnvironmentVariable("POSTMARK_SERVER_TOKEN");
-
-            effectiveProvider = !string.IsNullOrWhiteSpace(postmarkToken) ? "Postmark" : "Mailcow";
+            effectiveProvider = "Mailcow";
         }
 
         var log = new MasterEmailLog
