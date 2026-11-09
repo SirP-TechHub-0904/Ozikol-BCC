@@ -82,11 +82,12 @@ namespace Ozikol.Central.Services
                     }
                 }
 
-                // 3. Filter healthy available keys
+                // 3. Filter healthy available keys - Preferred keys are dispatched FIRST!
                 var availableKeys = candidateKeys
                     .Where(k => (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                              && k.TodayRequestsCount < k.DailyQuotaLimit)
-                    .OrderBy(k => k.TodayRequestsCount) // Least-used first for optimal load distribution
+                    .OrderByDescending(k => k.IsPreferred)
+                    .ThenBy(k => k.TodayRequestsCount) // Least-used first for optimal load distribution
                     .ThenBy(k => k.LastUsedAtUtc ?? DateTime.MinValue)
                     .ToList();
 
@@ -256,6 +257,7 @@ namespace Ozikol.Central.Services
                 .ToListAsync(cancellationToken);
 
             var avgLatency = recentLogs.Any() ? recentLogs.Average() : 0;
+            var primaryProvider = await GetPrimaryProviderAsync(cancellationToken);
 
             return new AiKeyPoolSummaryDto
             {
@@ -267,8 +269,57 @@ namespace Ozikol.Central.Services
                 TotalDailyCapacity = totalDailyCapacity,
                 TotalLifetimeRequests = totalLifetimeRequests,
                 AverageLatencyMs = Math.Round(avgLatency, 1),
+                PrimaryProvider = primaryProvider,
                 Keys = keys
             };
+        }
+
+        /// <inheritdoc />
+        public async Task<string> GetPrimaryProviderAsync(CancellationToken cancellationToken = default)
+        {
+            var setting = await _dbContext.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+            return !string.IsNullOrWhiteSpace(setting?.PrimaryAiProvider) ? setting.PrimaryAiProvider : "Gemini";
+        }
+
+        /// <inheritdoc />
+        public async Task SetPrimaryProviderAsync(string provider, CancellationToken cancellationToken = default)
+        {
+            var cleanProvider = string.Equals(provider, "DeepSeek", StringComparison.OrdinalIgnoreCase) ? "DeepSeek" : "Gemini";
+            var setting = await _dbContext.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+            if (setting != null)
+            {
+                setting.PrimaryAiProvider = cleanProvider;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Central Primary AI Provider successfully updated to '{Provider}'", cleanProvider);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task SetPreferredKeyAsync(Guid keyId, CancellationToken cancellationToken = default)
+        {
+            var targetKey = await _dbContext.MasterAiApiKeys.FindAsync(new object[] { keyId }, cancellationToken);
+            if (targetKey != null)
+            {
+                var newPreferredState = !targetKey.IsPreferred;
+
+                // When setting a key as preferred, reset any other preferred key within the SAME provider pool
+                if (newPreferredState)
+                {
+                    var otherKeys = await _dbContext.MasterAiApiKeys
+                        .Where(k => k.Provider == targetKey.Provider && k.Id != targetKey.Id)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var other in otherKeys)
+                    {
+                        other.IsPreferred = false;
+                    }
+                }
+
+                targetKey.IsPreferred = newPreferredState;
+                targetKey.UpdatedAtUtc = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("AI API Key '{KeyAlias}' ({Provider}) IsPreferred set to {State}", targetKey.KeyAlias, targetKey.Provider, newPreferredState);
+            }
         }
 
         /// <inheritdoc />

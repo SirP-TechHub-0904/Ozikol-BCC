@@ -46,6 +46,11 @@ namespace Ozikol.MasterDomain.Models
         public bool IsActive { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether this key is marked as preferred/primary to be dispatched first.
+        /// </summary>
+        public bool IsPreferred { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the maximum number of allowed requests per day (e.g. 1500 for Gemini Free tier).
         /// </summary>
         public int DailyQuotaLimit { get; set; } = 1500;

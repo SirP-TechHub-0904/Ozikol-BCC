@@ -142,11 +142,12 @@ namespace Ozikol_BCC.AiServices.Services
                 }
             }
 
-            // 3. Filter and order by least-used first
+            // 3. Filter and order by preferred key first, then least-used
             var availableKeys = candidateKeys
                 .Where(k => (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                          && k.TodayRequestsCount < k.DailyQuotaLimit)
-                .OrderBy(k => k.TodayRequestsCount)
+                .OrderByDescending(k => k.IsPreferred)
+                .ThenBy(k => k.TodayRequestsCount)
                 .ThenBy(k => k.LastUsedAtUtc ?? DateTime.MinValue)
                 .ToList();
 

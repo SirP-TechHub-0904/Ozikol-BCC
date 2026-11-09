@@ -40,6 +40,43 @@
         </div>
     }
 
+    <!-- Global Primary Engine Priority Selection -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 80, 229, 0.08); color: #0050E5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 24px;">hub</span>
+            </div>
+            <div>
+                <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Primary AI Engine Priority</div>
+                <div style="font-size: 13px; color: #64748b; margin-top: 2px;">
+                    Choose which AI provider pool executes first across Template Studio &amp; AI Copilot. The secondary provider acts as an automatic failover.
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <form method="post" asp-page-handler="SetPrimaryProvider" asp-route-provider="Gemini" style="display: inline;">
+                <button type="submit" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s ease; @(Model.Summary.PrimaryProvider.Equals("Gemini", StringComparison.OrdinalIgnoreCase) ? "background: #0050E5; color: #ffffff; border: 1px solid #0050E5; box-shadow: 0 2px 6px rgba(0, 80, 229, 0.25);" : "background: #f8fafc; color: #475569; border: 1px solid #cbd5e1;")">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">auto_awesome</span>
+                    <span>Google Gemini (Priority #1)</span>
+                    @if (Model.Summary.PrimaryProvider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="material-symbols-outlined" style="font-size: 15px;">check</span>
+                    }
+                </button>
+            </form>
+            <form method="post" asp-page-handler="SetPrimaryProvider" asp-route-provider="DeepSeek" style="display: inline;">
+                <button type="submit" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s ease; @(Model.Summary.PrimaryProvider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase) ? "background: #7e22ce; color: #ffffff; border: 1px solid #7e22ce; box-shadow: 0 2px 6px rgba(126, 34, 206, 0.25);" : "background: #f8fafc; color: #475569; border: 1px solid #cbd5e1;")">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">smart_toy</span>
+                    <span>DeepSeek (Priority #1)</span>
+                    @if (Model.Summary.PrimaryProvider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="material-symbols-outlined" style="font-size: 15px;">check</span>
+                    }
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Stat Metric Cards -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <!-- Card 1: Active Key Pool -->
@@ -204,7 +241,15 @@
                                 }
                             </td>
                             <td style="padding: 14px 20px;">
-                                <div style="font-weight: 700; color: #0f172a;">@key.KeyAlias</div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; color: #0f172a;">@key.KeyAlias</span>
+                                    @if (key.IsPreferred)
+                                    {
+                                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 3px;" title="Dispatched first in rotation pool">
+                                            <span class="material-symbols-outlined" style="font-size: 12px; color: #d97706;">star</span> Priority #1 (Use First)
+                                        </span>
+                                    }
+                                </div>
                                 <div style="font-size: 11.5px; font-family: monospace; color: #94a3b8;">ID: @key.Id.ToString().Substring(0, 8)...</div>
                             </td>
                             <td style="padding: 14px 20px;">
@@ -284,6 +329,11 @@
                             </td>
                             <td style="padding: 14px 20px; text-align: right;">
                                 <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <form method="post" asp-page-handler="TogglePreferredKey" asp-route-id="@key.Id" style="display: inline;">
+                                        <button type="submit" style="padding: 6px 10px; border: 1px solid @(key.IsPreferred ? "#fde68a" : "#cbd5e1"); border-radius: 6px; background: @(key.IsPreferred ? "#fffbeb" : "#ffffff"); cursor: pointer; display: inline-flex; align-items: center;" title="@(key.IsPreferred ? "Priority Key (Active) - Click to remove priority" : "Set as Priority Key (Use First)")">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: @(key.IsPreferred ? "#d97706" : "#94a3b8");">@(key.IsPreferred ? "star" : "star_outline")</span>
+                                        </button>
+                                    </form>
                                     <form method="post" asp-page-handler="ToggleActive" asp-route-id="@key.Id" style="display: inline;">
                                         <button type="submit" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; cursor: pointer; display: inline-flex; align-items: center;" title="@(key.IsActive ? "Pause Key" : "Activate Key")">
                                             <span class="material-symbols-outlined" style="font-size: 16px; color: @(key.IsActive ? "#d97706" : "#059669");">@(key.IsActive ? "pause" : "play_arrow")</span>

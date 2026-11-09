@@ -40,6 +40,8 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService? _aiService;
         private readonly IServiceScopeFactory? _serviceScopeFactory;
         private readonly ILogger<ContentApiController>? _logger;
+        private static Guid? _lastSuccessfulGeminiKeyId = null;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, int> _geminiKeyFailureCounts = new();
 
         public ContentApiController(
             DashboardDbContext context, 
@@ -4093,6 +4095,26 @@ Instructions:
                 }
 
                 // =========================================================
+                // 0. GLOBAL PRIMARY AI PROVIDER SELECTION
+                // =========================================================
+                string globalPrimaryProvider = "Gemini";
+                if (_masterCatalogDbContext != null)
+                {
+                    try
+                    {
+                        var setting = await _masterCatalogDbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+                        if (!string.IsNullOrWhiteSpace(setting?.PrimaryAiProvider))
+                        {
+                            globalPrimaryProvider = setting.PrimaryAiProvider.Trim();
+                        }
+                    }
+                    catch { }
+                }
+
+                bool runDeepSeekFirst = globalPrimaryProvider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase)
+                                     || (!string.IsNullOrWhiteSpace(request.Provider) && request.Provider.Contains("deep", StringComparison.OrdinalIgnoreCase));
+
+                // =========================================================
                 // 1. PRIMARY ENGINE: Google Gemini Multi-Key Rotation Pool
                 // =========================================================
                 List<MasterAiApiKey> candidateGeminiKeys = new();
@@ -4101,13 +4123,23 @@ Instructions:
                     try
                     {
                         var nowUtc = DateTime.UtcNow;
-                        candidateGeminiKeys = await _masterCatalogDbContext.MasterAiApiKeys
+                        var fetchedKeys = await _masterCatalogDbContext.MasterAiApiKeys
                             .Where(k => k.Provider == "Gemini" && k.IsActive 
                                      && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                                      && k.TodayRequestsCount < k.DailyQuotaLimit)
-                            .OrderBy(k => k.TodayRequestsCount)
-                            .ThenBy(k => k.LastUsedAtUtc ?? DateTime.MinValue)
                             .ToListAsync();
+
+                        // Smart Key Health & Preference Sorting:
+                        // 1. Keys marked as IsPreferred come FIRST (admin explicit priority)
+                        // 2. Keys with fewer consecutive failures come first (broken keys called LAST)
+                        // 3. Stick to the last known working key (_lastSuccessfulGeminiKeyId)
+                        // 4. Lowest today request count for optimal load balancing
+                        candidateGeminiKeys = fetchedKeys
+                            .OrderByDescending(k => k.IsPreferred)
+                            .ThenBy(k => _geminiKeyFailureCounts.GetValueOrDefault(k.Id, 0))
+                            .ThenByDescending(k => k.Id == _lastSuccessfulGeminiKeyId ? 1 : 0)
+                            .ThenBy(k => k.TodayRequestsCount)
+                            .ToList();
                     }
                     catch (Exception dbKeyEx)
                     {
@@ -4115,9 +4147,10 @@ Instructions:
                     }
                 }
 
-                if (candidateGeminiKeys.Any())
+                if (candidateGeminiKeys.Any() && !runDeepSeekFirst)
                 {
-                    var geminiModels = new[] { "gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
+                    // Active valid Google Gemini models only (deprecated 404 models removed)
+                    var geminiModels = new[] { "gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.7-flash" };
 
                     foreach (var activeGeminiKey in candidateGeminiKeys)
                     {
@@ -4132,7 +4165,7 @@ Instructions:
 
                         try
                         {
-                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
                             var geminiPayload = new
                             {
                                 contents = new[]
@@ -4155,7 +4188,7 @@ Instructions:
                                 var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
                                 try
                                 {
-                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
                                     geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
                                     geminiStatusCode = (int)geminiResponse.StatusCode;
 
@@ -4210,6 +4243,8 @@ Instructions:
                             {
                                 provider = $"Gemini {matchedModel} ({activeGeminiKey.KeyAlias})";
                                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed via [{activeGeminiKey.KeyAlias}] ({matchedModel}) in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+                                _lastSuccessfulGeminiKeyId = activeGeminiKey.Id;
+                                _geminiKeyFailureCounts[activeGeminiKey.Id] = 0;
 
                                 int? promptTokens = null;
                                 int? completionTokens = null;
@@ -4311,7 +4346,8 @@ Instructions:
                             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini cooldown save notice: {cooldownEx.Message}");
                         }
 
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini Key [{activeGeminiKey.KeyAlias}] failed. Placed on cooldown. Rotating to next Gemini key in pool...");
+                        _geminiKeyFailureCounts.AddOrUpdate(activeGeminiKey.Id, 1, (_, count) => count + 1);
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini Key [{activeGeminiKey.KeyAlias}] failed (consecutive failures: {_geminiKeyFailureCounts.GetValueOrDefault(activeGeminiKey.Id, 1)}). Placed on cooldown. Rotating to next Gemini key in pool...");
                     }
                 }
 
@@ -4328,7 +4364,8 @@ Instructions:
                             .Where(k => k.Provider == "DeepSeek" && k.IsActive 
                                      && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
                                      && k.TodayRequestsCount < k.DailyQuotaLimit)
-                            .OrderBy(k => k.TodayRequestsCount)
+                            .OrderByDescending(k => k.IsPreferred)
+                            .ThenBy(k => k.TodayRequestsCount)
                             .FirstOrDefaultAsync();
                     }
                     catch { }
@@ -4342,7 +4379,7 @@ Instructions:
 
                         try
                         {
-                            using var dsClient = new HttpClient { Timeout = TimeSpan.FromSeconds(35) };
+                            using var dsClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
                             dsClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", activeDeepSeekKey.ApiKey);
 
                             var dsPayload = new
@@ -4472,6 +4509,141 @@ Instructions:
                         {
                             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ DeepSeek error: {dsEx.Message}");
                         }
+                    }
+                }
+
+                // =========================================================
+                // 2.5 SECONDARY GEMINI FAILOVER (when DeepSeek was selected as primary)
+                // =========================================================
+                if (string.IsNullOrWhiteSpace(parsedReply) && runDeepSeekFirst && candidateGeminiKeys.Any())
+                {
+                    var geminiModels = new[] { "gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.7-flash" };
+
+                    foreach (var activeGeminiKey in candidateGeminiKeys)
+                    {
+                        if (string.IsNullOrWhiteSpace(activeGeminiKey.ApiKey)) continue;
+
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Gemini Key (Failover) [{activeGeminiKey.KeyAlias}] ...");
+                        var geminiTimer = Stopwatch.StartNew();
+                        HttpResponseMessage? geminiResponse = null;
+                        string matchedModel = "gemini-3.8-flash";
+                        string? geminiError = null;
+                        int geminiStatusCode = 500;
+
+                        try
+                        {
+                            using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
+                            var geminiPayload = new
+                            {
+                                contents = new[]
+                                {
+                                    new
+                                    {
+                                        role = "user",
+                                        parts = new[] { new { text = llmPrompt } }
+                                    }
+                                },
+                                generationConfig = new
+                                {
+                                    temperature = 0.2,
+                                    maxOutputTokens = 8192
+                                }
+                            };
+
+                            foreach (var gModel in geminiModels)
+                            {
+                                var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
+                                try
+                                {
+                                    using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                                    geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
+                                    geminiStatusCode = (int)geminiResponse.StatusCode;
+
+                                    if (geminiResponse.IsSuccessStatusCode)
+                                    {
+                                        matchedModel = gModel;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        geminiError = await geminiResponse.Content.ReadAsStringAsync();
+                                        if (geminiStatusCode == 400 || geminiStatusCode == 401 || geminiStatusCode == 403) break;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    geminiError = ex.Message;
+                                }
+                            }
+                        }
+                        catch (Exception clientEx)
+                        {
+                            geminiError = clientEx.Message;
+                        }
+
+                        geminiTimer.Stop();
+
+                        if (geminiResponse != null && geminiResponse.IsSuccessStatusCode)
+                        {
+                            using var gDoc = await JsonDocument.ParseAsync(await geminiResponse.Content.ReadAsStreamAsync());
+                            var gText = string.Empty;
+                            if (gDoc.RootElement.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
+                            {
+                                var firstCand = cands[0];
+                                if (firstCand.TryGetProperty("content", out var candContent) && candContent.TryGetProperty("parts", out var candParts) && candParts.GetArrayLength() > 0)
+                                {
+                                    if (candParts[0].TryGetProperty("text", out var textProp))
+                                    {
+                                        gText = textProp.GetString()?.Trim() ?? string.Empty;
+                                    }
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(gText))
+                            {
+                                provider = $"Gemini {matchedModel} ({activeGeminiKey.KeyAlias})";
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed via [{activeGeminiKey.KeyAlias}] ({matchedModel}) in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+                                _lastSuccessfulGeminiKeyId = activeGeminiKey.Id;
+                                _geminiKeyFailureCounts[activeGeminiKey.Id] = 0;
+
+                                if (isCodeBlueprint || gText.Contains("<") && gText.Contains(">"))
+                                {
+                                    isCodeBlueprint = true;
+                                    var cssMatch = Regex.Match(gText, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                    if (cssMatch.Success) generatedCss = cssMatch.Groups[1].Value.Trim();
+
+                                    var codeBlockMatch = Regex.Match(gText, @"```html\s*([\s\S]*?)```", RegexOptions.IgnoreCase);
+                                    if (codeBlockMatch.Success)
+                                    {
+                                        var rawBlock = codeBlockMatch.Groups[1].Value.Trim();
+                                        if (!cssMatch.Success)
+                                        {
+                                            var innerCss = Regex.Match(rawBlock, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                            if (innerCss.Success) generatedCss = innerCss.Groups[1].Value.Trim();
+                                        }
+                                        generatedHtml = Regex.Replace(rawBlock, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                    }
+                                    else
+                                    {
+                                        var fullHtml = Regex.Replace(gText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                        fullHtml = Regex.Replace(fullHtml, @"^```(?:html|css)?\s*", "", RegexOptions.IgnoreCase);
+                                        fullHtml = Regex.Replace(fullHtml, @"\s*```$", "", RegexOptions.IgnoreCase).Trim();
+                                        generatedHtml = fullHtml;
+                                    }
+
+                                    var cleanReply = Regex.Replace(gText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase);
+                                    cleanReply = Regex.Replace(cleanReply, @"```(?:html|css)?[\s\S]*?```", "", RegexOptions.IgnoreCase).Trim();
+                                    parsedReply = !string.IsNullOrWhiteSpace(cleanReply) ? cleanReply : $"Generated template blueprint with Google Gemini ({matchedModel}).";
+                                }
+                                else
+                                {
+                                    parsedReply = gText;
+                                }
+                                break;
+                            }
+                        }
+
+                        _geminiKeyFailureCounts.AddOrUpdate(activeGeminiKey.Id, 1, (_, count) => count + 1);
                     }
                 }
 
