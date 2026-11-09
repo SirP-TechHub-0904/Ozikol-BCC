@@ -697,7 +697,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             decimal fulfillmentRate = totalShifts > 0
                 ? Math.Round(((decimal)(totalShifts - openShifts) / totalShifts) * 100m, 1)
-                : 100.0m;
+                : 0.0m;
 
             var attendances = shifts.Where(s => s.AttendanceRecord != null).Select(s => s.AttendanceRecord!).ToList();
             int onTimeCount = attendances.Count(a => a.LateArrivalMinutes <= 5 && !a.IsFlagged);
@@ -707,7 +707,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             decimal punctualityPercent = attendances.Count > 0
                 ? Math.Round(((decimal)onTimeCount / attendances.Count) * 100m, 1)
-                : 100.0m;
+                : 0.0m;
 
             var siteBreakdowns = shifts
                 .GroupBy(s => new { s.ClientSiteId, SiteName = s.ClientSite?.SiteName ?? "Unassigned Venue" })

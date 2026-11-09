@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { WorkforceService } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -55,46 +55,80 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- Main Content -->
       <ng-container *ngIf="!isLoading || analytics">
-        <!-- 2. Five Comprehensive Smart Metric Cards -->
+        <!-- 2. Five Comprehensive Smart Metric Cards (Clickable) -->
         <div class="metrics-grid">
           <!-- Card 1: Shift Fulfillment Rate -->
-          <div class="metric-card">
+          <div
+            class="metric-card clickable"
+            (click)="navigateTo('/workforce/console/schedule')"
+            title="Click to view and schedule shifts in Rota Calendar"
+          >
             <div class="card-top">
               <div class="card-icon bg-blue">
                 <span class="material-symbols-outlined">event_available</span>
               </div>
-              <span class="card-chip chip-blue">Target 95%</span>
+              <span class="card-chip chip-blue">
+                {{ (analytics?.totalShiftsCount || 0) > 0 ? 'Target 95%' : 'No Shifts' }}
+              </span>
             </div>
-            <div class="card-value">{{ analytics?.shiftFulfillmentRatePercent ?? 100 }}%</div>
+            <div class="card-value">
+              {{ (analytics?.totalShiftsCount || 0) > 0 ? (analytics?.shiftFulfillmentRatePercent || 0) + '%' : '0%' }}
+            </div>
             <div class="card-label">Shift Fulfillment Rate</div>
             <div class="card-progress-track">
-              <div class="card-progress-bar bg-blue" [style.width.%]="analytics?.shiftFulfillmentRatePercent ?? 100"></div>
+              <div
+                class="card-progress-bar bg-blue"
+                [style.width.%]="(analytics?.totalShiftsCount || 0) > 0 ? (analytics?.shiftFulfillmentRatePercent || 0) : 0"
+              ></div>
             </div>
             <div class="card-sub-info">
-              <span>Planned vs. Staffed Roster</span>
+              <span>
+                {{ (analytics?.totalShiftsCount || 0) > 0
+                    ? (analytics?.totalShiftsCount - analytics?.openShiftsCount) + ' of ' + analytics?.totalShiftsCount + ' staffed'
+                    : 'No planned shifts recorded' }}
+              </span>
             </div>
           </div>
 
           <!-- Card 2: Punctuality Score -->
-          <div class="metric-card">
+          <div
+            class="metric-card clickable"
+            (click)="navigateTo('/attendance/console/live')"
+            title="Click to view live duty attendance and clock-in logs"
+          >
             <div class="card-top">
               <div class="card-icon bg-green">
                 <span class="material-symbols-outlined">schedule</span>
               </div>
-              <span class="card-chip chip-teal">On-Time Ratio</span>
+              <span class="card-chip chip-teal">
+                {{ (analytics?.completedShiftsCount || 0) > 0 ? 'On-Time Ratio' : 'No Check-Ins' }}
+              </span>
             </div>
-            <div class="card-value">{{ analytics?.overallPunctualityPercent ?? 100 }}%</div>
+            <div class="card-value">
+              {{ (analytics?.completedShiftsCount || 0) > 0 ? (analytics?.overallPunctualityPercent || 0) + '%' : '0%' }}
+            </div>
             <div class="card-label">Overall Punctuality Score</div>
             <div class="card-progress-track">
-              <div class="card-progress-bar bg-green" [style.width.%]="analytics?.overallPunctualityPercent ?? 100"></div>
+              <div
+                class="card-progress-bar bg-green"
+                [style.width.%]="(analytics?.completedShiftsCount || 0) > 0 ? (analytics?.overallPunctualityPercent || 0) : 0"
+              ></div>
             </div>
             <div class="card-sub-info">
-              <span>Clock-ins within grace window</span>
+              <span>
+                {{ (analytics?.completedShiftsCount || 0) > 0
+                    ? 'Clock-ins within grace window'
+                    : 'No verified check-ins recorded' }}
+              </span>
             </div>
           </div>
 
           <!-- Card 3: Active Duty Strength -->
-          <div class="metric-card">
+          <div
+            class="metric-card clickable"
+            (click)="navigateTo('/attendance/console/live')"
+            title="Click to view guards active on site now"
+          >
             <div class="card-top">
               <div class="card-icon bg-teal">
                 <span class="material-symbols-outlined">security</span>
@@ -111,7 +145,11 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <!-- Card 4: Gross Labor Spend -->
-          <div class="metric-card">
+          <div
+            class="metric-card clickable"
+            (click)="navigateTo('/workforce/console/schedule')"
+            title="Click to review shift hours, timesheets, and pay rates"
+          >
             <div class="card-top">
               <div class="card-icon bg-amber">
                 <span class="material-symbols-outlined">payments</span>
@@ -126,7 +164,11 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <!-- Card 5: Enrolled Talent Pool -->
-          <div class="metric-card">
+          <div
+            class="metric-card clickable"
+            (click)="scrollToRoster()"
+            title="Click to jump to Staff Directory & Roster"
+          >
             <div class="card-top">
               <div class="card-icon bg-purple">
                 <span class="material-symbols-outlined">groups</span>
@@ -143,8 +185,12 @@ import { ToastService } from '../../../core/services/toast.service';
 
         <!-- 3. Graphical Analytics Row: Venue Spend & Compliance Breakdown -->
         <div class="analytics-row">
-          <!-- Client Venue Spend Breakdown -->
-          <div class="analytics-card flex-3">
+          <!-- Client Venue Spend Breakdown (Clickable) -->
+          <div
+            class="analytics-card flex-3 clickable"
+            (click)="navigateTo('/workforce/console/sites')"
+            title="Click to manage operating client sites & geofences"
+          >
             <div class="card-header-bar">
               <div>
                 <h3>Labor Hours &amp; Spend by Client Venue</h3>
@@ -182,7 +228,7 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Attendance Compliance Breakdown -->
+          <!-- Attendance Compliance Breakdown (Balanced 2x2 Grid & Clickable) -->
           <div class="analytics-card flex-2">
             <div class="card-header-bar">
               <div>
@@ -192,8 +238,12 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
 
             <div class="compliance-cards-grid">
-              <!-- On-Time Check-Ins -->
-              <div class="compliance-metric-box box-green">
+              <!-- On-Time Check-Ins (Clickable) -->
+              <div
+                class="compliance-metric-box box-green clickable"
+                (click)="navigateTo('/attendance/console/live')"
+                title="View on-time check-in logs in Live Duty Monitor"
+              >
                 <div class="compliance-box-top">
                   <span class="material-symbols-outlined">check_circle</span>
                   <span class="compliance-title">On-Time Check-In</span>
@@ -201,8 +251,12 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="compliance-count">{{ analytics?.attendanceDistribution?.OnTime ?? 0 }}</div>
               </div>
 
-              <!-- Late Arrivals -->
-              <div class="compliance-metric-box box-amber">
+              <!-- Late Arrivals (Clickable) -->
+              <div
+                class="compliance-metric-box box-amber clickable"
+                (click)="navigateTo('/attendance/console/live')"
+                title="View late arrivals in Live Duty Monitor"
+              >
                 <div class="compliance-box-top">
                   <span class="material-symbols-outlined">schedule</span>
                   <span class="compliance-title">Late Arrivals (&gt;5m)</span>
@@ -210,8 +264,12 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="compliance-count">{{ analytics?.attendanceDistribution?.LateArrivals ?? 0 }}</div>
               </div>
 
-              <!-- Geofence Violations -->
-              <div class="compliance-metric-box box-rose">
+              <!-- Geofence Violations (Clickable) -->
+              <div
+                class="compliance-metric-box box-rose clickable"
+                (click)="navigateTo('/attendance/console/live')"
+                title="View geofence violation alerts in Live Duty Monitor"
+              >
                 <div class="compliance-box-top">
                   <span class="material-symbols-outlined">wrong_location</span>
                   <span class="compliance-title">Geofence Violations</span>
@@ -219,8 +277,12 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="compliance-count">{{ analytics?.attendanceDistribution?.GeofenceViolations ?? 0 }}</div>
               </div>
 
-              <!-- No-Shows -->
-              <div class="compliance-metric-box box-muted">
+              <!-- No-Shows (Clickable) -->
+              <div
+                class="compliance-metric-box box-muted clickable"
+                (click)="navigateTo('/workforce/console/schedule')"
+                title="Inspect unassigned & absent shifts in Rota Schedule"
+              >
                 <div class="compliance-box-top">
                   <span class="material-symbols-outlined">person_off</span>
                   <span class="compliance-title">Unexcused No-Shows</span>
@@ -232,7 +294,7 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
 
         <!-- 4. Staff Directory & Performance Roster Table -->
-        <div class="cms-card">
+        <div class="cms-card" id="staffRosterSection">
           <div class="table-toolbar">
             <div class="toolbar-left">
               <h3>Workforce Staff Roster &amp; Ratings</h3>
@@ -576,6 +638,7 @@ import { ToastService } from '../../../core/services/toast.service';
       align-items: center;
       gap: 12px;
       margin-bottom: 4px;
+      flex-wrap: wrap;
     }
     .title-row h1 {
       font-size: 26px;
@@ -675,12 +738,15 @@ import { ToastService } from '../../../core/services/toast.service';
       box-shadow: 0 4px 15px rgba(0,0,0,0.02);
       display: flex;
       flex-direction: column;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     }
-    .metric-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 80, 229, 0.06);
-      border-color: #cbd5e1;
+    .metric-card.clickable {
+      cursor: pointer;
+    }
+    .metric-card.clickable:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 80, 229, 0.12);
+      border-color: #0050e5;
     }
     .card-top {
       display: flex;
@@ -781,12 +847,22 @@ import { ToastService } from '../../../core/services/toast.service';
       box-shadow: 0 4px 15px rgba(0,0,0,0.02);
       display: flex;
       flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .analytics-card.clickable {
+      cursor: pointer;
+    }
+    .analytics-card.clickable:hover {
+      border-color: #0050e5;
+      box-shadow: 0 8px 24px rgba(0, 80, 229, 0.08);
+      transform: translateY(-2px);
     }
     .card-header-bar {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 20px;
+      gap: 12px;
     }
     .card-header-bar h3 {
       font-size: 17px;
@@ -807,6 +883,7 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 4px 12px;
       border-radius: 12px;
       border: 1px solid #e2e8f0;
+      white-space: nowrap;
     }
 
     /* Venue Bars */
@@ -821,6 +898,8 @@ import { ToastService } from '../../../core/services/toast.service';
       align-items: center;
       margin-bottom: 6px;
       font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
     }
     .venue-name {
       font-weight: 700;
@@ -867,10 +946,10 @@ import { ToastService } from '../../../core/services/toast.service';
       margin: 0;
     }
 
-    /* Compliance Metric Boxes */
+    /* Compliance Metric Boxes (Clean 2x2 Grid) */
     .compliance-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 12px;
     }
     .compliance-metric-box {
@@ -881,6 +960,15 @@ import { ToastService } from '../../../core/services/toast.service';
       justify-content: space-between;
       gap: 10px;
       border: 1px solid transparent;
+      transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    }
+    .compliance-metric-box.clickable {
+      cursor: pointer;
+    }
+    .compliance-metric-box.clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      filter: brightness(0.97);
     }
     .compliance-box-top {
       display: flex;
@@ -889,13 +977,15 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .compliance-box-top .material-symbols-outlined {
       font-size: 20px;
+      flex-shrink: 0;
     }
     .compliance-title {
       font-size: 12px;
       font-weight: 700;
+      line-height: 1.3;
     }
     .compliance-count {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
     }
     .box-green {
@@ -1340,6 +1430,50 @@ import { ToastService } from '../../../core/services/toast.service';
       margin: 0 auto 16px auto;
       animation: spin 0.8s linear infinite;
     }
+
+    /* Mobile & Tablet Responsiveness */
+    @media (max-width: 900px) {
+      .page-header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .analytics-row {
+        flex-direction: column;
+      }
+      .flex-3, .flex-2 {
+        flex: 1 1 100%;
+      }
+      .table-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .toolbar-right {
+        width: 100%;
+      }
+      .search-input-box, .search-input {
+        width: 100%;
+      }
+      .filter-dropdown {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-row-dual {
+        grid-template-columns: 1fr;
+      }
+      .compliance-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   `]
 })
 export class WorkforceAnalyticsComponent implements OnInit {
@@ -1375,7 +1509,8 @@ export class WorkforceAnalyticsComponent implements OnInit {
 
   constructor(
     private readonly workforceService: WorkforceService,
-    private readonly toast: ToastService
+    private readonly toast: ToastService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -1409,6 +1544,17 @@ export class WorkforceAnalyticsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  navigateTo(route: string): void {
+    this.router.navigateByUrl(route);
+  }
+
+  scrollToRoster(): void {
+    const el = document.getElementById('staffRosterSection');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   get filteredStaffMembers(): any[] {

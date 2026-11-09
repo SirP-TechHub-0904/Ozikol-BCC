@@ -318,20 +318,22 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <div class="calendar-grid">
-            <div class="calendar-header-day" *ngFor="let dayName of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
-              {{ dayName }}
-            </div>
-            <div
-              class="calendar-day-cell"
-              *ngFor="let c of calendarDays"
-              [class.not-current-month]="!c.isCurrentMonth"
-              [class.is-today]="c.isToday"
-              (click)="selectCalendarDay(c)"
-            >
-              <div class="day-number">{{ c.dayNum }}</div>
-              <div class="day-shifts-pill" *ngIf="c.shiftsCount > 0">
-                <span>{{ c.shiftsCount }} {{ c.shiftsCount === 1 ? 'shift' : 'shifts' }}</span>
+          <div class="calendar-scroll-wrap">
+            <div class="calendar-grid">
+              <div class="calendar-header-day" *ngFor="let dayName of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
+                {{ dayName }}
+              </div>
+              <div
+                class="calendar-day-cell"
+                *ngFor="let c of calendarDays"
+                [class.not-current-month]="!c.isCurrentMonth"
+                [class.is-today]="c.isToday"
+                (click)="selectCalendarDay(c)"
+              >
+                <div class="day-number">{{ c.dayNum }}</div>
+                <div class="day-shifts-pill" *ngIf="c.shiftsCount > 0">
+                  <span>{{ c.shiftsCount }} {{ c.shiftsCount === 1 ? 'shift' : 'shifts' }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1390,6 +1392,100 @@ import { ToastService } from '../../../core/services/toast.service';
       border-radius: 50%;
       margin: 0 auto 16px auto;
       animation: spin 0.8s linear infinite;
+    }
+
+    /* Mobile & Tablet Responsiveness */
+    @media (max-width: 900px) {
+      .page-header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .toolbar-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .view-mode-toggle {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .view-btn {
+        flex: 1;
+        justify-content: center;
+      }
+      .filters-row {
+        grid-template-columns: 1fr;
+      }
+      .form-row-dual, .form-row-triple {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .calendar-card {
+        padding: 16px;
+      }
+      .calendar-nav-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .calendar-controls {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+      .calendar-controls .btn {
+        flex: 1;
+        text-align: center;
+      }
+      .calendar-scroll-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+        margin: 0 -8px;
+      }
+      .calendar-grid {
+        min-width: 520px;
+        gap: 6px;
+      }
+      .calendar-header-day {
+        font-size: 11px;
+        padding: 8px 0;
+      }
+      .calendar-day-cell {
+        min-height: 72px;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      .day-number {
+        font-size: 13px;
+      }
+      .day-shifts-pill {
+        font-size: 10.5px;
+        padding: 2px 4px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .calendar-grid {
+        min-width: 460px;
+        gap: 4px;
+      }
+      .calendar-day-cell {
+        min-height: 62px;
+        padding: 6px;
+      }
+      .day-number {
+        font-size: 12px;
+      }
+      .day-shifts-pill {
+        font-size: 10px;
+      }
     }
   `]
 })
