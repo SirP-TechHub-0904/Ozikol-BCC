@@ -40,10 +40,10 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
-          <button type="button" class="btn btn-primary" (click)="showEnrollModal = true">
+          <a routerLink="/workforce/console/enroll" class="btn btn-primary">
             <span class="material-symbols-outlined">person_add</span>
             <span>Enroll Member</span>
-          </button>
+          </a>
         </div>
       </div>
 
@@ -390,10 +390,10 @@ import { ToastService } from '../../../core/services/toast.service';
                       <h4>No Workforce Members Found</h4>
                       <p *ngIf="searchQuery || selectedRoleFilter">No staff members match the selected filters. Clear your filters to see the full roster.</p>
                       <p *ngIf="!searchQuery && !selectedRoleFilter">No staff members enrolled yet. Click "Enroll Member" to send an onboarding invitation.</p>
-                      <button type="button" class="btn btn-primary mt-2" (click)="showEnrollModal = true" *ngIf="!searchQuery && !selectedRoleFilter">
+                      <a routerLink="/workforce/console/enroll" class="btn btn-primary mt-2" *ngIf="!searchQuery && !selectedRoleFilter">
                         <span class="material-symbols-outlined">person_add</span>
                         <span>Enroll First Member</span>
-                      </button>
+                      </a>
                     </div>
                   </td>
                 </tr>
@@ -403,86 +403,7 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </ng-container>
 
-      <!-- 5. Enroll Member Modal -->
-      <div class="modal-backdrop" *ngIf="showEnrollModal" (click)="showEnrollModal = false">
-        <div class="modal-card" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">person_add</span>
-              <div>
-                <h3>Enroll New Workforce Member</h3>
-                <p class="modal-subtitle">Add a staff member to the rota and dispatch an onboarding invitation email.</p>
-              </div>
-            </div>
-            <button type="button" class="btn-close" (click)="showEnrollModal = false">&times;</button>
-          </div>
-
-          <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label">Full Name <span class="required">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="newMember.fullName"
-                placeholder="e.g. First Last"
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Email Address <span class="required">*</span></label>
-              <input
-                type="email"
-                class="form-control"
-                [(ngModel)]="newMember.email"
-                placeholder="name@company.com"
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Designated Job Title <span class="required">*</span></label>
-              <select class="form-control" [(ngModel)]="newMember.jobTitle">
-                <option value="Security Guard">Security Guard</option>
-                <option value="SIA Door Supervisor">SIA Door Supervisor</option>
-                <option value="Event Steward">Event Steward</option>
-                <option value="Care Assistant">Care Assistant</option>
-                <option value="Healthcare Worker">Healthcare Worker</option>
-                <option value="Operations Supervisor">Operations Supervisor</option>
-              </select>
-            </div>
-
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Default Hourly Rate (£)</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  [(ngModel)]="newMember.defaultHourlyRate"
-                  placeholder="e.g. 15.00"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Contracted Hours / Week</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  [(ngModel)]="newMember.contractedWeeklyHours"
-                  placeholder="e.g. 40"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="showEnrollModal = false">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveEnrollMember()" [disabled]="isSubmitting">
-              <span class="material-symbols-outlined" *ngIf="!isSubmitting">send</span>
-              <span>{{ isSubmitting ? 'Enrolling...' : 'Send Invitation & Enroll' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6. Rate Member Modal -->
+      <!-- 5. Rate Member Modal -->
       <div class="modal-backdrop" *ngIf="showRateModal" (click)="showRateModal = false">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
@@ -1487,18 +1408,9 @@ export class WorkforceAnalyticsComponent implements OnInit {
   selectedRoleFilter = '';
 
   // Modals
-  showEnrollModal = false;
   showRateModal = false;
   showInfoModal = false;
   targetMember: any = null;
-
-  newMember = {
-    fullName: '',
-    email: '',
-    jobTitle: 'Security Guard',
-    defaultHourlyRate: null as number | null,
-    contractedWeeklyHours: 40
-  };
 
   ratingForm = {
     shiftId: '00000000-0000-0000-0000-000000000000',
@@ -1583,31 +1495,6 @@ export class WorkforceAnalyticsComponent implements OnInit {
     const parts = name.trim().split(' ');
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return parts[0].substring(0, 2).toUpperCase();
-  }
-
-  saveEnrollMember(): void {
-    if (!this.newMember.fullName || !this.newMember.email) {
-      this.toast.error('Full name and email address are required.');
-      return;
-    }
-    this.isSubmitting = true;
-    this.workforceService.enrollMember(this.newMember).subscribe({
-      next: (res: any) => {
-        this.isSubmitting = false;
-        if (res.isSuccess) {
-          this.toast.success('Member enrolled successfully! Onboarding email sent.');
-          this.showEnrollModal = false;
-          this.newMember = { fullName: '', email: '', jobTitle: 'Security Guard', defaultHourlyRate: null, contractedWeeklyHours: 40 };
-          this.loadMembers();
-        } else {
-          this.toast.error(res.message || 'Enrollment failed.');
-        }
-      },
-      error: (err: any) => {
-        this.isSubmitting = false;
-        this.toast.error(err?.error?.message || 'Enrollment failed.');
-      }
-    });
   }
 
   openRateModal(member: any): void {

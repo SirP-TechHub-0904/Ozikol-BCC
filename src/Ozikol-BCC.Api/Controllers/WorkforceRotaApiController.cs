@@ -3,9 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
@@ -31,6 +35,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ITenantProvider? _tenantProvider;
         private readonly ITenantFeatureGateService? _featureGateService;
+        private readonly UserManager<Profile>? _userManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WorkforceRotaApiController"/> class.
@@ -39,12 +44,14 @@ namespace Ozikol_BCC.Api.Controllers
             DashboardDbContext db,
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ITenantProvider? tenantProvider = null,
-            ITenantFeatureGateService? featureGateService = null)
+            ITenantFeatureGateService? featureGateService = null,
+            UserManager<Profile>? userManager = null)
         {
             _db = db;
             _notificationDispatcher = notificationDispatcher;
             _tenantProvider = tenantProvider;
             _featureGateService = featureGateService;
+            _userManager = userManager;
         }
 
         private string CurrentTenantKey => ResolveCurrentTenantKey();
@@ -649,6 +656,492 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             return Ok(ApiResponse<Guid>.SuccessResponse(profile.Id, "Staff member successfully enrolled and onboarding email dispatched."));
+        }
+
+        private static string GenerateOnboardingToken(string tenantKey, string email, DateTime expiresUtc)
+        {
+            var payload = $"{tenantKey.ToLowerInvariant()}:{email.Trim().ToLowerInvariant()}:{expiresUtc.Ticks}";
+            var secret = "Ozikol-Bcp-Workforce-Onboarding-Key-2026!";
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+            var hash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(payload)));
+            var combined = $"{payload}:{hash}";
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(combined))
+                .Replace("+", "-").Replace("/", "_").Replace("=", "");
+        }
+
+        private static bool TryValidateOnboardingToken(string token, out string tenantKey, out string email, out DateTime expiresUtc)
+        {
+            tenantKey = string.Empty;
+            email = string.Empty;
+            expiresUtc = DateTime.MinValue;
+            try
+            {
+                var incoming = token.Replace("-", "+").Replace("_", "/");
+                switch (incoming.Length % 4)
+                {
+                    case 2: incoming += "=="; break;
+                    case 3: incoming += "="; break;
+                }
+                var raw = Encoding.UTF8.GetString(Convert.FromBase64String(incoming));
+                var parts = raw.Split(':');
+                if (parts.Length != 4) return false;
+
+                tenantKey = parts[0];
+                email = parts[1];
+                if (!long.TryParse(parts[2], out var ticks)) return false;
+                expiresUtc = new DateTime(ticks, DateTimeKind.Utc);
+                var signature = parts[3];
+
+                if (expiresUtc < DateTime.UtcNow) return false;
+
+                var payload = $"{tenantKey}:{email}:{ticks}";
+                var secret = "Ozikol-Bcp-Workforce-Onboarding-Key-2026!";
+                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+                var expectedHash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(payload)));
+                return string.Equals(signature, expectedHash, StringComparison.Ordinal);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Generates a secure 7-day onboarding token and dispatches an invitation email for staff self-enrollment.
+        /// </summary>
+        [HttpPost("members/invite")]
+        [HttpPost("rota/members/invite")]
+        public async Task<ActionResult<ApiResponse<object>>> InviteWorkforceMember([FromBody] InviteWorkforceMemberRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Email address is mandatory for dispatching an invitation."));
+            }
+
+            var email = request.Email.Trim().ToLowerInvariant();
+            var fullName = string.IsNullOrWhiteSpace(request.FullName) ? "Team Member" : request.FullName.Trim();
+            var expiresUtc = DateTime.UtcNow.AddDays(7);
+            var token = GenerateOnboardingToken(CurrentTenantKey, email, expiresUtc);
+
+            var onboardingUrl = $"/workforce/onboarding?token={token}&email={Uri.EscapeDataString(email)}";
+
+            // Trigger Transactional Invitation Email
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var customNote = !string.IsNullOrWhiteSpace(request.WelcomeNote)
+                        ? $"\n\n**Note from Administrator:**\n_{request.WelcomeNote.Trim()}_\n"
+                        : string.Empty;
+
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        RecipientEmail = email,
+                        RecipientName = fullName,
+                        TenantKey = CurrentTenantKey,
+                        Title = $"Invitation to Join Workforce Rota as {request.JobTitle}",
+                        Message = $"Hello {fullName},\n\nYou have been invited to join the workforce team as a **{request.JobTitle}**.{customNote}\n\nPlease click the button below to complete your onboarding profile, set your password, and access your rota shifts.",
+                        Category = BcpMessageCategory.Account,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true,
+                        Module = "Workforce",
+                        Icon = "badge",
+                        ActionUrl = onboardingUrl
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                Email = email,
+                FullName = fullName,
+                JobTitle = request.JobTitle,
+                ExpiresUtc = expiresUtc,
+                OnboardingUrl = onboardingUrl
+            }, "Onboarding invitation successfully generated and dispatched."));
+        }
+
+        /// <summary>
+        /// Directly provisions a staff member's identity account, employment terms, SIA credentials, and sends password setup instructions.
+        /// </summary>
+        [HttpPost("members/direct-enroll")]
+        [HttpPost("rota/members/direct-enroll")]
+        public async Task<ActionResult<ApiResponse<Guid>>> DirectEnrollMember([FromBody] DirectEnrollMemberRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(ApiResponse<Guid>.FailureResponse("Email address is mandatory."));
+            }
+
+            var email = request.Email.Trim().ToLowerInvariant();
+            var firstName = request.FirstName?.Trim() ?? string.Empty;
+            var lastName = request.LastName?.Trim() ?? string.Empty;
+            var fullName = $"{firstName} {lastName}".Trim();
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = "Staff Member";
+
+            Profile? user = null;
+            if (_userManager != null)
+            {
+                user = await _userManager.FindByEmailAsync(email);
+            }
+            else
+            {
+                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+            }
+
+            string userId;
+            if (user == null)
+            {
+                userId = Guid.CreateVersion7().ToString();
+                var tempPassword = string.IsNullOrWhiteSpace(request.Password) ? $"Ozi@{Guid.NewGuid().ToString("N")[..6]}!" : request.Password;
+
+                var customAttrs = new Dictionary<string, object>();
+                if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
+                {
+                    customAttrs["emergencyContact"] = new
+                    {
+                        name = request.EmergencyContactName?.Trim(),
+                        relationship = request.EmergencyContactRelationship?.Trim(),
+                        phone = request.EmergencyContactPhone?.Trim()
+                    };
+                }
+                if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
+                {
+                    customAttrs["bankDetails"] = new
+                    {
+                        bankName = request.BankName?.Trim(),
+                        accountHolder = request.AccountHolderName?.Trim() ?? fullName,
+                        sortCode = request.SortCode?.Trim(),
+                        accountNumber = request.AccountNumber?.Trim(),
+                        nationalInsurance = request.NationalInsuranceNumber?.Trim()
+                    };
+                }
+
+                user = new Profile
+                {
+                    Id = userId,
+                    UserName = email,
+                    Email = email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    PhoneNumber = request.PhoneNumber?.Trim(),
+                    MemberId = $"WRK-{new Random().Next(1000, 9999)}",
+                    Designation = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim(),
+                    UserStatus = UserStatus.Active,
+                    EmailConfirmed = true,
+                    MustChangePassword = request.MustChangePassword,
+                    CustomAttributesJson = customAttrs.Count > 0 ? JsonSerializer.Serialize(customAttrs) : null,
+                    JoinDate = DateTime.UtcNow
+                };
+
+                if (_userManager != null)
+                {
+                    var createResult = await _userManager.CreateAsync(user, tempPassword);
+                    if (!createResult.Succeeded)
+                    {
+                        var firstError = createResult.Errors.FirstOrDefault()?.Description ?? "Failed to create identity account.";
+                        return BadRequest(ApiResponse<Guid>.FailureResponse(firstError));
+                    }
+                }
+                else
+                {
+                    _db.Users.Add(user);
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+            else
+            {
+                userId = user.Id;
+            }
+
+            // Provision or update BcpShiftStaffProfile
+            var staffProfile = await _db.BcpShiftStaffProfiles
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            if (staffProfile == null)
+            {
+                staffProfile = new BcpShiftStaffProfile
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    UserId = userId,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpShiftStaffProfiles.Add(staffProfile);
+            }
+
+            staffProfile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
+            staffProfile.DefaultHourlyRate = request.DefaultHourlyRate;
+            staffProfile.ContractedWeeklyHours = request.ContractedWeeklyHours;
+            staffProfile.IsActive = true;
+            staffProfile.UpdatedUtc = DateTime.UtcNow;
+
+            // Provision SIA compliance record if provided
+            if (!string.IsNullOrWhiteSpace(request.SiaLicenseNumber))
+            {
+                var doc = await _db.BcpShiftDocuments
+                    .FirstOrDefaultAsync(d => d.TenantKey == CurrentTenantKey && d.UserId == userId && d.DocumentType == "SIA License", ct);
+
+                if (doc == null)
+                {
+                    doc = new BcpShiftDocument
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = CurrentTenantKey,
+                        UserId = userId,
+                        DocumentType = "SIA License",
+                        UploadedBy = "Company",
+                        CreatedUtc = DateTime.UtcNow
+                    };
+                    _db.BcpShiftDocuments.Add(doc);
+                }
+
+                doc.DocumentName = $"SIA_{request.SiaLicenseSector ?? "Badge"}_{request.SiaLicenseNumber.Trim()}";
+                doc.Description = $"SIA License Number: {request.SiaLicenseNumber.Trim()}. Sector: {request.SiaLicenseSector ?? "Security"}";
+                doc.FileUrl = "verified://admin-record";
+                doc.ExpirationDateUtc = request.SiaLicenseExpiryDate;
+                doc.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync(ct);
+
+            // Send Credentials & Password Setup Link via Central Notification Dispatcher
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = userId,
+                        RecipientEmail = email,
+                        RecipientName = fullName,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Your Workforce Account Has Been Created",
+                        Message = $"Hello {fullName},\n\nAn administrator has pre-enrolled you into the Workforce Rota system as a **{staffProfile.JobTitle}**.\n\nPlease sign in with your email (`{email}`) to review your rota schedule, confirm shifts, and set your permanent password.",
+                        Category = BcpMessageCategory.Account,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        SendEmailCopy = true,
+                        Module = "Workforce",
+                        Icon = "badge",
+                        ActionUrl = "/auth/login"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
+            return Ok(ApiResponse<Guid>.SuccessResponse(staffProfile.Id, "Staff member successfully enrolled into workforce system."));
+        }
+
+        /// <summary>
+        /// Validates a member onboarding token for public self-activation.
+        /// </summary>
+        [HttpGet("members/verify-token")]
+        [HttpGet("rota/members/verify-token")]
+        [AllowAnonymous]
+        public ActionResult<ApiResponse<object>> VerifyOnboardingToken(
+            [FromQuery] string token,
+            [FromQuery] string? email)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Onboarding token is required."));
+            }
+
+            if (!TryValidateOnboardingToken(token, out var tenantKey, out var tokenEmail, out var expiresUtc))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The invitation token is invalid or has expired. Please contact your administrator for a new invite link."));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                TenantKey = tenantKey,
+                Email = tokenEmail,
+                ExpiresUtc = expiresUtc,
+                IsValid = true
+            }, "Invitation token verified successfully."));
+        }
+
+        /// <summary>
+        /// Completes member self-registration: sets password and stores compliance details.
+        /// </summary>
+        [HttpPost("members/complete-onboarding")]
+        [HttpPost("rota/members/complete-onboarding")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<object>>> CompleteMemberOnboarding(
+            [FromBody] CompleteMemberOnboardingRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Token) || !TryValidateOnboardingToken(request.Token, out var tenantKey, out var tokenEmail, out _))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid or expired invitation token."));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Password must be at least 6 characters."));
+            }
+
+            var email = tokenEmail.ToLowerInvariant();
+            var firstName = request.FirstName?.Trim() ?? string.Empty;
+            var lastName = request.LastName?.Trim() ?? string.Empty;
+            var fullName = $"{firstName} {lastName}".Trim();
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = request.FullName?.Trim() ?? "Staff Member";
+
+            Profile? user = null;
+            if (_userManager != null)
+            {
+                user = await _userManager.FindByEmailAsync(email);
+            }
+            else
+            {
+                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+            }
+
+            var customAttrs = new Dictionary<string, object>();
+            if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
+            {
+                customAttrs["emergencyContact"] = new
+                {
+                    name = request.EmergencyContactName?.Trim(),
+                    relationship = request.EmergencyContactRelationship?.Trim(),
+                    phone = request.EmergencyContactPhone?.Trim()
+                };
+            }
+            if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
+            {
+                customAttrs["bankDetails"] = new
+                {
+                    bankName = request.BankName?.Trim(),
+                    accountHolder = request.AccountHolderName?.Trim() ?? fullName,
+                    sortCode = request.SortCode?.Trim(),
+                    accountNumber = request.AccountNumber?.Trim(),
+                    nationalInsurance = request.NationalInsuranceNumber?.Trim()
+                };
+            }
+
+            if (user == null)
+            {
+                user = new Profile
+                {
+                    Id = Guid.CreateVersion7().ToString(),
+                    UserName = email,
+                    Email = email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    PhoneNumber = request.PhoneNumber?.Trim(),
+                    MemberId = $"WRK-{new Random().Next(1000, 9999)}",
+                    Designation = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim(),
+                    UserStatus = UserStatus.Active,
+                    EmailConfirmed = true,
+                    MustChangePassword = false,
+                    CustomAttributesJson = customAttrs.Count > 0 ? JsonSerializer.Serialize(customAttrs) : null,
+                    JoinDate = DateTime.UtcNow
+                };
+
+                if (_userManager != null)
+                {
+                    var createResult = await _userManager.CreateAsync(user, request.Password);
+                    if (!createResult.Succeeded)
+                    {
+                        var err = createResult.Errors.FirstOrDefault()?.Description ?? "Failed to create member account.";
+                        return BadRequest(ApiResponse<object>.FailureResponse(err));
+                    }
+                }
+                else
+                {
+                    _db.Users.Add(user);
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+            else
+            {
+                user.FirstName = !string.IsNullOrWhiteSpace(firstName) ? firstName : user.FirstName;
+                user.LastName = !string.IsNullOrWhiteSpace(lastName) ? lastName : user.LastName;
+                user.PhoneNumber = !string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : user.PhoneNumber;
+                user.CustomAttributesJson = customAttrs.Count > 0 ? JsonSerializer.Serialize(customAttrs) : user.CustomAttributesJson;
+                user.MustChangePassword = false;
+
+                if (_userManager != null)
+                {
+                    var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                    await _userManager.ResetPasswordAsync(user, resetToken, request.Password);
+                    await _userManager.UpdateAsync(user);
+                }
+                else
+                {
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+
+            // Provision or update BcpShiftStaffProfile
+            var staffProfile = await _db.BcpShiftStaffProfiles
+                .FirstOrDefaultAsync(p => p.TenantKey == tenantKey && p.UserId == user.Id, ct);
+
+            if (staffProfile == null)
+            {
+                staffProfile = new BcpShiftStaffProfile
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = tenantKey,
+                    UserId = user.Id,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _db.BcpShiftStaffProfiles.Add(staffProfile);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.JobTitle))
+            {
+                staffProfile.JobTitle = request.JobTitle.Trim();
+            }
+            staffProfile.IsActive = true;
+            staffProfile.UpdatedUtc = DateTime.UtcNow;
+
+            // Provision SIA compliance record if provided
+            if (!string.IsNullOrWhiteSpace(request.SiaLicenseNumber))
+            {
+                var doc = await _db.BcpShiftDocuments
+                    .FirstOrDefaultAsync(d => d.TenantKey == tenantKey && d.UserId == user.Id && d.DocumentType == "SIA License", ct);
+
+                if (doc == null)
+                {
+                    doc = new BcpShiftDocument
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = tenantKey,
+                        UserId = user.Id,
+                        DocumentType = "SIA License",
+                        UploadedBy = "Staff",
+                        CreatedUtc = DateTime.UtcNow
+                    };
+                    _db.BcpShiftDocuments.Add(doc);
+                }
+
+                doc.DocumentName = $"SIA_{request.SiaLicenseSector ?? "Badge"}_{request.SiaLicenseNumber.Trim()}";
+                doc.Description = $"SIA License: {request.SiaLicenseNumber.Trim()}. Sector: {request.SiaLicenseSector ?? "Security"}";
+                doc.FileUrl = "verified://staff-self-declaration";
+                doc.ExpirationDateUtc = request.SiaLicenseExpiryDate;
+                doc.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                UserId = user.Id,
+                Email = email,
+                FullName = fullName
+            }, "Account onboarding complete. You may now sign in to your workspace."));
         }
 
         /// <summary>
@@ -1358,6 +1851,75 @@ namespace Ozikol_BCC.Api.Controllers
         public bool EnableEmail { get; set; }
         public bool EnableWhatsApp { get; set; }
         public string? PreferredContactPhone { get; set; }
+    }
+
+    public class InviteWorkforceMemberRequest
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = "Staff Member";
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
+        public string? WelcomeNote { get; set; }
+        public bool RequireSiaLicense { get; set; } = true;
+        public bool RequireEmergencyContact { get; set; } = true;
+        public bool RequireBankDetails { get; set; } = true;
+        public bool RequireRightToWork { get; set; } = false;
+        public bool RequireProofOfAddress { get; set; } = false;
+    }
+
+    public class DirectEnrollMemberRequest
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string? Password { get; set; }
+        public bool MustChangePassword { get; set; } = true;
+
+        public string JobTitle { get; set; } = "Staff Member";
+        public decimal? DefaultHourlyRate { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
+        public Guid? AssignedSiteId { get; set; }
+
+        public string? SiaLicenseNumber { get; set; }
+        public string? SiaLicenseSector { get; set; }
+        public DateTime? SiaLicenseExpiryDate { get; set; }
+
+        public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactRelationship { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+
+        public string? BankName { get; set; }
+        public string? AccountHolderName { get; set; }
+        public string? SortCode { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? NationalInsuranceNumber { get; set; }
+    }
+
+    public class CompleteMemberOnboardingRequest
+    {
+        public string Token { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? FullName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? JobTitle { get; set; }
+
+        public string? SiaLicenseNumber { get; set; }
+        public string? SiaLicenseSector { get; set; }
+        public DateTime? SiaLicenseExpiryDate { get; set; }
+
+        public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactRelationship { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+
+        public string? BankName { get; set; }
+        public string? AccountHolderName { get; set; }
+        public string? SortCode { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? NationalInsuranceNumber { get; set; }
     }
 }
 

@@ -255,4 +255,21 @@ export class WorkforceService {
   updateNotificationPreferences(pref: any): Observable<any> {
     return this.apiService.post<any>('workforce/notifications/preferences', pref);
   }
+
+  // --- MEMBER ONBOARDING & ENROLLMENT ---
+  inviteMember(data: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/invite', data);
+  }
+
+  directEnrollMember(data: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/direct-enroll', data);
+  }
+
+  verifyOnboardingToken(token: string, email?: string): Observable<any> {
+    return this.apiService.get<any>('workforce/members/verify-token', { token, email });
+  }
+
+  completeOnboarding(data: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/complete-onboarding', data);
+  }
 }
