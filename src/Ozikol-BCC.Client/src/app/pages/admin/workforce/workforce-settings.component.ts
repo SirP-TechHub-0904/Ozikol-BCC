@@ -1116,7 +1116,7 @@ interface WorkforcePolicies {
                   type="text"
                   class="form-control"
                   [(ngModel)]="categoryForm.name"
-                  placeholder="e.g. Professional License / Registration"
+                  placeholder="e.g. Professional License"
                   required
                 />
               </div>
@@ -1127,7 +1127,7 @@ interface WorkforcePolicies {
                   type="text"
                   class="form-control text-uppercase"
                   [(ngModel)]="categoryForm.code"
-                  placeholder="e.g. LIC, RTW, DBS, CSCS"
+                  placeholder="e.g. LIC, RTW, DBS"
                   maxlength="20"
                   required
                 />
@@ -1147,17 +1147,17 @@ interface WorkforcePolicies {
             <div class="form-row-dual">
               <div class="form-group">
                 <label class="form-label">Mandatory for Staff Onboarding</label>
-                <div class="checkbox-row" style="margin-top: 8px;">
+                <div class="checkbox-row">
                   <input type="checkbox" id="catMandatory" [(ngModel)]="categoryForm.isMandatory" />
-                  <label for="catMandatory" style="cursor: pointer; font-size: 0.875rem;">Required before staff deployment</label>
+                  <label for="catMandatory">Required before staff deployment</label>
                 </div>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Track Expiration &amp; Alerts</label>
-                <div class="checkbox-row" style="margin-top: 8px;">
+                <div class="checkbox-row">
                   <input type="checkbox" id="catExpiry" [(ngModel)]="categoryForm.requiresExpiryDate" />
-                  <label for="catExpiry" style="cursor: pointer; font-size: 0.875rem;">Alert managers before document expires</label>
+                  <label for="catExpiry">Alert managers before document expires</label>
                 </div>
               </div>
             </div>
@@ -1175,9 +1175,9 @@ interface WorkforcePolicies {
 
               <div class="form-group">
                 <label class="form-label">Status</label>
-                <div class="checkbox-row" style="margin-top: 8px;">
+                <div class="checkbox-row">
                   <input type="checkbox" id="catActive" [(ngModel)]="categoryForm.isActive" />
-                  <label for="catActive" style="cursor: pointer; font-size: 0.875rem;">Active for selection</label>
+                  <label for="catActive">Active for selection</label>
                 </div>
               </div>
             </div>
@@ -1736,7 +1736,7 @@ interface WorkforcePolicies {
     .form-row-dual {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 1rem;
+      gap: 1.25rem;
       width: 100%;
       box-sizing: border-box;
     }
@@ -2025,6 +2025,39 @@ interface WorkforcePolicies {
       overflow-y: auto;
       overflow-x: hidden;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .modal-body .form-group {
+      margin-bottom: 0;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      min-height: 38px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #0050e5;
+      cursor: pointer;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    .checkbox-row label {
+      margin: 0;
+      color: #334155;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      line-height: 1.25;
+      user-select: none;
     }
 
     .modal-footer {
