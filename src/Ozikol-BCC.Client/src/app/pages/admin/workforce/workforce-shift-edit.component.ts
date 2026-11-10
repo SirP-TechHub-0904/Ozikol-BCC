@@ -405,7 +405,6 @@ interface StaffMember {
               </div>
             </div>
           </div>
-          </div>
 
           <!-- Card 3: Work Location & Facility Details -->
           <div class="cms-card">
