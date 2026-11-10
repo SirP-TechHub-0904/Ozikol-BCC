@@ -1269,51 +1269,70 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- 3. Workforce Rota & Shift Management Member Workspace (bcp-staff-rota) -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_workforce')" *ngIf="isFeatureActive('bcp-staff-rota')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/workforce/workspace')" (click)="toggleMenu('workspace_workforce')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">event_note</span>
-                <span>My Shifts &amp; Rota</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_workforce')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>My Assigned Shifts</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/workspace/my-shifts')" (click)="togglePin('My Assigned Shifts', '/workforce/workspace/my-shifts', 'calendar_month')" [title]="isPinned('/workforce/workspace/my-shifts') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/workforce/workspace/my-shifts') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
+          <!-- 3. Shift and Rota Member Section (Direct Navigation - No Dropdown) -->
+          <ng-container *ngIf="isFeatureActive('bcp-staff-rota') || isFeatureActive('bcp-attendance-tracking')">
+            <div class="menu-title">Shift and Rota</div>
 
-          <!-- 4. Attendance & Duty Clock-In Member Workspace (bcp-attendance-tracking) -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_attendance')" *ngIf="isFeatureActive('bcp-attendance-tracking')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/attendance/workspace')" (click)="toggleMenu('workspace_attendance')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">timer</span>
-                <span>Duty Clock &amp; GPS</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_attendance')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Live Shift Clock-In</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/attendance/workspace/clock')" (click)="togglePin('Live Shift Clock-In', '/attendance/workspace/clock', 'timer')" [title]="isPinned('/attendance/workspace/clock') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/attendance/workspace/clock') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
+            <!-- 1. Schedule -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">calendar_month</span>
+                  <span>Schedule</span>
                 </div>
-              </li>
-            </ul>
-          </div>
+              </a>
+            </div>
+
+            <!-- 2. Open Shifts -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">work_outline</span>
+                  <span>Open Shifts</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 3. Timesheets -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/timesheets" [class.active]="isCurrentRoute('/workforce/workspace/timesheets')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">description</span>
+                  <span>Timesheets</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 4. Time Off -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/leave" [class.active]="isCurrentRoute('/workforce/workspace/leave')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">flight_takeoff</span>
+                  <span>Time Off</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 5. Documents -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/documents" [class.active]="isCurrentRoute('/workforce/workspace/documents')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">folder_shared</span>
+                  <span>Documents</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 6. Duty Clock-In -->
+            <div class="nav-item" *ngIf="isFeatureActive('bcp-attendance-tracking')">
+              <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock') || isCurrentRoute('/workforce/workspace/clock')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">timer</span>
+                  <span>Duty Clock-In</span>
+                </div>
+              </a>
+            </div>
+          </ng-container>
 
           <!-- 5. Manage My Account Dropdown -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">

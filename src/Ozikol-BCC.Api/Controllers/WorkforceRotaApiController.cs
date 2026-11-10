@@ -689,6 +689,150 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Returns all unassigned open shifts available for claiming by active staff members.
+        /// </summary>
+        [HttpGet("shifts/open")]
+        public async Task<ActionResult<ApiResponse<List<ShiftDto>>>> GetOpenShifts(CancellationToken ct)
+        {
+            var nowUtc = DateTime.UtcNow;
+            var openShifts = await _db.BcpShifts
+                .AsNoTracking()
+                .Include(s => s.ClientSite)
+                .Where(s => s.TenantKey == CurrentTenantKey &&
+                            (string.IsNullOrEmpty(s.AssignedUserId) || s.Status == "Open" || s.Status == "Draft") &&
+                            s.EndsAtUtc >= nowUtc)
+                .OrderBy(s => s.StartsAtUtc)
+                .Select(s => new ShiftDto
+                {
+                    Id = s.Id,
+                    ShiftCode = s.ShiftCode,
+                    ClientSiteId = s.ClientSiteId,
+                    SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
+                    SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                    PostName = s.PostName,
+                    FacilityName = s.FacilityName,
+                    Address = s.Address,
+                    PostCode = s.PostCode,
+                    EventTag = s.EventTag,
+                    StartsAtUtc = s.StartsAtUtc,
+                    EndsAtUtc = s.EndsAtUtc,
+                    IsOvernight = s.IsOvernight,
+                    BreakMinutes = s.BreakMinutes,
+                    PlannedDurationHours = s.PlannedDurationHours,
+                    HourlyPayRate = s.HourlyPayRate,
+                    HourlyChargeRate = s.HourlyChargeRate,
+                    Status = "Open",
+                    Notes = s.Notes,
+                    SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(openShifts, "Open shifts retrieved."));
+        }
+
+        /// <summary>
+        /// Allows the signed-in member to claim an unassigned open shift directly from the rota market.
+        /// </summary>
+        [HttpPost("shifts/{id}/claim")]
+        public async Task<ActionResult<ApiResponse<bool>>> ClaimOpenShiftDirect(Guid id, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-4004"));
+            }
+
+            if (!string.IsNullOrEmpty(shift.AssignedUserId) && shift.AssignedUserId != CurrentUserId)
+            {
+                return Conflict(ApiResponse<bool>.FailureResponse("This shift has already been claimed by another officer.", errorCode: "ERR-2005"));
+            }
+
+            shift.AssignedUserId = CurrentUserId;
+            shift.AssignedUserName = CurrentUserName;
+            shift.Status = "Assigned";
+            shift.IsConfirmedByGuard = true;
+            shift.ConfirmedAtUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift claimed successfully. It has been added to your schedule."));
+        }
+
+        /// <summary>
+        /// Returns past duty history and attendance records for the current staff member's timesheet calculations.
+        /// </summary>
+        [HttpGet("shifts/timesheets")]
+        public async Task<ActionResult<ApiResponse<List<ShiftDto>>>> GetMyTimesheets(
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            CancellationToken ct)
+        {
+            var query = _db.BcpShifts
+                .AsNoTracking()
+                .Include(s => s.ClientSite)
+                .Include(s => s.AttendanceRecord)
+                .Where(s => s.TenantKey == CurrentTenantKey && s.AssignedUserId == CurrentUserId);
+
+            if (startDate.HasValue)
+                query = query.Where(s => s.StartsAtUtc >= startDate.Value.ToUniversalTime());
+            if (endDate.HasValue)
+                query = query.Where(s => s.EndsAtUtc <= endDate.Value.ToUniversalTime());
+
+            var history = await query
+                .OrderByDescending(s => s.StartsAtUtc)
+                .Select(s => new ShiftDto
+                {
+                    Id = s.Id,
+                    ShiftCode = s.ShiftCode,
+                    ClientSiteId = s.ClientSiteId,
+                    SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
+                    SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                    PostName = s.PostName,
+                    FacilityName = s.FacilityName,
+                    StartsAtUtc = s.StartsAtUtc,
+                    EndsAtUtc = s.EndsAtUtc,
+                    PlannedDurationHours = s.PlannedDurationHours,
+                    BreakMinutes = s.BreakMinutes,
+                    HourlyPayRate = s.HourlyPayRate,
+                    Status = s.Status,
+                    IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue,
+                    IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
+                    ClockInUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInUtc : null,
+                    ClockOutUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockOutUtc : null,
+                    ActualDurationHours = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && s.AttendanceRecord.ClockOutUtc.HasValue
+                        ? (decimal)Math.Round((s.AttendanceRecord.ClockOutUtc.Value - s.AttendanceRecord.ClockInUtc.Value).TotalHours, 2)
+                        : s.PlannedDurationHours,
+                    FineAttached = s.FineAttached,
+                    FineAmount = s.FineAmount,
+                    FineReason = s.FineReason,
+                    FineAuthorizedBy = s.FineAuthorizedBy,
+                    FineStatus = s.FineStatus,
+                    ReportSubmissionUtc = s.ReportSubmissionUtc,
+                    ReportContent = s.ReportContent
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(history, "Timesheets retrieved."));
+        }
+
+        /// <summary>
+        /// Returns all time-off and absence requests submitted by the logged-in staff member.
+        /// </summary>
+        [HttpGet("leave/my")]
+        public async Task<ActionResult<ApiResponse<List<BcpShiftLeaveRequest>>>> GetMyLeaveRequests(CancellationToken ct)
+        {
+            var requests = await _db.BcpShiftLeaveRequests
+                .AsNoTracking()
+                .Where(l => l.TenantKey == CurrentTenantKey && l.UserId == CurrentUserId)
+                .OrderByDescending(l => l.CreatedUtc)
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<BcpShiftLeaveRequest>>.SuccessResponse(requests, "Staff leave records retrieved."));
+        }
+
+        /// <summary>
         /// Creates a new planned shift with automatic cross-midnight overnight detection, break deduction,
         /// and rest-period/double-booking conflict checks.
         /// </summary>

@@ -1186,3 +1186,4 @@ export class WorkforceDutyDetailComponent implements OnInit {
     return name.slice(0, 2).toUpperCase();
   }
 }
+

@@ -1498,3 +1498,4 @@ export class WorkforceSiteActivityComponent implements OnInit {
     return `${y}-${m}-${day}`;
   }
 }
+

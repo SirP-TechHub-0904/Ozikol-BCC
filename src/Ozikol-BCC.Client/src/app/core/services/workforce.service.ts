@@ -198,6 +198,20 @@ export class WorkforceService {
     return this.apiService.post<any>(`workforce/shifts/${shiftId}/confirm`, {});
   }
 
+  // --- OPEN SHIFTS & CLAIMS ---
+  getOpenShifts(): Observable<any> {
+    return this.apiService.get<any>('workforce/shifts/open');
+  }
+
+  claimShiftDirect(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/claim`, {});
+  }
+
+  // --- TIMESHEETS ---
+  getMyTimesheets(params?: any): Observable<any> {
+    return this.apiService.get<any>('workforce/shifts/timesheets', params);
+  }
+
   // --- SWAPS ---
   requestSwap(swap: any): Observable<any> {
     return this.apiService.post<any>('workforce/swaps', swap);
@@ -214,6 +228,10 @@ export class WorkforceService {
   // --- LEAVE ---
   requestLeave(leave: any): Observable<any> {
     return this.apiService.post<any>('workforce/leave', leave);
+  }
+
+  getMyLeaveRequests(): Observable<any> {
+    return this.apiService.get<any>('workforce/leave/my');
   }
 
   // --- ATTENDANCE & GEOFENCE ---
