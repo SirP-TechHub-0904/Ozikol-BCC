@@ -418,7 +418,7 @@ public class CentralMigrationService : ICentralMigrationService
             try
             {
                 var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-                optionsBuilder.UseSqlServer(tenantConnStr)
+                optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
                     .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
                 using var scope = _serviceProvider.CreateScope();
@@ -498,7 +498,7 @@ public class CentralMigrationService : ICentralMigrationService
         try
         {
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-            optionsBuilder.UseSqlServer(tenantConnStr)
+            optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
             using var scope = _serviceProvider.CreateScope();
@@ -617,7 +617,7 @@ public class CentralMigrationService : ICentralMigrationService
         try
         {
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-            optionsBuilder.UseSqlServer(tenantConnStr)
+            optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
             using var scope = _serviceProvider.CreateScope();

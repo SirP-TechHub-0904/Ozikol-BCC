@@ -54,6 +54,16 @@ export interface Shift {
   emergencyContactPhone?: string;
   isClockedIn: boolean;
   isClockedOut: boolean;
+  clockInUtc?: string;
+  clockOutUtc?: string;
+  actualDurationHours?: number;
+  fineAttached?: boolean;
+  fineAmount?: number;
+  fineReason?: string;
+  fineAuthorizedBy?: string;
+  fineStatus?: string;
+  reportSubmissionUtc?: string;
+  reportContent?: string;
 }
 
 export interface LiveDutyMonitorItem {

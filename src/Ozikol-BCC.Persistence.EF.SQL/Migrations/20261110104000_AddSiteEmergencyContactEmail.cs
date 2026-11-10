@@ -1,10 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Ozikol_BCC.Persistence.EF.SQL;
 
 #nullable disable
 
 namespace OzikolBCC.Persistence.EF.SQL.Migrations
 {
-    /// <inheritdoc />
+    [DbContext(typeof(DashboardDbContext))]
+    [Migration("20261110104000_AddSiteEmergencyContactEmail")]
     public partial class AddSiteEmergencyContactEmail : Migration
     {
         /// <inheritdoc />

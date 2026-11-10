@@ -461,10 +461,14 @@ namespace Ozikol_BCC.Api.Controllers
             var lateCount = shifts.Count(s => s.LateArrivalMinutes > 0);
             var punctualityScore = shifts.Count > 0 ? Math.Round(((shifts.Count - lateCount) / (decimal)shifts.Count) * 100, 1) : 100m;
 
+            var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+            var fullName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : (shifts.FirstOrDefault()?.AssignedUserName ?? "Staff Member");
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = "Staff Member";
+
             var response = new StaffDutyHistoryResponse
             {
                 UserId = userId,
-                FullName = profile != null ? $"{profile.FirstName} {profile.LastName}".Trim() : (shifts.FirstOrDefault()?.AssignedUserName ?? "Staff Member"),
+                FullName = fullName,
                 JobTitle = profile?.JobTitle ?? "Staff",
                 TotalShiftsCount = shifts.Count,
                 CompletedShiftsCount = completedShifts.Count,
