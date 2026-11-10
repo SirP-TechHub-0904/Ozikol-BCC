@@ -287,6 +287,7 @@ namespace Ozikol_BCC.Api.Controllers
                     var extra = JsonSerializer.Deserialize<RegistrationLayoutConfigExtra>(policyConfigField.OptionsJson);
                     if (extra != null)
                     {
+                        policy.PageShellLayout = !string.IsNullOrWhiteSpace(extra.PageShellLayout) ? extra.PageShellLayout : policy.PageShellLayout;
                         policy.FormLayoutMode = !string.IsNullOrWhiteSpace(extra.FormLayoutMode) ? extra.FormLayoutMode : policy.FormLayoutMode;
                         policy.RequirePassword = extra.RequirePassword;
                         policy.AllowSaveAndContinue = extra.AllowSaveAndContinue;
@@ -350,6 +351,7 @@ namespace Ozikol_BCC.Api.Controllers
                 // 1. Prepare extra payload containing all settings as durable JSON
                 var extra = new RegistrationLayoutConfigExtra
                 {
+                    PageShellLayout = !string.IsNullOrWhiteSpace(dto.PageShellLayout) ? dto.PageShellLayout.Trim().ToLowerInvariant() : "website",
                     FormLayoutMode = !string.IsNullOrWhiteSpace(dto.FormLayoutMode) ? dto.FormLayoutMode : "single",
                     RequirePassword = dto.RequirePassword,
                     AllowSaveAndContinue = dto.AllowSaveAndContinue,
@@ -694,6 +696,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
 
+            string pageShellLayout = "website";
             string formLayoutMode = "single";
             bool requirePassword = true;
             bool allowSaveAndContinue = false;
@@ -708,6 +711,7 @@ namespace Ozikol_BCC.Api.Controllers
                     extra = JsonSerializer.Deserialize<RegistrationLayoutConfigExtra>(policyConfigField.OptionsJson);
                     if (extra != null)
                     {
+                        pageShellLayout = !string.IsNullOrWhiteSpace(extra.PageShellLayout) ? extra.PageShellLayout : "website";
                         formLayoutMode = !string.IsNullOrWhiteSpace(extra.FormLayoutMode) ? extra.FormLayoutMode : "single";
                         requirePassword = extra.RequirePassword;
                         allowSaveAndContinue = extra.AllowSaveAndContinue;
@@ -728,6 +732,7 @@ namespace Ozikol_BCC.Api.Controllers
                 registrationUrlSlug = (extra != null && !string.IsNullOrWhiteSpace(extra.RegistrationUrlSlug)) ? extra.RegistrationUrlSlug : (!string.IsNullOrWhiteSpace(config?.RegistrationUrlSlug) ? config.RegistrationUrlSlug : "register"),
                 enableAffiliateReferralCode = (extra != null && extra.EnableAffiliateReferralCode.HasValue) ? extra.EnableAffiliateReferralCode.Value : (config?.EnableAffiliateReferralCode ?? true),
                 defaultIndustrySector = (extra != null && !string.IsNullOrWhiteSpace(extra.DefaultIndustrySector)) ? extra.DefaultIndustrySector : (!string.IsNullOrWhiteSpace(config?.DefaultIndustrySector) ? config.DefaultIndustrySector : "Business & Enterprise"),
+                pageShellLayout,
                 formLayoutMode,
                 requirePassword,
                 allowSaveAndContinue,
@@ -837,6 +842,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     public class RegistrationLayoutConfigExtra
     {
+        public string PageShellLayout { get; set; } = "website";
         public string FormLayoutMode { get; set; } = "single";
         public bool RequirePassword { get; set; } = true;
         public bool AllowSaveAndContinue { get; set; } = false;
@@ -871,6 +877,11 @@ namespace Ozikol_BCC.Api.Controllers
         /// Custom CSS rules injected specifically on the public member registration page.
         /// </summary>
         public string? CustomCss { get; set; }
+
+        /// <summary>
+        /// Outer container shell used to render the registration form: "website" (Website Layout) or "auth" (Auth Layout).
+        /// </summary>
+        public string PageShellLayout { get; set; } = "website";
 
         /// <summary>
         /// Presentation layout experience: "single" (Single Page), "sections" (Single Page + Sections), "stepper" (Wizard Stepper), "pages" (Multi-Page).

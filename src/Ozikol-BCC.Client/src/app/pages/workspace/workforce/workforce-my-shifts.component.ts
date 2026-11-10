@@ -25,7 +25,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <button class="btn btn-outline-primary d-flex align-items-center gap-1" (click)="showLeaveModal = true">
             <span class="material-symbols-outlined">event_busy</span> Request Leave
           </button>
-          <a class="btn btn-primary d-flex align-items-center gap-1" routerLink="/attendance/workspace/clock">
+          <a class="btn btn-primary d-flex align-items-center gap-1" routerLink="/workforce/workspace/clock">
             <span class="material-symbols-outlined">fingerprint</span> Clock In / Out
           </a>
         </div>

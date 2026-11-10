@@ -34,6 +34,9 @@ interface JobRoleItem {
   title: string;
   code: string;
   description?: string;
+  compensationBasis?: 'Hourly' | 'Monthly';
+  monthlySalary?: number;
+  contractedWeeklyHours?: number;
   defaultHourlyRate: number;
   billingChargeRate: number;
   mandatorySiaSector?: string;
@@ -136,7 +139,7 @@ interface WorkforcePolicies {
           <button
             type="button"
             class="btn btn-primary"
-            *ngIf="activeTab === 'hours' || activeTab === 'breaks' || activeTab === 'forms'"
+            *ngIf="activeTab === 'hours' || activeTab === 'breaks'"
             (click)="savePolicies()"
             [disabled]="isSavingPolicies"
           >
@@ -178,16 +181,6 @@ interface WorkforcePolicies {
         >
           <span class="material-symbols-outlined">coffee</span>
           <span>Meal &amp; Rest Breaks</span>
-        </button>
-
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'forms'"
-          (click)="activeTab = 'forms'"
-        >
-          <span class="material-symbols-outlined">fact_check</span>
-          <span>Custom Forms &amp; Onboarding</span>
         </button>
 
         <button
@@ -239,15 +232,6 @@ interface WorkforcePolicies {
             </div>
           </div>
 
-          <div class="metric-card">
-            <div class="card-icon bg-purple">
-              <span class="material-symbols-outlined">price_check</span>
-            </div>
-            <div class="metric-body">
-              <div class="metric-val">{{ currencySymbol }}{{ averageChargeRate | number:'1.2-2' }}</div>
-              <div class="metric-label">Average Client Billing Rate</div>
-            </div>
-          </div>
         </div>
 
         <div class="content-card">
@@ -255,8 +239,8 @@ interface WorkforcePolicies {
             <div class="header-bar-left">
               <span class="material-symbols-outlined text-blue">work</span>
               <div>
-                <h3 class="card-heading">Configured Job Roles &amp; Charging Matrix</h3>
-                <p class="card-sub">Roles dictate default wage disbursements, client billing charge rates, and required credential categories.</p>
+                <h3 class="card-heading">Configured Job Roles</h3>
+                <p class="card-sub">Roles dictate default wage disbursements and required credential categories.</p>
               </div>
             </div>
           </div>
@@ -269,7 +253,6 @@ interface WorkforcePolicies {
                   <th>Role Title</th>
                   <th>Code</th>
                   <th>Base Wage Rate</th>
-                  <th>Client Charge Rate</th>
                   <th>Required Qualification</th>
                   <th>Assigned Staff</th>
                   <th>Status</th>
@@ -291,10 +274,8 @@ interface WorkforcePolicies {
                     <span class="code-badge">{{ r.code }}</span>
                   </td>
                   <td>
-                    <span class="wage-tag">{{ currencySymbol }}{{ r.defaultHourlyRate | number:'1.2-2' }}/hr</span>
-                  </td>
-                  <td>
-                    <span class="charge-tag">{{ currencySymbol }}{{ r.billingChargeRate | number:'1.2-2' }}/hr</span>
+                    <span class="wage-tag" *ngIf="r.compensationBasis !== 'Monthly'">{{ currencySymbol }}{{ r.defaultHourlyRate | number:'1.2-2' }}/hr</span>
+                    <span class="wage-tag salary" *ngIf="r.compensationBasis === 'Monthly'">{{ currencySymbol }}{{ (r.monthlySalary || 0) | number:'1.0-0' }}/mo</span>
                   </td>
                   <td>
                     <span class="sia-badge" [class.none]="!r.mandatorySiaSector || r.mandatorySiaSector === 'None'">
@@ -318,7 +299,7 @@ interface WorkforcePolicies {
                   </td>
                 </tr>
                 <tr *ngIf="jobRoles.length === 0 && !isLoading">
-                  <td colspan="9" class="empty-state">
+                  <td colspan="8" class="empty-state">
                     No job roles configured yet. Click "+ Add Job Role" to create your first operational role.
                   </td>
                 </tr>
@@ -646,99 +627,6 @@ interface WorkforcePolicies {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 4: CUSTOM FORMS & ONBOARDING -->
-      <!-- ========================================================================= -->
-      <div class="tab-pane" *ngIf="activeTab === 'forms'">
-        <div class="content-card">
-          <div class="card-header-bar">
-            <div class="header-bar-left">
-              <span class="material-symbols-outlined text-blue">dynamic_form</span>
-              <div>
-                <h3 class="card-heading">Mandatory Onboarding Questionnaire Fields</h3>
-                <p class="card-sub">Decide what information your staff members must provide during self-enrollment or profile completion.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="policy-form">
-            <div class="custom-fields-list">
-              <div class="field-item-card">
-                <div class="field-item-left">
-                  <span class="material-symbols-outlined text-blue">apparel</span>
-                  <div>
-                    <strong>Uniform &amp; PPE Sizing</strong>
-                    <p>Collects Jacket Size (S-XXL), Trouser Waist/Inseam, and Safety Boot Shoe Size.</p>
-                  </div>
-                </div>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="policies.requireUniformSizes"
-                    name="requireUniformSizes"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="field-item-card">
-                <div class="field-item-left">
-                  <span class="material-symbols-outlined text-blue">directions_car</span>
-                  <div>
-                    <strong>Driving License &amp; Vehicle Access</strong>
-                    <p>Checks if the staff member holds a valid driving license and has access to a vehicle for mobile patrol shifts.</p>
-                  </div>
-                </div>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="policies.requireDrivingLicense"
-                    name="requireDrivingLicense"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="field-item-card">
-                <div class="field-item-left">
-                  <span class="material-symbols-outlined text-blue">medical_information</span>
-                  <div>
-                    <strong>Emergency Medical Conditions &amp; Allergies</strong>
-                    <p>Captures critical health disclosures so dispatchers can respond appropriately in an emergency.</p>
-                  </div>
-                </div>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="policies.requireMedicalAllergies"
-                    name="requireMedicalAllergies"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="field-item-card">
-                <div class="field-item-left">
-                  <span class="material-symbols-outlined text-blue">shield_person</span>
-                  <div>
-                    <strong>DBS Criminal Record &amp; Vetting Disclosure</strong>
-                    <p>Standard security screening questions in compliance with BS 7858 security vetting standards.</p>
-                  </div>
-                </div>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="policies.requireDbsCriminalDisclosure"
-                    name="requireDbsCriminalDisclosure"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================================================= -->
       <!-- TAB 5: STAFF CLASSIFICATIONS (STAFF TYPES) -->
       <!-- ========================================================================= -->
       <div class="tab-pane" *ngIf="activeTab === 'staff-types'">
@@ -950,7 +838,32 @@ interface WorkforcePolicies {
               ></textarea>
             </div>
 
-            <div class="form-row-dual">
+            <!-- Compensation Model Selector -->
+            <div class="form-group">
+              <label class="form-label">Compensation Basis <span class="required">*</span></label>
+              <div class="radio-tab-toggle">
+                <button
+                  type="button"
+                  class="toggle-choice-btn"
+                  [class.active]="roleForm.compensationBasis !== 'Monthly'"
+                  (click)="roleForm.compensationBasis = 'Hourly'"
+                >
+                  <span class="material-symbols-outlined">schedule</span>
+                  <span>Hourly Wage Rate</span>
+                </button>
+                <button
+                  type="button"
+                  class="toggle-choice-btn"
+                  [class.active]="roleForm.compensationBasis === 'Monthly'"
+                  (click)="roleForm.compensationBasis = 'Monthly'"
+                >
+                  <span class="material-symbols-outlined">calendar_today</span>
+                  <span>Monthly Salaried</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row-dual" *ngIf="roleForm.compensationBasis !== 'Monthly'">
               <div class="form-group">
                 <label class="form-label">Default Hourly Wage Rate ({{ currencySymbol }}/hr) <span class="required">*</span></label>
                 <input
@@ -963,14 +876,29 @@ interface WorkforcePolicies {
                 />
               </div>
 
+            </div>
+
+            <div class="form-row-dual" *ngIf="roleForm.compensationBasis === 'Monthly'">
               <div class="form-group">
-                <label class="form-label">Client Billing Charge Rate ({{ currencySymbol }}/hr) <span class="required">*</span></label>
+                <label class="form-label">Monthly Base Salary ({{ currencySymbol }}/mo) <span class="required">*</span></label>
                 <input
                   type="number"
-                  step="0.25"
+                  step="1000"
                   class="form-control"
-                  [(ngModel)]="roleForm.billingChargeRate"
-                  placeholder="e.g. 22.50"
+                  [(ngModel)]="roleForm.monthlySalary"
+                  placeholder="e.g. 250000"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Contracted Weekly Hours <span class="required">*</span></label>
+                <input
+                  type="number"
+                  step="0.5"
+                  class="form-control"
+                  [(ngModel)]="roleForm.contractedWeeklyHours"
+                  placeholder="e.g. 40.0"
                   required
                 />
               </div>
@@ -1213,7 +1141,7 @@ interface WorkforcePolicies {
           <div class="modal-body info-guide-body">
             <div class="info-guide-section">
               <h4><span class="material-symbols-outlined text-blue">badge</span> Job Roles &amp; Pay Scales</h4>
-              <p>Job roles eliminate free-text discrepancies. When you allocate a staff member under a role, their base hourly pay and client billing charge automatically inherit these configured defaults.</p>
+              <p>Job roles eliminate free-text discrepancies. When you allocate a staff member under a role, their base hourly pay automatically inherits these configured defaults.</p>
             </div>
 
             <div class="info-guide-section">
@@ -1322,19 +1250,31 @@ interface WorkforcePolicies {
       display: flex;
       gap: 0.75rem;
       align-items: center;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.4rem;
-      padding: 0.55rem 1rem;
+      height: 40px;
+      padding: 0 1rem;
       font-size: 0.875rem;
       font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      text-decoration: none;
+      box-sizing: border-box;
       border-radius: 0.5rem;
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s ease;
+    }
+    .btn .material-symbols-outlined {
+      font-size: 18px;
     }
 
     .btn-outline {
@@ -1742,6 +1682,78 @@ interface WorkforcePolicies {
       }
     }
 
+    /* Mobile & Tablet Responsive Layout (header stacks, actions wrap, tables scroll horizontally) */
+    @media (max-width: 768px) {
+      .settings-page {
+        padding: 1rem 0.75rem;
+      }
+      .breadcrumb-nav {
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
+        font-size: 0.75rem;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+      }
+      .header-left {
+        min-width: 0;
+      }
+      .title-row {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .page-title {
+        font-size: 1.3rem;
+      }
+      .suite-pill {
+        white-space: nowrap;
+      }
+      .page-subtitle {
+        font-size: 0.8125rem;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: stretch;
+        gap: 0.5rem;
+      }
+      .header-actions .btn {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 0;
+        padding: 0 0.75rem;
+      }
+      .header-actions .btn-primary {
+        flex-basis: 100%;
+      }
+      .tab-btn {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 0.65rem 0.9rem;
+      }
+      .card-header-bar {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 1rem !important;
+      }
+      .header-bar-left {
+        min-width: 0;
+      }
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .settings-table {
+        min-width: 720px;
+      }
+      .settings-table th {
+        white-space: nowrap;
+      }
+      .settings-table td {
+        vertical-align: middle;
+      }
+    }
+
     .time-range-group {
       display: flex;
       align-items: center;
@@ -1910,6 +1922,106 @@ interface WorkforcePolicies {
       font-size: 0.75rem;
       color: #64748b;
       margin: 0.15rem 0 0 0;
+    }
+
+    /* Form Builder Redirect Box */
+    .form-builder-redirect-card {
+      padding: 2.5rem 2rem;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1.5rem;
+      margin: 1rem 0;
+    }
+
+    .redirect-icon-wrapper {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .redirect-icon-wrapper span {
+      font-size: 2.25rem;
+    }
+
+    .redirect-info-text h4 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .redirect-info-text p {
+      font-size: 0.875rem;
+      color: #475569;
+      max-width: 580px;
+      margin: 0 auto 0.5rem auto;
+      line-height: 1.5;
+    }
+
+    .redirect-info-text .redirect-sub {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin-top: 0.25rem;
+    }
+
+    .redirect-action-box {
+      margin-top: 0.5rem;
+    }
+
+    .btn-lg {
+      padding: 0.75rem 1.75rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      gap: 0.625rem;
+      border-radius: 0.5rem;
+    }
+
+    /* Radio Tab Toggle for Compensation Basis */
+    .radio-tab-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+    }
+
+    .toggle-choice-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border: none;
+      background: transparent;
+      border-radius: 0.375rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .toggle-choice-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .wage-tag.salary {
+      background-color: #f5f3ff;
+      color: #7c3aed;
+      border: 1px solid #ddd6fe;
     }
 
     /* Custom Fields */
@@ -2135,6 +2247,9 @@ export class WorkforceSettingsComponent implements OnInit {
     title: '',
     code: '',
     description: '',
+    compensationBasis: 'Hourly',
+    monthlySalary: undefined,
+    contractedWeeklyHours: 40,
     defaultHourlyRate: 15.0,
     billingChargeRate: 22.5,
     mandatorySiaSector: 'None',
@@ -2259,6 +2374,9 @@ export class WorkforceSettingsComponent implements OnInit {
       title: '',
       code: '',
       description: '',
+      compensationBasis: 'Hourly',
+      monthlySalary: undefined,
+      contractedWeeklyHours: 40,
       defaultHourlyRate: 15.0,
       billingChargeRate: 22.5,
       mandatorySiaSector: 'None',

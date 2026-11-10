@@ -181,6 +181,12 @@ namespace Ozikol_BCC.Domain.Models
         /// Timestamp when the shift was last modified in UTC.
         /// </summary>
         public DateTime? UpdatedUtc { get; set; }
+        [Column(TypeName = "nvarchar(max)")]
+        /// <summary>
+        /// Serialized JSON representation of the full user account information at the time of shift creation.
+        /// Stored as a string to allow flexible schema evolution without requiring a separate relational model.
+        /// </summary>
+        public string? UserAccountJson { get; set; }
 
         /// <summary>
         /// Navigation property to the 1-to-1 attendance execution record for this shift.

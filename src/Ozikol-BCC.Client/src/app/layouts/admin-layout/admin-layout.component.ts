@@ -1,5 +1,6 @@
 import { Component, OnInit, HostListener, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -51,7 +52,7 @@ export interface SuiteInfoDetail {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
@@ -663,6 +664,16 @@ export interface SuiteInfoDetail {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/live" [class.active]="isCurrentRoute('/workforce/console/live')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">radar</span>Live Duty &amp; Attendance</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/live')" (click)="togglePin('Live Duty Monitor', '/workforce/console/live', 'radar')" [title]="isPinned('/workforce/console/live') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/live') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/sites" [class.active]="isCurrentRoute('/workforce/console/sites')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">location_on</span>Client Sites &amp; Geofences</span>
                   </a>
@@ -1163,6 +1174,27 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">{{ isPinned('/identity/console/error-codes') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/settings/console/general')" (click)="toggleMenu('general_settings')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">settings</span>
+                <span>{{ 'nav.general_settings' | translate:'General Settings' }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/settings/console/general/email" [class.active]="isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Email Configuration</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Email Configuration', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
           </div>
           </ng-container>
         </ng-container>
@@ -1870,6 +1902,34 @@ export interface SuiteInfoDetail {
       [brandName]="brandName"
       (completed)="onFirstRunCompleted($event)">
     </app-first-run-setup-modal>
+
+    <!-- Workspace Email Service Notification Popup Modal (noreply@tenant.ozikol.cloud) -->
+    <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showEmailSetupModal && !showFirstRunModal">
+      <div class="oz-lang-modal-card" style="max-width: 480px; text-align: center; padding: 32px 28px;" (click)="$event.stopPropagation()">
+        <div class="oz-lang-modal-icon-wrap" style="margin: 0 auto 16px auto; background: rgba(0, 80, 229, 0.12); color: #0050E5;">
+          <span class="material-symbols-outlined">mark_email_read</span>
+        </div>
+
+        <span style="display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0050E5; background: #eff6ff; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px;">
+          Email Service for Notifications
+        </span>
+
+        <h3 class="oz-lang-modal-title" style="margin: 0 0 10px 0; font-size: 19px;">
+          Your Email Service for Notifications Has Been Activated
+        </h3>
+
+        <p class="oz-lang-modal-desc" style="margin-bottom: 18px; font-size: 13.5px; line-height: 1.6; color: #475569;">
+          Your workspace notification sender address (<strong style="color: #0050E5;">{{ emailSetupAddress }}</strong>) is enabled for Password Resets, Onboarding Invitations, and Security Alerts.
+        </p>
+
+        <div class="oz-lang-modal-actions" style="justify-content: center;">
+          <button type="button" class="btn-lang-modal-confirm" style="min-width: 160px; justify-content: center;" [disabled]="isProvisioningEmail" (click)="activateTenantMailcow()">
+            <span class="material-symbols-outlined" *ngIf="isProvisioningEmail">hourglass_top</span>
+            <span>{{ isProvisioningEmail ? 'Activating...' : 'OK' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Language Change Confirmation Modal -->
     <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLanguageConfirmModal" (click)="cancelLanguageChange()">
@@ -5593,11 +5653,19 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Transactional Email Service Setup Modal State
+  showEmailSetupModal = false;
+  emailSetupAddress = '';
+  isProvisioningEmail = false;
+
   /**
    * Checks if the workspace has been initialized with default or blank settings.
    * If not, presents the first-run onboarding setup wizard modal to administrators.
    */
   checkFirstRunSetupStatus(): void {
+    // Always check email setup status for administrators entering the dashboard
+    this.checkEmailServiceSetupStatus();
+
     // 1. Instant local/session guard: Avoid unnecessary network checks once verified in current browser session
     if (sessionStorage.getItem('bcp_setup_modal_dismissed') === 'true' ||
         localStorage.getItem('bcp_workspace_initialized') === 'true') {
@@ -5637,6 +5705,63 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     if (mode === 'default') {
       this.loadSidebarForms();
     }
+    this.checkEmailServiceSetupStatus();
+  }
+
+  /**
+   * Checks whether the tenant's notification email service (noreply@tenant.ozikol.cloud) is configured.
+   * If not configured, displays the activation confirmation modal on the dashboard.
+   */
+  checkEmailServiceSetupStatus(): void {
+    if (!this.isAdmin) return;
+    if (sessionStorage.getItem('bcp_email_setup_modal_dismissed') === 'true') return;
+
+    this.api.get<any>('SettingsApi/email-setup-status').subscribe({
+      next: (res) => {
+        if (res?.isSuccess && res.data) {
+          const tKey = res.data.tenantKey || this.tenantKey || 'workspace';
+          this.emailSetupAddress = res.data.senderEmail || `noreply@${tKey}.ozikol.cloud`;
+          if (!res.data.isConfigured) {
+            this.showEmailSetupModal = true;
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Activates the tenant's notification email service (noreply@tenant.ozikol.cloud) when the user clicks OK.
+   */
+  activateTenantMailcow(): void {
+    if (this.isProvisioningEmail) return;
+    this.isProvisioningEmail = true;
+
+    this.api.post<any>('SettingsApi/provision-mailcow', {
+      customSenderEmail: this.emailSetupAddress?.trim() || undefined,
+      senderName: this.brandName || undefined
+    }).subscribe({
+      next: (res) => {
+        this.isProvisioningEmail = false;
+        this.showEmailSetupModal = false;
+        sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
+        this.toast.success(res?.message || 'Your email service for notifications has been activated.');
+      },
+      error: (err) => {
+        this.isProvisioningEmail = false;
+        this.showEmailSetupModal = false;
+        sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
+        this.toast.error(err?.error?.message || 'Unable to activate email service for notifications.');
+      }
+    });
+  }
+
+  /**
+   * Dismisses the email setup popup for the current session.
+   */
+  dismissEmailSetupModal(): void {
+    this.showEmailSetupModal = false;
+    sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
   }
 
   ngOnDestroy(): void {

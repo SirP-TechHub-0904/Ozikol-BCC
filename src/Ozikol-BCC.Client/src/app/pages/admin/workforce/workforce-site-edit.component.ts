@@ -101,19 +101,6 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
               </div>
 
-              <!-- Parent Client Organization -->
-              <div class="form-group">
-                <div class="field-header-row">
-                  <label class="form-label mb-0">Parent Client Organization</label>
-                  <button type="button" class="btn-text-action" (click)="openAddOrgModal()">+ Add New Organization</button>
-                </div>
-                <select class="form-control" [(ngModel)]="site.clientOrganizationId" name="clientOrganizationId" (change)="onOrgChanged()">
-                  <option [ngValue]="null">-- Standalone Venue / Unassigned --</option>
-                  <option *ngFor="let org of clientOrganizations" [value]="org.id">{{ org.name }} ({{ org.organizationCode }})</option>
-                </select>
-                <span class="field-hint">Groups multiple customer venue posts under an umbrella corporate client for unified billing.</span>
-              </div>
-
               <div class="form-group">
                 <label class="form-label">Street Address <span class="required">*</span></label>
                 <input
@@ -153,14 +140,14 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Card 2: Duty Operations & Regulatory Compliance -->
+          <!-- Card 2: Contact Person & Operations -->
           <div class="cms-card">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="material-symbols-outlined text-purple">badge</span>
+                <span class="material-symbols-outlined text-purple">person_pin</span>
                 <div>
-                  <h3>Operations &amp; Compliance</h3>
-                  <p class="card-subtitle">Duty point of contact and mandatory credential/qualification requirements.</p>
+                  <h3>Contact Person</h3>
+                  <p class="card-subtitle">Site manager or primary point of contact for this work location.</p>
                 </div>
               </div>
             </div>
@@ -168,7 +155,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-body">
               <div class="form-row-dual">
                 <div class="form-group">
-                  <label class="form-label">Duty Contact Person</label>
+                  <label class="form-label">Full Name</label>
                   <input
                     type="text"
                     class="form-control"
@@ -176,11 +163,25 @@ import { ToastService } from '../../../core/services/toast.service';
                     name="emergencyContactName"
                     placeholder="e.g. First Last"
                   />
-                  <span class="field-hint">Site supervisor, facility lead, or emergency contact.</span>
+                  <span class="field-hint">Site supervisor, facility lead, or manager.</span>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Duty Phone (24/7)</label>
+                  <label class="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    [(ngModel)]="site.emergencyContactEmail"
+                    name="emergencyContactEmail"
+                    placeholder="name@company.com"
+                  />
+                  <span class="field-hint">Primary email for site notices.</span>
+                </div>
+              </div>
+
+              <div class="form-row-dual">
+                <div class="form-group">
+                  <label class="form-label">Phone Number</label>
                   <input
                     type="tel"
                     class="form-control"
@@ -188,19 +189,19 @@ import { ToastService } from '../../../core/services/toast.service';
                     name="emergencyContactPhone"
                     placeholder="e.g. +44 20 7946 0000"
                   />
-                  <span class="field-hint">24/7 incident phone line for on-duty guards.</span>
+                  <span class="field-hint">24/7 incident phone line for on-duty staff.</span>
                 </div>
-              </div>
 
-              <div class="form-group">
-                <label class="form-label">Required Credential / Document Category</label>
-                <select class="form-control" [(ngModel)]="site.requiredSiaLicenceType" name="requiredSiaLicenceType">
-                  <option value="">No credential required</option>
-                  <option *ngFor="let cat of documentCategories" [value]="cat.name">
-                    {{ cat.name }} ({{ cat.code }})
-                  </option>
-                </select>
-                <span class="field-hint">Personnel dispatched to this site must hold an active verified document under this category.</span>
+                <div class="form-group">
+                  <label class="form-label">Required Credential / Document Category</label>
+                  <select class="form-control" [(ngModel)]="site.requiredSiaLicenceType" name="requiredSiaLicenceType">
+                    <option value="">No credential required</option>
+                    <option *ngFor="let cat of documentCategories" [value]="cat.name">
+                      {{ cat.name }} ({{ cat.code }})
+                    </option>
+                  </select>
+                  <span class="field-hint">Personnel dispatched to this site must hold an active verified document under this category.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -327,66 +328,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </button>
         </div>
       </div>
-
-      <!-- Quick Create Organization Modal -->
-      <div class="modal-backdrop" *ngIf="showAddOrgModal" (click)="showAddOrgModal = false">
-        <div class="modal-card" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">corporate_fare</span>
-              <div>
-                <h3>Add Client Organization</h3>
-                <p class="modal-subtitle">Register parent client account for invoicing and site grouping.</p>
-              </div>
-            </div>
-            <button type="button" class="btn-close" (click)="showAddOrgModal = false">&times;</button>
-          </div>
-
-          <div class="modal-body">
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Company Name <span class="required">*</span></label>
-                <input type="text" class="form-control" [(ngModel)]="orgForm.name" placeholder="e.g. Commercial Property Group" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Client Code</label>
-                <input type="text" class="form-control" [(ngModel)]="orgForm.organizationCode" placeholder="e.g. CPG-CORP" />
-              </div>
-            </div>
-
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Billing Email Address <span class="required">*</span></label>
-                <input type="email" class="form-control" [(ngModel)]="orgForm.billingEmail" placeholder="name@company.com" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Billing Phone Number</label>
-                <input type="tel" class="form-control" [(ngModel)]="orgForm.billingPhone" placeholder="e.g. +44 20 7946 0000" />
-              </div>
-            </div>
-
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Account Manager</label>
-                <input type="text" class="form-control" [(ngModel)]="orgForm.accountManagerName" placeholder="e.g. First Last" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Payment Terms (Days)</label>
-                <input type="number" class="form-control" [(ngModel)]="orgForm.paymentTermsDays" placeholder="30" />
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="showAddOrgModal = false">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveOrganization()" [disabled]="isSavingOrg">
-              <span class="material-symbols-outlined" *ngIf="!isSavingOrg">save</span>
-              <span class="material-symbols-outlined spin" *ngIf="isSavingOrg">sync</span>
-              <span>{{ isSavingOrg ? 'Saving...' : 'Create Organization' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   `,
   styles: [`
@@ -395,8 +336,7 @@ import { ToastService } from '../../../core/services/toast.service';
       flex-direction: column;
       gap: 24px;
       padding: 0 4px 40px 4px;
-      max-width: 1320px;
-      margin: 0 auto;
+      width: 100%;
     }
 
     /* Page Header */
@@ -876,18 +816,6 @@ export class WorkforceSiteEditComponent implements OnInit {
   isSaving = false;
   isDetectingGps = false;
 
-  clientOrganizations: any[] = [];
-  showAddOrgModal = false;
-  isSavingOrg = false;
-  orgForm: any = {
-    name: '',
-    organizationCode: '',
-    billingEmail: '',
-    billingPhone: '',
-    accountManagerName: '',
-    paymentTermsDays: 30
-  };
-
   site: Partial<ClientSite> = {
     siteCode: '',
     siteName: '',
@@ -895,6 +823,9 @@ export class WorkforceSiteEditComponent implements OnInit {
     city: '',
     postalCode: '',
     geofenceRadiusMeters: 50,
+    emergencyContactName: '',
+    emergencyContactEmail: '',
+    emergencyContactPhone: '',
     requiredSiaLicenceType: ''
   };
 
@@ -908,7 +839,6 @@ export class WorkforceSiteEditComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadClientOrganizations();
     this.loadDocumentCategories();
     const siteId = this.route.snapshot.paramMap.get('id');
     if (siteId) {
@@ -929,59 +859,6 @@ export class WorkforceSiteEditComponent implements OnInit {
       },
       error: () => {}
     });
-  }
-
-  loadClientOrganizations(): void {
-    this.workforceService.getClientOrganizations().subscribe({
-      next: (res: any) => {
-        if (res && res.data) {
-          this.clientOrganizations = res.data;
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  openAddOrgModal(): void {
-    this.orgForm = {
-      name: '',
-      organizationCode: '',
-      billingEmail: '',
-      billingPhone: '',
-      accountManagerName: '',
-      paymentTermsDays: 30
-    };
-    this.showAddOrgModal = true;
-  }
-
-  saveOrganization(): void {
-    if (!this.orgForm.name?.trim() || !this.orgForm.billingEmail?.trim()) {
-      this.toast.warning('Company Name and Billing Email are required.');
-      return;
-    }
-
-    this.isSavingOrg = true;
-    this.workforceService.createClientOrganization(this.orgForm).subscribe({
-      next: (res: any) => {
-        this.isSavingOrg = false;
-        this.showAddOrgModal = false;
-        this.toast.success(`Client organization '${this.orgForm.name}' created.`);
-        this.loadClientOrganizations();
-        if (res && res.data) {
-          this.site.clientOrganizationId = res.data.id;
-          this.site.clientOrganizationName = res.data.name;
-        }
-      },
-      error: (err: any) => {
-        this.isSavingOrg = false;
-        this.toast.error(err?.error?.message || 'Failed to create organization.');
-      }
-    });
-  }
-
-  onOrgChanged(): void {
-    const selected = this.clientOrganizations.find(o => o.id === this.site.clientOrganizationId);
-    this.site.clientOrganizationName = selected ? selected.name : undefined;
   }
 
   private loadSite(id: string): void {

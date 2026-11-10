@@ -132,6 +132,10 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpClientOrganization> BcpClientOrganizations { get; set; } = null!;
     public DbSet<BcpShiftStaffRating> BcpShiftStaffRatings { get; set; } = null!;
     public DbSet<BcpShiftNotificationPreference> BcpShiftNotificationPreferences { get; set; } = null!;
+        /// <summary>
+        /// Invitation records for one‑time user onboarding links.
+        /// </summary>
+        public DbSet<Ozikol_BCC.Domain.Models.Invitation> Invitations { get; set; } = null!;
 
     // --- BCP: Committees & Groups Feature ---
     public DbSet<BcpGroup> BcpGroups { get; set; }

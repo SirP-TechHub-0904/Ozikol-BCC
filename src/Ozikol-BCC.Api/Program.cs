@@ -80,6 +80,8 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
             builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
             builder.Services.AddScoped<ITenantFeatureGateService, Ozikol_BCC.Api.Services.TenantFeatureGateService>();
             builder.Services.AddScoped<Ozikol_BCC.Api.Services.IBillingSnapshotService, Ozikol_BCC.Api.Services.BillingSnapshotService>();
+            // Register default tenant seeder for initial setup
+            builder.Services.AddScoped<Ozikol_BCC.Application.Seeders.DefaultTenantSeeder>();
             // Pushes billing/subscription changes made in Central to tenants over the notification WebSocket
             builder.Services.AddHostedService<Ozikol_BCC.Api.Services.BillingRealtimeWorker>();
             builder.Services.AddSingleton<Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService, Ozikol_BCC.Api.Services.TemplateSecurityInspectorService>();

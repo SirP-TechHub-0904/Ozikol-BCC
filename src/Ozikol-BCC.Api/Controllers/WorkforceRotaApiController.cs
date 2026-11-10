@@ -41,6 +41,24 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly UserManager<Profile>? _userManager;
 
         /// <summary>
+        /// In-memory single-use invitation registry ensuring resilient one-time token tracking.
+        /// </summary>
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Invitation> _memoryInvitations =
+            new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Computes a compact 64-character lookup key suitable for the <see cref="Invitation.Token"/> column (<c>StringLength(100)</c>).
+        /// </summary>
+        private static string ComputeTokenStorageKey(string rawToken)
+        {
+            if (string.IsNullOrWhiteSpace(rawToken)) return string.Empty;
+            var trimmed = rawToken.Trim();
+            if (trimmed.Length <= 96) return trimmed;
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(trimmed));
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="WorkforceRotaApiController"/> class.
         /// </summary>
         public WorkforceRotaApiController(
@@ -133,6 +151,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Longitude = s.Longitude,
                     GeofenceRadiusMeters = s.GeofenceRadiusMeters,
                     EmergencyContactName = s.EmergencyContactName,
+                    EmergencyContactEmail = s.EmergencyContactEmail,
                     EmergencyContactPhone = s.EmergencyContactPhone,
                     SiteAssignmentInstructions = s.SiteAssignmentInstructions,
                     RequiredSiaLicenceType = s.RequiredSiaLicenceType,
@@ -166,6 +185,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Longitude = s.Longitude,
                     GeofenceRadiusMeters = s.GeofenceRadiusMeters,
                     EmergencyContactName = s.EmergencyContactName,
+                    EmergencyContactEmail = s.EmergencyContactEmail,
                     EmergencyContactPhone = s.EmergencyContactPhone,
                     SiteAssignmentInstructions = s.SiteAssignmentInstructions,
                     RequiredSiaLicenceType = s.RequiredSiaLicenceType,
@@ -223,6 +243,7 @@ namespace Ozikol_BCC.Api.Controllers
             site.Longitude = request.Longitude;
             site.GeofenceRadiusMeters = request.GeofenceRadiusMeters > 0 ? request.GeofenceRadiusMeters : 150;
             site.EmergencyContactName = request.EmergencyContactName?.Trim();
+            site.EmergencyContactEmail = request.EmergencyContactEmail?.Trim();
             site.EmergencyContactPhone = request.EmergencyContactPhone?.Trim();
             site.SiteAssignmentInstructions = request.SiteAssignmentInstructions?.Trim();
             site.RequiredSiaLicenceType = request.RequiredSiaLicenceType?.Trim();
@@ -490,6 +511,326 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift confirmed successfully."));
         }
 
+        /// <summary>
+        /// Retrieves detailed information for a single scheduled shift.
+        /// </summary>
+        /// <param name="id">Unique identifier of the shift.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Populated shift data transfer object.</returns>
+        [HttpGet("shifts/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<ShiftDto>>> GetShift(Guid id, CancellationToken ct)
+        {
+            var s = await _db.BcpShifts
+                .AsNoTracking()
+                .Include(x => x.ClientSite)
+                .Include(x => x.AttendanceRecord)
+                .FirstOrDefaultAsync(x => x.Id == id && x.TenantKey == CurrentTenantKey, ct);
+
+            if (s == null)
+            {
+                return NotFound(ApiResponse<ShiftDto>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            var dto = new ShiftDto
+            {
+                Id = s.Id,
+                ShiftCode = s.ShiftCode,
+                ClientSiteId = s.ClientSiteId,
+                SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
+                SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                PostName = s.PostName,
+                FacilityName = s.FacilityName,
+                Address = s.Address,
+                PostCode = s.PostCode,
+                EventTag = s.EventTag,
+                AssignedUserId = s.AssignedUserId,
+                AssignedUserName = s.AssignedUserName,
+                StartsAtUtc = s.StartsAtUtc,
+                EndsAtUtc = s.EndsAtUtc,
+                IsOvernight = s.IsOvernight,
+                BreakMinutes = s.BreakMinutes,
+                PlannedDurationHours = s.PlannedDurationHours,
+                HourlyPayRate = s.HourlyPayRate,
+                HourlyChargeRate = s.HourlyChargeRate,
+                RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
+                RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
+                Status = s.Status,
+                IsConfirmedByGuard = s.IsConfirmedByGuard,
+                ConfirmedAtUtc = s.ConfirmedAtUtc,
+                AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
+                AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
+                Notes = s.Notes,
+                IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
+                IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
+            };
+
+            return Ok(ApiResponse<ShiftDto>.SuccessResponse(dto, "Shift details retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Updates an existing scheduled shift with recalculation of net working hours and overnight detection.
+        /// </summary>
+        /// <param name="id">Unique identifier of the shift to update.</param>
+        /// <param name="request">Updated shift parameters.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>ID of the updated shift.</returns>
+        [HttpPut("shifts/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<Guid>>> UpdateShift(Guid id, [FromBody] UpdateShiftRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts.FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<Guid>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            if (request.ClientSiteId == Guid.Empty || request.StartsAtUtc >= request.EndsAtUtc)
+            {
+                return BadRequest(ApiResponse<Guid>.FailureResponse("Valid work location and end time greater than start time are required.", errorCode: "ERR-2001"));
+            }
+
+            var startUtc = request.StartsAtUtc.ToUniversalTime();
+            var endUtc = request.EndsAtUtc.ToUniversalTime();
+
+            // Double-booking conflict check (excluding current shift)
+            if (!string.IsNullOrWhiteSpace(request.AssignedUserId))
+            {
+                var hasOverlap = await _db.BcpShifts.AnyAsync(s =>
+                    s.TenantKey == CurrentTenantKey &&
+                    s.Id != id &&
+                    s.AssignedUserId == request.AssignedUserId &&
+                    s.Status != "Cancelled" &&
+                    s.StartsAtUtc < endUtc &&
+                    s.EndsAtUtc > startUtc, ct);
+
+                if (hasOverlap)
+                {
+                    return Conflict(ApiResponse<Guid>.FailureResponse("This staff member is already scheduled for another shift during these hours.", errorCode: "ERR-2005"));
+                }
+            }
+
+            bool isOvernight = endUtc.Date > startUtc.Date;
+            int breakMins = request.BreakMinutes >= 0 ? request.BreakMinutes : 0;
+            decimal totalHours = (decimal)(endUtc - startUtc).TotalHours;
+            decimal plannedNetHours = Math.Max(0, totalHours - (breakMins / 60.0m));
+
+            shift.ClientSiteId = request.ClientSiteId;
+            shift.AssignedUserId = request.AssignedUserId;
+            shift.AssignedUserName = request.AssignedUserName;
+            shift.PostName = string.IsNullOrWhiteSpace(request.PostName) ? "General Assignment" : request.PostName.Trim();
+            shift.FacilityName = request.FacilityName?.Trim();
+            shift.Address = request.Address?.Trim();
+            shift.PostCode = request.PostCode?.Trim();
+            shift.EventTag = request.EventTag?.Trim();
+            shift.StartsAtUtc = startUtc;
+            shift.EndsAtUtc = endUtc;
+            shift.IsOvernight = isOvernight;
+            shift.BreakMinutes = breakMins;
+            shift.PlannedDurationHours = Math.Round(plannedNetHours, 2);
+            shift.RequiredWorkspaceStationId = request.RequiredWorkspaceStationId;
+            shift.RequiredWorkspaceStationName = request.RequiredWorkspaceStationName;
+            shift.HourlyPayRate = request.HourlyPayRate;
+            shift.HourlyChargeRate = request.HourlyChargeRate;
+            shift.AcceptanceDeadlineUtc = request.AcceptanceDeadlineUtc;
+            shift.Status = string.IsNullOrWhiteSpace(request.Status) ? shift.Status : request.Status.Trim();
+            shift.Notes = request.Notes?.Trim();
+            shift.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<Guid>.SuccessResponse(shift.Id, $"Shift {shift.ShiftCode} updated successfully."));
+        }
+
+        /// <summary>
+        /// Deletes or cancels a planned shift.
+        /// </summary>
+        /// <param name="id">Shift identifier.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Success confirmation.</returns>
+        [HttpDelete("shifts/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteShift(Guid id, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .Include(s => s.AttendanceRecord)
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            // If an active attendance record exists, cancel rather than hard-deleting
+            if (shift.AttendanceRecord != null)
+            {
+                shift.Status = "Cancelled";
+                shift.UpdatedUtc = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.BcpShifts.Remove(shift);
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift removed successfully."));
+        }
+
+        /// <summary>
+        /// Generates recurring or daily working schedules across a calendar date range.
+        /// Supports standard daily routines (e.g. 8 to 5 Mon–Fri), rotational shift patterns, and custom day selections.
+        /// </summary>
+        /// <param name="request">Batch schedule creation specification.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Collection of created shift IDs and generated summary.</returns>
+        [HttpPost("shifts/batch-schedule")]
+        public async Task<ActionResult<ApiResponse<List<Guid>>>> BatchCreateShiftSchedule(
+            [FromBody] BatchCreateShiftScheduleRequest request,
+            CancellationToken ct)
+        {
+            if (request.ClientSiteId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<List<Guid>>.FailureResponse("Valid work location is required.", errorCode: "ERR-2001"));
+            }
+
+            if (request.StartDate.Date > request.EndDate.Date)
+            {
+                return BadRequest(ApiResponse<List<Guid>>.FailureResponse("Start date cannot be later than end date.", errorCode: "ERR-2002"));
+            }
+
+            // Parse daily start and end times
+            if (!TimeSpan.TryParse(request.StartTime, out var startTimeSpan))
+            {
+                startTimeSpan = new TimeSpan(8, 0, 0);
+            }
+            if (!TimeSpan.TryParse(request.EndTime, out var endTimeSpan))
+            {
+                endTimeSpan = new TimeSpan(17, 0, 0);
+            }
+
+            var daysOfWeek = request.SelectedDaysOfWeek != null && request.SelectedDaysOfWeek.Count > 0
+                ? request.SelectedDaysOfWeek
+                : new List<int> { 1, 2, 3, 4, 5 }; // Default Monday to Friday
+
+            var generatedShifts = new List<BcpShift>();
+            var currentDate = request.StartDate.Date;
+            var endDate = request.EndDate.Date;
+
+            // Determine if daily window crosses midnight
+            bool isCrossMidnight = endTimeSpan <= startTimeSpan;
+
+            int breakMins = request.BreakMinutes >= 0 ? request.BreakMinutes : 0;
+            decimal durationHours = isCrossMidnight
+                ? (decimal)(24 - startTimeSpan.TotalHours + endTimeSpan.TotalHours)
+                : (decimal)(endTimeSpan - startTimeSpan).TotalHours;
+            decimal plannedNetHours = Math.Max(0, durationHours - (breakMins / 60.0m));
+
+            int shiftSequence = await _db.BcpShifts.CountAsync(s => s.TenantKey == CurrentTenantKey && s.StartsAtUtc.Date == DateTime.UtcNow.Date, ct);
+
+            while (currentDate <= endDate)
+            {
+                // DayOfWeek in .NET: Sunday = 0, Monday = 1 ... Saturday = 6
+                int dayNumber = (int)currentDate.DayOfWeek;
+                if (daysOfWeek.Contains(dayNumber))
+                {
+                    var shiftStartLocal = currentDate.Add(startTimeSpan);
+                    var shiftEndLocal = isCrossMidnight
+                        ? currentDate.AddDays(1).Add(endTimeSpan)
+                        : currentDate.Add(endTimeSpan);
+
+                    var startUtc = DateTime.SpecifyKind(shiftStartLocal, DateTimeKind.Utc);
+                    var endUtc = DateTime.SpecifyKind(shiftEndLocal, DateTimeKind.Utc);
+
+                    // Skip conflict if assigned user already has shift
+                    if (!string.IsNullOrWhiteSpace(request.AssignedUserId))
+                    {
+                        var hasOverlap = await _db.BcpShifts.AnyAsync(s =>
+                            s.TenantKey == CurrentTenantKey &&
+                            s.AssignedUserId == request.AssignedUserId &&
+                            s.Status != "Cancelled" &&
+                            s.StartsAtUtc < endUtc &&
+                            s.EndsAtUtc > startUtc, ct);
+
+                        if (hasOverlap)
+                        {
+                            currentDate = currentDate.AddDays(1);
+                            continue;
+                        }
+                    }
+
+                    shiftSequence++;
+                    var shiftCode = $"SHF-{currentDate:yyyyMMdd}-{shiftSequence:D3}";
+
+                    var shift = new BcpShift
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = CurrentTenantKey,
+                        ShiftCode = shiftCode,
+                        ClientSiteId = request.ClientSiteId,
+                        AssignedUserId = request.AssignedUserId,
+                        AssignedUserName = request.AssignedUserName,
+                        PostName = string.IsNullOrWhiteSpace(request.PostName) ? "General Assignment" : request.PostName.Trim(),
+                        FacilityName = request.FacilityName?.Trim(),
+                        Address = request.Address?.Trim(),
+                        PostCode = request.PostCode?.Trim(),
+                        EventTag = request.EventTag?.Trim() ?? request.SchedulePattern,
+                        StartsAtUtc = startUtc,
+                        EndsAtUtc = endUtc,
+                        IsOvernight = isCrossMidnight,
+                        BreakMinutes = breakMins,
+                        PlannedDurationHours = Math.Round(plannedNetHours, 2),
+                        RequiredWorkspaceStationId = request.RequiredWorkspaceStationId,
+                        RequiredWorkspaceStationName = request.RequiredWorkspaceStationName,
+                        HourlyPayRate = request.HourlyPayRate,
+                        HourlyChargeRate = request.HourlyChargeRate,
+                        AcceptanceDeadlineUtc = request.AcceptanceDeadlineUtc,
+                        Status = "Scheduled",
+                        IsConfirmedByGuard = false,
+                        Notes = request.Notes?.Trim(),
+                        CreatedByUserId = CurrentUserId,
+                        CreatedUtc = DateTime.UtcNow
+                    };
+
+                    generatedShifts.Add(shift);
+                }
+
+                currentDate = currentDate.AddDays(1);
+            }
+
+            if (generatedShifts.Count == 0)
+            {
+                return BadRequest(ApiResponse<List<Guid>>.FailureResponse("No working shifts were generated. Please verify selected days of week and date range."));
+            }
+
+            _db.BcpShifts.AddRange(generatedShifts);
+            await _db.SaveChangesAsync(ct);
+
+            // Notify assigned member if applicable
+            if (!string.IsNullOrWhiteSpace(request.AssignedUserId) && _notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = request.AssignedUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "New Recurring Schedule Assigned",
+                        Message = $"You have been assigned {generatedShifts.Count} scheduled working shifts between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "calendar_month",
+                        ActionUrl = "/workforce/my-shifts"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
+            var ids = generatedShifts.Select(s => s.Id).ToList();
+            return Ok(ApiResponse<List<Guid>>.SuccessResponse(ids, $"Successfully generated {generatedShifts.Count} scheduled shifts."));
+        }
+
         // =========================================================================
         // 3. SHIFT SWAPS & OPEN SHIFTS
         // =========================================================================
@@ -755,7 +1096,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Generates a secure 7-day onboarding token and dispatches an invitation email for staff self-enrollment.
+        /// Generates a secure 7-day single-use onboarding token and dispatches an invitation email for staff self-enrollment.
         /// </summary>
         [HttpPost("members/invite")]
         [HttpPost("rota/members/invite")]
@@ -768,12 +1109,55 @@ namespace Ozikol_BCC.Api.Controllers
 
             var email = request.Email.Trim().ToLowerInvariant();
             var fullName = string.IsNullOrWhiteSpace(request.FullName) ? "Team Member" : request.FullName.Trim();
+            var phoneNumber = request.PhoneNumber?.Trim();
             var expiresUtc = DateTime.UtcNow.AddDays(7);
-            var token = GenerateOnboardingToken(CurrentTenantKey, email, expiresUtc);
+            var token = Guid.NewGuid().ToString("N")[..14].ToLowerInvariant();
+            var tokenKey = ComputeTokenStorageKey(token);
 
-            var onboardingUrl = $"/workforce/onboarding?token={token}&email={Uri.EscapeDataString(email)}";
+            // Persist single-use invitation record so the link can only be redeemed once
+            var invitationRecord = new Invitation
+            {
+                Id = Guid.CreateVersion7(),
+                FullName = fullName,
+                Email = email,
+                PhoneNumber = phoneNumber,
+                Token = tokenKey,
+                IsUsed = false,
+                CreatedUtc = DateTime.UtcNow,
+                ExpiresUtc = expiresUtc
+            };
+            _memoryInvitations[tokenKey] = invitationRecord;
 
-            // Trigger Transactional Invitation Email
+            try
+            {
+                _db.Invitations.Add(invitationRecord);
+                await _db.SaveChangesAsync(ct);
+            }
+            catch
+            {
+                _db.Entry(invitationRecord).State = EntityState.Detached;
+            }
+
+            var onboardingUrl = $"/workforce/onboarding/{token}";
+
+            // Resolve full client origin for clickable external email link
+            var clientOrigin = Request.Headers.Origin.FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(clientOrigin))
+            {
+                var referer = Request.Headers.Referer.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refUri))
+                {
+                    clientOrigin = $"{refUri.Scheme}://{refUri.Authority}";
+                }
+            }
+            var fullEmailActionUrl = !string.IsNullOrWhiteSpace(clientOrigin)
+                ? $"{clientOrigin.TrimEnd('/')}{onboardingUrl}"
+                : onboardingUrl;
+
+            var emailSent = false;
+            var emailError = string.Empty;
+
+            // Trigger Transactional Invitation Email via Mailcow SMTP
             if (_notificationDispatcher != null)
             {
                 try
@@ -782,26 +1166,39 @@ namespace Ozikol_BCC.Api.Controllers
                         ? $"\n\n**Note from Administrator:**\n_{request.WelcomeNote.Trim()}_\n"
                         : string.Empty;
 
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    var roleText = !string.IsNullOrWhiteSpace(request.JobTitle)
+                        ? $" as a **{request.JobTitle.Trim()}**"
+                        : string.Empty;
+
+                    var dispatchResult = await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
                         RecipientEmail = email,
                         RecipientName = fullName,
                         TenantKey = CurrentTenantKey,
-                        Title = $"Invitation to Join Workforce Rota as {request.JobTitle}",
-                        Message = $"Hello {fullName},\n\nYou have been invited to join the workforce team as a **{request.JobTitle}**.{customNote}\n\nPlease click the button below to complete your onboarding profile, set your password, and access your rota shifts.",
+                        Title = !string.IsNullOrWhiteSpace(request.JobTitle)
+                            ? $"Invitation to Join Workforce Rota as {request.JobTitle.Trim()}"
+                            : "Invitation to Complete Your Workforce Registration",
+                        Message = $"Hello {fullName},\n\nYou have been invited to join the workforce team{roleText}.{customNote}\n\nPlease click the button below to complete your registration form using your single-use onboarding link.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.Email,
                         SendEmailCopy = true,
                         Module = "Workforce",
                         Icon = "badge",
-                        ActionUrl = onboardingUrl
+                        ActionUrl = fullEmailActionUrl
                     }, ct);
+
+                    emailSent = dispatchResult.DispatchedEmailCount > 0;
+                    if (!emailSent && dispatchResult.Errors.Count > 0)
+                    {
+                        emailError = string.Join(" ", dispatchResult.Errors);
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Non-blocking notification dispatch
+                    emailError = ex.Message;
                 }
             }
 
@@ -809,10 +1206,17 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 Email = email,
                 FullName = fullName,
+                PhoneNumber = phoneNumber,
                 JobTitle = request.JobTitle,
                 ExpiresUtc = expiresUtc,
-                OnboardingUrl = onboardingUrl
-            }, "Onboarding invitation successfully generated and dispatched."));
+                Token = token,
+                OnboardingUrl = onboardingUrl,
+                FullOnboardingUrl = fullEmailActionUrl,
+                EmailSent = emailSent,
+                EmailError = emailError
+            }, emailSent
+                ? $"Invitation email sent to {email} and single-use link generated."
+                : "Single-use invitation link generated. Copy and share the link below."));
         }
 
         /// <summary>
@@ -850,6 +1254,13 @@ namespace Ozikol_BCC.Api.Controllers
                 var tempPassword = string.IsNullOrWhiteSpace(request.Password) ? $"Ozi@{Guid.NewGuid().ToString("N")[..6]}!" : request.Password;
 
                 var customAttrs = new Dictionary<string, object>();
+                if (request.CustomAttributes != null)
+                {
+                    foreach (var kv in request.CustomAttributes)
+                    {
+                        customAttrs[kv.Key] = kv.Value;
+                    }
+                }
                 if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
                 {
                     customAttrs["emergencyContact"] = new
@@ -1033,20 +1444,61 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Validates a member onboarding token for public self-activation.
+        /// Validates a member onboarding token for public self-activation and enforces single-use redemption.
         /// </summary>
         [HttpGet("members/verify-token")]
         [HttpGet("rota/members/verify-token")]
         [AllowAnonymous]
-        public ActionResult<ApiResponse<object>> VerifyOnboardingToken(
+        public async Task<ActionResult<ApiResponse<object>>> VerifyOnboardingToken(
             [FromQuery] string token,
-            [FromQuery] string? email)
+            [FromQuery] string? email,
+            CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Onboarding token is required."));
             }
 
+            var tokenKey = ComputeTokenStorageKey(token);
+
+            // 1. Check single-use Invitation registry first
+            Invitation? inv = null;
+            try
+            {
+                inv = await _db.Invitations.AsNoTracking().FirstOrDefaultAsync(i => i.Token == tokenKey || i.Token == token, ct);
+            }
+            catch
+            {
+                // Fallback to in-memory invitation store if table is not yet migrated
+            }
+            if (inv == null && _memoryInvitations.TryGetValue(tokenKey, out var memInv))
+            {
+                inv = memInv;
+            }
+
+            if (inv != null)
+            {
+                if (inv.IsUsed)
+                {
+                    return StatusCode(410, ApiResponse<object>.FailureResponse("This invitation link has already been used and is no longer valid."));
+                }
+                if (inv.ExpiresUtc.HasValue && inv.ExpiresUtc.Value < DateTime.UtcNow)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("This invitation link has expired. Please request a new invitation from your administrator."));
+                }
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    TenantKey = CurrentTenantKey,
+                    Email = inv.Email,
+                    FullName = inv.FullName,
+                    PhoneNumber = inv.PhoneNumber,
+                    ExpiresUtc = inv.ExpiresUtc,
+                    IsValid = true
+                }, "Invitation token verified successfully."));
+            }
+
+            // 2. Fallback to cryptographic token check
             if (!TryValidateOnboardingToken(token, out var tenantKey, out var tokenEmail, out var expiresUtc))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("The invitation token is invalid or has expired. Please contact your administrator for a new invite link."));
@@ -1062,7 +1514,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Completes member self-registration: sets password and stores compliance details.
+        /// Completes member self-registration: sets password, stores registration form custom attributes &amp; compliance details, and invalidates the one-time token.
         /// </summary>
         [HttpPost("members/complete-onboarding")]
         [HttpPost("rota/members/complete-onboarding")]
@@ -1071,7 +1523,42 @@ namespace Ozikol_BCC.Api.Controllers
             [FromBody] CompleteMemberOnboardingRequest request,
             CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(request.Token) || !TryValidateOnboardingToken(request.Token, out var tenantKey, out var tokenEmail, out _))
+            if (string.IsNullOrWhiteSpace(request.Token))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid or expired invitation token."));
+            }
+
+            var tokenKey = ComputeTokenStorageKey(request.Token);
+            Invitation? inv = null;
+            try
+            {
+                inv = await _db.Invitations.FirstOrDefaultAsync(i => i.Token == tokenKey || i.Token == request.Token, ct);
+            }
+            catch
+            {
+                // Fallback to in-memory invitation store
+            }
+            if (inv == null && _memoryInvitations.TryGetValue(tokenKey, out var memInv))
+            {
+                inv = memInv;
+            }
+
+            string tenantKey = CurrentTenantKey;
+            string tokenEmail = string.Empty;
+
+            if (inv != null)
+            {
+                if (inv.IsUsed)
+                {
+                    return StatusCode(410, ApiResponse<object>.FailureResponse("This invitation link has already been used and is no longer valid."));
+                }
+                if (inv.ExpiresUtc.HasValue && inv.ExpiresUtc.Value < DateTime.UtcNow)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("This invitation link has expired."));
+                }
+                tokenEmail = inv.Email;
+            }
+            else if (!TryValidateOnboardingToken(request.Token, out tenantKey, out tokenEmail, out _))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Invalid or expired invitation token."));
             }
@@ -1085,7 +1572,7 @@ namespace Ozikol_BCC.Api.Controllers
             var firstName = request.FirstName?.Trim() ?? string.Empty;
             var lastName = request.LastName?.Trim() ?? string.Empty;
             var fullName = $"{firstName} {lastName}".Trim();
-            if (string.IsNullOrWhiteSpace(fullName)) fullName = request.FullName?.Trim() ?? "Staff Member";
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = request.FullName?.Trim() ?? inv?.FullName ?? "Staff Member";
 
             Profile? user = null;
             if (_userManager != null)
@@ -1098,6 +1585,13 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var customAttrs = new Dictionary<string, object>();
+            if (request.CustomAttributes != null)
+            {
+                foreach (var kv in request.CustomAttributes)
+                {
+                    customAttrs[kv.Key] = kv.Value;
+                }
+            }
             if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
             {
                 customAttrs["emergencyContact"] = new
@@ -1269,6 +1763,15 @@ namespace Ozikol_BCC.Api.Controllers
                 doc.UpdatedUtc = DateTime.UtcNow;
             }
 
+            if (inv != null)
+            {
+                inv.IsUsed = true;
+            }
+            if (_memoryInvitations.TryGetValue(tokenKey, out var memInvToClose))
+            {
+                memInvToClose.IsUsed = true;
+            }
+
             await _db.SaveChangesAsync(ct);
 
             return Ok(ApiResponse<object>.SuccessResponse(new
@@ -1296,7 +1799,7 @@ namespace Ozikol_BCC.Api.Controllers
             var users = await _db.Users
                 .AsNoTracking()
                 .Where(u => userIds.Contains(u.Id))
-                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.Email, u.PhoneNumber }, ct);
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.Email, u.PhoneNumber, u.AvatarUrl }, ct);
 
             var result = profiles.Select(p =>
             {
@@ -1308,6 +1811,7 @@ namespace Ozikol_BCC.Api.Controllers
                     FullName = u?.FullName ?? "Staff Member",
                     Email = u?.Email ?? string.Empty,
                     PhoneNumber = u?.PhoneNumber,
+                    AvatarUrl = u?.AvatarUrl,
                     JobTitle = p.JobTitle,
                     StaffTypeId = p.StaffTypeId,
                     StaffTypeName = p.StaffTypeName,
@@ -1794,14 +2298,11 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves all configured staff employment types (Permanent, Temporary, Contractor, etc.) for the current tenant.
-        /// Automatically seeds compulsory types if not yet initialized.
+        /// Retrieves all configured staff employment types for the current tenant without auto-seeding hardcoded defaults.
         /// </summary>
         [HttpGet("staff-types")]
         public async Task<ActionResult<ApiResponse<List<BcpStaffTypeDto>>>> GetStaffTypes(CancellationToken ct)
         {
-            await EnsureDefaultStaffTypesAsync(CurrentTenantKey, ct);
-
             var types = await _db.BcpStaffTypes
                 .AsNoTracking()
                 .Where(t => t.TenantKey == CurrentTenantKey)
@@ -1992,12 +2493,13 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var defaults = new List<BcpJobRole>
                 {
-                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "SIA Door Supervisor", Code = "DS", Description = "Licensed door supervisor managing access control, patron safety, and front-of-house security.", DefaultHourlyRate = 15.00m, BillingChargeRate = 22.50m, MandatorySiaSector = "Door Supervision", BadgeColor = "#0050E5", IsActive = true, SortOrder = 1, CreatedUtc = DateTime.UtcNow },
-                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Static Security Guard", Code = "SG", Description = "Manned guarding for corporate offices, reception desks, and perimeter patrol routes.", DefaultHourlyRate = 13.50m, BillingChargeRate = 20.00m, MandatorySiaSector = "Security Guarding", BadgeColor = "#059669", IsActive = true, SortOrder = 2, CreatedUtc = DateTime.UtcNow },
-                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "CCTV Controller", Code = "CCTV", Description = "Licensed control room operator monitoring live video feeds, intrusion alarms, and remote dispatches.", DefaultHourlyRate = 16.00m, BillingChargeRate = 24.00m, MandatorySiaSector = "CCTV", BadgeColor = "#7C3AED", IsActive = true, SortOrder = 3, CreatedUtc = DateTime.UtcNow },
-                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Mobile Patrol Officer", Code = "MPO", Description = "Vehicle-equipped patrol specialist conducting scheduled lockups, unlocks, and alarm responses.", DefaultHourlyRate = 14.50m, BillingChargeRate = 21.50m, MandatorySiaSector = "Security Guarding", BadgeColor = "#2563EB", IsActive = true, SortOrder = 4, CreatedUtc = DateTime.UtcNow },
-                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Event Steward", Code = "ES", Description = "Crowd management, ticket verification, and hospitality guidance for events and festivals.", DefaultHourlyRate = 12.50m, BillingChargeRate = 18.00m, MandatorySiaSector = "None", BadgeColor = "#D97706", IsActive = true, SortOrder = 5, CreatedUtc = DateTime.UtcNow },
-                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Healthcare / Care Worker", Code = "HCW", Description = "Certified care worker providing residential and post care support.", DefaultHourlyRate = 16.50m, BillingChargeRate = 25.00m, MandatorySiaSector = "None", BadgeColor = "#EC4899", IsActive = true, SortOrder = 6, CreatedUtc = DateTime.UtcNow }
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "SIA Door Supervisor", Code = "DS", Description = "Licensed door supervisor managing access control, patron safety, and front-of-house security.", CompensationBasis = "Hourly", DefaultHourlyRate = 15.00m, BillingChargeRate = 22.50m, MandatorySiaSector = "Door Supervision", BadgeColor = "#0050E5", IsActive = true, SortOrder = 1, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Static Security Guard", Code = "SG", Description = "Manned guarding for corporate offices, reception desks, and perimeter patrol routes.", CompensationBasis = "Hourly", DefaultHourlyRate = 13.50m, BillingChargeRate = 20.00m, MandatorySiaSector = "Security Guarding", BadgeColor = "#059669", IsActive = true, SortOrder = 2, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "CCTV Controller", Code = "CCTV", Description = "Licensed control room operator monitoring live video feeds, intrusion alarms, and remote dispatches.", CompensationBasis = "Hourly", DefaultHourlyRate = 16.00m, BillingChargeRate = 24.00m, MandatorySiaSector = "CCTV", BadgeColor = "#7C3AED", IsActive = true, SortOrder = 3, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Mobile Patrol Officer", Code = "MPO", Description = "Vehicle-equipped patrol specialist conducting scheduled lockups, unlocks, and alarm responses.", CompensationBasis = "Hourly", DefaultHourlyRate = 14.50m, BillingChargeRate = 21.50m, MandatorySiaSector = "Security Guarding", BadgeColor = "#2563EB", IsActive = true, SortOrder = 4, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Event Steward", Code = "ES", Description = "Crowd management, ticket verification, and hospitality guidance for events and festivals.", CompensationBasis = "Hourly", DefaultHourlyRate = 12.50m, BillingChargeRate = 18.00m, MandatorySiaSector = "None", BadgeColor = "#D97706", IsActive = true, SortOrder = 5, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Healthcare / Care Worker", Code = "HCW", Description = "Certified care worker providing residential and post care support.", CompensationBasis = "Hourly", DefaultHourlyRate = 16.50m, BillingChargeRate = 25.00m, MandatorySiaSector = "None", BadgeColor = "#EC4899", IsActive = true, SortOrder = 6, CreatedUtc = DateTime.UtcNow },
+                    new BcpJobRole { Id = Guid.CreateVersion7(), TenantKey = cleanKey, Title = "Office Administrator", Code = "ADM", Description = "Full-time daily administrative executive managing business operations, records, and correspondence.", CompensationBasis = "Monthly", MonthlySalary = 250000m, ContractedWeeklyHours = 40.0m, MandatorySiaSector = "None", BadgeColor = "#6366F1", IsActive = true, SortOrder = 7, CreatedUtc = DateTime.UtcNow }
                 };
                 _db.BcpJobRoles.AddRange(defaults);
             }
@@ -2035,13 +2537,11 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves all configured job roles for the tenant workspace.
+        /// Retrieves all configured job roles for the tenant workspace without auto-seeding hardcoded roles.
         /// </summary>
         [HttpGet("job-roles")]
         public async Task<ActionResult<ApiResponse<List<BcpJobRoleDto>>>> GetJobRoles(CancellationToken ct)
         {
-            await EnsureDefaultJobRolesAndPoliciesAsync(CurrentTenantKey, ct);
-
             var roles = await _db.BcpJobRoles
                 .AsNoTracking()
                 .Where(r => r.TenantKey == CurrentTenantKey)
@@ -2062,6 +2562,9 @@ namespace Ozikol_BCC.Api.Controllers
                 Title = r.Title,
                 Code = r.Code,
                 Description = r.Description,
+                CompensationBasis = r.CompensationBasis ?? "Hourly",
+                MonthlySalary = r.MonthlySalary,
+                ContractedWeeklyHours = r.ContractedWeeklyHours,
                 DefaultHourlyRate = r.DefaultHourlyRate,
                 BillingChargeRate = r.BillingChargeRate,
                 MandatorySiaSector = r.MandatorySiaSector,
@@ -2107,6 +2610,9 @@ namespace Ozikol_BCC.Api.Controllers
                     Title = cleanTitle,
                     Code = cleanCode,
                     Description = request.Description?.Trim() ?? string.Empty,
+                    CompensationBasis = !string.IsNullOrWhiteSpace(request.CompensationBasis) ? request.CompensationBasis.Trim() : "Hourly",
+                    MonthlySalary = request.MonthlySalary,
+                    ContractedWeeklyHours = request.ContractedWeeklyHours,
                     DefaultHourlyRate = request.DefaultHourlyRate,
                     BillingChargeRate = request.BillingChargeRate,
                     MandatorySiaSector = request.MandatorySiaSector?.Trim() ?? "None",
@@ -2125,6 +2631,9 @@ namespace Ozikol_BCC.Api.Controllers
                     Title = role.Title,
                     Code = role.Code,
                     Description = role.Description,
+                    CompensationBasis = role.CompensationBasis,
+                    MonthlySalary = role.MonthlySalary,
+                    ContractedWeeklyHours = role.ContractedWeeklyHours,
                     DefaultHourlyRate = role.DefaultHourlyRate,
                     BillingChargeRate = role.BillingChargeRate,
                     MandatorySiaSector = role.MandatorySiaSector,
@@ -2165,6 +2674,9 @@ namespace Ozikol_BCC.Api.Controllers
             role.Title = request.Title.Trim();
             role.Code = !string.IsNullOrWhiteSpace(request.Code) ? request.Code.Trim().ToUpperInvariant() : role.Code;
             role.Description = request.Description?.Trim() ?? string.Empty;
+            role.CompensationBasis = !string.IsNullOrWhiteSpace(request.CompensationBasis) ? request.CompensationBasis.Trim() : role.CompensationBasis;
+            role.MonthlySalary = request.MonthlySalary;
+            role.ContractedWeeklyHours = request.ContractedWeeklyHours;
             role.DefaultHourlyRate = request.DefaultHourlyRate;
             role.BillingChargeRate = request.BillingChargeRate;
             role.MandatorySiaSector = request.MandatorySiaSector?.Trim() ?? "None";
@@ -2184,6 +2696,9 @@ namespace Ozikol_BCC.Api.Controllers
                 Title = role.Title,
                 Code = role.Code,
                 Description = role.Description,
+                CompensationBasis = role.CompensationBasis,
+                MonthlySalary = role.MonthlySalary,
+                ContractedWeeklyHours = role.ContractedWeeklyHours,
                 DefaultHourlyRate = role.DefaultHourlyRate,
                 BillingChargeRate = role.BillingChargeRate,
                 MandatorySiaSector = role.MandatorySiaSector,
@@ -2234,8 +2749,6 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("settings/policies")]
         public async Task<ActionResult<ApiResponse<BcpWorkforcePolicySettingDto>>> GetWorkforcePolicies(CancellationToken ct)
         {
-            await EnsureDefaultJobRolesAndPoliciesAsync(CurrentTenantKey, ct);
-
             var policy = await _db.BcpWorkforcePolicySettings
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
@@ -2279,8 +2792,6 @@ namespace Ozikol_BCC.Api.Controllers
             [FromBody] UpdateWorkforcePolicyRequest request,
             CancellationToken ct)
         {
-            await EnsureDefaultJobRolesAndPoliciesAsync(CurrentTenantKey, ct);
-
             var policy = await _db.BcpWorkforcePolicySettings
                 .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
 
@@ -2438,13 +2949,11 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves all configured compliance document categories for the tenant workspace.
+        /// Retrieves all configured compliance document categories for the tenant workspace without auto-seeding hardcoded defaults.
         /// </summary>
         [HttpGet("document-categories")]
         public async Task<ActionResult<ApiResponse<List<BcpDocumentCategoryDto>>>> GetDocumentCategories(CancellationToken ct)
         {
-            await EnsureDefaultDocumentCategoriesAsync(CurrentTenantKey, ct);
-
             var categories = await _db.BcpDocumentCategories
                 .AsNoTracking()
                 .Where(c => c.TenantKey == CurrentTenantKey)
@@ -3079,6 +3588,7 @@ namespace Ozikol_BCC.Api.Controllers
         public double? Longitude { get; set; }
         public int GeofenceRadiusMeters { get; set; }
         public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactEmail { get; set; }
         public string? EmergencyContactPhone { get; set; }
         public string? SiteAssignmentInstructions { get; set; }
         public string? RequiredSiaLicenceType { get; set; }
@@ -3099,6 +3609,7 @@ namespace Ozikol_BCC.Api.Controllers
         public double? Longitude { get; set; }
         public int GeofenceRadiusMeters { get; set; } = 150;
         public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactEmail { get; set; }
         public string? EmergencyContactPhone { get; set; }
         public string? SiteAssignmentInstructions { get; set; }
         public string? RequiredSiaLicenceType { get; set; }
@@ -3163,6 +3674,66 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Notes { get; set; }
     }
 
+    /// <summary>
+    /// Payload for updating an existing scheduled shift.
+    /// </summary>
+    public class UpdateShiftRequest
+    {
+        public Guid ClientSiteId { get; set; }
+        public string? AssignedUserId { get; set; }
+        public string? AssignedUserName { get; set; }
+        public string PostName { get; set; } = "General Assignment";
+        public string? FacilityName { get; set; }
+        public string? Address { get; set; }
+        public string? PostCode { get; set; }
+        public string? EventTag { get; set; }
+        public DateTime StartsAtUtc { get; set; }
+        public DateTime EndsAtUtc { get; set; }
+        public int BreakMinutes { get; set; }
+        public decimal? HourlyPayRate { get; set; }
+        public decimal? HourlyChargeRate { get; set; }
+        public Guid? RequiredWorkspaceStationId { get; set; }
+        public string? RequiredWorkspaceStationName { get; set; }
+        public DateTime? AcceptanceDeadlineUtc { get; set; }
+        public string Status { get; set; } = "Scheduled";
+        public string? Notes { get; set; }
+    }
+
+    /// <summary>
+    /// Payload for generating recurring or daily schedule batches across a date range.
+    /// </summary>
+    public class BatchCreateShiftScheduleRequest
+    {
+        public Guid ClientSiteId { get; set; }
+        public string? AssignedUserId { get; set; }
+        public string? AssignedUserName { get; set; }
+        public string PostName { get; set; } = "General Assignment";
+        public string? FacilityName { get; set; }
+        public string? Address { get; set; }
+        public string? PostCode { get; set; }
+        public string? EventTag { get; set; }
+        public string? Notes { get; set; }
+
+        public string SchedulePattern { get; set; } = "Daily"; // "Daily", "ShiftRota", "AdHoc"
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string StartTime { get; set; } = "08:00"; // "HH:mm"
+        public string EndTime { get; set; } = "17:00";   // "HH:mm"
+        public List<int> SelectedDaysOfWeek { get; set; } = new() { 1, 2, 3, 4, 5 }; // 1=Mon .. 5=Fri
+        public int BreakMinutes { get; set; } = 60;
+
+        public string CompensationBasis { get; set; } = "Hourly";
+        public decimal? HourlyPayRate { get; set; }
+        public decimal? HourlyChargeRate { get; set; }
+        public decimal? MonthlySalary { get; set; }
+        public bool TrackOvertime { get; set; }
+        public decimal OvertimeThresholdHours { get; set; } = 8.0m;
+
+        public Guid? RequiredWorkspaceStationId { get; set; }
+        public string? RequiredWorkspaceStationName { get; set; }
+        public DateTime? AcceptanceDeadlineUtc { get; set; }
+    }
+
     public class CreateSwapRequest
     {
         public Guid ShiftId { get; set; }
@@ -3205,6 +3776,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
+        public string? AvatarUrl { get; set; }
         public string JobTitle { get; set; } = "Staff Member";
         public Guid? StaffTypeId { get; set; }
         public string StaffTypeName { get; set; } = "Permanent";
@@ -3414,6 +3986,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
         public string JobTitle { get; set; } = "Staff Member";
         public Guid? StaffTypeId { get; set; }
         public string StaffTypeName { get; set; } = "Permanent";
@@ -3444,6 +4017,7 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal? ContractedWeeklyHours { get; set; }
         public Guid? AssignedSiteId { get; set; }
 
+        public Dictionary<string, object>? CustomAttributes { get; set; }
         public List<StaffDocumentSubmissionDto>? ComplianceDocuments { get; set; }
         public string? SiaLicenseNumber { get; set; }
         public string? SiaLicenseSector { get; set; }
@@ -3472,6 +4046,7 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? StaffTypeId { get; set; }
         public string? StaffTypeName { get; set; }
 
+        public Dictionary<string, object>? CustomAttributes { get; set; }
         public List<StaffDocumentSubmissionDto>? ComplianceDocuments { get; set; }
         public string? SiaLicenseNumber { get; set; }
         public string? SiaLicenseSector { get; set; }
@@ -3525,6 +4100,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Title { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string CompensationBasis { get; set; } = "Hourly";
+        public decimal? MonthlySalary { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? BillingChargeRate { get; set; }
         public string MandatorySiaSector { get; set; } = "None";
@@ -3539,6 +4117,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Title { get; set; } = string.Empty;
         public string? Code { get; set; }
         public string? Description { get; set; }
+        public string? CompensationBasis { get; set; } = "Hourly";
+        public decimal? MonthlySalary { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? BillingChargeRate { get; set; }
         public string? MandatorySiaSector { get; set; }
@@ -3551,6 +4132,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Title { get; set; } = string.Empty;
         public string? Code { get; set; }
         public string? Description { get; set; }
+        public string? CompensationBasis { get; set; } = "Hourly";
+        public decimal? MonthlySalary { get; set; }
+        public decimal? ContractedWeeklyHours { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? BillingChargeRate { get; set; }
         public string? MandatorySiaSector { get; set; }

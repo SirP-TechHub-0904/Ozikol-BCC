@@ -33,6 +33,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         private readonly MasterCatalogDbContext _dbContext;
         private readonly ICentralMigrationService _migrationService;
         private readonly ILogger<DetailsModel> _logger;
+        private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
+        private readonly Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? _tenantProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetailsModel"/> class.
@@ -40,12 +42,26 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public DetailsModel(
             MasterCatalogDbContext dbContext,
             ICentralMigrationService migrationService,
-            ILogger<DetailsModel> logger)
+            ILogger<DetailsModel> logger,
+            Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
+            Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? tenantProvider = null)
         {
             _dbContext = dbContext;
             _migrationService = migrationService;
             _logger = logger;
+            _mailcowProvisioning = mailcowProvisioning;
+            _tenantProvider = tenantProvider;
         }
+
+        /// <summary>
+        /// Indicates whether the tenant's Mailcow transactional sender mailbox is configured in its database.
+        /// </summary>
+        public bool TenantEmailConfigured { get; set; }
+
+        /// <summary>
+        /// Resolved transactional sender email address for this tenant (e.g. noreply@tenant.ozikol.cloud).
+        /// </summary>
+        public string TenantSenderEmail { get; set; } = string.Empty;
 
         /// <summary>
         /// Tenant identifier from query string.
@@ -100,6 +116,33 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
 
             Tenant = tenant;
+            TenantSenderEmail = $"noreply@{tenant.TenantKey.Trim().ToLowerInvariant()}.ozikol.cloud";
+
+            // Check tenant's Mailcow email configuration status in its dedicated database
+            try
+            {
+                var connStr = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(tenant.ConnectionString) ?? tenant.ConnectionString;
+                if (!string.IsNullOrWhiteSpace(connStr) && _tenantProvider != null)
+                {
+                    var optBuilder = new DbContextOptionsBuilder<Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext>();
+                    optBuilder.UseSqlServer(connStr);
+                    using (_tenantProvider.BeginScope(connStr))
+                    using (var tenantDb = new Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext(optBuilder.Options, _tenantProvider, null))
+                    {
+                        var cfg = await tenantDb.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                        if (cfg != null && !string.IsNullOrWhiteSpace(cfg.SenderEmail))
+                        {
+                            TenantSenderEmail = cfg.SenderEmail.Trim();
+                            TenantEmailConfigured = !string.IsNullOrWhiteSpace(cfg.SmtpPassword) ||
+                                                    string.Equals(cfg.EmailProvider, "Mailcow", StringComparison.OrdinalIgnoreCase);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Non-blocking inspection
+            }
 
             // 1. Build Feature Subscriptions Matrix
             var allFeatures = await _dbContext.MasterFeatureCatalogs
@@ -517,6 +560,94 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             await _dbContext.SaveChangesAsync();
 
             return new JsonResult(new { success = true, isActive = enable, message = $"Feature '{feature.Name}' {(enable ? "enabled" : "disabled")}." });
+        }
+
+        /// <summary>
+        /// Central Admin 1-Click handler to provision or repair a tenant's Mailcow email service (<c>noreply@{tenant}.ozikol.cloud</c>)
+        /// and write the encrypted SMTP configuration directly into the tenant's database.
+        /// </summary>
+        public async Task<IActionResult> OnPostProvisionMailcowAsync(Guid id)
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.Id == id);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Tenants/Index");
+            }
+
+            var tenantKey = tenant.TenantKey.Trim().ToLowerInvariant();
+            var domain = $"{tenantKey}.ozikol.cloud";
+            var localPart = "noreply";
+            var senderEmail = $"{localPart}@{domain}";
+            var mailboxPassword = $"OziMail!{Guid.NewGuid():N}"[..20];
+
+            try
+            {
+                if (_mailcowProvisioning != null)
+                {
+                    await _mailcowProvisioning.EnsureDomainExistsAsync(domain, $"{tenant.OrganizationName} Transactional Mail Domain");
+                    await _mailcowProvisioning.EnsureMailboxExistsAsync(domain, localPart, mailboxPassword, tenant.OrganizationName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Non-blocking Mailcow API notice while provisioning {SenderEmail}", senderEmail);
+            }
+
+            try
+            {
+                var connStr = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(tenant.ConnectionString) ?? tenant.ConnectionString;
+                if (!string.IsNullOrWhiteSpace(connStr) && _tenantProvider != null)
+                {
+                    var optBuilder = new DbContextOptionsBuilder<Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext>();
+                    optBuilder.UseSqlServer(connStr);
+                    using (_tenantProvider.BeginScope(connStr))
+                    using (var tenantDb = new Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext(optBuilder.Options, _tenantProvider, null))
+                    {
+                        var config = await tenantDb.MisConfigurationSettings.FirstOrDefaultAsync();
+                        if (config == null)
+                        {
+                            config = new Ozikol_BCC.Domain.Models.MisConfigurationSetting { Id = Guid.NewGuid() };
+                            tenantDb.MisConfigurationSettings.Add(config);
+                        }
+
+                        config.EmailProvider = "Mailcow";
+                        config.SenderEmail = senderEmail;
+                        config.SenderName = tenant.OrganizationName;
+                        config.SmtpHost = "mail.ozikol.cloud";
+                        config.SmtpPort = 587;
+                        config.SmtpUsername = senderEmail;
+                        config.SmtpPassword = Ozikol.MasterDomain.Security.OzikolDataCipher.EncryptIfNeeded(mailboxPassword);
+                        config.SmtpEnableSsl = true;
+
+                        await tenantDb.SaveChangesAsync();
+                    }
+                }
+
+                var adminUser = User.Identity?.Name ?? "SuperAdmin";
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Tenant.MailcowProvisioned",
+                    EntityType = "Tenant",
+                    EntityId = tenant.Id.ToString(),
+                    Summary = $"Central Admin {adminUser} provisioned Mailcow transactional email ({senderEmail}) for tenant '{tenant.OrganizationName}'.",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = $"Transactional email service ({senderEmail}) configured via Mailcow for {tenant.OrganizationName}. Onboarding and password reset emails are now active.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save Mailcow configuration into tenant {TenantKey} database.", tenantKey);
+                TempData["Error"] = $"Failed to update tenant email configuration: {ex.Message}";
+            }
+
+            return RedirectToPage(new { id });
         }
     }
 }

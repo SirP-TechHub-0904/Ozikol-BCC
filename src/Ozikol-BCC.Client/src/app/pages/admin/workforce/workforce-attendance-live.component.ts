@@ -31,6 +31,9 @@ import { ToastService } from '../../../core/services/toast.service';
           <button class="btn btn-outline-primary d-flex align-items-center gap-1" (click)="loadMonitor()">
             <span class="material-symbols-outlined">refresh</span> Refresh Feed
           </button>
+          <a class="btn btn-primary d-flex align-items-center gap-1" routerLink="/workforce/workspace/clock" title="Open Staff Clock-In Terminal">
+            <span class="material-symbols-outlined">fingerprint</span> Clock-In Terminal
+          </a>
         </div>
       </div>
 
@@ -75,6 +78,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <th>Geofence Verification</th>
                 <th>Lone Worker Safety</th>
                 <th>Status</th>
+                <th style="text-align: right;">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -127,6 +131,35 @@ import { ToastService } from '../../../core/services/toast.service';
                 <td>
                   <span class="badge" [ngClass]="item.shiftStatus === 'InProgress' ? 'bg-primary' : 'bg-secondary'">{{ item.shiftStatus }}</span>
                 </td>
+                <td style="text-align: right;">
+                  <button
+                    *ngIf="!item.clockInUtc"
+                    type="button"
+                    class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                    (click)="recordClockIn(item)"
+                    [disabled]="isActionLoading === item.shiftId"
+                    title="Record verified clock-in for this shift"
+                  >
+                    <span class="material-symbols-outlined fs-6" *ngIf="isActionLoading !== item.shiftId">login</span>
+                    <span class="material-symbols-outlined fs-6 spin" *ngIf="isActionLoading === item.shiftId">sync</span>
+                    <span>Clock In</span>
+                  </button>
+                  <button
+                    *ngIf="item.clockInUtc && item.shiftStatus === 'InProgress'"
+                    type="button"
+                    class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
+                    (click)="recordClockOut(item)"
+                    [disabled]="isActionLoading === item.shiftId"
+                    title="Record clock-out and calculate hours"
+                  >
+                    <span class="material-symbols-outlined fs-6" *ngIf="isActionLoading !== item.shiftId">logout</span>
+                    <span class="material-symbols-outlined fs-6 spin" *ngIf="isActionLoading === item.shiftId">sync</span>
+                    <span>Clock Out</span>
+                  </button>
+                  <span class="badge bg-light text-muted border" *ngIf="item.clockInUtc && item.shiftStatus !== 'InProgress'">
+                    Completed
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -146,9 +179,9 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .live-monitor-page {
-      padding: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+      padding: 0 4px 40px 4px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .page-header {
       display: flex;
@@ -369,6 +402,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class WorkforceAttendanceLiveComponent implements OnInit, OnDestroy {
   feed: LiveDutyMonitorItem[] = [];
   isLoading = false;
+  isActionLoading: string | null = null;
   private pollTimer: any;
 
   constructor(
@@ -394,6 +428,44 @@ export class WorkforceAttendanceLiveComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isLoading = false;
+      }
+    });
+  }
+
+  recordClockIn(item: LiveDutyMonitorItem): void {
+    if (!item.shiftId || this.isActionLoading) return;
+    this.isActionLoading = item.shiftId;
+    this.workforceService.clockIn({
+      shiftId: item.shiftId,
+      method: 'SupervisorDirectAttendance'
+    }).subscribe({
+      next: () => {
+        this.isActionLoading = null;
+        this.toast.success(`Clock-in recorded for ${item.guardName || 'Staff Member'}`);
+        this.loadMonitor(true);
+      },
+      error: (err: any) => {
+        this.isActionLoading = null;
+        this.toast.error(err?.error?.message || 'Failed to record clock-in.');
+      }
+    });
+  }
+
+  recordClockOut(item: LiveDutyMonitorItem): void {
+    if (!item.shiftId || this.isActionLoading) return;
+    this.isActionLoading = item.shiftId;
+    this.workforceService.clockOut({
+      shiftId: item.shiftId,
+      method: 'SupervisorDirectAttendance'
+    }).subscribe({
+      next: () => {
+        this.isActionLoading = null;
+        this.toast.success(`Clock-out recorded for ${item.guardName || 'Staff Member'}`);
+        this.loadMonitor(true);
+      },
+      error: (err: any) => {
+        this.isActionLoading = null;
+        this.toast.error(err?.error?.message || 'Failed to record clock-out.');
       }
     });
   }

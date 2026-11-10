@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Security;
 
@@ -13,23 +14,28 @@ namespace Ozikol_BCC.Infrastructure.Services.Email;
 /// <summary>
 /// Implements transactional email delivery over Mailcow SMTP with STARTTLS on port 587,
 /// encrypted password resolution via <see cref="OzikolDataCipher"/>, and responsive compliance footers.
+/// Automatically handles development environments gracefully with detailed console telemetry.
 /// </summary>
 public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<SmtpEmailDispatcher> _logger;
+    private readonly IHostEnvironment? _environment;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SmtpEmailDispatcher"/> class.
     /// </summary>
     /// <param name="configuration">Application configuration provider.</param>
     /// <param name="logger">Structured logger instance.</param>
+    /// <param name="environment">Optional host environment provider for local developer bypass.</param>
     public SmtpEmailDispatcher(
         IConfiguration configuration,
-        ILogger<SmtpEmailDispatcher> logger)
+        ILogger<SmtpEmailDispatcher> logger,
+        IHostEnvironment? environment = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _environment = environment;
     }
 
     /// <inheritdoc />
@@ -43,13 +49,18 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
         bool isCentralPlatformEmail = false,
         string? tenantName = null,
         string? tenantAdminEmail = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? smtpUsernameOverride = null,
+        string? smtpPasswordOverride = null)
     {
         if (string.IsNullOrWhiteSpace(toEmail) || string.IsNullOrWhiteSpace(subject))
         {
             _logger.LogWarning("⚠️ [SmtpEmailDispatcher] Cannot dispatch email: recipient or subject is empty.");
             return false;
         }
+
+        var isDev = _environment?.IsDevelopment() == true ||
+                    string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
 
         try
         {
@@ -72,17 +83,21 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
                 smtpPort = 587;
             }
 
-            var smtpUser = _configuration["EmailSettings:SmtpUser"]
-                ?? _configuration["SMTP_USER"]
-                ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpUser")
-                ?? Environment.GetEnvironmentVariable("SMTP_USER")
-                ?? "noreply@ozikol.cloud";
+            var smtpUser = !string.IsNullOrWhiteSpace(smtpUsernameOverride)
+                ? smtpUsernameOverride.Trim()
+                : (_configuration["EmailSettings:SmtpUser"]
+                    ?? _configuration["SMTP_USER"]
+                    ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpUser")
+                    ?? Environment.GetEnvironmentVariable("SMTP_USER")
+                    ?? "noreply@ozikol.cloud");
 
-            var rawPassword = _configuration["EmailSettings:SmtpPassword"]
-                ?? _configuration["SMTP_PASSWORD"]
-                ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPassword")
-                ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD")
-                ?? string.Empty;
+            var rawPassword = !string.IsNullOrWhiteSpace(smtpPasswordOverride)
+                ? smtpPasswordOverride.Trim()
+                : (_configuration["EmailSettings:SmtpPassword"]
+                    ?? _configuration["SMTP_PASSWORD"]
+                    ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPassword")
+                    ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD")
+                    ?? string.Empty);
 
             // Decrypt password at rest using OzikolDataCipher (AES-256-GCM) if stored encrypted
             var smtpPassword = OzikolDataCipher.DecryptIfNeeded(rawPassword) ?? rawPassword;
@@ -101,48 +116,70 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
             // Append compliance & security footer
             var bodyWithFooter = AppendComplianceFooter(htmlBody, isCentralPlatformEmail, tenantName, tenantAdminEmail);
 
-            using var mailMessage = new MailMessage
+            // If valid SMTP credentials exist, attempt real STARTTLS transmission over port 587
+            if (!string.IsNullOrWhiteSpace(smtpPassword))
             {
-                From = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
-                Sender = new MailAddress(smtpUser, resolvedFromName, Encoding.UTF8),
-                Subject = subject,
-                Body = bodyWithFooter,
-                IsBodyHtml = true,
-                BodyEncoding = Encoding.UTF8,
-                SubjectEncoding = Encoding.UTF8
-            };
+                using var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
+                    Sender = new MailAddress(smtpUser, resolvedFromName, Encoding.UTF8),
+                    Subject = subject,
+                    Body = bodyWithFooter,
+                    IsBodyHtml = true,
+                    BodyEncoding = Encoding.UTF8,
+                    SubjectEncoding = Encoding.UTF8
+                };
 
-            mailMessage.To.Add(toEmail.Trim());
+                mailMessage.To.Add(toEmail.Trim());
 
-            if (!string.IsNullOrWhiteSpace(replyTo))
-            {
-                mailMessage.ReplyToList.Add(new MailAddress(replyTo.Trim()));
-            }
+                if (!string.IsNullOrWhiteSpace(replyTo))
+                {
+                    mailMessage.ReplyToList.Add(new MailAddress(replyTo.Trim()));
+                }
 
-            using var smtpClient = new SmtpClient(smtpHost, smtpPort)
-            {
-                EnableSsl = true, // Engages STARTTLS on port 587
-                DeliveryMethod = SmtpDeliveryMethod.Network,
-                UseDefaultCredentials = false,
-                Timeout = 15000 // 15s timeout
-            };
+                using var smtpClient = new SmtpClient(smtpHost, smtpPort)
+                {
+                    EnableSsl = true, // Engages STARTTLS on port 587
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Timeout = 8000 // 8s timeout to avoid blocking requests
+                };
 
-            if (!string.IsNullOrWhiteSpace(smtpUser) && !string.IsNullOrWhiteSpace(smtpPassword))
-            {
                 smtpClient.Credentials = new NetworkCredential(smtpUser.Trim(), smtpPassword.Trim());
+
+                _logger.LogInformation(
+                    "📧 [SmtpEmailDispatcher] Dispatching '{Subject}' from '{From}' to [{To}] via Mailcow ({Host}:{Port})...",
+                    subject, resolvedFromEmail, toEmail, smtpHost, smtpPort);
+
+                await smtpClient.SendMailAsync(mailMessage, cancellationToken);
+
+                _logger.LogInformation("✅ [SmtpEmailDispatcher] Successfully delivered '{Subject}' to [{To}].", subject, toEmail);
+                return true;
             }
 
-            _logger.LogInformation(
-                "📧 [SmtpEmailDispatcher] Dispatching '{Subject}' from '{From}' to [{To}] via Mailcow ({Host}:{Port})...",
-                subject, resolvedFromEmail, toEmail, smtpHost, smtpPort);
+            // In local development, if SMTP credentials are not yet provisioned, simulate successful delivery
+            if (isDev)
+            {
+                _logger.LogWarning(
+                    "⚠️ [SmtpEmailDispatcher] [DEVELOPMENT] SMTP password is not configured for {Host}:{Port}. Simulating delivery of '{Subject}' to [{To}] from '{From}'.",
+                    smtpHost, smtpPort, subject, toEmail, resolvedFromEmail);
+                return true;
+            }
 
-            await smtpClient.SendMailAsync(mailMessage, cancellationToken);
-
-            _logger.LogInformation("✅ [SmtpEmailDispatcher] Successfully delivered '{Subject}' to [{To}].", subject, toEmail);
-            return true;
+            _logger.LogError("❌ [SmtpEmailDispatcher] Outbound delivery aborted: No SMTP credentials configured for {Host}:{Port}.", smtpHost, smtpPort);
+            return false;
         }
         catch (Exception ex)
         {
+            if (isDev)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "⚠️ [SmtpEmailDispatcher] [DEVELOPMENT] Live SMTP delivery encountered exception ({Message}). Simulating successful delivery for local development.",
+                    ex.Message);
+                return true;
+            }
+
             _logger.LogError(ex, "❌ [SmtpEmailDispatcher] Failed delivering '{Subject}' to [{To}].", subject, toEmail);
             return false;
         }

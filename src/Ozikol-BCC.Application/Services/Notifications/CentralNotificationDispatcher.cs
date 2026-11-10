@@ -503,37 +503,36 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         }
                     }
 
-                    // Strictly enforce tenant sender address (noreply@{tenantKey}.ozikol.cloud) with zero fallback
+                    // Resolve tenant sender address and Mailcow mailbox credentials from MisConfigurationSettings
+                    var siteConfig = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
                     string fromAddress;
-                    if (!string.IsNullOrWhiteSpace(payload.TenantKey))
+                    if (!string.IsNullOrWhiteSpace(siteConfig?.SenderEmail))
+                    {
+                        fromAddress = siteConfig.SenderEmail.Trim().ToLowerInvariant();
+                    }
+                    else if (!string.IsNullOrWhiteSpace(payload.TenantKey))
                     {
                         fromAddress = $"noreply@{payload.TenantKey.Trim().ToLowerInvariant()}.ozikol.cloud";
                     }
                     else
                     {
-                        var siteConfig = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-                        if (!string.IsNullOrWhiteSpace(siteConfig?.SenderEmail))
-                        {
-                            fromAddress = siteConfig.SenderEmail.Trim().ToLowerInvariant();
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException("Tenant sender address is not configured. Expected 'noreply@{tenantKey}.ozikol.cloud'.");
-                        }
+                        throw new InvalidOperationException("Tenant sender address is not configured. Expected 'noreply@{tenantKey}.ozikol.cloud'.");
                     }
 
-                    // Dispatch strictly via Mailcow SMTP with zero fallback to external providers
+                    // Dispatch strictly via Mailcow SMTP with tenant mailbox credentials (falling back to platform relay if blank)
                     var sent = await _smtpEmailDispatcher.SendEmailAsync(
                         toEmail: email,
                         subject: safeSubject,
                         htmlBody: htmlBody,
                         fromEmail: fromAddress,
-                        fromName: tenantBrand,
+                        fromName: !string.IsNullOrWhiteSpace(siteConfig?.SenderName) ? siteConfig.SenderName.Trim() : tenantBrand,
                         replyTo: null,
                         isCentralPlatformEmail: false,
                         tenantName: tenantBrand,
                         tenantAdminEmail: null,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken,
+                        smtpUsernameOverride: siteConfig?.SmtpUsername,
+                        smtpPasswordOverride: siteConfig?.SmtpPassword);
 
                     if (!sent)
                     {

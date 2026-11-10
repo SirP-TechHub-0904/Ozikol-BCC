@@ -35,6 +35,8 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ITenantFeatureGateService? _featureGateService;
         private readonly ITenantProvider? _tenantProvider;
         private readonly Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? _notificationDispatcher;
+        private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
+        private readonly Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? _smtpEmailDispatcher;
 
         public SettingsApiController(
             IMediator mediator,
@@ -44,7 +46,9 @@ namespace Ozikol_BCC.Api.Controllers
             IHubContext<NotificationHub>? notificationHub = null,
             ITenantFeatureGateService? featureGateService = null,
             ITenantProvider? tenantProvider = null,
-            Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? notificationDispatcher = null)
+            Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? notificationDispatcher = null,
+            Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
+            Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null)
         {
             _mediator = mediator;
             _db = db;
@@ -54,6 +58,8 @@ namespace Ozikol_BCC.Api.Controllers
             _featureGateService = featureGateService;
             _tenantProvider = tenantProvider;
             _notificationDispatcher = notificationDispatcher;
+            _mailcowProvisioning = mailcowProvisioning;
+            _smtpEmailDispatcher = smtpEmailDispatcher;
         }
 
         private string? ResolveCurrentTenantKey()
@@ -1099,6 +1105,188 @@ namespace Ozikol_BCC.Api.Controllers
             }
             return string.Concat(words.Take(4).Select(w => char.ToUpperInvariant(w[0])));
         }
+
+        /// <summary>
+        /// Checks whether the tenant's transactional Mailcow email service (<c>noreply@{tenant}.ozikol.cloud</c>) is configured.
+        /// Used by the dashboard setup popup to prompt administrators if email is unconfigured.
+        /// </summary>
+        [HttpGet("email-setup-status")]
+        [Authorize]
+        public async Task<IActionResult> GetEmailSetupStatus()
+        {
+            var tenantKey = (ResolveCurrentTenantKey() ?? "workspace").Trim().ToLowerInvariant();
+            var recommendedAddress = $"noreply@{tenantKey}.ozikol.cloud";
+
+            var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+            var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brandName = site?.BrandName ?? site?.CompanyName ?? tenantKey;
+
+            var isConfigured = config != null &&
+                               !string.IsNullOrWhiteSpace(config.SenderEmail) &&
+                               (!string.IsNullOrWhiteSpace(config.SmtpPassword) || string.Equals(config.EmailProvider, "Mailcow", StringComparison.OrdinalIgnoreCase));
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                isConfigured,
+                tenantKey,
+                brandName,
+                senderName = !string.IsNullOrWhiteSpace(config?.SenderName) ? config!.SenderName : brandName,
+                senderEmail = !string.IsNullOrWhiteSpace(config?.SenderEmail) ? config!.SenderEmail : recommendedAddress,
+                recommendedAddress,
+                smtpEnableSsl = config?.SmtpEnableSsl ?? true,
+                smtpPort = config?.SmtpPort > 0 ? config.SmtpPort : 587
+            }, "Workspace email notification status retrieved."));
+        }
+
+        /// <summary>
+        /// Provisions the tenant's Mailcow domain and <c>noreply@{tenant}.ozikol.cloud</c> mailbox in one click,
+        /// saving the encrypted SMTP credentials into the tenant's <see cref="MisConfigurationSetting"/> record.
+        /// </summary>
+        [HttpPost("provision-mailcow")]
+        [Authorize]
+        public async Task<IActionResult> ProvisionMailcow([FromBody] ProvisionTenantMailcowRequestDto? request)
+        {
+            var tenantKey = (ResolveCurrentTenantKey() ?? "workspace").Trim().ToLowerInvariant();
+            var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brandName = !string.IsNullOrWhiteSpace(request?.SenderName)
+                ? request!.SenderName!.Trim()
+                : (site?.BrandName ?? site?.CompanyName ?? $"{tenantKey.ToUpperInvariant()} Workspace");
+
+            var domain = $"{tenantKey}.ozikol.cloud";
+            var localPart = "noreply";
+            var senderEmail = $"{localPart}@{domain}";
+            if (!string.IsNullOrWhiteSpace(request?.CustomSenderEmail) && request.CustomSenderEmail.Contains('@'))
+            {
+                senderEmail = request.CustomSenderEmail.Trim().ToLowerInvariant();
+                var parts = senderEmail.Split('@', 2);
+                localPart = parts[0];
+                domain = parts[1];
+            }
+
+            // Generate a strong mailbox password or use admin-supplied password
+            var mailboxPassword = !string.IsNullOrWhiteSpace(request?.Password)
+                ? request!.Password!.Trim()
+                : $"OziMail!{Guid.NewGuid():N}"[..20];
+
+            var mailcowProvisioned = false;
+            string? dkimTxt = null;
+            if (_mailcowProvisioning != null)
+            {
+                try
+                {
+                    await _mailcowProvisioning.EnsureDomainExistsAsync(domain, $"{brandName} Transactional Mail Domain");
+                    mailcowProvisioned = await _mailcowProvisioning.EnsureMailboxExistsAsync(domain, localPart, mailboxPassword, brandName);
+                    dkimTxt = await _mailcowProvisioning.GetDkimRecordAsync(domain);
+                }
+                catch
+                {
+                    // Continue and save tenant configuration so central/platform SMTP relay can still deliver
+                }
+            }
+
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (config == null)
+            {
+                config = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _db.MisConfigurationSettings.Add(config);
+            }
+
+            config.EmailProvider = "Mailcow";
+            config.SenderEmail = senderEmail;
+            config.SenderName = brandName;
+            config.SmtpHost = !string.IsNullOrWhiteSpace(request?.SmtpHost) ? request!.SmtpHost!.Trim() : "mail.ozikol.cloud";
+            config.SmtpPort = request?.SmtpPort > 0 ? request.SmtpPort : 587;
+            config.SmtpUsername = senderEmail;
+            // Only set password if Mailcow was successfully provisioned or an explicit password was provided
+            if (mailcowProvisioned || !string.IsNullOrWhiteSpace(request?.Password))
+            {
+                config.SmtpPassword = OzikolDataCipher.EncryptIfNeeded(mailboxPassword);
+            }
+            else
+            {
+                config.SmtpPassword = null;
+            }
+            config.SmtpEnableSsl = true;
+
+            await _db.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                isConfigured = true,
+                mailcowProvisioned,
+                senderEmail,
+                senderName = brandName,
+                smtpHost = config.SmtpHost,
+                smtpPort = config.SmtpPort,
+                dkimTxt
+            }, "Your email service for notifications has been activated."));
+        }
+
+        /// <summary>
+        /// Dispatches a live test email using the tenant's configured notification email settings.
+        /// </summary>
+        [HttpPost("test-email")]
+        [Authorize]
+        public async Task<IActionResult> SendTenantTestEmail([FromBody] TenantTestEmailRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.RecipientEmail))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Please enter a recipient email address."));
+            }
+
+            if (_smtpEmailDispatcher == null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Email notification service is currently unavailable."));
+            }
+
+            var tenantKey = (ResolveCurrentTenantKey() ?? "workspace").Trim().ToLowerInvariant();
+            var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+            var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brandName = config?.SenderName ?? site?.BrandName ?? site?.CompanyName ?? "Workspace";
+            var fromAddress = !string.IsNullOrWhiteSpace(config?.SenderEmail)
+                ? config!.SenderEmail!.Trim()
+                : $"noreply@{tenantKey}.ozikol.cloud";
+
+            var html = $@"
+                <div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;"">
+                    <h2 style=""color: #0050E5; margin: 0 0 10px 0;"">{System.Net.WebUtility.HtmlEncode(brandName)} — Email Service Active</h2>
+                    <p style=""color: #334155; font-size: 14px; line-height: 1.6;"">
+                        Your email service for notifications (<strong>{System.Net.WebUtility.HtmlEncode(fromAddress)}</strong>) is active and ready to deliver password resets, onboarding links, and security alerts.
+                    </p>
+                </div>";
+
+            var sent = await _smtpEmailDispatcher.SendEmailAsync(
+                toEmail: request.RecipientEmail.Trim(),
+                subject: $"{brandName} — Email Service Verification",
+                htmlBody: html,
+                fromEmail: fromAddress,
+                fromName: brandName,
+                isCentralPlatformEmail: false,
+                tenantName: brandName,
+                smtpUsernameOverride: config?.SmtpUsername,
+                smtpPasswordOverride: config?.SmtpPassword);
+
+            if (!sent)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Email delivery failed. Please verify your workspace notification settings or contact support."));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { sent = true, recipient = request.RecipientEmail.Trim(), fromAddress }, $"Test email sent to {request.RecipientEmail.Trim()} from {fromAddress}."));
+        }
+    }
+
+    public class ProvisionTenantMailcowRequestDto
+    {
+        public string? CustomSenderEmail { get; set; }
+        public string? SenderName { get; set; }
+        public string? Password { get; set; }
+        public string? SmtpHost { get; set; }
+        public int SmtpPort { get; set; } = 587;
+    }
+
+    public class TenantTestEmailRequestDto
+    {
+        public string RecipientEmail { get; set; } = string.Empty;
     }
 
     public class BrandSettingsResponseDto

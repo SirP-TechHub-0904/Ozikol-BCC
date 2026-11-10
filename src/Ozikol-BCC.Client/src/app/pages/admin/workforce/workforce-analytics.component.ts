@@ -97,7 +97,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Card 2: Punctuality Score -->
           <div
             class="metric-card clickable"
-            (click)="navigateTo('/attendance/console/live')"
+            (click)="navigateTo('/workforce/console/live')"
             title="Click to view live duty attendance and clock-in logs"
           >
             <div class="card-top">
@@ -130,8 +130,8 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Card 3: Active Duty Strength -->
           <div
             class="metric-card clickable"
-            (click)="navigateTo('/attendance/console/live')"
-            title="Click to view guards active on site now"
+            (click)="navigateTo('/workforce/console/live')"
+            title="Click to view personnel active on site now"
           >
             <div class="card-top">
               <div class="card-icon bg-teal">
@@ -245,7 +245,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <!-- On-Time Check-Ins (Clickable) -->
               <div
                 class="compliance-metric-box box-green clickable"
-                (click)="navigateTo('/attendance/console/live')"
+                (click)="navigateTo('/workforce/console/live')"
                 title="View on-time check-in logs in Live Duty Monitor"
               >
                 <div class="compliance-box-top">
@@ -258,7 +258,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <!-- Late Arrivals (Clickable) -->
               <div
                 class="compliance-metric-box box-amber clickable"
-                (click)="navigateTo('/attendance/console/live')"
+                (click)="navigateTo('/workforce/console/live')"
                 title="View late arrivals in Live Duty Monitor"
               >
                 <div class="compliance-box-top">
@@ -271,7 +271,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <!-- Geofence Violations (Clickable) -->
               <div
                 class="compliance-metric-box box-rose clickable"
-                (click)="navigateTo('/attendance/console/live')"
+                (click)="navigateTo('/workforce/console/live')"
                 title="View geofence violation alerts in Live Duty Monitor"
               >
                 <div class="compliance-box-top">
@@ -341,10 +341,13 @@ import { ToastService } from '../../../core/services/toast.service';
                 <tr *ngFor="let m of filteredStaffMembers">
                   <td>
                     <div class="staff-user-cell">
-                      <div class="avatar-circle">{{ getInitials(m.fullName) }}</div>
+                      <div class="avatar-circle">
+                        <img *ngIf="m.avatarUrl" [src]="m.avatarUrl" [alt]="m.fullName || 'Staff'" class="avatar-img" (error)="m.avatarUrl = null" />
+                        <span *ngIf="!m.avatarUrl" class="material-symbols-outlined avatar-icon">person</span>
+                      </div>
                       <div class="user-info">
                         <a [routerLink]="['/workforce/console/members', m.userId]" class="user-name clickable-profile-link" title="Click to view full staff profile & documents">
-                          {{ m.fullName }}
+                          {{ m.fullName || 'Staff Member' }}
                         </a>
                         <div class="user-email">{{ m.email }}</div>
                       </div>
@@ -381,14 +384,16 @@ import { ToastService } from '../../../core/services/toast.service';
                     </span>
                   </td>
                   <td style="text-align: right;">
-                    <a [routerLink]="['/workforce/console/members', m.userId]" class="btn-action-sm mr-2" title="View Full Profile & Vault">
-                      <span class="material-symbols-outlined">badge</span>
-                      <span>Profile</span>
-                    </a>
-                    <button type="button" class="btn-action-sm" (click)="openRateModal(m)">
-                      <span class="material-symbols-outlined">rate_review</span>
-                      <span>Rate Duty</span>
-                    </button>
+                    <div class="actions-group">
+                      <a [routerLink]="['/workforce/console/members', m.userId]" class="btn-action-sm" title="View Full Profile & Vault">
+                        <span class="material-symbols-outlined">badge</span>
+                        <span>Profile</span>
+                      </a>
+                      <button type="button" class="btn-action-sm" (click)="openRateModal(m)">
+                        <span class="material-symbols-outlined">rate_review</span>
+                        <span>Rate Duty</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 <tr *ngIf="filteredStaffMembers.length === 0">
@@ -1061,10 +1066,11 @@ import { ToastService } from '../../../core/services/toast.service';
       display: flex;
       align-items: center;
       gap: 12px;
+      min-width: 200px;
     }
     .avatar-circle {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: #eff6ff;
       color: #0050e5;
@@ -1073,8 +1079,25 @@ import { ToastService } from '../../../core/services/toast.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #bfdbfe;
+      border: 1.5px solid #bfdbfe;
       flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      display: block;
+    }
+    .avatar-icon {
+      font-size: 22px;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
     .user-name {
       font-weight: 700;
@@ -1154,19 +1177,27 @@ import { ToastService } from '../../../core/services/toast.service';
       border: 1px solid #fde68a;
     }
 
+    .actions-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+    }
     .btn-action-sm {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
+      padding: 6px 14px;
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 600;
       color: #334155;
       cursor: pointer;
+      text-decoration: none;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .btn-action-sm .material-symbols-outlined {
       font-size: 16px;
@@ -1174,8 +1205,9 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .btn-action-sm:hover {
       background: #eff6ff;
-      border-color: #93c5fd;
+      border-color: #0050e5;
       color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.08);
     }
 
     .empty-cell {
@@ -1542,10 +1574,12 @@ export class WorkforceAnalyticsComponent implements OnInit {
   }
 
   getInitials(name?: string): string {
-    if (!name) return 'ST';
-    const parts = name.trim().split(' ');
+    if (!name || name.trim().toLowerCase().includes('undefined')) return 'ST';
+    const parts = name.trim().split(' ').filter(p => p.length > 0 && !p.toLowerCase().includes('undefined'));
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return parts[0].substring(0, 2).toUpperCase();
+    if (parts.length === 1 && parts[0].length >= 2) return parts[0].substring(0, 2).toUpperCase();
+    if (parts.length === 1 && parts[0].length === 1) return parts[0].toUpperCase();
+    return 'ST';
   }
 
   openRateModal(member: any): void {

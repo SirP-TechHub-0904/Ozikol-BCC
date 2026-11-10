@@ -13,6 +13,7 @@ export interface ClientSite {
   longitude?: number;
   geofenceRadiusMeters: number;
   emergencyContactName?: string;
+  emergencyContactEmail?: string;
   emergencyContactPhone?: string;
   siteAssignmentInstructions?: string;
   requiredSiaLicenceType?: string;
@@ -148,7 +149,7 @@ export class WorkforceService {
     return this.apiService.post<any>('workforce/sites', site);
   }
 
-  // --- SHIFTS ---
+
   getShifts(filters?: { startDate?: string; endDate?: string; siteId?: string; userId?: string; status?: string }): Observable<any> {
     return this.apiService.get<any>('workforce/shifts', filters);
   }
@@ -157,8 +158,24 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/shifts/my');
   }
 
+  getShift(shiftId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/shifts/${shiftId}`);
+  }
+
   createShift(shift: any): Observable<any> {
     return this.apiService.post<any>('workforce/shifts', shift);
+  }
+
+  updateShift(shiftId: string, shift: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/shifts/${shiftId}`, shift);
+  }
+
+  deleteShift(shiftId: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/shifts/${shiftId}`);
+  }
+
+  batchCreateShifts(payload: any): Observable<any> {
+    return this.apiService.post<any>('workforce/shifts/batch-schedule', payload);
   }
 
   confirmShift(shiftId: string): Observable<any> {

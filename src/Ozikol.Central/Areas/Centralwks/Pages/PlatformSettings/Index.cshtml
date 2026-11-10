@@ -418,15 +418,15 @@
             </div>
         </div>
 
-        @* ── Section 6.5: Transactional Email Infrastructure (Postmark / Mailcow / SMTP) ── *@
+        @* ── Section 6.5: Transactional Email Infrastructure (Mailcow / SMTP) ── *@
         <div class="admin-card" style="width: 100%; margin-bottom: 24px; background: var(--admin-bg-surface); border: 1.5px solid rgba(37, 99, 235, 0.2); border-left: 5px solid #2563eb; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
                 <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.25); color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <span class="material-symbols-outlined" style="font-size: 22px;">forward_to_inbox</span>
                 </div>
                 <div>
-                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Central Transactional Email Service (Postmark / Mailcow / SMTP)</h2>
-                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Outbound email engine powering workspace provisioning receipts, two-factor auth codes, password resets, and critical alerts.</p>
+                    <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Central Transactional Email Service (Mailcow / SMTP)</h2>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Outbound SMTP email engine powering workspace provisioning receipts, two-factor auth codes, password resets, and critical alerts.</p>
                 </div>
             </div>
 
@@ -437,56 +437,33 @@
                             Email Dispatch Provider
                         </label>
                         <select asp-for="Input.EmailProvider" class="form-select" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);">
-                            <option value="Postmark">Postmark (High Deliverability Cloud API)</option>
                             <option value="Mailcow">Mailcow (Self-Hosted Postfix/Dovecot SMTP)</option>
                             <option value="SMTP">Standard Custom SMTP Gateway</option>
                         </select>
-                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Primary engine for transactional system notices.</span>
-                    </div>
-
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <label asp-for="Input.PostmarkServerToken" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
-                                Postmark Server API Token
-                            </label>
-                            @if (!string.IsNullOrEmpty(Model.Input.PostmarkServerToken))
-                            {
-                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
-                                    Configured
-                                </span>
-                            }
-                        </div>
-                        <div style="position: relative;">
-                            <input asp-for="Input.PostmarkServerToken" value="@Model.Input.PostmarkServerToken" id="postmarkTokenInput" type="password" class="form-control" 
-                                   placeholder="e.g. 8a7c2XXXXXXXXXXXXXXXXXXXXXXXXXXX" 
-                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
-                            <button type="button" onclick="togglePasswordVisibility('postmarkTokenInput', this)" 
-                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
-                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
-                            </button>
-                        </div>
-                        <span asp-validation-for="Input.PostmarkServerToken" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
-                    </div>
-
-                    <div>
-                        <label asp-for="Input.PostmarkDefaultFrom" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
-                            Postmark Default Sender Email
-                        </label>
-                        <input asp-for="Input.PostmarkDefaultFrom" class="form-control" placeholder="notifications@@ozikol.cloud" 
-                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
-                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Must be a verified sender signature or confirmed domain in Postmark.</span>
-                        <span asp-validation-for="Input.PostmarkDefaultFrom" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Primary SMTP engine for transactional system notices.</span>
                     </div>
 
                     <div>
                         <label asp-for="Input.EmailFromName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
                             Email Sender Display Name
                         </label>
-                        <input asp-for="Input.EmailFromName" class="form-control" placeholder="e.g. Ozikol Cloud Security" 
+                        <input asp-for="Input.EmailFromName" id="emailFromNameInput" class="form-control" placeholder="e.g. Ozikol Cloud Security" 
                                style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
                         <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Display name shown in user mailboxes next to sender address.</span>
                         <span asp-validation-for="Input.EmailFromName" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
                     </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 16px 20px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 260px;">
+                        <input type="email" id="testEmailRecipientInput" class="form-control" placeholder="name@@company.com (Enter email to test live SMTP delivery)" 
+                               style="max-width: 340px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;" />
+                        <button type="button" id="btnTestEmail" onclick="testEmailConnection()" class="btn-admin btn-admin-secondary" style="font-size: 12.5px; padding: 7px 14px; border: 1px solid var(--admin-border); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">send</span>
+                            <span>Send Test Email</span>
+                        </button>
+                    </div>
+                    <span id="emailTestStatus" style="font-size: 12.5px; font-weight: 600;"></span>
                 </div>
             </div>
         </div>
@@ -1228,6 +1205,59 @@
         } catch (err) {
             status.style.color = '#dc2626';
             status.textContent = '✗ Network error testing Cloudflare R2 connection.';
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function testEmailConnection() {
+        var recipientInput = document.getElementById('testEmailRecipientInput');
+        var btn = document.getElementById('btnTestEmail');
+        var status = document.getElementById('emailTestStatus');
+        if (!recipientInput || !status) return;
+
+        var recipient = recipientInput.value.trim();
+        if (!recipient) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Please enter a recipient email address first.';
+            return;
+        }
+
+        var provider = document.getElementById('Input_EmailProvider')?.value || 'Mailcow';
+        var fromEmail = document.getElementById('Input_DefaultFromEmail')?.value?.trim() || '';
+        var fromName = document.getElementById('emailFromNameInput')?.value?.trim() || '';
+
+        status.style.color = 'var(--admin-text-muted)';
+        status.textContent = 'Dispatching test email via ' + provider + '...';
+        if (btn) btn.disabled = true;
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        var formData = new FormData();
+        formData.append('provider', provider);
+        formData.append('fromEmail', fromEmail);
+        formData.append('fromName', fromName);
+        formData.append('testRecipient', recipient);
+
+        try {
+            var response = await fetch('/centralwks/platform-settings?handler=TestEmailConnection', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            var result = await response.json();
+            if (result.success) {
+                status.style.color = '#059669';
+                status.textContent = '✓ ' + result.message;
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = '✗ ' + result.message;
+            }
+        } catch (err) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Network error testing email dispatch.';
         } finally {
             if (btn) btn.disabled = false;
         }

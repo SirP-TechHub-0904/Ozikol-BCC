@@ -69,6 +69,25 @@ namespace Ozikol_BCC.Domain.Models
         public string BadgeColor { get; set; } = "#0050E5";
 
         /// <summary>
+        /// Remuneration model for this role: "Hourly" (wage calculated per scheduled hour) or "Monthly" (fixed monthly salary).
+        /// </summary>
+        [Required]
+        [StringLength(50)]
+        public string CompensationBasis { get; set; } = "Hourly";
+
+        /// <summary>
+        /// Monthly base salary amount for salaried roles (when CompensationBasis is "Monthly").
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? MonthlySalary { get; set; }
+
+        /// <summary>
+        /// Standard weekly contracted hours expected for this role (e.g., 40.0, 37.5).
+        /// </summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? ContractedWeeklyHours { get; set; }
+
+        /// <summary>
         /// Indicates whether this job role is actively available for shift scheduling and staff enrollment.
         /// </summary>
         public bool IsActive { get; set; } = true;

@@ -44,10 +44,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
-          <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+          <a routerLink="/workforce/console/schedule/create" class="btn btn-primary" title="Create Daily Routine or Shift Schedule">
             <span class="material-symbols-outlined">add</span>
-            <span>Create Shift</span>
-          </button>
+            <span>Create Schedule</span>
+          </a>
+          <a routerLink="/workforce/console/enroll" class="btn btn-primary" title="Create Invitation Link" style="margin-left:8px;">
+            <span class="material-symbols-outlined">mail</span>
+            <span>Create Invitation</span>
+          </a>
         </div>
       </div>
 
@@ -93,9 +97,9 @@ import { ToastService } from '../../../core/services/toast.service';
 
         <div class="filters-row">
           <div class="filter-item">
-            <label class="filter-label">Filter by Operating Site</label>
+            <label class="filter-label">Filter by Work Location</label>
             <select class="filter-dropdown" [(ngModel)]="selectedSiteId" (change)="applyFilters()">
-              <option value="">All Operating Sites</option>
+              <option value="">All Work Locations</option>
               <option *ngFor="let site of sites" [value]="site.id">{{ site.siteName }} ({{ site.siteCode }})</option>
             </select>
           </div>
@@ -144,9 +148,9 @@ import { ToastService } from '../../../core/services/toast.service';
               <thead>
                 <tr>
                   <th>SHIFT REF</th>
-                  <th>OPERATING SITE &amp; POST</th>
+                  <th>WORK LOCATION &amp; ROLE</th>
                   <th>FACILITY / ADDRESS</th>
-                  <th>ASSIGNED OFFICER</th>
+                  <th>ASSIGNED STAFF MEMBER</th>
                   <th>DATE &amp; HOURS</th>
                   <th>BREAK / NET</th>
                   <th>RATE / PAY</th>
@@ -219,10 +223,15 @@ import { ToastService } from '../../../core/services/toast.service';
                     <span class="badge-status" [ngClass]="getStatusBadge(s.status)">{{ s.status }}</span>
                   </td>
                   <td style="text-align: right;">
-                    <button type="button" class="btn-action-sm" (click)="viewShiftDetails(s)">
-                      <span class="material-symbols-outlined">visibility</span>
-                      <span>Details</span>
-                    </button>
+                    <div class="row-actions-group">
+                      <a [routerLink]="['/workforce/console/schedule/edit', s.id]" class="btn-action-sm" title="Edit Schedule">
+                        <span class="material-symbols-outlined">edit</span>
+                        <span>Edit</span>
+                      </a>
+                      <button type="button" class="btn-action-sm" (click)="viewShiftDetails(s)" title="View Details">
+                        <span class="material-symbols-outlined">visibility</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -345,17 +354,17 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="empty-icon-circle">
             <span class="material-symbols-outlined">calendar_month</span>
           </div>
-          <h3>No Shifts Found</h3>
+          <h3>No Schedules Found</h3>
           <p *ngIf="selectedSiteId || selectedStatus || selectedDateFilter">
-            No shifts match your currently selected filters. Clear your filters to inspect the full roster.
+            No schedules match your currently selected filters. Clear your filters to inspect the full roster.
           </p>
           <p *ngIf="!selectedSiteId && !selectedStatus && !selectedDateFilter">
-            Plan your first 24/7 or day shift by clicking "Create Shift".
+            Plan your first daily routine, 8-to-5 working schedule, or operational shift by clicking "Create Schedule".
           </p>
-          <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+          <a routerLink="/workforce/console/schedule/create" class="btn btn-primary">
             <span class="material-symbols-outlined">add</span>
-            <span>Create Shift</span>
-          </button>
+            <span>Create Schedule</span>
+          </a>
         </div>
       </ng-container>
 
@@ -1774,8 +1783,8 @@ export class WorkforceScheduleComponent implements OnInit {
   }
 
   getInitials(name?: string): string {
-    if (!name) return 'OP';
-    const parts = name.trim().split(' ');
+    if (!name || name.trim().toLowerCase().includes('undefined')) return 'OP';
+    const parts = name.trim().split(' ').filter(p => p.length > 0 && !p.toLowerCase().includes('undefined'));
     return parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
   }
 

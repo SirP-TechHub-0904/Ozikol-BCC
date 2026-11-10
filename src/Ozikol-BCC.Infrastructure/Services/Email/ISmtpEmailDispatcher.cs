@@ -33,6 +33,8 @@ public interface ISmtpEmailDispatcher
         bool isCentralPlatformEmail = false,
         string? tenantName = null,
         string? tenantAdminEmail = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? smtpUsernameOverride = null,
+        string? smtpPasswordOverride = null);
 }
 

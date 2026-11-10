@@ -96,6 +96,12 @@ namespace Ozikol_BCC.Domain.Models
         public string? EmergencyContactName { get; set; }
 
         /// <summary>
+        /// Primary contact person email address at the work location.
+        /// </summary>
+        [StringLength(150)]
+        public string? EmergencyContactEmail { get; set; }
+
+        /// <summary>
         /// Direct telephone or 24/7 hotline for emergency dispatch and incident escalation.
         /// </summary>
         [StringLength(50)]
