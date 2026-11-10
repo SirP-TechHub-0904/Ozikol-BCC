@@ -228,7 +228,7 @@ interface StaffMemberDetail {
                   </div>
                   <div class="form-group">
                     <label class="form-label">Phone Number</label>
-                    <input type="tel" class="form-control" [(ngModel)]="member.phoneNumber" placeholder="e.g. +44 20 7946 0000" />
+                    <input type="tel" class="form-control" [(ngModel)]="member.phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
                   </div>
                 </div>
 
@@ -258,7 +258,7 @@ interface StaffMemberDetail {
                   </div>
                   <div class="form-group">
                     <label class="form-label">24/7 Emergency Phone Number</label>
-                    <input type="tel" class="form-control" [(ngModel)]="member.emergencyContactPhone" placeholder="e.g. +44 20 7946 0000" />
+                    <input type="tel" class="form-control" [(ngModel)]="member.emergencyContactPhone" placeholder="e.g. +0 (000) 000-0000" />
                   </div>
                 </div>
               </div>

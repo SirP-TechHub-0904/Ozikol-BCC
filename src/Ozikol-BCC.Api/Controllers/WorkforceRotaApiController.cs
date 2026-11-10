@@ -209,9 +209,14 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("sites")]
         public async Task<ActionResult<ApiResponse<Guid>>> UpsertSite([FromBody] UpsertClientSiteRequest request, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(request.SiteName) || string.IsNullOrWhiteSpace(request.SiteCode))
+            if (string.IsNullOrWhiteSpace(request.SiteName))
             {
-                return BadRequest(ApiResponse<Guid>.FailureResponse("Site code and site name are mandatory.", errorCode: "ERR-2002"));
+                return BadRequest(ApiResponse<Guid>.FailureResponse("Site / Venue name is mandatory.", errorCode: "ERR-2002"));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.SiteCode))
+            {
+                request.SiteCode = "LOC-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
             }
 
             BcpClientSite site;

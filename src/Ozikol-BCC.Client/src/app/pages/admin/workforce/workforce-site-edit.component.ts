@@ -73,32 +73,17 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
 
             <div class="card-body">
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Site Code <span class="required">*</span></label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    [(ngModel)]="site.siteCode"
-                    name="siteCode"
-                    placeholder="e.g. SITE-101"
-                    required
-                  />
-                  <span class="field-hint">Unique alphanumeric identifier for rota allocation.</span>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Site / Venue Name <span class="required">*</span></label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    [(ngModel)]="site.siteName"
-                    name="siteName"
-                    placeholder="e.g. Venue or Customer Post Name"
-                    required
-                  />
-                  <span class="field-hint">Display title across schedules and mobile shift feeds.</span>
-                </div>
+              <div class="form-group">
+                <label class="form-label">Venue / Work Location Name <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="site.siteName"
+                  name="siteName"
+                  placeholder="e.g. Venue or Office Name"
+                  required
+                />
+                <span class="field-hint">Display name across schedules and mobile shift feeds.</span>
               </div>
 
               <div class="form-group">
@@ -133,7 +118,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     class="form-control"
                     [(ngModel)]="site.postalCode"
                     name="postalCode"
-                    placeholder="e.g. SW1A 1AA"
+                    placeholder="e.g. Postal / Zip Code"
                   />
                 </div>
               </div>
@@ -187,7 +172,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     class="form-control"
                     [(ngModel)]="site.emergencyContactPhone"
                     name="emergencyContactPhone"
-                    placeholder="e.g. +44 20 7946 0000"
+                    placeholder="e.g. +0 (000) 000-0000"
                   />
                   <span class="field-hint">24/7 incident phone line for on-duty staff.</span>
                 </div>

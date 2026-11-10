@@ -27,3 +27,4 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
         }
     }
 }
+
