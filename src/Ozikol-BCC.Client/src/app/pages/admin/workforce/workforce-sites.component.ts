@@ -113,7 +113,9 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="status-badge idle" *ngIf="s.activeShiftsCount === 0">0 Active Shifts</span>
           </div>
 
-          <h3 class="site-title">{{ s.siteName }}</h3>
+          <a [routerLink]="['/workforce/console/sites', s.id, 'activity']" class="site-title-link">
+            <h3 class="site-title">{{ s.siteName }}</h3>
+          </a>
           <div class="org-pill-row" *ngIf="s.clientOrganizationName">
             <span class="org-pill">
               <span class="material-symbols-outlined">corporate_fare</span>
@@ -157,6 +159,10 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <div class="site-card-actions">
+            <a [routerLink]="['/workforce/console/sites', s.id, 'activity']" class="btn btn-primary full-width">
+              <span class="material-symbols-outlined">assignment_ind</span>
+              <span>Duty History &amp; Staff</span>
+            </a>
             <a [routerLink]="['/workforce/console/sites/edit', s.id]" class="btn btn-outline full-width">
               <span class="material-symbols-outlined">tune</span>
               <span>Edit Geofence &amp; Orders</span>
@@ -188,7 +194,9 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
                 <td>
                   <div class="site-table-cell">
-                    <strong>{{ s.siteName }}</strong>
+                    <a [routerLink]="['/workforce/console/sites', s.id, 'activity']" class="site-table-link">
+                      <strong>{{ s.siteName }}</strong>
+                    </a>
                     <span class="org-pill-sm" *ngIf="s.clientOrganizationName">
                       <span class="material-symbols-outlined">corporate_fare</span>
                       {{ s.clientOrganizationName }}
@@ -217,10 +225,16 @@ import { ToastService } from '../../../core/services/toast.service';
                   <span class="status-badge idle" *ngIf="s.activeShiftsCount === 0">0 Active</span>
                 </td>
                 <td style="text-align: right;">
-                  <a [routerLink]="['/workforce/console/sites/edit', s.id]" class="btn-action-sm">
-                    <span class="material-symbols-outlined">edit</span>
-                    <span>Edit</span>
-                  </a>
+                  <div class="table-actions-row">
+                    <a [routerLink]="['/workforce/console/sites', s.id, 'activity']" class="btn-action-sm btn-action-primary" title="Duty History &amp; Staff">
+                      <span class="material-symbols-outlined">assignment_ind</span>
+                      <span>Duty &amp; Staff</span>
+                    </a>
+                    <a [routerLink]="['/workforce/console/sites/edit', s.id]" class="btn-action-sm" title="Edit Geofence &amp; Orders">
+                      <span class="material-symbols-outlined">edit</span>
+                      <span>Edit</span>
+                    </a>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -619,11 +633,44 @@ import { ToastService } from '../../../core/services/toast.service';
       100% { opacity: 1; transform: scale(1); }
     }
 
+    .site-title-link {
+      text-decoration: none;
+      display: block;
+    }
+    .site-title-link:hover .site-title {
+      color: #0050e5;
+    }
+    .site-table-link {
+      color: #0f172a;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.15s ease;
+    }
+    .site-table-link:hover {
+      color: #0050e5;
+    }
+    .table-actions-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action-primary {
+      background: #eff6ff !important;
+      border-color: #bfdbfe !important;
+      color: #0050e5 !important;
+      font-weight: 600;
+    }
+    .btn-action-primary:hover {
+      background: #0050e5 !important;
+      color: #ffffff !important;
+    }
+
     .site-title {
       font-size: 17px;
       font-weight: 800;
       color: #0f172a;
       margin: 0 0 6px 0;
+      transition: color 0.15s ease;
     }
     .site-location {
       display: flex;

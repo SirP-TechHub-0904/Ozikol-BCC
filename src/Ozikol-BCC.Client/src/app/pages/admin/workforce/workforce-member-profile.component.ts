@@ -626,67 +626,205 @@ interface StaffMemberDetail {
         <!-- ========================================================================= -->
         <!-- TAB 5: SHIFT HISTORY & TIMESHEETS -->
         <!-- ========================================================================= -->
+        <!-- TAB 5: Shift History & Timesheets with Summary & List/Card Toggle -->
         <div class="tab-pane" *ngIf="activeTab === 'shifts'">
+          <!-- 1. Total Summary KPI Metrics Bar -->
+          <div class="staff-kpi-summary-grid">
+            <div class="staff-kpi-card blue">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">calendar_month</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">{{ staffDutyHistory?.totalShiftsCount || member.totalShiftsCompleted || 0 }}</span>
+                <span class="kpi-label">Total Assigned Shifts</span>
+              </div>
+              <div class="kpi-sub">{{ staffDutyHistory?.completedShiftsCount || member.totalShiftsCompleted || 0 }} completed</div>
+            </div>
+
+            <div class="staff-kpi-card emerald">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">{{ (staffDutyHistory?.totalHoursWorked || (member.totalShiftsCompleted * 8)) | number:'1.1-1' }}h</span>
+                <span class="kpi-label">Total Logged Duty Hours</span>
+              </div>
+              <div class="kpi-sub">Across all operating venues</div>
+            </div>
+
+            <div class="staff-kpi-card purple">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">verified</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">{{ (staffDutyHistory?.punctualityScorePercent || member.punctualityScorePercent || 100) | number:'1.0-0' }}%</span>
+                <span class="kpi-label">Punctuality Score</span>
+              </div>
+              <div class="kpi-sub">Geofence and on-time adherence</div>
+            </div>
+
+            <div class="staff-kpi-card amber">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">gavel</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">₦{{ (staffDutyHistory?.totalFinesAmount || 0) | number:'1.0-0' }}</span>
+                <span class="kpi-label">Attached Disciplinary Fines</span>
+              </div>
+              <div class="kpi-sub">{{ staffDutyHistory?.totalFinesCount || 0 }} penalty deductions recorded</div>
+            </div>
+          </div>
+
+          <!-- 2. Content Card with List & Card View Switcher -->
           <div class="content-card">
             <div class="card-header-bar">
               <div class="header-bar-left">
                 <span class="material-symbols-outlined text-blue">history</span>
                 <div>
-                  <h3 class="card-heading">Shift History &amp; GPS Attendance Audit</h3>
-                  <p class="card-sub">Recent rosters, geofence compliance distance, supervisor ratings, and gross pay.</p>
+                  <h3 class="card-heading">Work History &amp; Duty Reports</h3>
+                  <p class="card-sub">Comprehensive record of past and current duty shifts, geofence compliance, and post reports.</p>
                 </div>
+              </div>
+              <div class="view-mode-toggle">
+                <button
+                  type="button"
+                  class="view-btn"
+                  [class.active]="shiftHistoryMode === 'table'"
+                  (click)="shiftHistoryMode = 'table'"
+                  title="List View"
+                >
+                  <span class="material-symbols-outlined">table_rows</span>
+                  <span>List</span>
+                </button>
+                <button
+                  type="button"
+                  class="view-btn"
+                  [class.active]="shiftHistoryMode === 'cards'"
+                  (click)="shiftHistoryMode = 'cards'"
+                  title="Card View"
+                >
+                  <span class="material-symbols-outlined">grid_view</span>
+                  <span>Cards</span>
+                </button>
               </div>
             </div>
 
-            <div class="table-responsive">
+            <!-- List / Table View -->
+            <div class="table-responsive" *ngIf="shiftHistoryMode === 'table'">
               <table class="settings-table">
                 <thead>
                   <tr>
-                    <th>Site / Post</th>
-                    <th>Date &amp; Time Window</th>
-                    <th>Hours</th>
-                    <th>Status</th>
-                    <th>GPS Geofence Adherence</th>
-                    <th>Hourly Rate</th>
-                    <th>Total Pay</th>
+                    <th>WORK LOCATION / POST</th>
+                    <th>DUTY DATE &amp; TIMING</th>
+                    <th>HOURS</th>
+                    <th>STATUS</th>
+                    <th>GPS GEOFENCE</th>
+                    <th>DUTY REPORT</th>
+                    <th>FINE</th>
+                    <th style="text-align: right;">ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let s of member.recentShifts">
+                  <tr *ngFor="let s of displayedStaffShifts">
                     <td>
-                      <strong>{{ s.siteName || s.siteCode }}</strong>
+                      <strong>{{ s.siteName || s.clientSiteName || 'Operating Post' }}</strong>
+                      <span class="desc-muted" *ngIf="s.postName">{{ s.postName }}</span>
                     </td>
                     <td>
-                      <div>{{ s.startUtc | date:'mediumDate' }}</div>
-                      <span class="desc-muted">{{ s.startUtc | date:'shortTime' }} &ndash; {{ s.endUtc | date:'shortTime' }}</span>
+                      <div>{{ s.startsAtUtc || s.startUtc | date:'EEE, d MMM y' }}</div>
+                      <span class="desc-muted">{{ s.startsAtUtc || s.startUtc | date:'shortTime' }} &ndash; {{ s.endsAtUtc || s.endUtc | date:'shortTime' }}</span>
                     </td>
-                    <td>{{ s.totalHours | number:'1.1-1' }} hrs</td>
+                    <td>{{ (s.actualDurationHours || s.plannedDurationHours || s.totalHours || 8) | number:'1.1-1' }} hrs</td>
                     <td>
                       <span class="status-pill active" *ngIf="s.status === 'Completed'">Completed</span>
-                      <span class="status-pill pending" *ngIf="s.status === 'Scheduled'">Scheduled</span>
+                      <span class="status-pill inprogress" *ngIf="s.status === 'InProgress'">In Progress</span>
+                      <span class="status-pill pending" *ngIf="s.status === 'Scheduled' || s.status === 'Confirmed'">Scheduled</span>
                       <span class="status-pill disabled" *ngIf="s.status === 'Cancelled'">Cancelled</span>
                     </td>
                     <td>
-                      <span class="gps-chip success" *ngIf="s.checkInDistanceMeters !== undefined && s.checkInDistanceMeters <= 50">
-                        <span class="material-symbols-outlined">radar</span> {{ s.checkInDistanceMeters }}m (Verified)
+                      <span class="gps-chip success" *ngIf="s.isClockInGeofenceVerified">
+                        <span class="material-symbols-outlined">verified</span> Verified GPS
                       </span>
-                      <span class="gps-chip warning" *ngIf="s.checkInDistanceMeters !== undefined && s.checkInDistanceMeters > 50">
-                        <span class="material-symbols-outlined">warning</span> {{ s.checkInDistanceMeters }}m (Out of bounds)
+                      <span class="gps-chip warning" *ngIf="s.isClockedIn && !s.isClockInGeofenceVerified">
+                        <span class="material-symbols-outlined">warning</span> Out of bounds
                       </span>
-                      <span class="text-muted" *ngIf="s.checkInDistanceMeters === undefined">Not Checked In</span>
+                      <span class="text-muted" *ngIf="!s.isClockedIn">Pending</span>
                     </td>
-                    <td>{{ member.currencySymbol }}{{ s.hourlyRate | number:'1.2-2' }}/hr</td>
                     <td>
-                      <strong>{{ member.currencySymbol }}{{ s.grossPay | number:'1.2-2' }}</strong>
+                      <span class="report-tag submitted" *ngIf="s.reportSubmissionUtc">Submitted</span>
+                      <span class="report-tag none" *ngIf="!s.reportSubmissionUtc">None</span>
+                    </td>
+                    <td>
+                      <span class="fine-tag attached" *ngIf="s.fineAttached">₦{{ (s.fineAmount || 0) | number:'1.0-0' }}</span>
+                      <span class="fine-tag none" *ngIf="!s.fineAttached">None</span>
+                    </td>
+                    <td style="text-align: right;">
+                      <a [routerLink]="['/workforce/console/shifts', s.id, 'report']" class="btn-duty-report">
+                        <span class="material-symbols-outlined">visibility</span>
+                        <span>Duty Report</span>
+                      </a>
                     </td>
                   </tr>
-                  <tr *ngIf="!member.recentShifts || member.recentShifts.length === 0">
-                    <td colspan="7" class="empty-state">
-                      No past shift records logged yet for this staff member.
+                  <tr *ngIf="displayedStaffShifts.length === 0">
+                    <td colspan="8" class="empty-state">
+                      No duty records found for this staff member yet.
                     </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Card View Grid -->
+            <div class="staff-duty-cards-grid" *ngIf="shiftHistoryMode === 'cards'">
+              <div class="staff-duty-card" *ngFor="let s of displayedStaffShifts">
+                <div class="duty-card-header-row">
+                  <strong>{{ s.siteName || s.clientSiteName || 'Operating Post' }}</strong>
+                  <span class="status-pill active" *ngIf="s.status === 'Completed'">Completed</span>
+                  <span class="status-pill inprogress" *ngIf="s.status === 'InProgress'">In Progress</span>
+                  <span class="status-pill pending" *ngIf="s.status === 'Scheduled' || s.status === 'Confirmed'">Scheduled</span>
+                  <span class="status-pill disabled" *ngIf="s.status === 'Cancelled'">Cancelled</span>
+                </div>
+
+                <div class="duty-card-post-name">{{ s.postName || 'General Assignment' }}</div>
+
+                <div class="duty-card-info-box">
+                  <div class="info-row">
+                    <span class="material-symbols-outlined">event</span>
+                    <span>{{ s.startsAtUtc || s.startUtc | date:'EEE, d MMM y' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="material-symbols-outlined">schedule</span>
+                    <span>{{ s.startsAtUtc || s.startUtc | date:'shortTime' }} &ndash; {{ s.endsAtUtc || s.endUtc | date:'shortTime' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="material-symbols-outlined">timer</span>
+                    <span>{{ (s.actualDurationHours || s.plannedDurationHours || s.totalHours || 8) | number:'1.1-1' }} hours logged</span>
+                  </div>
+                </div>
+
+                <div class="duty-card-badges-row">
+                  <span class="gps-chip success" *ngIf="s.isClockInGeofenceVerified">
+                    <span class="material-symbols-outlined">verified</span> GPS Verified
+                  </span>
+                  <span class="gps-chip warning" *ngIf="s.isClockedIn && !s.isClockInGeofenceVerified">
+                    <span class="material-symbols-outlined">warning</span> Out of bounds
+                  </span>
+                  <span class="fine-tag attached" *ngIf="s.fineAttached">
+                    <span class="material-symbols-outlined">gavel</span> ₦{{ (s.fineAmount || 0) | number:'1.0-0' }} Fine
+                  </span>
+                </div>
+
+                <div class="duty-card-action">
+                  <a [routerLink]="['/workforce/console/shifts', s.id, 'report']" class="btn btn-outline full-width">
+                    <span class="material-symbols-outlined">visibility</span>
+                    <span>View Duty Report</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="empty-state full-grid" *ngIf="displayedStaffShifts.length === 0">
+                No past shift records logged yet for this staff member.
+              </div>
             </div>
           </div>
         </div>
@@ -1423,6 +1561,245 @@ interface StaffMemberDetail {
     .badge-tag.purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
     .badge-tag.gray { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
+    /* Staff KPI Summary Grid */
+    .staff-kpi-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .staff-kpi-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .staff-kpi-summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .staff-kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .staff-kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .staff-kpi-card.blue::before { background: #0050e5; }
+    .staff-kpi-card.emerald::before { background: #10b981; }
+    .staff-kpi-card.purple::before { background: #8b5cf6; }
+    .staff-kpi-card.amber::before { background: #f59e0b; }
+
+    .kpi-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .staff-kpi-card.blue .kpi-icon-box { background: #eff6ff; color: #0050e5; }
+    .staff-kpi-card.emerald .kpi-icon-box { background: #ecfdf5; color: #10b981; }
+    .staff-kpi-card.purple .kpi-icon-box { background: #f5f3ff; color: #8b5cf6; }
+    .staff-kpi-card.amber .kpi-icon-box { background: #fffbeb; color: #f59e0b; }
+
+    .kpi-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .view-mode-toggle {
+      display: flex;
+      background: #f1f5f9;
+      padding: 0.2rem;
+      border-radius: 0.5rem;
+      gap: 0.2rem;
+    }
+
+    .view-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border: none;
+      background: transparent;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .view-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .view-btn span.material-symbols-outlined {
+      font-size: 1rem;
+    }
+
+    .report-tag {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .report-tag.submitted { background: #eff6ff; color: #0050e5; }
+    .report-tag.none { color: #94a3b8; }
+
+    .fine-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .fine-tag.attached { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .fine-tag.none { color: #94a3b8; }
+
+    .btn-duty-report {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #0050e5;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-duty-report:hover {
+      background: #0050e5;
+      color: #ffffff;
+    }
+
+    .btn-duty-report span.material-symbols-outlined {
+      font-size: 0.95rem;
+    }
+
+    /* Staff Duty Cards Grid */
+    .staff-duty-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .staff-duty-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .staff-duty-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .staff-duty-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.625rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .duty-card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+    }
+
+    .duty-card-post-name {
+      font-size: 0.75rem;
+      color: #0050e5;
+      font-weight: 600;
+    }
+
+    .duty-card-info-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.625rem;
+      background: #f8fafc;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      color: #334155;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .info-row span.material-symbols-outlined {
+      font-size: 0.95rem;
+      color: #64748b;
+    }
+
+    .duty-card-badges-row {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .full-grid {
+      grid-column: 1 / -1;
+    }
+
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
@@ -1433,6 +1810,9 @@ export class WorkforceMemberProfileComponent implements OnInit {
   isLoading = true;
   isSaving = false;
   activeTab: 'personal' | 'employment' | 'documents' | 'custom-forms' | 'shifts' = 'personal';
+
+  shiftHistoryMode: 'table' | 'cards' = 'table';
+  staffDutyHistory: any = null;
 
   jobRoles: any[] = [];
   staffTypes: any[] = [];
@@ -1476,6 +1856,13 @@ export class WorkforceMemberProfileComponent implements OnInit {
     this.loadMetadata();
   }
 
+  get displayedStaffShifts(): any[] {
+    if (this.staffDutyHistory?.shifts && this.staffDutyHistory.shifts.length > 0) {
+      return this.staffDutyHistory.shifts;
+    }
+    return this.member?.recentShifts || [];
+  }
+
   get jobRoleTitles(): string[] {
     return this.jobRoles.map(r => r.title);
   }
@@ -1503,12 +1890,24 @@ export class WorkforceMemberProfileComponent implements OnInit {
         if (res && res.data) {
           this.member = res.data;
           this.initWeeklySchedule();
+          this.loadStaffDutyHistory();
         }
       },
       error: (err) => {
         this.isLoading = false;
         this.toast.error(err?.error?.message || 'Failed to load member profile.');
       }
+    });
+  }
+
+  loadStaffDutyHistory(): void {
+    this.workforceService.getStaffDutyHistory(this.userId).subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.staffDutyHistory = res.data;
+        }
+      },
+      error: () => {}
     });
   }
 

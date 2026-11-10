@@ -167,6 +167,45 @@ namespace Ozikol_BCC.Domain.Models
         public string? Notes { get; set; }
 
         /// <summary>
+        /// Timestamp in UTC when the guard or duty officer submitted their post completion report.
+        /// </summary>
+        public DateTime? ReportSubmissionUtc { get; set; }
+
+        /// <summary>
+        /// Handover notes, occurrence book entries, security observations, and post incident report.
+        /// </summary>
+        public string? ReportContent { get; set; }
+
+        /// <summary>
+        /// Indicates whether an administrative penalty or fine was attached to this shift execution.
+        /// </summary>
+        public bool FineAttached { get; set; } = false;
+
+        /// <summary>
+        /// Monetary penalty amount in local currency (e.g., ₦) deducted for operational non-compliance.
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? FineAmount { get; set; }
+
+        /// <summary>
+        /// Specific reason for fine deduction (e.g. Late check-in > 30m, Uniform violation, Abandoned post).
+        /// </summary>
+        [StringLength(250)]
+        public string? FineReason { get; set; }
+
+        /// <summary>
+        /// User identifier or name of the supervisor who authorized the fine deduction.
+        /// </summary>
+        [StringLength(100)]
+        public string? FineAuthorizedBy { get; set; }
+
+        /// <summary>
+        /// Administrative status of the penalty deduction: "Pending", "Applied", "Waived".
+        /// </summary>
+        [StringLength(50)]
+        public string? FineStatus { get; set; }
+
+        /// <summary>
         /// User identifier of the administrator or supervisor who created this shift.
         /// </summary>
         [StringLength(100)]

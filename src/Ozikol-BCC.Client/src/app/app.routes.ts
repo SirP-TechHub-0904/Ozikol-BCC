@@ -25,6 +25,8 @@ import { WorkforceScheduleComponent } from './pages/admin/workforce/workforce-sc
 import { WorkforceShiftEditComponent } from './pages/admin/workforce/workforce-shift-edit.component';
 import { WorkforceSitesComponent } from './pages/admin/workforce/workforce-sites.component';
 import { WorkforceSiteEditComponent } from './pages/admin/workforce/workforce-site-edit.component';
+import { WorkforceSiteActivityComponent } from './pages/admin/workforce/workforce-site-activity.component';
+import { WorkforceDutyDetailComponent } from './pages/admin/workforce/workforce-duty-detail.component';
 import { WorkforceEnrollComponent } from './pages/admin/workforce/workforce-enroll.component';
 import { WorkforceSettingsComponent } from './pages/admin/workforce/workforce-settings.component';
 import { WorkforceMemberProfileComponent } from './pages/admin/workforce/workforce-member-profile.component';
@@ -306,9 +308,11 @@ export const routes: Routes = [
       { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/create', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/edit/:id', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/shifts/:id/report', component: WorkforceDutyDetailComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/sites', component: WorkforceSitesComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/sites/create', component: WorkforceSiteEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/sites/edit/:id', component: WorkforceSiteEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/sites/:id/activity', component: WorkforceSiteActivityComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/enroll', component: WorkforceEnrollComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/members/:id', component: WorkforceMemberProfileComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/settings', component: WorkforceSettingsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },

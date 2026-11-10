@@ -145,6 +145,22 @@ export class WorkforceService {
     return this.apiService.get<any>(`workforce/sites/${id}`);
   }
 
+  getSiteActivity(siteId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/sites/${siteId}/activity`);
+  }
+
+  getShiftReport(shiftId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/shifts/${shiftId}/report`);
+  }
+
+  submitShiftReport(shiftId: string, payload: any): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/report`, payload);
+  }
+
+  getStaffDutyHistory(userId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/members/${userId}/duty-history`);
+  }
+
   upsertSite(site: Partial<ClientSite>): Observable<any> {
     return this.apiService.post<any>('workforce/sites', site);
   }

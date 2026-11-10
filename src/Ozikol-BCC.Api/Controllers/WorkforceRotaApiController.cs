@@ -204,6 +204,281 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Retrieves complete operational duty activity, past/present/future shifts, rostered personnel,
+        /// and fine records for a specific client site.
+        /// </summary>
+        [HttpGet("sites/{siteId:guid}/activity")]
+        public async Task<ActionResult<ApiResponse<SiteActivityResponse>>> GetSiteActivity(Guid siteId, CancellationToken ct)
+        {
+            var site = await _db.BcpClientSites
+                .AsNoTracking()
+                .Where(s => s.TenantKey == CurrentTenantKey && s.Id == siteId && s.IsActive)
+                .Select(s => new ClientSiteDto
+                {
+                    Id = s.Id,
+                    SiteCode = s.SiteCode,
+                    SiteName = s.SiteName,
+                    Address = s.Address,
+                    City = s.City,
+                    PostalCode = s.PostalCode,
+                    Latitude = s.Latitude,
+                    Longitude = s.Longitude,
+                    GeofenceRadiusMeters = s.GeofenceRadiusMeters,
+                    EmergencyContactName = s.EmergencyContactName,
+                    EmergencyContactPhone = s.EmergencyContactPhone,
+                    SiteAssignmentInstructions = s.SiteAssignmentInstructions,
+                    RequiredSiaLicenceType = s.RequiredSiaLicenceType,
+                    ActiveShiftsCount = s.Shifts.Count(sh => sh.Status == "Scheduled" || sh.Status == "InProgress"),
+                    ClientOrganizationId = s.ClientOrganizationId,
+                    ClientOrganizationName = s.ClientOrganizationName
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (site == null)
+            {
+                return NotFound(ApiResponse<SiteActivityResponse>.FailureResponse("Client site not found.", errorCode: "ERR-2004"));
+            }
+
+            var shifts = await _db.BcpShifts
+                .AsNoTracking()
+                .Include(s => s.AttendanceRecord)
+                .Where(s => s.TenantKey == CurrentTenantKey && s.ClientSiteId == siteId)
+                .OrderByDescending(s => s.StartsAtUtc)
+                .Select(s => new ShiftDto
+                {
+                    Id = s.Id,
+                    ShiftCode = s.ShiftCode,
+                    ClientSiteId = s.ClientSiteId,
+                    SiteName = site.SiteName,
+                    SiteAddress = site.Address,
+                    PostName = s.PostName,
+                    FacilityName = s.FacilityName,
+                    Address = s.Address,
+                    PostCode = s.PostCode,
+                    EventTag = s.EventTag,
+                    AssignedUserId = s.AssignedUserId,
+                    AssignedUserName = s.AssignedUserName,
+                    StartsAtUtc = s.StartsAtUtc,
+                    EndsAtUtc = s.EndsAtUtc,
+                    IsOvernight = s.IsOvernight,
+                    BreakMinutes = s.BreakMinutes,
+                    PlannedDurationHours = s.PlannedDurationHours,
+                    HourlyPayRate = s.HourlyPayRate,
+                    HourlyChargeRate = s.HourlyChargeRate,
+                    RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
+                    RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
+                    Status = s.Status,
+                    IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    ConfirmedAtUtc = s.ConfirmedAtUtc,
+                    AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
+                    Notes = s.Notes,
+                    IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
+                    IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
+                    ReportSubmissionUtc = s.ReportSubmissionUtc,
+                    ReportContent = s.ReportContent,
+                    FineAttached = s.FineAttached,
+                    FineAmount = s.FineAmount,
+                    FineReason = s.FineReason,
+                    FineAuthorizedBy = s.FineAuthorizedBy,
+                    FineStatus = s.FineStatus,
+                    ClockInUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInUtc : null,
+                    ClockOutUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockOutUtc : null,
+                    IsClockInGeofenceVerified = s.AttendanceRecord != null && s.AttendanceRecord.IsClockInGeofenceVerified,
+                    IsClockOutGeofenceVerified = s.AttendanceRecord != null && s.AttendanceRecord.IsClockOutGeofenceVerified,
+                    ClockInDistanceFromSiteMeters = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInDistanceFromSiteMeters : null,
+                    LateArrivalMinutes = s.AttendanceRecord != null ? s.AttendanceRecord.LateArrivalMinutes : 0,
+                    IsFlagged = s.AttendanceRecord != null && s.AttendanceRecord.IsFlagged,
+                    FlagReason = s.AttendanceRecord != null ? s.AttendanceRecord.FlagReason : null,
+                    ActualDurationHours = s.AttendanceRecord != null ? s.AttendanceRecord.ActualDurationHours : null,
+                    BillableHours = s.AttendanceRecord != null ? s.AttendanceRecord.BillableHours : null,
+                    ClockInPhotoUrl = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInPhotoUrl : null,
+                    ClockOutPhotoUrl = s.AttendanceRecord != null ? s.AttendanceRecord.ClockOutPhotoUrl : null,
+                    SupervisorNotes = s.AttendanceRecord != null ? s.AttendanceRecord.SupervisorNotes : null,
+                    SupervisorApproved = s.AttendanceRecord != null && s.AttendanceRecord.SupervisorApproved
+                })
+                .ToListAsync(ct);
+
+            var roster = shifts
+                .Where(s => !string.IsNullOrWhiteSpace(s.AssignedUserId))
+                .GroupBy(s => s.AssignedUserId!)
+                .Select(g =>
+                {
+                    var first = g.First();
+                    var totalHours = g.Sum(x => x.ActualDurationHours ?? x.PlannedDurationHours);
+                    var completedCount = g.Count(x => x.Status == "Completed");
+                    var lateCount = g.Count(x => x.LateArrivalMinutes > 0);
+                    var onTimePercent = g.Count() > 0 ? Math.Round(((g.Count() - lateCount) / (decimal)g.Count()) * 100, 1) : 100m;
+
+                    return new SiteStaffRosterItemDto
+                    {
+                        UserId = g.Key,
+                        FullName = first.AssignedUserName ?? "Staff Member",
+                        JobTitle = first.PostName,
+                        TotalShiftsAtSite = g.Count(),
+                        CompletedShiftsAtSite = completedCount,
+                        TotalHoursAtSite = totalHours,
+                        PunctualityScorePercent = onTimePercent,
+                        LastDutyDateUtc = g.Max(x => x.StartsAtUtc),
+                        TotalFinesAmount = g.Where(x => x.FineAttached).Sum(x => x.FineAmount ?? 0m)
+                    };
+                })
+                .OrderByDescending(r => r.TotalShiftsAtSite)
+                .ToList();
+
+            var response = new SiteActivityResponse
+            {
+                Site = site,
+                TotalShiftsCount = shifts.Count,
+                ActiveShiftsCount = shifts.Count(s => s.Status == "InProgress"),
+                CompletedShiftsCount = shifts.Count(s => s.Status == "Completed"),
+                ScheduledShiftsCount = shifts.Count(s => s.Status == "Scheduled" || s.Status == "Confirmed"),
+                TotalHoursLogged = shifts.Sum(s => s.ActualDurationHours ?? (s.Status == "Completed" ? s.PlannedDurationHours : 0m)),
+                TotalFinesAmount = shifts.Where(s => s.FineAttached).Sum(s => s.FineAmount ?? 0m),
+                UniqueStaffCount = roster.Count,
+                Shifts = shifts,
+                StaffRoster = roster
+            };
+
+            return Ok(ApiResponse<SiteActivityResponse>.SuccessResponse(response, "Site duty activity retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves full duty inspection details, attendance telemetry, occurrence report, and attached fines for a single shift.
+        /// </summary>
+        [HttpGet("shifts/{id:guid}/report")]
+        public async Task<ActionResult<ApiResponse<ShiftDto>>> GetShiftDutyReport(Guid id, CancellationToken ct)
+        {
+            return await GetShift(id, ct);
+        }
+
+        /// <summary>
+        /// Submits or updates the post duty report, occurrence book entries, security observations, and optional administrative fines.
+        /// </summary>
+        [HttpPost("shifts/{id:guid}/report")]
+        public async Task<ActionResult<ApiResponse<bool>>> SubmitShiftDutyReport(Guid id, [FromBody] SubmitDutyReportRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts.FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift record not found.", errorCode: "ERR-2004"));
+            }
+
+            shift.ReportContent = request.ReportContent;
+            shift.ReportSubmissionUtc = DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(request.DutyStatus))
+            {
+                shift.Status = request.DutyStatus;
+            }
+
+            shift.FineAttached = request.FineAttached;
+            if (request.FineAttached)
+            {
+                shift.FineAmount = request.FineAmount;
+                shift.FineReason = request.FineReason;
+                shift.FineAuthorizedBy = !string.IsNullOrWhiteSpace(request.FineAuthorizedBy) ? request.FineAuthorizedBy : CurrentUserName;
+                shift.FineStatus = !string.IsNullOrWhiteSpace(request.FineStatus) ? request.FineStatus : "Applied";
+            }
+            else
+            {
+                shift.FineAmount = null;
+                shift.FineReason = null;
+                shift.FineAuthorizedBy = null;
+                shift.FineStatus = null;
+            }
+
+            shift.UpdatedUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Duty report and fine records saved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves duty execution history and aggregated performance metrics for a specific staff member.
+        /// </summary>
+        [HttpGet("members/{userId}/duty-history")]
+        public async Task<ActionResult<ApiResponse<StaffDutyHistoryResponse>>> GetStaffDutyHistory(string userId, CancellationToken ct)
+        {
+            var profile = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            var shifts = await _db.BcpShifts
+                .AsNoTracking()
+                .Include(s => s.ClientSite)
+                .Include(s => s.AttendanceRecord)
+                .Where(s => s.TenantKey == CurrentTenantKey && s.AssignedUserId == userId)
+                .OrderByDescending(s => s.StartsAtUtc)
+                .Select(s => new ShiftDto
+                {
+                    Id = s.Id,
+                    ShiftCode = s.ShiftCode,
+                    ClientSiteId = s.ClientSiteId,
+                    SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Venue",
+                    SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                    PostName = s.PostName,
+                    FacilityName = s.FacilityName,
+                    Address = s.Address,
+                    PostCode = s.PostCode,
+                    EventTag = s.EventTag,
+                    AssignedUserId = s.AssignedUserId,
+                    AssignedUserName = s.AssignedUserName,
+                    StartsAtUtc = s.StartsAtUtc,
+                    EndsAtUtc = s.EndsAtUtc,
+                    IsOvernight = s.IsOvernight,
+                    BreakMinutes = s.BreakMinutes,
+                    PlannedDurationHours = s.PlannedDurationHours,
+                    HourlyPayRate = s.HourlyPayRate,
+                    HourlyChargeRate = s.HourlyChargeRate,
+                    Status = s.Status,
+                    Notes = s.Notes,
+                    IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
+                    IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
+                    ReportSubmissionUtc = s.ReportSubmissionUtc,
+                    ReportContent = s.ReportContent,
+                    FineAttached = s.FineAttached,
+                    FineAmount = s.FineAmount,
+                    FineReason = s.FineReason,
+                    FineAuthorizedBy = s.FineAuthorizedBy,
+                    FineStatus = s.FineStatus,
+                    ClockInUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInUtc : null,
+                    ClockOutUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockOutUtc : null,
+                    IsClockInGeofenceVerified = s.AttendanceRecord != null && s.AttendanceRecord.IsClockInGeofenceVerified,
+                    IsClockOutGeofenceVerified = s.AttendanceRecord != null && s.AttendanceRecord.IsClockOutGeofenceVerified,
+                    ClockInDistanceFromSiteMeters = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInDistanceFromSiteMeters : null,
+                    LateArrivalMinutes = s.AttendanceRecord != null ? s.AttendanceRecord.LateArrivalMinutes : 0,
+                    IsFlagged = s.AttendanceRecord != null && s.AttendanceRecord.IsFlagged,
+                    FlagReason = s.AttendanceRecord != null ? s.AttendanceRecord.FlagReason : null,
+                    ActualDurationHours = s.AttendanceRecord != null ? s.AttendanceRecord.ActualDurationHours : null,
+                    BillableHours = s.AttendanceRecord != null ? s.AttendanceRecord.BillableHours : null,
+                    SupervisorNotes = s.AttendanceRecord != null ? s.AttendanceRecord.SupervisorNotes : null,
+                    SupervisorApproved = s.AttendanceRecord != null && s.AttendanceRecord.SupervisorApproved
+                })
+                .ToListAsync(ct);
+
+            var completedShifts = shifts.Where(s => s.Status == "Completed").ToList();
+            var totalHours = shifts.Sum(s => s.ActualDurationHours ?? (s.Status == "Completed" ? s.PlannedDurationHours : 0m));
+            var totalFines = shifts.Where(s => s.FineAttached).Sum(s => s.FineAmount ?? 0m);
+            var lateCount = shifts.Count(s => s.LateArrivalMinutes > 0);
+            var punctualityScore = shifts.Count > 0 ? Math.Round(((shifts.Count - lateCount) / (decimal)shifts.Count) * 100, 1) : 100m;
+
+            var response = new StaffDutyHistoryResponse
+            {
+                UserId = userId,
+                FullName = profile != null ? $"{profile.FirstName} {profile.LastName}".Trim() : (shifts.FirstOrDefault()?.AssignedUserName ?? "Staff Member"),
+                JobTitle = profile?.JobTitle ?? "Staff",
+                TotalShiftsCount = shifts.Count,
+                CompletedShiftsCount = completedShifts.Count,
+                TotalHoursWorked = totalHours,
+                PunctualityScorePercent = profile != null ? profile.PunctualityScorePercent : punctualityScore,
+                TotalFinesCount = shifts.Count(s => s.FineAttached),
+                TotalFinesAmount = totalFines,
+                Shifts = shifts
+            };
+
+            return Ok(ApiResponse<StaffDutyHistoryResponse>.SuccessResponse(response, "Staff duty history retrieved successfully."));
+        }
+
+        /// <summary>
         /// Creates or updates a client site profile, including GPS geofence boundary coordinates and emergency contact details.
         /// </summary>
         [HttpPost("sites")]
@@ -333,7 +608,28 @@ namespace Ozikol_BCC.Api.Controllers
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                     Notes = s.Notes,
                     IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
-                    IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
+                    IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
+                    ReportSubmissionUtc = s.ReportSubmissionUtc,
+                    ReportContent = s.ReportContent,
+                    FineAttached = s.FineAttached,
+                    FineAmount = s.FineAmount,
+                    FineReason = s.FineReason,
+                    FineAuthorizedBy = s.FineAuthorizedBy,
+                    FineStatus = s.FineStatus,
+                    ClockInUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInUtc : null,
+                    ClockOutUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockOutUtc : null,
+                    IsClockInGeofenceVerified = s.AttendanceRecord != null && s.AttendanceRecord.IsClockInGeofenceVerified,
+                    IsClockOutGeofenceVerified = s.AttendanceRecord != null && s.AttendanceRecord.IsClockOutGeofenceVerified,
+                    ClockInDistanceFromSiteMeters = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInDistanceFromSiteMeters : null,
+                    LateArrivalMinutes = s.AttendanceRecord != null ? s.AttendanceRecord.LateArrivalMinutes : 0,
+                    IsFlagged = s.AttendanceRecord != null && s.AttendanceRecord.IsFlagged,
+                    FlagReason = s.AttendanceRecord != null ? s.AttendanceRecord.FlagReason : null,
+                    ActualDurationHours = s.AttendanceRecord != null ? s.AttendanceRecord.ActualDurationHours : null,
+                    BillableHours = s.AttendanceRecord != null ? s.AttendanceRecord.BillableHours : null,
+                    ClockInPhotoUrl = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInPhotoUrl : null,
+                    ClockOutPhotoUrl = s.AttendanceRecord != null ? s.AttendanceRecord.ClockOutPhotoUrl : null,
+                    SupervisorNotes = s.AttendanceRecord != null ? s.AttendanceRecord.SupervisorNotes : null,
+                    SupervisorApproved = s.AttendanceRecord != null && s.AttendanceRecord.SupervisorApproved
                 })
                 .ToListAsync(ct);
 
@@ -566,7 +862,28 @@ namespace Ozikol_BCC.Api.Controllers
                 AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                 Notes = s.Notes,
                 IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
-                IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
+                IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
+                ReportSubmissionUtc = s.ReportSubmissionUtc,
+                ReportContent = s.ReportContent,
+                FineAttached = s.FineAttached,
+                FineAmount = s.FineAmount,
+                FineReason = s.FineReason,
+                FineAuthorizedBy = s.FineAuthorizedBy,
+                FineStatus = s.FineStatus,
+                ClockInUtc = s.AttendanceRecord?.ClockInUtc,
+                ClockOutUtc = s.AttendanceRecord?.ClockOutUtc,
+                IsClockInGeofenceVerified = s.AttendanceRecord?.IsClockInGeofenceVerified ?? false,
+                IsClockOutGeofenceVerified = s.AttendanceRecord?.IsClockOutGeofenceVerified ?? false,
+                ClockInDistanceFromSiteMeters = s.AttendanceRecord?.ClockInDistanceFromSiteMeters,
+                LateArrivalMinutes = s.AttendanceRecord?.LateArrivalMinutes ?? 0,
+                IsFlagged = s.AttendanceRecord?.IsFlagged ?? false,
+                FlagReason = s.AttendanceRecord?.FlagReason,
+                ActualDurationHours = s.AttendanceRecord?.ActualDurationHours,
+                BillableHours = s.AttendanceRecord?.BillableHours,
+                ClockInPhotoUrl = s.AttendanceRecord?.ClockInPhotoUrl,
+                ClockOutPhotoUrl = s.AttendanceRecord?.ClockOutPhotoUrl,
+                SupervisorNotes = s.AttendanceRecord?.SupervisorNotes,
+                SupervisorApproved = s.AttendanceRecord?.SupervisorApproved ?? false
             };
 
             return Ok(ApiResponse<ShiftDto>.SuccessResponse(dto, "Shift details retrieved successfully."));
@@ -3669,6 +3986,33 @@ namespace Ozikol_BCC.Api.Controllers
         public string? EmergencyContactPhone { get; set; }
         public bool IsClockedIn { get; set; }
         public bool IsClockedOut { get; set; }
+
+        // Duty Report Fields
+        public DateTime? ReportSubmissionUtc { get; set; }
+        public string? ReportContent { get; set; }
+
+        // Fine & Penalty Fields
+        public bool FineAttached { get; set; }
+        public decimal? FineAmount { get; set; }
+        public string? FineReason { get; set; }
+        public string? FineAuthorizedBy { get; set; }
+        public string? FineStatus { get; set; }
+
+        // Attendance Execution Telemetry
+        public DateTime? ClockInUtc { get; set; }
+        public DateTime? ClockOutUtc { get; set; }
+        public bool IsClockInGeofenceVerified { get; set; }
+        public bool IsClockOutGeofenceVerified { get; set; }
+        public double? ClockInDistanceFromSiteMeters { get; set; }
+        public int LateArrivalMinutes { get; set; }
+        public bool IsFlagged { get; set; }
+        public string? FlagReason { get; set; }
+        public decimal? ActualDurationHours { get; set; }
+        public decimal? BillableHours { get; set; }
+        public string? ClockInPhotoUrl { get; set; }
+        public string? ClockOutPhotoUrl { get; set; }
+        public string? SupervisorNotes { get; set; }
+        public bool SupervisorApproved { get; set; }
     }
 
     public class CreateShiftRequest
@@ -4329,6 +4673,58 @@ namespace Ozikol_BCC.Api.Controllers
         public string? MedicalDisclosures { get; set; }
         public string? DbsDisclosure { get; set; }
         public bool OptOut48Hours { get; set; }
+    }
+
+    public class SiteActivityResponse
+    {
+        public ClientSiteDto? Site { get; set; }
+        public int TotalShiftsCount { get; set; }
+        public int ActiveShiftsCount { get; set; }
+        public int CompletedShiftsCount { get; set; }
+        public int ScheduledShiftsCount { get; set; }
+        public decimal TotalHoursLogged { get; set; }
+        public decimal TotalFinesAmount { get; set; }
+        public int UniqueStaffCount { get; set; }
+        public List<ShiftDto> Shifts { get; set; } = new();
+        public List<SiteStaffRosterItemDto> StaffRoster { get; set; } = new();
+    }
+
+    public class SiteStaffRosterItemDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = string.Empty;
+        public int TotalShiftsAtSite { get; set; }
+        public int CompletedShiftsAtSite { get; set; }
+        public decimal TotalHoursAtSite { get; set; }
+        public decimal PunctualityScorePercent { get; set; }
+        public DateTime LastDutyDateUtc { get; set; }
+        public decimal TotalFinesAmount { get; set; }
+    }
+
+    public class SubmitDutyReportRequest
+    {
+        public string? ReportContent { get; set; }
+        public string? DutyStatus { get; set; }
+        public bool FineAttached { get; set; }
+        public decimal? FineAmount { get; set; }
+        public string? FineReason { get; set; }
+        public string? FineAuthorizedBy { get; set; }
+        public string? FineStatus { get; set; }
+    }
+
+    public class StaffDutyHistoryResponse
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = string.Empty;
+        public int TotalShiftsCount { get; set; }
+        public int CompletedShiftsCount { get; set; }
+        public decimal TotalHoursWorked { get; set; }
+        public decimal PunctualityScorePercent { get; set; }
+        public int TotalFinesCount { get; set; }
+        public decimal TotalFinesAmount { get; set; }
+        public List<ShiftDto> Shifts { get; set; } = new();
     }
 }
 
