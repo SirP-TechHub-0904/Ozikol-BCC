@@ -1,5 +1,6 @@
 import { Component, OnInit, HostListener, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -51,7 +52,7 @@ export interface SuiteInfoDetail {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
@@ -643,6 +644,16 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')">
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/analytics" [class.active]="isCurrentRoute('/workforce/console/analytics')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Analytics &amp; Directory</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/analytics')" (click)="togglePin('Workforce Analytics', '/workforce/console/analytics', 'analytics')" [title]="isPinned('/workforce/console/analytics') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/schedule" [class.active]="isCurrentRoute('/workforce/console/schedule')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Rota Calendar</span>
                   </a>
@@ -653,11 +664,31 @@ export interface SuiteInfoDetail {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/live" [class.active]="isCurrentRoute('/workforce/console/live')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">radar</span>Live Duty &amp; Attendance</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/live')" (click)="togglePin('Live Duty Monitor', '/workforce/console/live', 'radar')" [title]="isPinned('/workforce/console/live') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/live') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/sites" [class.active]="isCurrentRoute('/workforce/console/sites')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">location_on</span>Client Sites &amp; Geofences</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/sites')" (click)="togglePin('Client Sites', '/workforce/console/sites', 'location_on')" [title]="isPinned('/workforce/console/sites') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/workforce/console/sites') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/settings" [class.active]="isCurrentRoute('/workforce/console/settings')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>Staff Types &amp; Policies</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/settings')" (click)="togglePin('Staff Types', '/workforce/console/settings', 'tune')" [title]="isPinned('/workforce/console/settings') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/settings') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -1144,6 +1175,27 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/settings/console/general')" (click)="toggleMenu('general_settings')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">settings</span>
+                <span>{{ 'nav.general_settings' | translate:'General Settings' }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/settings/console/general/email" [class.active]="isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Email Configuration</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Email Configuration', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
           </ng-container>
         </ng-container>
 
@@ -1217,51 +1269,70 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- 3. Workforce Rota & Shift Management Member Workspace (bcp-staff-rota) -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_workforce')" *ngIf="isFeatureActive('bcp-staff-rota')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/workforce/workspace')" (click)="toggleMenu('workspace_workforce')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">event_note</span>
-                <span>My Shifts &amp; Rota</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_workforce')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>My Assigned Shifts</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/workspace/my-shifts')" (click)="togglePin('My Assigned Shifts', '/workforce/workspace/my-shifts', 'calendar_month')" [title]="isPinned('/workforce/workspace/my-shifts') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/workforce/workspace/my-shifts') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
+          <!-- 3. Shift and Rota Member Section (Direct Navigation - No Dropdown) -->
+          <ng-container *ngIf="isFeatureActive('bcp-staff-rota') || isFeatureActive('bcp-attendance-tracking')">
+            <div class="menu-title">Shift and Rota</div>
 
-          <!-- 4. Attendance & Duty Clock-In Member Workspace (bcp-attendance-tracking) -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_attendance')" *ngIf="isFeatureActive('bcp-attendance-tracking')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/attendance/workspace')" (click)="toggleMenu('workspace_attendance')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">timer</span>
-                <span>Duty Clock &amp; GPS</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_attendance')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Live Shift Clock-In</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/attendance/workspace/clock')" (click)="togglePin('Live Shift Clock-In', '/attendance/workspace/clock', 'timer')" [title]="isPinned('/attendance/workspace/clock') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/attendance/workspace/clock') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
+            <!-- 1. Schedule -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">calendar_month</span>
+                  <span>Schedule</span>
                 </div>
-              </li>
-            </ul>
-          </div>
+              </a>
+            </div>
+
+            <!-- 2. Open Shifts -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">work_outline</span>
+                  <span>Open Shifts</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 3. Timesheets -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/timesheets" [class.active]="isCurrentRoute('/workforce/workspace/timesheets')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">description</span>
+                  <span>Timesheets</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 4. Time Off -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/leave" [class.active]="isCurrentRoute('/workforce/workspace/leave')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">flight_takeoff</span>
+                  <span>Time Off</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 5. Documents -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/documents" [class.active]="isCurrentRoute('/workforce/workspace/documents')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">folder_shared</span>
+                  <span>Documents</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 6. Duty Clock-In -->
+            <div class="nav-item" *ngIf="isFeatureActive('bcp-attendance-tracking')">
+              <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock') || isCurrentRoute('/workforce/workspace/clock')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">timer</span>
+                  <span>Duty Clock-In</span>
+                </div>
+              </a>
+            </div>
+          </ng-container>
 
           <!-- 5. Manage My Account Dropdown -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
@@ -1850,6 +1921,34 @@ export interface SuiteInfoDetail {
       [brandName]="brandName"
       (completed)="onFirstRunCompleted($event)">
     </app-first-run-setup-modal>
+
+    <!-- Workspace Email Service Notification Popup Modal (noreply@tenant.ozikol.cloud) -->
+    <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showEmailSetupModal && !showFirstRunModal">
+      <div class="oz-lang-modal-card" style="max-width: 480px; text-align: center; padding: 32px 28px;" (click)="$event.stopPropagation()">
+        <div class="oz-lang-modal-icon-wrap" style="margin: 0 auto 16px auto; background: rgba(0, 80, 229, 0.12); color: #0050E5;">
+          <span class="material-symbols-outlined">mark_email_read</span>
+        </div>
+
+        <span style="display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0050E5; background: #eff6ff; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px;">
+          Email Service for Notifications
+        </span>
+
+        <h3 class="oz-lang-modal-title" style="margin: 0 0 10px 0; font-size: 19px;">
+          Your Email Service for Notifications Has Been Activated
+        </h3>
+
+        <p class="oz-lang-modal-desc" style="margin-bottom: 18px; font-size: 13.5px; line-height: 1.6; color: #475569;">
+          Your workspace notification sender address (<strong style="color: #0050E5;">{{ emailSetupAddress }}</strong>) is enabled for Password Resets, Onboarding Invitations, and Security Alerts.
+        </p>
+
+        <div class="oz-lang-modal-actions" style="justify-content: center;">
+          <button type="button" class="btn-lang-modal-confirm" style="min-width: 160px; justify-content: center;" [disabled]="isProvisioningEmail" (click)="activateTenantMailcow()">
+            <span class="material-symbols-outlined" *ngIf="isProvisioningEmail">hourglass_top</span>
+            <span>{{ isProvisioningEmail ? 'Activating...' : 'OK' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Language Change Confirmation Modal -->
     <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLanguageConfirmModal" (click)="cancelLanguageChange()">
@@ -3889,6 +3988,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   currentConsoleMode: 'console' | 'workspace' = (localStorage.getItem('bcp_console_mode') as any) || 'console';
   expiringFeatures: any[] = [];
   isExpirationBannerDismissed = false;
+  hasFlatRatePlan = false;
 
   committeeAliases: {
     aliasSingular: string;
@@ -3986,6 +4086,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
           this.expiringFeatures = res.data.filter((f: any) =>
+            (!this.hasFlatRatePlan || f.featureCode === 'flat-rate-master-plan') &&
             (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
             f.daysRemaining !== null && f.daysRemaining !== undefined
           );
@@ -4816,8 +4917,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     localStorage.removeItem('bcp_expired_feature_codes');
     localStorage.removeItem('bcp_visible_feature_codes_v4');
     localStorage.removeItem('bcp_available_feature_codes_v4');
+    this.hasFlatRatePlan = Boolean(d.hasFlatRatePlan);
     if (Array.isArray(d.notices)) {
       this.expiringFeatures = d.notices.filter((f: any) =>
+        (!this.hasFlatRatePlan || f.featureCode === 'flat-rate-master-plan') &&
         (Number(f.renewalPrice) > 0 || f.isTrialPeriod) &&
         f.daysRemaining !== null && f.daysRemaining !== undefined
       );
@@ -5569,11 +5672,19 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Transactional Email Service Setup Modal State
+  showEmailSetupModal = false;
+  emailSetupAddress = '';
+  isProvisioningEmail = false;
+
   /**
    * Checks if the workspace has been initialized with default or blank settings.
    * If not, presents the first-run onboarding setup wizard modal to administrators.
    */
   checkFirstRunSetupStatus(): void {
+    // Always check email setup status for administrators entering the dashboard
+    this.checkEmailServiceSetupStatus();
+
     // 1. Instant local/session guard: Avoid unnecessary network checks once verified in current browser session
     if (sessionStorage.getItem('bcp_setup_modal_dismissed') === 'true' ||
         localStorage.getItem('bcp_workspace_initialized') === 'true') {
@@ -5613,6 +5724,63 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     if (mode === 'default') {
       this.loadSidebarForms();
     }
+    this.checkEmailServiceSetupStatus();
+  }
+
+  /**
+   * Checks whether the tenant's notification email service (noreply@tenant.ozikol.cloud) is configured.
+   * If not configured, displays the activation confirmation modal on the dashboard.
+   */
+  checkEmailServiceSetupStatus(): void {
+    if (!this.isAdmin) return;
+    if (sessionStorage.getItem('bcp_email_setup_modal_dismissed') === 'true') return;
+
+    this.api.get<any>('SettingsApi/email-setup-status').subscribe({
+      next: (res) => {
+        if (res?.isSuccess && res.data) {
+          const tKey = res.data.tenantKey || this.tenantKey || 'workspace';
+          this.emailSetupAddress = res.data.senderEmail || `noreply@${tKey}.ozikol.cloud`;
+          if (!res.data.isConfigured) {
+            this.showEmailSetupModal = true;
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Activates the tenant's notification email service (noreply@tenant.ozikol.cloud) when the user clicks OK.
+   */
+  activateTenantMailcow(): void {
+    if (this.isProvisioningEmail) return;
+    this.isProvisioningEmail = true;
+
+    this.api.post<any>('SettingsApi/provision-mailcow', {
+      customSenderEmail: this.emailSetupAddress?.trim() || undefined,
+      senderName: this.brandName || undefined
+    }).subscribe({
+      next: (res) => {
+        this.isProvisioningEmail = false;
+        this.showEmailSetupModal = false;
+        sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
+        this.toast.success(res?.message || 'Your email service for notifications has been activated.');
+      },
+      error: (err) => {
+        this.isProvisioningEmail = false;
+        this.showEmailSetupModal = false;
+        sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
+        this.toast.error(err?.error?.message || 'Unable to activate email service for notifications.');
+      }
+    });
+  }
+
+  /**
+   * Dismisses the email setup popup for the current session.
+   */
+  dismissEmailSetupModal(): void {
+    this.showEmailSetupModal = false;
+    sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
   }
 
   ngOnDestroy(): void {

@@ -1,0 +1,2073 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { WorkforceService } from '../../../core/services/workforce.service';
+import { ToastService } from '../../../core/services/toast.service';
+
+interface StaffMemberDetail {
+  userId: string;
+  profileId: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  memberId: string;
+  jobTitle: string;
+  staffTypeId?: string;
+  staffTypeName: string;
+  defaultHourlyRate?: number;
+  contractedWeeklyHours: number;
+  preferredWorkingTime?: string;
+  workingAvailability?: string;
+  weeklyAvailabilityJson?: string;
+  averageRating: number;
+  totalRatingsCount: number;
+  totalShiftsCompleted: number;
+  punctualityScorePercent: number;
+  noShowCount: number;
+  isActive: boolean;
+  enrolledUtc: string;
+  currencyCode: string;
+  currencySymbol: string;
+
+  // Emergency Contact
+  emergencyContactName: string;
+  emergencyContactRelationship: string;
+  emergencyContactPhone: string;
+
+  // Payroll & Banking
+  bankName: string;
+  accountHolderName: string;
+  sortCode: string;
+  accountNumber: string;
+  nationalInsuranceNumber: string;
+
+  // Custom Form Submissions
+  uniformSizes: string;
+  drivingLicenseStatus: string;
+  medicalDisclosures: string;
+  dbsDisclosure: string;
+  optOut48Hours: boolean;
+
+  documents: any[];
+  recentShifts: any[];
+}
+
+@Component({
+  selector: 'app-workforce-member-profile',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
+    <div class="profile-page">
+      <!-- Breadcrumb Header -->
+      <nav class="breadcrumb-nav">
+        <a routerLink="/admin/dashboard" class="crumb-link">Command Center</a>
+        <span class="crumb-sep">/</span>
+        <a routerLink="/workforce/console/analytics" class="crumb-link">Workforce &amp; Shifts</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-active">{{ member?.fullName || 'Staff Member Profile' }}</span>
+      </nav>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="isLoading">
+        <span class="material-symbols-outlined spin">progress_activity</span>
+        <p>Loading member profile &amp; compliance history...</p>
+      </div>
+
+      <!-- Main Container -->
+      <div *ngIf="!isLoading && member" class="profile-container">
+        <!-- Top Navigation Bar -->
+        <div class="profile-top-nav">
+          <a routerLink="/workforce/console/enroll" class="btn btn-outline" title="Back to Staff Directory &amp; Roster">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Staff Directory</span>
+          </a>
+        </div>
+
+        <!-- Profile Hero Header Card -->
+        <div class="profile-hero-card">
+          <div class="hero-left">
+            <div class="avatar-circle">
+              {{ getInitials(member.fullName) }}
+            </div>
+            <div class="hero-info">
+              <div class="title-row">
+                <h1 class="member-name">{{ member.fullName }}</h1>
+                <span class="status-badge" [class.active]="member.isActive" [class.inactive]="!member.isActive">
+                  {{ member.isActive ? 'Active Duty' : 'Deactivated' }}
+                </span>
+                <span class="staff-type-badge">{{ member.staffTypeName || 'Permanent' }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-item">
+                  <span class="material-symbols-outlined">badge</span>
+                  <strong>ID:</strong> {{ member.memberId || 'N/A' }}
+                </span>
+                <span class="meta-item">
+                  <span class="material-symbols-outlined">work</span>
+                  {{ member.jobTitle || 'Security Guard' }}
+                </span>
+                <span class="meta-item">
+                  <span class="material-symbols-outlined">mail</span>
+                  {{ member.email }}
+                </span>
+                <span class="meta-item" *ngIf="member.phoneNumber">
+                  <span class="material-symbols-outlined">phone</span>
+                  {{ member.phoneNumber }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-box">
+              <div class="stat-val rating">
+                <span class="material-symbols-outlined star-icon">star</span>
+                {{ member.averageRating | number:'1.2-2' }}
+              </div>
+              <div class="stat-label">{{ member.totalRatingsCount }} shift reviews</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-val punctuality">
+                {{ member.punctualityScorePercent | number:'1.0-0' }}%
+              </div>
+              <div class="stat-label">Punctuality Score</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-val">
+                {{ member.totalShiftsCompleted }}
+              </div>
+              <div class="stat-label">Completed Shifts</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs Bar -->
+        <div class="profile-tabs-bar">
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'personal'"
+            (click)="activeTab = 'personal'"
+          >
+            <span class="material-symbols-outlined">person</span>
+            <span>Overview &amp; Personal</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'employment'"
+            (click)="activeTab = 'employment'"
+          >
+            <span class="material-symbols-outlined">work_history</span>
+            <span>Employment &amp; Hours</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'documents'"
+            (click)="activeTab = 'documents'"
+          >
+            <span class="material-symbols-outlined">verified_user</span>
+            <span>Document Vault &amp; Credentials</span>
+            <span class="tab-count">{{ member.documents.length || 0 }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'custom-forms'"
+            (click)="activeTab = 'custom-forms'"
+          >
+            <span class="material-symbols-outlined">fact_check</span>
+            <span>Custom Onboarding Responses</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'shifts'"
+            (click)="activeTab = 'shifts'"
+          >
+            <span class="material-symbols-outlined">history</span>
+            <span>Shift History &amp; Timesheets</span>
+            <span class="tab-count">{{ member.recentShifts.length || 0 }}</span>
+          </button>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 1: OVERVIEW & PERSONAL INFORMATION -->
+        <!-- ========================================================================= -->
+        <div class="tab-pane" *ngIf="activeTab === 'personal'">
+          <div class="form-grid-2col">
+            <!-- Identity & Personal Information -->
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">badge</span>
+                <h3>Personal Identity &amp; Contact</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-row-dual">
+                  <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.firstName" placeholder="e.g. First Name" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.lastName" placeholder="e.g. Last Name" />
+                  </div>
+                </div>
+
+                <div class="form-row-dual">
+                  <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-control" [(ngModel)]="member.email" disabled />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" [(ngModel)]="member.phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">National Insurance / Tax ID</label>
+                  <input type="text" class="form-control" [(ngModel)]="member.nationalInsuranceNumber" placeholder="e.g. QQ 12 34 56 A" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Emergency Contact / Next of Kin -->
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">emergency</span>
+                <h3>Emergency Contact / Next of Kin</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Full Name of Emergency Contact</label>
+                  <input type="text" class="form-control" [(ngModel)]="member.emergencyContactName" placeholder="e.g. First Last" />
+                </div>
+
+                <div class="form-row-dual">
+                  <div class="form-group">
+                    <label class="form-label">Relationship</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.emergencyContactRelationship" placeholder="e.g. Spouse / Parent / Sibling" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">24/7 Emergency Phone Number</label>
+                    <input type="tel" class="form-control" [(ngModel)]="member.emergencyContactPhone" placeholder="e.g. +0 (000) 000-0000" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payroll & Remittance Banking -->
+            <div class="profile-card full-width">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">account_balance</span>
+                <h3>Direct Payroll &amp; Banking Remittance</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-row-4col">
+                  <div class="form-group">
+                    <label class="form-label">Bank Name</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.bankName" placeholder="e.g. Bank Name" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Account Holder Name</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.accountHolderName" placeholder="e.g. First Last" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Sort Code / Bank Code</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.sortCode" placeholder="e.g. 00-00-00" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Account Number</label>
+                    <input type="text" class="form-control" [(ngModel)]="member.accountNumber" placeholder="e.g. 12345678" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button type="button" class="btn btn-primary" (click)="saveMemberDetail()" [disabled]="isSaving">
+              <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
+              {{ isSaving ? 'Saving...' : 'Save Personal Details' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 2: EMPLOYMENT & WORKING HOURS -->
+        <!-- ========================================================================= -->
+        <div class="tab-pane" *ngIf="activeTab === 'employment'">
+          <div class="form-grid-2col">
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">badge</span>
+                <h3>Designated Job Role &amp; Classification</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Designated Job Title</label>
+                  <select class="form-control" [(ngModel)]="member.jobTitle">
+                    <option *ngFor="let r of jobRoles" [value]="r.title">{{ r.title }}</option>
+                    <option *ngIf="!jobRoleTitles.includes(member.jobTitle)" [value]="member.jobTitle">{{ member.jobTitle }}</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Employment Classification</label>
+                  <select class="form-control" [(ngModel)]="member.staffTypeId" (change)="onStaffTypeChange()">
+                    <option *ngFor="let t of staffTypes" [value]="t.id">{{ t.name }} ({{ t.code }})</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Account Status</label>
+                  <div class="toggle-card">
+                    <label class="switch">
+                      <input type="checkbox" [(ngModel)]="member.isActive" />
+                      <span class="slider round"></span>
+                    </label>
+                    <div class="toggle-info">
+                      <strong>{{ member.isActive ? 'Active Duty Profile' : 'Deactivated Profile' }}</strong>
+                      <span>{{ member.isActive ? 'Eligible for rota scheduling and check-in.' : 'Excluded from scheduling.' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">schedule</span>
+                <h3>Contracted Hours &amp; Wage Overrides</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Contracted Weekly Target (Hours)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    [(ngModel)]="member.contractedWeeklyHours"
+                    placeholder="e.g. 40"
+                  />
+                  <span class="field-hint">Overrides general company standard hours for this staff member.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Individual Base Hourly Wage ({{ member.currencySymbol }}/hr)</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    class="form-control"
+                    [(ngModel)]="member.defaultHourlyRate"
+                    placeholder="e.g. 15.00"
+                  />
+                  <span class="field-hint">Overrides default role wage rate if negotiated individually.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Preferred Working Time</label>
+                  <select class="form-control" [(ngModel)]="member.preferredWorkingTime">
+                    <option value="Any">Any Shift (Day &amp; Night)</option>
+                    <option value="Day">Day Shifts Only</option>
+                    <option value="Night">Night Shifts Only</option>
+                  </select>
+                  <span class="field-hint">Day or Night window preference for shift scheduling.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Working Availability</label>
+                  <select class="form-control" [(ngModel)]="member.workingAvailability">
+                    <option value="Available">Available (Full Availability)</option>
+                    <option value="Full-Time">Full-Time (Standard Rota)</option>
+                    <option value="Part-Time">Part-Time (Flexible Rota)</option>
+                    <option value="Weekdays">Weekdays Only (Mon - Fri)</option>
+                    <option value="Weekends">Weekends Only (Sat - Sun)</option>
+                  </select>
+                  <span class="field-hint">Working availability tied to user identity.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">48-Hour Working Time Regulations Agreement</label>
+                  <div class="toggle-card">
+                    <label class="switch">
+                      <input type="checkbox" [(ngModel)]="member.optOut48Hours" />
+                      <span class="slider round"></span>
+                    </label>
+                    <div class="toggle-info">
+                      <strong>48-Hour Opt-Out Agreement Signed</strong>
+                      <span>Allows staff member to voluntarily work beyond 48 hours weekly.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Detailed Day-by-Day Working Availability -->
+            <div class="content-card mt-3">
+              <div class="card-header-bar">
+                <div class="header-bar-left">
+                  <span class="material-symbols-outlined text-blue">calendar_today</span>
+                  <div>
+                    <h3 class="card-heading">Day-by-Day Working Availability Schedule</h3>
+                    <p class="card-sub">Define recurring available hours per day (e.g. Monday 8 to 5, Tuesday Night, Friday Noon). Used to automatically filter and skip staff during shift creation.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <div class="weekly-schedule-table">
+                  <div class="schedule-day-row" *ngFor="let item of weeklySchedule">
+                    <div class="day-col">
+                      <strong>{{ item.dayLabel }}</strong>
+                    </div>
+                    <div class="mode-col">
+                      <select class="form-control" [(ngModel)]="item.mode">
+                        <option value="Any">Available (Any Shift)</option>
+                        <option value="Day">Day Shift Window</option>
+                        <option value="Night">Night Shift Window</option>
+                        <option value="Specific">Specific Working Hours</option>
+                        <option value="Off">Unavailable / Day Off</option>
+                      </select>
+                    </div>
+                    <div class="time-col" *ngIf="item.mode === 'Specific'">
+                      <input type="time" class="form-control" [(ngModel)]="item.startTime" placeholder="08:00" />
+                      <span class="time-sep">to</span>
+                      <input type="time" class="form-control" [(ngModel)]="item.endTime" placeholder="17:00" />
+                    </div>
+                    <div class="hint-col" *ngIf="item.mode !== 'Specific'">
+                      <span class="badge-tag green" *ngIf="item.mode === 'Any'">Full availability</span>
+                      <span class="badge-tag blue" *ngIf="item.mode === 'Day'">08:00 – 19:00</span>
+                      <span class="badge-tag purple" *ngIf="item.mode === 'Night'">19:00 – 08:00</span>
+                      <span class="badge-tag gray" *ngIf="item.mode === 'Off'">Day Off</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button type="button" class="btn btn-primary" (click)="saveMemberDetail()" [disabled]="isSaving">
+              <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
+              {{ isSaving ? 'Saving...' : 'Save Employment Settings' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 3: DOCUMENT VAULT & CREDENTIALS -->
+        <!-- ========================================================================= -->
+        <div class="tab-pane" *ngIf="activeTab === 'documents'">
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">verified_user</span>
+                <div>
+                  <h3 class="card-heading">Compliance Documents &amp; Credentials</h3>
+                  <p class="card-sub">Right to work documents, statutory licenses, and training certificates.</p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" (click)="openUploadModal()">
+                <span class="material-symbols-outlined">upload_file</span> + Upload Document
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="settings-table">
+                <thead>
+                  <tr>
+                    <th>Document Type</th>
+                    <th>Document Name</th>
+                    <th>Reference / Sector</th>
+                    <th>Uploaded Date</th>
+                    <th>Expiry Date</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let doc of member.documents">
+                    <td>
+                      <span class="doc-type-badge">{{ doc.documentType }}</span>
+                    </td>
+                    <td>
+                      <strong>{{ doc.documentName }}</strong>
+                      <span class="desc-muted" *ngIf="doc.description">{{ doc.description }}</span>
+                    </td>
+                    <td>{{ doc.referenceNumber || 'N/A' }}</td>
+                    <td>{{ doc.createdUtc | date:'mediumDate' }}</td>
+                    <td>
+                      <span *ngIf="doc.expiryDateUtc">{{ doc.expiryDateUtc | date:'mediumDate' }}</span>
+                      <span *ngIf="!doc.expiryDateUtc" class="text-muted">No Expiry</span>
+                    </td>
+                    <td>
+                      <span class="status-pill active" *ngIf="doc.isVerified">Verified</span>
+                      <span class="status-pill pending" *ngIf="!doc.isVerified">Pending Review</span>
+                    </td>
+                    <td style="text-align: right;">
+                      <a [href]="doc.fileUrl" target="_blank" class="btn-action-sm" *ngIf="doc.fileUrl">
+                        <span class="material-symbols-outlined">visibility</span>
+                        <span>View</span>
+                      </a>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!member.documents || member.documents.length === 0">
+                    <td colspan="7" class="empty-state">
+                      No compliance documents uploaded yet for this staff member.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 4: CUSTOM ONBOARDING RESPONSES -->
+        <!-- ========================================================================= -->
+        <div class="tab-pane" *ngIf="activeTab === 'custom-forms'">
+          <div class="form-grid-2col">
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">apparel</span>
+                <h3>Uniform &amp; PPE Sizing</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Uniform &amp; Boot Sizing Details</label>
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    [(ngModel)]="member.uniformSizes"
+                    placeholder="e.g. Jacket: L, Trousers: 34W/32L, Boots: UK 10"
+                  ></textarea>
+                  <span class="field-hint">Sizes provided by guard during registration.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">directions_car</span>
+                <h3>Driving License &amp; Transport</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Driving Status &amp; Vehicle Access</label>
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    [(ngModel)]="member.drivingLicenseStatus"
+                    placeholder="e.g. Full UK Driving License (Clean), Owns vehicle for patrol deployments"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">medical_information</span>
+                <h3>Medical Conditions &amp; Allergies</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Emergency Medical Disclosures</label>
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    [(ngModel)]="member.medicalDisclosures"
+                    placeholder="e.g. Asthmatic (inhaler carried), Penicillin allergy"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="card-header">
+                <span class="material-symbols-outlined text-blue">shield_person</span>
+                <h3>DBS Criminal Record &amp; Vetting Disclosure</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">BS 7858 Vetting &amp; DBS Status</label>
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    [(ngModel)]="member.dbsDisclosure"
+                    placeholder="e.g. Enhanced DBS Certificate #001482910 issued Jan 2026, No convictions"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button type="button" class="btn btn-primary" (click)="saveMemberDetail()" [disabled]="isSaving">
+              <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
+              {{ isSaving ? 'Saving...' : 'Save Onboarding Responses' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 5: SHIFT HISTORY & TIMESHEETS -->
+        <!-- ========================================================================= -->
+        <!-- TAB 5: Shift History & Timesheets with Summary & List/Card Toggle -->
+        <div class="tab-pane" *ngIf="activeTab === 'shifts'">
+          <!-- 1. Total Summary KPI Metrics Bar -->
+          <div class="staff-kpi-summary-grid">
+            <div class="staff-kpi-card blue">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">calendar_month</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">{{ staffDutyHistory?.totalShiftsCount || member.totalShiftsCompleted || 0 }}</span>
+                <span class="kpi-label">Total Assigned Shifts</span>
+              </div>
+              <div class="kpi-sub">{{ staffDutyHistory?.completedShiftsCount || member.totalShiftsCompleted || 0 }} completed</div>
+            </div>
+
+            <div class="staff-kpi-card emerald">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">{{ (staffDutyHistory?.totalHoursWorked || (member.totalShiftsCompleted * 8)) | number:'1.1-1' }}h</span>
+                <span class="kpi-label">Total Logged Duty Hours</span>
+              </div>
+              <div class="kpi-sub">Across all operating venues</div>
+            </div>
+
+            <div class="staff-kpi-card purple">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">verified</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">{{ (staffDutyHistory?.punctualityScorePercent || member.punctualityScorePercent || 100) | number:'1.0-0' }}%</span>
+                <span class="kpi-label">Punctuality Score</span>
+              </div>
+              <div class="kpi-sub">Geofence and on-time adherence</div>
+            </div>
+
+            <div class="staff-kpi-card amber">
+              <div class="kpi-icon-box">
+                <span class="material-symbols-outlined">gavel</span>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value">₦{{ (staffDutyHistory?.totalFinesAmount || 0) | number:'1.0-0' }}</span>
+                <span class="kpi-label">Attached Disciplinary Fines</span>
+              </div>
+              <div class="kpi-sub">{{ staffDutyHistory?.totalFinesCount || 0 }} penalty deductions recorded</div>
+            </div>
+          </div>
+
+          <!-- 2. Content Card with List & Card View Switcher -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">history</span>
+                <div>
+                  <h3 class="card-heading">Work History &amp; Duty Reports</h3>
+                  <p class="card-sub">Comprehensive record of past and current duty shifts, geofence compliance, and post reports.</p>
+                </div>
+              </div>
+              <div class="view-mode-toggle">
+                <button
+                  type="button"
+                  class="view-btn"
+                  [class.active]="shiftHistoryMode === 'table'"
+                  (click)="shiftHistoryMode = 'table'"
+                  title="List View"
+                >
+                  <span class="material-symbols-outlined">table_rows</span>
+                  <span>List</span>
+                </button>
+                <button
+                  type="button"
+                  class="view-btn"
+                  [class.active]="shiftHistoryMode === 'cards'"
+                  (click)="shiftHistoryMode = 'cards'"
+                  title="Card View"
+                >
+                  <span class="material-symbols-outlined">grid_view</span>
+                  <span>Cards</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- List / Table View -->
+            <div class="table-responsive" *ngIf="shiftHistoryMode === 'table'">
+              <table class="settings-table">
+                <thead>
+                  <tr>
+                    <th>WORK LOCATION / POST</th>
+                    <th>DUTY DATE &amp; TIMING</th>
+                    <th>HOURS</th>
+                    <th>STATUS</th>
+                    <th>GPS GEOFENCE</th>
+                    <th>DUTY REPORT</th>
+                    <th>FINE</th>
+                    <th style="text-align: right;">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of displayedStaffShifts">
+                    <td>
+                      <strong>{{ s.siteName || s.clientSiteName || 'Operating Post' }}</strong>
+                      <span class="desc-muted" *ngIf="s.postName">{{ s.postName }}</span>
+                    </td>
+                    <td>
+                      <div>{{ s.startsAtUtc || s.startUtc | date:'EEE, d MMM y' }}</div>
+                      <span class="desc-muted">{{ s.startsAtUtc || s.startUtc | date:'shortTime' }} &ndash; {{ s.endsAtUtc || s.endUtc | date:'shortTime' }}</span>
+                    </td>
+                    <td>{{ (s.actualDurationHours || s.plannedDurationHours || s.totalHours || 8) | number:'1.1-1' }} hrs</td>
+                    <td>
+                      <span class="status-pill active" *ngIf="s.status === 'Completed'">Completed</span>
+                      <span class="status-pill inprogress" *ngIf="s.status === 'InProgress'">In Progress</span>
+                      <span class="status-pill pending" *ngIf="s.status === 'Scheduled' || s.status === 'Confirmed'">Scheduled</span>
+                      <span class="status-pill disabled" *ngIf="s.status === 'Cancelled'">Cancelled</span>
+                    </td>
+                    <td>
+                      <span class="gps-chip success" *ngIf="s.isClockInGeofenceVerified">
+                        <span class="material-symbols-outlined">verified</span> Verified GPS
+                      </span>
+                      <span class="gps-chip warning" *ngIf="s.isClockedIn && !s.isClockInGeofenceVerified">
+                        <span class="material-symbols-outlined">warning</span> Out of bounds
+                      </span>
+                      <span class="text-muted" *ngIf="!s.isClockedIn">Pending</span>
+                    </td>
+                    <td>
+                      <span class="report-tag submitted" *ngIf="s.reportSubmissionUtc">Submitted</span>
+                      <span class="report-tag none" *ngIf="!s.reportSubmissionUtc">None</span>
+                    </td>
+                    <td>
+                      <span class="fine-tag attached" *ngIf="s.fineAttached">₦{{ (s.fineAmount || 0) | number:'1.0-0' }}</span>
+                      <span class="fine-tag none" *ngIf="!s.fineAttached">None</span>
+                    </td>
+                    <td style="text-align: right;">
+                      <a [routerLink]="['/workforce/console/shifts', s.id, 'report']" class="btn-duty-report">
+                        <span class="material-symbols-outlined">visibility</span>
+                        <span>Duty Report</span>
+                      </a>
+                    </td>
+                  </tr>
+                  <tr *ngIf="displayedStaffShifts.length === 0">
+                    <td colspan="8" class="empty-state">
+                      No duty records found for this staff member yet.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Card View Grid -->
+            <div class="staff-duty-cards-grid" *ngIf="shiftHistoryMode === 'cards'">
+              <div class="staff-duty-card" *ngFor="let s of displayedStaffShifts">
+                <div class="duty-card-header-row">
+                  <strong>{{ s.siteName || s.clientSiteName || 'Operating Post' }}</strong>
+                  <span class="status-pill active" *ngIf="s.status === 'Completed'">Completed</span>
+                  <span class="status-pill inprogress" *ngIf="s.status === 'InProgress'">In Progress</span>
+                  <span class="status-pill pending" *ngIf="s.status === 'Scheduled' || s.status === 'Confirmed'">Scheduled</span>
+                  <span class="status-pill disabled" *ngIf="s.status === 'Cancelled'">Cancelled</span>
+                </div>
+
+                <div class="duty-card-post-name">{{ s.postName || 'General Assignment' }}</div>
+
+                <div class="duty-card-info-box">
+                  <div class="info-row">
+                    <span class="material-symbols-outlined">event</span>
+                    <span>{{ s.startsAtUtc || s.startUtc | date:'EEE, d MMM y' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="material-symbols-outlined">schedule</span>
+                    <span>{{ s.startsAtUtc || s.startUtc | date:'shortTime' }} &ndash; {{ s.endsAtUtc || s.endUtc | date:'shortTime' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="material-symbols-outlined">timer</span>
+                    <span>{{ (s.actualDurationHours || s.plannedDurationHours || s.totalHours || 8) | number:'1.1-1' }} hours logged</span>
+                  </div>
+                </div>
+
+                <div class="duty-card-badges-row">
+                  <span class="gps-chip success" *ngIf="s.isClockInGeofenceVerified">
+                    <span class="material-symbols-outlined">verified</span> GPS Verified
+                  </span>
+                  <span class="gps-chip warning" *ngIf="s.isClockedIn && !s.isClockInGeofenceVerified">
+                    <span class="material-symbols-outlined">warning</span> Out of bounds
+                  </span>
+                  <span class="fine-tag attached" *ngIf="s.fineAttached">
+                    <span class="material-symbols-outlined">gavel</span> ₦{{ (s.fineAmount || 0) | number:'1.0-0' }} Fine
+                  </span>
+                </div>
+
+                <div class="duty-card-action">
+                  <a [routerLink]="['/workforce/console/shifts', s.id, 'report']" class="btn btn-outline full-width">
+                    <span class="material-symbols-outlined">visibility</span>
+                    <span>View Duty Report</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="empty-state full-grid" *ngIf="displayedStaffShifts.length === 0">
+                No past shift records logged yet for this staff member.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Document Modal -->
+      <div class="modal-backdrop" *ngIf="showUploadModal" (click)="showUploadModal = false">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">upload_file</span>
+              <div>
+                <h3>Upload Compliance Document</h3>
+                <p class="modal-subtitle">Add official credential, proof of address, or certification to member's vault.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="showUploadModal = false">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Document Category <span class="required">*</span></label>
+              <select class="form-control" [(ngModel)]="uploadForm.documentType">
+                <option *ngFor="let cat of availableCategories" [value]="cat.name">
+                  {{ cat.name }} ({{ cat.code }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Document Name / Title <span class="required">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="uploadForm.documentName" placeholder="e.g. Identity Document / License (Front & Back)" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Reference / License Number</label>
+              <input type="text" class="form-control" [(ngModel)]="uploadForm.referenceNumber" placeholder="e.g. License #, Certificate ID, or Registration code" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">File URL or Cloud Storage Link <span class="required">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="uploadForm.fileUrl" placeholder="https://..." />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Expiry Date</label>
+              <input type="date" class="form-control" [(ngModel)]="uploadForm.expiryDateUtc" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="showUploadModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="submitUpload()" [disabled]="isUploading">
+              <span class="material-symbols-outlined" *ngIf="!isUploading">upload</span>
+              <span class="material-symbols-outlined spin" *ngIf="isUploading">sync</span>
+              {{ isUploading ? 'Uploading...' : 'Save Document' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .profile-page {
+      padding: 1.5rem 2rem;
+      background: #f8fafc;
+      min-height: calc(100vh - 70px);
+    }
+
+    .breadcrumb-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .crumb-link {
+      color: #64748b;
+      text-decoration: none;
+    }
+
+    .crumb-link:hover {
+      color: #0050e5;
+    }
+
+    .crumb-sep {
+      color: #cbd5e1;
+    }
+
+    .crumb-active {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .loading-state {
+      padding: 4rem;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .profile-top-nav {
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Hero Card */
+    .profile-hero-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .avatar-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #0050e5;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #bfdbfe;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .member-name {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+    }
+
+    .status-badge.active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .status-badge.inactive {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .staff-type-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: #475569;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: 0.8125rem;
+      color: #64748b;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .meta-item .material-symbols-outlined {
+      font-size: 15px;
+      color: #94a3b8;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .stat-box {
+      text-align: center;
+      padding: 0 1rem;
+      border-left: 1px solid #f1f5f9;
+    }
+
+    .stat-box:first-child {
+      border-left: none;
+    }
+
+    .stat-val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .stat-val.rating {
+      color: #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+
+    .star-icon {
+      font-size: 18px;
+    }
+
+    .stat-val.punctuality {
+      color: #059669;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.15rem;
+    }
+
+    /* Tabs Bar */
+    .profile-tabs-bar {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: #0f172a;
+    }
+
+    .tab-btn.active {
+      color: #0050e5;
+      border-bottom-color: #0050e5;
+    }
+
+    .tab-count {
+      font-size: 0.6875rem;
+      background: #e2e8f0;
+      color: #475569;
+      padding: 0.1rem 0.45rem;
+      border-radius: 9999px;
+      font-weight: 700;
+    }
+
+    .tab-btn.active .tab-count {
+      background: #eff6ff;
+      color: #0050e5;
+    }
+
+    /* Form Grid */
+    .form-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .form-grid-2col {
+        grid-template-columns: 1fr;
+      }
+      .profile-hero-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .hero-stats {
+        width: 100%;
+        justify-content: space-around;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 1rem;
+      }
+    }
+
+    .profile-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .card-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.875rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
+    }
+
+    .form-control:disabled {
+      background: #f8fafc;
+      color: #94a3b8;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.3rem;
+      display: block;
+    }
+
+    .form-row-dual {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .form-row-4col {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .form-row-4col {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .save-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 1rem 0;
+    }
+
+    /* Content Card */
+    .content-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .header-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .card-sub {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin: 0.15rem 0 0 0;
+    }
+
+    /* Table Styles */
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .settings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .settings-table th {
+      background: #f8fafc;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    .settings-table td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    .doc-type-badge {
+      display: inline-flex;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      background: #eff6ff;
+      color: #0050e5;
+    }
+
+    .status-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
+    }
+
+    .status-pill.active { background: #dcfce7; color: #15803d; }
+    .status-pill.pending { background: #fef9c3; color: #a16207; }
+    .status-pill.disabled { background: #fee2e2; color: #b91c1c; }
+
+    .gps-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+    }
+
+    .gps-chip.success {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .gps-chip.warning {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .gps-chip .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    .btn-action-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.8125rem;
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .btn-action-sm:hover {
+      text-decoration: underline;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem;
+      color: #64748b;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary { background: #0050e5; color: #ffffff; }
+    .btn-primary:hover { background: #003ebd; }
+    .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
+    .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8125rem; }
+
+    /* Switch */
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+    }
+
+    .toggle-info strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+
+    .toggle-info span {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #0050e5; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .modal-title-group h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .modal-subtitle {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin: 0.1rem 0 0 0;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    /* Weekly Availability Schedule Table */
+    .weekly-schedule-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .schedule-day-row {
+      display: grid;
+      grid-template-columns: 140px 220px 1fr;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+    }
+    @media (max-width: 768px) {
+      .schedule-day-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+    }
+    .day-col strong {
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+    .time-col {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .time-col .form-control {
+      max-width: 140px;
+    }
+    .time-sep {
+      font-size: 0.8125rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-tag.green { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-tag.blue { background: #eff6ff; color: #0050e5; border: 1px solid #dbeafe; }
+    .badge-tag.purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+    .badge-tag.gray { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+    /* Staff KPI Summary Grid */
+    .staff-kpi-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .staff-kpi-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .staff-kpi-summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .staff-kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .staff-kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .staff-kpi-card.blue::before { background: #0050e5; }
+    .staff-kpi-card.emerald::before { background: #10b981; }
+    .staff-kpi-card.purple::before { background: #8b5cf6; }
+    .staff-kpi-card.amber::before { background: #f59e0b; }
+
+    .kpi-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .staff-kpi-card.blue .kpi-icon-box { background: #eff6ff; color: #0050e5; }
+    .staff-kpi-card.emerald .kpi-icon-box { background: #ecfdf5; color: #10b981; }
+    .staff-kpi-card.purple .kpi-icon-box { background: #f5f3ff; color: #8b5cf6; }
+    .staff-kpi-card.amber .kpi-icon-box { background: #fffbeb; color: #f59e0b; }
+
+    .kpi-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .view-mode-toggle {
+      display: flex;
+      background: #f1f5f9;
+      padding: 0.2rem;
+      border-radius: 0.5rem;
+      gap: 0.2rem;
+    }
+
+    .view-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border: none;
+      background: transparent;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .view-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .view-btn span.material-symbols-outlined {
+      font-size: 1rem;
+    }
+
+    .report-tag {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .report-tag.submitted { background: #eff6ff; color: #0050e5; }
+    .report-tag.none { color: #94a3b8; }
+
+    .fine-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .fine-tag.attached { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .fine-tag.none { color: #94a3b8; }
+
+    .btn-duty-report {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #0050e5;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-duty-report:hover {
+      background: #0050e5;
+      color: #ffffff;
+    }
+
+    .btn-duty-report span.material-symbols-outlined {
+      font-size: 0.95rem;
+    }
+
+    /* Staff Duty Cards Grid */
+    .staff-duty-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .staff-duty-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .staff-duty-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .staff-duty-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.625rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .duty-card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+    }
+
+    .duty-card-post-name {
+      font-size: 0.75rem;
+      color: #0050e5;
+      font-weight: 600;
+    }
+
+    .duty-card-info-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.625rem;
+      background: #f8fafc;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      color: #334155;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .info-row span.material-symbols-outlined {
+      font-size: 0.95rem;
+      color: #64748b;
+    }
+
+    .duty-card-badges-row {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .full-grid {
+      grid-column: 1 / -1;
+    }
+
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  `]
+})
+export class WorkforceMemberProfileComponent implements OnInit {
+  userId = '';
+  member: StaffMemberDetail | null = null;
+  isLoading = true;
+  isSaving = false;
+  activeTab: 'personal' | 'employment' | 'documents' | 'custom-forms' | 'shifts' = 'personal';
+
+  shiftHistoryMode: 'table' | 'cards' = 'table';
+  staffDutyHistory: any = null;
+
+  jobRoles: any[] = [];
+  staffTypes: any[] = [];
+  documentCategories: any[] = [];
+  weeklySchedule: { dayKey: string; dayLabel: string; mode: string; startTime?: string; endTime?: string }[] = [];
+  fallbackCategories = [
+    { name: 'Right to Work / Passport', code: 'RTW' },
+    { name: 'Proof of Address', code: 'POA' },
+    { name: 'Professional License / Registration', code: 'LIC' },
+    { name: 'Background Check / DBS', code: 'DBS' },
+    { name: 'Training & Certifications', code: 'TRN' }
+  ];
+
+  showUploadModal = false;
+  isUploading = false;
+  uploadForm = {
+    userId: '',
+    documentType: 'Right to Work / Passport',
+    documentName: '',
+    referenceNumber: '',
+    fileUrl: '',
+    expiryDateUtc: ''
+  };
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private workforceService: WorkforceService,
+    private toast: ToastService
+  ) {}
+
+  ngOnInit(): void {
+    this.userId = this.route.snapshot.paramMap.get('id') || '';
+    if (!this.userId) {
+      this.toast.error('Invalid member ID.');
+      this.router.navigate(['/workforce/console/analytics']);
+      return;
+    }
+
+    this.loadMemberDetail();
+    this.loadMetadata();
+  }
+
+  get displayedStaffShifts(): any[] {
+    if (this.staffDutyHistory?.shifts && this.staffDutyHistory.shifts.length > 0) {
+      return this.staffDutyHistory.shifts;
+    }
+    return this.member?.recentShifts || [];
+  }
+
+  get jobRoleTitles(): string[] {
+    return this.jobRoles.map(r => r.title);
+  }
+
+  get availableCategories(): any[] {
+    return this.documentCategories && this.documentCategories.length > 0
+      ? this.documentCategories
+      : this.fallbackCategories;
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '??';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  loadMemberDetail(): void {
+    this.isLoading = true;
+    this.workforceService.getMemberDetail(this.userId).subscribe({
+      next: (res: any) => {
+        this.isLoading = false;
+        if (res && res.data) {
+          this.member = res.data;
+          this.initWeeklySchedule();
+          this.loadStaffDutyHistory();
+        }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.toast.error(err?.error?.message || 'Failed to load member profile.');
+      }
+    });
+  }
+
+  loadStaffDutyHistory(): void {
+    this.workforceService.getStaffDutyHistory(this.userId).subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.staffDutyHistory = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  loadMetadata(): void {
+    this.workforceService.getJobRoles().subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.jobRoles = res.data;
+        }
+      },
+      error: () => {}
+    });
+
+    this.workforceService.getStaffTypes().subscribe({
+      next: (res: any) => {
+        if (res && res.data) {
+          this.staffTypes = res.data;
+        }
+      },
+      error: () => {}
+    });
+
+    this.workforceService.getDocumentCategories().subscribe({
+      next: (res: any) => {
+        if (res && res.data && Array.isArray(res.data)) {
+          this.documentCategories = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  onStaffTypeChange(): void {
+    if (!this.member) return;
+    const matched = this.staffTypes.find(t => t.id === this.member?.staffTypeId);
+    if (matched) {
+      this.member.staffTypeName = matched.name;
+    }
+  }
+
+  initWeeklySchedule(): void {
+    const defaults = [
+      { dayKey: 'monday', dayLabel: 'Monday', mode: 'Specific', startTime: '08:00', endTime: '17:00' },
+      { dayKey: 'tuesday', dayLabel: 'Tuesday', mode: 'Night', startTime: '20:00', endTime: '08:00' },
+      { dayKey: 'wednesday', dayLabel: 'Wednesday', mode: 'Any', startTime: '', endTime: '' },
+      { dayKey: 'thursday', dayLabel: 'Thursday', mode: 'Any', startTime: '', endTime: '' },
+      { dayKey: 'friday', dayLabel: 'Friday', mode: 'Specific', startTime: '12:00', endTime: '18:00' },
+      { dayKey: 'saturday', dayLabel: 'Saturday', mode: 'Off', startTime: '', endTime: '' },
+      { dayKey: 'sunday', dayLabel: 'Sunday', mode: 'Off', startTime: '', endTime: '' }
+    ];
+
+    if (this.member?.weeklyAvailabilityJson) {
+      try {
+        const parsed = JSON.parse(this.member.weeklyAvailabilityJson);
+        this.weeklySchedule = defaults.map(d => {
+          if (parsed[d.dayKey]) {
+            return { ...d, ...parsed[d.dayKey] };
+          }
+          return d;
+        });
+        return;
+      } catch {}
+    }
+    this.weeklySchedule = defaults;
+  }
+
+  saveMemberDetail(): void {
+    if (!this.member) return;
+    this.isSaving = true;
+
+    const availMap: { [key: string]: any } = {};
+    for (const d of this.weeklySchedule) {
+      availMap[d.dayKey] = {
+        mode: d.mode,
+        dayName: d.dayLabel,
+        startTime: d.startTime || '',
+        endTime: d.endTime || ''
+      };
+    }
+
+    const payload = {
+      firstName: this.member.firstName,
+      lastName: this.member.lastName,
+      phoneNumber: this.member.phoneNumber,
+      jobTitle: this.member.jobTitle,
+      staffTypeId: this.member.staffTypeId,
+      staffTypeName: this.member.staffTypeName,
+      defaultHourlyRate: this.member.defaultHourlyRate,
+      contractedWeeklyHours: this.member.contractedWeeklyHours,
+      preferredWorkingTime: this.member.preferredWorkingTime || 'Any',
+      workingAvailability: this.member.workingAvailability || 'Available',
+      weeklyAvailabilityJson: JSON.stringify(availMap),
+      isActive: this.member.isActive,
+      emergencyContactName: this.member.emergencyContactName,
+      emergencyContactRelationship: this.member.emergencyContactRelationship,
+      emergencyContactPhone: this.member.emergencyContactPhone,
+      bankName: this.member.bankName,
+      accountHolderName: this.member.accountHolderName,
+      sortCode: this.member.sortCode,
+      accountNumber: this.member.accountNumber,
+      nationalInsuranceNumber: this.member.nationalInsuranceNumber,
+      uniformSizes: this.member.uniformSizes,
+      drivingLicenseStatus: this.member.drivingLicenseStatus,
+      medicalDisclosures: this.member.medicalDisclosures,
+      dbsDisclosure: this.member.dbsDisclosure,
+      optOut48Hours: this.member.optOut48Hours
+    };
+
+    this.workforceService.updateMemberDetail(this.userId, payload).subscribe({
+      next: (res: any) => {
+        this.isSaving = false;
+        this.toast.success('Staff member profile updated successfully.');
+        if (res && res.data) {
+          this.member = res.data;
+          this.initWeeklySchedule();
+        }
+      },
+      error: (err) => {
+        this.isSaving = false;
+        this.toast.error(err?.error?.message || 'Failed to update member profile.');
+      }
+    });
+  }
+
+  openUploadModal(): void {
+    const defaultCategory = this.documentCategories.length > 0
+      ? this.documentCategories[0].name
+      : this.fallbackCategories[0].name;
+
+    this.uploadForm = {
+      userId: this.userId,
+      documentType: defaultCategory,
+      documentName: '',
+      referenceNumber: '',
+      fileUrl: '',
+      expiryDateUtc: ''
+    };
+    this.showUploadModal = true;
+  }
+
+  submitUpload(): void {
+    if (!this.uploadForm.documentName || !this.uploadForm.fileUrl) {
+      this.toast.error('Please specify both document title and file link.');
+      return;
+    }
+
+    this.uploadForm.userId = this.userId;
+    this.isUploading = true;
+    this.workforceService.uploadDocument(this.uploadForm).subscribe({
+      next: () => {
+        this.isUploading = false;
+        this.showUploadModal = false;
+        this.toast.success('Compliance document saved to vault.');
+        this.loadMemberDetail();
+      },
+      error: (err) => {
+        this.isUploading = false;
+        this.toast.error(err?.error?.message || 'Failed to upload document.');
+      }
+    });
+  }
+}
+

@@ -176,5 +176,39 @@ public class MasterTenantCatalog
     [MaxLength(10)]
     public string DefaultCurrencyCode { get; set; } = "USD";
 
+    /// <summary>
+    /// Indicates whether this tenant is on an All-Inclusive Flat-Rate Master Plan (e.g., $400/year).
+    /// When true and active, all published capabilities are unlocked and included without individual feature charges.
+    /// </summary>
+    public bool HasFlatRatePlan { get; set; } = false;
+
+    /// <summary>
+    /// The recurring flat-rate amount charged for this tenant's master subscription in USD (or tenant default currency).
+    /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? FlatRatePrice { get; set; }
+
+    /// <summary>
+    /// Cadence/frequency of the flat-rate master plan (Monthly = 1, Quarterly = 2, Yearly = 3).
+    /// Defaults to Yearly.
+    /// </summary>
+    public SubscriptionBillingDuration FlatRateCadence { get; set; } = SubscriptionBillingDuration.Yearly;
+
+    /// <summary>
+    /// UTC timestamp when the tenant's flat-rate master plan expires / renews.
+    /// </summary>
+    public DateTime? FlatRateExpiresAtUtc { get; set; }
+
+    /// <summary>
+    /// Indicates whether the flat-rate master plan automatically renews on the expiration date.
+    /// </summary>
+    public bool FlatRateAutoRenew { get; set; } = true;
+
+    /// <summary>
+    /// Human-readable label or package name for the flat-rate plan (e.g., "All-Access Enterprise Bundle", "Annual Unlimited Suite").
+    /// </summary>
+    [MaxLength(150)]
+    public string? FlatRatePlanName { get; set; }
+
     public ICollection<MasterTenantFeatureSubscription> FeatureSubscriptions { get; set; } = new List<MasterTenantFeatureSubscription>();
 }

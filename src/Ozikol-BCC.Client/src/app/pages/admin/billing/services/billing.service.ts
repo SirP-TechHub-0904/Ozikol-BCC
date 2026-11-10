@@ -31,6 +31,7 @@ export interface BillingFeatureItem {
   hasUsedFreeTrial?: boolean;
   isTrialPeriod?: boolean;
   isEligibleForFreeTrial?: boolean;
+  isIncludedInFlatRatePlan?: boolean;
   sortOrder?: number;
   billingType?: string;
   autoRenew: boolean;
@@ -68,6 +69,13 @@ export interface BillingFeaturesSnapshot {
   exchangeRateFromUsd?: number;
   useCustomPricing?: boolean;
   useCustomAvailability?: boolean;
+  hasFlatRatePlan?: boolean;
+  flatRatePrice?: number;
+  flatRateCadence?: string;
+  flatRateExpiresAtUtc?: string;
+  flatRateDaysRemaining?: number;
+  flatRatePlanName?: string;
+  flatRateAutoRenew?: boolean;
   serverTimeUtc: string;
   included: BillingFeatureItem[];
   subscribed: BillingFeatureItem[];

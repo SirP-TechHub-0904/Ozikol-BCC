@@ -130,6 +130,29 @@
                     <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Website URL</span>
                     <div>@(Model.Tenant.WebsiteUrl ?? "Default Platform Web App")</div>
                 </div>
+                <div style="padding-top: 10px; border-top: 1px solid var(--admin-border);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                        <span style="color: var(--admin-text-dim); font-size: 12px;">Transactional Email (Mailcow)</span>
+                        @if (Model.TenantEmailConfigured)
+                        {
+                            <span class="badge badge-success" style="font-size: 10.5px; padding: 2px 7px;">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-warning" style="font-size: 10.5px; padding: 2px 7px;">Not Configured</span>
+                        }
+                    </div>
+                    <code style="display: block; color: var(--admin-text); background: var(--admin-bg-surface-elevated); padding: 4px 8px; border-radius: 4px; font-weight: 600; margin-bottom: 8px;">
+                        @Model.TenantSenderEmail
+                    </code>
+                    <form method="post" asp-page-handler="ProvisionMailcow" asp-route-id="@Model.Id" style="margin: 0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">forward_to_inbox</span>
+                            @(Model.TenantEmailConfigured ? "Repair / Re-Sync Mailcow Email" : "Setup Mailcow Email for Tenant")
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 

@@ -10,7 +10,7 @@ namespace Ozikol_BCC.Domain.Models
     /// where security posts, staff shifts, and geofenced attendance boundaries are managed.
     /// Table: [dbo].[BcpClientSites]
     /// </summary>
-    public class BcpClientSite
+    public class BcpClientSite : IBcpWorkforceEntity
     {
         /// <summary>
         /// Unique primary key identifier for the client site.
@@ -24,6 +24,23 @@ namespace Ozikol_BCC.Domain.Models
         [Required]
         [StringLength(100)]
         public string TenantKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional foreign key identifier referencing the master client organization (<see cref="BcpClientOrganization"/>).
+        /// </summary>
+        public Guid? ClientOrganizationId { get; set; }
+
+        /// <summary>
+        /// Cached display name of the parent client enterprise organization.
+        /// </summary>
+        [StringLength(200)]
+        public string? ClientOrganizationName { get; set; }
+
+        /// <summary>
+        /// Navigation property referencing the parent client enterprise organization.
+        /// </summary>
+        [ForeignKey(nameof(ClientOrganizationId))]
+        public virtual BcpClientOrganization? ClientOrganization { get; set; }
 
         /// <summary>
         /// Unique short code identifier for the site (e.g., "SITE-101", "LDN-HQ").
@@ -77,6 +94,12 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [StringLength(150)]
         public string? EmergencyContactName { get; set; }
+
+        /// <summary>
+        /// Primary contact person email address at the work location.
+        /// </summary>
+        [StringLength(150)]
+        public string? EmergencyContactEmail { get; set; }
 
         /// <summary>
         /// Direct telephone or 24/7 hotline for emergency dispatch and incident escalation.

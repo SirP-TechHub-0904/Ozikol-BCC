@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, HostListener, ElementRef, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -28,7 +28,7 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
   encapsulation: ViewEncapsulation.None,
   template: `
     <!-- Top Progress / Loader -->
-    <div *ngIf="loading" class="public-site-loader">
+    <div *ngIf="loading" class="public-site-loader" [class.oz-preview-loader]="previewMode">
       <div class="loader-inner">
         <div class="spinner-ring"></div>
       </div>
@@ -48,12 +48,23 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     </div>
 
     <!-- Dynamic Live Hydrated Site -->
-    <div *ngIf="!loading && !error" class="public-dynamic-site-wrapper" [class.mobile-menu-active]="mobileMenuOpen">
+    <div *ngIf="!loading && !error" class="public-dynamic-site-wrapper" [class.mobile-menu-active]="mobileMenuOpen" [class.oz-preview-shell]="previewMode" [class.oz-compact-preview]="compactPreview">
       <!-- Rendered HTML Blocks (Menu, Hero/Breadcrumb, Sections, Footer) -->
-      <main class="dynamic-rendered-content" [innerHTML]="safeRenderedHtml"></main>
+      <main *ngIf="!embeddedShellMode" class="dynamic-rendered-content" [innerHTML]="safeRenderedHtml"></main>
+
+      <!-- When embeddedShellMode is active, inject projected <ng-content> into the exact body section slot between Breadcrumb and Footer -->
+      <main *ngIf="embeddedShellMode" class="dynamic-rendered-content">
+        <div class="oz-embedded-top-shell" [innerHTML]="safeEmbeddedTopHtml"></div>
+        <section class="oz-embedded-body-slot py-5 bg-light" style="padding: 40px 16px; background: #f8fafc;">
+          <div class="container py-3" style="max-width: 720px; margin: 0 auto;">
+            <ng-content></ng-content>
+          </div>
+        </section>
+        <div class="oz-embedded-bottom-shell" [innerHTML]="safeEmbeddedBottomHtml"></div>
+      </main>
 
       <!-- Glassmorphic Cookie Consent Bar -->
-      <aside *ngIf="showCookieConsent && cookieSettings?.enabled" class="oz-cookie-consent-bar" role="dialog" aria-live="polite" aria-label="Cookie consent banner">
+      <aside *ngIf="!previewMode && showCookieConsent && cookieSettings?.enabled" class="oz-cookie-consent-bar" role="dialog" aria-live="polite" aria-label="Cookie consent banner">
         <div class="oz-cookie-content">
           <div class="oz-cookie-icon-wrap">
             <svg class="oz-cookie-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -79,7 +90,7 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       </aside>
 
       <!-- WhatsApp Floating Live Chat Widget -->
-      <div *ngIf="whatsAppSettings?.enabled" class="oz-whatsapp-widget" role="complementary" aria-label="WhatsApp live chat support">
+      <div *ngIf="!previewMode && whatsAppSettings?.enabled" class="oz-whatsapp-widget" role="complementary" aria-label="WhatsApp live chat support">
         <!-- Chat Popup Card -->
         <div *ngIf="whatsAppChatOpen" class="oz-whatsapp-popup" aria-live="polite">
           <div class="oz-whatsapp-header">
@@ -162,6 +173,10 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       justify-content: center;
       min-height: 100vh;
       background: #ffffff;
+    }
+    .public-site-loader.oz-preview-loader {
+      min-height: 360px;
+      width: 100%;
     }
     .loader-inner {
       text-align: center;
@@ -255,6 +270,30 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       position: relative;
       width: 100%;
       min-height: 100vh;
+    }
+    .public-dynamic-site-wrapper.oz-preview-shell {
+      min-height: auto;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      transform: translateZ(0);
+      contain: layout paint;
+      container-type: inline-size;
+    }
+    .public-dynamic-site-wrapper.oz-preview-shell .preloader,
+    .public-dynamic-site-wrapper.oz-preview-shell #preloader,
+    .public-dynamic-site-wrapper.oz-preview-shell .page-loader,
+    .public-dynamic-site-wrapper.oz-preview-shell .loader-wrap {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .public-dynamic-site-wrapper.oz-compact-preview {
+      zoom: 0.45;
+      width: 100%;
+    }
+    .public-dynamic-site-wrapper.oz-compact-preview .oz-embedded-body-slot {
+      zoom: 1.75;
     }
 
     /* Anti-FOUC Smooth Site Reveal */
@@ -655,9 +694,59 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
         bottom: 58px;
       }
     }
+    .oz-embedded-website-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+      background: #f8fafc;
+    }
+    .oz-embedded-website-shell.oz-preview-shell {
+      min-height: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+    .oz-embedded-body-slot {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .oz-embedded-website-shell.oz-preview-shell .oz-embedded-body-slot {
+      padding: 28px 16px;
+    }
   `]
 })
-export class LandingComponent implements OnInit, OnDestroy {
+export class LandingComponent implements OnInit, OnDestroy, OnChanges {
+  /**
+   * When true, renders the live Website Header/Menu + Breadcrumb above `<ng-content>` and the live Website Footer below `<ng-content>`.
+   */
+  @Input() embeddedShellMode: boolean = false;
+
+  /**
+   * When true, renders inside an admin preview container without locking/unlocking document body scroll or intercepting clicks.
+   */
+  @Input() previewMode: boolean = false;
+
+  /**
+   * When true, scales the desktop website shell proportionally (`zoom: 0.45`) to fit inside a narrow sidebar preview column.
+   */
+  @Input() compactPreview: boolean = false;
+
+  /**
+   * Title displayed in the Website Breadcrumb banner when `embeddedShellMode` is active.
+   */
+  @Input() embeddedPageTitle: string = 'Create Your Account';
+
+  /**
+   * Subtitle displayed in the Website Breadcrumb banner when `embeddedShellMode` is active.
+   */
+  @Input() embeddedPageSubtitle: string = 'Complete your profile registration below.';
+
   // State Flags
   loading: boolean = true;
   error: boolean = false;
@@ -700,6 +789,8 @@ export class LandingComponent implements OnInit, OnDestroy {
   // Render Pipeline
   renderedStyles: string = '';
   safeRenderedHtml: SafeHtml | null = null;
+  safeEmbeddedTopHtml: SafeHtml | null = null;
+  safeEmbeddedBottomHtml: SafeHtml | null = null;
 
   // Public Committee & Sub-Group Registration State
   committeeTenantSlug: string = '';
@@ -788,8 +879,15 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Unlock native document scrolling for public website mode
-    document.body.classList.add('public-website-mode');
+    // Unlock native document scrolling for public website mode (unless embedded inside an admin preview)
+    if (!this.previewMode) {
+      document.body.classList.add('public-website-mode');
+    }
+
+    if (this.embeddedShellMode) {
+      this.loadSiteData();
+      return;
+    }
 
     // Listen to route changes (slug changes) to support instant in-app navigation
     this.routeSub = this.route.paramMap.subscribe(params => {
@@ -852,13 +950,24 @@ export class LandingComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if ((changes['embeddedPageTitle'] || changes['embeddedPageSubtitle']) && !changes['embeddedPageTitle']?.firstChange && this.embeddedShellMode && !this.loading) {
+      this.composeEmbeddedShell();
+    }
+  }
+
   ngOnDestroy(): void {
     // Re-lock or restore default dashboard mode
-    document.body.classList.remove('public-website-mode');
+    if (!this.previewMode) {
+      document.body.classList.remove('public-website-mode');
+    }
 
-    // Clean up dynamic tags injected into head and body
-    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
-    document.getElementById('tenant-dynamic-theme-styles')?.remove();
+    // Clean up dynamic tags injected into head and body only when no other app-landing instance remains mounted
+    const remainingInstances = document.querySelectorAll('app-landing').length;
+    if (remainingInstances <= 1) {
+      document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+      document.getElementById('tenant-dynamic-theme-styles')?.remove();
+    }
 
     if (this.routeSub) {
       this.routeSub.unsubscribe();
@@ -886,6 +995,12 @@ export class LandingComponent implements OnInit, OnDestroy {
     .then(async () => {
       // Concurrently fetch active ticker items if breaking news ribbon is enabled
       await this.fetchTickerItems();
+
+      // Embedded Shell Mode: Wraps projected content (<ng-content>) inside live Website Header/Breadcrumb and Footer
+      if (this.embeddedShellMode) {
+        await this.composeEmbeddedShell();
+        return;
+      }
 
       // Route dispatch based on active slug
       if (!this.currentSlug || this.currentSlug === 'home') {
@@ -4253,24 +4368,164 @@ export class LandingComponent implements OnInit, OnDestroy {
    * 4. Hiding the preloader and revealing the styled website smoothly.
    * 5. Executing Zone 2 (body_open), Zone 3 (footer), and section scripts.
    */
-  private async finalizeRender(styles: string, html: string, combinedJs?: string): Promise<void> {
-    // 1. Inject Scoped Template CSS into <head>
-    let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
-    if (!styleTag) {
-      styleTag = document.createElement('style');
-      styleTag.id = 'tenant-dynamic-theme-styles';
-      document.head.appendChild(styleTag);
+  /**
+   * Scopes CSS selectors inside `#tenant-dynamic-theme-styles` (including fetched head stylesheets
+   * such as Bootstrap 5 and active template CSS) strictly to `.public-dynamic-site-wrapper`
+   * when `previewMode` is active so 100% of the website CSS renders inside the preview without
+   * altering the Admin Console layout outside `.public-dynamic-site-wrapper`.
+   */
+  private scopeStylesToWrapper(css: string): string {
+    if (!css) return '';
+
+    // 1. Extract any @import rules so they stay at the top of the <style> sheet
+    const imports: string[] = [];
+    let bodyCss = css
+      .replace(/@charset[^;]+;/gi, '')
+      .replace(/@import\s+[^;]+;/gi, (match) => {
+        imports.push(match);
+        return '';
+      });
+
+    // 2. Hoist @keyframes / @font-face blocks out of @scope (they are not valid inside a scoped block)
+    const hoisted: string[] = [];
+    bodyCss = this.extractAtRuleBlocks(bodyCss, /@(-webkit-)?keyframes\b|@font-face\b/gi, hoisted);
+
+    // 3. Map :root, html, and body selectors to :scope (.public-dynamic-site-wrapper)
+    bodyCss = bodyCss
+      .replace(/:root\b/gi, ':scope')
+      .replace(/(^|[\s,\}\{:;])(html|body)(?=[\s,\{\.#:\[>~+])/gi, '$1:scope')
+      .replace(/:scope\s+:scope/g, ':scope');
+
+    // 4. Convert viewport width media queries into container queries so the preview column
+    //    renders the theme's true responsive (mobile/tablet) layout based on its own width
+    bodyCss = bodyCss.replace(
+      /@media\s+(?:only\s+)?(?:screen\s+and\s+|all\s+and\s+)?(\([^)]*width[^)]*\)(?:\s*and\s*\([^)]*width[^)]*\))*)\s*\{/gi,
+      '@container $1 {'
+    );
+
+    return `${imports.join('\n')}\n${hoisted.join('\n')}\n@scope (.public-dynamic-site-wrapper) to (.oz-embedded-body-slot) {\n${bodyCss}\n}`;
+  }
+
+  /**
+   * Removes balanced-brace at-rule blocks matching `pattern` from `css` and pushes them into `out`.
+   * @param css Source stylesheet text.
+   * @param pattern Global regex matching the at-rule prelude start (e.g. `@keyframes`).
+   * @param out Collector receiving the extracted complete blocks.
+   * @returns The stylesheet text with the matched blocks removed.
+   */
+  private extractAtRuleBlocks(css: string, pattern: RegExp, out: string[]): string {
+    let result = '';
+    let cursor = 0;
+    pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(css)) !== null) {
+      const start = match.index;
+      const braceOpen = css.indexOf('{', start);
+      if (braceOpen === -1) break;
+      // Walk forward counting braces to locate the matching closing brace
+      let depth = 0;
+      let end = braceOpen;
+      for (; end < css.length; end++) {
+        if (css[end] === '{') depth++;
+        else if (css[end] === '}') {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      out.push(css.substring(start, end + 1));
+      result += css.substring(cursor, start);
+      cursor = end + 1;
+      pattern.lastIndex = cursor;
     }
-    // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
-    const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
-    styleTag.textContent = cleanStyles;
+    return result + css.substring(cursor);
+  }
 
-    // 2. Clean up previously injected dynamic tags
-    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+  /**
+   * Loads Zone 1 (<head>) stylesheets and inline <style> tags in `previewMode` by fetching
+   * framework/theme CSS (e.g. Bootstrap 5) for scoped injection while mounting icon/font links.
+   */
+  private async loadPreviewHeadStyles(): Promise<string> {
+    if (!this.codeInjections.head || this.codeInjections.head.length === 0) {
+      return '';
+    }
+    const currentUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
+    const cssChunks: string[] = [];
+    const fetchTasks: Promise<void>[] = [];
 
-    // 3. Pre-inject Zone 1 (<head>) tags and collect stylesheet loading promises
+    for (const tag of this.codeInjections.head) {
+      if (!tag.content) continue;
+      const compiledHeadTag = this.templateHydration.compileMetaTags(tag.content, {
+        page: this.currentPage,
+        brand: this.brandInfo,
+        currentUrl
+      });
+
+      const temp = document.createElement('div');
+      temp.innerHTML = compiledHeadTag.trim();
+
+      Array.from(temp.children).forEach(child => {
+        const el = child as HTMLElement;
+        const tagName = el.tagName.toLowerCase();
+
+        if (tagName === 'style') {
+          if (el.textContent) {
+            cssChunks.push(el.textContent);
+          }
+        } else if (tagName === 'link' && el.getAttribute('rel') === 'stylesheet') {
+          const href = el.getAttribute('href') || '';
+          if (!href) return;
+          const lowerHref = href.toLowerCase();
+          const isFontOrIcon = lowerHref.includes('fonts.googleapis.com') ||
+                               lowerHref.includes('font-awesome') ||
+                               lowerHref.includes('fontawesome') ||
+                               lowerHref.includes('bootstrap-icons') ||
+                               lowerHref.includes('remixicon') ||
+                               lowerHref.includes('line-awesome') ||
+                               lowerHref.includes('boxicons') ||
+                               lowerHref.includes('material');
+
+          if (isFontOrIcon) {
+            const link = document.createElement('link');
+            link.className = 'ozikol-injected-tag ozikol-zone-head';
+            Array.from(el.attributes).forEach(attr => link.setAttribute(attr.name, attr.value));
+            document.head.appendChild(link);
+          } else {
+            const task = Promise.race([
+              fetch(href).then(r => r.ok ? r.text() : Promise.reject()),
+              new Promise<string>((_, reject) => setTimeout(reject, 2500))
+            ])
+              .then(cssText => {
+                if (cssText) cssChunks.push(cssText);
+              })
+              .catch(() => {
+                // Never fall back to a global <link> in previewMode: it would restyle the Admin Console
+                console.warn('[Ozikol Preview] Could not fetch stylesheet for scoped preview:', href);
+              });
+            fetchTasks.push(task);
+          }
+        }
+      });
+    }
+
+    if (fetchTasks.length > 0) {
+      await Promise.all(fetchTasks);
+    }
+
+    return cssChunks.join('\n\n');
+  }
+
+  private async finalizeRender(styles: string, html: string, combinedJs?: string): Promise<void> {
+    // 1. Clean up previously injected dynamic tags only if not sharing with another preview instance
+    if (!this.previewMode) {
+      document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+    }
+
+    // 2. Pre-inject Zone 1 (<head>) tags
     const stylePromises: Promise<void>[] = [];
-    if (this.codeInjections.head && this.codeInjections.head.length > 0) {
+    let previewHeadCss = '';
+    if (this.previewMode) {
+      previewHeadCss = await this.loadPreviewHeadStyles();
+    } else if (this.codeInjections.head && this.codeInjections.head.length > 0) {
       const currentUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
       for (const tag of this.codeInjections.head) {
         if (!tag.content) continue;
@@ -4293,8 +4548,29 @@ export class LandingComponent implements OnInit, OnDestroy {
       ]);
     }
 
+    // 3. Inject Scoped Template CSS into <head>
+    let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'tenant-dynamic-theme-styles';
+      document.head.appendChild(styleTag);
+    }
+    const rawCleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+    const combinedRawStyles = this.previewMode
+      ? `${previewHeadCss}\n\n${rawCleanStyles}`
+      : rawCleanStyles;
+    const cleanStyles = this.previewMode ? this.scopeStylesToWrapper(combinedRawStyles) : combinedRawStyles;
+    styleTag.textContent = cleanStyles;
+
     // 4. Set Safe HTML for main page layout now that stylesheets are in place
-    this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    if (this.embeddedShellMode) {
+      const marker = '<!--__OZIKOL_NG_CONTENT_SLOT__-->';
+      const parts = html.split(marker);
+      this.safeEmbeddedTopHtml = this.sanitizer.bypassSecurityTrustHtml(parts[0] || '');
+      this.safeEmbeddedBottomHtml = this.sanitizer.bypassSecurityTrustHtml(parts[1] || '');
+    } else {
+      this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    }
 
     // 5. Complete loading and trigger Change Detection to reveal fully-styled page
     this.loading = false;
@@ -4303,16 +4579,111 @@ export class LandingComponent implements OnInit, OnDestroy {
     // 6. Inject Zone 2 (body-open), Zone 3 (footer), and section scripts
     setTimeout(() => {
       this.injectRemainingCodeTags(combinedJs);
-      this.initRecaptchas();
+      if (!this.previewMode) {
+        this.initRecaptchas();
+      }
     }, 50);
+  }
+
+  /**
+   * Composes the embedded page using the exact same `HtmlAssemblerService.assemblePageBundle`
+   * and `finalizeRender` pipeline as `composeContentPage()` — zero replica markup.
+   */
+  private composeEmbeddedShell(): void {
+    const pageTitle = this.embeddedPageTitle || 'Create Your Account';
+    const pageDesc = this.embeddedPageSubtitle || '';
+
+    // 1. Navigation Header Section Unit (exact same active menu template)
+    const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'register'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    // 2. Breadcrumb Header Section Unit (exact same active breadcrumb template & tenant page background image)
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    let breadcrumbSection: SectionTemplateUnit | undefined;
+    if (breadcrumbTemplate) {
+      const existingPageWithBg = (this.publishedPages || []).find(p => p.imageUrl || p.ImageUrl || p.headerImageUrl || p.backgroundImageUrl);
+      const effectiveBg = existingPageWithBg?.imageUrl ||
+                          existingPageWithBg?.ImageUrl ||
+                          existingPageWithBg?.headerImageUrl ||
+                          existingPageWithBg?.backgroundImageUrl ||
+                          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
+      const breadcrumbData = {
+        title: pageTitle,
+        Title: pageTitle,
+        pageTitle: pageTitle,
+        miniTitle: this.brandName || '',
+        description: pageDesc,
+        backgroundImageUrl: effectiveBg,
+        imageUrl: effectiveBg,
+        breadcrumbTrail: [
+          { label: 'Home', url: '/', isActive: false },
+          { label: pageTitle, url: '#', isActive: true }
+        ],
+        breadcrumbs: [
+          { title: 'Home', url: '/', isActive: false },
+          { title: pageTitle, url: '#', isActive: true }
+        ]
+      };
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
+      };
+    }
+
+    // 3. Body Slot Marker (splits top and bottom around <ng-content> in finalizeRender)
+    const bodySectionsList: SectionTemplateUnit[] = [{
+      name: 'Projected Content Slot',
+      category: 'body',
+      html: '<!--__OZIKOL_NG_CONTENT_SLOT__-->',
+      sortOrder: 1
+    }];
+
+    // 4. Footer Section Unit (exact same active footer template)
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
+
+    // 5. Delegate full page synthesis to HtmlAssemblerService & finalizeRender (Single Source of Truth)
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${pageTitle} | ${this.brandName}`,
+      pageSlug: 'register',
+      metaDescription: pageDesc || this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
    * Injects remaining code tags (Zone 2 body open, Zone 3 footer, and section JS).
    */
   private injectRemainingCodeTags(combinedJs?: string): void {
-    // 1. Inject CMS Body Open Tags (immediately after <body>) strictly from DB
-    if (this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
+    // 1. Inject CMS Body Open Tags (immediately after <body>) strictly from DB (skip in previewMode so full-page body preloaders do not cover the Admin Console)
+    if (!this.previewMode && this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
       for (const tag of this.codeInjections.bodyOpen) {
         if (!tag.content) continue;
         this.prependHtmlToBody(tag.content);
@@ -4327,8 +4698,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 3. Section JavaScript Execution
+    // 3. Section JavaScript Execution (replace any previous section script so re-renders do not stack handlers)
     if (combinedJs && combinedJs.trim()) {
+      document.querySelectorAll('.ozikol-section-scripts').forEach(el => el.remove());
       const script = document.createElement('script');
       script.className = 'ozikol-injected-tag ozikol-section-scripts';
       const cleanJs = combinedJs.replace(/<\/?script[^>]*>/gi, '').trim();
@@ -4357,6 +4729,11 @@ export class LandingComponent implements OnInit, OnDestroy {
         promises.push(promise);
         container.appendChild(link);
       } else if (el.tagName.toLowerCase() === 'script') {
+        // Skip external scripts already mounted (prevents double-loading Bootstrap/jQuery when the preview re-renders)
+        const existingSrc = el.getAttribute('src');
+        if (existingSrc && document.querySelector(`script[src="${existingSrc}"]`)) {
+          return;
+        }
         const script = document.createElement('script');
         script.className = el.className;
         Array.from(el.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
@@ -4408,6 +4785,20 @@ export class LandingComponent implements OnInit, OnDestroy {
   onGlobalClick(e: MouseEvent): void {
     const target = e.target as HTMLElement;
     if (!target) return;
+
+    // Do not intercept clicks inside the projected <ng-content> body slot when in embeddedShellMode
+    if (this.embeddedShellMode && target.closest('.oz-embedded-body-slot')) {
+      return;
+    }
+
+    // Prevent navigation away from the admin builder when clicking header/footer links in previewMode
+    if (this.previewMode) {
+      const previewAnchor = target.closest('a');
+      if (previewAnchor) {
+        e.preventDefault();
+      }
+      return;
+    }
 
     // 1. Internal Navigation Link Interception (SPA client routing)
     const anchor = target.closest('a') as HTMLAnchorElement;

@@ -402,10 +402,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public async Task<IActionResult> OnPostTogglePublishAsync(Guid id)
         {
             var feature = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.Id == id)
-                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsCompulsory, f.IsActive, f.IsAvailableForUse, f.MonthlyPrice, f.YearlyPrice })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(f => f.Id == id);
 
             if (feature == null)
             {
@@ -431,11 +428,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
             }
 
-            await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.Id == id)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(f => f.IsActive, newActive)
-                    .SetProperty(f => f.IsPublished, newActive));
+            feature.IsActive = newActive;
+            feature.IsPublished = newActive;
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -480,10 +474,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public async Task<IActionResult> OnPostToggleAvailabilityAsync(Guid id)
         {
             var feature = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.Id == id)
-                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(f => f.Id == id);
 
             if (feature == null)
             {
@@ -496,11 +487,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             var newAvailable = !feature.IsAvailableForUse;
-
-            await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.Id == id)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(f => f.IsAvailableForUse, newAvailable));
+            feature.IsAvailableForUse = newAvailable;
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -837,68 +824,35 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             var clampedDays = Math.Clamp(freeTrialDays, 0, 365);
             try
             {
-                var featureInfo = await _dbContext.MasterFeatureCatalogs
-                    .AsNoTracking()
-                    .Where(f => f.Id == featureId)
-                    .Select(f => new
-                    {
-                        f.Id,
-                        f.Name,
-                        f.FeatureCode,
-                        f.MonthlyPrice,
-                        f.QuarterlyPrice,
-                        f.YearlyPrice,
-                        f.IsCompulsory,
-                        f.IsActive,
-                        f.IsPublished
-                    })
-                    .FirstOrDefaultAsync();
+                var feature = await _dbContext.MasterFeatureCatalogs
+                    .FirstOrDefaultAsync(f => f.Id == featureId);
 
-                if (featureInfo == null)
+                if (feature == null)
                 {
                     TempData["Error"] = "Capability not found.";
                     return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
                 }
 
-                decimal effectiveMonthly = monthlyPrice.HasValue ? Math.Max(0m, monthlyPrice.Value) : featureInfo.MonthlyPrice;
+                decimal effectiveMonthly = monthlyPrice.HasValue ? Math.Max(0m, monthlyPrice.Value) : feature.MonthlyPrice;
                 decimal effectiveQuarterly = monthlyPrice.HasValue
                     ? Math.Round(effectiveMonthly * 3m * 0.90m, 2)
-                    : featureInfo.QuarterlyPrice;
+                    : feature.QuarterlyPrice;
                 decimal effectiveYearly = yearlyPrice.HasValue && yearlyPrice.Value >= 0m
                     ? Math.Max(0m, yearlyPrice.Value)
-                    : (monthlyPrice.HasValue ? Math.Round(effectiveMonthly * 10m, 2) : featureInfo.YearlyPrice);
+                    : (monthlyPrice.HasValue ? Math.Round(effectiveMonthly * 10m, 2) : feature.YearlyPrice);
                 
                 // Both Monthly and Yearly amounts are compulsory (> 0)
-                bool hasPrice = featureInfo.IsCompulsory || (effectiveMonthly > 0m && effectiveYearly > 0m);
-                bool newIsActive = hasPrice && featureInfo.IsActive;
-                bool newIsPublished = hasPrice && featureInfo.IsPublished;
+                bool hasPrice = feature.IsCompulsory || (effectiveMonthly > 0m && effectiveYearly > 0m);
+                bool newIsActive = hasPrice && feature.IsActive;
+                bool newIsPublished = hasPrice && feature.IsPublished;
 
-                try
-                {
-                    await _dbContext.MasterFeatureCatalogs
-                        .Where(f => f.Id == featureId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(f => f.MonthlyPrice, effectiveMonthly)
-                            .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
-                            .SetProperty(f => f.YearlyPrice, effectiveYearly)
-                            .SetProperty(f => f.IsCompulsory, false)
-                            .SetProperty(f => f.FreeTrialDays, clampedDays)
-                            .SetProperty(f => f.IsActive, newIsActive)
-                            .SetProperty(f => f.IsPublished, newIsPublished));
-                }
-                catch
-                {
-                    // Fallback if FreeTrialDays column migration has not been applied yet: still save price immediately
-                    await _dbContext.MasterFeatureCatalogs
-                        .Where(f => f.Id == featureId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(f => f.MonthlyPrice, effectiveMonthly)
-                            .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
-                            .SetProperty(f => f.YearlyPrice, effectiveYearly)
-                            .SetProperty(f => f.IsCompulsory, false)
-                            .SetProperty(f => f.IsActive, newIsActive)
-                            .SetProperty(f => f.IsPublished, newIsPublished));
-                }
+                feature.MonthlyPrice = effectiveMonthly;
+                feature.QuarterlyPrice = effectiveQuarterly;
+                feature.YearlyPrice = effectiveYearly;
+                feature.IsCompulsory = false;
+                feature.FreeTrialDays = clampedDays;
+                feature.IsActive = newIsActive;
+                feature.IsPublished = newIsPublished;
 
                 _dbContext.MasterAuditLogs.Add(new MasterAuditLog
                 {
@@ -906,8 +860,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     UserName = User.Identity?.Name,
                     Action = "QuickUpdatePriceAndTrial",
                     EntityType = "Feature",
-                    EntityId = featureInfo.Id.ToString(),
-                    Summary = $"Updated capability '{featureInfo.Name}' ({featureInfo.FeatureCode}): Price=${effectiveMonthly:F2}/mo (${effectiveYearly:F2}/yr), FreeTrial={clampedDays}d",
+                    EntityId = feature.Id.ToString(),
+                    Summary = $"Updated capability '{feature.Name}' ({feature.FeatureCode}): Price=${effectiveMonthly:F2}/mo (${effectiveYearly:F2}/yr), FreeTrial={clampedDays}d",
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                     UserAgent = Request.Headers["User-Agent"].ToString(),
                     CreatedUtc = DateTime.UtcNow
@@ -915,7 +869,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                 await _dbContext.SaveChangesAsync();
                 _currencyService?.InvalidatePricingCache();
-                TempData["Success"] = $"Updated '{featureInfo.Name}': Price set to ${(effectiveMonthly > 0 ? $"{effectiveMonthly:F2}/mo" : "0.00 (Free)")} and First-Time Free Trial set to {clampedDays} day(s) before payment.";
+                TempData["Success"] = $"Updated '{feature.Name}': Price set to ${(effectiveMonthly > 0 ? $"{effectiveMonthly:F2}/mo" : "0.00 (Free)")} and First-Time Free Trial set to {clampedDays} day(s) before payment.";
             }
             catch (Exception ex)
             {

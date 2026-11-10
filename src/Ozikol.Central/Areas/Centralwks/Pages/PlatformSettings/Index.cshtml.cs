@@ -20,6 +20,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
         private readonly MasterCatalogDbContext _context;
         private readonly ICurrencyService _currencyService;
         private readonly ILogger<IndexModel> _logger;
+        private readonly Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? _smtpEmailDispatcher;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
@@ -27,11 +28,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
         /// <param name="context">Master catalog database context.</param>
         /// <param name="currencyService">Currency and pricing service.</param>
         /// <param name="logger">Structured logging service.</param>
-        public IndexModel(MasterCatalogDbContext context, ICurrencyService currencyService, ILogger<IndexModel> logger)
+        /// <param name="smtpEmailDispatcher">Optional Mailcow SMTP email dispatcher for live diagnostic testing.</param>
+        public IndexModel(
+            MasterCatalogDbContext context,
+            ICurrencyService currencyService,
+            ILogger<IndexModel> logger,
+            Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _smtpEmailDispatcher = smtpEmailDispatcher;
         }
 
         /// <summary>
@@ -670,6 +677,65 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             catch (Exception ex)
             {
                 return new JsonResult(new { success = false, message = $"Cloudflare R2 connection test failed: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Handles AJAX POST request to send a live diagnostic test email via Mailcow SMTP.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestEmailConnectionAsync(
+            [FromForm] string? provider,
+            [FromForm] string? fromEmail,
+            [FromForm] string? fromName,
+            [FromForm] string? testRecipient)
+        {
+            var recipient = testRecipient?.Trim();
+            if (string.IsNullOrWhiteSpace(recipient))
+            {
+                return new JsonResult(new { success = false, message = "Please enter a recipient email address to receive the test email." });
+            }
+
+            var existing = await _context.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+            var selectedProvider = !string.IsNullOrWhiteSpace(provider) ? provider.Trim() : (existing?.EmailProvider ?? "Mailcow");
+            var resolvedFrom = !string.IsNullOrWhiteSpace(fromEmail) ? fromEmail.Trim() : (existing?.DefaultFromEmail ?? "noreply@ozikol.cloud").Trim();
+            var resolvedName = !string.IsNullOrWhiteSpace(fromName) ? fromName.Trim() : (existing?.EmailFromName ?? "Ozikol Business Command Center").Trim();
+
+            var testHtml = $@"
+                <div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;"">
+                    <h2 style=""color: #0050E5; margin: 0 0 12px 0;"">Ozikol Central SMTP Email Diagnostic</h2>
+                    <p style=""color: #334155; font-size: 14px; line-height: 1.6;"">
+                        This is a live test email dispatched from <strong>Ozikol Central Platform Settings</strong> via <strong>{System.Net.WebUtility.HtmlEncode(selectedProvider)}</strong>.
+                    </p>
+                    <p style=""color: #64748b; font-size: 12px; margin-top: 20px;"">
+                        Dispatched at {DateTime.UtcNow:dd MMM yyyy HH:mm:ss} UTC
+                    </p>
+                </div>";
+
+            try
+            {
+                if (_smtpEmailDispatcher == null)
+                {
+                    return new JsonResult(new { success = false, message = "Mailcow SMTP dispatcher is not registered." });
+                }
+
+                var sent = await _smtpEmailDispatcher.SendEmailAsync(
+                    toEmail: recipient,
+                    subject: "Ozikol Central — Live SMTP Email Test",
+                    htmlBody: testHtml,
+                    fromEmail: resolvedFrom,
+                    fromName: resolvedName,
+                    isCentralPlatformEmail: true);
+
+                if (sent)
+                {
+                    return new JsonResult(new { success = true, message = $"Test email delivered to '{recipient}' via Mailcow / SMTP." });
+                }
+
+                return new JsonResult(new { success = false, message = "SMTP delivery failed. Check SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD in your environment/.env configuration." });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Email test error: {ex.Message}" });
             }
         }
     }

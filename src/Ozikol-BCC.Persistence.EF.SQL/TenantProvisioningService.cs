@@ -515,6 +515,255 @@ END";
                 );
             }
 
+            // 7. Seed Compulsory Staff Types for Workforce Rota
+            if (!await dbContext.BcpStaffTypes.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpStaffTypes.AddRange(
+                    new BcpStaffType
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Permanent",
+                        Code = "permanent",
+                        Description = "Permanent contract staff member with standardized full-time or part-time baseline hours.",
+                        DefaultContractedHours = 40.0m,
+                        IsCompulsory = true,
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpStaffType
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Temporary",
+                        Code = "temporary",
+                        Description = "Temporary, casual, or zero-hours staff assigned to seasonal or flexible shift deployments.",
+                        DefaultContractedHours = 0.0m,
+                        IsCompulsory = true,
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpStaffType
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Contractor",
+                        Code = "contractor",
+                        Description = "External agency contractor or freelance specialist deployed for targeted customer post orders.",
+                        DefaultContractedHours = 0.0m,
+                        IsCompulsory = false,
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                );
+            }
+
+            // 8. Seed Default Operational Job Roles
+            if (!await dbContext.BcpJobRoles.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpJobRoles.AddRange(
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "SIA Door Supervisor",
+                        Code = "DS",
+                        Description = "Licensed door supervisor managing access control, patron safety, and front-of-house security.",
+                        DefaultHourlyRate = 15.00m,
+                        BillingChargeRate = 22.50m,
+                        MandatorySiaSector = "Door Supervision",
+                        BadgeColor = "#0050E5",
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Static Security Guard",
+                        Code = "SG",
+                        Description = "Manned guarding for corporate offices, reception desks, and perimeter patrol routes.",
+                        DefaultHourlyRate = 13.50m,
+                        BillingChargeRate = 20.00m,
+                        MandatorySiaSector = "Security Guarding",
+                        BadgeColor = "#059669",
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "CCTV Controller",
+                        Code = "CCTV",
+                        Description = "Licensed control room operator monitoring live video feeds, intrusion alarms, and remote dispatches.",
+                        DefaultHourlyRate = 16.00m,
+                        BillingChargeRate = 24.00m,
+                        MandatorySiaSector = "CCTV",
+                        BadgeColor = "#7C3AED",
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Mobile Patrol Officer",
+                        Code = "MPO",
+                        Description = "Vehicle-equipped patrol specialist conducting scheduled lockups, unlocks, and alarm responses.",
+                        DefaultHourlyRate = 14.50m,
+                        BillingChargeRate = 21.50m,
+                        MandatorySiaSector = "Security Guarding",
+                        BadgeColor = "#2563EB",
+                        IsActive = true,
+                        SortOrder = 4,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Event Steward",
+                        Code = "ES",
+                        Description = "Crowd management, ticket verification, and hospitality guidance for events and festivals.",
+                        DefaultHourlyRate = 12.50m,
+                        BillingChargeRate = 18.00m,
+                        MandatorySiaSector = "None",
+                        BadgeColor = "#D97706",
+                        IsActive = true,
+                        SortOrder = 5,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpJobRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Title = "Healthcare / Care Worker",
+                        Code = "HCW",
+                        Description = "Certified care worker providing residential and post care support.",
+                        DefaultHourlyRate = 16.50m,
+                        BillingChargeRate = 25.00m,
+                        MandatorySiaSector = "None",
+                        BadgeColor = "#EC4899",
+                        IsActive = true,
+                        SortOrder = 6,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                );
+            }
+
+            // 9. Seed Default Workforce Policy Setting
+            if (!await dbContext.BcpWorkforcePolicySettings.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpWorkforcePolicySettings.Add(new BcpWorkforcePolicySetting
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = cleanKey,
+                    StandardWeeklyHours = 40.0m,
+                    MaxPermissibleWeeklyHours = 48.0m,
+                    MaxConsecutiveWorkingDays = 6,
+                    Enforce48HourWeeklyCap = true,
+                    DayShiftStart = "07:00",
+                    DayShiftEnd = "19:00",
+                    NightShiftStart = "19:00",
+                    NightShiftEnd = "07:00",
+                    NightPremiumHourlyAllowance = 1.50m,
+                    EnableNightPremium = false,
+                    BreakMinutesFor6Hours = 30,
+                    BreakMinutesFor8Hours = 45,
+                    BreakMinutesFor12Hours = 60,
+                    IsBreakPaid = false,
+                    BreakLoggingMode = "AutomaticDeduction",
+                    RequireUniformSizes = true,
+                    RequireDrivingLicense = true,
+                    RequireMedicalAllergies = true,
+                    RequireDbsCriminalDisclosure = true,
+                    CreatedUtc = DateTime.UtcNow
+                });
+            }
+
+            // 10. Seed Baseline Compliance Document Categories
+            if (!await dbContext.BcpDocumentCategories.AnyAsync(cancellationToken))
+            {
+                var cleanKey = request.TenantKey?.Trim().ToLowerInvariant() ?? "default";
+                dbContext.BcpDocumentCategories.AddRange(
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Right to Work / Passport",
+                        Code = "RTW",
+                        Description = "Proof of legal eligibility to work (Passport scan, Share Code, Biometric Residence Permit).",
+                        IsMandatory = true,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 1,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Proof of Address",
+                        Code = "POA",
+                        Description = "Official proof of residential address issued within the last 3 months (Utility bill, bank statement, council tax).",
+                        IsMandatory = false,
+                        RequiresExpiryDate = false,
+                        IsActive = true,
+                        SortOrder = 2,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Professional License / Registration",
+                        Code = "LIC",
+                        Description = "Industry license, badge, or regulatory registration (e.g. SIA License, CSCS Card, Nursing PIN, Driver License).",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 3,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Background Check / DBS",
+                        Code = "VET",
+                        Description = "Criminal record vetting, DBS disclosure, or police clearance documentation.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 4,
+                        CreatedUtc = DateTime.UtcNow
+                    },
+                    new BcpDocumentCategory
+                    {
+                        Id = Guid.CreateVersion7(),
+                        TenantKey = cleanKey,
+                        Name = "Training & Certifications",
+                        Code = "TRN",
+                        Description = "Vocational certifications, First Aid at Work, Fire Safety, and specialist qualifications.",
+                        IsMandatory = false,
+                        RequiresExpiryDate = true,
+                        IsActive = true,
+                        SortOrder = 5,
+                        CreatedUtc = DateTime.UtcNow
+                    }
+                );
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
     }

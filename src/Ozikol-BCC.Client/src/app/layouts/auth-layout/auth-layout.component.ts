@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Title, Meta } from '@angular/platform-browser';
@@ -21,7 +21,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
   standalone: true,
   imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
-    <div class="auth-viewport" [style.--auth-bg]="'url(' + activeBackground + ')'" [class.mode-centered]="isCentered">
+    <div class="auth-viewport" [style.--auth-bg]="'url(' + activeBackground + ')'" [class.mode-centered]="isCentered" [class.mode-preview]="previewMode">
       <!-- Ambient Backdrop Overlay -->
       <div class="auth-backdrop-overlay"></div>
 
@@ -102,9 +102,12 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
         <!-- ============================================== -->
         <main class="auth-form-panel">
           <div class="form-panel-scroll">
-            <div class="form-wrapper">
+            <div class="form-wrapper" [class.wide-embedded-form]="embeddedMode">
+              <!-- Injected Form Content (Registration / Workforce Onboarding) -->
+              <ng-content></ng-content>
+
               <!-- Routed Auth View (Login, 2FA, Reset Password, Register) -->
-              <router-outlet></router-outlet>
+              <router-outlet *ngIf="!embeddedMode"></router-outlet>
 
               <!-- Universal Form Footer Note & Powered by Ozikol -->
               <div class="form-footer-meta">
@@ -159,6 +162,15 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
+    :host.preview-host {
+      width: 100%;
+      height: auto;
+      min-height: 600px;
+      max-height: none;
+      overflow: visible;
+      border-radius: 12px;
+    }
+
     .auth-viewport {
       position: relative;
       width: 100vw;
@@ -170,6 +182,52 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
       background-position: center center;
       background-repeat: no-repeat;
       display: flex;
+    }
+
+    .auth-viewport.mode-preview {
+      width: 100%;
+      height: auto;
+      min-height: 600px;
+      max-height: none;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    .auth-viewport.mode-preview .centered-return-home,
+    .auth-viewport.mode-preview .auth-top-floating-bar {
+      position: absolute;
+    }
+
+    .auth-viewport.mode-preview .auth-split-layout {
+      height: auto;
+      min-height: 600px;
+      max-height: none;
+      grid-template-columns: 0.9fr 1.1fr;
+    }
+
+    .auth-viewport.mode-preview .auth-showcase-panel {
+      height: auto;
+      min-height: 600px;
+      max-height: none;
+      padding: 28px 24px;
+    }
+
+    .auth-viewport.mode-preview .showcase-hero .hero-title {
+      font-size: 24px;
+    }
+
+    .auth-viewport.mode-preview .auth-form-panel {
+      height: auto;
+      min-height: 600px;
+      max-height: none;
+    }
+
+    .form-wrapper.wide-embedded-form {
+      max-width: 720px;
+    }
+
+    .auth-viewport.mode-centered .auth-form-panel:has(.wide-embedded-form) {
+      max-width: 740px;
     }
 
     .auth-backdrop-overlay {
@@ -859,6 +917,14 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
   `]
 })
 export class AuthLayoutComponent implements OnInit, OnDestroy {
+  @Input() embeddedMode: boolean = false;
+  @Input() previewMode: boolean = false;
+
+  @HostBinding('class.preview-host')
+  get isPreviewHost(): boolean {
+    return this.previewMode;
+  }
+
   brandName: string = 'Workspace';
   websiteTitle: string = '';
   brandLogoUrl: string = '';

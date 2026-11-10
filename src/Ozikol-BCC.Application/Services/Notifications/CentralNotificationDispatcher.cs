@@ -413,9 +413,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
             NotificationDispatchResult result,
             CancellationToken cancellationToken)
         {
-            if (_smtpEmailDispatcher == null && _emailService == null)
+            if (_smtpEmailDispatcher == null)
             {
-                result.Errors.Add("No transactional email dispatch service (Mailcow SMTP or Postmark) is registered in the service container.");
+                result.Errors.Add("Mailcow SMTP email dispatch service is not registered in the service container.");
                 return;
             }
 
@@ -503,36 +503,40 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         }
                     }
 
-                    if (_smtpEmailDispatcher != null)
+                    // Resolve tenant sender address and Mailcow mailbox credentials from MisConfigurationSettings
+                    var siteConfig = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                    string fromAddress;
+                    if (!string.IsNullOrWhiteSpace(siteConfig?.SenderEmail))
                     {
-                        var fromAddress = !string.IsNullOrWhiteSpace(payload.TenantKey)
-                            ? $"noreply@{payload.TenantKey}.ozikol.cloud"
-                            : "noreply@ozikol.cloud";
-
-                        var sent = await _smtpEmailDispatcher.SendEmailAsync(
-                            toEmail: email,
-                            subject: safeSubject,
-                            htmlBody: htmlBody,
-                            fromEmail: fromAddress,
-                            fromName: tenantBrand,
-                            replyTo: null,
-                            isCentralPlatformEmail: false,
-                            tenantName: tenantBrand,
-                            tenantAdminEmail: null,
-                            cancellationToken: cancellationToken);
-
-                        if (!sent)
-                        {
-                            throw new InvalidOperationException($"SMTP delivery to {email} returned non-success.");
-                        }
+                        fromAddress = siteConfig.SenderEmail.Trim().ToLowerInvariant();
                     }
-                    else if (_emailService != null)
+                    else if (!string.IsNullOrWhiteSpace(payload.TenantKey))
                     {
-                        await _emailService.SendHtmlEmailAsync(
-                            to: email,
-                            subject: safeSubject,
-                            htmlBody: htmlBody,
-                            tag: $"notification-{severityLabel.ToLowerInvariant()}");
+                        fromAddress = $"noreply@{payload.TenantKey.Trim().ToLowerInvariant()}.ozikol.cloud";
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Tenant sender address is not configured. Expected 'noreply@{tenantKey}.ozikol.cloud'.");
+                    }
+
+                    // Dispatch strictly via Mailcow SMTP with tenant mailbox credentials (falling back to platform relay if blank)
+                    var sent = await _smtpEmailDispatcher.SendEmailAsync(
+                        toEmail: email,
+                        subject: safeSubject,
+                        htmlBody: htmlBody,
+                        fromEmail: fromAddress,
+                        fromName: !string.IsNullOrWhiteSpace(siteConfig?.SenderName) ? siteConfig.SenderName.Trim() : tenantBrand,
+                        replyTo: null,
+                        isCentralPlatformEmail: false,
+                        tenantName: tenantBrand,
+                        tenantAdminEmail: null,
+                        cancellationToken: cancellationToken,
+                        smtpUsernameOverride: siteConfig?.SmtpUsername,
+                        smtpPasswordOverride: siteConfig?.SmtpPassword);
+
+                    if (!sent)
+                    {
+                        throw new InvalidOperationException($"Mailcow SMTP delivery to '{email}' from '{fromAddress}' returned failure. Please verify Mailcow server connectivity and sender ACL permissions.");
                     }
 
                     _dbContext.BcpEmailQueue.Add(new BcpEmailQueue

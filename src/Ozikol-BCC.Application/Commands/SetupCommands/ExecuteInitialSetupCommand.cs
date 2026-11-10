@@ -41,21 +41,24 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
         private readonly DashboardDbContext _context;
         private readonly UserManager<Profile> _userManager;
         private readonly RoleManager<AppRole> _roleManager;
-        private readonly DefaultTenantSeeder _defaultTenantSeeder;
+
         private readonly IConfiguration _configuration;
+        /// <summary>
+        /// Provides seeding of default tenant data such as web pages and sections.
+        /// </summary>
+        private readonly DefaultTenantSeeder _defaultTenantSeeder;
 
         public ExecuteInitialSetupCommandHandler(
             DashboardDbContext context,
             UserManager<Profile> userManager,
             RoleManager<AppRole> roleManager,
-            DefaultTenantSeeder defaultTenantSeeder,
-            IConfiguration configuration)
+            IConfiguration configuration, DefaultTenantSeeder defaultTenantSeeder)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-            _defaultTenantSeeder = defaultTenantSeeder;
             _configuration = configuration;
+            _defaultTenantSeeder = defaultTenantSeeder;
         }
 
         public async Task<SetupResultDto> Handle(ExecuteInitialSetupCommand request, CancellationToken cancellationToken)

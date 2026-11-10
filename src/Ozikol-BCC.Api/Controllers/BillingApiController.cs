@@ -201,9 +201,13 @@ namespace Ozikol_BCC.Api.Controllers
                 _ => (feature.MonthlyPrice > 0m ? feature.MonthlyPrice : (feature.YearlyPrice > 0m ? feature.YearlyPrice : 0m))
             };
 
-            decimal effectiveUsdPrice = (tenant.UseCustomPricing && existing?.CustomPriceOverride != null)
-                ? existing.CustomPriceOverride.Value
-                : catalogPrice;
+            bool isFlatRateActive = tenant.HasFlatRatePlan && (!tenant.FlatRateExpiresAtUtc.HasValue || tenant.FlatRateExpiresAtUtc.Value > now);
+
+            decimal effectiveUsdPrice = isFlatRateActive
+                ? 0m
+                : ((tenant.UseCustomPricing && existing?.CustomPriceOverride != null)
+                    ? existing.CustomPriceOverride.Value
+                    : catalogPrice);
 
             int catalogTrialDays = Math.Max(0, feature.FreeTrialDays);
             bool hasCustomTrialOverride = existing?.CustomFreeTrialDaysOverride != null;
@@ -212,17 +216,18 @@ namespace Ozikol_BCC.Api.Controllers
                 : catalogTrialDays;
 
             bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
-            // Free trial can ONLY start if the tenant has not already used it AND effectiveFreeTrialDays > 0!
-            bool startFirstTimeTrial = targetActive && !hasUsedFreeTrial && effectiveFreeTrialDays > 0;
+            // Free trial can ONLY start if the tenant has not already used it AND effectiveFreeTrialDays > 0, and not on flat-rate plan
+            bool startFirstTimeTrial = targetActive && !isFlatRateActive && !hasUsedFreeTrial && effectiveFreeTrialDays > 0;
 
             // Safeguard: If activating a capability when no first-time free trial applies,
-            // only allow re-enabling if the tenant already holds an unexpired paid subscription that is currently suspended.
+            // only allow re-enabling if the tenant already holds an unexpired paid subscription that is currently suspended,
+            // or if the tenant is covered by an All-Inclusive Flat-Rate Master Plan.
             // If it is 0 days free trial, tenant MUST pay via Paystack to activate!
-            bool hasUnexpiredPaidTerm = existing != null
+            bool hasUnexpiredPaidTerm = (existing != null
                 && !existing.IsTrialPeriod
                 && !string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase)
                 && existing.ExpiresAtUtc > now
-                && !currentlyActive;
+                && !currentlyActive) || isFlatRateActive;
 
             if (targetActive && effectiveUsdPrice > 0m && !startFirstTimeTrial && !hasUnexpiredPaidTerm)
             {
@@ -284,12 +289,12 @@ namespace Ozikol_BCC.Api.Controllers
                     DurationType = cadence,
                     RecurringPrice = effectiveUsdPrice,
                     StartsAtUtc = now,
-                    ExpiresAtUtc = feature.IsCompulsory ? DateTime.MaxValue : now.AddDays(effectiveFreeTrialDays),
+                    ExpiresAtUtc = (feature.IsCompulsory || isFlatRateActive) ? (tenant.FlatRateExpiresAtUtc ?? DateTime.MaxValue) : now.AddDays(effectiveFreeTrialDays),
                     AutoRenew = true,
                     IsActive = targetActive,
-                    Status = targetActive ? (feature.IsCompulsory ? "Active" : "Trial") : "Suspended",
+                    Status = targetActive ? ((feature.IsCompulsory || isFlatRateActive) ? "Active" : "Trial") : "Suspended",
                     HasUsedFreeTrial = true,
-                    IsTrialPeriod = !feature.IsCompulsory,
+                    IsTrialPeriod = !feature.IsCompulsory && !isFlatRateActive,
                     IsAvailableForUseOverride = tenant.UseCustomAvailability && targetActive ? true : null,
                     CreatedUtc = now
                 };
@@ -330,9 +335,9 @@ namespace Ozikol_BCC.Api.Controllers
                 updatedSnapshot!,
                 targetActive
                     ? (startFirstTimeTrial
-                        ? $"'{feature.Name}' is now active on your {effectiveFreeTrialDays}-Day Free Trial! Test all capabilities before payment is required."
-                        : $"'{feature.Name}' has been installed and activated. It is now available in your workspace menu.")
-                    : $"'{feature.Name}' has been deactivated and removed from your workspace menu."));
+                        ? $"'{feature.Name}' is now active ({effectiveFreeTrialDays}-Day Free Trial)."
+                        : $"'{feature.Name}' is now active.")
+                    : $"'{feature.Name}' has been deactivated."));
         }
 
         /// <summary>

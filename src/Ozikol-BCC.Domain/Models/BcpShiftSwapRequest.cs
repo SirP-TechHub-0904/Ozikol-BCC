@@ -9,7 +9,7 @@ namespace Ozikol_BCC.Domain.Models
     /// Handles guard requests to trade shifts or claim open rosters with multi-step supervisor approval.
     /// Table: [dbo].[BcpShiftSwapRequests]
     /// </summary>
-    public class BcpShiftSwapRequest
+    public class BcpShiftSwapRequest : IBcpWorkforceEntity
     {
         /// <summary>
         /// Unique primary key identifier for the swap request.
@@ -100,6 +100,11 @@ namespace Ozikol_BCC.Domain.Models
         /// Timestamp when the swap request was submitted in UTC.
         /// </summary>
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Timestamp when the swap request was last modified in UTC.
+        /// </summary>
+        public DateTime? UpdatedUtc { get; set; }
     }
 }
 

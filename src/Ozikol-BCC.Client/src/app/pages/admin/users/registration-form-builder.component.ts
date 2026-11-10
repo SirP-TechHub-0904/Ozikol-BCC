@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { LandingComponent } from '../../landing/landing.component';
+import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
 
 interface RegistrationField {
   id: string;
@@ -44,6 +46,7 @@ interface RegistrationPolicy {
   enableAffiliateReferralCode?: boolean;
   defaultIndustrySector?: string;
   // Presentation & Flow Architecture (Card 3)
+  pageShellLayout?: 'website' | 'auth';
   formLayoutMode: 'single' | 'sections' | 'stepper' | 'pages';
   requirePassword: boolean;
   allowSaveAndContinue: boolean;
@@ -75,7 +78,7 @@ interface IndustryTemplate {
 @Component({
   selector: 'app-registration-form-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent],
   template: `
     <div class="rf-builder-container">
       <!-- Page Header -->
@@ -287,6 +290,65 @@ interface IndustryTemplate {
                 <span class="material-symbols-outlined">{{ savingPolicy ? 'hourglass_top' : 'save' }}</span>
                 <span>{{ savingPolicy ? 'Saving...' : 'Save Layout & Policies' }}</span>
               </button>
+            </div>
+
+            <!-- =========================================================== -->
+            <!-- ROW 0: PAGE SHELL LAYOUT (WEBSITE LAYOUT VS. AUTH LAYOUT)    -->
+            <!-- =========================================================== -->
+            <div class="rf-builder-row">
+              <div class="rf-row-header">
+                <span class="rf-row-num">SHELL</span>
+                <span class="rf-row-title">PAGE SHELL LAYOUT (WEBSITE LAYOUT VS. AUTH LAYOUT)</span>
+                <span class="rf-row-hint">Choose which live master layout wraps your registration &amp; workforce onboarding form</span>
+              </div>
+
+              <div class="rf-layout-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <!-- Shell Option 1: Website Layout -->
+                <div class="rf-layout-card"
+                     [class.selected]="policy.pageShellLayout !== 'auth'"
+                     (click)="selectPageShellLayout('website')">
+                  <div class="rf-layout-radio">
+                    <span class="material-symbols-outlined rf-radio-dot">{{ policy.pageShellLayout !== 'auth' ? 'radio_button_checked' : 'radio_button_unchecked' }}</span>
+                    <span class="rf-layout-badge badge-blue">Live Website Shell</span>
+                  </div>
+                  <div class="rf-layout-main">
+                    <div class="rf-layout-icon-wrap bg-blue-subtle">
+                      <span class="material-symbols-outlined text-blue">language</span>
+                    </div>
+                    <h4 class="rf-layout-title">Website Layout (Header, Menu &amp; Footer)</h4>
+                    <p class="rf-layout-desc">Injects the registration form directly inside your active public Website Layout between the live navigation bar, breadcrumb banner, and footer.</p>
+                  </div>
+                  <div class="rf-layout-footer" style="justify-content: flex-end;">
+                    <button type="button" class="rf-btn-view-sample" (click)="openFullScreenPreview('website', $event)">
+                      <span class="material-symbols-outlined">open_in_full</span>
+                      <span>View Full Screen</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Shell Option 2: Auth Layout -->
+                <div class="rf-layout-card"
+                     [class.selected]="policy.pageShellLayout === 'auth'"
+                     (click)="selectPageShellLayout('auth')">
+                  <div class="rf-layout-radio">
+                    <span class="material-symbols-outlined rf-radio-dot">{{ policy.pageShellLayout === 'auth' ? 'radio_button_checked' : 'radio_button_unchecked' }}</span>
+                    <span class="rf-layout-badge badge-purple">Live Auth Split Shell</span>
+                  </div>
+                  <div class="rf-layout-main">
+                    <div class="rf-layout-icon-wrap bg-purple-subtle">
+                      <span class="material-symbols-outlined text-purple">dock_to_left</span>
+                    </div>
+                    <h4 class="rf-layout-title">Auth Layout (Brand Showcase &amp; Form Split)</h4>
+                    <p class="rf-layout-desc">Injects the registration form directly into your official Auth Layout beside the dark brand showcase panel, feature highlights, and trust footer.</p>
+                  </div>
+                  <div class="rf-layout-footer" style="justify-content: flex-end;">
+                    <button type="button" class="rf-btn-view-sample" (click)="openFullScreenPreview('auth', $event)">
+                      <span class="material-symbols-outlined">open_in_full</span>
+                      <span>View Full Screen</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- =========================================================== -->
@@ -852,6 +914,27 @@ interface IndustryTemplate {
                 <span>INTERACTIVE "GET STARTED" SANDBOX</span>
               </div>
               <div class="rf-preview-bar-actions">
+                <div style="display:inline-flex;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:2px;gap:2px;">
+                  <button type="button" (click)="selectPageShellLayout('website')"
+                          [style.background]="policy.pageShellLayout !== 'auth' ? '#0050E5' : 'transparent'"
+                          [style.color]="policy.pageShellLayout !== 'auth' ? '#ffffff' : '#475569'"
+                          style="border:none;border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+                    <span class="material-symbols-outlined" style="font-size:13px;">language</span>
+                    <span>Website Layout</span>
+                  </button>
+                  <button type="button" (click)="selectPageShellLayout('auth')"
+                          [style.background]="policy.pageShellLayout === 'auth' ? '#0050E5' : 'transparent'"
+                          [style.color]="policy.pageShellLayout === 'auth' ? '#ffffff' : '#475569'"
+                          style="border:none;border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+                    <span class="material-symbols-outlined" style="font-size:13px;">dock_to_left</span>
+                    <span>Auth Layout</span>
+                  </button>
+                </div>
+                <button type="button" (click)="showFullScreenPreview = true"
+                        style="background:#0050E5;color:#ffffff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 6px rgba(0,80,229,0.25);">
+                  <span class="material-symbols-outlined" style="font-size:14px;">open_in_full</span>
+                  <span>View Full Screen</span>
+                </button>
                 <button type="button" class="rf-btn-sim-autofill" (click)="autoFillSimulation()" title="Auto-fill sandbox with realistic test data">
                   <span class="material-symbols-outlined">magic_button</span>
                   <span>Auto-Fill Sample</span>
@@ -864,7 +947,40 @@ interface IndustryTemplate {
               </div>
             </div>
 
-            <!-- Simulated Public Registration Screen -->
+            <!-- Active Shell Indicator Banner in Narrow Sidebar Preview -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11.5px;color:#334155;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;color:#0050E5;">{{ policy.pageShellLayout === 'auth' ? 'dock_to_left' : 'language' }}</span>
+                <span>Active Page Shell: <strong style="color:#0f172a;">{{ policy.pageShellLayout === 'auth' ? 'Auth Layout (Split Screen)' : 'Website Layout (Header & Footer)' }}</strong></span>
+              </div>
+              <button type="button" (click)="showFullScreenPreview = true"
+                      style="background:#eff6ff;color:#0050E5;border:1px solid #bfdbfe;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+                <span class="material-symbols-outlined" style="font-size:13px;">open_in_full</span>
+                <span>Preview Full Desktop Layout</span>
+              </button>
+            </div>
+
+            <!-- Live Injected Outer Layout Shell in Sidebar -->
+            <div style="width:100%;max-height:780px;overflow-y:auto;overflow-x:hidden;border-radius:12px;border:1px solid #334155;background:#f8fafc;">
+              <app-landing *ngIf="policy.pageShellLayout !== 'auth'"
+                           [embeddedShellMode]="true"
+                           [previewMode]="true"
+                           [embeddedPageTitle]="policy.registrationFormTitle || 'Create Your Account'"
+                           [embeddedPageSubtitle]="policy.registrationWelcomeMessage || 'Join our member directory and workspace portal.'">
+                <div style="max-width: 580px; margin: 0 auto;">
+                  <ng-container *ngTemplateOutlet="liveSimFormCard"></ng-container>
+                </div>
+              </app-landing>
+
+              <app-auth-layout *ngIf="policy.pageShellLayout === 'auth'"
+                               [embeddedMode]="true"
+                               [previewMode]="true">
+                <ng-container *ngTemplateOutlet="liveSimFormCard"></ng-container>
+              </app-auth-layout>
+            </div>
+
+            <!-- Simulated Public Registration Form Card Template -->
+            <ng-template #liveSimFormCard>
             <div class="rf-sim-card">
               
               <!-- Draft Saved Toast/Alert -->
@@ -1040,6 +1156,15 @@ interface IndustryTemplate {
                     </a>
                   </div>
 
+                  <!-- Google reCAPTCHA Anti-Bot Protection -->
+                  <div class="rf-sim-recaptcha-box">
+                    <label class="rf-sim-recaptcha-check" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" [(ngModel)]="simModel.reCaptchaChecked" style="cursor: pointer;" />
+                      <span class="material-symbols-outlined rf-recaptcha-shield">verified_user</span>
+                      <span style="font-size: 11px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
+                    </label>
+                  </div>
+
                   <!-- Single Submit Button -->
                   <button type="button" class="rf-sim-btn rf-sim-btn-finish" (click)="testSubmitSimulation()">
                     <span class="material-symbols-outlined">how_to_reg</span>
@@ -1139,6 +1264,15 @@ interface IndustryTemplate {
                       <span class="material-symbols-outlined">bookmark</span>
                       <span>Save &amp; Continue Later</span>
                     </a>
+                  </div>
+
+                  <!-- Google reCAPTCHA Anti-Bot Protection -->
+                  <div class="rf-sim-recaptcha-box">
+                    <label class="rf-sim-recaptcha-check" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" [(ngModel)]="simModel.reCaptchaChecked" style="cursor: pointer;" />
+                      <span class="material-symbols-outlined rf-recaptcha-shield">verified_user</span>
+                      <span style="font-size: 11px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
+                    </label>
                   </div>
 
                   <button type="button" class="rf-sim-btn rf-sim-btn-finish" (click)="testSubmitSimulation()">
@@ -1432,6 +1566,7 @@ interface IndustryTemplate {
                 </div>
               </div>
             </div>
+            </ng-template>
           </div>
         </div>
       </div>
@@ -2253,6 +2388,77 @@ interface IndustryTemplate {
         </div>
       </div>
 
+      <!-- ============================================================= -->
+      <!-- FULL-SCREEN LIVE DESKTOP LAYOUT PREVIEW MODAL POPUP           -->
+      <!-- ============================================================= -->
+      <div *ngIf="showFullScreenPreview"
+           style="position:fixed;inset:0;z-index:99999;background:#0f172a;display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Top Full-Screen Preview Control Bar -->
+        <div style="height:56px;min-height:56px;background:#0f172a;border-bottom:1px solid #1e293b;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;color:#ffffff;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="rf-pulse-dot"></span>
+            <strong style="font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Full-Screen Desktop Preview (Single Source of Truth)</strong>
+            <span style="background:#1e293b;color:#93c5fd;border:1px solid #334155;border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:700;">
+              {{ getLayoutTitle(policy.formLayoutMode) }}
+            </span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;">
+            <!-- Switch between Website Layout & Auth Layout live -->
+            <div style="display:inline-flex;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:3px;gap:4px;">
+              <button type="button" (click)="selectPageShellLayout('website')"
+                      [style.background]="policy.pageShellLayout !== 'auth' ? '#0050E5' : 'transparent'"
+                      [style.color]="policy.pageShellLayout !== 'auth' ? '#ffffff' : '#cbd5e1'"
+                      style="border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:15px;">language</span>
+                <span>Website Layout</span>
+              </button>
+              <button type="button" (click)="selectPageShellLayout('auth')"
+                      [style.background]="policy.pageShellLayout === 'auth' ? '#0050E5' : 'transparent'"
+                      [style.color]="policy.pageShellLayout === 'auth' ? '#ffffff' : '#cbd5e1'"
+                      style="border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:15px;">dock_to_left</span>
+                <span>Auth Layout</span>
+              </button>
+            </div>
+
+            <button type="button" class="rf-btn-sim-autofill" (click)="autoFillSimulation()" style="height:34px;padding:0 12px;font-size:12px;">
+              <span class="material-symbols-outlined" style="font-size:15px;">magic_button</span>
+              <span>Auto-Fill Sample</span>
+            </button>
+
+            <button type="button" class="rf-btn-sim-reset" (click)="resetSimulation()" style="height:34px;padding:0 12px;font-size:12px;">
+              <span class="material-symbols-outlined" style="font-size:15px;">restart_alt</span>
+              <span>Reset Test</span>
+            </button>
+
+            <button type="button" (click)="showFullScreenPreview = false"
+                    style="background:#ef4444;color:#ffffff;border:none;border-radius:8px;height:34px;padding:0 14px;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <span class="material-symbols-outlined" style="font-size:16px;">close_fullscreen</span>
+              <span>Exit Full Screen</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Full-Viewport Desktop Layout Canvas -->
+        <div style="flex:1;overflow-y:auto;background:#f8fafc;width:100%;">
+          <app-landing *ngIf="policy.pageShellLayout !== 'auth'"
+                       [embeddedShellMode]="true"
+                       [previewMode]="true"
+                       [embeddedPageTitle]="policy.registrationFormTitle || 'Create Your Account'"
+                       [embeddedPageSubtitle]="policy.registrationWelcomeMessage || 'Join our member directory and workspace portal.'">
+            <div style="max-width: 580px; margin: 0 auto;">
+              <ng-container *ngTemplateOutlet="liveSimFormCard"></ng-container>
+            </div>
+          </app-landing>
+
+          <app-auth-layout *ngIf="policy.pageShellLayout === 'auth'"
+                           [embeddedMode]="true">
+            <ng-container *ngTemplateOutlet="liveSimFormCard"></ng-container>
+          </app-auth-layout>
+        </div>
+      </div>
+
   `,
   styles: [`
     .rf-builder-container {
@@ -2518,9 +2724,13 @@ interface IndustryTemplate {
     /* Split Workspace */
     .rf-split-workspace {
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
       gap: 24px;
       align-items: start;
+    }
+    .rf-column-basic, .rf-column-preview {
+      min-width: 0;
+      max-width: 100%;
     }
     @media (max-width: 1024px) { .rf-split-workspace { grid-template-columns: 1fr; } }
 
@@ -5005,6 +5215,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
     registrationUrlSlug: 'register',
     enableAffiliateReferralCode: true,
     defaultIndustrySector: 'Business & Enterprise',
+    pageShellLayout: 'website',
     formLayoutMode: 'single',
     requirePassword: true,
     allowSaveAndContinue: false,
@@ -5016,6 +5227,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
   // Card 3 State: Layout Modes & Samples
   activeSampleTab: 'single' | 'sections' | 'stepper' | 'pages' = 'single';
   showLayoutModal = false;
+  showFullScreenPreview = false;
   activeTooltip: string | null = null;
   newSectionName = '';
 
@@ -5378,6 +5590,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
         this.closeTemplateModal();
         this.loadFields();
         this.loadPolicy();
+        this.broadcastFormUpdate();
       },
       error: (err) => {
         this.applyingTemplate = false;
@@ -5434,6 +5647,16 @@ export class RegistrationFormBuilderComponent implements OnInit {
   }
 
   /**
+   * Switches the outer Page Shell Layout ('website' | 'auth') and persists it immediately.
+   * @param shell Target outer shell layout ('website' | 'auth').
+   */
+  selectPageShellLayout(shell: 'website' | 'auth'): void {
+    if ((this.policy.pageShellLayout || 'website') === shell) return;
+    this.policy.pageShellLayout = shell;
+    this.savePolicy(true);
+  }
+
+  /**
    * Switches the form presentation layout mode and persists it to the tenant database immediately.
    * @param mode Target layout presentation format ('single' | 'sections' | 'stepper' | 'pages').
    */
@@ -5452,6 +5675,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
     this.api.put<any>('RegistrationFormApi/policy', this.policy).subscribe({
       next: () => {
         this.savingPolicy = false;
+        this.broadcastFormUpdate();
         if (fromLayoutClick) {
           const names: Record<string, string> = {
             single: 'Single Page Form',
@@ -5589,6 +5813,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
           this.toast.success('Question updated successfully.');
           this.closeModal();
           this.loadFields();
+          this.broadcastFormUpdate();
         },
         error: (err) => {
           this.savingField = false;
@@ -5602,6 +5827,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
           this.toast.success('Custom question added to registration form.');
           this.closeModal();
           this.loadFields();
+          this.broadcastFormUpdate();
         },
         error: (err) => {
           this.savingField = false;
@@ -5642,6 +5868,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
 
     this.api.put<any>(`RegistrationFormApi/fields/${field.id}`, payload).subscribe({
       next: () => {
+        this.broadcastFormUpdate();
         this.toast.success(
           newState
             ? `Question "${field.label}" is now active and visible to new registrants.`
@@ -5661,6 +5888,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
         next: () => {
           this.toast.success('Question removed.');
           this.loadFields();
+          this.broadcastFormUpdate();
         },
         error: (err) => {
           this.toast.error(err?.error?.message || 'Could not remove question.');
@@ -5691,9 +5919,28 @@ export class RegistrationFormBuilderComponent implements OnInit {
       sortOrder: idx + 1
     }));
     this.api.put<any>('RegistrationFormApi/fields/reorder', orders).subscribe({
-      next: () => {},
+      next: () => {
+        this.broadcastFormUpdate();
+      },
       error: () => {}
     });
+  }
+
+  /**
+   * Broadcasts a real-time notification across tabs/components whenever the registration form policy,
+   * layout style, or fields are updated so live previews (e.g. Workforce Enroll) refresh immediately.
+   */
+  private broadcastFormUpdate(): void {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ozikol_reg_form_updated_at', Date.now().toString());
+        if ('BroadcastChannel' in window) {
+          const ch = new BroadcastChannel('ozikol_reg_form_sync');
+          ch.postMessage({ updatedAt: Date.now(), policy: this.policy });
+          ch.close();
+        }
+      }
+    } catch {}
   }
 
   getFieldTypeIcon(type: string): string {
@@ -5739,6 +5986,19 @@ export class RegistrationFormBuilderComponent implements OnInit {
     if (event) event.stopPropagation();
     this.activeSampleTab = mode;
     this.showLayoutModal = true;
+  }
+
+  /**
+   * Opens the full-screen desktop preview popup modal for the selected page shell layout.
+   * @param shell Optional shell layout ('website' | 'auth') to select before opening.
+   * @param event Optional DOM event to stop propagation.
+   */
+  openFullScreenPreview(shell?: 'website' | 'auth', event?: Event): void {
+    if (event) event.stopPropagation();
+    if (shell) {
+      this.selectPageShellLayout(shell);
+    }
+    this.showFullScreenPreview = true;
   }
 
   /**

@@ -265,8 +265,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
             this.suppressNextSocketToast = false;
           } else if (this.activePage !== 'invoice-detail' && prevSig !== '' && prevSig !== nextSig) {
             this.toastService.info(
-              'Features Updated',
-              'Capabilities, availability, and menu items updated.'
+              'Feature Active',
+              'Feature active.'
             );
           }
         }
@@ -356,7 +356,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
     // If activating or renewing a paid capability when no first-time free trial applies,
     // launch the Central Paystack Inline Checkout instead of bypassing payment.
-    if (desiredState && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
+    // (Bypassed if tenant holds an active All-Inclusive Flat-Rate Plan)
+    if (desiredState && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial && !this.snapshot?.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) {
       this.payAndRenewFeature(feat);
       return;
     }
@@ -385,13 +386,13 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           }
           if (desiredState) {
             this.toastService.success(
-              feat.isEligibleForFreeTrial ? 'Free Trial Started & Activated' : 'Capability Installed & Activated',
-              res.message || `'${feat.name}' is now Active and visible in your sidebar menu.`
+              'Feature Active',
+              `'${feat.name}' is now active.`
             );
           } else {
             this.toastService.info(
-              'Capability Deactivated',
-              `'${feat.name}' has been deactivated and removed from your sidebar menu.`
+              'Feature Deactivated',
+              `'${feat.name}' has been deactivated.`
             );
           }
           // Refresh the page state & snapshot so UI immediately updates
@@ -1106,6 +1107,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   getFeatureDisplayAmount(feat: BillingFeatureItem): number {
     if (!feat) return 0;
+    if (this.snapshot?.hasFlatRatePlan || feat.isIncludedInFlatRatePlan) return 0;
     if (feat.effectivePrice && feat.effectivePrice > 0) {
       return Number(feat.effectivePrice);
     }
@@ -1124,6 +1126,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   getFeatureDurationLabel(feat: BillingFeatureItem): string {
     if (!feat) return 'Monthly';
+    if (this.snapshot?.hasFlatRatePlan || feat.isIncludedInFlatRatePlan) {
+      return this.snapshot?.flatRateCadence || 'Yearly';
+    }
     const cadence = (feat.billingCadence || '').trim().toLowerCase();
     if (cadence === 'yearly' || (feat.monthlyPrice <= 0 && feat.yearlyPrice > 0)) {
       return 'Yearly';

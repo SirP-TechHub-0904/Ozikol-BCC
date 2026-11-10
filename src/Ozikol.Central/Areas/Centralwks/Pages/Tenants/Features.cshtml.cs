@@ -701,6 +701,76 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         }
 
         /// <summary>
+        /// Configures or toggles the All-Inclusive Flat-Rate Master Plan for this tenant.
+        /// When enabled, all published features are included without individual per-feature charges.
+        /// </summary>
+        public async Task<IActionResult> OnPostConfigureFlatRatePlanAsync(
+            Guid tenantId,
+            bool enable,
+            decimal? price = null,
+            int cadence = 3,
+            int durationMonths = 12,
+            string? planName = null,
+            bool autoRenew = true)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(targetId);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            tenant.HasFlatRatePlan = enable;
+            if (enable)
+            {
+                tenant.FlatRatePrice = price.HasValue ? Math.Max(0m, price.Value) : (tenant.FlatRatePrice ?? 400.00m);
+                tenant.FlatRateCadence = Enum.IsDefined(typeof(SubscriptionBillingDuration), cadence)
+                    ? (SubscriptionBillingDuration)cadence
+                    : SubscriptionBillingDuration.Yearly;
+                tenant.FlatRatePlanName = string.IsNullOrWhiteSpace(planName) ? "All-Inclusive Master Plan" : planName.Trim();
+                tenant.FlatRateAutoRenew = autoRenew;
+
+                var now = DateTime.UtcNow;
+                int monthsToAdd = durationMonths > 0 ? durationMonths : (tenant.FlatRateCadence switch
+                {
+                    SubscriptionBillingDuration.Yearly => 12,
+                    SubscriptionBillingDuration.Quarterly => 3,
+                    _ => 1
+                });
+
+                // If already active in the future, extend; otherwise from now
+                var baseStart = (tenant.FlatRateExpiresAtUtc.HasValue && tenant.FlatRateExpiresAtUtc.Value > now)
+                    ? tenant.FlatRateExpiresAtUtc.Value
+                    : now;
+                tenant.FlatRateExpiresAtUtc = baseStart.AddMonths(monthsToAdd);
+            }
+            tenant.UpdatedUtc = DateTime.UtcNow;
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = enable ? "EnableFlatRatePlan" : "DisableFlatRatePlan",
+                EntityType = "Tenant",
+                EntityId = tenant.Id.ToString(),
+                Summary = enable
+                    ? $"Configured All-Inclusive Master Plan for '{tenant.OrganizationName}': ${tenant.FlatRatePrice:F2} ({tenant.FlatRateCadence}), Expires: {tenant.FlatRateExpiresAtUtc:yyyy-MM-dd}"
+                    : $"Disabled All-Inclusive Master Plan for '{tenant.OrganizationName}', reverting to individual feature billing.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = enable
+                ? $"All-Inclusive Master Plan enabled for {tenant.OrganizationName} (${tenant.FlatRatePrice:F2}/{tenant.FlatRateCadence}, Expires: {tenant.FlatRateExpiresAtUtc:yyyy-MM-dd}). All capabilities are now unlocked!"
+                : $"All-Inclusive Master Plan disabled for {tenant.OrganizationName}.";
+
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
+        }
+
+        /// <summary>
         /// Sets the default billing/display currency for this specific tenant organization.
         /// </summary>
         public async Task<IActionResult> OnPostSetTenantCurrencyAsync(Guid tenantId, string currencyCode)

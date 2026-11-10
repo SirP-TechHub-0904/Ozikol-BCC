@@ -13,10 +13,13 @@ export interface ClientSite {
   longitude?: number;
   geofenceRadiusMeters: number;
   emergencyContactName?: string;
+  emergencyContactEmail?: string;
   emergencyContactPhone?: string;
   siteAssignmentInstructions?: string;
   requiredSiaLicenceType?: string;
   activeShiftsCount: number;
+  clientOrganizationId?: string;
+  clientOrganizationName?: string;
 }
 
 export interface Shift {
@@ -26,6 +29,10 @@ export interface Shift {
   siteName: string;
   siteAddress: string;
   postName: string;
+  facilityName?: string;
+  address?: string;
+  postCode?: string;
+  eventTag?: string;
   assignedUserId?: string;
   assignedUserName?: string;
   startsAtUtc: string;
@@ -33,16 +40,30 @@ export interface Shift {
   isOvernight: boolean;
   breakMinutes: number;
   plannedDurationHours: number;
+  hourlyPayRate?: number;
+  hourlyChargeRate?: number;
   requiredWorkspaceStationId?: string;
   requiredWorkspaceStationName?: string;
   status: string;
   isConfirmedByGuard: boolean;
   confirmedAtUtc?: string;
+  acceptanceDeadlineUtc?: string;
+  acceptanceCountdownMinutes?: number;
   notes?: string;
   siteAssignmentInstructions?: string;
   emergencyContactPhone?: string;
   isClockedIn: boolean;
   isClockedOut: boolean;
+  clockInUtc?: string;
+  clockOutUtc?: string;
+  actualDurationHours?: number;
+  fineAttached?: boolean;
+  fineAmount?: number;
+  fineReason?: string;
+  fineAuthorizedBy?: string;
+  fineStatus?: string;
+  reportSubmissionUtc?: string;
+  reportContent?: string;
 }
 
 export interface LiveDutyMonitorItem {
@@ -71,6 +92,9 @@ export interface ClockInPayload {
   longitude?: number;
   accuracyMeters?: number;
   method?: string;
+  biometricVerified?: boolean;
+  biometricType?: string;
+  photoUrl?: string;
 }
 
 export interface ClockInResult {
@@ -81,6 +105,8 @@ export interface ClockInResult {
   isFlagged: boolean;
   flagReason?: string;
   requiredStationUnlocked: boolean;
+  biometricVerified?: boolean;
+  photoUrl?: string;
 }
 
 export interface ClockOutPayload {
@@ -89,6 +115,7 @@ export interface ClockOutPayload {
   longitude?: number;
   accuracyMeters?: number;
   method?: string;
+  photoUrl?: string;
 }
 
 export interface ClockOutResult {
@@ -124,11 +151,31 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/sites');
   }
 
+  getSiteById(id: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/sites/${id}`);
+  }
+
+  getSiteActivity(siteId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/sites/${siteId}/activity`);
+  }
+
+  getShiftReport(shiftId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/shifts/${shiftId}/report`);
+  }
+
+  submitShiftReport(shiftId: string, payload: any): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/report`, payload);
+  }
+
+  getStaffDutyHistory(userId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/members/${userId}/duty-history`);
+  }
+
   upsertSite(site: Partial<ClientSite>): Observable<any> {
     return this.apiService.post<any>('workforce/sites', site);
   }
 
-  // --- SHIFTS ---
+
   getShifts(filters?: { startDate?: string; endDate?: string; siteId?: string; userId?: string; status?: string }): Observable<any> {
     return this.apiService.get<any>('workforce/shifts', filters);
   }
@@ -137,12 +184,42 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/shifts/my');
   }
 
+  getShift(shiftId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/shifts/${shiftId}`);
+  }
+
   createShift(shift: any): Observable<any> {
     return this.apiService.post<any>('workforce/shifts', shift);
   }
 
+  updateShift(shiftId: string, shift: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/shifts/${shiftId}`, shift);
+  }
+
+  deleteShift(shiftId: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/shifts/${shiftId}`);
+  }
+
+  batchCreateShifts(payload: any): Observable<any> {
+    return this.apiService.post<any>('workforce/shifts/batch-schedule', payload);
+  }
+
   confirmShift(shiftId: string): Observable<any> {
     return this.apiService.post<any>(`workforce/shifts/${shiftId}/confirm`, {});
+  }
+
+  // --- OPEN SHIFTS & CLAIMS ---
+  getOpenShifts(): Observable<any> {
+    return this.apiService.get<any>('workforce/shifts/open');
+  }
+
+  claimShiftDirect(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/claim`, {});
+  }
+
+  // --- TIMESHEETS ---
+  getMyTimesheets(params?: any): Observable<any> {
+    return this.apiService.get<any>('workforce/shifts/timesheets', params);
   }
 
   // --- SWAPS ---
@@ -161,6 +238,10 @@ export class WorkforceService {
   // --- LEAVE ---
   requestLeave(leave: any): Observable<any> {
     return this.apiService.post<any>('workforce/leave', leave);
+  }
+
+  getMyLeaveRequests(): Observable<any> {
+    return this.apiService.get<any>('workforce/leave/my');
   }
 
   // --- ATTENDANCE & GEOFENCE ---
@@ -186,5 +267,169 @@ export class WorkforceService {
 
   validateStationAccess(stationId: string): Observable<any> {
     return this.apiService.get<any>('workforce/attendance/validate-station-access', { stationId });
+  }
+
+  // --- STAFF ENROLLMENT & ROSTER ---
+  enrollMember(member: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/enroll', member);
+  }
+
+  getMembers(): Observable<any> {
+    return this.apiService.get<any>('workforce/members');
+  }
+
+  // --- GRAPHICAL ANALYTICS & KPIS ---
+  getAnalytics(): Observable<any> {
+    return this.apiService.get<any>('workforce/analytics');
+  }
+
+  /**
+   * Retrieves active running currency configured in Central for the tenant.
+   */
+  getTenantCurrency(): Observable<any> {
+    return this.apiService.get<any>('workforce/currency');
+  }
+
+  getCurrency(): Observable<any> {
+    return this.getTenantCurrency();
+  }
+
+  // --- RATINGS & REVIEWS ---
+  submitRating(rating: any): Observable<any> {
+    return this.apiService.post<any>('workforce/ratings', rating);
+  }
+
+  getRatings(userId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/ratings/${userId}`);
+  }
+
+  // --- TRI-STATE AVAILABILITY ---
+  getAvailability(filters?: { userId?: string; fromDate?: string; toDate?: string }): Observable<any> {
+    return this.apiService.get<any>('workforce/availability', filters);
+  }
+
+  upsertAvailability(availability: { targetDate: string; state: string; unavailableFromTime?: string; unavailableToTime?: string; reason?: string }): Observable<any> {
+    return this.apiService.post<any>('workforce/availability', availability);
+  }
+
+  // --- COMPLIANCE & DOCUMENTS ---
+  getDocuments(userId?: string): Observable<any> {
+    return this.apiService.get<any>('workforce/documents', userId ? { userId } : undefined);
+  }
+
+  uploadDocument(doc: { documentType: string; documentName: string; description?: string; fileUrl: string; expiryDateUtc?: string }): Observable<any> {
+    return this.apiService.post<any>('workforce/documents', doc);
+  }
+
+  // --- CUSTOM SHIFT REMINDER PREFERENCES ---
+  getNotificationPreferences(): Observable<any> {
+    return this.apiService.get<any>('workforce/notifications/preferences');
+  }
+
+  updateNotificationPreferences(pref: any): Observable<any> {
+    return this.apiService.post<any>('workforce/notifications/preferences', pref);
+  }
+
+  // --- MEMBER ONBOARDING & ENROLLMENT ---
+  inviteMember(data: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/invite', data);
+  }
+
+  directEnrollMember(data: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/direct-enroll', data);
+  }
+
+  verifyOnboardingToken(token: string, email?: string): Observable<any> {
+    return this.apiService.get<any>('workforce/members/verify-token', { token, email });
+  }
+
+  completeOnboarding(data: any): Observable<any> {
+    return this.apiService.post<any>('workforce/members/complete-onboarding', data);
+  }
+
+  // --- STAFF TYPES GOVERNANCE ---
+  getStaffTypes(): Observable<any> {
+    return this.apiService.get<any>('workforce/staff-types');
+  }
+
+  createStaffType(type: { name: string; code?: string; description?: string; defaultContractedHours?: number; sortOrder?: number }): Observable<any> {
+    return this.apiService.post<any>('workforce/staff-types', type);
+  }
+
+  updateStaffType(id: string, type: { name: string; description?: string; defaultContractedHours?: number; isActive?: boolean; sortOrder?: number }): Observable<any> {
+    return this.apiService.put<any>(`workforce/staff-types/${id}`, type);
+  }
+
+  deleteStaffType(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/staff-types/${id}`);
+  }
+
+  // --- JOB ROLES & PAY RATES ---
+  getJobRoles(): Observable<any> {
+    return this.apiService.get<any>('workforce/job-roles');
+  }
+
+  createJobRole(role: any): Observable<any> {
+    return this.apiService.post<any>('workforce/job-roles', role);
+  }
+
+  updateJobRole(id: string, role: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/job-roles/${id}`, role);
+  }
+
+  deleteJobRole(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/job-roles/${id}`);
+  }
+
+  // --- WORKFORCE OPERATIONAL POLICIES ---
+  getWorkforcePolicies(): Observable<any> {
+    return this.apiService.get<any>('workforce/settings/policies');
+  }
+
+  updateWorkforcePolicies(policy: any): Observable<any> {
+    return this.apiService.put<any>('workforce/settings/policies', policy);
+  }
+
+  // --- CLIENT ORGANIZATIONS ---
+  getClientOrganizations(): Observable<any> {
+    return this.apiService.get<any>('workforce/client-organizations');
+  }
+
+  createClientOrganization(org: any): Observable<any> {
+    return this.apiService.post<any>('workforce/client-organizations', org);
+  }
+
+  updateClientOrganization(id: string, org: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/client-organizations/${id}`, org);
+  }
+
+  deleteClientOrganization(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/client-organizations/${id}`);
+  }
+
+  // --- DEDICATED STAFF MEMBER PROFILE HUB ---
+  getMemberDetail(userId: string): Observable<any> {
+    return this.apiService.get<any>(`workforce/members/${userId}`);
+  }
+
+  updateMemberDetail(userId: string, data: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/members/${userId}`, data);
+  }
+
+  // --- DOCUMENT CATEGORIES & COMPLIANCE POLICIES ---
+  getDocumentCategories(): Observable<any> {
+    return this.apiService.get<any>('workforce/document-categories');
+  }
+
+  createDocumentCategory(category: any): Observable<any> {
+    return this.apiService.post<any>('workforce/document-categories', category);
+  }
+
+  updateDocumentCategory(id: string, category: any): Observable<any> {
+    return this.apiService.put<any>(`workforce/document-categories/${id}`, category);
+  }
+
+  deleteDocumentCategory(id: string): Observable<any> {
+    return this.apiService.delete<any>(`workforce/document-categories/${id}`);
   }
 }

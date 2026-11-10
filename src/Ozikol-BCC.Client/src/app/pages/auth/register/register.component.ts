@@ -7,6 +7,8 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { environment } from '../../../../environments/environment';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { LandingComponent } from '../../landing/landing.component';
+import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
 
 /**
  * Interface representing dynamic registration form field schema from backend.
@@ -50,44 +52,22 @@ interface WizardStep {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe, LandingComponent, AuthLayoutComponent],
   template: `
-    <div class="oz-onboarding-shell">
-      <!-- Dedicated Standalone Top Navigation Bar -->
-      <header class="oz-onboarding-topbar">
-        <div class="topbar-inner">
-          <a routerLink="/" class="topbar-brand" [title]="(brandName || 'Workspace') + ' - ' + ('auth.return_to_home' | translate:'Return to Home')">
-            <!-- Official Brand Logo: When a tenant has uploaded their brand logo, render it cleanly with no duplicate text -->
-            <img 
-              *ngIf="logoUrl" 
-              [src]="logoUrl" 
-              [alt]="brandName" 
-              class="brand-logo-img" 
-            />
-            <!-- Fallback: Render badge icon + organization name when no logo image exists -->
-            <div *ngIf="!logoUrl" class="brand-fallback-wrap">
-              <div class="brand-badge-icon">
-                <span class="material-symbols-outlined">how_to_reg</span>
-              </div>
-              <div class="brand-text-col">
-                <span class="brand-name">{{ brandName || 'Workspace' }}</span>
-                <span class="brand-badge">{{ 'auth.member_registration' | translate:'Member Registration' }}</span>
-              </div>
-            </div>
-          </a>
+    <!-- Live Single-Source-of-Truth Outer Shell: Website Layout vs. Auth Layout -->
+    <app-landing *ngIf="policy.pageShellLayout !== 'auth'"
+                 [embeddedShellMode]="true"
+                 [embeddedPageTitle]="policy.formTitle || 'Create Your Account'"
+                 [embeddedPageSubtitle]="policy.welcomeMessage || 'Join our member directory and workspace portal.'">
+      <ng-container *ngTemplateOutlet="registerBodyTpl"></ng-container>
+    </app-landing>
 
-          <div class="topbar-right">
-            <span class="signin-hint">{{ 'auth.already_have_account_q' | translate:'Already have an account?' }}</span>
-            <a routerLink="/auth/login" class="btn-signin-link">
-              <span>{{ 'auth.sign_in' | translate:'Sign In' }}</span>
-              <span class="material-symbols-outlined">arrow_forward</span>
-            </a>
-          </div>
-        </div>
-      </header>
+    <app-auth-layout *ngIf="policy.pageShellLayout === 'auth'"
+                     [embeddedMode]="true">
+      <ng-container *ngTemplateOutlet="registerBodyTpl"></ng-container>
+    </app-auth-layout>
 
-      <!-- Main Centered Onboarding Body -->
-      <main class="oz-onboarding-body">
+    <ng-template #registerBodyTpl>
         <div class="register-container">
           <div class="register-card" [class.wide-card]="policy.formLayoutMode === 'single' || policy.formLayoutMode === 'sections'">
             
@@ -1283,18 +1263,7 @@ interface WizardStep {
             </div>
           </div>
         </div>
-      </main>
-
-      <!-- Clean Onboarding Footer -->
-      <footer class="oz-onboarding-footer">
-        <div class="footer-inner">
-          <span class="copyright-text">&copy; {{ currentYear }} {{ brandName || 'Workspace' }}. All rights reserved.</span>
-          <span class="powered-by-tag">
-            Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>
-          </span>
-        </div>
-      </footer>
-    </div>
+    </ng-template>
   `,
   styles: [`
     :host {
@@ -2393,6 +2362,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     enableAffiliateReferralCode: true,
     defaultIndustrySector: 'Business & Enterprise',
     registrationUrlSlug: 'register',
+    pageShellLayout: 'website' as 'website' | 'auth',
     formLayoutMode: 'single' as 'single' | 'sections' | 'stepper' | 'pages',
     requirePassword: true,
     allowSaveAndContinue: false,
@@ -2843,6 +2813,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
           this.policy.enableAffiliateReferralCode = schema.enableAffiliateReferralCode ?? true;
           this.policy.defaultIndustrySector = schema.defaultIndustrySector || 'Business & Enterprise';
           this.policy.registrationUrlSlug = schema.registrationUrlSlug || 'register';
+          this.policy.pageShellLayout = (schema.pageShellLayout as any) || 'website';
           this.policy.formLayoutMode = (schema.formLayoutMode as any) || 'single';
           this.policy.requirePassword = schema.requirePassword ?? true;
           this.policy.allowSaveAndContinue = schema.allowSaveAndContinue ?? false;

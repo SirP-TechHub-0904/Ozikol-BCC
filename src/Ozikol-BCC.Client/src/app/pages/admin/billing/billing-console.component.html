@@ -82,10 +82,15 @@
                 <span class="material-symbols-outlined">lock</span>
                 <span>Available — Not Active (Locked in Menu)</span>
               </span>
-              @if (selectedFeatureDetail.isEligibleForFreeTrial && (selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+              @if (selectedFeatureDetail.isEligibleForFreeTrial && (selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0 && !snapshot.hasFlatRatePlan && !selectedFeatureDetail.isIncludedInFlatRatePlan) {
                 <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.12); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
                   <span class="material-symbols-outlined">redeem</span>
                   <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free Trial Before Payment</span>
+                </span>
+              } @else if (snapshot.hasFlatRatePlan || selectedFeatureDetail.isIncludedInFlatRatePlan) {
+                <span class="badge-pill-md" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; border: 1px solid rgba(0, 80, 229, 0.25);">
+                  <span class="material-symbols-outlined">workspace_premium</span>
+                  <span>Included with All-Inclusive Plan</span>
                 </span>
               }
             } @else {
@@ -197,10 +202,10 @@
                 (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
               >
                 <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode">
-                  {{ (togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode) ? 'sync' : (selectedFeatureDetail.isEligibleForFreeTrial ? 'redeem' : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? 'payments' : 'download_done')) }}
+                  {{ (togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode) ? 'sync' : ((selectedFeatureDetail.isEligibleForFreeTrial && !snapshot.hasFlatRatePlan && !selectedFeatureDetail.isIncludedInFlatRatePlan) ? 'redeem' : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? 'payments' : 'download_done')) }}
                 </span>
                 <span>
-                  {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : (selectedFeatureDetail.isEligibleForFreeTrial ? ('Start ' + selectedFeatureDetail.effectiveFreeTrialDays + '-Day Free Trial & Activate') : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? ('Pay & Activate (' + formatAmount(getFeatureDisplayAmount(selectedFeatureDetail)) + ')') : 'Install & Activate Now'))) }}
+                  {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : ((selectedFeatureDetail.isEligibleForFreeTrial && !snapshot.hasFlatRatePlan && !selectedFeatureDetail.isIncludedInFlatRatePlan) ? ('Start ' + selectedFeatureDetail.effectiveFreeTrialDays + '-Day Free Trial & Activate') : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? ('Pay & Activate (' + formatAmount(getFeatureDisplayAmount(selectedFeatureDetail)) + ')') : 'Install & Activate Now'))) }}
                 </span>
               </button>
             } @else {
@@ -311,6 +316,12 @@
       </div>
 
       <div class="features-mode-tabs-right">
+        @if (snapshot.hasFlatRatePlan) {
+          <span class="badge-pill-md" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; border: 1.5px solid rgba(0, 80, 229, 0.35); font-weight: 800;" title="All-Inclusive Master Plan Active">
+            <span class="material-symbols-outlined">workspace_premium</span>
+            <span>{{ snapshot.flatRatePlanName || 'All-Inclusive Master Plan' }} Active</span>
+          </span>
+        }
         @if (snapshot.useCustomAvailability) {
           <span class="badge-pill-md badge-available" title="Custom Availability policy is active for this workspace">
             <span class="material-symbols-outlined">verified</span>
@@ -325,6 +336,35 @@
         }
       </div>
     </div>
+    }
+
+    <!-- ── ALL-INCLUSIVE MASTER PLAN BANNER (When Active) ── -->
+    @if (!selectedFeatureDetail && snapshot.hasFlatRatePlan) {
+      <div class="toolbar-card" style="margin-bottom: 16px; padding: 14px 20px; background: rgba(0, 80, 229, 0.04); border: 1.5px solid rgba(0, 80, 229, 0.25); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(0, 80, 229, 0.12); color: #0050e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 26px;">stars</span>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 15px; font-weight: 800; color: #0f172a;">{{ snapshot.flatRatePlanName || 'All-Inclusive Master Plan' }}</span>
+              <span class="badge" style="background: #0050e5; color: #ffffff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+                {{ currencySymbol }}{{ (snapshot.flatRatePrice || 0) | number:'1.2-2' }} / {{ snapshot.flatRateCadence || 'Yearly' }}
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+              All modular capabilities are 100% unlocked and included without individual feature charges.
+              @if (snapshot.flatRateExpiresAtUtc) {
+                <span>• Renews on <strong>{{ snapshot.flatRateExpiresAtUtc | date:'longDate' }}</strong> ({{ snapshot.flatRateDaysRemaining }} days remaining).</span>
+              }
+            </div>
+          </div>
+        </div>
+        <span class="badge-pill-md badge-available" style="font-weight: 800;">
+          <span class="material-symbols-outlined">verified</span>
+          <span>All Capabilities Unlocked</span>
+        </span>
+      </div>
     }
 
     <!-- ════════════════════════════════════════════════════════════════════════ -->
@@ -488,17 +528,22 @@
                       @if (feat.isActive) {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active' }}</span>
+                          <span>{{ (!snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && feat.isTrialPeriod) ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active' }}</span>
                         </span>
                       } @else if (feat.isAvailableForUse) {
                         <span class="badge-pill-md badge-optional">
                           <span class="material-symbols-outlined">lock</span>
                           <span>Not Active</span>
                         </span>
-                        @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                        @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0 && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) {
                           <span class="badge-pill-md" style="margin-left: 6px; background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
                             <span class="material-symbols-outlined">redeem</span>
                             <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
+                          </span>
+                        } @else if (snapshot.hasFlatRatePlan || feat.isIncludedInFlatRatePlan) {
+                          <span class="badge-pill-md" style="margin-left: 6px; background: rgba(0, 80, 229, 0.1); color: #0050e5; border: 1px solid rgba(0, 80, 229, 0.25);">
+                            <span class="material-symbols-outlined">workspace_premium</span>
+                            <span>Included with Plan</span>
                           </span>
                         }
                       } @else {
@@ -556,10 +601,10 @@
                             title="Install and unlock in sidebar menu"
                           >
                             <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode">
-                              {{ (togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode) ? 'sync' : (feat.isEligibleForFreeTrial ? 'redeem' : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'payments' : 'download_done')) }}
+                              {{ (togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode) ? 'sync' : ((feat.isEligibleForFreeTrial && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) ? 'redeem' : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'payments' : 'download_done')) }}
                             </span>
                             <span>
-                              {{ payingFeatureCode === feat.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === feat.featureCode ? 'Installing...' : (feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Free Trial') : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'Pay & Activate' : 'Install & Activate'))) }}
+                              {{ payingFeatureCode === feat.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === feat.featureCode ? 'Installing...' : ((feat.isEligibleForFreeTrial && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) ? ('Start ' + feat.effectiveFreeTrialDays + 'd Free Trial') : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'Pay & Activate' : 'Install & Activate'))) }}
                             </span>
                           </button>
                         } @else {
@@ -845,7 +890,7 @@
                           @if (feat.isActive) {
                             <span class="badge-pill-md badge-available">
                               <span class="material-symbols-outlined">check_circle</span>
-                              <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active in Menu' }}</span>
+                              <span>{{ (!snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && feat.isTrialPeriod) ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 7) + 'd left)') : 'Active in Menu' }}</span>
                             </span>
                             @if (hasFeatureExpirationInfo(feat)) {
                               <span class="badge-pill-md" [style.background]="isFeatureExpiringWithinMonth(feat) ? 'rgba(245, 158, 11, 0.14)' : '#f1f5f9'" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'" [style.border]="isFeatureExpiringWithinMonth(feat) ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #cbd5e1'">
@@ -872,10 +917,15 @@
                             </span>
                           }
 
-                          @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                          @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0 && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) {
                             <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
                               <span class="material-symbols-outlined">redeem</span>
                               <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
+                            </span>
+                          } @else if (snapshot.hasFlatRatePlan || feat.isIncludedInFlatRatePlan) {
+                            <span class="badge-pill-md" style="background: rgba(0, 80, 229, 0.1); color: #0050e5; border: 1px solid rgba(0, 80, 229, 0.25);">
+                              <span class="material-symbols-outlined">workspace_premium</span>
+                              <span>Included with Plan</span>
                             </span>
                           }
                         </div>
@@ -926,8 +976,8 @@
                               [disabled]="togglingFeatureCode === feat.featureCode"
                               (click)="toggleFeatureInstall(feat, true)"
                             >
-                              <span class="material-symbols-outlined">{{ feat.isEligibleForFreeTrial ? 'redeem' : 'download_done' }}</span>
-                              <span>{{ feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Trial') : 'Install' }}</span>
+                              <span class="material-symbols-outlined">{{ (feat.isEligibleForFreeTrial && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) ? 'redeem' : 'download_done' }}</span>
+                              <span>{{ (feat.isEligibleForFreeTrial && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan) ? ('Start ' + feat.effectiveFreeTrialDays + 'd Trial') : 'Install & Activate' }}</span>
                             </button>
                           }
                           <button
@@ -1251,7 +1301,7 @@
                           <span class="material-symbols-outlined">error</span>
                           <span>{{ (feat.daysRemaining ?? 0) < 0 ? (((feat.daysRemaining || 0) * -1) + 'd Overdue — Payment Due') : 'Expired Today — Payment Due' }}</span>
                         </span>
-                      } @else if (!feat.isCompulsory && (feat.daysRemaining ?? 999) <= 30) {
+                      } @else if (!feat.isCompulsory && !snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && (feat.daysRemaining ?? 999) <= 30) {
                         <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
                           <span class="material-symbols-outlined">schedule</span>
                           <span>{{ feat.isTrialPeriod ? 'Free Trial' : 'Active' }} &bull; {{ feat.daysRemaining }}d Left</span>
@@ -1259,7 +1309,7 @@
                       } @else {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || 7) + 'd left)') : 'Active' }}</span>
+                          <span>{{ (!snapshot.hasFlatRatePlan && !feat.isIncludedInFlatRatePlan && feat.isTrialPeriod) ? ('Active Trial (' + (feat.daysRemaining || 7) + 'd left)') : 'Active' }}</span>
                         </span>
                       }
                       @if (hasFeatureExpirationInfo(feat)) {

@@ -401,6 +401,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPreferred")
+                        .HasColumnType("bit");
+
                     b.Property<string>("KeyAlias")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -3379,6 +3382,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("PrimaryAiProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("SentryDsn")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -3962,6 +3970,25 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("DeletionReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("FlatRateAutoRenew")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("FlatRateCadence")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("FlatRateExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FlatRatePlanName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal?>("FlatRatePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("HasFlatRatePlan")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");

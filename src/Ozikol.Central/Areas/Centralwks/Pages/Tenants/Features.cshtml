@@ -42,33 +42,33 @@
 </div>
 
 @* ── 2 Tenant Policy Switches Banner (50% / 50%): Pricing + Free Trial Mode & Availability Mode ── *@
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-bottom: 20px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; margin-bottom: 20px;">
     @* Switch 1: Pricing & Free Trial Policy (General vs Custom Pricing & Custom Free Trial Override) *@
-    <div class="admin-card" style="padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
+    <div class="admin-card" style="padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
         <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.12)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.12)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">payments</span>
             </div>
             <div style="min-width: 0; flex: 1;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing &amp; Free Trial Policy</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Tenant Pricing Policy</span>
                     @if (Model.Tenant.UseCustomPricing)
                     {
-                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10.5px; font-weight: 700;">● Selected: Custom Price &amp; Free Trial Active</span>
+                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10px; font-weight: 700;">● Custom Pricing</span>
                     }
                     else
                     {
-                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">● Selected: General Price &amp; Free Trial Active</span>
+                        <span class="badge badge-neutral" style="font-size: 10px; font-weight: 700;">● General Catalog</span>
                     }
                 </div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">
                     @if (Model.Tenant.UseCustomPricing)
                     {
-                        <span><strong style="color: #0050e5;">Note:</strong> Custom Pricing &amp; Custom Free Trial overrides are active for this tenant (overrides General Catalog prices and general free trial days).</span>
+                        <span><strong style="color: #0050e5;">Note:</strong> Negotiated custom price overrides active for this tenant.</span>
                     }
                     else
                     {
-                        <span><strong style="color: #0f172a;">Note:</strong> General Pricing &amp; Free Trial is active (inheriting Master Catalog prices and general free trial days).</span>
+                        <span><strong style="color: #0f172a;">Note:</strong> Inheriting default Master Catalog prices and trial days.</span>
                     }
                 </div>
             </div>
@@ -79,38 +79,38 @@
             <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
             <input type="hidden" name="tab" value="@Model.ActiveTab" />
             <button type="submit" class="btn-admin @(Model.Tenant.UseCustomPricing ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm" style="white-space: nowrap;">
-                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomPricing ? "toggle_off" : "tune")</span>
-                <span>@(Model.Tenant.UseCustomPricing ? "Disable Custom Price & Trial" : "Enable Custom Price & Trial")</span>
+                <span class="material-symbols-outlined" style="font-size: 14px;">@(Model.Tenant.UseCustomPricing ? "toggle_off" : "tune")</span>
+                <span>@(Model.Tenant.UseCustomPricing ? "Disable Custom" : "Enable Custom")</span>
             </button>
         </form>
     </div>
 
     @* Switch 2: Availability Policy (General vs Custom Availability) *@
-    <div class="admin-card" style="padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1.5px solid @(Model.Tenant.UseCustomAvailability ? "#059669" : "#e2e8f0"); background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.03)" : "#ffffff");">
+    <div class="admin-card" style="padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomAvailability ? "#059669" : "#e2e8f0"); background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.03)" : "#ffffff");">
         <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.14)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomAvailability ? "#059669" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span class="material-symbols-outlined" style="font-size: 22px;">verified</span>
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.14)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomAvailability ? "#059669" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">verified</span>
             </div>
             <div style="min-width: 0; flex: 1;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Availability Policy</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #0f172a;">Tenant Availability Policy</span>
                     @if (Model.Tenant.UseCustomAvailability)
                     {
-                        <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 10.5px; font-weight: 700;">● Selected: Custom Availability is Active</span>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 10px; font-weight: 700;">● Custom Availability</span>
                     }
                     else
                     {
-                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">● Selected: General Availability is Active</span>
+                        <span class="badge badge-neutral" style="font-size: 10px; font-weight: 700;">● General Catalog</span>
                     }
                 </div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">
                     @if (Model.Tenant.UseCustomAvailability)
                     {
-                        <span><strong style="color: #059669;">Note:</strong> Custom Availability is active (@Model.AvailableForUseCount Available / @Model.ComingSoonCount Not Available). Click <em>Disable Custom Availability</em> to revert to General Availability.</span>
+                        <span><strong style="color: #059669;">Note:</strong> Custom availability active (@Model.AvailableForUseCount Avail / @Model.ComingSoonCount Locked).</span>
                     }
                     else
                     {
-                        <span><strong style="color: #0f172a;">Note:</strong> General Availability is active (inheriting Master Catalog availability).</span>
+                        <span><strong style="color: #0f172a;">Note:</strong> Inheriting platform-wide Master Catalog availability.</span>
                     }
                 </div>
             </div>
@@ -120,10 +120,69 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
             <button type="submit" class="btn-admin @(Model.Tenant.UseCustomAvailability ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm" style="white-space: nowrap;">
-                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomAvailability ? "toggle_off" : "tune")</span>
-                <span>@(Model.Tenant.UseCustomAvailability ? "Disable Custom Availability" : "Enable Custom Availability")</span>
+                <span class="material-symbols-outlined" style="font-size: 14px;">@(Model.Tenant.UseCustomAvailability ? "toggle_off" : "tune")</span>
+                <span>@(Model.Tenant.UseCustomAvailability ? "Disable Custom" : "Enable Custom")</span>
             </button>
         </form>
+    </div>
+
+    @* Switch 3: Tenant All-Inclusive Plan / Flat-Rate Master Billing *@
+    <div class="admin-card" style="padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.HasFlatRatePlan ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.04)" : "#ffffff");">
+        <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.12)" : "#f1f5f9"); color: @(Model.Tenant.HasFlatRatePlan ? "#0050e5" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">workspace_premium</span>
+            </div>
+            <div style="min-width: 0; flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 13px; font-weight: 800; color: #0f172a;">All-Inclusive Flat-Rate Plan</span>
+                    @if (Model.Tenant.HasFlatRatePlan)
+                    {
+                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10px; font-weight: 700;">
+                            ● Active: $@(Model.Tenant.FlatRatePrice?.ToString("F2") ?? "400.00") / @Model.Tenant.FlatRateCadence
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-neutral" style="font-size: 10px; font-weight: 700;">● Feature-by-Feature Billing</span>
+                    }
+                </div>
+                <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">
+                    @if (Model.Tenant.HasFlatRatePlan)
+                    {
+                        <span><strong style="color: #0050e5;">@(Model.Tenant.FlatRatePlanName ?? "All-Inclusive Master Plan")</strong>: All capabilities unlocked without individual bills. Renews: @(Model.Tenant.FlatRateExpiresAtUtc?.ToString("yyyy-MM-dd") ?? "Ongoing").</span>
+                    }
+                    else
+                    {
+                        <span><strong style="color: #0f172a;">Note:</strong> Per-feature charges apply. Enable to set a global flat rate (e.g. $400/yr) giving full access to all features.</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            @if (Model.Tenant.HasFlatRatePlan)
+            {
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="openFlatRateModal(true)" title="Edit Plan Details">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
+                    <span>Edit Plan</span>
+                </button>
+                <form method="post" asp-page-handler="ConfigureFlatRatePlan" style="margin: 0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+                    <input type="hidden" name="enable" value="false" />
+                    <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" title="Disable All-Inclusive Plan">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="openFlatRateModal(false)">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">stars</span>
+                    <span>Enable Flat Plan</span>
+                </button>
+            }
+        </div>
     </div>
 </div>
 
@@ -501,10 +560,14 @@
                                         <button type="button"
                                                 onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                 class="badge"
-                                                style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.08)" : "#f1f5f9")); color: @(item.EffectiveFreeTrialDays > 0 || item.HasCustomFreeTrialOverride ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
-                                                title="Click to configure Custom Free Trial Days for @Model.Tenant.OrganizationName (overrides General @(feat.FreeTrialDays)d trial)">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
-                                            @if (item.IsTrialPeriod)
+                                                style="background: @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.1)" : (item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.08)" : "#f1f5f9"))); color: @(Model.Tenant.HasFlatRatePlan ? "#0050e5" : (item.EffectiveFreeTrialDays > 0 || item.HasCustomFreeTrialOverride ? "#6d28d9" : "#64748b")); font-weight: 700; font-size: 11px; border: 1px solid @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.3)" : (item.HasCustomFreeTrialOverride ? "#7c3aed" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0"))); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                                title="Configure Pricing &amp; Free Trial Days for @Model.Tenant.OrganizationName">
+                                            <span class="material-symbols-outlined" style="font-size: 12px;">@(Model.Tenant.HasFlatRatePlan ? "workspace_premium" : "redeem")</span>
+                                            @if (Model.Tenant.HasFlatRatePlan)
+                                            {
+                                                <span>Included with Master Plan</span>
+                                            }
+                                            else if (item.IsTrialPeriod)
                                             {
                                                 <span>Active Free Trial (@(item.EffectiveFreeTrialDays)d)</span>
                                             }
@@ -801,10 +864,14 @@ else
                                 <button type="button"
                                         onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                         class="badge"
-                                        style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : "rgba(124, 58, 237, 0.08)"); color: #6d28d9; font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : "rgba(124, 58, 237, 0.25)"); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
-                                        title="Click to set Custom Free Trial Days for @Model.Tenant.OrganizationName">
-                                    <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
-                                    @if (item.HasCustomFreeTrialOverride)
+                                        style="background: @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.1)" : (item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : "rgba(124, 58, 237, 0.08)")); color: @(Model.Tenant.HasFlatRatePlan ? "#0050e5" : "#6d28d9"); font-weight: 700; font-size: 11px; border: 1px solid @(Model.Tenant.HasFlatRatePlan ? "rgba(0, 80, 229, 0.3)" : (item.HasCustomFreeTrialOverride ? "#7c3aed" : "rgba(124, 58, 237, 0.25)")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                        title="Configure Pricing &amp; Free Trial Days for @Model.Tenant.OrganizationName">
+                                    <span class="material-symbols-outlined" style="font-size: 12px;">@(Model.Tenant.HasFlatRatePlan ? "workspace_premium" : "redeem")</span>
+                                    @if (Model.Tenant.HasFlatRatePlan)
+                                    {
+                                        <span>Included with Master Plan</span>
+                                    }
+                                    else if (item.HasCustomFreeTrialOverride)
                                     {
                                         <span>@(item.EffectiveFreeTrialDays)d Custom (Overrides @(feat.FreeTrialDays)d)</span>
                                     }
@@ -1002,6 +1069,83 @@ else
                 <button type="submit" class="btn-admin btn-admin-primary">
                     <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
                     <span>Update Remaining Days</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Modal 3: Configure Tenant All-Inclusive Flat-Rate Master Plan ── *@
+<div id="flatRatePlanModalBackdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center;">
+    <div class="admin-card" style="width: 100%; max-width: 520px; padding: 24px 28px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); animation: fadeIn 0.2s ease-out;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 80, 229, 0.12); color: #0050e5; display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">workspace_premium</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">All-Inclusive Flat-Rate Plan</h3>
+                    <div style="font-size: 12px; color: #64748b;">@Model.Tenant.OrganizationName (@Model.Tenant.TenantKey)</div>
+                </div>
+            </div>
+            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeFlatRateModal()" style="border: none; padding: 4px;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="ConfigureFlatRatePlan">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <input type="hidden" name="enable" value="true" />
+
+            <div style="background: rgba(0, 80, 229, 0.05); border: 1px solid rgba(0, 80, 229, 0.18); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 12.5px; color: #0f172a; line-height: 1.5;">
+                <strong style="color: #0050e5;">How This Works:</strong> All published capabilities across the platform will be <strong>100% unlocked and included</strong> for @Model.Tenant.OrganizationName. The tenant will not be charged or invoiced per feature.
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #1e293b;">Plan / Package Display Name</label>
+                <input type="text" name="planName" id="flatRatePlanNameInput" class="form-control" value="@(Model.Tenant.FlatRatePlanName ?? "All-Inclusive Master Plan")" placeholder="e.g. Annual Unlimited Suite" required />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #1e293b;">Flat Rate Price ($ USD)</label>
+                    <div style="position: relative;">
+                        <span style="position: absolute; left: 10px; top: 8px; font-weight: 700; color: #64748b;">$</span>
+                        <input type="number" step="0.01" min="0" name="price" id="flatRatePriceInput" class="form-control" style="padding-left: 24px;" value="@(Model.Tenant.FlatRatePrice?.ToString("F2") ?? "400.00")" placeholder="e.g. 400.00" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #1e293b;">Billing Cadence</label>
+                    <select name="cadence" id="flatRateCadenceSelect" class="form-control">
+                        <option value="3" selected="@(Model.Tenant.FlatRateCadence == Ozikol.MasterDomain.Models.SubscriptionBillingDuration.Yearly)">Yearly (Annual)</option>
+                        <option value="1" selected="@(Model.Tenant.FlatRateCadence == Ozikol.MasterDomain.Models.SubscriptionBillingDuration.Monthly)">Monthly</option>
+                        <option value="2" selected="@(Model.Tenant.FlatRateCadence == Ozikol.MasterDomain.Models.SubscriptionBillingDuration.Quarterly)">Quarterly (3 Months)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #1e293b;">Duration (Months)</label>
+                    <input type="number" min="1" max="120" name="durationMonths" id="flatRateDurationInput" class="form-control" value="12" required />
+                    <span style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">e.g. 12 for 1 year, 24 for 2 years.</span>
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1e293b; cursor: pointer; margin-top: 10px;">
+                        <input type="checkbox" name="autoRenew" value="true" checked style="width: 16px; height: 16px; accent-color: #0050e5;" />
+                        <span>Enable Auto-Renewal</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeFlatRateModal()">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+                    <span>Save &amp; Unlock All Features</span>
                 </button>
             </div>
         </form>
@@ -1231,6 +1375,14 @@ else
 
         function closeAdjustExpiryModal() {
             document.getElementById('adjustExpiryModalBackdrop').style.display = 'none';
+        }
+
+        function openFlatRateModal(isEdit) {
+            document.getElementById('flatRatePlanModalBackdrop').style.display = 'flex';
+        }
+
+        function closeFlatRateModal() {
+            document.getElementById('flatRatePlanModalBackdrop').style.display = 'none';
         }
     </script>
 }
