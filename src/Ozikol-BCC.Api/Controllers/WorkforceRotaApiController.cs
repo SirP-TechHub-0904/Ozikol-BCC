@@ -1015,6 +1015,8 @@ namespace Ozikol_BCC.Api.Controllers
             profile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
             profile.DefaultHourlyRate = request.DefaultHourlyRate;
             profile.ContractedWeeklyHours = request.ContractedWeeklyHours;
+            if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) profile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
+            if (!string.IsNullOrWhiteSpace(request.WorkingAvailability)) profile.WorkingAvailability = request.WorkingAvailability.Trim();
             profile.IsActive = true;
             profile.UpdatedUtc = DateTime.UtcNow;
 
@@ -1345,6 +1347,8 @@ namespace Ozikol_BCC.Api.Controllers
             staffProfile.StaffTypeName = !string.IsNullOrWhiteSpace(request.StaffTypeName) ? request.StaffTypeName.Trim() : "Permanent";
             staffProfile.DefaultHourlyRate = request.DefaultHourlyRate;
             staffProfile.ContractedWeeklyHours = request.ContractedWeeklyHours;
+            if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) staffProfile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
+            if (!string.IsNullOrWhiteSpace(request.WorkingAvailability)) staffProfile.WorkingAvailability = request.WorkingAvailability.Trim();
             staffProfile.IsActive = true;
             staffProfile.UpdatedUtc = DateTime.UtcNow;
 
@@ -1822,6 +1826,8 @@ namespace Ozikol_BCC.Api.Controllers
                     StaffTypeName = p.StaffTypeName,
                     DefaultHourlyRate = p.DefaultHourlyRate,
                     ContractedWeeklyHours = p.ContractedWeeklyHours,
+                    PreferredWorkingTime = p.PreferredWorkingTime,
+                    WorkingAvailability = p.WorkingAvailability,
                     AverageRating = p.AverageRating,
                     TotalRatingsCount = p.TotalRatingsCount,
                     TotalShiftsCompleted = p.TotalShiftsCompleted,
@@ -3432,6 +3438,8 @@ namespace Ozikol_BCC.Api.Controllers
                 StaffTypeName = profile?.StaffTypeName ?? "Permanent",
                 DefaultHourlyRate = profile?.DefaultHourlyRate,
                 ContractedWeeklyHours = profile?.ContractedWeeklyHours ?? 40.0m,
+                PreferredWorkingTime = profile?.PreferredWorkingTime ?? "Any",
+                WorkingAvailability = profile?.WorkingAvailability ?? "Available",
                 AverageRating = profile?.AverageRating ?? 5.0m,
                 TotalRatingsCount = profile?.TotalRatingsCount ?? 0,
                 TotalShiftsCompleted = profile?.TotalShiftsCompleted ?? 0,
@@ -3569,6 +3577,8 @@ namespace Ozikol_BCC.Api.Controllers
             if (!string.IsNullOrWhiteSpace(request.StaffTypeName)) profile.StaffTypeName = request.StaffTypeName.Trim();
             if (request.DefaultHourlyRate.HasValue) profile.DefaultHourlyRate = request.DefaultHourlyRate.Value;
             if (request.ContractedWeeklyHours.HasValue) profile.ContractedWeeklyHours = request.ContractedWeeklyHours.Value;
+            if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) profile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
+            if (!string.IsNullOrWhiteSpace(request.WorkingAvailability)) profile.WorkingAvailability = request.WorkingAvailability.Trim();
             profile.IsActive = request.IsActive;
             profile.UpdatedUtc = DateTime.UtcNow;
 
@@ -3772,6 +3782,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string JobTitle { get; set; } = "Staff Member";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
+        public string? PreferredWorkingTime { get; set; }
+        public string? WorkingAvailability { get; set; }
     }
 
     public class StaffMemberDto
@@ -3787,6 +3799,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string StaffTypeName { get; set; } = "Permanent";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
+        public string PreferredWorkingTime { get; set; } = "Any";
+        public string WorkingAvailability { get; set; } = "Available";
         public decimal AverageRating { get; set; }
         public int TotalRatingsCount { get; set; }
         public int TotalShiftsCompleted { get; set; }
@@ -4020,6 +4034,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string StaffTypeName { get; set; } = "Permanent";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
+        public string? PreferredWorkingTime { get; set; }
+        public string? WorkingAvailability { get; set; }
         public Guid? AssignedSiteId { get; set; }
 
         public Dictionary<string, object>? CustomAttributes { get; set; }
@@ -4243,6 +4259,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string StaffTypeName { get; set; } = "Permanent";
         public decimal? DefaultHourlyRate { get; set; }
         public decimal ContractedWeeklyHours { get; set; }
+        public string PreferredWorkingTime { get; set; } = "Any";
+        public string WorkingAvailability { get; set; } = "Available";
         public decimal AverageRating { get; set; }
         public int TotalRatingsCount { get; set; }
         public int TotalShiftsCompleted { get; set; }
@@ -4286,6 +4304,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
+        public string? PreferredWorkingTime { get; set; }
+        public string? WorkingAvailability { get; set; }
         public bool IsActive { get; set; } = true;
 
         public string? EmergencyContactName { get; set; }

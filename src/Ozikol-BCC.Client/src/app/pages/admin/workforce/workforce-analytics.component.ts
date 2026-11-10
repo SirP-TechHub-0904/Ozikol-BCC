@@ -358,6 +358,9 @@ import { ToastService } from '../../../core/services/toast.service';
                     <span class="staff-type-pill" [class.type-temp]="m.staffTypeName?.toLowerCase()?.includes('temp')" [class.type-contract]="m.staffTypeName?.toLowerCase()?.includes('contract')">
                       {{ m.staffTypeName || 'Permanent' }}
                     </span>
+                    <span class="staff-type-pill" *ngIf="m.preferredWorkingTime && m.preferredWorkingTime !== 'Any'">
+                      {{ m.preferredWorkingTime }} Shift
+                    </span>
                   </td>
                   <td>
                     <span class="rate-text">

@@ -139,7 +139,7 @@ interface WorkforcePolicies {
           <button
             type="button"
             class="btn btn-primary"
-            *ngIf="activeTab === 'hours' || activeTab === 'breaks'"
+            *ngIf="activeTab === 'breaks'"
             (click)="savePolicies()"
             [disabled]="isSavingPolicies"
           >
@@ -161,16 +161,6 @@ interface WorkforcePolicies {
           <span class="material-symbols-outlined">badge</span>
           <span>Job Roles</span>
           <span class="tab-count">{{ jobRoles.length }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'hours'"
-          (click)="activeTab = 'hours'"
-        >
-          <span class="material-symbols-outlined">schedule</span>
-          <span>Working Hours &amp; Shift Windows</span>
         </button>
 
         <button
@@ -261,178 +251,7 @@ interface WorkforcePolicies {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 2: WORKING HOURS & SHIFT WINDOWS -->
-      <!-- ========================================================================= -->
-      <div class="tab-pane" *ngIf="activeTab === 'hours'">
-        <div class="policy-grid">
-          <!-- Standard Working Hours Card -->
-          <div class="content-card">
-            <div class="card-header-bar">
-              <div class="header-bar-left">
-                <span class="material-symbols-outlined text-blue">timer</span>
-                <div>
-                  <h3 class="card-heading">Standard Company Working Hours</h3>
-                  <p class="card-sub">Baseline hours applied across the rota. Individual staff profiles can override this default.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="policy-form">
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Standard Full-Time Week (Hours) <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    [(ngModel)]="policies.standardWeeklyHours"
-                    name="standardWeeklyHours"
-                    placeholder="e.g. 40"
-                    min="1"
-                    max="80"
-                  />
-                  <span class="field-hint">Default contracted target for full-time personnel (e.g. 37.5 or 40.0 hrs).</span>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Max Permissible Weekly Hours <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    [(ngModel)]="policies.maxPermissibleWeeklyHours"
-                    name="maxPermissibleWeeklyHours"
-                    placeholder="e.g. 48"
-                    min="10"
-                    max="100"
-                  />
-                  <span class="field-hint">Statutory ceiling (e.g. 48 hrs under UK Working Time Regulations).</span>
-                </div>
-              </div>
-
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Max Consecutive Working Days <span class="required">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    [(ngModel)]="policies.maxConsecutiveWorkingDays"
-                    name="maxConsecutiveWorkingDays"
-                    placeholder="e.g. 6"
-                    min="1"
-                    max="14"
-                  />
-                  <span class="field-hint">Triggers fatigue burnout warnings when auto-scheduling.</span>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Working Time Regulations Enforcement</label>
-                <div class="toggle-card">
-                  <label class="switch">
-                    <input
-                      type="checkbox"
-                      [(ngModel)]="policies.enforce48HourWeeklyCap"
-                      name="enforce48HourWeeklyCap"
-                    />
-                    <span class="slider round"></span>
-                  </label>
-                  <div class="toggle-info">
-                    <strong>Enforce 48-Hour Weekly Cap</strong>
-                    <span>Warn or block allocations exceeding 48h unless opt-out signed.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Day Shift vs Night Shift Windows Card -->
-          <div class="content-card">
-            <div class="card-header-bar">
-              <div class="header-bar-left">
-                <span class="material-symbols-outlined text-blue">bedtime</span>
-                <div>
-                  <h3 class="card-heading">Day Shift vs. Night Shift Windows</h3>
-                  <p class="card-sub">Shift classification boundaries and nocturnal pay differentials.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="policy-form">
-              <div class="form-group">
-                <label class="form-label">Day Shift Window <span class="required">*</span></label>
-                <div class="time-range-group">
-                  <input
-                    type="time"
-                    class="form-control"
-                    [(ngModel)]="policies.dayShiftStart"
-                    name="dayShiftStart"
-                  />
-                  <span class="time-sep">to</span>
-                  <input
-                    type="time"
-                    class="form-control"
-                    [(ngModel)]="policies.dayShiftEnd"
-                    name="dayShiftEnd"
-                  />
-                </div>
-                <span class="field-hint">Standard daytime hours (e.g. 07:00 to 19:00).</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Night Shift Window <span class="required">*</span></label>
-                <div class="time-range-group">
-                  <input
-                    type="time"
-                    class="form-control"
-                    [(ngModel)]="policies.nightShiftStart"
-                    name="nightShiftStart"
-                  />
-                  <span class="time-sep">to</span>
-                  <input
-                    type="time"
-                    class="form-control"
-                    [(ngModel)]="policies.nightShiftEnd"
-                    name="nightShiftEnd"
-                  />
-                </div>
-                <span class="field-hint">Overnight window spanning midnight (e.g. 19:00 to 07:00).</span>
-              </div>
-
-              <div class="night-premium-box">
-                <div class="toggle-card">
-                  <label class="switch">
-                    <input
-                      type="checkbox"
-                      [(ngModel)]="policies.enableNightPremium"
-                      name="enableNightPremium"
-                    />
-                    <span class="slider round"></span>
-                  </label>
-                  <div class="toggle-info">
-                    <strong>Enable Night Premium Differential</strong>
-                    <span>Apply extra hourly allowance when a shift falls inside the night window.</span>
-                  </div>
-                </div>
-
-                <div class="form-group mt-3" *ngIf="policies.enableNightPremium">
-                  <label class="form-label">Night Premium Hourly Allowance ({{ currencySymbol }}/hr)</label>
-                  <input
-                    type="number"
-                    step="0.50"
-                    class="form-control"
-                    [(ngModel)]="policies.nightPremiumHourlyAllowance"
-                    name="nightPremiumHourlyAllowance"
-                    placeholder="e.g. 1.50"
-                  />
-                  <span class="field-hint">Added automatically to gross wages for hours worked within night window.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================================================= -->
-      <!-- TAB 3: MEAL & REST BREAKS -->
+      <!-- TAB 2: MEAL & REST BREAKS -->
       <!-- ========================================================================= -->
       <div class="tab-pane" *ngIf="activeTab === 'breaks'">
         <div class="policy-grid">
@@ -2079,7 +1898,7 @@ interface WorkforcePolicies {
   `]
 })
 export class WorkforceSettingsComponent implements OnInit {
-  activeTab: 'roles' | 'hours' | 'breaks' | 'forms' | 'staff-types' | 'documents' = 'roles';
+  activeTab: 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' = 'roles';
   isLoading = false;
 
   currencyCode = 'NGN';

@@ -202,6 +202,30 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                 </div>
               </div>
 
+              <div class="form-row-dual">
+                <div class="form-group">
+                  <label class="form-label">Preferred Working Time</label>
+                  <select class="form-control" [(ngModel)]="inviteModel.preferredWorkingTime">
+                    <option value="Any">Any Shift (Day &amp; Night)</option>
+                    <option value="Day">Day Shifts Only</option>
+                    <option value="Night">Night Shifts Only</option>
+                  </select>
+                  <span class="field-hint">Day or Night preference for rota assignment.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Working Availability</label>
+                  <select class="form-control" [(ngModel)]="inviteModel.workingAvailability">
+                    <option value="Available">Available (Full Availability)</option>
+                    <option value="Full-Time">Full-Time (Standard Rota)</option>
+                    <option value="Part-Time">Part-Time (Flexible Rota)</option>
+                    <option value="Weekdays">Weekdays Only (Mon - Fri)</option>
+                    <option value="Weekends">Weekends Only (Sat - Sun)</option>
+                  </select>
+                  <span class="field-hint">Initial availability baseline tied to user account.</span>
+                </div>
+              </div>
+
               <div class="form-group">
                 <label class="form-label">Welcome Note (Optional)</label>
                 <textarea
@@ -1773,6 +1797,8 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     staffTypeName: '',
     defaultHourlyRate: 0,
     contractedWeeklyHours: 0,
+    preferredWorkingTime: 'Any',
+    workingAvailability: 'Available',
     welcomeNote: ''
   };
 

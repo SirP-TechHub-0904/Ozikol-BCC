@@ -19,6 +19,8 @@ interface StaffMemberDetail {
   staffTypeName: string;
   defaultHourlyRate?: number;
   contractedWeeklyHours: number;
+  preferredWorkingTime?: string;
+  workingAvailability?: string;
   averageRating: number;
   totalRatingsCount: number;
   totalShiftsCompleted: number;
@@ -371,6 +373,28 @@ interface StaffMemberDetail {
                     placeholder="e.g. 15.00"
                   />
                   <span class="field-hint">Overrides default role wage rate if negotiated individually.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Preferred Working Time</label>
+                  <select class="form-control" [(ngModel)]="member.preferredWorkingTime">
+                    <option value="Any">Any Shift (Day &amp; Night)</option>
+                    <option value="Day">Day Shifts Only</option>
+                    <option value="Night">Night Shifts Only</option>
+                  </select>
+                  <span class="field-hint">Day or Night window preference for shift scheduling.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Working Availability</label>
+                  <select class="form-control" [(ngModel)]="member.workingAvailability">
+                    <option value="Available">Available (Full Availability)</option>
+                    <option value="Full-Time">Full-Time (Standard Rota)</option>
+                    <option value="Part-Time">Part-Time (Flexible Rota)</option>
+                    <option value="Weekdays">Weekdays Only (Mon - Fri)</option>
+                    <option value="Weekends">Weekends Only (Sat - Sun)</option>
+                  </select>
+                  <span class="field-hint">Working availability tied to user identity.</span>
                 </div>
 
                 <div class="form-group">
@@ -1439,6 +1463,8 @@ export class WorkforceMemberProfileComponent implements OnInit {
       staffTypeName: this.member.staffTypeName,
       defaultHourlyRate: this.member.defaultHourlyRate,
       contractedWeeklyHours: this.member.contractedWeeklyHours,
+      preferredWorkingTime: this.member.preferredWorkingTime || 'Any',
+      workingAvailability: this.member.workingAvailability || 'Available',
       isActive: this.member.isActive,
       emergencyContactName: this.member.emergencyContactName,
       emergencyContactRelationship: this.member.emergencyContactRelationship,

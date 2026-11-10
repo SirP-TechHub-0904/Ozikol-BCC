@@ -30,6 +30,8 @@ interface StaffMember {
   jobTitle?: string;
   defaultHourlyRate?: number;
   contractedWeeklyHours?: number;
+  preferredWorkingTime?: string;
+  workingAvailability?: string;
 }
 
 /**
@@ -577,7 +579,7 @@ interface StaffMember {
                 >
                   <option value="">Leave unassigned (Open Shift / Board)</option>
                   <option *ngFor="let m of staffMembers" [value]="m.userId">
-                    {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }})
+                    {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift] &bull; {{ m.workingAvailability || 'Available' }}
                   </option>
                 </select>
                 <span class="field-hint">If left unassigned, this schedule appears on the Open Shift Claim Board.</span>

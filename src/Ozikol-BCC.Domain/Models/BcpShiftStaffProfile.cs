@@ -96,6 +96,20 @@ namespace Ozikol_BCC.Domain.Models
         public int NoShowCount { get; set; } = 0;
 
         /// <summary>
+        /// Preferred working shift window ("Day", "Night", or "Any").
+        /// </summary>
+        [Required]
+        [StringLength(50)]
+        public string PreferredWorkingTime { get; set; } = "Any";
+
+        /// <summary>
+        /// Working availability status (e.g., "Available", "Full-Time", "Part-Time", "Weekdays", "Weekends").
+        /// </summary>
+        [Required]
+        [StringLength(100)]
+        public string WorkingAvailability { get; set; } = "Available";
+
+        /// <summary>
         /// Indicates whether this worker is active and eligible for shift scheduling and open shift bidding.
         /// </summary>
         public bool IsActive { get; set; } = true;
