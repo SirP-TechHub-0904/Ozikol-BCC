@@ -1045,7 +1045,7 @@ interface WorkforcePolicies {
                 type="text"
                 class="form-control"
                 [(ngModel)]="staffTypeForm.name"
-                placeholder="e.g. Subcontractor Specialist"
+                placeholder="e.g. Permanent Staff, Temporal Staff, Contract Staff, Student"
                 required
               />
             </div>
@@ -1056,7 +1056,7 @@ interface WorkforcePolicies {
                 type="text"
                 class="form-control"
                 [(ngModel)]="staffTypeForm.code"
-                placeholder="e.g. SUB"
+                placeholder="e.g. PERM, TEMP, CONT, STU"
               />
             </div>
 
