@@ -159,7 +159,7 @@ interface WorkforcePolicies {
           (click)="activeTab = 'roles'"
         >
           <span class="material-symbols-outlined">badge</span>
-          <span>Job Roles &amp; Pay Rates</span>
+          <span>Job Roles</span>
           <span class="tab-count">{{ jobRoles.length }}</span>
         </button>
 
@@ -207,40 +207,16 @@ interface WorkforcePolicies {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 1: JOB ROLES & PAY RATES -->
+      <!-- TAB 1: JOB ROLES -->
       <!-- ========================================================================= -->
       <div class="tab-pane" *ngIf="activeTab === 'roles'">
-        <!-- Metrics Grid -->
-        <div class="metrics-grid">
-          <div class="metric-card">
-            <div class="card-icon bg-blue">
-              <span class="material-symbols-outlined">badge</span>
-            </div>
-            <div class="metric-body">
-              <div class="metric-val">{{ jobRoles.length }}</div>
-              <div class="metric-label">Operational Job Roles</div>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="card-icon bg-emerald">
-              <span class="material-symbols-outlined">payments</span>
-            </div>
-            <div class="metric-body">
-              <div class="metric-val">{{ currencySymbol }}{{ averageHourlyWage | number:'1.2-2' }}</div>
-              <div class="metric-label">Average Base Hourly Wage</div>
-            </div>
-          </div>
-
-        </div>
-
         <div class="content-card">
           <div class="card-header-bar">
             <div class="header-bar-left">
               <span class="material-symbols-outlined text-blue">work</span>
               <div>
                 <h3 class="card-heading">Configured Job Roles</h3>
-                <p class="card-sub">Roles dictate default wage disbursements and required credential categories.</p>
+                <p class="card-sub">Roles available for staff assignment across client sites and shifts.</p>
               </div>
             </div>
           </div>
@@ -249,45 +225,20 @@ interface WorkforcePolicies {
             <table class="settings-table">
               <thead>
                 <tr>
-                  <th style="width: 50px;">Color</th>
-                  <th>Role Title</th>
-                  <th>Code</th>
-                  <th>Base Wage Rate</th>
-                  <th>Required Qualification</th>
-                  <th>Assigned Staff</th>
-                  <th>Status</th>
+                  <th style="width: 70px;">S/N</th>
+                  <th>Job Role Title</th>
                   <th style="text-align: right; width: 140px;">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let r of jobRoles">
+                <tr *ngFor="let r of jobRoles; let i = index">
                   <td>
-                    <span class="color-dot" [style.backgroundColor]="r.badgeColor || '#0050E5'"></span>
+                    <span class="sn-badge">{{ i + 1 }}</span>
                   </td>
                   <td>
                     <div class="title-cell">
                       <strong>{{ r.title }}</strong>
-                      <span class="desc-muted" *ngIf="r.description">{{ r.description }}</span>
                     </div>
-                  </td>
-                  <td>
-                    <span class="code-badge">{{ r.code }}</span>
-                  </td>
-                  <td>
-                    <span class="wage-tag" *ngIf="r.compensationBasis !== 'Monthly'">{{ currencySymbol }}{{ r.defaultHourlyRate | number:'1.2-2' }}/hr</span>
-                    <span class="wage-tag salary" *ngIf="r.compensationBasis === 'Monthly'">{{ currencySymbol }}{{ (r.monthlySalary || 0) | number:'1.0-0' }}/mo</span>
-                  </td>
-                  <td>
-                    <span class="sia-badge" [class.none]="!r.mandatorySiaSector || r.mandatorySiaSector === 'None'">
-                      {{ r.mandatorySiaSector || 'None' }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="staff-count-pill">{{ r.assignedStaffCount }} staff</span>
-                  </td>
-                  <td>
-                    <span class="status-pill active" *ngIf="r.isActive">Active</span>
-                    <span class="status-pill disabled" *ngIf="!r.isActive">Inactive</span>
                   </td>
                   <td style="text-align: right;">
                     <button type="button" class="action-btn" (click)="editRole(r)" title="Edit Role">
@@ -299,7 +250,7 @@ interface WorkforcePolicies {
                   </td>
                 </tr>
                 <tr *ngIf="jobRoles.length === 0 && !isLoading">
-                  <td colspan="8" class="empty-state">
+                  <td colspan="3" class="empty-state">
                     No job roles configured yet. Click "+ Add Job Role" to create your first operational role.
                   </td>
                 </tr>
@@ -791,155 +742,37 @@ interface WorkforcePolicies {
       <!-- MODAL: ADD / EDIT JOB ROLE -->
       <!-- ========================================================================= -->
       <div class="modal-backdrop" *ngIf="showRoleModal" (click)="closeRoleModal()">
-        <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title-group">
-              <span class="material-symbols-outlined text-blue">badge</span>
+              <span class="material-symbols-outlined text-blue">work</span>
               <div>
                 <h3>{{ isEditingRole ? 'Edit Job Role' : 'Add New Job Role' }}</h3>
-                <p class="modal-subtitle">Specify role title, base wage, billing charge rate, and qualification requirements.</p>
+                <p class="modal-subtitle">Enter the operational job role title.</p>
               </div>
             </div>
             <button type="button" class="btn-close" (click)="closeRoleModal()">&times;</button>
           </div>
 
           <div class="modal-body">
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Role Title <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="roleForm.title"
-                  placeholder="e.g. Operations Supervisor"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Role Code <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="roleForm.code"
-                  placeholder="e.g. OPS"
-                  required
-                />
-              </div>
-            </div>
-
             <div class="form-group">
-              <label class="form-label">Description</label>
-              <textarea
+              <label class="form-label">Role Title <span class="required">*</span></label>
+              <input
+                type="text"
                 class="form-control"
-                rows="2"
-                [(ngModel)]="roleForm.description"
-                placeholder="Brief summary of duties and responsibilities..."
-              ></textarea>
-            </div>
-
-            <!-- Compensation Model Selector -->
-            <div class="form-group">
-              <label class="form-label">Compensation Basis <span class="required">*</span></label>
-              <div class="radio-tab-toggle">
-                <button
-                  type="button"
-                  class="toggle-choice-btn"
-                  [class.active]="roleForm.compensationBasis !== 'Monthly'"
-                  (click)="roleForm.compensationBasis = 'Hourly'"
-                >
-                  <span class="material-symbols-outlined">schedule</span>
-                  <span>Hourly Wage Rate</span>
-                </button>
-                <button
-                  type="button"
-                  class="toggle-choice-btn"
-                  [class.active]="roleForm.compensationBasis === 'Monthly'"
-                  (click)="roleForm.compensationBasis = 'Monthly'"
-                >
-                  <span class="material-symbols-outlined">calendar_today</span>
-                  <span>Monthly Salaried</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="form-row-dual" *ngIf="roleForm.compensationBasis !== 'Monthly'">
-              <div class="form-group">
-                <label class="form-label">Default Hourly Wage Rate ({{ currencySymbol }}/hr) <span class="required">*</span></label>
-                <input
-                  type="number"
-                  step="0.25"
-                  class="form-control"
-                  [(ngModel)]="roleForm.defaultHourlyRate"
-                  placeholder="e.g. 15.00"
-                  required
-                />
-              </div>
-
-            </div>
-
-            <div class="form-row-dual" *ngIf="roleForm.compensationBasis === 'Monthly'">
-              <div class="form-group">
-                <label class="form-label">Monthly Base Salary ({{ currencySymbol }}/mo) <span class="required">*</span></label>
-                <input
-                  type="number"
-                  step="1000"
-                  class="form-control"
-                  [(ngModel)]="roleForm.monthlySalary"
-                  placeholder="e.g. 250000"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Contracted Weekly Hours <span class="required">*</span></label>
-                <input
-                  type="number"
-                  step="0.5"
-                  class="form-control"
-                  [(ngModel)]="roleForm.contractedWeeklyHours"
-                  placeholder="e.g. 40.0"
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="form-row-dual">
-              <div class="form-group">
-                <label class="form-label">Required Qualification / Credential</label>
-                <select class="form-control" [(ngModel)]="roleForm.mandatorySiaSector">
-                  <option value="None">None (Unrestricted / General Duty)</option>
-                  <option *ngFor="let cat of documentCategories" [value]="cat.name">
-                    {{ cat.name }} ({{ cat.code }})
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Badge Color Identifier</label>
-                <div class="color-picker-row">
-                  <input
-                    type="color"
-                    class="color-input"
-                    [(ngModel)]="roleForm.badgeColor"
-                  />
-                  <input
-                    type="text"
-                    class="form-control"
-                    [(ngModel)]="roleForm.badgeColor"
-                    placeholder="#0050E5"
-                  />
-                </div>
-              </div>
+                [(ngModel)]="roleForm.title"
+                placeholder="e.g. Security Officer, Supervisor, Receptionist"
+                required
+              />
             </div>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-outline" (click)="closeRoleModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" (click)="saveRole()" [disabled]="isSavingRole">
+            <button type="button" class="btn btn-primary" (click)="saveRole()" [disabled]="isSavingRole || !roleForm.title?.trim()">
               <span class="material-symbols-outlined" *ngIf="!isSavingRole">save</span>
               <span class="material-symbols-outlined spin" *ngIf="isSavingRole">sync</span>
-              {{ isSavingRole ? 'Saving...' : 'Save Job Role' }}
+              {{ isSavingRole ? 'Saving...' : (isEditingRole ? 'Update Role' : 'Save Job Role') }}
             </button>
           </div>
         </div>
@@ -1500,6 +1333,20 @@ interface WorkforcePolicies {
       background: #f1f5f9;
       border-radius: 0.35rem;
       color: #475569;
+    }
+
+    .sn-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
     }
 
     .wage-tag {
@@ -2375,10 +2222,8 @@ export class WorkforceSettingsComponent implements OnInit {
       code: '',
       description: '',
       compensationBasis: 'Hourly',
-      monthlySalary: undefined,
       contractedWeeklyHours: 40,
-      defaultHourlyRate: 15.0,
-      billingChargeRate: 22.5,
+      defaultHourlyRate: 0,
       mandatorySiaSector: 'None',
       badgeColor: '#0050E5',
       isActive: true
@@ -2397,9 +2242,17 @@ export class WorkforceSettingsComponent implements OnInit {
   }
 
   saveRole(): void {
-    if (!this.roleForm.title || !this.roleForm.code) {
-      this.toast.error('Please specify both Role Title and Role Code.');
+    if (!this.roleForm.title?.trim()) {
+      this.toast.error('Please enter a Role Title.');
       return;
+    }
+
+    if (!this.roleForm.code?.trim()) {
+      const words = this.roleForm.title.trim().split(/\s+/);
+      const code = words.length > 1
+        ? (words[0][0] + words[1][0] + (words[2] ? words[2][0] : '')).toUpperCase()
+        : this.roleForm.title.trim().substring(0, 4).toUpperCase();
+      this.roleForm.code = code || 'ROLE';
     }
 
     this.isSavingRole = true;
