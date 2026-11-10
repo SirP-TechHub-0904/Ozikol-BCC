@@ -102,6 +102,10 @@ interface WorkforcePolicies {
           </p>
         </div>
         <div class="header-actions">
+          <a routerLink="/workforce/console/schedule" class="btn btn-outline" title="Back to Rota & Shift Management">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Rota</span>
+          </a>
           <button type="button" class="btn btn-outline" (click)="loadAllData()">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span> Refresh
           </button>

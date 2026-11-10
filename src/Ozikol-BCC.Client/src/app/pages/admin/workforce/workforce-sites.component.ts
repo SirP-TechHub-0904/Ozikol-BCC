@@ -36,6 +36,10 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Manage operating customer sites, GPS geofence zones, and Site Assignment Instructions (SIs).</p>
         </div>
         <div class="header-actions">
+          <a routerLink="/workforce/console/schedule" class="btn btn-outline" title="Back to Rota & Shift Management">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Rota</span>
+          </a>
           <button type="button" class="btn btn-outline" (click)="loadSites()">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>

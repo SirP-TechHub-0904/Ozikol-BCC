@@ -36,6 +36,10 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="subtitle">Multi-site shift scheduling, 24/7 overnight rosters, and conflict protection.</p>
         </div>
         <div class="header-actions">
+          <a routerLink="/workforce/console/analytics" class="btn btn-outline" title="Back to Workforce Analytics & Hub">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Hub</span>
+          </a>
           <button type="button" class="btn btn-outline" (click)="loadData()">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>

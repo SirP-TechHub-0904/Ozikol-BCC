@@ -25,12 +25,12 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="text-muted m-0 mt-1">Real-time telemetry of on-duty security officers, geofence compliance, and safety check-calls.</p>
         </div>
         <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary d-flex align-items-center gap-1" routerLink="/workforce/console/schedule" title="Back to Rota Calendar">
+            <span class="material-symbols-outlined">arrow_back</span> Back to Rota
+          </a>
           <button class="btn btn-outline-primary d-flex align-items-center gap-1" (click)="loadMonitor()">
             <span class="material-symbols-outlined">refresh</span> Refresh Feed
           </button>
-          <a class="btn btn-primary d-flex align-items-center gap-1" routerLink="/workforce/console/schedule">
-            <span class="material-symbols-outlined">calendar_month</span> Rota Calendar
-          </a>
         </div>
       </div>
 

@@ -75,6 +75,14 @@ interface StaffMemberDetail {
 
       <!-- Main Container -->
       <div *ngIf="!isLoading && member" class="profile-container">
+        <!-- Top Navigation Bar -->
+        <div class="profile-top-nav">
+          <a routerLink="/workforce/console/enroll" class="btn btn-outline" title="Back to Staff Directory &amp; Roster">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Staff Directory</span>
+          </a>
+        </div>
+
         <!-- Profile Hero Header Card -->
         <div class="profile-hero-card">
           <div class="hero-left">
@@ -711,6 +719,12 @@ interface StaffMemberDetail {
       padding: 4rem;
       text-align: center;
       color: #64748b;
+    }
+
+    .profile-top-nav {
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
     }
 
     /* Hero Card */
