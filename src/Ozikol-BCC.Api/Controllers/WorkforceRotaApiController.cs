@@ -1828,6 +1828,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ContractedWeeklyHours = p.ContractedWeeklyHours,
                     PreferredWorkingTime = p.PreferredWorkingTime,
                     WorkingAvailability = p.WorkingAvailability,
+                    WeeklyAvailabilityJson = p.WeeklyAvailabilityJson,
                     AverageRating = p.AverageRating,
                     TotalRatingsCount = p.TotalRatingsCount,
                     TotalShiftsCompleted = p.TotalShiftsCompleted,
@@ -3440,6 +3441,7 @@ namespace Ozikol_BCC.Api.Controllers
                 ContractedWeeklyHours = profile?.ContractedWeeklyHours ?? 40.0m,
                 PreferredWorkingTime = profile?.PreferredWorkingTime ?? "Any",
                 WorkingAvailability = profile?.WorkingAvailability ?? "Available",
+                WeeklyAvailabilityJson = profile?.WeeklyAvailabilityJson,
                 AverageRating = profile?.AverageRating ?? 5.0m,
                 TotalRatingsCount = profile?.TotalRatingsCount ?? 0,
                 TotalShiftsCompleted = profile?.TotalShiftsCompleted ?? 0,
@@ -3579,6 +3581,7 @@ namespace Ozikol_BCC.Api.Controllers
             if (request.ContractedWeeklyHours.HasValue) profile.ContractedWeeklyHours = request.ContractedWeeklyHours.Value;
             if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) profile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
             if (!string.IsNullOrWhiteSpace(request.WorkingAvailability)) profile.WorkingAvailability = request.WorkingAvailability.Trim();
+            if (request.WeeklyAvailabilityJson != null) profile.WeeklyAvailabilityJson = request.WeeklyAvailabilityJson;
             profile.IsActive = request.IsActive;
             profile.UpdatedUtc = DateTime.UtcNow;
 
@@ -3801,6 +3804,7 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal? ContractedWeeklyHours { get; set; }
         public string PreferredWorkingTime { get; set; } = "Any";
         public string WorkingAvailability { get; set; } = "Available";
+        public string? WeeklyAvailabilityJson { get; set; }
         public decimal AverageRating { get; set; }
         public int TotalRatingsCount { get; set; }
         public int TotalShiftsCompleted { get; set; }
@@ -4261,6 +4265,7 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal ContractedWeeklyHours { get; set; }
         public string PreferredWorkingTime { get; set; } = "Any";
         public string WorkingAvailability { get; set; } = "Available";
+        public string? WeeklyAvailabilityJson { get; set; }
         public decimal AverageRating { get; set; }
         public int TotalRatingsCount { get; set; }
         public int TotalShiftsCompleted { get; set; }
@@ -4306,6 +4311,7 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
         public string? WorkingAvailability { get; set; }
+        public string? WeeklyAvailabilityJson { get; set; }
         public bool IsActive { get; set; } = true;
 
         public string? EmergencyContactName { get; set; }

@@ -21,6 +21,7 @@ interface StaffMemberDetail {
   contractedWeeklyHours: number;
   preferredWorkingTime?: string;
   workingAvailability?: string;
+  weeklyAvailabilityJson?: string;
   averageRating: number;
   totalRatingsCount: number;
   totalShiftsCompleted: number;
@@ -407,6 +408,49 @@ interface StaffMemberDetail {
                     <div class="toggle-info">
                       <strong>48-Hour Opt-Out Agreement Signed</strong>
                       <span>Allows staff member to voluntarily work beyond 48 hours weekly.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Detailed Day-by-Day Working Availability -->
+            <div class="content-card mt-3">
+              <div class="card-header-bar">
+                <div class="header-bar-left">
+                  <span class="material-symbols-outlined text-blue">calendar_today</span>
+                  <div>
+                    <h3 class="card-heading">Day-by-Day Working Availability Schedule</h3>
+                    <p class="card-sub">Define recurring available hours per day (e.g. Monday 8 to 5, Tuesday Night, Friday Noon). Used to automatically filter and skip staff during shift creation.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <div class="weekly-schedule-table">
+                  <div class="schedule-day-row" *ngFor="let item of weeklySchedule">
+                    <div class="day-col">
+                      <strong>{{ item.dayLabel }}</strong>
+                    </div>
+                    <div class="mode-col">
+                      <select class="form-control" [(ngModel)]="item.mode">
+                        <option value="Any">Available (Any Shift)</option>
+                        <option value="Day">Day Shift Window</option>
+                        <option value="Night">Night Shift Window</option>
+                        <option value="Specific">Specific Working Hours</option>
+                        <option value="Off">Unavailable / Day Off</option>
+                      </select>
+                    </div>
+                    <div class="time-col" *ngIf="item.mode === 'Specific'">
+                      <input type="time" class="form-control" [(ngModel)]="item.startTime" placeholder="08:00" />
+                      <span class="time-sep">to</span>
+                      <input type="time" class="form-control" [(ngModel)]="item.endTime" placeholder="17:00" />
+                    </div>
+                    <div class="hint-col" *ngIf="item.mode !== 'Specific'">
+                      <span class="badge-tag green" *ngIf="item.mode === 'Any'">Full availability</span>
+                      <span class="badge-tag blue" *ngIf="item.mode === 'Day'">08:00 – 19:00</span>
+                      <span class="badge-tag purple" *ngIf="item.mode === 'Night'">19:00 – 08:00</span>
+                      <span class="badge-tag gray" *ngIf="item.mode === 'Off'">Day Off</span>
                     </div>
                   </div>
                 </div>
@@ -1326,6 +1370,59 @@ interface StaffMemberDetail {
       background: #f8fafc;
     }
 
+    /* Weekly Availability Schedule Table */
+    .weekly-schedule-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .schedule-day-row {
+      display: grid;
+      grid-template-columns: 140px 220px 1fr;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+    }
+    @media (max-width: 768px) {
+      .schedule-day-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+    }
+    .day-col strong {
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+    .time-col {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .time-col .form-control {
+      max-width: 140px;
+    }
+    .time-sep {
+      font-size: 0.8125rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-tag.green { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-tag.blue { background: #eff6ff; color: #0050e5; border: 1px solid #dbeafe; }
+    .badge-tag.purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+    .badge-tag.gray { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
@@ -1340,6 +1437,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
   jobRoles: any[] = [];
   staffTypes: any[] = [];
   documentCategories: any[] = [];
+  weeklySchedule: { dayKey: string; dayLabel: string; mode: string; startTime?: string; endTime?: string }[] = [];
   fallbackCategories = [
     { name: 'Right to Work / Passport', code: 'RTW' },
     { name: 'Proof of Address', code: 'POA' },
@@ -1404,6 +1502,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
         this.isLoading = false;
         if (res && res.data) {
           this.member = res.data;
+          this.initWeeklySchedule();
         }
       },
       error: (err) => {
@@ -1450,9 +1549,45 @@ export class WorkforceMemberProfileComponent implements OnInit {
     }
   }
 
+  initWeeklySchedule(): void {
+    const defaults = [
+      { dayKey: 'monday', dayLabel: 'Monday', mode: 'Specific', startTime: '08:00', endTime: '17:00' },
+      { dayKey: 'tuesday', dayLabel: 'Tuesday', mode: 'Night', startTime: '20:00', endTime: '08:00' },
+      { dayKey: 'wednesday', dayLabel: 'Wednesday', mode: 'Any', startTime: '', endTime: '' },
+      { dayKey: 'thursday', dayLabel: 'Thursday', mode: 'Any', startTime: '', endTime: '' },
+      { dayKey: 'friday', dayLabel: 'Friday', mode: 'Specific', startTime: '12:00', endTime: '18:00' },
+      { dayKey: 'saturday', dayLabel: 'Saturday', mode: 'Off', startTime: '', endTime: '' },
+      { dayKey: 'sunday', dayLabel: 'Sunday', mode: 'Off', startTime: '', endTime: '' }
+    ];
+
+    if (this.member?.weeklyAvailabilityJson) {
+      try {
+        const parsed = JSON.parse(this.member.weeklyAvailabilityJson);
+        this.weeklySchedule = defaults.map(d => {
+          if (parsed[d.dayKey]) {
+            return { ...d, ...parsed[d.dayKey] };
+          }
+          return d;
+        });
+        return;
+      } catch {}
+    }
+    this.weeklySchedule = defaults;
+  }
+
   saveMemberDetail(): void {
     if (!this.member) return;
     this.isSaving = true;
+
+    const availMap: { [key: string]: any } = {};
+    for (const d of this.weeklySchedule) {
+      availMap[d.dayKey] = {
+        mode: d.mode,
+        dayName: d.dayLabel,
+        startTime: d.startTime || '',
+        endTime: d.endTime || ''
+      };
+    }
 
     const payload = {
       firstName: this.member.firstName,
@@ -1465,6 +1600,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
       contractedWeeklyHours: this.member.contractedWeeklyHours,
       preferredWorkingTime: this.member.preferredWorkingTime || 'Any',
       workingAvailability: this.member.workingAvailability || 'Available',
+      weeklyAvailabilityJson: JSON.stringify(availMap),
       isActive: this.member.isActive,
       emergencyContactName: this.member.emergencyContactName,
       emergencyContactRelationship: this.member.emergencyContactRelationship,
@@ -1487,6 +1623,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
         this.toast.success('Staff member profile updated successfully.');
         if (res && res.data) {
           this.member = res.data;
+          this.initWeeklySchedule();
         }
       },
       error: (err) => {

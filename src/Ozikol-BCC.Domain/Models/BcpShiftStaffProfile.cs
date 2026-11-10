@@ -110,6 +110,11 @@ namespace Ozikol_BCC.Domain.Models
         public string WorkingAvailability { get; set; } = "Available";
 
         /// <summary>
+        /// Detailed day-of-week availability schedule in JSON format (e.g., Monday: 08:00-17:00, Tuesday: Night, Friday: Noon, etc.).
+        /// </summary>
+        public string? WeeklyAvailabilityJson { get; set; }
+
+        /// <summary>
         /// Indicates whether this worker is active and eligible for shift scheduling and open shift bidding.
         /// </summary>
         public bool IsActive { get; set; } = true;

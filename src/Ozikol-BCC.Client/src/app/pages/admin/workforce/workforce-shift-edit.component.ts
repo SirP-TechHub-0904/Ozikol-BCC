@@ -32,6 +32,7 @@ interface StaffMember {
   contractedWeeklyHours?: number;
   preferredWorkingTime?: string;
   workingAvailability?: string;
+  weeklyAvailabilityJson?: string;
 }
 
 /**
@@ -111,58 +112,42 @@ interface StaffMember {
               <div class="card-title-group">
                 <span class="material-symbols-outlined text-blue">event_repeat</span>
                 <div>
-                  <h3>Work Schedule Pattern &amp; Frequency</h3>
-                  <p class="card-subtitle">Select the working arrangement that matches your operational needs.</p>
+                  <h3>Work Schedule Pattern</h3>
+                  <p class="card-subtitle">Choose whether this is a single ad-hoc shift or a repeating multi-day schedule.</p>
                 </div>
               </div>
             </div>
 
             <div class="card-body">
-              <div class="pattern-selector-grid">
-                <!-- Pattern 1: Regular Daily Routine -->
+              <div class="pattern-dual-grid">
+                <!-- Choice 1: Single Shift -->
                 <div
                   class="pattern-card"
-                  [class.selected]="schedulePattern === 'Daily'"
-                  (click)="setPattern('Daily')"
+                  [class.selected]="schedulePattern === 'Single'"
+                  (click)="setPattern('Single')"
                 >
                   <div class="pattern-icon-box">
-                    <span class="material-symbols-outlined">business</span>
+                    <span class="material-symbols-outlined">event</span>
                   </div>
                   <div class="pattern-details">
-                    <span class="pattern-title">Regular Daily Routine</span>
-                    <span class="pattern-desc">Fixed daily working hours (e.g. 8:00 AM - 5:00 PM Mon to Fri) across weeks or months.</span>
+                    <span class="pattern-title">Single Shift</span>
+                    <span class="pattern-desc">Specific duty assignment with Start Date &amp; Time and End Date &amp; Time.</span>
                   </div>
                   <span class="pattern-radio"></span>
                 </div>
 
-                <!-- Pattern 2: Shift / Rota Pattern -->
+                <!-- Choice 2: Recurring Schedule -->
                 <div
                   class="pattern-card"
-                  [class.selected]="schedulePattern === 'ShiftRota'"
-                  (click)="setPattern('ShiftRota')"
+                  [class.selected]="schedulePattern === 'Recurring'"
+                  (click)="setPattern('Recurring')"
                 >
                   <div class="pattern-icon-box">
-                    <span class="material-symbols-outlined">sync_alt</span>
+                    <span class="material-symbols-outlined">event_repeat</span>
                   </div>
                   <div class="pattern-details">
-                    <span class="pattern-title">Shift / Rota Pattern</span>
-                    <span class="pattern-desc">Rotating day, evening, or overnight windows (e.g. 12h shifts, 24/7 care or facilities).</span>
-                  </div>
-                  <span class="pattern-radio"></span>
-                </div>
-
-                <!-- Pattern 3: Single / Ad-Hoc Shift -->
-                <div
-                  class="pattern-card"
-                  [class.selected]="schedulePattern === 'AdHoc'"
-                  (click)="setPattern('AdHoc')"
-                >
-                  <div class="pattern-icon-box">
-                    <span class="material-symbols-outlined">bolt</span>
-                  </div>
-                  <div class="pattern-details">
-                    <span class="pattern-title">Single / Ad-Hoc Shift</span>
-                    <span class="pattern-desc">A one-off specific shift, emergency cover, or event assignment.</span>
+                    <span class="pattern-title">Recurring Schedule</span>
+                    <span class="pattern-desc">Repeats across a date range. Apply Every Day or Dynamic Specific Days.</span>
                   </div>
                   <span class="pattern-radio"></span>
                 </div>
@@ -177,14 +162,47 @@ interface StaffMember {
                 <span class="material-symbols-outlined text-blue">schedule</span>
                 <div>
                   <h3>Working Hours &amp; Calendar Range</h3>
-                  <p class="card-subtitle">Specify active operational dates, daily work times, and break allowances.</p>
+                  <p class="card-subtitle">
+                    {{ schedulePattern === 'Single' || isEditMode ? 'Specify shift start and end dates/times.' : 'Specify date range, cadence, and daily operational hours.' }}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div class="card-body">
-              <!-- Regular Daily Pattern Settings -->
-              <ng-container *ngIf="!isEditMode && schedulePattern === 'Daily'">
+              <!-- Single Shift Mode (No days of week chips) -->
+              <ng-container *ngIf="isEditMode || schedulePattern === 'Single'">
+                <div class="form-row-dual">
+                  <div class="form-group">
+                    <label class="form-label">Duty Start Date &amp; Time <span class="required">*</span></label>
+                    <input
+                      type="datetime-local"
+                      class="form-control"
+                      [(ngModel)]="singleStartDateTime"
+                      name="singleStartDateTime"
+                      (change)="onDateTimeChange()"
+                      required
+                    />
+                    <span class="field-hint">e.g. 10/11/2026, 08:00 AM</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Duty End Date &amp; Time <span class="required">*</span></label>
+                    <input
+                      type="datetime-local"
+                      class="form-control"
+                      [(ngModel)]="singleEndDateTime"
+                      name="singleEndDateTime"
+                      (change)="onDateTimeChange()"
+                      required
+                    />
+                    <span class="field-hint">e.g. 10/11/2026, 05:00 PM</span>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Recurring Schedule Mode -->
+              <ng-container *ngIf="!isEditMode && schedulePattern === 'Recurring'">
                 <div class="form-row-dual">
                   <div class="form-group">
                     <label class="form-label">Effective Start Date <span class="required">*</span></label>
@@ -213,34 +231,65 @@ interface StaffMember {
                   </div>
                 </div>
 
-                <!-- Days of Week Selector -->
+                <!-- Schedule Cadence: Every Day vs Dynamic Specific Days -->
                 <div class="form-group">
-                  <div class="label-with-action">
-                    <label class="form-label">Active Working Days <span class="required">*</span></label>
-                    <div class="quick-day-actions">
-                      <button type="button" class="btn-text-sm" (click)="setWeekdaysOnly()">Mon - Fri</button>
-                      <button type="button" class="btn-text-sm" (click)="toggleWeekends()">Include Weekends</button>
-                      <button type="button" class="btn-text-sm" (click)="selectAllDays()">All 7 Days</button>
+                  <label class="form-label">Schedule Cadence &amp; Days <span class="required">*</span></label>
+                  <div class="cadence-toggle-group">
+                    <button
+                      type="button"
+                      class="btn-cadence"
+                      [class.active]="recurringCadence === 'EveryDay'"
+                      (click)="setCadence('EveryDay')"
+                    >
+                      <span class="material-symbols-outlined">calendar_month</span>
+                      <span>Every Day (All Days in Range)</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-cadence"
+                      [class.active]="recurringCadence === 'Dynamic'"
+                      (click)="setCadence('Dynamic')"
+                    >
+                      <span class="material-symbols-outlined">tune</span>
+                      <span>Dynamic / Specific Days</span>
+                    </button>
+                  </div>
+
+                  <!-- Dynamic Days of Week Chips -->
+                  <div class="dynamic-days-box" *ngIf="recurringCadence === 'Dynamic'">
+                    <div class="label-with-action">
+                      <span class="quick-label">Select Active Days:</span>
+                      <div class="quick-day-actions">
+                        <button type="button" class="btn-text-sm" (click)="setWeekdaysOnly()">Mon - Fri</button>
+                        <button type="button" class="btn-text-sm" (click)="toggleWeekends()">Include Weekends</button>
+                        <button type="button" class="btn-text-sm" (click)="selectAllDays()">All 7 Days</button>
+                      </div>
+                    </div>
+
+                    <div class="days-chips-row">
+                      <button
+                        type="button"
+                        *ngFor="let d of daysOfWeekList"
+                        class="day-chip"
+                        [class.active]="selectedDays.includes(d.id)"
+                        (click)="toggleDay(d.id)"
+                      >
+                        {{ d.label }}
+                      </button>
                     </div>
                   </div>
 
-                  <div class="days-chips-row">
-                    <button
-                      type="button"
-                      *ngFor="let d of daysOfWeekList"
-                      class="day-chip"
-                      [class.active]="selectedDays.includes(d.id)"
-                      (click)="toggleDay(d.id)"
-                    >
-                      {{ d.label }}
-                    </button>
+                  <!-- Every Day Friendly Note -->
+                  <div class="cadence-note" *ngIf="recurringCadence === 'EveryDay'">
+                    <span class="material-symbols-outlined text-blue">info</span>
+                    <span>Shift will be scheduled for every day across the entire date range.</span>
                   </div>
                 </div>
 
-                <!-- Daily Times -->
+                <!-- Daily Shift Times -->
                 <div class="form-row-dual">
                   <div class="form-group">
-                    <label class="form-label">Daily Work Start Time <span class="required">*</span></label>
+                    <label class="form-label">Daily Shift Start Time <span class="required">*</span></label>
                     <input
                       type="time"
                       class="form-control"
@@ -253,7 +302,7 @@ interface StaffMember {
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">Daily Work End Time <span class="required">*</span></label>
+                    <label class="form-label">Daily Shift End Time <span class="required">*</span></label>
                     <input
                       type="time"
                       class="form-control"
@@ -265,152 +314,97 @@ interface StaffMember {
                     <span class="field-hint">e.g. 17:00 (5:00 PM)</span>
                   </div>
                 </div>
-              </ng-container>
 
-              <!-- Shift Rota Pattern Settings -->
-              <ng-container *ngIf="!isEditMode && schedulePattern === 'ShiftRota'">
                 <div class="preset-windows-bar">
-                  <span class="preset-label">Shift Presets:</span>
-                  <button type="button" class="btn-preset" (click)="applyPreset('Day')">Day (08:00 - 20:00)</button>
+                  <span class="preset-label">Quick Presets:</span>
+                  <button type="button" class="btn-preset" (click)="applyPreset('Day')">Day (08:00 - 17:00)</button>
                   <button type="button" class="btn-preset" (click)="applyPreset('Night')">Night (20:00 - 08:00)</button>
                   <button type="button" class="btn-preset" (click)="applyPreset('Morning')">Morning (07:00 - 15:30)</button>
                   <button type="button" class="btn-preset" (click)="applyPreset('Evening')">Evening (15:00 - 23:00)</button>
                 </div>
-
-                <div class="form-row-dual">
-                  <div class="form-group">
-                    <label class="form-label">Schedule Start Date <span class="required">*</span></label>
-                    <input
-                      type="date"
-                      class="form-control"
-                      [(ngModel)]="startDate"
-                      name="startDate"
-                      (change)="recalculateScheduleMetrics()"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label class="form-label">Schedule End Date <span class="required">*</span></label>
-                    <input
-                      type="date"
-                      class="form-control"
-                      [(ngModel)]="endDate"
-                      name="endDate"
-                      (change)="recalculateScheduleMetrics()"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Shift Duty Days</label>
-                  <div class="days-chips-row">
-                    <button
-                      type="button"
-                      *ngFor="let d of daysOfWeekList"
-                      class="day-chip"
-                      [class.active]="selectedDays.includes(d.id)"
-                      (click)="toggleDay(d.id)"
-                    >
-                      {{ d.label }}
-                    </button>
-                  </div>
-                </div>
-
-                <div class="form-row-dual">
-                  <div class="form-group">
-                    <label class="form-label">Shift Start Time <span class="required">*</span></label>
-                    <input
-                      type="time"
-                      class="form-control"
-                      [(ngModel)]="dailyStartTime"
-                      name="dailyStartTime"
-                      (change)="recalculateScheduleMetrics()"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label class="form-label">Shift End Time <span class="required">*</span></label>
-                    <input
-                      type="time"
-                      class="form-control"
-                      [(ngModel)]="dailyEndTime"
-                      name="dailyEndTime"
-                      (change)="recalculateScheduleMetrics()"
-                      required
-                    />
-                  </div>
-                </div>
               </ng-container>
 
-              <!-- Single / Ad-Hoc Shift or Edit Mode -->
-              <ng-container *ngIf="isEditMode || schedulePattern === 'AdHoc'">
-                <div class="form-row-dual">
-                  <div class="form-group">
-                    <label class="form-label">Duty Start Date &amp; Time (Local) <span class="required">*</span></label>
-                    <input
-                      type="datetime-local"
-                      class="form-control"
-                      [(ngModel)]="singleStartDateTime"
-                      name="singleStartDateTime"
-                      (change)="recalculateScheduleMetrics()"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label class="form-label">Duty End Date &amp; Time (Local) <span class="required">*</span></label>
-                    <input
-                      type="datetime-local"
-                      class="form-control"
-                      [(ngModel)]="singleEndDateTime"
-                      name="singleEndDateTime"
-                      (change)="recalculateScheduleMetrics()"
-                      required
-                    />
-                  </div>
-                </div>
-              </ng-container>
-
-              <!-- Break Deduction & Overtime Settings -->
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Unpaid Break Deduction (Minutes)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="180"
-                    step="5"
-                    class="form-control"
-                    [(ngModel)]="breakMinutes"
-                    name="breakMinutes"
-                    (change)="recalculateScheduleMetrics()"
-                    placeholder="e.g. 60"
-                  />
-                  <span class="field-hint">Deducted from gross duration for billable/payroll hours.</span>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Overtime Tracking</label>
+              <!-- Break Timeframe (Start & End Time) -->
+              <div class="break-timeframe-box">
+                <div class="break-header-row">
                   <div class="toggle-control-box">
                     <label class="switch">
                       <input
                         type="checkbox"
-                        [(ngModel)]="trackOvertime"
-                        name="trackOvertime"
+                        [(ngModel)]="hasBreak"
+                        name="hasBreak"
+                        (change)="onBreakToggle()"
                       />
                       <span class="slider round"></span>
                     </label>
                     <div class="toggle-text">
-                      <strong>{{ trackOvertime ? 'Overtime Flagged' : 'Standard Working Time' }}</strong>
-                      <span>{{ trackOvertime ? 'Hours exceeding standard shift threshold earn overtime allowance.' : 'Standard remuneration applied.' }}</span>
+                      <strong>Scheduled Rest / Meal Break</strong>
+                      <span>Deduct unpaid rest break time frame from gross scheduled hours.</span>
                     </div>
+                  </div>
+                </div>
+
+                <div class="break-inputs-row" *ngIf="hasBreak">
+                  <div class="form-group">
+                    <label class="form-label">Break Start Time</label>
+                    <input
+                      type="time"
+                      class="form-control"
+                      [(ngModel)]="breakStartTime"
+                      name="breakStartTime"
+                      (change)="onBreakTimeChange()"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Break End Time</label>
+                    <input
+                      type="time"
+                      class="form-control"
+                      [(ngModel)]="breakEndTime"
+                      name="breakEndTime"
+                      (change)="onBreakTimeChange()"
+                    />
+                  </div>
+                </div>
+
+                <div class="break-summary-badge" *ngIf="hasBreak">
+                  <span class="material-symbols-outlined text-blue">coffee</span>
+                  <div>
+                    <strong>Break Time Frame: {{ formatTime12(breakStartTime) }} to {{ formatTime12(breakEndTime) }}</strong>
+                    <span>{{ breakMinutes }} minutes total deduction applied to billable and payroll hours</span>
+                  </div>
+                </div>
+
+                <div class="break-summary-badge no-break" *ngIf="!hasBreak">
+                  <span class="material-symbols-outlined">schedule</span>
+                  <div>
+                    <strong>Continuous Duty (No Unpaid Break)</strong>
+                    <span>100% of shift duration is credited as payable duty time.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Overtime Tracking Setting -->
+              <div class="form-group">
+                <label class="form-label">Overtime Tracking</label>
+                <div class="toggle-control-box">
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="trackOvertime"
+                      name="trackOvertime"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                  <div class="toggle-text">
+                    <strong>{{ trackOvertime ? 'Overtime Flagged' : 'Standard Working Time' }}</strong>
+                    <span>{{ trackOvertime ? 'Hours exceeding standard shift threshold earn overtime allowance.' : 'Standard remuneration applied.' }}</span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
           </div>
 
           <!-- Card 3: Work Location & Facility Details -->
@@ -569,6 +563,65 @@ interface StaffMember {
             </div>
 
             <div class="card-body">
+              <!-- Staff Availability Matcher & Auto-Skip Notice Banner -->
+              <div class="availability-notice-banner">
+                <div class="notice-main">
+                  <span class="material-symbols-outlined text-success">verified_user</span>
+                  <div class="notice-text">
+                    <div class="notice-title">
+                      <strong>{{ availableStaffList.length }} Qualified Personnel Available</strong>
+                      <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
+                        {{ skippedStaffList.length }} Incompatible Personnel Skipped
+                      </span>
+                    </div>
+                    <p class="notice-desc">
+                      Staff whose profile availability does not cover this day and time window are automatically skipped.
+                    </p>
+                  </div>
+                </div>
+                <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
+                  <button
+                    type="button"
+                    class="btn-text-sm"
+                    (click)="showSkippedList = !showSkippedList"
+                  >
+                    <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
+                    <span>{{ showSkippedList ? 'Hide Skipped Personnel' : 'View Skipped (' + skippedStaffList.length + ')' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Skipped Personnel Accordion Drawer -->
+              <div class="skipped-drawer" *ngIf="showSkippedList && skippedStaffList.length > 0">
+                <div class="skipped-drawer-header">
+                  <span class="material-symbols-outlined text-warning">info</span>
+                  <span>Personnel Skipped (Availability Mismatch):</span>
+                </div>
+                <div class="skipped-items-list">
+                  <div class="skipped-item" *ngFor="let s of skippedStaffList">
+                    <div class="skipped-person">
+                      <strong>{{ s.member.fullName }}</strong>
+                      <span class="skipped-role">({{ s.member.jobTitle || 'General Staff' }})</span>
+                    </div>
+                    <div class="skipped-reason">
+                      <span class="material-symbols-outlined text-danger">cancel</span>
+                      <span>{{ s.reason }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="override-checkbox-row">
+                  <label class="custom-check-label">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="overrideAvailabilityFilter"
+                      name="overrideAvailabilityFilter"
+                    />
+                    <span>Show skipped personnel in dropdown (Administrative emergency override)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Assigned Staff Dropdown -->
               <div class="form-group">
                 <label class="form-label">Assigned Staff Member</label>
                 <select
@@ -578,11 +631,20 @@ interface StaffMember {
                   (change)="onStaffChange()"
                 >
                   <option value="">Leave unassigned (Open Shift / Board)</option>
-                  <option *ngFor="let m of staffMembers" [value]="m.userId">
-                    {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift] &bull; {{ m.workingAvailability || 'Available' }}
+                  <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
+                    {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
                   </option>
                 </select>
                 <span class="field-hint">If left unassigned, this schedule appears on the Open Shift Claim Board.</span>
+              </div>
+
+              <!-- Warning if selected staff member is incompatible -->
+              <div class="staff-conflict-alert" *ngIf="selectedStaffConflict">
+                <span class="material-symbols-outlined text-danger">warning</span>
+                <div>
+                  <strong>Availability Conflict Warning:</strong>
+                  <p>{{ selectedStaffConflict }}</p>
+                </div>
               </div>
 
               <div class="form-row-dual" *ngIf="isEditMode">
@@ -1517,6 +1579,268 @@ interface StaffMember {
       margin-bottom: 0.35rem;
     }
 
+    /* Pattern Dual Grid */
+    .pattern-dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .pattern-dual-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cadence Toggle Group */
+    .cadence-toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .btn-cadence {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-cadence:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .btn-cadence.active {
+      background: #eff6ff;
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+
+    .dynamic-days-box {
+      padding: 0.875rem 1rem;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 0.5rem;
+    }
+
+    .cadence-note {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: #eff6ff;
+      border-radius: 0.375rem;
+      font-size: 0.8125rem;
+      color: #1e40af;
+    }
+
+    /* Break Timeframe */
+    .break-timeframe-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.625rem;
+    }
+
+    .break-inputs-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .break-summary-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.625rem 0.875rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+    }
+
+    .break-summary-badge.no-break {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      color: #64748b;
+    }
+
+    .break-summary-badge strong {
+      display: block;
+      color: #0f172a;
+    }
+
+    .break-summary-badge span {
+      display: block;
+      color: #475569;
+      font-size: 0.75rem;
+    }
+
+    /* Availability Notice & Skipping */
+    .availability-notice-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.875rem 1rem;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 0.5rem;
+      gap: 1rem;
+    }
+
+    .notice-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .notice-main span {
+      font-size: 1.35rem;
+      color: #16a34a;
+    }
+
+    .notice-title {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      flex-wrap: wrap;
+    }
+
+    .notice-title strong {
+      font-size: 0.875rem;
+      color: #166534;
+    }
+
+    .skipped-tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 0.375rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #b91c1c;
+    }
+
+    .notice-desc {
+      font-size: 0.75rem;
+      color: #334155;
+      margin: 0.2rem 0 0 0;
+      line-height: 1.4;
+    }
+
+    .skipped-drawer {
+      padding: 0.875rem 1rem;
+      background: #ffffff;
+      border: 1px solid #fed7aa;
+      border-radius: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    .skipped-drawer-header {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #c2410c;
+    }
+
+    .skipped-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .skipped-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0.6rem;
+      background: #fff7ed;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+    }
+
+    .skipped-person strong {
+      color: #0f172a;
+    }
+
+    .skipped-role {
+      color: #64748b;
+      margin-left: 0.35rem;
+    }
+
+    .skipped-reason {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .skipped-reason span.material-symbols-outlined {
+      font-size: 1rem;
+    }
+
+    .override-checkbox-row {
+      padding-top: 0.5rem;
+      border-top: 1px dashed #e2e8f0;
+    }
+
+    .custom-check-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .staff-conflict-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.75rem 1rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 0.5rem;
+      color: #991b1b;
+      font-size: 0.8125rem;
+    }
+
+    .staff-conflict-alert p {
+      margin: 0.2rem 0 0 0;
+      font-size: 0.75rem;
+      color: #b91c1c;
+    }
+
+    .text-warning {
+      color: #ea580c;
+    }
+
+    .text-danger {
+      color: #dc2626;
+    }
+
     .modal-footer {
       padding: 1rem 1.5rem;
       border-top: 1px solid #e2e8f0;
@@ -1539,8 +1863,11 @@ export class WorkforceShiftEditComponent implements OnInit {
   jobRoles: JobRole[] = [];
   staffMembers: StaffMember[] = [];
 
-  // Pattern Selector: 'Daily' | 'ShiftRota' | 'AdHoc'
-  schedulePattern: 'Daily' | 'ShiftRota' | 'AdHoc' = 'Daily';
+  // Pattern Selector: 'Single' | 'Recurring'
+  schedulePattern: 'Single' | 'Recurring' = 'Single';
+
+  // Cadence for Recurring: 'EveryDay' | 'Dynamic'
+  recurringCadence: 'EveryDay' | 'Dynamic' = 'EveryDay';
 
   // Schedule Dates & Times
   startDate = '';
@@ -1549,11 +1876,16 @@ export class WorkforceShiftEditComponent implements OnInit {
   dailyEndTime = '17:00';
   singleStartDateTime = '';
   singleEndDateTime = '';
+
+  // Break Time Frame
+  hasBreak = true;
+  breakStartTime = '12:00';
+  breakEndTime = '13:00';
   breakMinutes = 60;
   trackOvertime = false;
 
   // Selected Days of Week for Recurring (1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun)
-  selectedDays: number[] = [1, 2, 3, 4, 5];
+  selectedDays: number[] = [1, 2, 3, 4, 5, 6, 0];
   daysOfWeekList = [
     { id: 1, label: 'Mon' },
     { id: 2, label: 'Tue' },
@@ -1585,10 +1917,15 @@ export class WorkforceShiftEditComponent implements OnInit {
   requiredWorkspaceStationName = '';
   dutyNotes = '';
 
+  // Availability & Skipping
+  showSkippedList = false;
+  overrideAvailabilityFilter = false;
+  selectedStaffConflict = '';
+
   // Live Calculated Metrics
-  calculatedTotalDays = 0;
+  calculatedTotalDays = 1;
   calculatedDailyHours = 8.0;
-  calculatedTotalHours = 0;
+  calculatedTotalHours = 8.0;
   isOvernightShift = false;
 
   constructor(
@@ -1611,139 +1948,218 @@ export class WorkforceShiftEditComponent implements OnInit {
     });
   }
 
-  private initDefaultDates(): void {
-    const today = new Date();
-    const future = new Date();
-    future.setDate(today.getDate() + 30); // Default 1 month ahead
+  // --- Availability Checker & Skipping Logic ---
 
-    this.startDate = this.formatDate(today);
-    this.endDate = this.formatDate(future);
+  get availableStaffList(): StaffMember[] {
+    return this.staffMembers.filter(m => this.checkStaffAvailability(m).available);
+  }
 
-    // Single shift defaults (tomorrow 8am - 5pm)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const startIso = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 8, 0);
-    const endIso = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 17, 0);
-    this.singleStartDateTime = this.formatDateTimeLocal(startIso);
-    this.singleEndDateTime = this.formatDateTimeLocal(endIso);
+  get skippedStaffList(): { member: StaffMember; reason: string }[] {
+    const list: { member: StaffMember; reason: string }[] = [];
+    for (const m of this.staffMembers) {
+      const check = this.checkStaffAvailability(m);
+      if (!check.available) {
+        list.push({ member: m, reason: check.reason || 'Availability mismatch' });
+      }
+    }
+    return list;
+  }
 
+  get displayedStaffMembers(): StaffMember[] {
+    return this.overrideAvailabilityFilter ? this.staffMembers : this.availableStaffList;
+  }
+
+  checkStaffAvailability(m: StaffMember): { available: boolean; reason?: string } {
+    const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    let targetDays: number[] = [];
+    let shiftStart = '';
+    let shiftEnd = '';
+
+    if (this.isEditMode || this.schedulePattern === 'Single') {
+      if (this.singleStartDateTime) {
+        const d = new Date(this.singleStartDateTime);
+        targetDays = [d.getDay()];
+        shiftStart = this.getTimePart(this.singleStartDateTime);
+      } else {
+        targetDays = [1];
+        shiftStart = '08:00';
+      }
+      shiftEnd = this.singleEndDateTime ? this.getTimePart(this.singleEndDateTime) : '17:00';
+    } else {
+      targetDays = this.recurringCadence === 'EveryDay' ? [1, 2, 3, 4, 5, 6, 0] : this.selectedDays;
+      shiftStart = this.dailyStartTime || '08:00';
+      shiftEnd = this.dailyEndTime || '17:00';
+    }
+
+    const isNightShift = this.isShiftNight(shiftStart, shiftEnd);
+
+    // 1. Day-by-Day schedule check from weeklyAvailabilityJson
+    if (m.weeklyAvailabilityJson) {
+      try {
+        const parsed = JSON.parse(m.weeklyAvailabilityJson);
+        for (const dayNum of targetDays) {
+          const k = dayKeys[dayNum];
+          const cfg = parsed[k];
+          if (cfg) {
+            if (cfg.mode === 'Off') {
+              return { available: false, reason: `Unavailable on ${dayNames[dayNum]} (Scheduled Off)` };
+            }
+            if (cfg.mode === 'Day' && isNightShift) {
+              return { available: false, reason: `Available for Day shifts only on ${dayNames[dayNum]}` };
+            }
+            if (cfg.mode === 'Night' && !isNightShift) {
+              return { available: false, reason: `Available for Night shifts only on ${dayNames[dayNum]}` };
+            }
+            if (cfg.mode === 'Specific' && cfg.startTime && cfg.endTime) {
+              const shiftStartMins = this.toMinutes(shiftStart);
+              const shiftEndMins = this.toMinutes(shiftEnd);
+              const userStartMins = this.toMinutes(cfg.startTime);
+              const userEndMins = this.toMinutes(cfg.endTime);
+
+              if (shiftStartMins < userStartMins || shiftEndMins > userEndMins) {
+                return {
+                  available: false,
+                  reason: `Available on ${dayNames[dayNum]} only between ${cfg.startTime} - ${cfg.endTime}`
+                };
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Global preferences fallback
+    if (m.preferredWorkingTime === 'Day' && isNightShift) {
+      return { available: false, reason: 'Prefers Day shifts only' };
+    }
+    if (m.preferredWorkingTime === 'Night' && !isNightShift) {
+      return { available: false, reason: 'Prefers Night shifts only' };
+    }
+    if (m.workingAvailability === 'Weekdays Only' && (targetDays.includes(6) || targetDays.includes(0))) {
+      return { available: false, reason: 'Available Weekdays Only (Shift includes Weekends)' };
+    }
+    if (m.workingAvailability === 'Weekends Only' && targetDays.some(d => d >= 1 && d <= 5)) {
+      return { available: false, reason: 'Available Weekends Only (Shift includes Weekdays)' };
+    }
+
+    return { available: true };
+  }
+
+  onDateTimeChange(): void {
     this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
   }
 
-  private loadReferenceData(): void {
-    this.isLoading = true;
-
-    // Load Work Locations
-    this.workforceService.getSites().subscribe({
-      next: (res: any) => {
-        this.sites = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
-      },
-      error: () => {}
-    });
-
-    // Load Job Roles
-    this.workforceService.getJobRoles().subscribe({
-      next: (res: any) => {
-        this.jobRoles = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
-        if (this.jobRoles.length > 0 && !this.selectedRoleId) {
-          this.selectedRoleId = this.jobRoles[0].id;
-          this.onRoleChange();
-        }
-        this.isLoading = false;
-      },
-      error: () => {
-        this.isLoading = false;
-      }
-    });
-
-    // Load Staff Members
-    this.workforceService.getMembers().subscribe({
-      next: (res: any) => {
-        this.staffMembers = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
-      },
-      error: () => {}
-    });
+  validateAssignedStaffAvailability(): void {
+    if (!this.assignedUserId) {
+      this.selectedStaffConflict = '';
+      return;
+    }
+    const staff = this.staffMembers.find(m => m.userId === this.assignedUserId);
+    if (staff) {
+      const check = this.checkStaffAvailability(staff);
+      this.selectedStaffConflict = check.available ? '' : (check.reason || 'Availability mismatch');
+    }
   }
 
-  private loadShiftDetails(id: string): void {
-    this.isLoading = true;
-    this.workforceService.getShift(id).subscribe({
-      next: (res: any) => {
-        this.isLoading = false;
-        const s = res?.data || res;
-        if (!s) return;
+  // --- Break Controls ---
 
-        this.shiftCode = s.shiftCode;
-        this.selectedSiteId = s.clientSiteId;
-        this.facilityName = s.facilityName || '';
-        this.address = s.address || '';
-        this.postCode = s.postCode || '';
-        this.postName = s.postName || 'General Assignment';
-        this.assignedUserId = s.assignedUserId || '';
-        this.assignedStaffName = s.assignedUserName || '';
-        this.hourlyPayRate = s.hourlyPayRate;
-        this.hourlyChargeRate = s.hourlyChargeRate;
-        this.breakMinutes = s.breakMinutes || 0;
-        this.requiredWorkspaceStationName = s.requiredWorkspaceStationName || '';
-        this.shiftStatus = s.status || 'Scheduled';
-        this.dutyNotes = s.notes || '';
-
-        if (s.startsAtUtc) {
-          const st = new Date(s.startsAtUtc);
-          this.singleStartDateTime = this.formatDateTimeLocal(st);
-        }
-        if (s.endsAtUtc) {
-          const et = new Date(s.endsAtUtc);
-          this.singleEndDateTime = this.formatDateTimeLocal(et);
-        }
-        if (s.acceptanceDeadlineUtc) {
-          const ad = new Date(s.acceptanceDeadlineUtc);
-          this.acceptanceDeadlineLocal = this.formatDateTimeLocal(ad);
-        }
-
-        this.recalculateScheduleMetrics();
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.toast.error(err?.error?.message || 'Failed to load shift details.');
-      }
-    });
+  onBreakToggle(): void {
+    if (this.hasBreak) {
+      this.onBreakTimeChange();
+    } else {
+      this.breakMinutes = 0;
+      this.recalculateScheduleMetrics();
+    }
   }
 
-  setPattern(pattern: 'Daily' | 'ShiftRota' | 'AdHoc'): void {
-    this.schedulePattern = pattern;
-    if (pattern === 'Daily') {
-      this.dailyStartTime = '08:00';
-      this.dailyEndTime = '17:00';
-      this.breakMinutes = 60;
-      this.selectedDays = [1, 2, 3, 4, 5];
-    } else if (pattern === 'ShiftRota') {
-      this.dailyStartTime = '08:00';
-      this.dailyEndTime = '20:00';
-      this.breakMinutes = 60;
+  onBreakTimeChange(): void {
+    if (this.breakStartTime && this.breakEndTime) {
+      const startMins = this.toMinutes(this.breakStartTime);
+      const endMins = this.toMinutes(this.breakEndTime);
+      let diff = endMins - startMins;
+      if (diff < 0) diff += 24 * 60; // Crosses midnight
+      this.breakMinutes = Math.max(0, diff);
     }
     this.recalculateScheduleMetrics();
+  }
+
+  formatTime12(timeStr: string): string {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    let h = parseInt(parts[0], 10);
+    const m = parts[1] || '00';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+  }
+
+  private toMinutes(t: string): number {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  }
+
+  private getTimePart(dt: string): string {
+    if (!dt) return '08:00';
+    const idx = dt.indexOf('T');
+    return idx >= 0 ? dt.substring(idx + 1, idx + 6) : '08:00';
+  }
+
+  private isShiftNight(startTime: string, endTime: string): boolean {
+    const startMins = this.toMinutes(startTime);
+    const endMins = this.toMinutes(endTime);
+    // If shift crosses midnight or starts at/after 19:00 (7 PM) or starts before 06:00
+    if (endMins < startMins) return true;
+    if (startMins >= 19 * 60 || startMins <= 6 * 60) return true;
+    return false;
+  }
+
+  // --- Pattern & Cadence Methods ---
+
+  setPattern(pattern: 'Single' | 'Recurring'): void {
+    this.schedulePattern = pattern;
+    this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
+  }
+
+  setCadence(cadence: 'EveryDay' | 'Dynamic'): void {
+    this.recurringCadence = cadence;
+    if (cadence === 'EveryDay') {
+      this.selectedDays = [1, 2, 3, 4, 5, 6, 0];
+    } else {
+      this.selectedDays = [1, 2, 3, 4, 5];
+    }
+    this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
   }
 
   applyPreset(preset: 'Day' | 'Night' | 'Morning' | 'Evening'): void {
     if (preset === 'Day') {
       this.dailyStartTime = '08:00';
-      this.dailyEndTime = '20:00';
-      this.breakMinutes = 60;
+      this.dailyEndTime = '17:00';
+      this.breakStartTime = '12:00';
+      this.breakEndTime = '13:00';
     } else if (preset === 'Night') {
       this.dailyStartTime = '20:00';
       this.dailyEndTime = '08:00';
-      this.breakMinutes = 60;
+      this.breakStartTime = '00:00';
+      this.breakEndTime = '01:00';
     } else if (preset === 'Morning') {
       this.dailyStartTime = '07:00';
       this.dailyEndTime = '15:30';
-      this.breakMinutes = 30;
+      this.breakStartTime = '11:30';
+      this.breakEndTime = '12:00';
     } else if (preset === 'Evening') {
       this.dailyStartTime = '15:00';
       this.dailyEndTime = '23:00';
-      this.breakMinutes = 30;
+      this.breakStartTime = '19:00';
+      this.breakEndTime = '19:30';
     }
-    this.recalculateScheduleMetrics();
+    this.onBreakTimeChange();
   }
 
   toggleDay(dayId: number): void {
@@ -1758,11 +2174,13 @@ export class WorkforceShiftEditComponent implements OnInit {
       this.selectedDays.push(dayId);
     }
     this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
   }
 
   setWeekdaysOnly(): void {
     this.selectedDays = [1, 2, 3, 4, 5];
     this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
   }
 
   toggleWeekends(): void {
@@ -1774,11 +2192,13 @@ export class WorkforceShiftEditComponent implements OnInit {
       if (!this.selectedDays.includes(0)) this.selectedDays.push(0);
     }
     this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
   }
 
   selectAllDays(): void {
     this.selectedDays = [1, 2, 3, 4, 5, 6, 0];
     this.recalculateScheduleMetrics();
+    this.validateAssignedStaffAvailability();
   }
 
   onSiteChange(): void {
@@ -1808,10 +2228,109 @@ export class WorkforceShiftEditComponent implements OnInit {
   onStaffChange(): void {
     const member = this.staffMembers.find((m) => m.userId === this.assignedUserId);
     this.assignedStaffName = member ? member.fullName : '';
+    this.validateAssignedStaffAvailability();
+  }
+
+  private initDefaultDates(): void {
+    const today = new Date();
+    const future = new Date();
+    future.setDate(today.getDate() + 30);
+
+    this.startDate = this.formatDate(today);
+    this.endDate = this.formatDate(future);
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const startIso = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 8, 0);
+    const endIso = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 17, 0);
+    this.singleStartDateTime = this.formatDateTimeLocal(startIso);
+    this.singleEndDateTime = this.formatDateTimeLocal(endIso);
+
+    this.onBreakTimeChange();
+  }
+
+  private loadReferenceData(): void {
+    this.isLoading = true;
+
+    this.workforceService.getSites().subscribe({
+      next: (res: any) => {
+        this.sites = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+      },
+      error: () => {}
+    });
+
+    this.workforceService.getJobRoles().subscribe({
+      next: (res: any) => {
+        this.jobRoles = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+        if (this.jobRoles.length > 0 && !this.selectedRoleId) {
+          this.selectedRoleId = this.jobRoles[0].id;
+          this.onRoleChange();
+        }
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+
+    this.workforceService.getMembers().subscribe({
+      next: (res: any) => {
+        this.staffMembers = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+        this.validateAssignedStaffAvailability();
+      },
+      error: () => {}
+    });
+  }
+
+  private loadShiftDetails(id: string): void {
+    this.isLoading = true;
+    this.workforceService.getShift(id).subscribe({
+      next: (res: any) => {
+        this.isLoading = false;
+        const s = res?.data || res;
+        if (!s) return;
+
+        this.shiftCode = s.shiftCode;
+        this.selectedSiteId = s.clientSiteId;
+        this.facilityName = s.facilityName || '';
+        this.address = s.address || '';
+        this.postCode = s.postCode || '';
+        this.postName = s.postName || 'General Assignment';
+        this.assignedUserId = s.assignedUserId || '';
+        this.assignedStaffName = s.assignedUserName || '';
+        this.hourlyPayRate = s.hourlyPayRate;
+        this.hourlyChargeRate = s.hourlyChargeRate;
+        this.breakMinutes = s.breakMinutes || 0;
+        this.hasBreak = this.breakMinutes > 0;
+        this.requiredWorkspaceStationName = s.requiredWorkspaceStationName || '';
+        this.shiftStatus = s.status || 'Scheduled';
+        this.dutyNotes = s.notes || '';
+
+        if (s.startsAtUtc) {
+          const st = new Date(s.startsAtUtc);
+          this.singleStartDateTime = this.formatDateTimeLocal(st);
+        }
+        if (s.endsAtUtc) {
+          const et = new Date(s.endsAtUtc);
+          this.singleEndDateTime = this.formatDateTimeLocal(et);
+        }
+        if (s.acceptanceDeadlineUtc) {
+          const ad = new Date(s.acceptanceDeadlineUtc);
+          this.acceptanceDeadlineLocal = this.formatDateTimeLocal(ad);
+        }
+
+        this.recalculateScheduleMetrics();
+        this.validateAssignedStaffAvailability();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.toast.error(err?.error?.message || 'Failed to load shift details.');
+      }
+    });
   }
 
   recalculateScheduleMetrics(): void {
-    if (this.isEditMode || this.schedulePattern === 'AdHoc') {
+    if (this.isEditMode || this.schedulePattern === 'Single') {
       if (this.singleStartDateTime && this.singleEndDateTime) {
         const start = new Date(this.singleStartDateTime);
         const end = new Date(this.singleEndDateTime);
@@ -1827,13 +2346,13 @@ export class WorkforceShiftEditComponent implements OnInit {
       return;
     }
 
-    // Daily & Shift Rota calculation
+    // Recurring Schedule Calculation
     if (this.dailyStartTime && this.dailyEndTime) {
       const [sh, sm] = this.dailyStartTime.split(':').map(Number);
       const [eh, em] = this.dailyEndTime.split(':').map(Number);
       let grossHours = (eh + em / 60) - (sh + sm / 60);
       if (grossHours <= 0) {
-        grossHours += 24; // Cross-midnight
+        grossHours += 24;
         this.isOvernightShift = true;
       } else {
         this.isOvernightShift = false;
@@ -1849,8 +2368,10 @@ export class WorkforceShiftEditComponent implements OnInit {
       let count = 0;
       const cur = new Date(start);
 
+      const activeDays = this.recurringCadence === 'EveryDay' ? [1, 2, 3, 4, 5, 6, 0] : this.selectedDays;
+
       while (cur <= end) {
-        if (this.selectedDays.includes(cur.getDay())) {
+        if (activeDays.includes(cur.getDay())) {
           count++;
         }
         cur.setDate(cur.getDate() + 1);
@@ -1875,7 +2396,6 @@ export class WorkforceShiftEditComponent implements OnInit {
     this.isSaving = true;
 
     if (this.isEditMode && this.shiftId) {
-      // Single shift update
       const payload = {
         clientSiteId: this.selectedSiteId,
         assignedUserId: this.assignedUserId || null,
@@ -1910,7 +2430,7 @@ export class WorkforceShiftEditComponent implements OnInit {
     }
 
     // Create Single Shift
-    if (this.schedulePattern === 'AdHoc') {
+    if (this.schedulePattern === 'Single') {
       const singlePayload = {
         clientSiteId: this.selectedSiteId,
         assignedUserId: this.assignedUserId || null,
@@ -1942,7 +2462,9 @@ export class WorkforceShiftEditComponent implements OnInit {
       return;
     }
 
-    // Create Batch Recurring Schedule (Daily Routine or Shift Rota)
+    // Create Batch Recurring Schedule
+    const activeDays = this.recurringCadence === 'EveryDay' ? [1, 2, 3, 4, 5, 6, 0] : this.selectedDays;
+
     const batchPayload = {
       clientSiteId: this.selectedSiteId,
       assignedUserId: this.assignedUserId || null,
@@ -1951,14 +2473,14 @@ export class WorkforceShiftEditComponent implements OnInit {
       facilityName: this.facilityName,
       address: this.address,
       postCode: this.postCode,
-      eventTag: this.schedulePattern,
+      eventTag: 'Recurring',
       notes: this.dutyNotes,
-      schedulePattern: this.schedulePattern,
+      schedulePattern: 'Recurring',
       startDate: this.startDate,
       endDate: this.endDate,
       startTime: this.dailyStartTime,
       endTime: this.dailyEndTime,
-      selectedDaysOfWeek: this.selectedDays,
+      selectedDaysOfWeek: activeDays,
       breakMinutes: this.breakMinutes,
       compensationBasis: this.selectedRole?.compensationBasis || 'Hourly',
       hourlyPayRate: this.hourlyPayRate,
