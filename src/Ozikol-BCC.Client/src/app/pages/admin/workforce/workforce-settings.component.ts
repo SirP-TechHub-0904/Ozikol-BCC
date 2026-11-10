@@ -111,7 +111,7 @@ interface WorkforcePolicies {
             *ngIf="activeTab === 'roles'"
             (click)="openRoleModal()"
           >
-            <span class="material-symbols-outlined">add</span> + Add Job Role
+            <span class="material-symbols-outlined">add</span> Add Job Role
           </button>
           <button
             type="button"
@@ -119,7 +119,7 @@ interface WorkforcePolicies {
             *ngIf="activeTab === 'staff-types'"
             (click)="openStaffTypeModal()"
           >
-            <span class="material-symbols-outlined">add</span> + Add Staff Type
+            <span class="material-symbols-outlined">add</span> Add Staff Classification
           </button>
           <button
             type="button"
@@ -127,7 +127,7 @@ interface WorkforcePolicies {
             *ngIf="activeTab === 'documents'"
             (click)="openCategoryModal()"
           >
-            <span class="material-symbols-outlined">add</span> + Add Document Category
+            <span class="material-symbols-outlined">add</span> Add Document Category
           </button>
           <button
             type="button"
@@ -255,9 +255,6 @@ interface WorkforcePolicies {
                 <p class="card-sub">Roles dictate default wage disbursements, client billing charge rates, and required credential categories.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="openRoleModal()">
-              <span class="material-symbols-outlined">add</span> + Add Role
-            </button>
           </div>
 
           <div class="table-responsive">
@@ -750,9 +747,6 @@ interface WorkforcePolicies {
                 <p class="card-sub">Permanent, Temporary, and Contractor tiers. Compulsory types cannot be deleted to ensure data integrity.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="openStaffTypeModal()">
-              <span class="material-symbols-outlined">add</span> + Add Classification
-            </button>
           </div>
 
           <div class="table-responsive">
@@ -829,9 +823,6 @@ interface WorkforcePolicies {
                 <p class="card-sub">Define the specific compliance credentials, certificates, and ID documents your staff must provide.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="openCategoryModal()">
-              <span class="material-symbols-outlined">add</span> + Add Category
-            </button>
           </div>
 
           <div class="table-responsive">
