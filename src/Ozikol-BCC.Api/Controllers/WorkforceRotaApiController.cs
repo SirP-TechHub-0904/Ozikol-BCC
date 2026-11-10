@@ -2085,54 +2085,62 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse("Job role title is required."));
             }
 
-            var cleanTitle = request.Title.Trim();
-            var cleanCode = !string.IsNullOrWhiteSpace(request.Code)
-                ? request.Code.Trim().ToUpperInvariant()
-                : cleanTitle[..Math.Min(4, cleanTitle.Length)].ToUpperInvariant();
-
-            bool exists = await _db.BcpJobRoles
-                .AnyAsync(r => r.TenantKey == CurrentTenantKey && r.Title.ToLower() == cleanTitle.ToLower(), ct);
-
-            if (exists)
+            try
             {
-                return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse($"A job role with title '{cleanTitle}' already exists."));
+                var cleanTitle = request.Title.Trim();
+                var cleanCode = !string.IsNullOrWhiteSpace(request.Code)
+                    ? request.Code.Trim().ToUpperInvariant()
+                    : cleanTitle[..Math.Min(4, cleanTitle.Length)].ToUpperInvariant();
+
+                bool exists = await _db.BcpJobRoles
+                    .AnyAsync(r => r.TenantKey == CurrentTenantKey && r.Title.ToLower() == cleanTitle.ToLower(), ct);
+
+                if (exists)
+                {
+                    return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse($"A job role with title '{cleanTitle}' already exists."));
+                }
+
+                var role = new BcpJobRole
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    Title = cleanTitle,
+                    Code = cleanCode,
+                    Description = request.Description?.Trim() ?? string.Empty,
+                    DefaultHourlyRate = request.DefaultHourlyRate,
+                    BillingChargeRate = request.BillingChargeRate,
+                    MandatorySiaSector = request.MandatorySiaSector?.Trim() ?? "None",
+                    BadgeColor = !string.IsNullOrWhiteSpace(request.BadgeColor) ? request.BadgeColor.Trim() : "#0050E5",
+                    IsActive = true,
+                    SortOrder = request.SortOrder,
+                    CreatedUtc = DateTime.UtcNow
+                };
+
+                _db.BcpJobRoles.Add(role);
+                await _db.SaveChangesAsync(ct);
+
+                var dto = new BcpJobRoleDto
+                {
+                    Id = role.Id,
+                    Title = role.Title,
+                    Code = role.Code,
+                    Description = role.Description,
+                    DefaultHourlyRate = role.DefaultHourlyRate,
+                    BillingChargeRate = role.BillingChargeRate,
+                    MandatorySiaSector = role.MandatorySiaSector,
+                    BadgeColor = role.BadgeColor,
+                    IsActive = role.IsActive,
+                    SortOrder = role.SortOrder,
+                    EnrolledStaffCount = 0
+                };
+
+                return Ok(ApiResponse<BcpJobRoleDto>.SuccessResponse(dto, "Job role created successfully."));
             }
-
-            var role = new BcpJobRole
+            catch (Exception ex)
             {
-                Id = Guid.CreateVersion7(),
-                TenantKey = CurrentTenantKey,
-                Title = cleanTitle,
-                Code = cleanCode,
-                Description = request.Description?.Trim() ?? string.Empty,
-                DefaultHourlyRate = request.DefaultHourlyRate,
-                BillingChargeRate = request.BillingChargeRate,
-                MandatorySiaSector = request.MandatorySiaSector?.Trim() ?? "None",
-                BadgeColor = !string.IsNullOrWhiteSpace(request.BadgeColor) ? request.BadgeColor.Trim() : "#0050E5",
-                IsActive = true,
-                SortOrder = request.SortOrder,
-                CreatedUtc = DateTime.UtcNow
-            };
-
-            _db.BcpJobRoles.Add(role);
-            await _db.SaveChangesAsync(ct);
-
-            var dto = new BcpJobRoleDto
-            {
-                Id = role.Id,
-                Title = role.Title,
-                Code = role.Code,
-                Description = role.Description,
-                DefaultHourlyRate = role.DefaultHourlyRate,
-                BillingChargeRate = role.BillingChargeRate,
-                MandatorySiaSector = role.MandatorySiaSector,
-                BadgeColor = role.BadgeColor,
-                IsActive = role.IsActive,
-                SortOrder = role.SortOrder,
-                EnrolledStaffCount = 0
-            };
-
-            return Ok(ApiResponse<BcpJobRoleDto>.SuccessResponse(dto, "Job role created successfully."));
+                return BadRequest(ApiResponse<BcpJobRoleDto>.FailureResponse(
+                    $"Unable to save job role: {ex.InnerException?.Message ?? ex.Message}. Please verify database schema is up-to-date."));
+            }
         }
 
         /// <summary>

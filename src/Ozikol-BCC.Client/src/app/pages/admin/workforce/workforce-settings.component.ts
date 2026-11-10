@@ -389,22 +389,22 @@ interface WorkforcePolicies {
                   />
                   <span class="field-hint">Triggers fatigue burnout warnings when auto-scheduling.</span>
                 </div>
+              </div>
 
-                <div class="form-group">
-                  <label class="form-label">Working Time Regulations Enforcement</label>
-                  <div class="toggle-card">
-                    <label class="switch">
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="policies.enforce48HourWeeklyCap"
-                        name="enforce48HourWeeklyCap"
-                      />
-                      <span class="slider round"></span>
-                    </label>
-                    <div class="toggle-info">
-                      <strong>Enforce 48-Hour Weekly Cap</strong>
-                      <span>Warn or block allocations exceeding 48h unless opt-out signed.</span>
-                    </div>
+              <div class="form-group">
+                <label class="form-label">Working Time Regulations Enforcement</label>
+                <div class="toggle-card">
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="policies.enforce48HourWeeklyCap"
+                      name="enforce48HourWeeklyCap"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                  <div class="toggle-info">
+                    <strong>Enforce 48-Hour Weekly Cap</strong>
+                    <span>Warn or block allocations exceeding 48h unless opt-out signed.</span>
                   </div>
                 </div>
               </div>
@@ -424,46 +424,44 @@ interface WorkforcePolicies {
             </div>
 
             <div class="policy-form">
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Day Shift Window <span class="required">*</span></label>
-                  <div class="time-range-group">
-                    <input
-                      type="time"
-                      class="form-control"
-                      [(ngModel)]="policies.dayShiftStart"
-                      name="dayShiftStart"
-                    />
-                    <span class="time-sep">to</span>
-                    <input
-                      type="time"
-                      class="form-control"
-                      [(ngModel)]="policies.dayShiftEnd"
-                      name="dayShiftEnd"
-                    />
-                  </div>
-                  <span class="field-hint">Standard daytime hours (e.g. 07:00 to 19:00).</span>
+              <div class="form-group">
+                <label class="form-label">Day Shift Window <span class="required">*</span></label>
+                <div class="time-range-group">
+                  <input
+                    type="time"
+                    class="form-control"
+                    [(ngModel)]="policies.dayShiftStart"
+                    name="dayShiftStart"
+                  />
+                  <span class="time-sep">to</span>
+                  <input
+                    type="time"
+                    class="form-control"
+                    [(ngModel)]="policies.dayShiftEnd"
+                    name="dayShiftEnd"
+                  />
                 </div>
+                <span class="field-hint">Standard daytime hours (e.g. 07:00 to 19:00).</span>
+              </div>
 
-                <div class="form-group">
-                  <label class="form-label">Night Shift Window <span class="required">*</span></label>
-                  <div class="time-range-group">
-                    <input
-                      type="time"
-                      class="form-control"
-                      [(ngModel)]="policies.nightShiftStart"
-                      name="nightShiftStart"
-                    />
-                    <span class="time-sep">to</span>
-                    <input
-                      type="time"
-                      class="form-control"
-                      [(ngModel)]="policies.nightShiftEnd"
-                      name="nightShiftEnd"
-                    />
-                  </div>
-                  <span class="field-hint">Overnight window spanning midnight (e.g. 19:00 to 07:00).</span>
+              <div class="form-group">
+                <label class="form-label">Night Shift Window <span class="required">*</span></label>
+                <div class="time-range-group">
+                  <input
+                    type="time"
+                    class="form-control"
+                    [(ngModel)]="policies.nightShiftStart"
+                    name="nightShiftStart"
+                  />
+                  <span class="time-sep">to</span>
+                  <input
+                    type="time"
+                    class="form-control"
+                    [(ngModel)]="policies.nightShiftEnd"
+                    name="nightShiftEnd"
+                  />
                 </div>
+                <span class="field-hint">Overnight window spanning midnight (e.g. 19:00 to 07:00).</span>
               </div>
 
               <div class="night-premium-box">
@@ -930,7 +928,7 @@ interface WorkforcePolicies {
                   type="text"
                   class="form-control"
                   [(ngModel)]="roleForm.title"
-                  placeholder="e.g. Operations Supervisor, Team Lead, Specialist"
+                  placeholder="e.g. Operations Supervisor"
                   required
                 />
               </div>
@@ -1246,6 +1244,9 @@ interface WorkforcePolicies {
       padding: 1.5rem 2rem;
       background-color: #f8fafc;
       min-height: calc(100vh - 70px);
+      overflow-x: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .breadcrumb-nav {
@@ -1373,6 +1374,11 @@ interface WorkforcePolicies {
       border-bottom: 2px solid #e2e8f0;
       margin-bottom: 1.5rem;
       overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
 
     .tab-btn {
@@ -1671,8 +1677,9 @@ interface WorkforcePolicies {
     /* Policy Forms Layout */
     .policy-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1.5rem;
+      max-width: 100%;
     }
 
     @media (max-width: 1024px) {
@@ -1702,6 +1709,8 @@ interface WorkforcePolicies {
 
     .form-control {
       width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 0.55rem 0.85rem;
       font-size: 0.875rem;
       border: 1px solid #cbd5e1;
@@ -1726,20 +1735,36 @@ interface WorkforcePolicies {
 
     .form-row-dual {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 640px) {
+      .form-row-dual {
+        grid-template-columns: 1fr;
+      }
     }
 
     .time-range-group {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .time-range-group .form-control {
+      flex: 1 1 0;
+      min-width: 0;
     }
 
     .time-sep {
       font-size: 0.8125rem;
       color: #64748b;
       font-weight: 600;
+      flex-shrink: 0;
     }
 
     .toggle-card {
@@ -1945,12 +1970,13 @@ interface WorkforcePolicies {
       border-radius: 0.75rem;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
       width: 100%;
-      max-width: 550px;
+      max-width: 580px;
       overflow: hidden;
+      box-sizing: border-box;
     }
 
     .modal-large {
-      max-width: 700px;
+      max-width: 720px;
     }
 
     .modal-header {
@@ -1997,6 +2023,8 @@ interface WorkforcePolicies {
       padding: 1.5rem;
       max-height: 70vh;
       overflow-y: auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
 
     .modal-footer {
@@ -2012,6 +2040,8 @@ interface WorkforcePolicies {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .color-input {
@@ -2022,6 +2052,12 @@ interface WorkforcePolicies {
       cursor: pointer;
       padding: 2px;
       background: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .color-picker-row .form-control {
+      flex: 1 1 0;
+      min-width: 0;
     }
 
     .info-guide-body {

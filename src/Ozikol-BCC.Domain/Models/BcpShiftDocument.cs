@@ -77,6 +77,16 @@ namespace Ozikol_BCC.Domain.Models
         public DateTime? ExpiryDateUtc { get; set; }
 
         /// <summary>
+        /// Backward-compatible alias for ExpiryDateUtc.
+        /// </summary>
+        [NotMapped]
+        public DateTime? ExpirationDateUtc
+        {
+            get => ExpiryDateUtc;
+            set => ExpiryDateUtc = value;
+        }
+
+        /// <summary>
         /// Indicates whether an organization manager or compliance officer has formally verified the document.
         /// </summary>
         public bool IsVerified { get; set; }
