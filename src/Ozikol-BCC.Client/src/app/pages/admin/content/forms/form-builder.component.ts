@@ -73,23 +73,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                   placeholder="e.g. Service Request & Project Intake"
                   class="form-control"
                   required>
-                <small class="hint">Internal and display title of this form.</small>
+                <div class="auto-key-meta">
+                  <span class="auto-key-label">Form Key:</span>
+                  <code class="auto-key-pill">{{ form.formKey || 'auto-generated' }}</code>
+                  <span *ngIf="isDuplicateFormKey()" class="auto-key-dup">Already in use — auto-adjusted on save</span>
+                  <span *ngIf="!isDuplicateFormKey()" class="auto-key-hint">Auto-generated from title (used to link sections)</span>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label>Programmatic Key / Slug <span class="required">*</span></label>
-                <input
-                  type="text"
-                  [(ngModel)]="form.formKey"
-                  (ngModelChange)="onDataChanged()"
-                  placeholder="e.g. service-request"
-                  class="form-control font-mono"
-                  [disabled]="isEditMode"
-                  required>
-                <small class="hint">Used in template sections to identify this form (lowercase, hyphens only).</small>
-              </div>
-
-              <div class="form-group">
+              <div class="form-group col-span-2">
                 <label>Notification Email</label>
                 <input
                   type="email"
@@ -210,21 +202,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       <input
                         type="text"
                         [(ngModel)]="field.label"
-                        (input)="onFieldLabelChange(field)"
+                        (input)="onFieldLabelChange(field, idx)"
                         (ngModelChange)="onDataChanged()"
                         placeholder="e.g. Which service are you interested in?"
                         class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Programmatic Key <span class="required">*</span></label>
-                      <input
-                        type="text"
-                        [(ngModel)]="field.fieldKey"
-                        (ngModelChange)="onDataChanged()"
-                        placeholder="e.g. services"
-                        class="form-control font-mono">
-                      <small class="hint">Identifier stored in submission data payload.</small>
+                      <div class="auto-key-meta">
+                        <span class="auto-key-label">Programmatic Key:</span>
+                        <code class="auto-key-pill">{{ field.fieldKey || ('question_' + (idx + 1)) }}</code>
+                        <span *ngIf="isDuplicateFieldKey(field, idx)" class="auto-key-dup">Duplicate key auto-adjusted</span>
+                      </div>
                     </div>
 
                     <div class="form-group">
@@ -244,6 +230,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       </select>
                     </div>
 
+                    <div class="form-group">
+                      <label>Grid Layout Width</label>
+                      <select [(ngModel)]="field.gridWidth" (ngModelChange)="onDataChanged()" class="form-control">
+                        <option value="col-md-12">Full Width (100%)</option>
+                        <option value="col-md-6">Half Width (50%)</option>
+                        <option value="col-md-4">One Third (33.3%)</option>
+                      </select>
+                    </div>
+
                     <!-- Options list for pill_select and dropdown -->
                     <div class="form-group col-span-2" *ngIf="field.fieldType === 'pill_select' || field.fieldType === 'dropdown'">
                       <label>
@@ -259,7 +254,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       <small class="hint">Enter each option separated by commas. Visitors will choose from these items.</small>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group col-span-2">
                       <label>Placeholder Text</label>
                       <input
                         type="text"
@@ -267,15 +262,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                         (ngModelChange)="onDataChanged()"
                         placeholder="e.g. Select timeline or Enter details"
                         class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Grid Layout Width</label>
-                      <select [(ngModel)]="field.gridWidth" (ngModelChange)="onDataChanged()" class="form-control">
-                        <option value="col-md-12">Full Width (100%)</option>
-                        <option value="col-md-6">Half Width (50%)</option>
-                        <option value="col-md-4">One Third (33.3%)</option>
-                      </select>
                     </div>
 
                     <div class="form-group col-span-2">
@@ -490,6 +476,27 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
       padding: 18px; border-top: 1px solid #f1f5f9; background: #fff;
     }
     .field-edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .auto-key-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 11px;
+    }
+    .auto-key-label { color: #64748b; font-weight: 600; }
+    .auto-key-pill {
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 600;
+    }
+    .auto-key-hint { color: #94a3b8; }
+    .auto-key-dup { color: #d97706; font-weight: 600; }
 
     .empty-fields-state {
       padding: 32px; text-align: center; color: #64748b;
@@ -605,6 +612,7 @@ export class FormBuilderComponent implements OnInit {
   autoSaveStatus: 'saved' | 'saving' | 'unsaved' | 'error' = 'saved';
   lastSavedTime: Date | null = null;
   hasDraftRestored = false;
+  existingFormKeys: string[] = [];
   private autoSaveDebounceTimer: any = null;
 
   get headerTitle(): string {
@@ -655,6 +663,7 @@ export class FormBuilderComponent implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
+      this.loadExistingFormKeys(id);
       if (id) {
         this.isEditMode = true;
         this.formId = id;
@@ -858,26 +867,103 @@ export class FormBuilderComponent implements OnInit {
     });
   }
 
+  private loadExistingFormKeys(currentId: string | null): void {
+    this.formsService.getAllForms().subscribe({
+      next: (res: any) => {
+        const list: any[] = Array.isArray(res?.data) ? res.data : [];
+        this.existingFormKeys = list
+          .filter(f => !currentId || f.id !== currentId)
+          .map(f => String(f.formKey || '').trim().toLowerCase())
+          .filter(Boolean);
+      },
+      error: () => { }
+    });
+  }
+
   onTitleChange(): void {
     if (!this.isEditMode && this.form.title) {
-      this.form.formKey = this.form.title
+      const baseSlug = this.form.title
         .toLowerCase()
+        .replace(/&/g, 'and')
         .replace(/[^a-z0-9\s-]/g, '')
         .trim()
-        .replace(/\s+/g, '-');
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+
+      const root = baseSlug || 'custom-form';
+      let candidate = root;
+      let suffix = 2;
+      while (this.existingFormKeys.includes(candidate)) {
+        candidate = `${root}-${suffix++}`;
+      }
+      this.form.formKey = candidate;
     }
     this.onDataChanged();
   }
 
-  onFieldLabelChange(field: PageFormFieldItem): void {
-    if (!field.fieldKey || field.fieldKey.startsWith('question_') || field.fieldKey.startsWith('field_')) {
-      field.fieldKey = field.label
+  isDuplicateFormKey(): boolean {
+    if (this.isEditMode || !this.form.formKey) return false;
+    return this.existingFormKeys.includes(this.form.formKey.trim().toLowerCase());
+  }
+
+  onFieldLabelChange(field: PageFormFieldItem, idx: number): void {
+    field.fieldKey = this.buildUniqueFieldKey(field.label, idx);
+    this.onDataChanged();
+  }
+
+  /**
+   * Builds a snake_case programmatic key from the question label while guaranteeing
+   * zero duplicate keys among sibling fields in this form.
+   */
+  private buildUniqueFieldKey(label: string | undefined, selfIdx: number): string {
+    const cleaned = (label || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s_]/g, '')
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    const root = cleaned || `question_${selfIdx + 1}`;
+    const siblingKeys = new Set(
+      this.fields
+        .map((f, i) => (i !== selfIdx ? (f.fieldKey || '').trim().toLowerCase() : ''))
+        .filter(Boolean)
+    );
+
+    let candidate = root;
+    let suffix = 2;
+    while (siblingKeys.has(candidate)) {
+      candidate = `${root}_${suffix++}`;
+    }
+    return candidate;
+  }
+
+  isDuplicateFieldKey(field: PageFormFieldItem, idx: number): boolean {
+    const target = (field.fieldKey || '').trim().toLowerCase();
+    if (!target) return false;
+    return this.fields.some((f, i) => i !== idx && (f.fieldKey || '').trim().toLowerCase() === target);
+  }
+
+  private ensureUniqueFieldKeys(): void {
+    const seen = new Set<string>();
+    this.fields.forEach((f, idx) => {
+      const cleaned = (f.fieldKey || f.label || `question_${idx + 1}`)
         .toLowerCase()
         .replace(/[^a-z0-9\s_]/g, '')
         .trim()
-        .replace(/\s+/g, '_');
-    }
-    this.onDataChanged();
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      const root = cleaned || `question_${idx + 1}`;
+      let candidate = root;
+      let suffix = 2;
+      while (seen.has(candidate)) {
+        candidate = `${root}_${suffix++}`;
+      }
+      seen.add(candidate);
+      f.fieldKey = candidate;
+    });
   }
 
   getFieldTypeLabel(type: string): string {
@@ -902,14 +988,15 @@ export class FormBuilderComponent implements OnInit {
   }
 
   addField(): void {
-    const newIdx = this.fields.length + 1;
+    const newIdx = this.fields.length;
+    const defaultLabel = `Question ${newIdx + 1}`;
     this.fields.push({
-      fieldKey: `question_${newIdx}`,
-      label: `Question ${newIdx}`,
+      fieldKey: this.buildUniqueFieldKey(defaultLabel, newIdx),
+      label: defaultLabel,
       placeholder: '',
       fieldType: 'text',
       isRequired: false,
-      sortOrder: newIdx,
+      sortOrder: newIdx + 1,
       gridWidth: 'col-md-12'
     });
     this.activeFieldIndex = this.fields.length - 1;
@@ -940,6 +1027,7 @@ export class FormBuilderComponent implements OnInit {
     this.fields.forEach((f, i) => {
       f.sortOrder = i + 1;
     });
+    this.ensureUniqueFieldKeys();
   }
 
   parseOptions(optionsStr?: string): string[] {

@@ -143,6 +143,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (dto.Fields != null && dto.Fields.Count > 0)
             {
+                var usedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 int order = 1;
                 foreach (var fieldDto in dto.Fields)
                 {
@@ -150,9 +151,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         Id = Guid.NewGuid(),
                         PageFormId = form.Id,
-                        FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey)
-                            ? $"field_{order}"
-                            : fieldDto.FieldKey.Trim().ToLowerInvariant(),
+                        FieldKey = DeduplicateFieldKey(fieldDto.FieldKey, fieldDto.Label, order, usedKeys),
                         Label = fieldDto.Label?.Trim() ?? $"Question {order}",
                         Placeholder = fieldDto.Placeholder?.Trim(),
                         FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant(),
@@ -211,17 +210,19 @@ namespace Ozikol_BCC.Api.Controllers
                 _context.PageFormFields.RemoveRange(toRemove);
             }
 
+            var usedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int order = 1;
             foreach (var fieldDto in incomingFields)
             {
                 var targetOrder = fieldDto.SortOrder > 0 ? fieldDto.SortOrder : order;
+                var resolvedKey = DeduplicateFieldKey(fieldDto.FieldKey, fieldDto.Label, order, usedKeys);
 
                 if (fieldDto.Id.HasValue && fieldDto.Id.Value != Guid.Empty)
                 {
                     var existing = existingFields.FirstOrDefault(f => f.Id == fieldDto.Id.Value);
                     if (existing != null)
                     {
-                        existing.FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey) ? existing.FieldKey : fieldDto.FieldKey.Trim().ToLowerInvariant();
+                        existing.FieldKey = resolvedKey;
                         existing.Label = fieldDto.Label?.Trim() ?? existing.Label;
                         existing.Placeholder = fieldDto.Placeholder?.Trim();
                         existing.FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant();
@@ -238,7 +239,7 @@ namespace Ozikol_BCC.Api.Controllers
                         {
                             Id = Guid.NewGuid(),
                             PageFormId = form.Id,
-                            FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey) ? $"field_{order}" : fieldDto.FieldKey.Trim().ToLowerInvariant(),
+                            FieldKey = resolvedKey,
                             Label = fieldDto.Label?.Trim() ?? $"Question {order}",
                             Placeholder = fieldDto.Placeholder?.Trim(),
                             FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant(),
@@ -256,7 +257,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         Id = Guid.NewGuid(),
                         PageFormId = form.Id,
-                        FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey) ? $"field_{order}" : fieldDto.FieldKey.Trim().ToLowerInvariant(),
+                        FieldKey = resolvedKey,
                         Label = fieldDto.Label?.Trim() ?? $"Question {order}",
                         Placeholder = fieldDto.Placeholder?.Trim(),
                         FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant(),
@@ -300,6 +301,7 @@ namespace Ozikol_BCC.Api.Controllers
                     _context.PageFormFields.RemoveRange(freshForm.Fields);
                     await _context.SaveChangesAsync();
 
+                    var retryUsedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     int reorder = 1;
                     foreach (var fieldDto in incomingFields)
                     {
@@ -307,7 +309,7 @@ namespace Ozikol_BCC.Api.Controllers
                         {
                             Id = Guid.NewGuid(),
                             PageFormId = freshForm.Id,
-                            FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey) ? $"field_{reorder}" : fieldDto.FieldKey.Trim().ToLowerInvariant(),
+                            FieldKey = DeduplicateFieldKey(fieldDto.FieldKey, fieldDto.Label, reorder, retryUsedKeys),
                             Label = fieldDto.Label?.Trim() ?? $"Question {reorder}",
                             Placeholder = fieldDto.Placeholder?.Trim(),
                             FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant(),
@@ -454,6 +456,39 @@ namespace Ozikol_BCC.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(ApiResponse<object>.SuccessResponse(null, "Submission deleted successfully."));
+        }
+
+        /// <summary>
+        /// Normalizes and deduplicates a dynamic form field key inside its parent form
+        /// so two questions never collide inside the submitted JSON payload.
+        /// </summary>
+        /// <param name="rawKey">Incoming client field key, if any.</param>
+        /// <param name="label">Question label fallback used to derive a clean key.</param>
+        /// <param name="order">1-based sequence order fallback.</param>
+        /// <param name="usedKeys">Case-insensitive set of keys already claimed by earlier fields.</param>
+        /// <returns>Sanitized, unique snake_case field key.</returns>
+        private static string DeduplicateFieldKey(string? rawKey, string? label, int order, HashSet<string> usedKeys)
+        {
+            var source = string.IsNullOrWhiteSpace(rawKey) ? label : rawKey;
+            var normalized = (source ?? string.Empty).Trim().ToLowerInvariant();
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[^a-z0-9\s_]", string.Empty);
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\s+", "_");
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"_+", "_").Trim('_');
+
+            var baseKey = string.IsNullOrWhiteSpace(normalized) ? $"question_{order}" : normalized;
+            if (baseKey.Length > 90)
+            {
+                baseKey = baseKey.Substring(0, 90).TrimEnd('_');
+            }
+
+            var candidate = baseKey;
+            var suffix = 2;
+            while (!usedKeys.Add(candidate))
+            {
+                candidate = $"{baseKey}_{suffix++}";
+            }
+
+            return candidate;
         }
     }
 
