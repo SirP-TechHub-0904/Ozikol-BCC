@@ -449,7 +449,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <a
                   *ngIf="section.templateKey"
                   [routerLink]="['/content/console/templates/visuals', activeTemplateRouteTarget]"
-                  [queryParams]="{ returnUrl: currentEditReturnUrl }"
                   target="_blank"
                   class="link-edit-template"
                   title="Edit this template layout in Visual Template Studio (opens in new tab)">
@@ -483,7 +482,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </div>
                 <a
                   [routerLink]="['/content/console/templates/visuals', activeTemplateRouteTarget]"
-                  [queryParams]="{ returnUrl: currentEditReturnUrl }"
                   target="_blank"
                   class="btn-edit-template-pill"
                   title="Open this template in Visual Template Studio">
@@ -1339,13 +1337,6 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
       return this.activeInstalledTemplate.id || this.activeInstalledTemplate.variantCode || this.activeInstalledTemplate.templateKey;
     }
     return this.section?.templateKey || '';
-  }
-
-  /**
-   * Current URL to pass as returnUrl query parameter when navigating to Template Visuals Studio.
-   */
-  get currentEditReturnUrl(): string {
-    return this.router.url;
   }
 
   publishedPagesList: { title: string; url: string }[] = [];

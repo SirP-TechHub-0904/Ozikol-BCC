@@ -342,11 +342,48 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
 
             <div class="form-group">
-              <label>PARENT SECTION</label>
-              <select [(ngModel)]="item.pageSectionId" class="form-control" [disabled]="!isEditMode && parentSection">
+              <div class="label-with-action">
+                <label>PARENT SECTION</label>
+                <a
+                  *ngIf="activeTemplateRouteTarget"
+                  [routerLink]="['/content/console/templates/visuals', activeTemplateRouteTarget]"
+                  target="_blank"
+                  class="link-edit-template"
+                  title="Edit parent section template in Visual Template Studio (opens in new tab)">
+                  <span class="material-symbols-outlined fs-6">edit_note</span>
+                  <span>Edit Template</span>
+                  <span class="material-symbols-outlined open-ext-icon">open_in_new</span>
+                </a>
+              </div>
+              <select [(ngModel)]="item.pageSectionId" (ngModelChange)="onParentSectionChange($event)" class="form-control" [disabled]="!isEditMode && parentSection">
                 <option [ngValue]="null">-- Select Layout Section --</option>
                 <option *ngFor="let s of allSections" [ngValue]="s.id">{{ s.title }} ({{ s.templateKey || 'Block' }})</option>
               </select>
+
+              <!-- Active Parent Section Template Quick-Edit Card -->
+              <div class="active-template-card" *ngIf="selectedParentSection?.templateKey">
+                <div class="active-template-details">
+                  <span class="material-symbols-outlined active-template-icon">palette</span>
+                  <div class="active-template-meta">
+                    <span class="template-title">{{ activeInstalledTemplate?.name || selectedParentSection?.title || 'Active Design Blueprint' }}</span>
+                    <span class="template-sub">
+                      <code>{{ activeInstalledTemplate?.variantCode || activeInstalledTemplate?.templateKey || selectedParentSection?.templateKey }}</code>
+                      <span class="category-pill" *ngIf="activeInstalledTemplate?.categoryKey || activeInstalledTemplate?.category">
+                        [{{ activeInstalledTemplate?.categoryKey || activeInstalledTemplate?.category }}]
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <a
+                  [routerLink]="['/content/console/templates/visuals', activeTemplateRouteTarget]"
+                  target="_blank"
+                  class="btn-edit-template-pill"
+                  title="Open this template in Visual Template Studio (opens in new tab)">
+                  <span class="material-symbols-outlined fs-6">edit</span>
+                  <span>Edit Template</span>
+                  <span class="material-symbols-outlined fs-6">open_in_new</span>
+                </a>
+              </div>
             </div>
 
             <div class="form-group" style="margin-top:12px;">
@@ -689,6 +726,107 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
 
     .label-with-badge { display: flex; justify-content: space-between; align-items: center; }
+    .label-with-action {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .label-with-action label {
+      margin-bottom: 0;
+    }
+    .link-edit-template {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0050e5;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .link-edit-template:hover {
+      color: #003ebd;
+      text-decoration: underline;
+    }
+    .link-edit-template .open-ext-icon {
+      font-size: 13px;
+    }
+    .active-template-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f0f7ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+    }
+    .active-template-details {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .active-template-icon {
+      font-size: 20px;
+      color: #0050e5;
+      flex-shrink: 0;
+    }
+    .active-template-meta {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .template-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .template-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+    .template-sub code {
+      font-size: 11px;
+      color: #1e40af;
+      background: #dbeafe;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .category-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .btn-edit-template-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      background: #0050e5;
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .btn-edit-template-pill:hover {
+      background: #003ebd;
+      transform: translateY(-1px);
+    }
     .key-pill {
       display: inline-flex; align-items: center; gap: 4px;
       background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 700;
@@ -719,6 +857,43 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
   item: any = null;
   parentSection: any = null;
   allSections: any[] = [];
+  installedTemplates: any[] = [];
+
+  /// <summary>
+  /// Resolves the active parent PageSection either from allSections (matching item.pageSectionId) or the loaded parentSection.
+  /// </summary>
+  get selectedParentSection(): any {
+    const targetId = this.item?.pageSectionId;
+    if (targetId && Array.isArray(this.allSections) && this.allSections.length > 0) {
+      const matched = this.allSections.find((s: any) => s.id === targetId);
+      if (matched) return matched;
+    }
+    return this.parentSection;
+  }
+
+  /// <summary>
+  /// Resolves the active installed template object matching the parent section's templateKey.
+  /// </summary>
+  get activeInstalledTemplate(): any {
+    const rawKey = this.selectedParentSection?.templateKey;
+    if (!rawKey) return null;
+    const key = rawKey.trim().toLowerCase();
+    return (this.installedTemplates || []).find((t: any) =>
+      (t.templateKey && t.templateKey.trim().toLowerCase() === key) ||
+      (t.variantCode && t.variantCode.trim().toLowerCase() === key) ||
+      (t.id && t.id.toString().toLowerCase() === key)
+    );
+  }
+
+  /// <summary>
+  /// Resolves the route target parameter for opening the active template in Visual Template Studio.
+  /// </summary>
+  get activeTemplateRouteTarget(): string {
+    if (this.activeInstalledTemplate) {
+      return this.activeInstalledTemplate.id || this.activeInstalledTemplate.variantCode || this.activeInstalledTemplate.templateKey;
+    }
+    return this.selectedParentSection?.templateKey || '';
+  }
 
   showHtmlSource = false;
   loading = false;
@@ -817,6 +992,7 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
 
     this.loadAllSections();
     this.loadAllPages();
+    this.loadInstalledTemplates();
   }
 
   ngAfterViewInit(): void {
@@ -874,6 +1050,36 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
       },
       error: () => {}
     });
+  }
+
+  /// <summary>
+  /// Loads installed tenant templates so the parent section's active template can be linked for direct editing.
+  /// </summary>
+  loadInstalledTemplates(): void {
+    this.api.get<any>('ContentApi/templates/installed').subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.installedTemplates = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /// <summary>
+  /// Keeps parentSection synchronized when switching the parent section dropdown.
+  /// </summary>
+  onParentSectionChange(sectionId: string | null): void {
+    if (!sectionId) {
+      this.parentSection = null;
+      return;
+    }
+    const matched = (this.allSections || []).find((s: any) => s.id === sectionId);
+    if (matched) {
+      this.parentSection = matched;
+    } else {
+      this.loadParentSection(sectionId);
+    }
   }
 
   loadAllPages(): void {
