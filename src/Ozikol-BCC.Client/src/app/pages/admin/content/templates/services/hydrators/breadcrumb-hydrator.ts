@@ -68,8 +68,7 @@ export function hydrateBreadcrumb(template: string, ctx: HydrationContext): stri
   // 3. Banner Scalars
   const effectiveTitle = ctx.pageTitle || ctx.title || '';
   const effectiveSubTitle = ctx.subTitle || ctx.miniTitle || ctx.description || '';
-  const DEFAULT_BREADCRUMB_BG = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
-  const effectiveBg = ctx.backgroundImageUrl || ctx.imageUrl || DEFAULT_BREADCRUMB_BG;
+  const effectiveBg = ctx.backgroundImageUrl || ctx.imageUrl || '';
 
   // Resolve conditional BackgroundImageUrl tag if present in template
   output = resolveDepthAwareIf(output, 'BackgroundImageUrl', Boolean(effectiveBg));

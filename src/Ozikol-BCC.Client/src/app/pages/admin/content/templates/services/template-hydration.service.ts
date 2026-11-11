@@ -887,8 +887,8 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // BackgroundImageUrl scalar
-    const bgImage = bcPool.backgroundImageUrl || bcPool.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80';
+    // BackgroundImageUrl scalar (no default fallback - empty if not uploaded)
+    const bgImage = bcPool.backgroundImageUrl || bcPool.imageUrl || '';
     output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, bgImage);
 
     // 6h. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
