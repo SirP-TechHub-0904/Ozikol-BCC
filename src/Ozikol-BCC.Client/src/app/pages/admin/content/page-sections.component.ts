@@ -589,6 +589,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe;
     }
     .page-pill.global { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
+    .page-pills-container { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .badge-linked {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px;
+      border-radius: 6px; font-size: 11px; font-weight: 700;
+      background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+    }
+    .badge-link-count {
+      display: inline-flex; align-items: center; padding: 2px 6px;
+      border-radius: 6px; font-size: 11px; font-weight: 700;
+      background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;
+    }
+    .btn-info { background: #0284c7; color: #ffffff; border: 1px solid #0284c7; }
+    .btn-info:hover { background: #0369a1; }
     .btn-preview-tag { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 11.5px; font-weight: 700; }
     .badge-none { color: #94a3b8; font-size: 12px; }
 
@@ -721,7 +734,7 @@ export class PageSectionsComponent implements OnInit {
 
   // Bulk Transfer Properties
   showBulkTransferSectionsModal = false;
-  transferSectionsMode: 'move' | 'copy' = 'move';
+  transferSectionsMode: 'move' | 'copy' | 'link' = 'move';
   targetTransferPageId = '';
   transferringSections = false;
 
@@ -1023,7 +1036,7 @@ export class PageSectionsComponent implements OnInit {
    * @param sec Target layout section entity.
    * @param mode Transfer mode: 'copy' or 'move'.
    */
-  openSingleSectionTransfer(sec: any, mode: 'move' | 'copy'): void {
+  openSingleSectionTransfer(sec: any, mode: 'move' | 'copy' | 'link'): void {
     this.closeActionDropdown();
     this.selectedSectionIds.clear();
     this.selectedSectionIds.add(sec.id);
@@ -1050,7 +1063,7 @@ export class PageSectionsComponent implements OnInit {
   // BULK TRANSFER SECTIONS (MOVE & COPY)
   // ==========================================
 
-  openBulkTransferSectionsModal(mode: 'move' | 'copy'): void {
+  openBulkTransferSectionsModal(mode: 'move' | 'copy' | 'link'): void {
     if (this.selectedSectionIds.size === 0) return;
     this.transferSectionsMode = mode;
     this.targetTransferPageId = this.filterPageId || (this.allPages.length > 0 ? this.allPages[0].id : '');

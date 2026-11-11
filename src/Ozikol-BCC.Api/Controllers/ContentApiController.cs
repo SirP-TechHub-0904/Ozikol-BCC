@@ -1346,7 +1346,51 @@ Reply ONLY with the valid JSON object.";
                 query = query.OrderBy(s => s.WebPageId).ThenBy(s => s.PageSortOrder);
             }
 
+            if (webPageId.HasValue)
+            {
+                var directSections = await query.Where(s => s.WebPageId == webPageId.Value).ToListAsync();
+
+                var linkedSectionLinks = await _context.WebPageSectionLinks
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.WebPage)
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.PageForm)
+                            .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
+                    .Where(l => l.WebPageId == webPageId.Value && l.PageSection != null)
+                    .ToListAsync();
+
+                var combined = new List<PageSection>(directSections);
+                foreach (var link in linkedSectionLinks)
+                {
+                    if (link.PageSection != null && !combined.Any(s => s.Id == link.PageSectionId))
+                    {
+                        var clone = link.PageSection;
+                        clone.PageSortOrder = link.PageSortOrder;
+                        clone.IsLinkedSection = true;
+                        combined.Add(clone);
+                    }
+                }
+
+                combined = combined.OrderBy(s => s.PageSortOrder).ToList();
+                return Ok(ApiResponse<object>.SuccessResponse(combined, "Page sections retrieved."));
+            }
+
             var sections = await query.ToListAsync();
+            var linkCounts = await _context.WebPageSectionLinks
+                .GroupBy(l => l.PageSectionId)
+                .Select(g => new { SectionId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.SectionId, x => x.Count);
+
+            foreach (var sec in sections)
+            {
+                if (linkCounts.TryGetValue(sec.Id, out var count))
+                {
+                    sec.LinkedPageCount = count;
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(sections, "Page sections retrieved."));
         }
 
@@ -1362,6 +1406,7 @@ Reply ONLY with the valid JSON object.";
 
             if (section == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
             section.ListCount = await _context.PageSectionLists.CountAsync(l => l.PageSectionId == id);
+            section.LinkedPageCount = await _context.WebPageSectionLinks.CountAsync(l => l.PageSectionId == id);
             return Ok(ApiResponse<object>.SuccessResponse(section, "Section details retrieved."));
         }
 
@@ -1695,6 +1740,221 @@ Reply ONLY with the valid JSON object.";
                     targetPageTitle = targetPage.Title
                 }, $"{sections.Count} section(s) moved successfully to '{targetPage.Title}'."));
             }
+            else if (string.Equals(request.Action, "link", StringComparison.OrdinalIgnoreCase))
+            {
+                var originalSections = await _context.PageSections
+                    .Where(s => targetIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (!originalSections.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found to link."));
+                }
+
+                var maxDirectSort = await _context.PageSections
+                    .Where(s => s.WebPageId == request.TargetPageId)
+                    .MaxAsync(s => (int?)s.PageSortOrder) ?? 0;
+
+                var maxLinkedSort = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == request.TargetPageId)
+                    .MaxAsync(l => (int?)l.PageSortOrder) ?? 0;
+
+                var currentMaxSort = Math.Max(maxDirectSort, maxLinkedSort);
+
+                var existingLinks = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == request.TargetPageId && targetIds.Contains(l.PageSectionId))
+                    .ToListAsync();
+
+                var createdLinks = new List<WebPageSectionLink>();
+
+                foreach (var sec in originalSections)
+                {
+                    if (sec.WebPageId == request.TargetPageId) continue;
+
+                    var existingLink = existingLinks.FirstOrDefault(l => l.PageSectionId == sec.Id);
+                    if (existingLink == null)
+                    {
+                        currentMaxSort++;
+                        var newLink = new WebPageSectionLink
+                        {
+                            Id = Guid.NewGuid(),
+                            WebPageId = request.TargetPageId,
+                            PageSectionId = sec.Id,
+                            PageSortOrder = currentMaxSort,
+                            IsVisible = true,
+                            CreatedAtUtc = DateTime.UtcNow
+                        };
+                        _context.WebPageSectionLinks.Add(newLink);
+                        createdLinks.Add(newLink);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    linkedCount = createdLinks.Count,
+                    targetPageId = request.TargetPageId,
+                    targetPageTitle = targetPage.Title
+                }, $"{createdLinks.Count} layout section(s) linked to '{targetPage.Title}' successfully."));
+            }
+            else
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"Unknown transfer action '{request.Action}'. Supported: copy, move, link."));
+            }
+        }
+
+        // ==========================================
+        // SECTION MULTI-PAGE LINKING ENDPOINTS
+        // ==========================================
+
+        public class SaveSectionPageLinksRequest
+        {
+            /// <summary>
+            /// Collection of secondary page placement links for this section.
+            /// </summary>
+            public List<SectionPageLinkInput> Links { get; set; } = new();
+        }
+
+        public class SectionPageLinkInput
+        {
+            /// <summary>
+            /// Unique identifier of the target WebPage.
+            /// </summary>
+            public Guid WebPageId { get; set; }
+
+            /// <summary>
+            /// Sort order of the section on this specific page.
+            /// </summary>
+            public int PageSortOrder { get; set; } = 0;
+
+            /// <summary>
+            /// Visibility toggle for this page placement.
+            /// </summary>
+            public bool IsVisible { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Retrieves the primary parent page and all secondary linked page placements for a specific section.
+        /// </summary>
+        /// <param name="id">Unique identifier of the section.</param>
+        /// <returns>Primary page details, current active links with sort orders, and list of available other pages.</returns>
+        [HttpGet("sections/{id:guid}/page-links")]
+        public async Task<IActionResult> GetSectionPageLinks(Guid id)
+        {
+            var section = await _context.PageSections
+                .Include(s => s.WebPage)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (section == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
+            }
+
+            var links = await _context.WebPageSectionLinks
+                .Include(l => l.WebPage)
+                .Where(l => l.PageSectionId == id)
+                .OrderBy(l => l.PageSortOrder)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.WebPageId,
+                    PageTitle = l.WebPage != null ? l.WebPage.Title : "Unknown Page",
+                    DirectUrl = l.WebPage != null ? l.WebPage.DirectUrl : string.Empty,
+                    l.PageSortOrder,
+                    l.IsVisible,
+                    l.CreatedAtUtc
+                })
+                .ToListAsync();
+
+            var allPages = await _context.WebPages
+                .OrderBy(p => p.SortOrder)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Title,
+                    p.DirectUrl,
+                    p.Publish
+                })
+                .ToListAsync();
+
+            var primaryPageId = section.WebPageId;
+            var linkedPageIds = links.Select(l => l.WebPageId).ToHashSet();
+            var availablePages = allPages
+                .Where(p => p.Id != primaryPageId && !linkedPageIds.Contains(p.Id))
+                .ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                sectionId = section.Id,
+                sectionTitle = section.Title ?? "Untitled Section",
+                primaryPageId = section.WebPageId,
+                primaryPageTitle = section.WebPage != null ? section.WebPage.Title : "None (Global)",
+                primaryPageSortOrder = section.PageSortOrder,
+                linkedPages = links,
+                availablePages = availablePages
+            }, "Section page links retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Saves or synchronizes secondary multi-page placements for a layout section.
+        /// </summary>
+        /// <param name="id">Unique identifier of the section.</param>
+        /// <param name="request">Collection of desired page links with sort orders and visibility.</param>
+        /// <returns>Updated collection of page links.</returns>
+        [HttpPut("sections/{id:guid}/page-links")]
+        public async Task<IActionResult> SaveSectionPageLinks(Guid id, [FromBody] SaveSectionPageLinksRequest request)
+        {
+            var section = await _context.PageSections.FindAsync(id);
+            if (section == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
+            }
+
+            var existingLinks = await _context.WebPageSectionLinks
+                .Where(l => l.PageSectionId == id)
+                .ToListAsync();
+
+            var submittedLinks = request?.Links ?? new List<SectionPageLinkInput>();
+
+            // Do not allow linking to its own primary parent page
+            submittedLinks = submittedLinks.Where(l => l.WebPageId != section.WebPageId).ToList();
+
+            var submittedPageIds = submittedLinks.Select(l => l.WebPageId).ToHashSet();
+
+            // 1. Remove links not present in submitted list
+            var linksToRemove = existingLinks.Where(l => !submittedPageIds.Contains(l.WebPageId)).ToList();
+            if (linksToRemove.Count > 0)
+            {
+                _context.WebPageSectionLinks.RemoveRange(linksToRemove);
+            }
+
+            // 2. Update existing or insert new links
+            foreach (var input in submittedLinks)
+            {
+                var existing = existingLinks.FirstOrDefault(l => l.WebPageId == input.WebPageId);
+                if (existing != null)
+                {
+                    existing.PageSortOrder = input.PageSortOrder;
+                    existing.IsVisible = input.IsVisible;
+                }
+                else
+                {
+                    _context.WebPageSectionLinks.Add(new WebPageSectionLink
+                    {
+                        Id = Guid.NewGuid(),
+                        WebPageId = input.WebPageId,
+                        PageSectionId = id,
+                        PageSortOrder = input.PageSortOrder,
+                        IsVisible = input.IsVisible,
+                        CreatedAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return await GetSectionPageLinks(id);
         }
 
 

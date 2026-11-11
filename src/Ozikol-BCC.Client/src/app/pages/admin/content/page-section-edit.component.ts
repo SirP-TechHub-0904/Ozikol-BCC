@@ -463,6 +463,91 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
           </div>
 
+          <!-- Multi-Page Shared Placements & Linking -->
+          <div class="cms-card" *ngIf="isEditMode">
+            <div class="card-header-bar">
+              <div>
+                <h3>Multi-Page Shared Placements</h3>
+                <p class="card-sub">Reuse this master section across other web pages with independent sort orders.</p>
+              </div>
+              <span class="badge" [class.badge-primary]="linkedPages.length > 0" [class.badge-secondary]="linkedPages.length === 0">
+                {{ linkedPages.length }} Linked {{ linkedPages.length === 1 ? 'Page' : 'Pages' }}
+              </span>
+            </div>
+
+            <!-- Primary Home / Parent Page Banner -->
+            <div class="primary-page-banner" *ngIf="primaryPageTitle">
+              <span class="material-symbols-outlined text-primary">home</span>
+              <div class="banner-text">
+                <span class="banner-title">Primary Parent: <strong>{{ primaryPageTitle }}</strong></span>
+                <span class="banner-sub">Position #{{ section.pageSortOrder }} &bull; All sub-items &amp; cards remain in sync</span>
+              </div>
+            </div>
+
+            <!-- Linked Secondary Pages List -->
+            <div class="linked-pages-list" *ngIf="linkedPages && linkedPages.length > 0">
+              <div class="linked-page-item" *ngFor="let link of linkedPages; let i = index">
+                <div class="link-item-header">
+                  <span class="material-symbols-outlined text-info">share_location</span>
+                  <div class="link-title-box">
+                    <strong>{{ link.pageTitle }}</strong>
+                    <span class="link-slug">{{ link.directUrl || '/' }}</span>
+                  </div>
+                </div>
+
+                <div class="link-item-actions">
+                  <div class="sort-input-group">
+                    <label>Position</label>
+                    <input type="number" [(ngModel)]="link.pageSortOrder" (change)="markLinksDirty()" class="form-control form-control-sm link-sort-input" min="0">
+                  </div>
+
+                  <label class="link-vis-toggle" title="Toggle visibility on this page">
+                    <input type="checkbox" [(ngModel)]="link.isVisible" (change)="markLinksDirty()">
+                    <span>Visible</span>
+                  </label>
+
+                  <button type="button" class="btn-remove-link" (click)="removePageLink(i)" title="Remove placement on this page">
+                    <span class="material-symbols-outlined">link_off</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-links-state" *ngIf="!linkedPages || linkedPages.length === 0">
+              <span class="material-symbols-outlined">device_hub</span>
+              <p>This section is currently only displayed on its primary parent page. Link it to show on other pages with independent sort positions.</p>
+            </div>
+
+            <!-- Add Page Placement Bar -->
+            <div class="add-link-section" *ngIf="availablePages && availablePages.length > 0">
+              <div class="add-link-row">
+                <select [(ngModel)]="selectedAddPageId" class="form-control form-control-sm">
+                  <option value="">-- Choose page to link... --</option>
+                  <option *ngFor="let p of availablePages" [value]="p.id">
+                    {{ p.title }} ({{ p.directUrl || '/' }})
+                  </option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="addPageLink()" [disabled]="!selectedAddPageId">
+                  <span class="material-symbols-outlined fs-6">add_link</span>
+                  <span>Link Page</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Save Placements Action Bar -->
+            <div class="links-dirty-bar" *ngIf="isLinksDirty">
+              <div class="dirty-notice">
+                <span class="material-symbols-outlined text-warning">warning</span>
+                <span>You have unsaved page placement changes.</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-primary" (click)="savePageLinks()" [disabled]="isSavingLinks">
+                <span class="material-symbols-outlined fs-6">save</span>
+                <span>{{ isSavingLinks ? 'Saving...' : 'Save Placements' }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Dynamic Page Form Attachment -->
           <div class="cms-card">
             <div class="card-header-bar">
@@ -874,6 +959,52 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .toggle-info p { font-size: 11px; color: #64748b; margin: 2px 0 0; }
     .checkbox-card { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
+    /* Multi-Page Shared Placements Card */
+    .primary-page-banner {
+      display: flex; align-items: center; gap: 10px; background: #eff6ff;
+      border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+    }
+    .primary-page-banner .banner-text { display: flex; flex-direction: column; }
+    .primary-page-banner .banner-title { font-size: 12.5px; color: #1e3a8a; }
+    .primary-page-banner .banner-sub { font-size: 11px; color: #3b82f6; }
+
+    .linked-pages-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .linked-page-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;
+      flex-wrap: wrap;
+    }
+    .link-item-header { display: flex; align-items: center; gap: 8px; }
+    .link-title-box { display: flex; flex-direction: column; }
+    .link-title-box strong { font-size: 13px; color: #0f172a; }
+    .link-slug { font-size: 11px; color: #64748b; font-family: monospace; }
+
+    .link-item-actions { display: flex; align-items: center; gap: 10px; }
+    .sort-input-group { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #475569; }
+    .link-sort-input { width: 60px; text-align: center; font-weight: 600; padding: 4px; }
+    .link-vis-toggle { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; color: #334155; cursor: pointer; }
+    .btn-remove-link {
+      background: none; border: none; color: #dc2626; cursor: pointer; padding: 2px 4px; border-radius: 4px;
+      display: flex; align-items: center;
+    }
+    .btn-remove-link:hover { background: #fee2e2; }
+
+    .empty-links-state {
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      padding: 18px 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 12px;
+    }
+    .empty-links-state span { font-size: 28px; color: #94a3b8; margin-bottom: 4px; }
+    .empty-links-state p { font-size: 11.5px; color: #64748b; margin: 0; line-height: 1.4; }
+
+    .add-link-section { margin-top: 8px; }
+    .add-link-row { display: flex; gap: 8px; align-items: center; }
+    .links-dirty-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; margin-top: 12px;
+    }
+    .dirty-notice { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #92400e; font-weight: 500; }
+    .dirty-notice span { font-size: 16px; }
+
     .loading-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; color: #64748b; }
     .spin { animation: spin 1s linear infinite; font-size: 32px; color: #0050e5; margin-bottom: 12px; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -884,6 +1015,14 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
 
   sectionId = '';
   isEditMode = false;
+
+  // Multi-Page Linking States
+  linkedPages: any[] = [];
+  availablePages: any[] = [];
+  primaryPageTitle = '';
+  selectedAddPageId = '';
+  isLinksDirty = false;
+  isSavingLinks = false;
   section: any = null;
   installedTemplates: any[] = [];
   allPages: any[] = [];
@@ -1067,6 +1206,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
     this.api.get<any>('ContentApi/pages').subscribe({
       next: (res) => {
         this.allPages = res?.data || [];
+        this.updateAvailablePages();
         this.publishedPagesList = this.allPages.map((p: any) => {
           let url = p.directUrl || p.slug || '';
           if (p.isHomePage || url === 'home' || url === 'index') {
@@ -1106,6 +1246,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
             this.section.pageFormId = '__registration_form__';
           }
           this.syncCanvasWithHtml();
+          this.loadPageLinks();
         }
       },
       error: (err) => {
@@ -1444,6 +1585,9 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         next: (res) => {
           this.saving = false;
           this.toast.success(res?.message || 'Section updated successfully!');
+          if (this.isLinksDirty) {
+            this.savePageLinks();
+          }
         },
         error: (err) => {
           this.saving = false;
@@ -1470,6 +1614,104 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         }
       });
     }
+  }
+
+  /**
+   * Loads all active page placements for this section from the backend API.
+   */
+  loadPageLinks(): void {
+    if (!this.sectionId) return;
+    this.api.get<any>(`ContentApi/sections/${this.sectionId}/page-links`).subscribe({
+      next: (res) => {
+        if (res?.success) {
+          this.linkedPages = res.data?.links || [];
+          this.primaryPageTitle = res.data?.primaryPageTitle || '';
+          this.updateAvailablePages();
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load page links for section', err);
+      }
+    });
+  }
+
+  /**
+   * Recalculates the list of web pages available to be linked (excluding parent page and already linked pages).
+   */
+  updateAvailablePages(): void {
+    const linkedIds = new Set(this.linkedPages.map(l => l.webPageId));
+    if (this.section?.webPageId) {
+      linkedIds.add(this.section.webPageId);
+    }
+    this.availablePages = (this.allPages || []).filter(p => !linkedIds.has(p.id));
+    this.selectedAddPageId = '';
+  }
+
+  /**
+   * Adds a new page link placement to the working list.
+   */
+  addPageLink(): void {
+    if (!this.selectedAddPageId) return;
+    const page = this.allPages.find(p => p.id === this.selectedAddPageId);
+    if (!page) return;
+
+    this.linkedPages.push({
+      webPageId: page.id,
+      pageTitle: page.title,
+      directUrl: page.directUrl,
+      pageSortOrder: this.linkedPages.length + 1,
+      isVisible: true
+    });
+
+    this.isLinksDirty = true;
+    this.updateAvailablePages();
+  }
+
+  /**
+   * Removes a page link placement at the specified index.
+   */
+  removePageLink(index: number): void {
+    if (index >= 0 && index < this.linkedPages.length) {
+      this.linkedPages.splice(index, 1);
+      this.isLinksDirty = true;
+      this.updateAvailablePages();
+    }
+  }
+
+  /**
+   * Flags that linked page configurations (sort order or visibility) have been modified.
+   */
+  markLinksDirty(): void {
+    this.isLinksDirty = true;
+  }
+
+  /**
+   * Persists multi-page placement links to the backend.
+   */
+  savePageLinks(): void {
+    if (!this.sectionId) return;
+    this.isSavingLinks = true;
+
+    const payload = {
+      links: this.linkedPages.map(l => ({
+        webPageId: l.webPageId,
+        pageSortOrder: Number(l.pageSortOrder) || 0,
+        isVisible: l.isVisible !== false
+      }))
+    };
+
+    this.api.put<any>(`ContentApi/sections/${this.sectionId}/page-links`, payload).subscribe({
+      next: (res) => {
+        this.isSavingLinks = false;
+        this.isLinksDirty = false;
+        this.toast.success(res?.message || 'Page placements updated successfully!');
+        this.loadPageLinks();
+      },
+      error: (err) => {
+        this.isSavingLinks = false;
+        this.toast.error(err?.error?.message || 'Failed to save page placements.');
+      }
+    });
   }
 
   goBack(): void {

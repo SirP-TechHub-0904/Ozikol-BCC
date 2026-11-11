@@ -82,6 +82,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' was not found or is unpublished."));
             }
 
+            await MergeLinkedSectionsAsync(page);
+
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
@@ -107,7 +109,44 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<object>.FailureResponse("Page was not found or is unpublished."));
             }
 
+            await MergeLinkedSectionsAsync(page);
+
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
+        }
+
+        /// <summary>
+        /// Populates and merges secondary shared PageSections linked to this page via WebPageSectionLink,
+        /// sorting the combined collection by each section's effective PageSortOrder.
+        /// </summary>
+        /// <param name="page">The target WebPage entity to hydrate with linked sections.</param>
+        private async Task MergeLinkedSectionsAsync(WebPage page)
+        {
+            if (page == null) return;
+
+            var linkedSections = await _context.WebPageSectionLinks
+                .Where(l => l.WebPageId == page.Id && l.IsVisible && l.PageSection != null && !l.PageSection.Disable)
+                .Include(l => l.PageSection!)
+                    .ThenInclude(s => s.PageSectionLists!.Where(item => !item.Disable).OrderBy(item => item.SortOrder))
+                .Include(l => l.PageSection!)
+                    .ThenInclude(s => s.PageForm)
+                        .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
+                .ToListAsync();
+
+            if (linkedSections.Count > 0)
+            {
+                var combined = (page.PageSections ?? new List<PageSection>()).ToList();
+                foreach (var link in linkedSections)
+                {
+                    if (link.PageSection != null && !combined.Any(s => s.Id == link.PageSectionId))
+                    {
+                        var clone = link.PageSection;
+                        clone.PageSortOrder = link.PageSortOrder;
+                        clone.IsLinkedSection = true;
+                        combined.Add(clone);
+                    }
+                }
+                page.PageSections = combined.OrderBy(s => s.PageSortOrder).ToList();
+            }
         }
 
         // ==========================================
@@ -147,8 +186,10 @@ namespace Ozikol_BCC.Api.Controllers
                 .Where(s => !s.Disable)
                 .AsQueryable();
 
+            Guid? targetPageId = null;
             if (webPageId.HasValue)
             {
+                targetPageId = webPageId.Value;
                 query = query.Where(s => s.WebPageId == webPageId.Value).OrderBy(s => s.PageSortOrder);
             }
             else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
@@ -156,6 +197,7 @@ namespace Ozikol_BCC.Api.Controllers
                 var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
                 if (homePage != null)
                 {
+                    targetPageId = homePage.Id;
                     query = query.Where(s => s.WebPageId == homePage.Id).OrderBy(s => s.PageSortOrder);
                 }
                 else
@@ -165,6 +207,34 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var sections = await query.ToListAsync();
+
+            if (targetPageId.HasValue)
+            {
+                var linkedSections = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == targetPageId.Value && l.IsVisible && l.PageSection != null && !l.PageSection.Disable)
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.PageSectionLists!.Where(item => !item.Disable).OrderBy(item => item.SortOrder))
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.PageForm)
+                            .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
+                    .ToListAsync();
+
+                if (linkedSections.Count > 0)
+                {
+                    foreach (var link in linkedSections)
+                    {
+                        if (link.PageSection != null && !sections.Any(s => s.Id == link.PageSectionId))
+                        {
+                            var clone = link.PageSection;
+                            clone.PageSortOrder = link.PageSortOrder;
+                            clone.IsLinkedSection = true;
+                            sections.Add(clone);
+                        }
+                    }
+                    sections = sections.OrderBy(s => s.PageSortOrder).ToList();
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(sections, "Page layout sections retrieved."));
         }
 
