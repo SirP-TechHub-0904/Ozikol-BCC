@@ -68,6 +68,15 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
 
       // Slide Item Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
+      const isFirst = idx === 0;
+      const isLast = idx === activeItems.length - 1;
+      const indexNumber = idx + 1;
+      const itemId = item.id || `slide-${indexNumber}`;
+
+      rendered = resolveDepthAwareIf(rendered, '@first', isFirst);
+      rendered = resolveDepthAwareIf(rendered, '@last', isLast);
+      rendered = rendered.replace(/\{\{#unless\s+@first\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isFirst ? '' : '$1');
+      rendered = rendered.replace(/\{\{#unless\s+@last\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isLast ? '' : '$1');
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MiniTitle', Boolean(item.miniTitle || item.subTitle));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ImageUrl', Boolean(item.imageUrl && item.imageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
@@ -100,7 +109,9 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?DirectUrl\s*\}\}/gi, item.directUrl || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?CustomClass\s*\}\}/gi, item.customClass || '');
       rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(idx));
-      rendered = rendered.replace(/\{\{\s*@number\s*\}\}/gi, String(idx + 1));
+      rendered = rendered.replace(/\{\{\s*(?:@number|Index)\s*\}\}/gi, String(indexNumber));
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.)?(?:Id|UniqueId)\s*\}\}/gi, String(itemId));
+      rendered = rendered.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(item.sortOrder ?? indexNumber));
 
       return rendered;
     }).join('\n');

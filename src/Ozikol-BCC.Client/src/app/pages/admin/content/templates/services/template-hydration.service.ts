@@ -495,6 +495,9 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?DirectUrl\s*\}\}/gi, item.directUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*SortOrder\s*\}\}/gi, (item.sortOrder !== undefined ? item.sortOrder : idx + 1).toString());
         renderedItem = renderedItem.replace(/\{\{\s*Index\s*\}\}/gi, (idx + 1).toString());
+        renderedItem = renderedItem.replace(/\{\{\s*@index\s*\}\}/gi, idx.toString());
+        renderedItem = renderedItem.replace(/\{\{\s*@number\s*\}\}/gi, (idx + 1).toString());
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?(?:Id|UniqueId)\s*\}\}/gi, (item.id || `item-${idx + 1}`).toString());
 
         return renderedItem;
       }).join('\n');

@@ -97,6 +97,17 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, !isButtonDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || '#') : '#');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
 
+      // Loop Index Conditionals (@first, @last)
+      const isFirst = idx === 0;
+      const isLast = idx === activeItems.length - 1;
+      const indexNumber = idx + 1;
+      const itemId = item.id || `item-${indexNumber}`;
+
+      rendered = resolveDepthAwareIf(rendered, '@first', isFirst);
+      rendered = resolveDepthAwareIf(rendered, '@last', isLast);
+      rendered = rendered.replace(/\{\{#unless\s+@first\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isFirst ? '' : '$1');
+      rendered = rendered.replace(/\{\{#unless\s+@last\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isLast ? '' : '$1');
+
       // Item Card Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
       const itemDesc = item.description || item.moreDescription || item.fullDescription || '';
       const itemFullDesc = item.fullDescription || item.moreDescription || item.description || '';
@@ -129,7 +140,10 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?DirectUrl\s*\}\}/gi, item.directUrl || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?CustomClass\s*\}\}/gi, item.customClass || '');
-      rendered = rendered.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(item.sortOrder ?? idx + 1));
+      rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(idx));
+      rendered = rendered.replace(/\{\{\s*(?:@number|Index)\s*\}\}/gi, String(indexNumber));
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.)?(?:Id|UniqueId)\s*\}\}/gi, String(itemId));
+      rendered = rendered.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(item.sortOrder ?? indexNumber));
 
       return rendered;
     }).join('\n');
