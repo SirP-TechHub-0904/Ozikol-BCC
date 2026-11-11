@@ -614,6 +614,9 @@ export class FormBuilderComponent implements OnInit {
   hasDraftRestored = false;
   existingFormKeys: string[] = [];
   private autoSaveDebounceTimer: any = null;
+  private autoSaveInFlight = false;
+  private pendingAutoSave = false;
+  private pendingExplicitSave = false;
 
   get headerTitle(): string {
     return this.isEditMode ? `Edit: ${this.form.title || ''}` : 'Create Dynamic Website Form';
@@ -760,8 +763,8 @@ export class FormBuilderComponent implements OnInit {
       if (!draft || !draft.form) return;
 
       if (serverUpdatedAt && draft.savedAt) {
-        const draftTime = new Date(draft.savedAt).getTime();
-        const serverTime = new Date(serverUpdatedAt).getTime();
+        const draftTime = this.parseUtcMillis(draft.savedAt);
+        const serverTime = this.parseUtcMillis(serverUpdatedAt);
         if (draftTime <= serverTime) {
           localStorage.removeItem(this.draftStorageKey);
           return;
@@ -810,17 +813,35 @@ export class FormBuilderComponent implements OnInit {
   }
 
   /// <summary>
-  /// Executes debounced background saving without navigating away from the builder.
+  /// Parses a UTC timestamp safely even when SQL Server serializes without a trailing 'Z'.
+  /// </summary>
+  /// <param name="value">ISO or naive UTC timestamp string.</param>
+  /// <returns>Unix epoch milliseconds.</returns>
+  private parseUtcMillis(value: string): number {
+    const raw = (value || '').trim();
+    if (!raw) return 0;
+    const hasZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(raw);
+    return new Date(hasZone ? raw : `${raw}Z`).getTime();
+  }
+
+  /// <summary>
+  /// Executes debounced background saving without overlapping in-flight requests or explicit saves.
   /// </summary>
   performAutoSave(): void {
     if (!this.form.title?.trim() || !this.form.formKey?.trim() || this.fields.length === 0) {
       return;
     }
 
-    if (this.saving) {
+    if (this.saving || this.pendingExplicitSave) {
       return;
     }
 
+    if (this.autoSaveInFlight) {
+      this.pendingAutoSave = true;
+      return;
+    }
+
+    this.autoSaveInFlight = true;
     this.autoSaveStatus = 'saving';
     this.reindexFields();
 
@@ -835,6 +856,8 @@ export class FormBuilderComponent implements OnInit {
 
     action.subscribe({
       next: (res: any) => {
+        this.autoSaveInFlight = false;
+
         if (res && res.isSuccess) {
           this.autoSaveStatus = 'saved';
           this.lastSavedTime = new Date();
@@ -848,10 +871,13 @@ export class FormBuilderComponent implements OnInit {
           }
 
           if (res.data?.fields && Array.isArray(res.data.fields)) {
-            const serverFields = res.data.fields;
+            const serverFields: PageFormFieldItem[] = res.data.fields;
             this.fields.forEach((f, idx) => {
-              if (serverFields[idx]?.id) {
-                f.id = serverFields[idx].id;
+              const matched =
+                serverFields.find(sf => sf.fieldKey && sf.fieldKey === f.fieldKey) ||
+                (serverFields.length === this.fields.length ? serverFields[idx] : undefined);
+              if (matched?.id) {
+                f.id = matched.id;
               }
             });
           }
@@ -860,9 +886,28 @@ export class FormBuilderComponent implements OnInit {
         } else {
           this.autoSaveStatus = 'error';
         }
+
+        if (this.pendingExplicitSave) {
+          this.pendingExplicitSave = false;
+          this.pendingAutoSave = false;
+          this.executeSaveRequest();
+        } else if (this.pendingAutoSave) {
+          this.pendingAutoSave = false;
+          this.performAutoSave();
+        }
       },
       error: () => {
+        this.autoSaveInFlight = false;
         this.autoSaveStatus = 'error';
+
+        if (this.pendingExplicitSave) {
+          this.pendingExplicitSave = false;
+          this.pendingAutoSave = false;
+          this.executeSaveRequest();
+        } else if (this.pendingAutoSave) {
+          this.pendingAutoSave = false;
+          this.performAutoSave();
+        }
       }
     });
   }
@@ -1042,6 +1087,7 @@ export class FormBuilderComponent implements OnInit {
     if (this.autoSaveDebounceTimer) {
       clearTimeout(this.autoSaveDebounceTimer);
     }
+    this.pendingAutoSave = false;
 
     if (!this.form.title?.trim()) {
       this.toast.error('Form title is required.');
@@ -1060,6 +1106,20 @@ export class FormBuilderComponent implements OnInit {
 
     this.saving = true;
     this.autoSaveStatus = 'saving';
+
+    // Wait for any active background auto-save to finish so two concurrent PUTs never race on PageFormFields.
+    if (this.autoSaveInFlight) {
+      this.pendingExplicitSave = true;
+      return;
+    }
+
+    this.executeSaveRequest();
+  }
+
+  /// <summary>
+  /// Sends the explicit Save Form request and navigates back to the forms console on success.
+  /// </summary>
+  private executeSaveRequest(): void {
     this.reindexFields();
 
     const payload: Partial<PageFormItem> = {
