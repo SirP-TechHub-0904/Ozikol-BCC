@@ -44,7 +44,12 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
             <div class="form-grid">
               <div class="form-group full-width">
                 <label>SECTION MAIN TITLE</label>
-                <input type="text" [(ngModel)]="section.title" class="form-control font-bold" placeholder="e.g. Empowering Our Community Through Action">
+                <input
+                  type="text"
+                  [(ngModel)]="section.title"
+                  (ngModelChange)="onSectionTitleChange($event)"
+                  class="form-control font-bold"
+                  placeholder="e.g. Empowering Our Community Through Action">
               </div>
 
               <div class="form-group">
@@ -506,8 +511,32 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
             </div>
 
             <div class="form-group" style="margin-top:14px;">
-              <label>CUSTOM CSS CLASS INJECTION</label>
-              <input type="text" [(ngModel)]="section.customClass" class="form-control" placeholder="bg-slate-50 py-12 border-b">
+              <div class="label-with-link">
+                <label style="margin-bottom:0;">CUSTOM CSS CLASS INJECTION</label>
+                <div class="css-auto-actions">
+                  <span class="badge-css-mode" [class.manual]="customClassManuallyEdited">
+                    {{ customClassManuallyEdited ? 'Custom' : 'Auto · Max 13' }}
+                  </span>
+                  <button
+                    type="button"
+                    class="btn-sync-css"
+                    *ngIf="customClassManuallyEdited && section.title?.trim()"
+                    (click)="syncCssClassFromTitle()"
+                    title="Regenerate custom CSS class from Section Main Title (max 13 chars)">
+                    Sync from title
+                  </button>
+                </div>
+              </div>
+              <input
+                type="text"
+                [(ngModel)]="section.customClass"
+                (ngModelChange)="onCustomClassInput($event)"
+                maxlength="150"
+                class="form-control"
+                placeholder="e.g. hero-banner or bg-slate-50 py-12">
+              <small class="help-text">
+                Auto-fills from Section Main Title (max 13 chars) as you type, or enter custom CSS classes directly.
+              </small>
             </div>
           </div>
 
@@ -1486,6 +1515,40 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
       padding: 6px;
     }
     .flc-toggle { background: #ffffff; border-color: #cbd5e1; }
+
+    /* Auto Custom CSS Class Mode Controls */
+    .css-auto-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-css-mode {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .badge-css-mode.manual {
+      background: #f1f5f9;
+      color: #475569;
+      border-color: #cbd5e1;
+    }
+    .btn-sync-css {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0050e5;
+      cursor: pointer;
+    }
+    .btn-sync-css:hover {
+      text-decoration: underline;
+    }
   `]
 })
 export class PageSectionEditComponent implements OnInit, AfterViewInit {
@@ -1514,6 +1577,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
   uploadingVideo = false;
   filePickerOpen = false;
   filePickerTarget: 'primary' | 'secondary' = 'primary';
+  customClassManuallyEdited = false;
 
   /**
    * Returns a contextual modal heading based on which CTA button slot is picking a file.
@@ -1642,6 +1706,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
 
   private initNewSection(): void {
     const webPageIdQuery = this.route.snapshot.queryParams['webPageId'] || null;
+    this.customClassManuallyEdited = false;
 
     this.section = {
       title: '',
@@ -1785,6 +1850,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
             this.section.pageFormId = '__registration_form__';
           }
           this.ensureFormLayoutDefaults();
+          this.initCustomClassSyncState();
           this.syncCanvasWithHtml();
           this.loadPageLinks();
         }
@@ -1794,6 +1860,66 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         this.toast.error(err?.error?.message || 'Failed to load layout section details.');
       }
     });
+  }
+
+  /**
+   * Initializes auto-sync state for customClass after loading an existing section.
+   */
+  private initCustomClassSyncState(): void {
+    const current = (this.section?.customClass || '').trim();
+    const generated = this.buildCssClassFromTitle(this.section?.title);
+    // Preserve custom/Tailwind classes entered manually while keeping matching auto-slugs synced.
+    this.customClassManuallyEdited = Boolean(current) && current !== generated;
+  }
+
+  /**
+   * Auto-generates up to a 13-character CSS class from Section Main Title while unedited manually.
+   * @param title Current section main title value.
+   */
+  onSectionTitleChange(title: string): void {
+    if (!this.section || this.customClassManuallyEdited) return;
+    this.section.customClass = this.buildCssClassFromTitle(title);
+  }
+
+  /**
+   * Tracks manual typing in the Custom CSS Class input so user edits are never overwritten by title changes.
+   * @param value Raw class string entered by the user.
+   */
+  onCustomClassInput(value: string): void {
+    const trimmed = (value || '').trim();
+    const generated = this.buildCssClassFromTitle(this.section?.title);
+    // Treat empty or matching generated text when no manual divergence exists cleanly; otherwise lock manual mode.
+    this.customClassManuallyEdited = trimmed.length === 0 ? true : trimmed !== generated;
+  }
+
+  /**
+   * Regenerates customClass directly from Section Main Title (max 13 chars) and re-enables auto-sync.
+   */
+  syncCssClassFromTitle(): void {
+    if (!this.section) return;
+    this.customClassManuallyEdited = false;
+    this.section.customClass = this.buildCssClassFromTitle(this.section.title);
+  }
+
+  /**
+   * Converts a section title into a valid lowercase hyphenated CSS class name capped at 13 characters.
+   * @param title Raw section title text.
+   * @returns Sanitized CSS class name (0 to 13 characters).
+   */
+  buildCssClassFromTitle(title?: string): string {
+    const maxLen = 13;
+    const normalized = (title || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    if (!normalized) return '';
+
+    // Prefix with 's-' if the slug starts with a digit so it remains a valid unescaped CSS class selector.
+    const safeIdentifier = /^[0-9]/.test(normalized) ? `s-${normalized}` : normalized;
+    return safeIdentifier.slice(0, maxLen).replace(/-+$/g, '');
   }
 
   onFormSelected(formId: string | null): void {
