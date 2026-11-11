@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { FilePickerModalComponent } from '../../../shared/components/file-picker-modal/file-picker-modal.component';
 
 @Component({
   selector: 'app-page-section-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, FilePickerModalComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -269,11 +270,17 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
                   <div class="form-group full-width">
                     <label>DESTINATION LINK URL</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="section.buttonLink"
-                      class="form-control"
-                      placeholder="e.g. /about-us, #contact, or https://...">
+                    <div class="input-with-file-btn">
+                      <input
+                        type="text"
+                        [(ngModel)]="section.buttonLink"
+                        class="form-control"
+                        placeholder="e.g. /about-us, #contact, or https://...">
+                      <button type="button" class="btn-choose-file" (click)="openFilePicker('primary')" title="Pick an uploaded file from File Manager">
+                        <span class="material-symbols-outlined fs-6">folder_open</span>
+                        <span>Choose File</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -312,11 +319,17 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
                   <div class="form-group full-width">
                     <label>DESTINATION LINK URL</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="section.secondButtonLink"
-                      class="form-control"
-                      placeholder="e.g. /get-a-quote, #pricing, or https://...">
+                    <div class="input-with-file-btn">
+                      <input
+                        type="text"
+                        [(ngModel)]="section.secondButtonLink"
+                        class="form-control"
+                        placeholder="e.g. /get-a-quote, #pricing, or https://...">
+                      <button type="button" class="btn-choose-file" (click)="openFilePicker('secondary')" title="Pick an uploaded file from File Manager">
+                        <span class="material-symbols-outlined fs-6">folder_open</span>
+                        <span>Choose File</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -682,6 +695,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
         </div>
       </div>
+
+      <app-file-picker-modal
+        [isOpen]="filePickerOpen"
+        [title]="filePickerTitle"
+        (closed)="filePickerOpen = false"
+        (fileSelected)="onFilePicked($event)"
+      ></app-file-picker-modal>
     </div>
   `,
   styles: [`
@@ -779,8 +799,23 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .cta-fields-grid {
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
     }
+    .input-with-file-btn {
+      display: flex; gap: 10px; align-items: stretch;
+    }
+    .input-with-file-btn .form-control {
+      flex: 1; min-width: 0;
+    }
+    .btn-choose-file {
+      display: inline-flex; align-items: center; gap: 6px; padding: 0 14px;
+      background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; border-radius: 8px;
+      font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .btn-choose-file:hover { background: #dbeafe; border-color: #93c5fd; }
     @media (max-width: 640px) {
       .cta-fields-grid { grid-template-columns: 1fr; }
+      .input-with-file-btn { flex-direction: column; }
+      .btn-choose-file { justify-content: center; min-height: 38px; }
     }
 
     /* Live Icon Preview Field */
@@ -1265,6 +1300,17 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
   uploadingPrimary = false;
   uploadingSecondary = false;
   uploadingVideo = false;
+  filePickerOpen = false;
+  filePickerTarget: 'primary' | 'secondary' = 'primary';
+
+  /**
+   * Returns a contextual modal heading based on which CTA button slot is picking a file.
+   */
+  get filePickerTitle(): string {
+    return this.filePickerTarget === 'secondary'
+      ? 'Choose File for Secondary Action Button'
+      : 'Choose File for Primary Action Button';
+  }
 
   get headerEyebrow(): string {
     return this.section?.webPageId
@@ -1487,6 +1533,29 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         this.section.secondButtonLink = val;
       }
     }
+  }
+
+  /**
+   * Opens the File Manager picker modal for the chosen CTA button link field.
+   * @param target Identifies whether the primary or secondary button URL should be populated.
+   */
+  openFilePicker(target: 'primary' | 'secondary'): void {
+    this.filePickerTarget = target;
+    this.filePickerOpen = true;
+  }
+
+  /**
+   * Populates the active button destination URL when a file is chosen from the File Manager modal.
+   * @param file Selected file record containing its hosted URL and metadata.
+   */
+  onFilePicked(file: any): void {
+    if (!file?.fileUrl || !this.section) return;
+    if (this.filePickerTarget === 'secondary') {
+      this.section.secondButtonLink = file.fileUrl;
+    } else {
+      this.section.buttonLink = file.fileUrl;
+    }
+    this.toast.success(`Inserted URL for "${file.fileName}".`);
   }
 
   loadSection(): void {

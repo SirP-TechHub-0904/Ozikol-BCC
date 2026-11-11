@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { FilePickerModalComponent } from '../../../shared/components/file-picker-modal/file-picker-modal.component';
 
 @Component({
   selector: 'app-page-section-list-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, FilePickerModalComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -271,8 +272,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                       <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
                     </optgroup>
                   </select>
+                  <button type="button" class="btn-choose-file" (click)="openFilePicker()" title="Pick an uploaded file from File Manager">
+                    <span class="material-symbols-outlined fs-6">folder_open</span>
+                    <span>Choose File</span>
+                  </button>
                 </div>
-                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
+                <small class="help-text">Select from root (/), web pages, system pages, or choose an uploaded file, or freely type any custom direct/anchor link.</small>
               </div>
             </div>
           </div>
@@ -438,6 +443,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
         </div>
       </div>
+
+      <app-file-picker-modal
+        [isOpen]="filePickerOpen"
+        title="Choose File for Button Link"
+        (closed)="filePickerOpen = false"
+        (fileSelected)="onFilePicked($event)"
+      ></app-file-picker-modal>
     </div>
   `,
   styles: [`
@@ -680,15 +692,23 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
     /* Media Uploads & Dropdown Combo */
     .input-with-dropdown {
-      display: flex; gap: 10px; align-items: center;
+      display: flex; gap: 10px; align-items: stretch;
     }
-    .input-with-dropdown .link-input { flex: 1 1 55%; min-width: 0; }
+    .input-with-dropdown .link-input { flex: 1 1 50%; min-width: 0; }
     .input-with-dropdown .link-select {
-      flex: 1 1 45%; min-width: 0; background-color: #f8fafc; border-color: #cbd5e1;
+      flex: 1 1 35%; min-width: 0; background-color: #f8fafc; border-color: #cbd5e1;
       color: #334155; font-weight: 500; cursor: pointer;
     }
+    .btn-choose-file {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px;
+      background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; border-radius: 8px;
+      font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+      transition: all 0.15s ease; flex-shrink: 0;
+    }
+    .btn-choose-file:hover { background: #dbeafe; border-color: #93c5fd; }
     @media (max-width: 640px) {
       .input-with-dropdown { flex-direction: column; align-items: stretch; }
+      .btn-choose-file { min-height: 38px; }
     }
 
     .video-preview-row {
@@ -958,6 +978,7 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
 
   allPages: any[] = [];
   publishedPagesList: { title: string; url: string }[] = [];
+  filePickerOpen = false;
 
   systemPages: { name: string; url: string }[] = [
     { name: 'Member Sign In / Portal', url: '/auth/login' },
@@ -1108,6 +1129,23 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
     if (val) {
       this.item.buttonLink = val;
     }
+  }
+
+  /**
+   * Opens the File Manager picker modal for the sub-item button link.
+   */
+  openFilePicker(): void {
+    this.filePickerOpen = true;
+  }
+
+  /**
+   * Inserts the chosen File Manager file URL into the sub-item button link field.
+   * @param file Selected file record from File Manager.
+   */
+  onFilePicked(file: any): void {
+    if (!file?.fileUrl || !this.item) return;
+    this.item.buttonLink = file.fileUrl;
+    this.toast.success(`Inserted URL for "${file.fileName}".`);
   }
 
   loadItem(): void {
