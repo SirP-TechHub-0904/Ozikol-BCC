@@ -78,8 +78,67 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
 
               <div class="attached-pages-note" *ngIf="attachedPageCount > 0">
-                Will be unlinked to Standalone:
-                <strong>{{ attachedPageTitlesPreview }}</strong>
+                The category has {{ attachedPageCount }} page{{ attachedPageCount === 1 ? '' : 's' }} binded — unbind them below before deleting.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bound Pages List & Unbind Controls (Same-Page Resolution) -->
+        <div class="bound-pages-card" *ngIf="attachedPageCount > 0">
+          <div class="bound-pages-head">
+            <div class="bound-head-left">
+              <span class="material-symbols-outlined">link_off</span>
+              <div>
+                <h3>Bound Web Pages ({{ attachedPageCount }}) — Unbind First</h3>
+                <p>The category has some pages binded. Unbind individual pages or clear all bound pages below to proceed with deletion.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-primary-blue"
+              (click)="unbindAllPages()"
+              [disabled]="unbindingAll || !!unbindingPageId"
+            >
+              <span class="material-symbols-outlined">{{ unbindingAll ? 'hourglass_top' : 'link_off' }}</span>
+              <span>{{ unbindingAll ? 'Unbinding...' : 'Unbind All Pages (' + attachedPageCount + ')' }}</span>
+            </button>
+          </div>
+
+          <div class="bound-pages-list">
+            <div class="bound-page-row" *ngFor="let p of category.webPages">
+              <div class="bound-page-info">
+                <span class="material-symbols-outlined bound-page-icon">article</span>
+                <div>
+                  <strong class="bound-page-title">{{ p.title || '(Untitled Page)' }}</strong>
+                  <div class="bound-page-meta">
+                    <code>{{ formatSlug(p.directUrl || p.slug) }}</code>
+                    <span class="status-tag" [class.live]="p.publish" [class.draft]="!p.publish">
+                      {{ p.publish ? 'Published' : 'Draft' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bound-page-actions">
+                <a
+                  [routerLink]="['/content/console/pages/edit', p.id]"
+                  target="_blank"
+                  class="btn btn-sm btn-outline-light"
+                  title="Open page settings in a new tab"
+                >
+                  <span class="material-symbols-outlined">open_in_new</span>
+                  <span>View / Edit</span>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-unbind"
+                  (click)="unbindSinglePage(p)"
+                  [disabled]="unbindingAll || unbindingPageId === p.id"
+                >
+                  <span class="material-symbols-outlined">{{ unbindingPageId === p.id ? 'hourglass_top' : 'link_off' }}</span>
+                  <span>{{ unbindingPageId === p.id ? 'Unbinding...' : 'Unbind' }}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -94,10 +153,10 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <ul class="consequences-list">
             <li>
-              <strong>Page Unlinking:</strong> All web pages currently grouped under this navigation category will be unlinked to <em>Standalone / Uncategorized</em>.
+              <strong>Bound Pages Prerequisite:</strong> Any web pages still grouped under this category must be unbound to <em>Standalone / Uncategorized</em> first using the list above.
             </li>
             <li>
-              <strong>Header Menu Dropdown Removal:</strong> This dropdown menu and its grouped page hierarchy will immediately disappear from the public website header.
+              <strong>Header Menu Dropdown Removal:</strong> This dropdown menu will immediately disappear from the public website header.
             </li>
             <li>
               <strong>Permanent Record Eradication:</strong> This web menu category cannot be recovered after deletion.
@@ -390,6 +449,136 @@ import { ToastService } from '../../../core/services/toast.service';
       padding-top: 16px;
       margin-top: 4px;
     }
+
+    /* Bound Pages Unbind Card */
+    .bound-pages-card {
+      background: #ffffff;
+      border: 1.5px solid #93c5fd;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.06);
+    }
+    .bound-pages-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 14px;
+    }
+    .bound-head-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .bound-head-left > span {
+      color: #0050e5;
+      font-size: 24px;
+      margin-top: 2px;
+    }
+    .bound-head-left h3 {
+      margin: 0 0 2px;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .bound-head-left p {
+      margin: 0;
+      font-size: 12.5px;
+      color: #475569;
+    }
+    .btn-primary-blue {
+      background: #0050e5;
+      color: #ffffff;
+    }
+    .btn-primary-blue:hover:not(:disabled) {
+      background: #003fb8;
+    }
+    .btn-primary-blue:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .bound-pages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .bound-page-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .bound-page-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bound-page-icon {
+      color: #0050e5;
+      font-size: 20px;
+    }
+    .bound-page-title {
+      display: block;
+      font-size: 13.5px;
+      color: #0f172a;
+    }
+    .bound-page-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      font-size: 11.5px;
+    }
+    .bound-page-meta code {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .status-tag {
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .status-tag.live { background: #dcfce7; color: #15803d; }
+    .status-tag.draft { background: #e2e8f0; color: #475569; }
+    .bound-page-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn-outline-light {
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-outline-light:hover { background: #f1f5f9; }
+    .btn-unbind {
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .btn-unbind:hover:not(:disabled) {
+      background: #0050e5;
+      color: #ffffff;
+    }
+    .btn-unbind:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   `]
 })
 export class WebCategoryDeleteComponent implements OnInit {
@@ -397,6 +586,8 @@ export class WebCategoryDeleteComponent implements OnInit {
   category: any = null;
   loading = false;
   deleting = false;
+  unbindingAll = false;
+  unbindingPageId: string | null = null;
   confirmationInput = '';
   errorMsg = '';
 
@@ -444,6 +635,52 @@ export class WebCategoryDeleteComponent implements OnInit {
   get attachedPageTitlesPreview(): string {
     const pages = this.category?.webPages || [];
     return pages.map((p: any) => p.title || 'Untitled').join(', ');
+  }
+
+  /** Returns a normal leading-slash slug label for a bound page row. */
+  formatSlug(raw?: string): string {
+    const val = (raw || '').trim();
+    if (!val || val === '/') return '/';
+    if (val.startsWith('http://') || val.startsWith('https://')) return val;
+    return '/' + val.replace(/^\/+/, '');
+  }
+
+  /** Unbinds a single bound web page from this category directly on the delete page. */
+  unbindSinglePage(page: any): void {
+    if (!this.categoryId || !page?.id) return;
+    this.unbindingPageId = page.id;
+    this.errorMsg = '';
+
+    this.api.post<any>(`ContentApi/categories/${this.categoryId}/unbind-pages`, { webPageId: page.id }).subscribe({
+      next: () => {
+        this.unbindingPageId = null;
+        this.category.webPages = (this.category?.webPages || []).filter((p: any) => p.id !== page.id);
+        this.toast.success(`"${page.title}" unbound to Standalone.`);
+      },
+      error: (err) => {
+        this.unbindingPageId = null;
+        this.errorMsg = err?.error?.message || 'Failed to unbind web page.';
+      }
+    });
+  }
+
+  /** Clears all bound web pages from this category in one click on the same page. */
+  unbindAllPages(): void {
+    if (!this.categoryId || this.attachedPageCount === 0) return;
+    this.unbindingAll = true;
+    this.errorMsg = '';
+
+    this.api.post<any>(`ContentApi/categories/${this.categoryId}/unbind-pages`, {}).subscribe({
+      next: (res) => {
+        this.unbindingAll = false;
+        this.category.webPages = [];
+        this.toast.success(res?.message || 'All bound pages cleared to Standalone.');
+      },
+      error: (err) => {
+        this.unbindingAll = false;
+        this.errorMsg = err?.error?.message || 'Failed to unbind attached pages.';
+      }
+    });
   }
 
   isTitleMatched(): boolean {

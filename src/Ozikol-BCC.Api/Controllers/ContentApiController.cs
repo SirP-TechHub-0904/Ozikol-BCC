@@ -1497,18 +1497,69 @@ Reply ONLY with the valid JSON object.";
         }
 
         /// <summary>
-        /// Deletes a navigation page category after verifying title confirmation,
-        /// unlinking attached web pages and child sub-categories to standalone by default.
+        /// Payload for unbinding a single page or all bound pages from a category.
+        /// </summary>
+        public class UnbindCategoryPagesRequest
+        {
+            /// <summary>
+            /// Optional page identifier to unbind only one page; when null, all bound pages are unbound.
+            /// </summary>
+            public Guid? WebPageId { get; set; }
+        }
+
+        /// <summary>
+        /// Unbinds one or all web pages attached to a navigation category so the category can be safely deleted.
+        /// </summary>
+        /// <param name="id">Unique identifier of the category.</param>
+        /// <param name="request">Optional request specifying a single WebPageId to unbind.</param>
+        /// <returns>Standardized API response with the number of unbound pages and remaining bound count.</returns>
+        [HttpPost("categories/{id:guid}/unbind-pages")]
+        public async Task<IActionResult> UnbindCategoryPages(Guid id, [FromBody] UnbindCategoryPagesRequest? request = null)
+        {
+            var category = await _context.PageCategories.FindAsync(id);
+            if (category == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
+            }
+
+            var query = _context.WebPages.Where(p => p.PageCategoryId == id);
+            if (request?.WebPageId.HasValue == true && request.WebPageId.Value != Guid.Empty)
+            {
+                query = query.Where(p => p.Id == request.WebPageId.Value);
+            }
+
+            var pagesToUnbind = await query.ToListAsync();
+            foreach (var page in pagesToUnbind)
+            {
+                page.PageCategoryId = null;
+                page.PageCategory = null;
+                page.UpdatedAtUtc = DateTime.UtcNow;
+            }
+
+            if (pagesToUnbind.Count > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            var remainingCount = await _context.WebPages.CountAsync(p => p.PageCategoryId == id);
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                unboundCount = pagesToUnbind.Count,
+                remainingCount
+            }, $"{pagesToUnbind.Count} page(s) unbound from '{category.Title}'."));
+        }
+
+        /// <summary>
+        /// Deletes a navigation page category after verifying title confirmation.
+        /// Rejects deletion if any web pages remain bound to the category so admins unbind them explicitly first.
         /// </summary>
         /// <param name="id">Unique identifier of the category to delete.</param>
         /// <param name="confirmationTitle">Exact category title typed by the admin to confirm deletion.</param>
-        /// <param name="unlinkPages">When true (default), attached pages are unbound to standalone instead of blocking deletion.</param>
-        /// <returns>Standardized API response confirming category deletion.</returns>
+        /// <returns>Standardized API response confirming category deletion or reporting bound pages.</returns>
         [HttpDelete("categories/{id:guid}")]
         public async Task<IActionResult> DeleteCategory(
             Guid id,
-            [FromQuery] string? confirmationTitle = null,
-            [FromQuery] bool unlinkPages = true)
+            [FromQuery] string? confirmationTitle = null)
         {
             var existing = await _context.PageCategories
                 .Include(c => c.WebPages)
@@ -1522,13 +1573,19 @@ Reply ONLY with the valid JSON object.";
                 return BadRequest(ApiResponse<object>.FailureResponse("Confirmation title mismatch. Type the exact category title to delete."));
             }
 
-            if (existing.WebPages != null && existing.WebPages.Any() && !unlinkPages)
+            if (existing.WebPages != null && existing.WebPages.Any())
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Category '{existing.Title}' still has {existing.WebPages.Count} attached page(s). Enable unlinking to proceed."));
+                    "The category has some pages binded. Unbind all bound pages first."));
             }
 
-            UnbindCategoryDependencies(existing);
+            // Unbind any child sub-categories and flush FK nulls before deleting parent category
+            var hadChildren = existing.Children != null && existing.Children.Any();
+            if (hadChildren)
+            {
+                UnbindCategoryDependencies(existing);
+                await _context.SaveChangesAsync();
+            }
 
             _context.PageCategories.Remove(existing);
             await _context.SaveChangesAsync();
@@ -1541,20 +1598,24 @@ Reply ONLY with the valid JSON object.";
         /// <param name="category">Loaded category entity with WebPages and Children collections.</param>
         private static void UnbindCategoryDependencies(PageCategory category)
         {
-            if (category.WebPages != null)
+            if (category.WebPages != null && category.WebPages.Any())
             {
-                foreach (var page in category.WebPages)
+                foreach (var page in category.WebPages.ToList())
                 {
                     page.PageCategoryId = null;
+                    page.PageCategory = null;
                 }
+                category.WebPages.Clear();
             }
 
-            if (category.Children != null)
+            if (category.Children != null && category.Children.Any())
             {
-                foreach (var child in category.Children)
+                foreach (var child in category.Children.ToList())
                 {
                     child.ParentId = null;
+                    child.Parent = null;
                 }
+                category.Children.Clear();
             }
         }
 
@@ -1609,6 +1670,7 @@ Reply ONLY with the valid JSON object.";
                 UnbindCategoryDependencies(cat);
             }
 
+            await _context.SaveChangesAsync();
             _context.PageCategories.RemoveRange(categories);
             await _context.SaveChangesAsync();
 
