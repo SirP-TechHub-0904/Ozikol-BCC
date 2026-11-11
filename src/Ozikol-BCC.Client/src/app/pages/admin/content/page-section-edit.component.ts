@@ -1909,7 +1909,9 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
           this.saving = false;
           this.toast.success(res?.message || 'Section updated successfully!');
           if (this.isLinksDirty) {
-            this.savePageLinks();
+            this.savePageLinks(true);
+          } else {
+            this.goBack();
           }
         },
         error: (err) => {
@@ -2010,8 +2012,9 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
 
   /**
    * Persists multi-page placement links to the backend.
+   * @param navigateBackAfterSave When true, returns to the sections/page list once placements are saved.
    */
-  savePageLinks(): void {
+  savePageLinks(navigateBackAfterSave: boolean = false): void {
     if (!this.sectionId) return;
     this.isSavingLinks = true;
 
@@ -2028,7 +2031,11 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         this.isSavingLinks = false;
         this.isLinksDirty = false;
         this.toast.success(res?.message || 'Page placements updated successfully!');
-        this.loadPageLinks();
+        if (navigateBackAfterSave) {
+          this.goBack();
+        } else {
+          this.loadPageLinks();
+        }
       },
       error: (err) => {
         this.isSavingLinks = false;

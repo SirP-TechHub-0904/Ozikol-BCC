@@ -1584,6 +1584,7 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
         next: (res) => {
           this.saving = false;
           this.toast.success(res?.message || 'Sub-item updated successfully!');
+          this.goBack();
         },
         error: (err) => {
           this.saving = false;
