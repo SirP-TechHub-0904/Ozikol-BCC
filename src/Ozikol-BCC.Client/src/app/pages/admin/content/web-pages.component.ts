@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -233,22 +233,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <a [href]="getLivePageUrl(page)" target="_blank" class="btn-action btn-view" title="Open live published page in a new tab">
-                      <span class="material-symbols-outlined">open_in_new</span>
-                      <span>View</span>
-                    </a>
-                    <a [routerLink]="['/content/console/pages/edit', page.id]" class="btn-action btn-edit" title="Edit Page & Settings">
-                      <span class="material-symbols-outlined">edit</span>
-                      <span>Edit</span>
-                    </a>
-                    <a [routerLink]="['/content/console/pages/details', page.id]" class="btn-action btn-sections" title="Manage Page Sections">
-                      <span class="material-symbols-outlined">layers</span>
-                      <span>Sections</span>
-                    </a>
-                    <a [routerLink]="['/content/console/pages/delete', page.id]" class="btn-action btn-delete" title="Delete Web Page">
-                      <span class="material-symbols-outlined">delete</span>
-                      <span>Delete</span>
-                    </a>
+                    <button
+                      type="button"
+                      class="btn-actions-trigger"
+                      [class.active]="openActionPage?.id === page.id"
+                      (click)="toggleActionMenu(page, $event)"
+                      title="Page Actions">
+                      <span>Actions</span>
+                      <span class="material-symbols-outlined">expand_more</span>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -309,6 +302,32 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </button>
           </div>
         </div>
+      <!-- Floating Row Actions Dropdown Menu (Unclipped by table overflow) -->
+      <div
+        class="dropdown-menu-card"
+        *ngIf="openActionPage"
+        [ngStyle]="dropdownMenuStyle"
+        (click)="$event.stopPropagation()"
+      >
+        <a [href]="getLivePageUrl(openActionPage)" target="_blank" rel="noopener noreferrer" class="dropdown-item item-view" (click)="closeActionMenu()">
+          <span class="material-symbols-outlined fs-6">open_in_new</span>
+          <span>View Live Page</span>
+        </a>
+        <a [routerLink]="['/content/console/pages/edit', openActionPage.id]" class="dropdown-item item-edit" (click)="closeActionMenu()">
+          <span class="material-symbols-outlined fs-6">edit</span>
+          <span>Edit Page &amp; Settings</span>
+        </a>
+        <a [routerLink]="['/content/console/pages/details', openActionPage.id]" class="dropdown-item item-sections" (click)="closeActionMenu()">
+          <span class="material-symbols-outlined fs-6">layers</span>
+          <span>Manage Sections</span>
+        </a>
+        <div class="dropdown-divider"></div>
+        <a [routerLink]="['/content/console/pages/delete', openActionPage.id]" class="dropdown-item item-delete" (click)="closeActionMenu()">
+          <span class="material-symbols-outlined fs-6">delete</span>
+          <span>Delete Web Page</span>
+        </a>
+      </div>
+
       <!-- Bulk Delete Confirmation Modal -->
       <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
         <div class="modal-card">
@@ -921,72 +940,87 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .status-pill.published { background: #dcfce7; color: #15803d; }
     .status-pill.draft { background: #fef3c7; color: #b45309; }
 
-    /* Uniform Table Action Buttons */
+    /* Uniform Table Action Dropdown */
     .action-buttons {
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: flex-end;
       white-space: nowrap;
     }
-    .btn-action {
+    .btn-actions-trigger {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       height: 34px;
       padding: 0 12px;
       border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
-      text-decoration: none;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
       cursor: pointer;
       transition: all 0.15s ease;
-      border: 1px solid transparent;
-      box-sizing: border-box;
     }
-    .btn-action .material-symbols-outlined {
-      font-size: 16px;
-    }
-    .btn-view {
-      background: #f0fdf4;
-      color: #16a34a;
-      border-color: #bbf7d0;
-    }
-    .btn-view:hover {
-      background: #dcfce7;
-      border-color: #86efac;
-      color: #15803d;
-    }
-    .btn-edit {
+    .btn-actions-trigger:hover, .btn-actions-trigger.active {
       background: #eff6ff;
+      border-color: #0050e5;
       color: #0050e5;
-      border-color: #bfdbfe;
     }
-    .btn-edit:hover {
-      background: #dbeafe;
-      border-color: #93c5fd;
-      color: #0043c7;
+    .btn-actions-trigger .material-symbols-outlined {
+      font-size: 18px;
+      transition: transform 0.15s ease;
     }
-    .btn-sections {
-      background: #f1f5f9;
+    .btn-actions-trigger.active .material-symbols-outlined {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu-card {
+      position: fixed;
+      min-width: 205px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 4px 10px rgba(15, 23, 42, 0.06);
+      padding: 6px;
+      z-index: 3000;
+      animation: dropdownFadeIn 0.14s ease-out;
+    }
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
       color: #334155;
-      border-color: #cbd5e1;
+      text-decoration: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: background 0.15s, color 0.15s;
     }
-    .btn-sections:hover {
-      background: #e2e8f0;
-      border-color: #94a3b8;
-      color: #0f172a;
+    .dropdown-item .material-symbols-outlined {
+      font-size: 17px;
     }
-    .btn-delete {
-      background: #fef2f2;
-      color: #dc2626;
-      border-color: #fecaca;
-    }
-    .btn-delete:hover {
-      background: #fee2e2;
-      border-color: #fca5a5;
-      color: #b91c1c;
+    .dropdown-item.item-view { color: #16a34a; }
+    .dropdown-item.item-view:hover { background: #f0fdf4; color: #15803d; }
+    .dropdown-item.item-edit { color: #0050e5; }
+    .dropdown-item.item-edit:hover { background: #eff6ff; color: #003ebd; }
+    .dropdown-item.item-sections { color: #334155; }
+    .dropdown-item.item-sections:hover { background: #f1f5f9; color: #0f172a; }
+    .dropdown-item.item-delete { color: #dc2626; }
+    .dropdown-item.item-delete:hover { background: #fef2f2; color: #b91c1c; }
+    .dropdown-divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 4px 6px;
     }
 
     .empty-cell {
@@ -1097,6 +1131,46 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 export class WebPagesComponent implements OnInit {
   loading = false;
   savingPageOrder = false;
+
+  // Floating Row Actions Dropdown State
+  openActionPage: any = null;
+  dropdownMenuStyle: { top?: string; bottom?: string; right?: string } = {};
+
+  @HostListener('document:click')
+  @HostListener('window:scroll')
+  closeActionMenu(): void {
+    this.openActionPage = null;
+  }
+
+  /**
+   * Toggles the floating row actions dropdown menu and computes unclipped fixed coordinates.
+   */
+  toggleActionMenu(page: any, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.openActionPage?.id === page.id) {
+      this.openActionPage = null;
+      return;
+    }
+
+    const trigger = event.currentTarget as HTMLElement;
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const rightOffset = window.innerWidth - rect.right;
+
+    if (spaceBelow < 210) {
+      this.dropdownMenuStyle = {
+        bottom: `${window.innerHeight - rect.top + 6}px`,
+        right: `${Math.max(12, rightOffset)}px`
+      };
+    } else {
+      this.dropdownMenuStyle = {
+        top: `${rect.bottom + 6}px`,
+        right: `${Math.max(12, rightOffset)}px`
+      };
+    }
+
+    this.openActionPage = page;
+  }
 
   get headerButtons(): PageHeaderButton[] {
     return [
