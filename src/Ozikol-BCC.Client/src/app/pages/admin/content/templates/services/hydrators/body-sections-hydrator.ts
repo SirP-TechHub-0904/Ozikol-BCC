@@ -24,16 +24,36 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   output = injectDynamicForms(output, ctx);
 
   // 2. Section Headline Conditionals
-  output = resolveDepthAwareIf(output, 'MiniTitle', Boolean(ctx.miniTitle && ctx.miniTitle.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'SecondButtonText', Boolean(ctx.secondButtonText && ctx.secondButtonText.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'ImageUrl', Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'SecondImageUrl', Boolean(ctx.secondImageUrl && ctx.secondImageUrl.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'VideoUrl', Boolean(ctx.videoUrl && ctx.videoUrl.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'YoutubeUrlLink', Boolean(ctx.youtubeUrlLink && ctx.youtubeUrlLink.trim().length > 0));
+  const hasTitle = Boolean(ctx.title && ctx.title.trim().length > 0);
+  const hasMiniTitle = Boolean((ctx.miniTitle && ctx.miniTitle.trim().length > 0) || (ctx.subTitle && ctx.subTitle.trim().length > 0));
+  const hasDesc = Boolean((ctx.description && ctx.description.trim().length > 0) || (ctx.fullDescription && ctx.fullDescription.trim().length > 0));
+  const hasFullDesc = Boolean((ctx.fullDescription && ctx.fullDescription.trim().length > 0) || (ctx.description && ctx.description.trim().length > 0));
+  const hasButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0);
+  const hasButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#');
+  const hasSecondButton = Boolean((ctx.secondButtonText && ctx.secondButtonText.trim().length > 0) || (ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0));
+  const hasSecondButtonLink = Boolean((ctx.secondButtonLink && ctx.secondButtonLink.trim().length > 0 && ctx.secondButtonLink !== '#') || (ctx.secondaryButtonLink && ctx.secondaryButtonLink.trim().length > 0 && ctx.secondaryButtonLink !== '#'));
+  const hasImage = Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0);
+  const hasSecondImage = Boolean(ctx.secondImageUrl && ctx.secondImageUrl.trim().length > 0);
+  const hasVideo = Boolean(ctx.videoUrl && ctx.videoUrl.trim().length > 0);
+  const hasYoutube = Boolean(ctx.youtubeUrlLink && ctx.youtubeUrlLink.trim().length > 0);
+  const hasIcon = Boolean(ctx.iconText && ctx.iconText.trim().length > 0);
   const quoteVal = (ctx.qoute || ctx.quote || '').trim();
-  output = resolveDepthAwareIf(output, 'Qoute', quoteVal.length > 0);
-  output = resolveDepthAwareIf(output, 'Quote', quoteVal.length > 0);
+  const hasQuote = quoteVal.length > 0;
+
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?Title', hasTitle);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:MiniTitle|Subtitle|SubTitle)', hasMiniTitle);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?Description', hasDesc);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?FullDescription', hasFullDesc);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?ButtonText', hasButton);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?ButtonLink', hasButtonLink);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:SecondButtonText|SecondaryButtonText)', hasSecondButton);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:SecondButtonLink|SecondaryButtonLink)', hasSecondButtonLink);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?ImageUrl', hasImage);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?SecondImageUrl', hasSecondImage);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?VideoUrl', hasVideo);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?YoutubeUrlLink', hasYoutube);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:IconText|Icon)', hasIcon);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:Quote|Qoute)', hasQuote);
 
   // 3. Repeater Cards Loop: {{#each PageSectionLists}} or {{#each Items}}
   const rawItems = ctx.pageSectionLists || ctx.items || [];
@@ -97,20 +117,18 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   // 4. Section Level Scalars (supports {{ Title }} or {{ PageSection.Title }})
   output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?Description\s*\}\}/gi, ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || ctx.fullDescription || '');
   output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?Quote\s*\}\}/gi, ctx.quote || ctx.qoute || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:Quote|Qoute)\s*\}\}/gi, ctx.quote || ctx.qoute || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, ctx.buttonText || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondButtonText\s*\}\}/gi, ctx.secondButtonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondButtonLink\s*\}\}/gi, ctx.secondButtonLink || '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, ctx.secondButtonText || ctx.secondaryButtonText || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, ctx.secondButtonLink || ctx.secondaryButtonLink || '#');
   output = output.replace(/\{\{\s*(?:PageSection\.)?ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
-  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:IconText|Icon)', Boolean(ctx.iconText && ctx.iconText.trim().length > 0));
   output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
   output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');
 
