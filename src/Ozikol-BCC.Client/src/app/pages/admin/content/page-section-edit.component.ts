@@ -220,22 +220,122 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
           </div>
 
-          <!-- Card 2: Action Buttons, Root Icon & Direct Links -->
+          <!-- Card 2: Action Buttons, Links & Section Icon -->
           <div class="cms-card">
             <div class="card-header-bar">
               <div>
-                <h3>Action Buttons, Root Icon & Links</h3>
-                <p class="card-sub">Interactive CTA buttons, destination page links, and section iconography.</p>
+                <h3>Action Buttons &amp; Section Icon</h3>
+                <p class="card-sub">Configure interactive CTA buttons, destination links, and optional section iconography.</p>
               </div>
+              <label class="header-toggle-pill" [class.active-off]="section.disableButton" title="Toggle visibility of CTA action buttons on this section">
+                <input type="checkbox" [(ngModel)]="section.disableButton">
+                <span class="material-symbols-outlined fs-6">{{ section.disableButton ? 'visibility_off' : 'visibility' }}</span>
+                <span>{{ section.disableButton ? 'Buttons Hidden' : 'Buttons Visible' }}</span>
+              </label>
             </div>
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <div class="icon-label-row">
-                  <label>ROOT ICON (FONT AWESOME, &lt;I&gt; TAG, OR IMAGE URL)</label>
+
+            <div class="cta-sections-stack">
+              <!-- Group 1: Primary CTA Button -->
+              <div class="cta-subcard" [class.cta-dimmed]="section.disableButton">
+                <div class="cta-subcard-header">
+                  <div class="cta-badge-title">
+                    <span class="cta-num-badge primary">1</span>
+                    <div>
+                      <strong>Primary Action Button</strong>
+                      <span class="cta-sub">Main call-to-action trigger displayed in this layout block.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cta-fields-grid">
+                  <div class="form-group">
+                    <label>BUTTON LABEL</label>
+                    <input type="text" [(ngModel)]="section.buttonText" class="form-control" placeholder="e.g. Discover More, Get Started">
+                  </div>
+
+                  <div class="form-group">
+                    <label>QUICK PICK PAGE</label>
+                    <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'primary')">
+                      <option value="">-- Choose a page --</option>
+                      <option value="/">🏠 Root / Home Page (/)</option>
+                      <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                        <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                      </optgroup>
+                      <optgroup label="Ready-Made System Pages">
+                        <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>DESTINATION LINK URL</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="section.buttonLink"
+                      class="form-control"
+                      placeholder="e.g. /about-us, #contact, or https://...">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Group 2: Secondary CTA Button (Dual CTA) -->
+              <div class="cta-subcard" [class.cta-dimmed]="section.disableButton">
+                <div class="cta-subcard-header">
+                  <div class="cta-badge-title">
+                    <span class="cta-num-badge secondary">2</span>
+                    <div>
+                      <strong>Secondary Action Button <span class="optional-tag">Optional Dual CTA</span></strong>
+                      <span class="cta-sub">Additional secondary button when the template supports two buttons.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cta-fields-grid">
+                  <div class="form-group">
+                    <label>BUTTON LABEL</label>
+                    <input type="text" [(ngModel)]="section.secondButtonText" class="form-control" placeholder="e.g. Watch Demo, Our Certificate">
+                  </div>
+
+                  <div class="form-group">
+                    <label>QUICK PICK PAGE</label>
+                    <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'secondary')">
+                      <option value="">-- Choose a page --</option>
+                      <option value="/">🏠 Root / Home Page (/)</option>
+                      <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                        <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                      </optgroup>
+                      <optgroup label="Ready-Made System Pages">
+                        <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>DESTINATION LINK URL</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="section.secondButtonLink"
+                      class="form-control"
+                      placeholder="e.g. /get-a-quote, #pricing, or https://...">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Group 3: Section Root Icon -->
+              <div class="cta-subcard">
+                <div class="cta-subcard-header">
+                  <div class="cta-badge-title">
+                    <span class="material-symbols-outlined icon-header-badge">interests</span>
+                    <div>
+                      <strong>Section Root Icon <span class="optional-tag">Optional</span></strong>
+                      <span class="cta-sub">Font Awesome class, &lt;i&gt; tag, or SVG/image icon URL rendered natively by the template.</span>
+                    </div>
+                  </div>
                   <span *ngIf="section.iconText" class="badge-icon-type" [class.badge-image]="getIconKind(section.iconText) === 'image'">
                     {{ getIconTypeLabel(section.iconText) }}
                   </span>
                 </div>
+
                 <div class="icon-input-group">
                   <div class="icon-preview-box" [title]="'Live Icon Preview: ' + (section.iconText || 'None')">
                     <ng-container [ngSwitch]="getIconKind(section.iconText)">
@@ -249,68 +349,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     [(ngModel)]="section.iconText"
                     class="form-control icon-input-field"
                     placeholder="e.g. fa-solid fa-rocket, <i class='fa-solid fa-rocket'></i>, or https://.../icon.svg">
-                </div>
-                <small class="help-text">Paste Font Awesome class, direct &lt;i&gt; HTML tag, or image URL. The template engine renders it natively.</small>
-              </div>
-
-              <div class="form-group">
-                <label>PRIMARY BUTTON TEXT</label>
-                <input type="text" [(ngModel)]="section.buttonText" class="form-control" placeholder="e.g. Discover More, Join Now">
-              </div>
-
-              <div class="form-group">
-                <label>SECONDARY BUTTON TEXT (DUAL CTA)</label>
-                <input type="text" [(ngModel)]="section.secondButtonText" class="form-control" placeholder="e.g. Watch Demo, Learn More">
-              </div>
-
-              <div class="form-group full-width">
-                <label>PRIMARY BUTTON TARGET LINK</label>
-                <div class="input-with-dropdown">
-                  <input
-                    type="text"
-                    [(ngModel)]="section.buttonLink"
-                    class="form-control link-input"
-                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
-                  <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'primary')">
-                    <option value="">-- Quick Pick Page --</option>
-                    <option value="/">🏠 Root / Home Page (/)</option>
-                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
-                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
-                    </optgroup>
-                    <optgroup label="Ready-Made System Pages">
-                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
-                    </optgroup>
-                  </select>
-                </div>
-                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
-              </div>
-
-              <div class="form-group full-width">
-                <label>SECONDARY BUTTON TARGET LINK (DUAL CTA)</label>
-                <div class="input-with-dropdown">
-                  <input
-                    type="text"
-                    [(ngModel)]="section.secondButtonLink"
-                    class="form-control link-input"
-                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
-                  <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'secondary')">
-                    <option value="">-- Quick Pick Page --</option>
-                    <option value="/">🏠 Root / Home Page (/)</option>
-                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
-                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
-                    </optgroup>
-                    <optgroup label="Ready-Made System Pages">
-                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
-                    </optgroup>
-                  </select>
-                </div>
-                <small class="help-text">Select from root (/), web pages, or system pages, or freely type any custom direct/anchor link.</small>
-              </div>
-
-              <div class="form-group full-width">
-                <div class="checkbox-card">
-                  <input type="checkbox" [(ngModel)]="section.disableButton" id="disBtn">
-                  <label for="disBtn"><strong>Disable / Hide Action Buttons</strong> — Hides CTA action triggers from the rendered template.</label>
                 </div>
               </div>
             </div>
@@ -689,6 +727,63 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .form-control:focus { outline: none; border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
     .help-text { font-size: 11px; color: #64748b; }
+
+    /* Organized CTA & Iconography Subcards */
+    .header-toggle-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+      border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer;
+      background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe;
+      transition: all 0.15s ease; user-select: none; white-space: nowrap;
+    }
+    .header-toggle-pill input { display: none; }
+    .header-toggle-pill.active-off {
+      background: #fef2f2; color: #dc2626; border-color: #fecaca;
+    }
+    .cta-sections-stack {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .cta-subcard {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 16px 18px; display: flex; flex-direction: column; gap: 14px;
+      transition: opacity 0.2s ease;
+    }
+    .cta-subcard.cta-dimmed {
+      opacity: 0.55;
+    }
+    .cta-subcard-header {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    }
+    .cta-badge-title {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .cta-badge-title > div {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .cta-badge-title strong {
+      font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 8px;
+    }
+    .cta-sub { font-size: 11.5px; color: #64748b; }
+    .cta-num-badge {
+      width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0;
+    }
+    .cta-num-badge.primary { background: #0050e5; color: #fff; }
+    .cta-num-badge.secondary { background: #e2e8f0; color: #334155; }
+    .icon-header-badge {
+      width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+      background: #eff6ff; color: #0050e5;
+    }
+    .optional-tag {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 999px; background: #e2e8f0; color: #475569;
+    }
+    .cta-fields-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    @media (max-width: 640px) {
+      .cta-fields-grid { grid-template-columns: 1fr; }
+    }
 
     /* Live Icon Preview Field */
     .icon-label-row {
