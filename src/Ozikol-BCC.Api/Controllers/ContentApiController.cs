@@ -1835,6 +1835,10 @@ Reply ONLY with the valid JSON object.";
             existing.WebPageId = updated.WebPageId == Guid.Empty ? null : updated.WebPageId;
             existing.PageFormId = updated.PageFormId == Guid.Empty ? null : updated.PageFormId;
             existing.FormKey = updated.FormKey;
+            existing.FormPlacementMode = updated.FormPlacementMode;
+            existing.FormWidthPreset = updated.FormWidthPreset;
+            existing.FormCustomWidthPercent = updated.FormCustomWidthPercent;
+            existing.HideSectionImageWhenFormActive = updated.HideSectionImageWhenFormActive;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Section updated successfully."));

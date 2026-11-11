@@ -661,7 +661,110 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
 
             <div class="form-group" style="margin-top:12px;">
               <label>DIRECT FORM KEY</label>
-              <input type="text" [(ngModel)]="section.formKey" class="form-control" placeholder="e.g. contact-us, registration">
+              <input type="text" [(ngModel)]="section.formKey" (ngModelChange)="onFormKeyTyped($event)" class="form-control" placeholder="e.g. contact-us, registration">
+            </div>
+
+            <!-- Interactive Form Placement & Split Layout Configurator -->
+            <div class="form-layout-config-box" *ngIf="section.pageFormId || section.formKey?.trim()">
+              <div class="flc-header">
+                <span class="material-symbols-outlined flc-icon">view_sidebar</span>
+                <div>
+                  <strong>Form Placement &amp; Section Layout</strong>
+                  <span class="flc-sub">Controls placement if your template does not embed a <code>{{ '{{' }} Form {{ '}}' }}</code> tag.</span>
+                </div>
+              </div>
+
+              <!-- 1. Form Width Mode -->
+              <div class="flc-block">
+                <label class="flc-label">FORM WIDTH</label>
+                <div class="flc-pill-group">
+                  <button type="button" class="flc-pill" [class.active]="section.formWidthPreset === '30'" (click)="setFormWidthPreset('30')">
+                    <strong>30%</strong>
+                    <span>Compact Side</span>
+                  </button>
+                  <button type="button" class="flc-pill" [class.active]="section.formWidthPreset === '50' || !section.formWidthPreset" (click)="setFormWidthPreset('50')">
+                    <strong>50%</strong>
+                    <span>Balanced Split</span>
+                  </button>
+                  <button type="button" class="flc-pill" [class.active]="section.formWidthPreset === 'custom'" (click)="setFormWidthPreset('custom')">
+                    <strong>Custom %</strong>
+                    <span>Adjustable</span>
+                  </button>
+                  <button type="button" class="flc-pill" [class.active]="section.formWidthPreset === '100'" (click)="setFormWidthPreset('100')">
+                    <strong>100%</strong>
+                    <span>Full Block</span>
+                  </button>
+                </div>
+
+                <!-- Custom Percentage Adjuster -->
+                <div class="flc-custom-row" *ngIf="section.formWidthPreset === 'custom'">
+                  <label>CUSTOM FORM WIDTH (%):</label>
+                  <div class="flc-custom-inputs">
+                    <input type="range" min="20" max="80" step="1" [(ngModel)]="section.formCustomWidthPercent" (ngModelChange)="onCustomWidthChange($event)">
+                    <input type="number" min="20" max="80" [(ngModel)]="section.formCustomWidthPercent" (ngModelChange)="onCustomWidthChange($event)" class="form-control flc-num-input">
+                    <span class="flc-pct-badge">%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2A. Side Alignment when Beside Section (30%, 50%, Custom) -->
+              <div class="flc-block" *ngIf="section.formWidthPreset !== '100'">
+                <label class="flc-label">POSITION BESIDE SECTION</label>
+                <div class="flc-pill-group two-col">
+                  <button type="button" class="flc-pill-row" [class.active]="section.formPlacementMode === 'beside_left'" (click)="section.formPlacementMode = 'beside_left'">
+                    <span class="material-symbols-outlined">align_horizontal_left</span>
+                    <span>Left Side (Form | Section)</span>
+                  </button>
+                  <button type="button" class="flc-pill-row" [class.active]="section.formPlacementMode !== 'beside_left'" (click)="section.formPlacementMode = 'beside_right'">
+                    <span class="material-symbols-outlined">align_horizontal_right</span>
+                    <span>Right Side (Section | Form)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2B. Stack Position when Full Width (100%) -->
+              <div class="flc-block" *ngIf="section.formWidthPreset === '100'">
+                <label class="flc-label">FULL-WIDTH STACK POSITION</label>
+                <div class="flc-pill-group two-col">
+                  <button type="button" class="flc-pill-row" [class.active]="section.formPlacementMode === 'before_section'" (click)="section.formPlacementMode = 'before_section'">
+                    <span class="material-symbols-outlined">vertical_align_top</span>
+                    <span>Before Section (Above)</span>
+                  </button>
+                  <button type="button" class="flc-pill-row" [class.active]="section.formPlacementMode !== 'before_section'" (click)="section.formPlacementMode = 'after_section'">
+                    <span class="material-symbols-outlined">vertical_align_bottom</span>
+                    <span>After Section (Below)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Visual Wireframe Preview Bar -->
+              <div class="flc-preview-strip" *ngIf="section.formWidthPreset !== '100'">
+                <div class="flc-preview-form" *ngIf="section.formPlacementMode === 'beside_left'" [style.flex]="'0 0 ' + getEffectiveFormWidth() + '%'">
+                  Form ({{ getEffectiveFormWidth() }}%)
+                </div>
+                <div class="flc-preview-sec">
+                  Section Content ({{ 100 - getEffectiveFormWidth() }}%)
+                </div>
+                <div class="flc-preview-form" *ngIf="section.formPlacementMode !== 'beside_left'" [style.flex]="'0 0 ' + getEffectiveFormWidth() + '%'">
+                  Form ({{ getEffectiveFormWidth() }}%)
+                </div>
+              </div>
+              <div class="flc-preview-stack" *ngIf="section.formWidthPreset === '100'">
+                <div class="flc-stack-form" *ngIf="section.formPlacementMode === 'before_section'">Form Block (100% Width)</div>
+                <div class="flc-stack-sec">Section Layout Content (100% Width)</div>
+                <div class="flc-stack-form" *ngIf="section.formPlacementMode !== 'before_section'">Form Block (100% Width)</div>
+              </div>
+
+              <!-- 3. Section Image Visibility Option (Shown for Side-by-Side layouts when section has an image) -->
+              <div class="flc-image-toggle" *ngIf="section.formWidthPreset !== '100' && (section.imageUrl || section.secondImageUrl)">
+                <label class="toggle-card flc-toggle">
+                  <input type="checkbox" [(ngModel)]="section.hideSectionImageWhenFormActive">
+                  <div class="toggle-info">
+                    <strong>Hide section image when form sits beside section</strong>
+                    <p>Replaces the image column cleanly so text and form split evenly without a cramped 3-column squeeze.</p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -1274,6 +1377,115 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
     .loading-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; color: #64748b; }
     .spin { animation: spin 1s linear infinite; font-size: 32px; color: #0050e5; margin-bottom: 12px; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Form Layout & Placement Configurator */
+    .form-layout-config-box {
+      margin-top: 16px;
+      padding: 14px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .flc-header { display: flex; align-items: flex-start; gap: 10px; }
+    .flc-icon { font-size: 20px; color: #0050e5; margin-top: 2px; }
+    .flc-header strong { display: block; font-size: 13px; color: #0f172a; }
+    .flc-sub { display: block; font-size: 11px; color: #64748b; margin-top: 2px; }
+    .flc-block { display: flex; flex-direction: column; gap: 6px; }
+    .flc-label { font-size: 10.5px; font-weight: 700; color: #475569; letter-spacing: 0.4px; }
+    .flc-pill-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .flc-pill-group.two-col { grid-template-columns: repeat(2, 1fr); }
+    .flc-pill, .flc-pill-row {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .flc-pill-row {
+      flex-direction: row;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #334155;
+      padding: 8px 10px;
+    }
+    .flc-pill-row .material-symbols-outlined { font-size: 16px; }
+    .flc-pill strong { font-size: 12px; color: #0f172a; }
+    .flc-pill span { font-size: 10px; color: #64748b; }
+    .flc-pill.active, .flc-pill-row.active {
+      background: #eff6ff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 1px #0050e5;
+    }
+    .flc-pill.active strong, .flc-pill-row.active { color: #0050e5; }
+    .flc-custom-row { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+    .flc-custom-row label { font-size: 10.5px; font-weight: 700; color: #475569; }
+    .flc-custom-inputs { display: flex; align-items: center; gap: 8px; }
+    .flc-custom-inputs input[type="range"] { flex: 1; accent-color: #0050e5; }
+    .flc-num-input { width: 68px; text-align: center; font-weight: 700; padding: 5px; }
+    .flc-pct-badge { font-size: 12px; font-weight: 700; color: #475569; }
+    .flc-preview-strip {
+      display: flex;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .flc-preview-form {
+      background: #dbeafe;
+      color: #0050e5;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      padding: 8px 4px;
+    }
+    .flc-preview-sec {
+      flex: 1;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 4px;
+    }
+    .flc-preview-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .flc-stack-form {
+      background: #dbeafe;
+      color: #0050e5;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      padding: 6px;
+    }
+    .flc-stack-sec {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px;
+    }
+    .flc-toggle { background: #ffffff; border-color: #cbd5e1; }
   `]
 })
 export class PageSectionEditComponent implements OnInit, AfterViewInit {
@@ -1456,6 +1668,10 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
       webPageId: webPageIdQuery,
       pageFormId: null,
       formKey: '',
+      formPlacementMode: 'beside_right',
+      formWidthPreset: '50',
+      formCustomWidthPercent: 45,
+      hideSectionImageWhenFormActive: false,
       imageUrl: '',
       imageKey: '',
       secondImageUrl: '',
@@ -1568,6 +1784,7 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
           if (!this.section.pageFormId && (this.section.formKey === 'registration' || this.section.formKey === 'register')) {
             this.section.pageFormId = '__registration_form__';
           }
+          this.ensureFormLayoutDefaults();
           this.syncCanvasWithHtml();
           this.loadPageLinks();
         }
@@ -1586,12 +1803,79 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
     }
     if (formId === '__registration_form__') {
       this.section.formKey = 'registration';
+      this.ensureFormLayoutDefaults();
       return;
     }
     const found = this.availableForms.find(f => f.id === formId);
     if (found) {
       this.section.formKey = found.formKey;
     }
+    this.ensureFormLayoutDefaults();
+  }
+
+  onFormKeyTyped(val: string): void {
+    if (val && val.trim().length > 0) {
+      this.ensureFormLayoutDefaults();
+    }
+  }
+
+  private ensureFormLayoutDefaults(): void {
+    if (!this.section.formWidthPreset) {
+      this.section.formWidthPreset = '50';
+    }
+    if (!this.section.formPlacementMode) {
+      this.section.formPlacementMode = this.section.formWidthPreset === '100' ? 'after_section' : 'beside_right';
+    }
+    if (!this.section.formCustomWidthPercent) {
+      this.section.formCustomWidthPercent = 45;
+    }
+    const hasImage = Boolean(this.section.imageUrl || this.section.secondImageUrl);
+    if (hasImage && this.section.formWidthPreset === '50' && this.section.hideSectionImageWhenFormActive === undefined) {
+      this.section.hideSectionImageWhenFormActive = true;
+    }
+  }
+
+  setFormWidthPreset(preset: '30' | '50' | 'custom' | '100'): void {
+    this.section.formWidthPreset = preset;
+    if (preset === '100') {
+      if (this.section.formPlacementMode !== 'before_section' && this.section.formPlacementMode !== 'after_section') {
+        this.section.formPlacementMode = 'after_section';
+      }
+      // Full-width stacked forms sit cleanly above/below, so keep section image visible by default
+      this.section.hideSectionImageWhenFormActive = false;
+      return;
+    }
+
+    if (this.section.formPlacementMode !== 'beside_left' && this.section.formPlacementMode !== 'beside_right') {
+      this.section.formPlacementMode = 'beside_right';
+    }
+    if (preset === 'custom' && (!this.section.formCustomWidthPercent || this.section.formCustomWidthPercent < 20)) {
+      this.section.formCustomWidthPercent = 45;
+    }
+
+    const effectivePct = this.getEffectiveFormWidth();
+    const hasImage = Boolean(this.section.imageUrl || this.section.secondImageUrl);
+    if (hasImage) {
+      this.section.hideSectionImageWhenFormActive = effectivePct >= 45;
+    }
+  }
+
+  onCustomWidthChange(val: number): void {
+    const num = Math.min(80, Math.max(20, Number(val) || 45));
+    this.section.formCustomWidthPercent = num;
+    const hasImage = Boolean(this.section.imageUrl || this.section.secondImageUrl);
+    if (hasImage && this.section.formWidthPreset === 'custom') {
+      this.section.hideSectionImageWhenFormActive = num >= 45;
+    }
+  }
+
+  getEffectiveFormWidth(): number {
+    if (this.section.formWidthPreset === '30') return 30;
+    if (this.section.formWidthPreset === '100') return 100;
+    if (this.section.formWidthPreset === 'custom') {
+      return Math.min(80, Math.max(20, Number(this.section.formCustomWidthPercent) || 45));
+    }
+    return 50;
   }
 
   // --- WYSIWYG Summernote Rich Text Editor Engine ---

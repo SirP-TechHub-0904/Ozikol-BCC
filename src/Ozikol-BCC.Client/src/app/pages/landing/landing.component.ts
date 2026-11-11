@@ -10,6 +10,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { CommitteesService } from '../../core/services/committees.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
 import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
+import { SectionFormCompositorService } from '../admin/content/templates/services/section-form-compositor.service';
 import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
 
 /**
@@ -825,6 +826,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     private toastService: ToastService,
     private templateHydration: TemplateHydrationService,
     private contentHydration: ContentHydrationService,
+    private formCompositor: SectionFormCompositorService,
     private htmlAssembler: HtmlAssemblerService,
     private sanitizer: DomSanitizer,
     private titleService: Title,
@@ -1730,19 +1732,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
-        const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
-        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
-        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
-        const sectionData = this.buildSectionContext(sec);
-        bodySectionsList.push({
-          id: sec.id || secTemplate.id,
-          name: sec.title || secTemplate.name,
-          category: 'body',
-          html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
-          css: activeCss,
-          js: activeJs,
-          sortOrder: sec.homePageSortOrder ?? sec.pageSortOrder ?? 0
-        });
+        bodySectionsList.push(
+          this.composeBodySectionUnit(sec, secTemplate, sec.homePageSortOrder ?? sec.pageSortOrder ?? 0)
+        );
       }
     }
 
@@ -1867,19 +1859,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       for (const sec of pageSections) {
         const secTemplate = this.findTemplateForSection(sec);
         if (secTemplate) {
-          const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
-          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
-          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
-          const sectionData = this.buildSectionContext(sec);
-          bodySectionsList.push({
-            id: sec.id || secTemplate.id,
-            name: sec.title || secTemplate.name,
-            category: 'body',
-            html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
-            css: activeCss,
-            js: activeJs,
-            sortOrder: sec.pageSortOrder ?? 0
-          });
+          bodySectionsList.push(this.composeBodySectionUnit(sec, secTemplate, sec.pageSortOrder ?? 0));
         }
       }
     } else {
@@ -4243,9 +4223,39 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   /**
+   * Hydrates a body section template and applies external form layout composition only
+   * when an attached form exists and the template itself lacks an inline form token.
+   */
+  private composeBodySectionUnit(sec: any, secTemplate: any, sortOrder: number): SectionTemplateUnit {
+    const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+    const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
+    const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
+    const hasInlineForm = /\{\{\s*(?:Form|form)\b/i.test(activeHtml || '');
+    const shouldHideMedia = Boolean(
+      sec.hideSectionImageWhenFormActive &&
+      !hasInlineForm &&
+      (sec.pageFormId || sec.formKey || sec.pageForm) &&
+      sec.formWidthPreset !== '100'
+    );
+    const sectionData = this.buildSectionContext(sec, shouldHideMedia);
+    const hydratedBody = this.contentHydration.hydrate(activeHtml, sectionData, 'body');
+    const composed = this.formCompositor.compose(hydratedBody, sec);
+
+    return {
+      id: sec.id || secTemplate.id,
+      name: sec.title || secTemplate.name,
+      category: 'body',
+      html: composed.html,
+      css: [activeCss, composed.css].filter(Boolean).join('\n\n'),
+      js: activeJs,
+      sortOrder
+    };
+  }
+
+  /**
    * Formats a PageSection database entity into the token context expected by TemplateHydrationService.
    */
-  private buildSectionContext(sec: any): any {
+  private buildSectionContext(sec: any, suppressImage: boolean = false): any {
     const listItems = (sec.pageSectionLists || sec.items || []).map((item: any, idx: number) => ({
       id: item.id,
       title: item.title || '',
@@ -4295,10 +4305,10 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       Description: sec.description || '',
       fullDescription: sec.fullDescription || '',
       FullDescription: sec.fullDescription || '',
-      imageUrl: sec.imageUrl || '',
-      ImageUrl: sec.imageUrl || '',
-      secondImageUrl: sec.secondImageUrl || '',
-      SecondImageUrl: sec.secondImageUrl || '',
+      imageUrl: suppressImage ? '' : (sec.imageUrl || ''),
+      ImageUrl: suppressImage ? '' : (sec.imageUrl || ''),
+      secondImageUrl: suppressImage ? '' : (sec.secondImageUrl || ''),
+      SecondImageUrl: suppressImage ? '' : (sec.secondImageUrl || ''),
       videoUrl: sec.videoUrl || '',
       VideoUrl: sec.videoUrl || '',
       youtubeUrlLink: sec.youtubeUrlLink || sec.videoUrl || '',

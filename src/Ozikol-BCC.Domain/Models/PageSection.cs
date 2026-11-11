@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -270,6 +270,29 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [MaxLength(100)]
         public string? FormKey { get; set; }
+
+        /// <summary>
+        /// Layout position mode when composing an attached form onto a section whose template lacks a form placeholder:
+        /// "beside_left", "beside_right", "before_section", or "after_section".
+        /// </summary>
+        [MaxLength(30)]
+        public string? FormPlacementMode { get; set; } = "beside_right";
+
+        /// <summary>
+        /// Width preset for an attached dynamic form container: "30", "50", "100", or "custom".
+        /// </summary>
+        [MaxLength(20)]
+        public string? FormWidthPreset { get; set; } = "50";
+
+        /// <summary>
+        /// Custom percentage width (20-80) applied when FormWidthPreset is set to "custom".
+        /// </summary>
+        public int? FormCustomWidthPercent { get; set; }
+
+        /// <summary>
+        /// When true and a side-by-side form is composed next to this section, hides the section image so the form replaces the media column cleanly.
+        /// </summary>
+        public bool HideSectionImageWhenFormActive { get; set; } = false;
 
         /// <summary>
         /// Navigation collection of repeatable child items (slides, feature cards, pricing tiers, office locations).

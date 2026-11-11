@@ -7626,12 +7626,26 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("FixedAfterFooter")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("FormCustomWidthPercent")
+                        .HasColumnType("int");
+
                     b.Property<string>("FormKey")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("FormPlacementMode")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("FormWidthPreset")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("FullDescription")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HideSectionImageWhenFormActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("HtmlTemplate")
                         .HasColumnType("nvarchar(max)");
