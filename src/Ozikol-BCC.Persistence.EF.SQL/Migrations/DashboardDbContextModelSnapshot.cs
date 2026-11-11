@@ -652,6 +652,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("EmergencyContactEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("EmergencyContactName")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -4479,6 +4483,25 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<decimal?>("FineAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("FineAttached")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FineAuthorizedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FineReason")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("FineStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<decimal?>("HourlyChargeRate")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -4508,6 +4531,12 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ReportContent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReportSubmissionUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("RequiredWorkspaceStationId")
                         .HasColumnType("uniqueidentifier");
@@ -4981,6 +5010,11 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<int>("NoShowCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("PreferredWorkingTime")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<decimal>("PunctualityScorePercent")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(5,2)");
@@ -5008,6 +5042,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("WeeklyAvailabilityJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WorkingAvailability")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -8271,6 +8313,37 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("WebPages");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageSectionLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PageSectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PageSortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WebPageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PageSectionId");
+
+                    b.HasIndex("WebPageId", "PageSectionId")
+                        .IsUnique();
+
+                    b.ToTable("WebPageSectionLinks");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageViewLog", b =>
                 {
                     b.Property<long>("Id")
@@ -9725,6 +9798,25 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("PageCategory");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageSectionLink", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.PageSection", "PageSection")
+                        .WithMany("LinkedPages")
+                        .HasForeignKey("PageSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ozikol_BCC.Domain.Models.WebPage", "WebPage")
+                        .WithMany("SectionLinks")
+                        .HasForeignKey("WebPageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PageSection");
+
+                    b.Navigation("WebPage");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageViewLog", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.WebPage", "WebPage")
@@ -9984,6 +10076,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageSection", b =>
                 {
+                    b.Navigation("LinkedPages");
+
                     b.Navigation("PageSectionLists");
                 });
 
@@ -9995,6 +10089,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPage", b =>
                 {
                     b.Navigation("PageSections");
+
+                    b.Navigation("SectionLinks");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -278,9 +278,26 @@ namespace Ozikol_BCC.Domain.Models
         public ICollection<PageSectionList> PageSectionLists { get; set; } = new List<PageSectionList>();
 
         /// <summary>
+        /// Navigation collection of secondary web pages where this shared section is linked via WebPageSectionLink.
+        /// </summary>
+        public ICollection<WebPageSectionLink> LinkedPages { get; set; } = new List<WebPageSectionLink>();
+
+        /// <summary>
         /// Total number of repeatable child items (cards, lists) attached to this section. Computed / non-persisted property.
         /// </summary>
         [NotMapped]
         public int ListCount { get; set; }
+
+        /// <summary>
+        /// Indicates if this section is linked from another primary parent page. Computed / non-persisted property.
+        /// </summary>
+        [NotMapped]
+        public bool IsLinkedSection { get; set; } = false;
+
+        /// <summary>
+        /// Number of other pages this section is linked to. Computed / non-persisted property.
+        /// </summary>
+        [NotMapped]
+        public int LinkedPageCount { get; set; } = 0;
     }
 }

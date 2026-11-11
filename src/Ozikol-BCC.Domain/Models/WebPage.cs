@@ -285,6 +285,11 @@ namespace Ozikol_BCC.Domain.Models
         public ICollection<PageSection> PageSections { get; set; } = new List<PageSection>();
 
         /// <summary>
+        /// Navigation collection of secondary shared sections linked to this page via WebPageSectionLink.
+        /// </summary>
+        public ICollection<WebPageSectionLink> SectionLinks { get; set; } = new List<WebPageSectionLink>();
+
+        /// <summary>
         /// Total number of layout sections attached to this web page. Computed / non-persisted property.
         /// </summary>
         [NotMapped]
