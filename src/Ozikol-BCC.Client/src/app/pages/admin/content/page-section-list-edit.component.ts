@@ -523,21 +523,46 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
   }
 
   get headerButtons(): PageHeaderButton[] {
-    return [
+    const btns: PageHeaderButton[] = [
       {
-        text: 'Back',
-        icon: 'arrow_back',
-        action: () => this.goBack()
-      },
-      {
-        text: this.saving ? (this.isEditMode ? 'Saving...' : 'Creating...') : (this.isEditMode ? 'Save Changes' : 'Create Sub-Item'),
-        icon: 'save',
-        isPrimary: true,
-        disabled: this.saving || this.loading,
-        loading: this.saving,
-        action: () => this.saveItem()
+        text: 'Back to Pages',
+        icon: 'auto_stories',
+        routerLink: '/content/console/pages'
       }
     ];
+
+    if (this.parentSection?.webPageId) {
+      btns.push({
+        text: 'Page Sections',
+        icon: 'layers',
+        routerLink: `/content/console/pages/details/${this.parentSection.webPageId}`
+      });
+    }
+
+    if (this.item?.pageSectionId) {
+      btns.push({
+        text: 'Section Items',
+        icon: 'view_list',
+        routerLink: `/content/console/sections/details/${this.item.pageSectionId}`
+      });
+    }
+
+    btns.push({
+      text: 'All Sections',
+      icon: 'dashboard',
+      routerLink: '/content/console/sections'
+    });
+
+    btns.push({
+      text: this.saving ? (this.isEditMode ? 'Saving...' : 'Creating...') : (this.isEditMode ? 'Save Changes' : 'Create Sub-Item'),
+      icon: 'save',
+      isPrimary: true,
+      disabled: this.saving || this.loading,
+      loading: this.saving,
+      action: () => this.saveItem()
+    });
+
+    return btns;
   }
 
   allPages: any[] = [];

@@ -181,8 +181,16 @@ export class PageSectionDetailsComponent implements OnInit {
   sectionId = '';
   section: any = null;
   loading = false;
+  webPageIdParam: string | null = null;
+
+  get targetWebPageId(): string | null {
+    return this.section?.webPageId || this.webPageIdParam || null;
+  }
 
   get headerEyebrow(): string {
+    if (this.section?.webPage?.title) {
+      return `CMS Studio / Page Sections / ${this.section.webPage.title}`;
+    }
     return this.section?.webPageId
       ? 'CMS Studio / Page Sections / Web Page'
       : 'CMS Studio / Page Sections';
@@ -195,19 +203,32 @@ export class PageSectionDetailsComponent implements OnInit {
   }
 
   get headerButtons(): PageHeaderButton[] {
-    return [
+    const btns: PageHeaderButton[] = [
       {
-        text: 'Back',
-        icon: 'arrow_back',
+        text: 'Back to Pages',
+        icon: 'auto_stories',
+        routerLink: '/content/console/pages'
+      },
+      {
+        text: this.section?.webPage?.title ? `Page: ${this.section.webPage.title}` : 'Page Sections',
+        icon: 'layers',
+        routerLink: this.targetWebPageId
+          ? `/content/console/pages/details/${this.targetWebPageId}`
+          : '/content/console/pages'
+      },
+      {
+        text: 'All Sections',
+        icon: 'view_list',
         routerLink: '/content/console/sections'
       },
       {
-        text: 'Edit Section Block',
+        text: 'Edit Section',
         icon: 'edit',
         isPrimary: true,
         routerLink: `/content/console/sections/edit/${this.sectionId}`
       }
     ];
+    return btns;
   }
 
   constructor(
@@ -217,6 +238,9 @@ export class PageSectionDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      this.webPageIdParam = params.get('webPageId');
+    });
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {

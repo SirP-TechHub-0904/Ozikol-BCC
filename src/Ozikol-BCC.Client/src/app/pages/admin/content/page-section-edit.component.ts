@@ -701,6 +701,24 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
 
   get headerButtons(): PageHeaderButton[] {
     const btns: PageHeaderButton[] = [];
+    btns.push({
+      text: 'Back to Pages',
+      icon: 'auto_stories',
+      routerLink: '/content/console/pages'
+    });
+    const pageId = this.section?.webPageId || this.route.snapshot.queryParams['webPageId'];
+    if (pageId) {
+      btns.push({
+        text: 'Page Sections',
+        icon: 'layers',
+        routerLink: `/content/console/pages/details/${pageId}`
+      });
+    }
+    btns.push({
+      text: 'All Sections',
+      icon: 'view_list',
+      routerLink: '/content/console/sections'
+    });
     if (this.isEditMode && this.sectionId) {
       btns.push({
         text: 'Manage Sub-Items',
@@ -708,11 +726,6 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
         routerLink: `/content/console/sections/details/${this.sectionId}`
       });
     }
-    btns.push({
-      text: this.section?.webPageId ? 'Back to Page' : 'Back to Sections',
-      icon: 'arrow_back',
-      action: () => this.goBack()
-    });
     btns.push({
       text: this.saving ? (this.isEditMode ? 'Saving...' : 'Creating...') : (this.isEditMode ? 'Save Section Changes' : 'Create Section'),
       icon: 'save',
