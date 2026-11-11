@@ -64,14 +64,22 @@ import { ToastService } from '../../../core/services/toast.service';
 
             <div class="record-details">
               <h2 class="record-title">{{ category.title }}</h2>
-              <p class="record-sub">Slug: <code>/{{ category.slug || 'category' }}</code> &bull; {{ category.description || 'No description provided.' }}</p>
+              <p class="record-sub">
+                Menu Header: {{ category.showInMenu ? 'Enabled' : 'Hidden' }} &bull;
+                Footer Column: {{ category.showInFooter ? (category.footerDisplayTitle || category.title) : 'Disabled' }}
+              </p>
 
               <div class="meta-row">
                 <span class="meta-pill" [ngClass]="category.publish ? 'published' : 'draft'">
                   {{ category.publish ? 'Published on Header Menu' : 'Draft / Hidden' }}
                 </span>
-                <span class="meta-pill count-pill">{{ category.pageCount || 0 }} Web Pages Attached</span>
-                <span class="meta-date">Sort Order: {{ category.sortOrder || 0 }}</span>
+                <span class="meta-pill count-pill">{{ attachedPageCount }} Web Page{{ attachedPageCount === 1 ? '' : 's' }} Attached</span>
+                <span class="meta-date">Menu Sort Order: {{ category.menuSortOrder ?? category.sortOrder ?? 0 }}</span>
+              </div>
+
+              <div class="attached-pages-note" *ngIf="attachedPageCount > 0">
+                Will be unlinked to Standalone:
+                <strong>{{ attachedPageTitlesPreview }}</strong>
               </div>
             </div>
           </div>
@@ -287,6 +295,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .meta-pill.draft { background: rgba(100, 116, 139, 0.12); color: #64748b; }
     .meta-pill.count-pill { background: #f1f5f9; color: #334155; }
     .meta-date { font-size: 12px; color: #94a3b8; }
+    .attached-pages-note { font-size: 12px; color: #475569; margin-top: 8px; }
 
     .consequences-card {
       background: #fef2f2;
@@ -426,6 +435,17 @@ export class WebCategoryDeleteComponent implements OnInit {
     });
   }
 
+  /** Returns the actual count of web pages attached to this category. */
+  get attachedPageCount(): number {
+    return this.category?.webPages?.length ?? this.category?.pageCount ?? 0;
+  }
+
+  /** Returns a readable comma-separated list of attached page titles. */
+  get attachedPageTitlesPreview(): string {
+    const pages = this.category?.webPages || [];
+    return pages.map((p: any) => p.title || 'Untitled').join(', ');
+  }
+
   isTitleMatched(): boolean {
     if (!this.category?.title || !this.confirmationInput) return false;
     return this.confirmationInput.trim().toLowerCase() === this.category.title.trim().toLowerCase();
@@ -444,7 +464,7 @@ export class WebCategoryDeleteComponent implements OnInit {
     this.deleting = true;
     this.errorMsg = '';
 
-    this.api.delete<any>(`ContentApi/categories/${this.categoryId}?confirmationTitle=${encodeURIComponent(this.confirmationInput)}`).subscribe({
+    this.api.delete<any>(`ContentApi/categories/${this.categoryId}?confirmationTitle=${encodeURIComponent(this.confirmationInput.trim())}`).subscribe({
       next: () => {
         this.deleting = false;
         this.toast.success(`Web category '${this.category.title}' deleted successfully.`);

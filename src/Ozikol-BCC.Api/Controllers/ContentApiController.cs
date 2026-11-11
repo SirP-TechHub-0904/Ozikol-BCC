@@ -1496,26 +1496,66 @@ Reply ONLY with the valid JSON object.";
             }
         }
 
+        /// <summary>
+        /// Deletes a navigation page category after verifying title confirmation,
+        /// unlinking attached web pages and child sub-categories to standalone by default.
+        /// </summary>
+        /// <param name="id">Unique identifier of the category to delete.</param>
+        /// <param name="confirmationTitle">Exact category title typed by the admin to confirm deletion.</param>
+        /// <param name="unlinkPages">When true (default), attached pages are unbound to standalone instead of blocking deletion.</param>
+        /// <returns>Standardized API response confirming category deletion.</returns>
         [HttpDelete("categories/{id:guid}")]
-        public async Task<IActionResult> DeleteCategory(Guid id, [FromQuery] string? confirmationTitle = null)
+        public async Task<IActionResult> DeleteCategory(
+            Guid id,
+            [FromQuery] string? confirmationTitle = null,
+            [FromQuery] bool unlinkPages = true)
         {
-            var existing = await _context.PageCategories.Include(c => c.WebPages).FirstOrDefaultAsync(c => c.Id == id);
+            var existing = await _context.PageCategories
+                .Include(c => c.WebPages)
+                .Include(c => c.Children)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
 
-            if (existing.WebPages != null && existing.WebPages.Any())
+            if (!string.IsNullOrWhiteSpace(confirmationTitle) &&
+                !string.Equals(confirmationTitle.Trim(), existing.Title?.Trim(), StringComparison.OrdinalIgnoreCase))
             {
-                var pageTitles = existing.WebPages.Select(p => p.Title).ToList();
-                return BadRequest(ApiResponse<object>.FailureResponse($"Cannot delete category '{existing.Title}' because {existing.WebPages.Count} web page(s) belong to it: [{string.Join(", ", pageTitles)}]. Move or delete those pages first."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Confirmation title mismatch. Type the exact category title to delete."));
             }
 
-            if (!string.IsNullOrWhiteSpace(confirmationTitle) && !string.Equals(confirmationTitle.Trim(), existing.Title?.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (existing.WebPages != null && existing.WebPages.Any() && !unlinkPages)
             {
-                return BadRequest(ApiResponse<object>.FailureResponse($"Confirmation title mismatch. Please type '{existing.Title}' exactly."));
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Category '{existing.Title}' still has {existing.WebPages.Count} attached page(s). Enable unlinking to proceed."));
             }
+
+            UnbindCategoryDependencies(existing);
 
             _context.PageCategories.Remove(existing);
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}' deleted successfully."));
+        }
+
+        /// <summary>
+        /// Unbinds attached web pages and child sub-categories from a category prior to deletion.
+        /// </summary>
+        /// <param name="category">Loaded category entity with WebPages and Children collections.</param>
+        private static void UnbindCategoryDependencies(PageCategory category)
+        {
+            if (category.WebPages != null)
+            {
+                foreach (var page in category.WebPages)
+                {
+                    page.PageCategoryId = null;
+                }
+            }
+
+            if (category.Children != null)
+            {
+                foreach (var child in category.Children)
+                {
+                    child.ParentId = null;
+                }
+            }
         }
 
         /// <summary>
@@ -1551,6 +1591,7 @@ Reply ONLY with the valid JSON object.";
             var categories = await _context.PageCategories
                 .Where(c => targetIds.Contains(c.Id))
                 .Include(c => c.WebPages)
+                .Include(c => c.Children)
                 .ToListAsync();
 
             if (!categories.Any())
@@ -1560,21 +1601,12 @@ Reply ONLY with the valid JSON object.";
 
             foreach (var cat in categories)
             {
-                if (cat.WebPages != null && cat.WebPages.Any())
+                if (cat.WebPages != null && cat.WebPages.Any() && !request.UnlinkPages)
                 {
-                    if (request.UnlinkPages)
-                    {
-                        foreach (var page in cat.WebPages)
-                        {
-                            page.PageCategoryId = null;
-                        }
-                    }
-                    else
-                    {
-                        return BadRequest(ApiResponse<object>.FailureResponse(
-                            $"Cannot delete category '{cat.Title}' because it contains {cat.WebPages.Count} linked web page(s). Enable page unlinking to proceed."));
-                    }
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Cannot delete category '{cat.Title}' because it contains {cat.WebPages.Count} linked web page(s). Enable page unlinking to proceed."));
                 }
+                UnbindCategoryDependencies(cat);
             }
 
             _context.PageCategories.RemoveRange(categories);
