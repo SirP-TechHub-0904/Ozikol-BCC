@@ -5,11 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import {
+  CmsOrderCellComponent,
+  CmsDragDropReorderHelper,
+  reorderListToTop,
+  reorderListStep,
+  reorderListByMove,
+  assignStepOrders
+} from './cms-order-cell.component';
 
 @Component({
   selector: 'app-page-sections',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, CmsOrderCellComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -128,6 +136,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     title="Select / Deselect all sections on this view"
                   >
                 </th>
+                <th style="width: 145px;">ORDER</th>
                 <th>SECTION TITLE</th>
                 <th>PARENT PAGE</th>
                 <th>TEMPLATE KEY</th>
@@ -138,7 +147,18 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let sec of filteredSections" [class.selected-row]="isSectionSelected(sec.id)">
+              <tr
+                *ngFor="let sec of filteredSections; let i = index"
+                [class.selected-row]="isSectionSelected(sec.id)"
+                draggable="true"
+                (dragstart)="sectionReorder.onDragStart($event, i)"
+                (dragover)="sectionReorder.onDragOver($event, i)"
+                (dragleave)="sectionReorder.onDragLeave(i)"
+                (drop)="onSectionDrop($event, i)"
+                (dragend)="sectionReorder.reset()"
+                [class.row-dragged]="sectionReorder.draggedIndex === i"
+                [class.row-drag-over]="sectionReorder.dragOverIndex === i"
+              >
                 <td style="width: 44px; text-align: center;">
                   <input
                     type="checkbox"
@@ -146,6 +166,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     [checked]="isSectionSelected(sec.id)"
                     (change)="toggleSectionSelection(sec.id)"
                   >
+                </td>
+                <td>
+                  <app-cms-order-cell
+                    [order]="sec.pageSortOrder || 0"
+                    [isFirst]="isFirstInGroup(filteredSections, i, sectionParentKey)"
+                    [isLast]="isLastInGroup(filteredSections, i, sectionParentKey)"
+                    [disabled]="savingOrder"
+                    entityLabel="section"
+                    (moveToTop)="moveSection(i, 'top')"
+                    (moveUp)="moveSection(i, 'up')"
+                    (moveDown)="moveSection(i, 'down')"
+                    (orderCommit)="commitSectionOrder(sec, $event)"
+                  ></app-cms-order-cell>
                 </td>
                 <td>
                   <strong>{{ sec.title || '(Untitled Section)' }}</strong>
@@ -216,7 +249,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </td>
               </tr>
               <tr *ngIf="filteredSections.length === 0">
-                <td colspan="8" class="empty-cell">No sections found matching your filter criteria.</td>
+                <td colspan="9" class="empty-cell">No sections found matching your filter criteria.</td>
               </tr>
             </tbody>
           </table>
@@ -239,17 +272,28 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     title="Select / Deselect all sub-items on this view"
                   >
                 </th>
+                <th style="width: 145px;">ORDER</th>
                 <th>SUB-ITEM / CARD TITLE</th>
                 <th>PARENT SECTION</th>
                 <th>PARENT PAGE</th>
                 <th>BUTTON / DESTINATION</th>
-                <th>SORT ORDER</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of filteredSubItems" [class.selected-row]="isSubItemSelected(item.id)">
+              <tr
+                *ngFor="let item of filteredSubItems; let i = index"
+                [class.selected-row]="isSubItemSelected(item.id)"
+                draggable="true"
+                (dragstart)="subItemReorder.onDragStart($event, i)"
+                (dragover)="subItemReorder.onDragOver($event, i)"
+                (dragleave)="subItemReorder.onDragLeave(i)"
+                (drop)="onSubItemDrop($event, i)"
+                (dragend)="subItemReorder.reset()"
+                [class.row-dragged]="subItemReorder.draggedIndex === i"
+                [class.row-drag-over]="subItemReorder.dragOverIndex === i"
+              >
                 <td style="width: 44px; text-align: center;">
                   <input
                     type="checkbox"
@@ -257,6 +301,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     [checked]="isSubItemSelected(item.id)"
                     (change)="toggleSubItemSelection(item.id)"
                   >
+                </td>
+                <td>
+                  <app-cms-order-cell
+                    [order]="item.sortOrder || 0"
+                    [isFirst]="isFirstInGroup(filteredSubItems, i, subItemParentKey)"
+                    [isLast]="isLastInGroup(filteredSubItems, i, subItemParentKey)"
+                    [disabled]="savingOrder"
+                    entityLabel="sub-item"
+                    (moveToTop)="moveSubItem(i, 'top')"
+                    (moveUp)="moveSubItem(i, 'up')"
+                    (moveDown)="moveSubItem(i, 'down')"
+                    (orderCommit)="commitSubItemOrder(item, $event)"
+                  ></app-cms-order-cell>
                 </td>
                 <td>
                   <strong>{{ item.title || '(Untitled Item)' }}</strong>
@@ -283,7 +340,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <code class="small text-muted" *ngIf="item.buttonLink"> &rarr; {{ item.buttonLink }}</code>
                   <span class="badge-none" *ngIf="!item.buttonText &amp;&amp; !item.buttonLink">-</span>
                 </td>
-                <td><code>#{{ item.sortOrder || 0 }}</code></td>
                 <td>
                   <span class="status-pill" [class.published]="!item.disable" [class.draft]="item.disable">
                     {{ !item.disable ? 'Active' : 'Disabled' }}
@@ -576,6 +632,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     .selected-row { background: #f0f7ff !important; }
+    tr.row-dragged { opacity: 0.45; background: #f1f5f9 !important; }
+    tr.row-drag-over { border-top: 2.5px solid #0050e5 !important; background: #eff6ff !important; }
 
     .cms-checkbox {
       width: 17px; height: 17px; accent-color: #0050e5; cursor: pointer;
@@ -723,6 +781,13 @@ export class PageSectionsComponent implements OnInit {
   // Bulk Selection Sets
   selectedSectionIds = new Set<string>();
   selectedSubItemIds = new Set<string>();
+
+  // Drag-and-Drop & Arrow Reorder State
+  sectionReorder = new CmsDragDropReorderHelper();
+  subItemReorder = new CmsDragDropReorderHelper();
+  savingOrder = false;
+  readonly sectionParentKey = (sec: any): string => (sec?.webPageId || '__global__').toString();
+  readonly subItemParentKey = (item: any): string => (item?.pageSectionId || '__unassigned__').toString();
 
   // Row Action Dropdown States
   openActionDropdownId: string | null = null;
@@ -1149,5 +1214,142 @@ export class PageSectionsComponent implements OnInit {
   getSubItemDeleteReturnUrl(item: any): string {
     const pageId = this.filterPageId || item.pageSection?.webPageId;
     return pageId ? `/content/console/sections?webPageId=${pageId}` : '/content/console/sections';
+  }
+
+  // ==========================================
+  // DRAG-AND-DROP & ARROW REORDERING (SECTIONS & SUB-ITEMS)
+  // ==========================================
+
+  /** Returns true when row at the given index is first within its parent group. */
+  isFirstInGroup(list: any[], index: number, parentKeyFn: (item: any) => string): boolean {
+    if (index <= 0 || index >= list.length) return true;
+    const key = parentKeyFn(list[index]);
+    return parentKeyFn(list[index - 1]) !== key;
+  }
+
+  /** Returns true when row at the given index is last within its parent group. */
+  isLastInGroup(list: any[], index: number, parentKeyFn: (item: any) => string): boolean {
+    if (index < 0 || index >= list.length - 1) return true;
+    const key = parentKeyFn(list[index]);
+    return parentKeyFn(list[index + 1]) !== key;
+  }
+
+  moveSection(filteredIndex: number, dir: 'top' | 'up' | 'down'): void {
+    this.handleGroupMove(this.filteredSections, this.sections, filteredIndex, dir, this.sectionParentKey, 'pageSortOrder', 'ContentApi/sections/reorder');
+  }
+
+  onSectionDrop(event: DragEvent, targetFilteredIndex: number): void {
+    this.handleGroupDrop(event, this.sectionReorder, this.filteredSections, this.sections, targetFilteredIndex, this.sectionParentKey, 'pageSortOrder', 'ContentApi/sections/reorder', 'parent page');
+  }
+
+  commitSectionOrder(sec: any, newOrder: number): void {
+    sec.pageSortOrder = newOrder;
+    this.sortGroupedList(this.sections, this.sectionParentKey, 'pageSortOrder');
+    this.persistReorder('ContentApi/sections/reorder', [{ id: sec.id, sortOrder: newOrder }], `Order for "${sec.title || 'Section'}" updated to #${newOrder}.`);
+  }
+
+  moveSubItem(filteredIndex: number, dir: 'top' | 'up' | 'down'): void {
+    this.handleGroupMove(this.filteredSubItems, this.allSubItems, filteredIndex, dir, this.subItemParentKey, 'sortOrder', 'ContentApi/section-lists/reorder');
+  }
+
+  onSubItemDrop(event: DragEvent, targetFilteredIndex: number): void {
+    this.handleGroupDrop(event, this.subItemReorder, this.filteredSubItems, this.allSubItems, targetFilteredIndex, this.subItemParentKey, 'sortOrder', 'ContentApi/section-lists/reorder', 'parent section');
+  }
+
+  commitSubItemOrder(item: any, newOrder: number): void {
+    item.sortOrder = newOrder;
+    this.sortGroupedList(this.allSubItems, this.subItemParentKey, 'sortOrder');
+    this.persistReorder('ContentApi/section-lists/reorder', [{ id: item.id, sortOrder: newOrder }], `Order for "${item.title || 'Sub-Item'}" updated to #${newOrder}.`);
+  }
+
+  private handleGroupMove(
+    filteredList: any[],
+    masterList: any[],
+    filteredIndex: number,
+    dir: 'top' | 'up' | 'down',
+    parentKeyFn: (item: any) => string,
+    orderField: string,
+    endpoint: string
+  ): void {
+    const target = filteredList[filteredIndex];
+    if (!target) return;
+    const key = parentKeyFn(target);
+    const siblings = masterList.filter(x => parentKeyFn(x) === key);
+    const siblingIdx = siblings.findIndex(x => x.id === target.id);
+    if (siblingIdx === -1) return;
+
+    const reordered =
+      dir === 'top'
+        ? reorderListToTop(siblings, siblingIdx)
+        : reorderListStep(siblings, siblingIdx, dir === 'up' ? -1 : 1);
+    if (!reordered) return;
+
+    const payload = assignStepOrders(reordered, orderField, 10);
+    this.sortGroupedList(masterList, parentKeyFn, orderField);
+    this.persistReorder(endpoint, payload);
+  }
+
+  private handleGroupDrop(
+    event: DragEvent,
+    helper: CmsDragDropReorderHelper,
+    filteredList: any[],
+    masterList: any[],
+    targetFilteredIndex: number,
+    parentKeyFn: (item: any) => string,
+    orderField: string,
+    endpoint: string,
+    groupLabel: string
+  ): void {
+    const move = helper.consumeDrop(event, targetFilteredIndex);
+    if (!move) return;
+
+    const draggedItem = filteredList[move.fromIndex];
+    const targetItem = filteredList[move.toIndex];
+    if (!draggedItem || !targetItem) return;
+
+    const key = parentKeyFn(draggedItem);
+    if (parentKeyFn(targetItem) !== key) {
+      this.toast.warning(`Drag within items of the same ${groupLabel}, or filter to view a single page.`);
+      return;
+    }
+
+    const siblings = masterList.filter(x => parentKeyFn(x) === key);
+    const fromSiblingIdx = siblings.findIndex(x => x.id === draggedItem.id);
+    const toSiblingIdx = siblings.findIndex(x => x.id === targetItem.id);
+    const reordered = reorderListByMove(siblings, fromSiblingIdx, toSiblingIdx);
+    if (!reordered) return;
+
+    const payload = assignStepOrders(reordered, orderField, 10);
+    this.sortGroupedList(masterList, parentKeyFn, orderField);
+    this.persistReorder(endpoint, payload);
+  }
+
+  private sortGroupedList(masterList: any[], parentKeyFn: (item: any) => string, orderField: string): void {
+    const groupFirstIndex = new Map<string, number>();
+    masterList.forEach((item, idx) => {
+      const k = parentKeyFn(item);
+      if (!groupFirstIndex.has(k)) groupFirstIndex.set(k, idx);
+    });
+    masterList.sort((a, b) => {
+      const ga = groupFirstIndex.get(parentKeyFn(a)) ?? 0;
+      const gb = groupFirstIndex.get(parentKeyFn(b)) ?? 0;
+      if (ga !== gb) return ga - gb;
+      return (a[orderField] || 0) - (b[orderField] || 0);
+    });
+  }
+
+  private persistReorder(endpoint: string, payload: Array<{ id: string; sortOrder: number }>, successMsg?: string): void {
+    this.savingOrder = true;
+    this.api.put<any>(endpoint, payload).subscribe({
+      next: () => {
+        this.savingOrder = false;
+        if (successMsg) this.toast.success(successMsg);
+      },
+      error: (err) => {
+        this.savingOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save reorder changes.');
+        this.loadSections();
+      }
+    });
   }
 }

@@ -5,11 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import {
+  CmsOrderCellComponent,
+  CmsDragDropReorderHelper,
+  reorderListToTop,
+  reorderListStep,
+  reorderListByMove,
+  assignStepOrders
+} from './cms-order-cell.component';
 
 @Component({
   selector: 'app-page-section-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, CmsOrderCellComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -55,8 +63,30 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of section.pageSectionLists">
-                <td><span class="order-badge">#{{ item.sortOrder }}</span></td>
+              <tr
+                *ngFor="let item of section.pageSectionLists; let i = index"
+                draggable="true"
+                (dragstart)="subItemReorder.onDragStart($event, i)"
+                (dragover)="subItemReorder.onDragOver($event, i)"
+                (dragleave)="subItemReorder.onDragLeave(i)"
+                (drop)="onSubItemDrop($event, i)"
+                (dragend)="subItemReorder.reset()"
+                [class.row-dragged]="subItemReorder.draggedIndex === i"
+                [class.row-drag-over]="subItemReorder.dragOverIndex === i"
+              >
+                <td>
+                  <app-cms-order-cell
+                    [order]="item.sortOrder || 0"
+                    [isFirst]="i === 0"
+                    [isLast]="i === section.pageSectionLists.length - 1"
+                    [disabled]="savingOrder"
+                    entityLabel="sub-item"
+                    (moveToTop)="moveSubItemToTop(i)"
+                    (moveUp)="moveSubItemUp(i)"
+                    (moveDown)="moveSubItemDown(i)"
+                    (orderCommit)="commitSubItemOrder(item, $event)"
+                  ></app-cms-order-cell>
+                </td>
                 <td><strong>{{ item.title }}</strong></td>
                 <td>
                   <span class="icon-chip" *ngIf="item.iconText"><i [class]="item.iconText"></i> {{ item.iconText }}</span>
@@ -130,6 +160,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       font-weight: 700; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-transform: uppercase;
     }
     .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; }
+    tr.row-dragged { opacity: 0.45; background: #f1f5f9 !important; }
+    tr.row-drag-over { border-top: 2.5px solid #0050e5 !important; background: #eff6ff !important; }
 
     .order-badge { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; color: #0f172a; }
     .mini-pill { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-left: 6px; }
@@ -186,7 +218,9 @@ export class PageSectionDetailsComponent implements OnInit {
   sectionId = '';
   section: any = null;
   loading = false;
+  savingOrder = false;
   webPageIdParam: string | null = null;
+  subItemReorder = new CmsDragDropReorderHelper();
 
   get targetWebPageId(): string | null {
     return this.section?.webPageId || this.webPageIdParam || null;
@@ -279,6 +313,66 @@ export class PageSectionDetailsComponent implements OnInit {
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to delete sub-item.');
+      }
+    });
+  }
+
+  // ==========================================
+  // DRAG-AND-DROP & ARROW REORDERING
+  // ==========================================
+
+  /** Moves a sub-item directly to the top of this section. */
+  moveSubItemToTop(index: number): void {
+    const next = reorderListToTop(this.section?.pageSectionLists || [], index);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Moves a sub-item one position up within this section. */
+  moveSubItemUp(index: number): void {
+    const next = reorderListStep(this.section?.pageSectionLists || [], index, -1);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Moves a sub-item one position down within this section. */
+  moveSubItemDown(index: number): void {
+    const next = reorderListStep(this.section?.pageSectionLists || [], index, 1);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Drops a dragged sub-item onto the target index and persists the new sort order. */
+  onSubItemDrop(event: DragEvent, targetIndex: number): void {
+    const move = this.subItemReorder.consumeDrop(event, targetIndex);
+    if (!move) return;
+    const next = reorderListByMove(this.section?.pageSectionLists || [], move.fromIndex, move.toIndex);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Updates an individual sub-item's inline SortOrder and persists immediately. */
+  commitSubItemOrder(item: any, newOrder: number): void {
+    item.sortOrder = newOrder;
+    const items = [...(this.section?.pageSectionLists || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    this.section.pageSectionLists = items;
+    const payload = items.map((l: any) => ({ id: l.id, sortOrder: l.sortOrder || 0 }));
+    this.persistSubItemReorder(payload, `Order for "${item.title || 'Item'}" updated to #${newOrder}.`);
+  }
+
+  private applyAndSaveSubItemReorder(orderedList: any[]): void {
+    const payload = assignStepOrders(orderedList, 'sortOrder', 10);
+    this.section.pageSectionLists = orderedList;
+    this.persistSubItemReorder(payload);
+  }
+
+  private persistSubItemReorder(payload: Array<{ id: string; sortOrder: number }>, successMsg?: string): void {
+    this.savingOrder = true;
+    this.api.put<any>('ContentApi/section-lists/reorder', payload).subscribe({
+      next: () => {
+        this.savingOrder = false;
+        if (successMsg) this.toast.success(successMsg);
+      },
+      error: (err) => {
+        this.savingOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save sub-item order.');
+        this.loadSection();
       }
     });
   }

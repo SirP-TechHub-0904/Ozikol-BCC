@@ -5,11 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import {
+  CmsOrderCellComponent,
+  CmsDragDropReorderHelper,
+  reorderListToTop,
+  reorderListStep,
+  reorderListByMove,
+  assignStepOrders
+} from './cms-order-cell.component';
 
 @Component({
   selector: 'app-web-page-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, CmsOrderCellComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -106,7 +114,18 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let sec of page.pageSections" [class.selected-row]="isSelected(sec.id)">
+                <tr
+                  *ngFor="let sec of page.pageSections; let i = index"
+                  [class.selected-row]="isSelected(sec.id)"
+                  draggable="true"
+                  (dragstart)="sectionReorder.onDragStart($event, i)"
+                  (dragover)="sectionReorder.onDragOver($event, i)"
+                  (dragleave)="sectionReorder.onDragLeave(i)"
+                  (drop)="onSectionDrop($event, i)"
+                  (dragend)="sectionReorder.reset()"
+                  [class.row-dragged]="sectionReorder.draggedIndex === i"
+                  [class.row-drag-over]="sectionReorder.dragOverIndex === i"
+                >
                   <td style="width: 44px; text-align: center;">
                     <input
                       type="checkbox"
@@ -116,7 +135,17 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     >
                   </td>
                   <td>
-                    <span class="order-badge">#{{ sec.pageSortOrder }}</span>
+                    <app-cms-order-cell
+                      [order]="sec.pageSortOrder || 0"
+                      [isFirst]="i === 0"
+                      [isLast]="i === page.pageSections.length - 1"
+                      [disabled]="savingOrder"
+                      entityLabel="section"
+                      (moveToTop)="moveSectionToTop(i)"
+                      (moveUp)="moveSectionUp(i)"
+                      (moveDown)="moveSectionDown(i)"
+                      (orderCommit)="commitSectionOrder(sec, $event)"
+                    ></app-cms-order-cell>
                   </td>
                   <td>
                     <div class="title-with-badges">
@@ -566,6 +595,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     .selected-row { background: #f0f7ff !important; }
+    tr.row-dragged { opacity: 0.45; background: #f1f5f9 !important; }
+    tr.row-drag-over { border-top: 2.5px solid #0050e5 !important; background: #eff6ff !important; }
 
     .cms-checkbox {
       width: 17px; height: 17px; accent-color: #0050e5; cursor: pointer;
@@ -752,6 +783,10 @@ export class WebPageDetailsComponent implements OnInit {
   // Bulk Delete Modal State
   showBulkDeleteModal = false;
   isDeleting = false;
+
+  // Section Drag-and-Drop & Reorder State
+  sectionReorder = new CmsDragDropReorderHelper();
+  savingOrder = false;
 
   get displayDirectRoute(): string {
     if (!this.page?.directUrl) return '/';
@@ -1118,5 +1153,66 @@ export class WebPageDetailsComponent implements OnInit {
     }
 
     this.loadPage();
+  }
+
+  // ==========================================
+  // DRAG-AND-DROP & ARROW REORDERING
+  // ==========================================
+
+  /** Moves a section directly to the top of the page layout. */
+  moveSectionToTop(index: number): void {
+    const next = reorderListToTop(this.page?.pageSections || [], index);
+    if (next) this.applyAndSaveSectionReorder(next);
+  }
+
+  /** Moves a section one position up within the page layout. */
+  moveSectionUp(index: number): void {
+    const next = reorderListStep(this.page?.pageSections || [], index, -1);
+    if (next) this.applyAndSaveSectionReorder(next);
+  }
+
+  /** Moves a section one position down within the page layout. */
+  moveSectionDown(index: number): void {
+    const next = reorderListStep(this.page?.pageSections || [], index, 1);
+    if (next) this.applyAndSaveSectionReorder(next);
+  }
+
+  /** Drops a dragged section onto the target index and persists the new layout order. */
+  onSectionDrop(event: DragEvent, targetIndex: number): void {
+    const move = this.sectionReorder.consumeDrop(event, targetIndex);
+    if (!move) return;
+    const next = reorderListByMove(this.page?.pageSections || [], move.fromIndex, move.toIndex);
+    if (next) this.applyAndSaveSectionReorder(next);
+  }
+
+  /** Updates an individual section's inline PageSortOrder and persists immediately. */
+  commitSectionOrder(sec: any, newOrder: number): void {
+    sec.pageSortOrder = newOrder;
+    const sections = [...(this.page?.pageSections || [])].sort((a, b) => (a.pageSortOrder || 0) - (b.pageSortOrder || 0));
+    this.page.pageSections = sections;
+    const payload = sections.map((s: any) => ({ id: s.id, sortOrder: s.pageSortOrder || 0 }));
+    this.persistSectionReorder(payload, `Order for "${sec.title || 'Section'}" updated to #${newOrder}.`);
+  }
+
+  private applyAndSaveSectionReorder(orderedList: any[]): void {
+    const payload = assignStepOrders(orderedList, 'pageSortOrder', 10);
+    this.page.pageSections = orderedList;
+    this.persistSectionReorder(payload);
+  }
+
+  private persistSectionReorder(payload: Array<{ id: string; sortOrder: number }>, successMsg?: string): void {
+    this.savingOrder = true;
+    const url = this.pageId ? `ContentApi/sections/reorder?webPageId=${this.pageId}` : 'ContentApi/sections/reorder';
+    this.api.put<any>(url, payload).subscribe({
+      next: () => {
+        this.savingOrder = false;
+        if (successMsg) this.toast.success(successMsg);
+      },
+      error: (err) => {
+        this.savingOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save section order.');
+        this.loadPage();
+      }
+    });
   }
 }

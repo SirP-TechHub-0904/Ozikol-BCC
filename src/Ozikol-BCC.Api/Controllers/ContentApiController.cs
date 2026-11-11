@@ -1746,6 +1746,60 @@ Reply ONLY with the valid JSON object.";
         }
 
         /// <summary>
+        /// Batch reorders multiple layout sections atomically with updated PageSortOrder values.
+        /// When <paramref name="webPageId"/> is provided, secondary linked sections on that page
+        /// update their per-page <see cref="WebPageSectionLink.PageSortOrder"/> without mutating the primary page's order.
+        /// </summary>
+        /// <param name="items">Ordered list of section IDs and newly assigned sort orders.</param>
+        /// <param name="webPageId">Optional target WebPage ID context (used for linked sections).</param>
+        /// <returns>Success response confirming the reordered count.</returns>
+        [HttpPut("sections/reorder")]
+        public async Task<IActionResult> ReorderSections([FromBody] List<ReorderItemRequest> items, [FromQuery] Guid? webPageId = null)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).Distinct().ToList();
+            var itemMap = items.GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.Last().SortOrder);
+
+            var sections = await _context.PageSections
+                .Where(s => ids.Contains(s.Id))
+                .ToListAsync();
+
+            Dictionary<Guid, WebPageSectionLink> linkMap = new();
+            if (webPageId.HasValue)
+            {
+                var links = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == webPageId.Value && ids.Contains(l.PageSectionId))
+                    .ToListAsync();
+                linkMap = links.GroupBy(l => l.PageSectionId).ToDictionary(g => g.Key, g => g.First());
+            }
+
+            var updatedCount = 0;
+            foreach (var section in sections)
+            {
+                if (!itemMap.TryGetValue(section.Id, out var newSortOrder)) continue;
+
+                // If viewing a secondary linked page, persist ordering on the WebPageSectionLink record
+                if (webPageId.HasValue && section.WebPageId != webPageId.Value && linkMap.TryGetValue(section.Id, out var link))
+                {
+                    link.PageSortOrder = newSortOrder;
+                    updatedCount++;
+                }
+                else
+                {
+                    section.PageSortOrder = newSortOrder;
+                    updatedCount++;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{updatedCount} layout section(s) reordered successfully."));
+        }
+
+        /// <summary>
         /// Permanently deletes a layout section if it has no repeating child list items.
         /// If sub-items exist, blocks deletion and returns a clear custom error requesting their removal.
         /// </summary>
@@ -2340,6 +2394,38 @@ Reply ONLY with the valid JSON object.";
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Section sub-item updated successfully."));
+        }
+
+        /// <summary>
+        /// Batch reorders multiple repeating section sub-items (<see cref="PageSectionList"/>) atomically with updated SortOrder values.
+        /// </summary>
+        /// <param name="items">Ordered list of sub-item IDs and newly assigned sort orders.</param>
+        /// <returns>Success response confirming the reordered count.</returns>
+        [HttpPut("section-lists/reorder")]
+        public async Task<IActionResult> ReorderSectionLists([FromBody] List<ReorderItemRequest> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).Distinct().ToList();
+            var itemMap = items.GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.Last().SortOrder);
+
+            var subItems = await _context.PageSectionLists
+                .Where(l => ids.Contains(l.Id))
+                .ToListAsync();
+
+            foreach (var subItem in subItems)
+            {
+                if (itemMap.TryGetValue(subItem.Id, out var newSortOrder))
+                {
+                    subItem.SortOrder = newSortOrder;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{subItems.Count} repeating sub-item(s) reordered successfully."));
         }
 
         [HttpDelete("section-lists/{id:guid}")]
