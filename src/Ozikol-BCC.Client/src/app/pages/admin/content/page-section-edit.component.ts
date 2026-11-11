@@ -406,7 +406,20 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
             <!-- Dropdown from Real Tenant Database Templates -->
             <div class="form-group">
-              <label>TEMPLATE DESIGN KEY *</label>
+              <div class="label-with-link">
+                <label>TEMPLATE DESIGN KEY *</label>
+                <a
+                  *ngIf="section.templateKey"
+                  [routerLink]="['/content/console/templates/visuals', activeTemplateRouteTarget]"
+                  [queryParams]="{ returnUrl: currentEditReturnUrl }"
+                  target="_blank"
+                  class="link-edit-template"
+                  title="Edit this template layout in Visual Template Studio (opens in new tab)">
+                  <span class="material-symbols-outlined fs-6">edit_note</span>
+                  <span>Edit Template</span>
+                  <span class="material-symbols-outlined open-ext-icon">open_in_new</span>
+                </a>
+              </div>
               <select [(ngModel)]="section.templateKey" class="form-control template-select">
                 <option value="">-- Select Template Layout --</option>
                 <optgroup label="Tenant Installed Templates" *ngIf="installedTemplates.length > 0">
@@ -415,6 +428,32 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </option>
                 </optgroup>
               </select>
+
+              <!-- Active Template Live Action Card -->
+              <div class="active-template-card" *ngIf="section.templateKey">
+                <div class="active-template-details">
+                  <span class="material-symbols-outlined active-template-icon">palette</span>
+                  <div class="active-template-meta">
+                    <span class="template-title">{{ activeInstalledTemplate?.name || 'Active Design Blueprint' }}</span>
+                    <span class="template-sub">
+                      <code>{{ activeInstalledTemplate?.variantCode || activeInstalledTemplate?.templateKey || section.templateKey }}</code>
+                      <span class="category-pill" *ngIf="activeInstalledTemplate?.categoryKey || activeInstalledTemplate?.category">
+                        [{{ activeInstalledTemplate?.categoryKey || activeInstalledTemplate?.category }}]
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <a
+                  [routerLink]="['/content/console/templates/visuals', activeTemplateRouteTarget]"
+                  [queryParams]="{ returnUrl: currentEditReturnUrl }"
+                  target="_blank"
+                  class="btn-edit-template-pill"
+                  title="Open this template in Visual Template Studio">
+                  <span class="material-symbols-outlined fs-6">edit</span>
+                  <span>Edit Template</span>
+                  <span class="material-symbols-outlined fs-6">open_in_new</span>
+                </a>
+              </div>
             </div>
 
             <div class="form-group" style="margin-top:14px;">
@@ -718,6 +757,105 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       font-size: 12px; border: 1px solid #bfdbfe;
     }
     .template-selected-badge .material-symbols-outlined { font-size: 16px; }
+
+    /* Active Template Linked Controls */
+    .label-with-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .link-edit-template {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0050e5;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .link-edit-template:hover {
+      color: #003ebd;
+      text-decoration: underline;
+    }
+    .link-edit-template .open-ext-icon {
+      font-size: 13px;
+    }
+    .active-template-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #f0f7ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+    }
+    .active-template-details {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .active-template-icon {
+      font-size: 22px;
+      color: #0050e5;
+      flex-shrink: 0;
+    }
+    .active-template-meta {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .template-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .template-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .template-sub code {
+      font-size: 11px;
+      color: #1e40af;
+      background: #dbeafe;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .category-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .btn-edit-template-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      background: #0050e5;
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .btn-edit-template-pill:hover {
+      background: #003ebd;
+      transform: translateY(-1px);
+    }
 
     /* Summernote-style WYSIWYG Editor Frame */
     .summernote-wrapper {
@@ -1083,6 +1221,36 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
       action: () => this.saveSection()
     });
     return btns;
+  }
+
+  /**
+   * Resolves the active installed template object matching the section's selected templateKey.
+   */
+  get activeInstalledTemplate(): any {
+    if (!this.section?.templateKey) return null;
+    const key = this.section.templateKey.trim().toLowerCase();
+    return (this.installedTemplates || []).find((t: any) =>
+      (t.templateKey && t.templateKey.trim().toLowerCase() === key) ||
+      (t.variantCode && t.variantCode.trim().toLowerCase() === key) ||
+      (t.id && t.id.toString().toLowerCase() === key)
+    );
+  }
+
+  /**
+   * Resolves the navigation route parameter for editing the active template in Visual Template Studio.
+   */
+  get activeTemplateRouteTarget(): string {
+    if (this.activeInstalledTemplate) {
+      return this.activeInstalledTemplate.id || this.activeInstalledTemplate.variantCode || this.activeInstalledTemplate.templateKey;
+    }
+    return this.section?.templateKey || '';
+  }
+
+  /**
+   * Current URL to pass as returnUrl query parameter when navigating to Template Visuals Studio.
+   */
+  get currentEditReturnUrl(): string {
+    return this.router.url;
   }
 
   publishedPagesList: { title: string; url: string }[] = [];

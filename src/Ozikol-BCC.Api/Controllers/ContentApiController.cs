@@ -469,7 +469,47 @@ namespace Ozikol_BCC.Api.Controllers
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (page == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
-            page.SectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == page.Id);
+
+            // Calculate linked page counts for primary sections
+            var sectionIds = page.PageSections?.Select(s => s.Id).ToList() ?? new List<Guid>();
+            var linkCounts = await _context.WebPageSectionLinks
+                .Where(l => sectionIds.Contains(l.PageSectionId))
+                .GroupBy(l => l.PageSectionId)
+                .Select(g => new { SectionId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.SectionId, x => x.Count);
+
+            foreach (var sec in page.PageSections ?? Enumerable.Empty<PageSection>())
+            {
+                sec.LinkedPageCount = linkCounts.TryGetValue(sec.Id, out var count) ? count : 0;
+            }
+
+            // Also load secondary linked sections placed on this page
+            var secondaryLinks = await _context.WebPageSectionLinks
+                .Where(l => l.WebPageId == page.Id)
+                .Include(l => l.PageSection!)
+                    .ThenInclude(s => s.WebPage)
+                .Include(l => l.PageSection!)
+                    .ThenInclude(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                .OrderBy(l => l.PageSortOrder)
+                .ToListAsync();
+
+            if (secondaryLinks.Count > 0)
+            {
+                var combined = (page.PageSections ?? new List<PageSection>()).ToList();
+                foreach (var link in secondaryLinks)
+                {
+                    if (link.PageSection != null && !combined.Any(s => s.Id == link.PageSectionId))
+                    {
+                        var clone = link.PageSection;
+                        clone.PageSortOrder = link.PageSortOrder;
+                        clone.IsLinkedSection = true;
+                        combined.Add(clone);
+                    }
+                }
+                page.PageSections = combined.OrderBy(s => s.PageSortOrder).ToList();
+            }
+
+            page.SectionCount = page.PageSections?.Count ?? 0;
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
@@ -1955,6 +1995,29 @@ Reply ONLY with the valid JSON object.";
             await _context.SaveChangesAsync();
 
             return await GetSectionPageLinks(id);
+        }
+
+        /// <summary>
+        /// Unlinks a shared section from a secondary web page without deleting the section entity itself.
+        /// </summary>
+        /// <param name="id">Unique identifier of the section.</param>
+        /// <param name="webPageId">Unique identifier of the web page from which to unlink the section.</param>
+        /// <returns>Standard API response confirming unlinking.</returns>
+        [HttpDelete("sections/{id:guid}/page-links/{webPageId:guid}")]
+        public async Task<IActionResult> UnlinkSectionFromPage(Guid id, Guid webPageId)
+        {
+            var link = await _context.WebPageSectionLinks
+                .FirstOrDefaultAsync(l => l.PageSectionId == id && l.WebPageId == webPageId);
+
+            if (link == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Link between this section and page was not found."));
+            }
+
+            _context.WebPageSectionLinks.Remove(link);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Section unlinked successfully from this page."));
         }
 
 

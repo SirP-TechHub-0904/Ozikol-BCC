@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,83 +11,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "PreferredWorkingTime",
-                table: "BcpShiftStaffProfiles",
-                type: "nvarchar(50)",
-                maxLength: 50,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "WeeklyAvailabilityJson",
-                table: "BcpShiftStaffProfiles",
-                type: "nvarchar(max)",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "WorkingAvailability",
-                table: "BcpShiftStaffProfiles",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<decimal>(
-                name: "FineAmount",
-                table: "BcpShifts",
-                type: "decimal(18,2)",
-                precision: 18,
-                scale: 2,
-                nullable: true);
-
-            migrationBuilder.AddColumn<bool>(
-                name: "FineAttached",
-                table: "BcpShifts",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<string>(
-                name: "FineAuthorizedBy",
-                table: "BcpShifts",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "FineReason",
-                table: "BcpShifts",
-                type: "nvarchar(250)",
-                maxLength: 250,
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "FineStatus",
-                table: "BcpShifts",
-                type: "nvarchar(50)",
-                maxLength: 50,
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ReportContent",
-                table: "BcpShifts",
-                type: "nvarchar(max)",
-                nullable: true);
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ReportSubmissionUtc",
-                table: "BcpShifts",
-                type: "datetime2",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "EmergencyContactEmail",
-                table: "BcpClientSites",
-                type: "nvarchar(150)",
-                maxLength: 150,
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "WebPageSectionLinks",
                 columns: table => new
@@ -133,50 +56,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
         {
             migrationBuilder.DropTable(
                 name: "WebPageSectionLinks");
-
-            migrationBuilder.DropColumn(
-                name: "PreferredWorkingTime",
-                table: "BcpShiftStaffProfiles");
-
-            migrationBuilder.DropColumn(
-                name: "WeeklyAvailabilityJson",
-                table: "BcpShiftStaffProfiles");
-
-            migrationBuilder.DropColumn(
-                name: "WorkingAvailability",
-                table: "BcpShiftStaffProfiles");
-
-            migrationBuilder.DropColumn(
-                name: "FineAmount",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "FineAttached",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "FineAuthorizedBy",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "FineReason",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "FineStatus",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "ReportContent",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "ReportSubmissionUtc",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "EmergencyContactEmail",
-                table: "BcpClientSites");
         }
     }
 }
