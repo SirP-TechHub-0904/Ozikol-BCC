@@ -1017,14 +1017,17 @@ export class BodyVisualComponent implements OnInit {
   bodyPresets: SectionPreset[] = [];
 
   bodyTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ PageSectionList.Icon }}</span>\n    <h3>{{ PageSectionList.Title }}</h3>\n    <p>{{ PageSectionList.Description }}</p>\n  </div>\n{{/each}}', description: 'Repeats over child items/cards in PageSectionList.' },
+    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <i class="{{ PageSectionList.IconText }}"></i>\n    <h3>{{ PageSectionList.Title }}</h3>\n    <p>{{ PageSectionList.Description }}</p>\n  </div>\n{{/each}}', description: 'Repeats over child items/cards in PageSectionList.' },
     { label: 'Card Title', token: '{{ PageSectionList.Title }}', description: 'Child item/card headline in PageSectionList.' },
     { label: 'Card MiniTitle', token: '{{ PageSectionList.MiniTitle }}', description: 'Child item/card badge/price in PageSectionList.' },
     { label: 'Card Description', token: '{{ PageSectionList.Description }}', description: 'Child item/card summary in PageSectionList.' },
+    { label: 'Card Icon', token: '<i class="{{ PageSectionList.IconText }}"></i>', description: 'Child item/card FontAwesome or theme icon class string.' },
     { label: 'Card ImageUrl', token: '{{ PageSectionList.ImageUrl }}', description: 'Child item/card visual thumbnail in PageSectionList.' },
+    { label: 'Card Button', token: '<a href="{{ PageSectionList.ButtonLink }}" class="btn">{{ PageSectionList.ButtonText }}</a>', description: 'Child item/card action button link in PageSectionList.' },
     { label: 'Section Title', token: '{{ PageSection.Title }}', description: 'Parent section main heading / title.' },
     { label: 'Section MiniTitle', token: '{{ PageSection.MiniTitle }}', description: 'Parent eyebrow kicker badge or category label.' },
     { label: 'Section Description', token: '{{ PageSection.Description }}', description: 'Parent section intro description or subtitle.' },
+    { label: 'Section Icon', token: '<i class="{{ PageSection.IconText }}"></i>', description: 'Parent section root icon class in PageSection.' },
     { label: 'FullDescription', token: '{{{ FullDescription }}}', description: 'Extended rich HTML body content for split showcases.' },
     { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Primary section graphic or hero image.' },
     { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button display label.' },

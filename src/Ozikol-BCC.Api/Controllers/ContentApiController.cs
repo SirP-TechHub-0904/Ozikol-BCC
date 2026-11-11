@@ -1028,6 +1028,16 @@ Reply ONLY with the valid JSON object.";
 
 
 
+        private static string FormatPageUrl(string? directUrl, Guid id)
+        {
+            if (string.IsNullOrWhiteSpace(directUrl)) return $"/page/{id}";
+            var trimmed = directUrl.Trim();
+            if (trimmed == "/" || trimmed == "home") return "/";
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return trimmed;
+            return "/" + trimmed.TrimStart('/');
+        }
+
         private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null, bool isHomePage = false)
         {
             if (isHomePage || rawInput?.Trim() == "/")
@@ -1036,11 +1046,24 @@ Reply ONLY with the valid JSON object.";
             }
 
             if (string.IsNullOrWhiteSpace(rawInput)) rawInput = "page";
-            // Strip leading / trailing slashes and normalize
-            var cleaned = rawInput.Trim().Trim('/');
-            var baseSlug = Regex.Replace(cleaned.ToLowerInvariant(), @"[^a-z0-9\-_]", "-");
-            baseSlug = Regex.Replace(baseSlug, @"-+", "-").Trim('-');
-            if (string.IsNullOrEmpty(baseSlug)) baseSlug = "page";
+
+            var trimmed = rawInput.Trim();
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+
+            // Preserve path slashes for multi-segment slugs (e.g. auth/login, store/cart)
+            var segments = trimmed.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var cleanedSegments = segments.Select(seg =>
+            {
+                var baseSeg = Regex.Replace(seg.ToLowerInvariant(), @"[^a-z0-9\-_]", "-");
+                baseSeg = Regex.Replace(baseSeg, @"-+", "-").Trim('-');
+                return string.IsNullOrEmpty(baseSeg) ? "page" : baseSeg;
+            });
+
+            var baseSlug = "/" + string.Join("/", cleanedSegments);
+            if (baseSlug == "/") baseSlug = "/page";
 
             var slug = baseSlug;
             while (await _context.WebPages.AnyAsync(p => p.DirectUrl == slug && (!excludePageId.HasValue || p.Id != excludePageId.Value)))
@@ -5560,7 +5583,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                                    ? p.DirectUrl
+                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
                                 showInFooter = p.ShowInFooter,
                                 showInMenu = true
                             })
@@ -5584,7 +5609,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                                    ? p.DirectUrl
+                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
                                 showInFooter = true,
                                 showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
                             })
@@ -5602,7 +5629,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
                     })
                     .ToListAsync();
 
@@ -5616,7 +5645,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
                     })
                     .ToListAsync();
 
@@ -5714,7 +5745,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
                     })
                     .ToListAsync();
 
@@ -5728,7 +5761,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
                         tags = p.Tags
                     })
                     .ToListAsync();

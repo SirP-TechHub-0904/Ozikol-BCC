@@ -3813,8 +3813,10 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
                    (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
                    !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
       .forEach(p => {
-        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '');
-        const pUrl = (rawUrl === '' || rawUrl.toLowerCase() === 'home') ? '/' : `/${rawUrl}`;
+        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').trim();
+        const pUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+          ? rawUrl
+          : ((rawUrl === '' || rawUrl.toLowerCase() === 'home' || rawUrl === '/') ? '/' : `/${rawUrl.replace(/^\/+/, '')}`);
         const pLower = pUrl.toLowerCase();
 
         // Avoid duplicating if URL is already in a dropdown or already added
@@ -3844,11 +3846,17 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const topBarPages = (this.publishedPages || [])
       .filter(p => (p.publish !== false && p.Publish !== false) && (normalizeZone(p.menuPosition) === 'top' || p.showInMenuTopBar === true || p.showInTopBar === true))
       .sort((a, b) => (a.topBarSortOrder || a.TopBarSortOrder || a.sortOrder || 0) - (b.topBarSortOrder || b.TopBarSortOrder || b.sortOrder || 0))
-      .map(p => ({
-        title: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        customClass: p.customClass || ''
-      }));
+      .map(p => {
+        const raw = (p.directUrl || p.slug || '').trim();
+        const finalUrl = raw.startsWith('http://') || raw.startsWith('https://')
+          ? raw
+          : (raw === '/' || raw === 'home' ? '/' : `/${raw.replace(/^\/+/, '')}`);
+        return {
+          title: p.title || p.Title || '',
+          url: finalUrl,
+          customClass: p.customClass || ''
+        };
+      });
 
     // 4. CTA Buttons: Driven purely from publishedPages where isMenuCTA is true
     const menuCtaButtons = (this.publishedPages || [])
@@ -3926,8 +3934,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
+      activateLoginInMenu: isLoginActive && isLoginInMenu,
       ActivateLoginInMenu: isLoginActive && isLoginInMenu,
+      loginText: loginText,
       LoginText: loginText,
+      loginUrl: loginUrl,
       LoginUrl: loginUrl
     };
 
@@ -4135,8 +4146,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
+      activateLoginInFooter: isLoginActive && isLoginInFooter,
       ActivateLoginInFooter: isLoginActive && isLoginInFooter,
+      loginText: loginText,
       LoginText: loginText,
+      loginUrl: loginUrl,
       LoginUrl: loginUrl
     };
 

@@ -505,8 +505,8 @@ export function replaceCommonScalars(template: string, ctx: HydrationContext): s
   output = output.replace(/\{\{\s*WorkingHours\s*\}\}/gi, ctx.workingHours || '');
   output = output.replace(/\{\{\s*HomeUrl\s*\}\}/gi, ctx.homeUrl || '/');
   output = output.replace(/\{\{\s*ContactUrl\s*\}\}/gi, (ctx as any).contactUrl || '/contact');
-  output = output.replace(/\{\{\s*LoginUrl\s*\}\}/gi, ctx.loginUrl || '/auth/login');
-  output = output.replace(/\{\{\s*LoginText\s*\}\}/gi, ctx.loginText || 'Sign In');
+  output = output.replace(/\{\{\s*(?:LoginUrl|AuthUrl|PortalUrl)\s*\}\}/gi, ctx.loginUrl || (ctx as any).LoginUrl || '/auth/login');
+  output = output.replace(/\{\{\s*(?:LoginText|LoginTitle|AuthText|PortalText)\s*\}\}/gi, ctx.loginText || (ctx as any).LoginText || 'Sign In');
   output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, ctx.customClass || '');
 
   return output;

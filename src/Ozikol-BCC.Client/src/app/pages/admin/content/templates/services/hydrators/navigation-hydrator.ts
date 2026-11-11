@@ -62,8 +62,8 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
   output = resolveDepthAwareIf(output, 'Address', hasAddress);
   output = resolveDepthAwareIf(output, 'WorkingHours', hasWorkingHours);
 
-  output = resolveDepthAwareIf(output, 'ActivateLoginInMenu', Boolean(ctx.activateLoginInMenu));
-  output = resolveDepthAwareIf(output, 'LoginUrl', Boolean(ctx.loginUrl || ctx.activateLoginInMenu));
+  output = resolveDepthAwareIf(output, 'ActivateLoginInMenu', Boolean(ctx.activateLoginInMenu || (ctx as any).ActivateLoginInMenu));
+  output = resolveDepthAwareIf(output, 'LoginUrl', Boolean(ctx.loginUrl || (ctx as any).LoginUrl || ctx.activateLoginInMenu || (ctx as any).ActivateLoginInMenu));
   const effectiveLogo = (ctx.brandLogo || ctx.logoUrl || '').trim();
   output = resolveDepthAwareIf(output, 'BrandLogo', Boolean(effectiveLogo.length > 0));
   output = resolveDepthAwareIf(output, 'LogoUrl', Boolean(effectiveLogo.length > 0));

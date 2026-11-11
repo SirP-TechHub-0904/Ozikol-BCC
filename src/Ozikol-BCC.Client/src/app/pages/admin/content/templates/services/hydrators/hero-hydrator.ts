@@ -64,6 +64,7 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, ctx.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
 
       // Slide Item Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MiniTitle', Boolean(item.miniTitle || item.subTitle));
@@ -79,8 +80,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, item.description || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || 'star');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || item.iconText || 'star');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || item.icon || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?SecondaryButtonText\s*\}\}/gi, item.secondaryButtonText || '');
@@ -125,6 +126,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:IconText|Icon)', Boolean(ctx.iconText && ctx.iconText.trim().length > 0));
 
   // 8. Replace Brand Scalars & CustomClass
   output = replaceCommonScalars(output, ctx);

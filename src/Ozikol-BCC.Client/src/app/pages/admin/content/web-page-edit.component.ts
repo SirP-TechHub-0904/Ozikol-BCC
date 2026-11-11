@@ -2464,12 +2464,15 @@ export class WebPageEditComponent implements OnInit {
   }
 
   isSystemSlug(slug: string): boolean {
-    const clean = (slug || '').trim().toLowerCase();
-    return this.systemPages.some(s => s.slug.toLowerCase() === clean) ||
-           clean === '/login' ||
-           clean === '/auth/login' ||
-           clean === '/register' ||
-           clean === (this.registrationSlug || '').toLowerCase();
+    const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
+    return this.systemPages.some(s => s.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+           clean === 'login' ||
+           clean === 'auth-login' ||
+           clean === 'auth/login' ||
+           clean === 'register' ||
+           clean === 'auth-register' ||
+           clean === 'auth/register' ||
+           clean === (this.registrationSlug || '').toLowerCase().replace(/^\/+/, '');
   }
 
   private slugify(text: string): string {
@@ -2492,9 +2495,16 @@ export class WebPageEditComponent implements OnInit {
           const direct = (this.page.directUrl || '').trim();
           if (this.isSystemSlug(direct)) {
             this.destinationType = 'system';
-            this.selectedSystemPage = direct.toLowerCase() === '/login' ? '/auth/login' : direct;
-            if (direct.toLowerCase() === '/login') {
+            const clean = direct.toLowerCase().replace(/^\/+/, '');
+            if (clean === 'login' || clean === 'auth-login' || clean === 'auth/login') {
+              this.selectedSystemPage = '/auth/login';
               this.page.directUrl = '/auth/login';
+            } else if (clean === 'register' || clean === 'auth-register' || clean === 'auth/register') {
+              this.selectedSystemPage = this.registrationSlug || '/register';
+              this.page.directUrl = this.selectedSystemPage;
+            } else {
+              this.selectedSystemPage = direct.startsWith('/') ? direct : '/' + direct;
+              this.page.directUrl = this.selectedSystemPage;
             }
           } else if (this.page.enableDirectUrl || direct.startsWith('http://') || direct.startsWith('https://')) {
             this.destinationType = 'direct';
