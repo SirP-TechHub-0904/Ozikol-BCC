@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -176,7 +176,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </span>
                 </td>
                 <td>
-                  <div class="action-buttons">
+                  <div class="action-dropdown-wrapper">
                     <a [routerLink]="['/content/console/sections/details', sec.id]" class="btn-action btn-details" title="Manage sub-items">
                       <span class="material-symbols-outlined">list</span>
                       <span>Sub-Items</span>
@@ -185,9 +185,33 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: getSectionDeleteReturnUrl(sec) }" class="btn-action btn-delete" title="Delete Section">
-                      <span class="material-symbols-outlined">delete</span>
-                    </a>
+
+                    <!-- More Actions Dropdown Toggle -->
+                    <div class="dropdown-container" [class.open]="openActionDropdownId === sec.id">
+                      <button
+                        type="button"
+                        class="btn-action btn-dropdown-toggle"
+                        (click)="toggleActionDropdown(sec.id, $event)"
+                        title="More actions">
+                        <span class="material-symbols-outlined">more_vert</span>
+                      </button>
+
+                      <div class="dropdown-menu-card" *ngIf="openActionDropdownId === sec.id" (click)="$event.stopPropagation()">
+                        <button type="button" class="dropdown-item" (click)="openSingleSectionTransfer(sec, 'copy')">
+                          <span class="material-symbols-outlined fs-6 text-primary">content_copy</span>
+                          <span>Copy to Another Page...</span>
+                        </button>
+                        <button type="button" class="dropdown-item" (click)="openSingleSectionTransfer(sec, 'move')">
+                          <span class="material-symbols-outlined fs-6 text-secondary">drive_file_move</span>
+                          <span>Move to Another Page...</span>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: getSectionDeleteReturnUrl(sec) }" class="dropdown-item text-danger" (click)="closeActionDropdown()">
+                          <span class="material-symbols-outlined fs-6">delete</span>
+                          <span>Delete Section</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -266,14 +290,38 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </span>
                 </td>
                 <td>
-                  <div class="action-buttons">
+                  <div class="action-dropdown-wrapper">
                     <a [routerLink]="['/content/console/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: getSubItemDeleteReturnUrl(item) }" class="btn-action btn-delete" title="Delete Item">
-                      <span class="material-symbols-outlined">delete</span>
-                    </a>
+
+                    <!-- Sub-Item Dropdown Toggle -->
+                    <div class="dropdown-container" [class.open]="openSubItemDropdownId === item.id">
+                      <button
+                        type="button"
+                        class="btn-action btn-dropdown-toggle"
+                        (click)="toggleSubItemDropdown(item.id, $event)"
+                        title="More actions">
+                        <span class="material-symbols-outlined">more_vert</span>
+                      </button>
+
+                      <div class="dropdown-menu-card" *ngIf="openSubItemDropdownId === item.id" (click)="$event.stopPropagation()">
+                        <button type="button" class="dropdown-item" (click)="openSingleSubItemTransfer(item, 'copy')">
+                          <span class="material-symbols-outlined fs-6 text-primary">content_copy</span>
+                          <span>Copy to Another Section...</span>
+                        </button>
+                        <button type="button" class="dropdown-item" (click)="openSingleSubItemTransfer(item, 'move')">
+                          <span class="material-symbols-outlined fs-6 text-secondary">drive_file_move</span>
+                          <span>Move to Another Section...</span>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: getSubItemDeleteReturnUrl(item) }" class="dropdown-item text-danger" (click)="closeActionDropdown()">
+                          <span class="material-symbols-outlined fs-6">delete</span>
+                          <span>Delete Sub-Item</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -553,6 +601,34 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .status-pill.draft { background: #fee2e2; color: #dc2626; }
 
     .action-buttons { display: flex; gap: 6px; align-items: center; }
+    .action-dropdown-wrapper { display: flex; align-items: center; gap: 6px; }
+    .dropdown-container { position: relative; }
+    .btn-dropdown-toggle {
+      background: #f1f5f9; color: #475569; padding: 6px 6px; border-radius: 6px;
+    }
+    .btn-dropdown-toggle:hover, .dropdown-container.open .btn-dropdown-toggle {
+      background: #e2e8f0; color: #0f172a;
+    }
+    .dropdown-menu-card {
+      position: absolute; top: calc(100% + 4px); right: 0; min-width: 210px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0, 0, 0, 0.04);
+      padding: 6px; z-index: 1050; animation: dropdownFadeIn 0.15s ease-out;
+    }
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px;
+      font-size: 12.5px; font-weight: 500; color: #334155; text-decoration: none;
+      background: none; border: none; border-radius: 6px; cursor: pointer; text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    .dropdown-item:hover { background: #f8fafc; color: #0f172a; }
+    .dropdown-item.text-danger { color: #dc2626; }
+    .dropdown-item.text-danger:hover { background: #fee2e2; color: #b91c1c; }
+    .dropdown-divider { height: 1px; background: #f1f5f9; margin: 4px 0; }
     .btn-action {
       display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px;
       border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
@@ -634,6 +710,10 @@ export class PageSectionsComponent implements OnInit {
   // Bulk Selection Sets
   selectedSectionIds = new Set<string>();
   selectedSubItemIds = new Set<string>();
+
+  // Row Action Dropdown States
+  openActionDropdownId: string | null = null;
+  openSubItemDropdownId: string | null = null;
 
   // Modals
   showBulkDeleteSectionsModal = false;
@@ -895,6 +975,76 @@ export class PageSectionsComponent implements OnInit {
   // ==========================================
   // CREATE SECTION
   // ==========================================
+
+  // ==========================================
+  // ROW ACTION DROPDOWN MENUS
+  // ==========================================
+
+  /**
+   * Toggles the row action dropdown menu for a section.
+   * @param secId Section GUID identifier.
+   * @param event Mouse click event to stop propagation.
+   */
+  toggleActionDropdown(secId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.openActionDropdownId = this.openActionDropdownId === secId ? null : secId;
+    this.openSubItemDropdownId = null;
+  }
+
+  /**
+   * Toggles the row action dropdown menu for a sub-item.
+   * @param itemId Sub-item GUID identifier.
+   * @param event Mouse click event to stop propagation.
+   */
+  toggleSubItemDropdown(itemId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.openSubItemDropdownId = this.openSubItemDropdownId === itemId ? null : itemId;
+    this.openActionDropdownId = null;
+  }
+
+  /**
+   * Closes all open action dropdown menus.
+   */
+  closeActionDropdown(): void {
+    this.openActionDropdownId = null;
+    this.openSubItemDropdownId = null;
+  }
+
+  /**
+   * Global document listener to close active dropdowns on outside click.
+   */
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeActionDropdown();
+  }
+
+  /**
+   * Opens the transfer modal for a single section directly from the row dropdown.
+   * @param sec Target layout section entity.
+   * @param mode Transfer mode: 'copy' or 'move'.
+   */
+  openSingleSectionTransfer(sec: any, mode: 'move' | 'copy'): void {
+    this.closeActionDropdown();
+    this.selectedSectionIds.clear();
+    this.selectedSectionIds.add(sec.id);
+    this.transferSectionsMode = mode;
+    this.targetTransferPageId = sec.webPageId || this.filterPageId || (this.allPages.length > 0 ? this.allPages[0].id : '');
+    this.showBulkTransferSectionsModal = true;
+  }
+
+  /**
+   * Opens the transfer modal for a single sub-item directly from the row dropdown.
+   * @param item Target sub-item entity.
+   * @param mode Transfer mode: 'copy' or 'move'.
+   */
+  openSingleSubItemTransfer(item: any, mode: 'move' | 'copy'): void {
+    this.closeActionDropdown();
+    this.selectedSubItemIds.clear();
+    this.selectedSubItemIds.add(item.id);
+    this.transferSubItemsMode = mode;
+    this.targetTransferSectionId = item.pageSectionId || (this.sections.length > 0 ? this.sections[0].id : '');
+    this.showBulkTransferSubItemsModal = true;
+  }
 
   // ==========================================
   // BULK TRANSFER SECTIONS (MOVE & COPY)
