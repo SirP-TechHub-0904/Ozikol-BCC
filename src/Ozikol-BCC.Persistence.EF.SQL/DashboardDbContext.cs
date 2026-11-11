@@ -66,6 +66,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<WebPageSectionLink> WebPageSectionLinks { get; set; } = null!;
     public DbSet<PageSectionList> PageSectionLists { get; set; }
     public DbSet<TenantInstalledTemplate> TenantInstalledTemplates { get; set; } = null!;
+    public DbSet<CmsMediaFile> CmsMediaFiles { get; set; } = null!;
     public DbSet<PageCategory> PageCategories { get; set; }
     public DbSet<NewsLetter> NewsLetter { get; set; }
     public DbSet<ContactUsCategory> ContactUsCategories { get; set; }

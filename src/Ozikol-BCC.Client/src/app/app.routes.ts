@@ -91,6 +91,7 @@ import { FormsListComponent } from './pages/admin/content/forms/forms-list.compo
 import { FormBuilderComponent } from './pages/admin/content/forms/form-builder.component';
 import { FormSubmissionsComponent } from './pages/admin/content/forms/form-submissions.component';
 import { WebPagesComponent } from './pages/admin/content/web-pages.component';
+import { FileManagerComponent } from './pages/admin/content/file-manager.component';
 import { WebPageDetailsComponent } from './pages/admin/content/web-page-details.component';
 import { WebPageEditComponent } from './pages/admin/content/web-page-edit.component';
 import { WebCategoriesComponent } from './pages/admin/content/web-categories.component';
@@ -400,6 +401,8 @@ export const routes: Routes = [
       { path: 'content/console/blogs/delete/:id', component: BlogDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blog-categories', component: BlogCategoriesManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blog-categories/delete/:id', component: BlogCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/files', component: FileManagerComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/file-manager', redirectTo: 'content/console/files', pathMatch: 'full' },
 
       // 6. Commerce & Store Studio Suite (Console Only)
       { path: 'products/console', component: ProductsListComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },

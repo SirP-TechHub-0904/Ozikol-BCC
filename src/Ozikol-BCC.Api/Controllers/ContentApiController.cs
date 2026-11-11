@@ -191,6 +191,248 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         // ==========================================
+        // 0.0B. CMS FILE MANAGER (Website Media & Asset Repository)
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all uploaded website files managed in the CMS Studio File Manager,
+        /// optionally filtered by search term or file type, ordered newest first.
+        /// </summary>
+        /// <param name="search">Optional filename or URL search filter.</param>
+        /// <param name="fileType">Optional exact file type/extension filter (e.g. "PDF", "PNG").</param>
+        /// <returns>Ordered list of CMS media files.</returns>
+        [HttpGet("files")]
+        public async Task<IActionResult> GetCmsFiles([FromQuery] string? search = null, [FromQuery] string? fileType = null)
+        {
+            var query = _context.CmsMediaFiles.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(f =>
+                    f.FileName.ToLower().Contains(term) ||
+                    f.FileUrl.ToLower().Contains(term) ||
+                    f.FileType.ToLower().Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(fileType) && !string.Equals(fileType, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                var typeFilter = fileType.Trim().ToUpperInvariant();
+                query = query.Where(f => f.FileType.ToUpper() == typeFilter);
+            }
+
+            var files = await query
+                .OrderByDescending(f => f.CreatedAtUtc)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(files, "CMS files retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Uploads any file intended for website usage (images, PDFs, documents, videos, icons, etc.)
+        /// through the resilient storage pipeline (Cloudflare R2 / Cloudinary / Local fallback)
+        /// and registers it in the CmsMediaFiles repository table.
+        /// </summary>
+        /// <param name="file">The uploaded file from multipart/form-data.</param>
+        /// <returns>The created CmsMediaFile metadata record containing the public URL.</returns>
+        [HttpPost("files/upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadCmsFile([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
+            }
+
+            var extension = Path.GetExtension(file.FileName)?.TrimStart('.').ToUpperInvariant();
+            var normalizedType = string.IsNullOrWhiteSpace(extension) ? "FILE" : extension;
+            var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+            var isImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
+                          new[] { "PNG", "JPG", "JPEG", "GIF", "WEBP", "SVG", "ICO", "AVIF", "BMP" }.Contains(normalizedType);
+
+            string? finalUrl = null;
+            string? storageKey = null;
+            string storageProvider = "LocalDisk";
+
+            // Resolve custom tenant BYOS Cloudinary settings if configured
+            string? customCloud = null;
+            string? customKey = null;
+            string? customSecret = null;
+
+            try
+            {
+                var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                if (config?.UseCustomStorage == true &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                {
+                    customCloud = config.CustomCloudinaryCloudName;
+                    customKey = config.CustomCloudinaryApiKey;
+                    customSecret = config.CustomCloudinaryApiSecret;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[ContentApi] Failed to inspect MisConfigurationSettings during CMS file upload.");
+            }
+
+            var folder = "bcp-cms-files";
+
+            // 1. For non-image files (PDF, DOCX, MP4, ZIP, etc.), prefer Cloudflare R2 first for exact MIME delivery
+            if (!isImage && _r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    await using var stream = file.OpenReadStream();
+                    var result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folder}");
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        finalUrl = result.Url;
+                        storageKey = result.SafeFileName ?? file.FileName;
+                        storageProvider = "CloudflareR2";
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[ContentApi] Cloudflare R2 upload failed for file {FileName}. Trying Cloudinary.", file.FileName);
+                }
+            }
+
+            // 2. Try Cloudinary (Image pipeline for images, Raw Document pipeline for non-images)
+            if (string.IsNullOrWhiteSpace(finalUrl))
+            {
+                try
+                {
+                    var (secureUrl, publicId) = isImage
+                        ? await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret)
+                        : await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
+
+                    if (!string.IsNullOrWhiteSpace(secureUrl))
+                    {
+                        finalUrl = secureUrl;
+                        storageKey = publicId;
+                        storageProvider = "Cloudinary";
+                    }
+                }
+                catch (Exception cldEx)
+                {
+                    _logger?.LogWarning(cldEx, "[ContentApi] Cloudinary upload failed for file {FileName}. Proceeding to next storage fallback.", file.FileName);
+                }
+            }
+
+            // 3. Resilient fallback to Cloudflare R2 if image upload skipped or failed Cloudinary
+            if (string.IsNullOrWhiteSpace(finalUrl) && _r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    await using var stream = file.OpenReadStream();
+                    var result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folder}");
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        finalUrl = result.Url;
+                        storageKey = result.SafeFileName ?? file.FileName;
+                        storageProvider = "CloudflareR2";
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[ContentApi] Cloudflare R2 fallback failed for {FileName}. Using local storage.", file.FileName);
+                }
+            }
+
+            // 4. Local disk fallback (wwwroot/uploads/cms-files) so upload never halts in local dev
+            if (string.IsNullOrWhiteSpace(finalUrl))
+            {
+                try
+                {
+                    var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "cms-files");
+                    Directory.CreateDirectory(uploadsDir);
+
+                    var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
+                    var filePath = Path.Combine(uploadsDir, safeName);
+
+                    await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(fileStream);
+                    }
+
+                    var scheme = Request?.Scheme ?? "https";
+                    var host = Request?.Host.Value ?? "localhost";
+                    finalUrl = $"{scheme}://{host}/uploads/cms-files/{Uri.EscapeDataString(safeName)}";
+                    storageKey = safeName;
+                    storageProvider = "LocalDisk";
+                }
+                catch (Exception diskEx)
+                {
+                    _logger?.LogError(diskEx, "[ContentApi] All storage pipelines failed for file {FileName}.", file.FileName);
+                    return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to upload file: {diskEx.Message}"));
+                }
+            }
+
+            var uploadedBy = User?.Identity?.Name ?? User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+            var mediaFile = new CmsMediaFile
+            {
+                Id = Guid.NewGuid(),
+                FileName = Path.GetFileName(file.FileName),
+                FileUrl = finalUrl,
+                StorageKey = storageKey,
+                FileType = normalizedType,
+                ContentType = contentType,
+                FileSizeBytes = file.Length,
+                StorageProvider = storageProvider,
+                UploadedBy = uploadedBy,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            _context.CmsMediaFiles.Add(mediaFile);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(mediaFile, $"File '{mediaFile.FileName}' uploaded successfully."));
+        }
+
+        /// <summary>
+        /// Deletes a file entry from the CMS Studio File Manager repository.
+        /// </summary>
+        /// <param name="id">Unique identifier of the CmsMediaFile record.</param>
+        /// <returns>Confirmation response.</returns>
+        [HttpDelete("files/{id:guid}")]
+        public async Task<IActionResult> DeleteCmsFile(Guid id)
+        {
+            var mediaFile = await _context.CmsMediaFiles.FindAsync(id);
+            if (mediaFile == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("File record not found."));
+            }
+
+            // Clean up local file if stored on local disk
+            if (string.Equals(mediaFile.StorageProvider, "LocalDisk", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(mediaFile.StorageKey))
+            {
+                try
+                {
+                    var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "cms-files", mediaFile.StorageKey);
+                    if (System.IO.File.Exists(localPath))
+                    {
+                        System.IO.File.Delete(localPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "[ContentApi] Failed to remove local file {Key} during delete.", mediaFile.StorageKey);
+                }
+            }
+
+            _context.CmsMediaFiles.Remove(mediaFile);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"File '{mediaFile.FileName}' deleted successfully."));
+        }
+
+        // ==========================================
         // 0.1. CSS ASSET UPLOAD & CLOUDFLARE R2 + CDN HOSTING
         // ==========================================
 
