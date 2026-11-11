@@ -7787,6 +7787,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<int>("RibonSortOrder")
                         .HasColumnType("int");
 
+                    b.Property<string>("SecondButtonLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SecondButtonText")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 

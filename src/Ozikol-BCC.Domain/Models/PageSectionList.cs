@@ -110,6 +110,22 @@ namespace Ozikol_BCC.Domain.Models
         public string? ButtonLink { get; set; }
 
         /// <summary>
+        /// Secondary action button display text for dual-CTA cards or slides.
+        /// Injected into templates via {{ SecondButtonText }} or {{ SecondaryButtonText }}.
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Second Button Text")]
+        public string? SecondButtonText { get; set; }
+
+        /// <summary>
+        /// Secondary action button destination URL for dual-CTA cards or slides.
+        /// Injected into templates via {{ SecondButtonLink }} or {{ SecondaryButtonLink }}.
+        /// </summary>
+        [MaxLength(500)]
+        [Display(Name = "Second Button Link")]
+        public string? SecondButtonLink { get; set; }
+
+        /// <summary>
         /// Custom direct routing string.
         /// Injected into templates via {{ DirectUrl }}.
         /// </summary>

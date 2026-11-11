@@ -1971,6 +1971,8 @@ Reply ONLY with the valid JSON object.";
                                 IconText = sub.IconText,
                                 ButtonText = sub.ButtonText,
                                 ButtonLink = sub.ButtonLink,
+                                SecondButtonText = sub.SecondButtonText,
+                                SecondButtonLink = sub.SecondButtonLink,
                                 SortOrder = sub.SortOrder,
                                 Disable = sub.Disable,
 
@@ -2325,6 +2327,8 @@ Reply ONLY with the valid JSON object.";
             existing.VideoKey = updated.VideoKey;
             existing.ButtonText = updated.ButtonText;
             existing.ButtonLink = updated.ButtonLink;
+            existing.SecondButtonText = updated.SecondButtonText;
+            existing.SecondButtonLink = updated.SecondButtonLink;
             existing.DirectUrl = updated.DirectUrl;
             existing.CustomClass = updated.CustomClass;
             existing.SortOrder = updated.SortOrder;
@@ -2466,6 +2470,8 @@ Reply ONLY with the valid JSON object.";
                         IconText = orig.IconText,
                         ButtonText = orig.ButtonText,
                         ButtonLink = orig.ButtonLink,
+                        SecondButtonText = orig.SecondButtonText,
+                        SecondButtonLink = orig.SecondButtonLink,
                         SortOrder = currentMaxSort,
                         Disable = orig.Disable,
                         CustomClass = orig.CustomClass
@@ -6080,6 +6086,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                             ImageUrl = item.ImageUrl,
                             ButtonText = item.ButtonText,
                             ButtonLink = item.ButtonLink,
+                            SecondButtonText = item.SecondButtonText,
+                            SecondButtonLink = item.SecondButtonLink,
                             SortOrder = itemOrder++
                         };
                         _context.PageSectionLists.Add(child);
@@ -6804,6 +6812,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                             ImageUrl = item.ImageUrl,
                                             ButtonText = item.ButtonText,
                                             ButtonLink = item.ButtonLink,
+                                            SecondButtonText = item.SecondButtonText,
+                                            SecondButtonLink = item.SecondButtonLink,
                                             SortOrder = itemSort++
                                         };
                                         _context.PageSectionLists.Add(child);
@@ -7727,6 +7737,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? ImageUrl { get; set; }
         public string? ButtonText { get; set; }
         public string? ButtonLink { get; set; }
+        public string? SecondButtonText { get; set; }
+        public string? SecondButtonLink { get; set; }
     }
 
     public class CreateCodeInjectionRequest
@@ -7925,6 +7937,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? ImageUrl { get; set; }
         public string? ButtonText { get; set; }
         public string? ButtonLink { get; set; }
+        public string? SecondButtonText { get; set; }
+        public string? SecondButtonLink { get; set; }
     }
 
     public class ImportablePageDto

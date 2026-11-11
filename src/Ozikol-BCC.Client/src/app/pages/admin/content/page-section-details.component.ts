@@ -49,7 +49,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <th>ITEM TITLE</th>
                 <th>MINI TITLE / ICON</th>
                 <th>DESCRIPTION</th>
-                <th>BUTTON</th>
+                <th>BUTTONS</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
@@ -64,8 +64,11 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </td>
                 <td><span class="desc-preview">{{ item.description | slice:0:60 }}...</span></td>
                 <td>
-                  <span class="btn-preview-tag" *ngIf="item.buttonText">{{ item.buttonText }}</span>
-                  <span class="badge-none" *ngIf="!item.buttonText">-</span>
+                  <div class="btn-preview-stack" *ngIf="item.buttonText || item.secondButtonText">
+                    <span class="btn-preview-tag" *ngIf="item.buttonText">{{ item.buttonText }}</span>
+                    <span class="btn-preview-tag secondary" *ngIf="item.secondButtonText">{{ item.secondButtonText }}</span>
+                  </div>
+                  <span class="badge-none" *ngIf="!item.buttonText && !item.secondButtonText">-</span>
                 </td>
                 <td>
                   <span class="status-pill" [class.published]="!item.disable" [class.draft]="item.disable">
@@ -132,7 +135,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .mini-pill { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-left: 6px; }
     .icon-chip { font-size: 12px; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
     .desc-preview { color: #475569; font-size: 12px; }
+    .btn-preview-stack { display: flex; flex-wrap: wrap; gap: 4px; }
     .btn-preview-tag { background: #eff6ff; color: #0050e5; padding: 3px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; }
+    .btn-preview-tag.secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
     .badge-none { color: #94a3b8; font-size: 11px; }
     .status-pill { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
     .status-pill.published { background: #dcfce7; color: #15803d; }

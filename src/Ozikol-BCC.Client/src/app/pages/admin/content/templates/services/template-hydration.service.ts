@@ -472,7 +472,9 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{#if\s+IconText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (icon ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+ImageUrl\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.imageUrl ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+MiniTitle\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.miniTitle ? content : ''));
-        renderedItem = renderedItem.replace(/\{\{#if\s+ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?(?:SecondButtonText|SecondaryButtonText)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => ((item.secondButtonText || item.secondaryButtonText) ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?(?:SecondButtonLink|SecondaryButtonLink)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => ((item.secondButtonLink || item.secondaryButtonLink) ? content : ''));
         const iDesc = item.description || item.moreDescription || item.fullDescription || '';
         const iFullDesc = item.fullDescription || item.moreDescription || item.description || '';
 
@@ -492,6 +494,8 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, item.secondButtonText || item.secondaryButtonText || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, item.secondButtonLink || item.secondaryButtonLink || '#');
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?DirectUrl\s*\}\}/gi, item.directUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*SortOrder\s*\}\}/gi, (item.sortOrder !== undefined ? item.sortOrder : idx + 1).toString());
         renderedItem = renderedItem.replace(/\{\{\s*Index\s*\}\}/gi, (idx + 1).toString());

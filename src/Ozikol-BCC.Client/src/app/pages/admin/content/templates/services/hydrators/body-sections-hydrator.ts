@@ -114,8 +114,15 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       const hasItemDesc = Boolean(itemDesc && itemDesc.trim().length > 0);
       const hasItemFullDesc = Boolean(itemFullDesc && itemFullDesc.trim().length > 0);
 
+      const hasItemButtonLink = Boolean(item.buttonLink && item.buttonLink.trim().length > 0 && item.buttonLink !== '#');
+      const hasItemSecondButton = Boolean((item.secondButtonText && item.secondButtonText.trim().length > 0) || (item.secondaryButtonText && item.secondaryButtonText.trim().length > 0));
+      const hasItemSecondButtonLink = Boolean((item.secondButtonLink && item.secondButtonLink.trim().length > 0 && item.secondButtonLink !== '#') || (item.secondaryButtonLink && item.secondaryButtonLink.trim().length > 0 && item.secondaryButtonLink !== '#'));
+
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ImageUrl', Boolean(item.imageUrl && item.imageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonLink', hasItemButtonLink);
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondButtonText|SecondaryButtonText)', hasItemSecondButton);
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondButtonLink|SecondaryButtonLink)', hasItemSecondButtonLink);
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Icon', Boolean(item.icon && item.icon.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?IconText', Boolean(item.iconText && item.iconText.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MiniTitle', Boolean(item.miniTitle && item.miniTitle.trim().length > 0));
@@ -136,6 +143,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
 
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, item.secondButtonText || item.secondaryButtonText || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, item.secondButtonLink || item.secondaryButtonLink || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ImageUrl\s*\}\}/gi, item.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?DirectUrl\s*\}\}/gi, item.directUrl || '#');

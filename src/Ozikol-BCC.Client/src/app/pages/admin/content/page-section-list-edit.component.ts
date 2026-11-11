@@ -240,44 +240,113 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
             </div>
           </div>
 
-          <!-- Card 2: Action Button & Route -->
+          <!-- Card 2: Action Buttons & Direct Links -->
           <div class="cms-card">
             <div class="card-header-bar">
               <div>
-                <h3>Button Action & Direct Link</h3>
-                <p class="card-sub">Clickable action triggers and destination page links.</p>
+                <h3>Action Buttons & Direct Links</h3>
+                <p class="card-sub">Clickable primary and optional secondary CTA triggers for this card or slide.</p>
               </div>
             </div>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>BUTTON TEXT</label>
-                <input type="text" [(ngModel)]="item.buttonText" class="form-control" placeholder="e.g. View Program, Learn More">
+
+            <div class="cta-sections-stack">
+              <!-- Group 1: Primary Action Button -->
+              <div class="cta-subcard">
+                <div class="cta-subcard-header">
+                  <div class="cta-badge-title">
+                    <span class="cta-num-badge primary">1</span>
+                    <div>
+                      <strong>Primary Action Button</strong>
+                      <span class="cta-sub">Main call-to-action button rendered inside this repeating card or slide.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>BUTTON TEXT</label>
+                    <input type="text" [(ngModel)]="item.buttonText" class="form-control" placeholder="e.g. View Program, Learn More">
+                  </div>
+
+                  <div class="form-group">
+                    <label>QUICK PICK PAGE</label>
+                    <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'primary')">
+                      <option value="">-- Quick Pick Page --</option>
+                      <option value="/">🏠 Root / Home Page (/)</option>
+                      <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                        <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                      </optgroup>
+                      <optgroup label="Ready-Made System Pages">
+                        <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>DESTINATION LINK URL</label>
+                    <div class="input-with-file-btn">
+                      <input
+                        type="text"
+                        [(ngModel)]="item.buttonLink"
+                        class="form-control"
+                        placeholder="Select page, choose file, or type direct URL (e.g. /, /about, https://...)">
+                      <button type="button" class="btn-choose-file" (click)="openFilePicker('primary')" title="Pick an uploaded file from File Manager">
+                        <span class="material-symbols-outlined fs-6">folder_open</span>
+                        <span>Choose File</span>
+                      </button>
+                    </div>
+                    <small class="help-text">Select from root (/), web pages, system pages, or choose an uploaded file, or freely type any custom direct/anchor link.</small>
+                  </div>
+                </div>
               </div>
 
-              <div class="form-group full-width">
-                <label>BUTTON LINK (DESTINATION URL OR PAGE)</label>
-                <div class="input-with-dropdown">
-                  <input
-                    type="text"
-                    [(ngModel)]="item.buttonLink"
-                    class="form-control link-input"
-                    placeholder="Select page from dropdown or type direct URL (e.g. /, /about, https://...)">
-                  <select class="form-control link-select" (change)="onButtonLinkSelect($event)">
-                    <option value="">-- Quick Pick Page --</option>
-                    <option value="/">🏠 Root / Home Page (/)</option>
-                    <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
-                      <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
-                    </optgroup>
-                    <optgroup label="Ready-Made System Pages">
-                      <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
-                    </optgroup>
-                  </select>
-                  <button type="button" class="btn-choose-file" (click)="openFilePicker()" title="Pick an uploaded file from File Manager">
-                    <span class="material-symbols-outlined fs-6">folder_open</span>
-                    <span>Choose File</span>
-                  </button>
+              <!-- Group 2: Secondary Action Button (Dual CTA) -->
+              <div class="cta-subcard">
+                <div class="cta-subcard-header">
+                  <div class="cta-badge-title">
+                    <span class="cta-num-badge secondary">2</span>
+                    <div>
+                      <strong>Secondary Action Button <span class="optional-tag">Optional Dual CTA</span></strong>
+                      <span class="cta-sub">Additional secondary button when the hero slide or card template supports two buttons.</span>
+                    </div>
+                  </div>
                 </div>
-                <small class="help-text">Select from root (/), web pages, system pages, or choose an uploaded file, or freely type any custom direct/anchor link.</small>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>BUTTON TEXT</label>
+                    <input type="text" [(ngModel)]="item.secondButtonText" class="form-control" placeholder="e.g. Download Brochure, Watch Demo">
+                  </div>
+
+                  <div class="form-group">
+                    <label>QUICK PICK PAGE</label>
+                    <select class="form-control link-select" (change)="onButtonLinkSelect($event, 'secondary')">
+                      <option value="">-- Quick Pick Page --</option>
+                      <option value="/">🏠 Root / Home Page (/)</option>
+                      <optgroup label="Published Web Pages" *ngIf="publishedPagesList.length">
+                        <option *ngFor="let p of publishedPagesList" [value]="p.url">{{ p.title }} ({{ p.url }})</option>
+                      </optgroup>
+                      <optgroup label="Ready-Made System Pages">
+                        <option *ngFor="let sp of systemPages" [value]="sp.url">{{ sp.name }} ({{ sp.url }})</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>DESTINATION LINK URL</label>
+                    <div class="input-with-file-btn">
+                      <input
+                        type="text"
+                        [(ngModel)]="item.secondButtonLink"
+                        class="form-control"
+                        placeholder="Select page, choose file, or type direct URL (e.g. /contact, https://...)">
+                      <button type="button" class="btn-choose-file" (click)="openFilePicker('secondary')" title="Pick an uploaded file from File Manager">
+                        <span class="material-symbols-outlined fs-6">folder_open</span>
+                        <span>Choose File</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -446,7 +515,7 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
 
       <app-file-picker-modal
         [isOpen]="filePickerOpen"
-        title="Choose File for Button Link"
+        [title]="filePickerTitle"
         (closed)="filePickerOpen = false"
         (fileSelected)="onFilePicked($event)"
       ></app-file-picker-modal>
@@ -690,15 +759,37 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
       resize: vertical;
     }
 
-    /* Media Uploads & Dropdown Combo */
-    .input-with-dropdown {
-      display: flex; gap: 10px; align-items: stretch;
+    /* CTA Subcards & File Picker Combo */
+    .cta-sections-stack { display: flex; flex-direction: column; gap: 16px; }
+    .cta-subcard {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;
     }
-    .input-with-dropdown .link-input { flex: 1 1 50%; min-width: 0; }
-    .input-with-dropdown .link-select {
-      flex: 1 1 35%; min-width: 0; background-color: #f8fafc; border-color: #cbd5e1;
+    .cta-subcard-header {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;
+    }
+    .cta-badge-title { display: flex; align-items: center; gap: 10px; }
+    .cta-badge-title > div { display: flex; flex-direction: column; gap: 2px; }
+    .cta-badge-title strong { font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .cta-sub { font-size: 11.5px; color: #64748b; }
+    .cta-num-badge {
+      width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0;
+    }
+    .cta-num-badge.primary { background: #0050e5; color: #fff; }
+    .cta-num-badge.secondary { background: #e2e8f0; color: #334155; }
+    .optional-tag {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 999px; background: #e2e8f0; color: #475569;
+    }
+    .link-select {
+      background-color: #fff; border-color: #cbd5e1;
       color: #334155; font-weight: 500; cursor: pointer;
     }
+    .input-with-file-btn {
+      display: flex; gap: 10px; align-items: stretch;
+    }
+    .input-with-file-btn .form-control { flex: 1; min-width: 0; }
     .btn-choose-file {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px;
       background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; border-radius: 8px;
@@ -707,7 +798,7 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
     }
     .btn-choose-file:hover { background: #dbeafe; border-color: #93c5fd; }
     @media (max-width: 640px) {
-      .input-with-dropdown { flex-direction: column; align-items: stretch; }
+      .input-with-file-btn { flex-direction: column; align-items: stretch; }
       .btn-choose-file { min-height: 38px; }
     }
 
@@ -979,6 +1070,16 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
   allPages: any[] = [];
   publishedPagesList: { title: string; url: string }[] = [];
   filePickerOpen = false;
+  filePickerTarget: 'primary' | 'secondary' = 'primary';
+
+  /**
+   * Returns a contextual modal heading based on which button slot is picking a file.
+   */
+  get filePickerTitle(): string {
+    return this.filePickerTarget === 'secondary'
+      ? 'Choose File for Secondary Action Button'
+      : 'Choose File for Primary Action Button';
+  }
 
   systemPages: { name: string; url: string }[] = [
     { name: 'Member Sign In / Portal', url: '/auth/login' },
@@ -1031,6 +1132,8 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
       moreDescription: '',
       buttonText: '',
       buttonLink: '',
+      secondButtonText: '',
+      secondButtonLink: '',
       directUrl: '',
       imageUrl: '',
       imageKey: '',
@@ -1124,27 +1227,37 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
     });
   }
 
-  onButtonLinkSelect(event: any): void {
+  onButtonLinkSelect(event: any, target: 'primary' | 'secondary' = 'primary'): void {
     const val = event.target?.value;
     if (val) {
-      this.item.buttonLink = val;
+      if (target === 'secondary') {
+        this.item.secondButtonLink = val;
+      } else {
+        this.item.buttonLink = val;
+      }
     }
   }
 
   /**
-   * Opens the File Manager picker modal for the sub-item button link.
+   * Opens the File Manager picker modal for the chosen sub-item button link field.
+   * @param target Identifies whether the primary or secondary button URL should be populated.
    */
-  openFilePicker(): void {
+  openFilePicker(target: 'primary' | 'secondary' = 'primary'): void {
+    this.filePickerTarget = target;
     this.filePickerOpen = true;
   }
 
   /**
-   * Inserts the chosen File Manager file URL into the sub-item button link field.
+   * Inserts the chosen File Manager file URL into the active sub-item button link field.
    * @param file Selected file record from File Manager.
    */
   onFilePicked(file: any): void {
     if (!file?.fileUrl || !this.item) return;
-    this.item.buttonLink = file.fileUrl;
+    if (this.filePickerTarget === 'secondary') {
+      this.item.secondButtonLink = file.fileUrl;
+    } else {
+      this.item.buttonLink = file.fileUrl;
+    }
     this.toast.success(`Inserted URL for "${file.fileName}".`);
   }
 

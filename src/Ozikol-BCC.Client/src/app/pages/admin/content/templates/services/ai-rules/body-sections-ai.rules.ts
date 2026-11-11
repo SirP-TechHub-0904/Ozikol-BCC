@@ -24,6 +24,8 @@ export class BodySectionsAiRule implements ICategoryAiRule {
     '{{ PageSectionList.IconText }}',
     '{{ PageSectionList.ButtonText }}',
     '{{ PageSectionList.ButtonLink }}',
+    '{{ PageSectionList.SecondButtonText }}',
+    '{{ PageSectionList.SecondButtonLink }}',
     '{{ PageSectionList.SortOrder }}',
     '{{ Title }}',
     '{{ MiniTitle }}',
@@ -106,6 +108,9 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
        {{/if}}
        {{#if PageSectionList.ButtonText}}
          <a href="{{ PageSectionList.ButtonLink }}" class="[original card btn classes]">{{ PageSectionList.ButtonText }}</a>
+       {{/if}}
+       {{#if PageSectionList.SecondButtonText}}
+         <a href="{{ PageSectionList.SecondButtonLink }}" class="[original secondary card btn classes]">{{ PageSectionList.SecondButtonText }}</a>
        {{/if}}
      </div>
    {{/each}}

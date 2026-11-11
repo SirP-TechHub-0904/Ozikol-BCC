@@ -1025,6 +1025,7 @@ export class BodyVisualComponent implements OnInit {
     { label: 'Card Icon', token: '<i class="{{ PageSectionList.IconText }}"></i>', description: 'Child item/card FontAwesome or theme icon class string.' },
     { label: 'Card ImageUrl', token: '{{ PageSectionList.ImageUrl }}', description: 'Child item/card visual thumbnail in PageSectionList.' },
     { label: 'Card Button', token: '<a href="{{ PageSectionList.ButtonLink }}" class="btn">{{ PageSectionList.ButtonText }}</a>', description: 'Child item/card action button link in PageSectionList.' },
+    { label: 'Card Second Button', token: '{{#if PageSectionList.SecondButtonText}}\n  <a href="{{ PageSectionList.SecondButtonLink }}" class="btn-outline">{{ PageSectionList.SecondButtonText }}</a>\n{{/if}}', description: 'Child item/card optional secondary action button in PageSectionList.' },
     { label: 'Section Title', token: '{{ PageSection.Title }}', description: 'Parent section main heading / title.' },
     { label: 'Section MiniTitle', token: '{{ PageSection.MiniTitle }}', description: 'Parent eyebrow kicker badge or category label.' },
     { label: 'Section Description', token: '{{#if PageSection.Description}}\n  <p>{{ PageSection.Description }}</p>\n{{/if}}', description: 'Parent section introductory description with condition.' },

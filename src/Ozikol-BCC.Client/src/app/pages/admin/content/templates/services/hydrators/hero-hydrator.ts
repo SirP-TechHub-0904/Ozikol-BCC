@@ -80,7 +80,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MiniTitle', Boolean(item.miniTitle || item.subTitle));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ImageUrl', Boolean(item.imageUrl && item.imageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?SecondaryButtonText', Boolean(item.secondaryButtonText && item.secondaryButtonText.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondaryButtonText|SecondButtonText)', Boolean((item.secondButtonText && item.secondButtonText.trim().length > 0) || (item.secondaryButtonText && item.secondaryButtonText.trim().length > 0)));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondaryButtonLink|SecondButtonLink)', Boolean((item.secondButtonLink && item.secondButtonLink.trim().length > 0 && item.secondButtonLink !== '#') || (item.secondaryButtonLink && item.secondaryButtonLink.trim().length > 0 && item.secondaryButtonLink !== '#')));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Icon', Boolean(item.icon && item.icon.trim().length > 0));
       const slideDesc = item.description || item.moreDescription || item.fullDescription || '';
       const slideFullDesc = item.fullDescription || item.moreDescription || item.description || '';
@@ -102,8 +103,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
 
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?SecondaryButtonText\s*\}\}/gi, item.secondaryButtonText || '');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?SecondaryButtonLink\s*\}\}/gi, item.secondaryButtonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:SecondaryButtonText|SecondButtonText)\s*\}\}/gi, item.secondButtonText || item.secondaryButtonText || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:SecondaryButtonLink|SecondButtonLink)\s*\}\}/gi, item.secondButtonLink || item.secondaryButtonLink || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ImageUrl\s*\}\}/gi, item.imageUrl || ctx.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?DirectUrl\s*\}\}/gi, item.directUrl || '#');

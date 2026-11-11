@@ -91,6 +91,8 @@ namespace Ozikol_BCC.Application.Queries.PageSectionQueries
                 DisableButton = x.DisableButton,
                 ButtonText = x.ButtonText,
                 ButtonLink = x.ButtonLink,
+                SecondButtonText = x.SecondButtonText,
+                SecondButtonLink = x.SecondButtonLink,
                 FullDescription = x.FullDescription,
                 SectionLists = x.PageSectionLists.Select(sl => new PageSectionListDto
                 {
@@ -103,6 +105,8 @@ namespace Ozikol_BCC.Application.Queries.PageSectionQueries
                     MiniTitle = sl.MiniTitle,
                     ButtonLink = sl.ButtonLink,
                     ButtonText = sl.ButtonText,
+                    SecondButtonText = sl.SecondButtonText,
+                    SecondButtonLink = sl.SecondButtonLink,
                     DirectUrl = sl.DirectUrl,
                     MoreDescription = sl.MoreDescription
                 }).OrderBy(sl => sl.SortOrder).ToList()

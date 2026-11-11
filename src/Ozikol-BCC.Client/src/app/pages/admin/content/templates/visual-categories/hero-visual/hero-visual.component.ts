@@ -1172,6 +1172,7 @@ export class HeroVisualComponent implements OnInit {
     { label: 'Slide Icon', token: '<i class="{{ PageSectionList.IconText }}"></i>', description: 'Current slide icon class in PageSectionList.' },
     { label: 'Slide Image', token: '{{ PageSectionList.ImageUrl }}', description: 'Current slide background visual in PageSectionList.' },
     { label: 'Slide Button', token: '{{ PageSectionList.ButtonText }}', description: 'Current slide action button in PageSectionList.' },
+    { label: 'Slide Second Button', token: '{{#if PageSectionList.SecondButtonText}}\n  <a href="{{ PageSectionList.SecondButtonLink }}" class="btn-secondary">{{ PageSectionList.SecondButtonText }}</a>\n{{/if}}', description: 'Current slide secondary action button in PageSectionList.' },
     { label: 'Section Title', token: '{{ PageSection.Title }}', description: 'Parent section title.' },
     { label: 'Section MiniTitle', token: '{{ PageSection.MiniTitle }}', description: 'Parent section category label or eyebrow badge.' },
     { label: 'Section Description', token: '{{ PageSection.Description }}', description: 'Parent section introductory narrative text.' },

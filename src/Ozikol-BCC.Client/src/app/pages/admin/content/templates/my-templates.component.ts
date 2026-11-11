@@ -3686,6 +3686,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
                   imageUrl: it.imageUrl || it.ImageUrl || '',
                   buttonText: it.buttonText || it.ButtonText || '',
                   buttonLink: it.buttonLink || it.ButtonLink || '',
+                  secondButtonText: it.secondButtonText || it.SecondButtonText || it.secondaryButtonText || it.SecondaryButtonText || '',
+                  secondButtonLink: it.secondButtonLink || it.SecondButtonLink || it.secondaryButtonLink || it.SecondaryButtonLink || '',
                   sortOrder: it.sortOrder || it.SortOrder || (idx + 1)
                 }))
               : [
