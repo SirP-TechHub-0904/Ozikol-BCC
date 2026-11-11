@@ -1677,6 +1677,7 @@ export class WebPagesComponent implements OnInit {
   }
 
   getLivePageUrl(page: any): string {
+    if (page?.isHomePage) return '/';
     if (!page?.directUrl) return '/';
     const val = page.directUrl.trim();
     if (val.startsWith('http://') || val.startsWith('https://')) return val;
@@ -1685,6 +1686,7 @@ export class WebPagesComponent implements OnInit {
   }
 
   getDisplaySlug(page: any): string {
+    if (page?.isHomePage) return '/';
     if (!page?.directUrl) return '/';
     const val = page.directUrl.trim();
     if (val.startsWith('http://') || val.startsWith('https://')) return val;

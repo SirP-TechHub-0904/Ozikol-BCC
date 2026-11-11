@@ -1029,7 +1029,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       } else {
         // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
         await this.fetchPageBySlug(this.currentSlug);
-        this.composeContentPage();
+        if (this.currentPage?.isHomePage || this.currentPage?.IsHomePage) {
+          // Safeguard: root landing pages stored under legacy slugs still render full homepage composition
+          await Promise.all([
+            this.fetchHomeSections(),
+            this.fetchRecentBlogs()
+          ]);
+          this.composeHomepage();
+        } else {
+          this.composeContentPage();
+        }
       }
 
       this.loading = false;
@@ -3774,7 +3783,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         if (!childPages || childPages.length === 0) return;
 
         const pagesList = childPages.map((p: any) => {
-          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          const isHome = p.isHomePage === true || p.IsHomePage === true;
+          const pUrl = isHome ? '/' : `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
           usedUrls.add(pUrl.toLowerCase());
           return {
             title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
@@ -3813,10 +3823,13 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
                    (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
                    !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
       .forEach(p => {
+        const isHome = p.isHomePage === true || p.IsHomePage === true;
         const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').trim();
-        const pUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-          ? rawUrl
-          : ((rawUrl === '' || rawUrl.toLowerCase() === 'home' || rawUrl === '/') ? '/' : `/${rawUrl.replace(/^\/+/, '')}`);
+        const pUrl = isHome
+          ? '/'
+          : (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+            ? rawUrl
+            : ((rawUrl === '' || rawUrl.toLowerCase() === 'home' || rawUrl === '/') ? '/' : `/${rawUrl.replace(/^\/+/, '')}`));
         const pLower = pUrl.toLowerCase();
 
         // Avoid duplicating if URL is already in a dropdown or already added
