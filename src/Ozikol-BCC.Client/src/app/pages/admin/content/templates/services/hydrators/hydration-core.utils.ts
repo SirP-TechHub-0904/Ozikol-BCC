@@ -514,12 +514,16 @@ export function replaceCommonScalars(template: string, ctx: HydrationContext): s
 }
 
 /**
- * Scrubs any leftover unrendered tokens (supporting both {{ Token }} and {{{ Token }}}).
+ * Scrubs any leftover unrendered tokens (supporting both {{ Token }} and {{{ Token }}}),
+ * and eliminates empty <img> tags (where src is empty, whitespace, or missing) so browsers
+ * never display broken image icon placeholders.
  */
 export function scrubRemainingTokens(template: string): string {
   let output = template.replace(/\{\{#each\s+[^}]+\}\}[\s\S]*?\{\{\/each\}\}/gi, '');
   output = output.replace(/\{\{#if\s+[^}]+\}\}[\s\S]*?\{\{\/if\}\}/gi, '');
   output = output.replace(/\{\{\{?\s*[^}]+\s*\}?\}\}/gi, '');
+  // Clean up any empty <img> tags (src="" or missing src) to prevent broken image icon boxes
+  output = output.replace(/<img\b(?![^>]*\bsrc=["'][^"'\s#]+["'])[^>]*>/gi, '');
   return output;
 }
 
