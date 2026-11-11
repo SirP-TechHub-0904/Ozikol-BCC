@@ -336,11 +336,11 @@ export function reorderListStep<T>(items: T[], index: number, delta: -1 | 1): T[
 }
 
 /**
- * Assigns spaced numeric sort orders (10, 20, 30, ...) on each item in <paramref name="orderedItems"/>
+ * Assigns spaced numeric sort orders (10, 20, 30, ...) on each item in orderedItems
  * and produces the batch reorder API payload.
  */
-export function assignStepOrders<T extends Record<string, any>>(
-  orderedItems: T[],
+export function assignStepOrders(
+  orderedItems: Array<Record<string, any>>,
   orderField: string,
   step: number = 10
 ): Array<{ id: string; sortOrder: number }> {
@@ -350,3 +350,4 @@ export function assignStepOrders<T extends Record<string, any>>(
     return { id: item['id'], sortOrder: newOrder };
   });
 }
+
