@@ -1709,7 +1709,7 @@ Reply ONLY with the valid JSON object.";
                     targetPageTitle = targetPage.Title
                 }, $"{clonedSections.Count} section(s) copied successfully to '{targetPage.Title}'."));
             }
-            else
+            else if (string.Equals(request.Action, "move", StringComparison.OrdinalIgnoreCase))
             {
                 // MOVE
                 var sections = await _context.PageSections
@@ -2176,7 +2176,7 @@ Reply ONLY with the valid JSON object.";
                     targetSectionTitle = targetSection.Title
                 }, $"{clonedItems.Count} sub-item(s) copied successfully to section '{targetSection.Title}'."));
             }
-            else
+            else if (string.Equals(request.Action, "move", StringComparison.OrdinalIgnoreCase))
             {
                 // MOVE
                 var subItems = await _context.PageSectionLists
@@ -2206,6 +2206,10 @@ Reply ONLY with the valid JSON object.";
                     count = subItems.Count,
                     targetSectionTitle = targetSection.Title
                 }, $"{subItems.Count} sub-item(s) moved successfully to section '{targetSection.Title}'."));
+            }
+            else
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"Unknown transfer action '{request.Action}'. Supported: copy, move."));
             }
         }
 
