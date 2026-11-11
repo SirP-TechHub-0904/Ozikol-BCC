@@ -52,8 +52,27 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </div>
 
               <div class="form-group">
-                <label>ICON CLASS STRING (FONT AWESOME / THEME)</label>
-                <input type="text" [(ngModel)]="item.iconText" class="form-control" placeholder="e.g. fa-solid fa-stethoscope, tji-phone">
+                <div class="icon-label-row">
+                  <label>ICON (FONT AWESOME, &lt;I&gt; TAG, OR IMAGE URL)</label>
+                  <span *ngIf="item.iconText" class="badge-icon-type" [class.badge-image]="getIconKind(item.iconText) === 'image'">
+                    {{ getIconTypeLabel(item.iconText) }}
+                  </span>
+                </div>
+                <div class="icon-input-group">
+                  <div class="icon-preview-box" [title]="'Live Icon Preview: ' + (item.iconText || 'None')">
+                    <ng-container [ngSwitch]="getIconKind(item.iconText)">
+                      <img *ngSwitchCase="'image'" [src]="getIconSrc(item.iconText)" alt="Preview" class="preview-img" />
+                      <i *ngSwitchCase="'font'" [class]="getCleanIconClass(item.iconText)" class="preview-icon"></i>
+                      <span *ngSwitchDefault class="material-symbols-outlined preview-empty">image_not_supported</span>
+                    </ng-container>
+                  </div>
+                  <input
+                    type="text"
+                    [(ngModel)]="item.iconText"
+                    class="form-control icon-input-field"
+                    placeholder="e.g. fa-solid fa-calendar-check, <i class='fa-solid fa-calendar-check'></i>, or https://.../icon.svg">
+                </div>
+                <small class="help-text">Paste Font Awesome class, direct &lt;i&gt; HTML tag, or image URL. The template engine renders it natively.</small>
               </div>
 
               <div class="form-group full-width">
@@ -425,6 +444,64 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .form-control:focus { outline: none; border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
     .help-text { font-size: 11px; color: #64748b; }
+
+    /* Live Icon Preview Field */
+    .icon-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge-icon-type {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .badge-icon-type.badge-image {
+      background: #f0fdf4;
+      color: #16a34a;
+      border-color: #bbf7d0;
+    }
+    .icon-input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .icon-preview-box {
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #0050e5;
+      font-size: 18px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .icon-preview-box .preview-img {
+      max-width: 26px;
+      max-height: 26px;
+      object-fit: contain;
+    }
+    .icon-preview-box .preview-icon {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .icon-preview-box .preview-empty {
+      font-size: 18px;
+      color: #94a3b8;
+    }
+    .icon-input-field {
+      flex: 1;
+    }
 
     /* Summernote-style WYSIWYG Editor Frame */
     .summernote-wrapper {
@@ -1177,5 +1254,61 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
     } else {
       this.router.navigate(['/content/console/sections']);
     }
+  }
+
+  /**
+   * Identifies the category of the icon value (font icon, image asset, or empty).
+   * @param val Raw icon string entered by the user.
+   * @returns 'font' | 'image' | 'empty'
+   */
+  getIconKind(val?: string): 'font' | 'image' | 'empty' {
+    const raw = (val || '').trim();
+    if (!raw) return 'empty';
+    if (raw.startsWith('<img') || /^(?:https?:\/\/|\/|\.\/)/i.test(raw) || /\.(?:svg|png|jpe?g|webp|gif|ico)(?:\?.*)?$/i.test(raw)) {
+      return 'image';
+    }
+    return 'font';
+  }
+
+  /**
+   * Returns a friendly status label for the entered icon.
+   * @param val Raw icon string.
+   * @returns Human-readable type string.
+   */
+  getIconTypeLabel(val?: string): string {
+    const kind = this.getIconKind(val);
+    if (kind === 'image') return 'Image Asset';
+    if (kind === 'font') {
+      const raw = (val || '').trim();
+      if (raw.startsWith('<i')) return 'Font Awesome Tag';
+      return 'Font Icon Class';
+    }
+    return '';
+  }
+
+  /**
+   * Extracts clean class string for preview rendering (e.g. from <i class="fa-solid fa-star"></i>).
+   * @param val Raw icon string.
+   * @returns Sanitized CSS class list.
+   */
+  getCleanIconClass(val?: string): string {
+    const raw = (val || '').trim();
+    if (!raw) return 'fa-solid fa-star';
+    const match = raw.match(/class=["']([^"']+)["']/i);
+    if (match) return match[1].trim();
+    return raw.replace(/[<>"']/g, '').trim();
+  }
+
+  /**
+   * Extracts image source URL for preview rendering.
+   * @param val Raw icon string.
+   * @returns Image source URL.
+   */
+  getIconSrc(val?: string): string {
+    const raw = (val || '').trim();
+    if (!raw) return '';
+    const match = raw.match(/src=["']([^"']+)["']/i);
+    if (match) return match[1].trim();
+    return raw;
   }
 }

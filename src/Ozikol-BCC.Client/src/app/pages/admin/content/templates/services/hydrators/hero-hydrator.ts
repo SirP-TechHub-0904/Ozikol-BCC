@@ -4,7 +4,8 @@ import {
   replaceDepthAwareEach,
   replaceCommonScalars,
   scrubRemainingTokens,
-  injectDynamicForms
+  injectDynamicForms,
+  hydrateIconTokens
 } from './hydration-core.utils';
 
 /**
@@ -83,8 +84,13 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, slideDesc);
       rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?(?:MoreDescription|FullDescription)\s*\}?\}\}/gi, slideFullDesc);
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || item.iconText || 'star');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || item.icon || '');
+
+      // Polymorphic Slide Icon Replacement
+      const slideIconVal = item.iconText || item.icon || '';
+      if (slideIconVal) {
+        rendered = hydrateIconTokens(rendered, '(?:PageSectionList\\.|this\\.)?(?:IconText|Icon)', slideIconVal, item.title || 'Slide Icon');
+      }
+
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?SecondaryButtonText\s*\}\}/gi, item.secondaryButtonText || '');
@@ -148,7 +154,9 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
+  if (ctx.iconText) {
+    output = hydrateIconTokens(output, '(?:PageSection\\.)?(?:IconText|Icon)', ctx.iconText, ctx.title || 'Hero Icon');
+  }
 
   // 8. Replace Brand Scalars & CustomClass
   output = replaceCommonScalars(output, ctx);

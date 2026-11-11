@@ -4,7 +4,8 @@ import {
   replaceDepthAwareEach,
   replaceCommonScalars,
   scrubRemainingTokens,
-  injectDynamicForms
+  injectDynamicForms,
+  hydrateIconTokens
 } from './hydration-core.utils';
 
 /**
@@ -110,8 +111,13 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, itemDesc);
       rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?(?:MoreDescription|FullDescription)\s*\}?\}\}/gi, itemFullDesc);
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || item.iconText || 'verified');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || item.icon || 'verified');
+
+      // Polymorphic Icon Replacement (handles <img> tags, class attributes, and standalone tokens)
+      const itemIconVal = item.iconText || item.icon || '';
+      if (itemIconVal) {
+        rendered = hydrateIconTokens(rendered, '(?:PageSectionList\\.|this\\.)?(?:IconText|Icon)', itemIconVal, item.title || 'Item Icon');
+      }
+
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ImageUrl\s*\}\}/gi, item.imageUrl || '');
@@ -138,7 +144,9 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
+  if (ctx.iconText) {
+    output = hydrateIconTokens(output, '(?:PageSection\\.)?(?:IconText|Icon)', ctx.iconText, ctx.title || 'Section Icon');
+  }
   output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
   output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');
 

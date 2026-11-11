@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { hydrateIconTokens } from './hydrators/hydration-core.utils';
 
 /**
  * Options and environment state required for template hydration.
@@ -480,8 +481,9 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?Description\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iDesc ? content : ''));
 
         // Replace item-level tokens
-        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?IconText\s*\}\}/gi, icon);
-        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?Icon\s*\}\}/gi, icon);
+        if (icon) {
+          renderedItem = hydrateIconTokens(renderedItem, '(?:PageSectionList\\.)?(?:IconText|Icon)', icon, item.title || 'Item Icon');
+        }
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
         renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?MiniTitle\s*\}\}/gi, item.miniTitle || '');
         renderedItem = renderedItem.replace(/\{\{\{?\s*(?:PageSectionList\.)?Description\s*\}?\}\}/gi, iDesc);
