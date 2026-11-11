@@ -3851,9 +3851,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const finalUrl = raw.startsWith('http://') || raw.startsWith('https://')
           ? raw
           : (raw === '/' || raw === 'home' ? '/' : `/${raw.replace(/^\/+/, '')}`);
+        const isAuthDirect = (raw.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
+        const displayTitle = isAuthDirect && authed
+          ? (isAdmin ? 'Admin Console' : 'Member Portal')
+          : (p.title || p.Title || '');
+        const targetUrl = isAuthDirect && authed
+          ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace')
+          : finalUrl;
         return {
-          title: p.title || p.Title || '',
-          url: finalUrl,
+          title: displayTitle,
+          url: targetUrl,
           customClass: p.customClass || ''
         };
       });
