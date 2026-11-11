@@ -27,8 +27,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   // 2. Section Headline Conditionals
   const hasTitle = Boolean(ctx.title && ctx.title.trim().length > 0);
   const hasMiniTitle = Boolean((ctx.miniTitle && ctx.miniTitle.trim().length > 0) || (ctx.subTitle && ctx.subTitle.trim().length > 0));
-  const hasDesc = Boolean((ctx.description && ctx.description.trim().length > 0) || (ctx.fullDescription && ctx.fullDescription.trim().length > 0));
-  const hasFullDesc = Boolean((ctx.fullDescription && ctx.fullDescription.trim().length > 0) || (ctx.description && ctx.description.trim().length > 0));
+  const hasDesc = Boolean(ctx.description && ctx.description.trim().length > 0);
+  const hasFullDesc = Boolean(ctx.fullDescription && ctx.fullDescription.trim().length > 0);
   const isButtonDisabled = Boolean(ctx.disableButton || (ctx as any).DisableButton);
   const hasButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0 && !isButtonDisabled);
   const hasButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#' && !isButtonDisabled);
@@ -88,8 +88,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       // Parent PageSection tokens accessible inside loop via PageSection. or ../
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)Title\s*\}\}/gi, ctx.title || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
-      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)Description\s*\}?\}\}/gi, ctx.description || ctx.fullDescription || '');
-      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)Description\s*\}?\}\}/gi, ctx.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)FullDescription\s*\}?\}\}/gi, ctx.fullDescription || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonText || '') : '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonLink || '#') : '#');
@@ -109,8 +109,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       rendered = rendered.replace(/\{\{#unless\s+@last\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isLast ? '' : '$1');
 
       // Item Card Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
-      const itemDesc = item.description || item.moreDescription || item.fullDescription || '';
-      const itemFullDesc = item.fullDescription || item.moreDescription || item.description || '';
+      const itemDesc = item.description || '';
+      const itemFullDesc = item.moreDescription || item.fullDescription || '';
       const hasItemDesc = Boolean(itemDesc && itemDesc.trim().length > 0);
       const hasItemFullDesc = Boolean(itemFullDesc && itemFullDesc.trim().length > 0);
 
@@ -161,8 +161,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   // 4. Section Level Scalars (supports {{ Title }} or {{ PageSection.Title }})
   output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
-  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || ctx.fullDescription || '');
-  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:Quote|Qoute)\s*\}\}/gi, ctx.quote || ctx.qoute || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonText || '') : '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonLink || '#') : '#');

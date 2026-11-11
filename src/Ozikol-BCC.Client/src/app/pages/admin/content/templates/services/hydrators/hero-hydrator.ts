@@ -52,16 +52,20 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*@activeClass\s*\}\}/gi, idx === 0 ? 'active' : '');
 
       // Parent PageSection conditionals inside slide loop
+      const hasHeroDescOutside = Boolean(ctx.description && ctx.description.trim().length > 0);
+      const hasHeroFullDescOutside = Boolean(ctx.fullDescription && ctx.fullDescription.trim().length > 0);
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)MiniTitle', Boolean(ctx.miniTitle || ctx.subTitle));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ImageUrl', Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)SecondaryButtonText', Boolean(ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)Description', Boolean(ctx.description && ctx.description.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)Description', hasHeroDescOutside);
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)FullDescription', hasHeroFullDescOutside);
 
       // Parent PageSection tokens accessible inside slide loop via PageSection. or ../
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)Title\s*\}\}/gi, ctx.title || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)Description\s*\}?\}\}/gi, ctx.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)FullDescription\s*\}?\}\}/gi, ctx.fullDescription || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, ctx.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
@@ -83,8 +87,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondaryButtonText|SecondButtonText)', Boolean((item.secondButtonText && item.secondButtonText.trim().length > 0) || (item.secondaryButtonText && item.secondaryButtonText.trim().length > 0)));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondaryButtonLink|SecondButtonLink)', Boolean((item.secondButtonLink && item.secondButtonLink.trim().length > 0 && item.secondButtonLink !== '#') || (item.secondaryButtonLink && item.secondaryButtonLink.trim().length > 0 && item.secondaryButtonLink !== '#')));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Icon', Boolean(item.icon && item.icon.trim().length > 0));
-      const slideDesc = item.description || item.moreDescription || item.fullDescription || '';
-      const slideFullDesc = item.fullDescription || item.moreDescription || item.description || '';
+      const slideDesc = item.description || '';
+      const slideFullDesc = item.moreDescription || item.fullDescription || '';
 
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Description', Boolean(slideDesc && slideDesc.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:MoreDescription|FullDescription)', Boolean(slideFullDesc && slideFullDesc.trim().length > 0));
@@ -121,8 +125,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   // 3. Section Headline & Media Conditionals (for Root Section)
   const hasHeroTitle = Boolean(ctx.title && ctx.title.trim().length > 0);
   const hasHeroMiniTitle = Boolean((ctx.miniTitle && ctx.miniTitle.trim().length > 0) || (ctx.subTitle && ctx.subTitle.trim().length > 0));
-  const hasHeroDesc = Boolean((ctx.description && ctx.description.trim().length > 0) || (ctx.fullDescription && ctx.fullDescription.trim().length > 0));
-  const hasHeroFullDesc = Boolean((ctx.fullDescription && ctx.fullDescription.trim().length > 0) || (ctx.description && ctx.description.trim().length > 0));
+  const hasHeroDesc = Boolean(ctx.description && ctx.description.trim().length > 0);
+  const hasHeroFullDesc = Boolean(ctx.fullDescription && ctx.fullDescription.trim().length > 0);
   const isHeroButtonDisabled = Boolean(ctx.disableButton || (ctx as any).DisableButton);
   const hasHeroButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0 && !isHeroButtonDisabled);
   const hasHeroButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#' && !isHeroButtonDisabled);
@@ -151,8 +155,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   // 4. Headline Scalars (for Root Section - supports {{ Title }} or {{ PageSection.Title }})
   output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
-  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || ctx.fullDescription || '');
-  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:Quote|Qoute)\s*\}\}/gi, ctx.quote || ctx.qoute || '');
 
   // 5. Button Scalars (for Root Section)

@@ -475,8 +475,8 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?(?:SecondButtonText|SecondaryButtonText)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => ((item.secondButtonText || item.secondaryButtonText) ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?(?:SecondButtonLink|SecondaryButtonLink)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => ((item.secondButtonLink || item.secondaryButtonLink) ? content : ''));
-        const iDesc = item.description || item.moreDescription || item.fullDescription || '';
-        const iFullDesc = item.fullDescription || item.moreDescription || item.description || '';
+        const iDesc = item.description || '';
+        const iFullDesc = item.moreDescription || item.fullDescription || '';
 
         renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?MoreDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iFullDesc ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?FullDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iFullDesc ? content : ''));
@@ -929,8 +929,8 @@ export class TemplateHydrationService {
       'PageSection.Title': ctx.title || ctx.Title || '',
       'PageSection.MiniTitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
       'PageSection.Subtitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
-      'PageSection.Description': ctx.description || ctx.Description || ctx.fullDescription || ctx.FullDescription || '',
-      'PageSection.FullDescription': ctx.fullDescription || ctx.FullDescription || ctx.description || ctx.Description || '',
+      'PageSection.Description': ctx.description || ctx.Description || '',
+      'PageSection.FullDescription': ctx.fullDescription || ctx.FullDescription || '',
       'ButtonText': !isBtnDisabled ? (ctx.buttonText || ctx.ButtonText || '') : '',
       'ButtonLink': !isBtnDisabled ? (ctx.buttonLink || ctx.ButtonLink || '') : '',
       'SecondButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondButtonText || '') : '',
@@ -1049,16 +1049,16 @@ export class TemplateHydrationService {
 
     // 7. Scalar placeholders matching C# Domain Models (PageSection, PageSectionList, BrandSettings)
     // Rich-text triple mustache unescaped passes
-    output = output.replace(/\{\{\{\s*FullDescription\s*\}\}\}/gi, ctx.fullDescription || ctx.description || '');
-    output = output.replace(/\{\{\{\s*Description\s*\}\}\}/gi, ctx.description || ctx.fullDescription || '');
+    output = output.replace(/\{\{\{\s*(?:PageSection\.)?FullDescription\s*\}\}\}/gi, ctx.fullDescription || ctx.FullDescription || '');
+    output = output.replace(/\{\{\{\s*(?:PageSection\.)?Description\s*\}\}\}/gi, ctx.description || ctx.Description || '');
     output = output.replace(/\{\{\{\s*Article\.Body\s*\}\}\}/gi, artBody);
 
-    // Standard PageSection model properties
-    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || ctx.Title || opts.previewBlogContent?.title || '');
-    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || ctx.MiniTitle || opts.previewBlogContent?.miniTitle || '');
-    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
-    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.Description || ctx.text || opts.previewBlogContent?.description || '');
-    output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.FullDescription || ctx.description || '');
+    // Standard PageSection model properties (1 DB Column = 1 Token, zero cross-fallback)
+    output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || ctx.Title || opts.previewBlogContent?.title || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?MiniTitle\s*\}\}/gi, ctx.miniTitle || ctx.MiniTitle || opts.previewBlogContent?.miniTitle || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?Text\s*\}\}/gi, ctx.text || ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?Description\s*\}\}/gi, ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.FullDescription || '');
     output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || ctx.Qoute || ctx.Quote || '');
     output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || ctx.Quote || ctx.Qoute || '');
     output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || ctx.DirectUrl || '');

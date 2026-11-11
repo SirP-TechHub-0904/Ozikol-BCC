@@ -803,11 +803,12 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
           title: custom.title || p.title || 'Architected for High-Throughput Performance',
           miniTitle: custom.miniTitle || 'MODULAR CAPABILITIES',
           description: custom.description || 'Engineered from the ground up to support ultra-low latency transaction processing and autonomous distributed compute.',
+          fullDescription: custom.fullDescription || '<p>Our distributed architecture pairs automated failover with regional data residency, giving operations teams full visibility across hybrid clusters without manual intervention.</p>',
           imageUrl: custom.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&auto=format&fit=crop&q=80',
           pageSectionLists: custom.pageSectionLists || custom.items || [
-            { title: 'Data Security & Encryption', description: 'AES-256 in flight and at rest with hardware key vault isolation.', iconText: 'fa-solid fa-shield-halved' },
-            { title: 'Elastic Horizontal Scaling', description: 'Dynamic pod auto-balancing supporting over 100,000 transactions/sec.', iconText: 'fa-solid fa-bolt' },
-            { title: 'Global Telemetry Mesh', description: 'Real-time observability and crash tracing across hybrid cloud edges.', iconText: 'fa-solid fa-chart-line' }
+            { title: 'Data Security & Encryption', description: 'AES-256 in flight and at rest with hardware key vault isolation.', moreDescription: '<p>Managed hardware security modules rotate tenant encryption keys automatically.</p>', iconText: 'fa-solid fa-shield-halved' },
+            { title: 'Elastic Horizontal Scaling', description: 'Dynamic pod auto-balancing supporting over 100,000 transactions/sec.', moreDescription: '<p>Predictive warm pools scale compute nodes ahead of peak demand spikes.</p>', iconText: 'fa-solid fa-bolt' },
+            { title: 'Global Telemetry Mesh', description: 'Real-time observability and crash tracing across hybrid cloud edges.', moreDescription: '<p>Unified distributed traces correlate gateway latency with database execution.</p>', iconText: 'fa-solid fa-chart-line' }
           ]
         };
 

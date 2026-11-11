@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Constants;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Application.Services.Cloudflare;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -4656,57 +4657,13 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
      * NEVER invent non-existent tokens like Brand.Email, Brand.Address, Brand.Phone, Brand.LogoUrl, or PageCategories.
      * NEVER truncate or stop after closing header tags. Return 100% of the entire HTML document including all sibling drawers and overlays.
 
-2. Hero Banners & Image Sliders (Category: hero / slider):
-   - Static Hero: Headline {{{{ Title }}}}, Eyebrow {{{{ MiniTitle }}}}, Lead {{{{ Description }}}}, Image src=""{{{{ ImageUrl }}}}"" or style=""background-image: url('{{{{ ImageUrl }}}}');"".
-   - Primary Action Button: {{{{ #if ButtonText }}}}<a href=""{{{{ ButtonLink }}}}"">{{{{ ButtonText }}}}</a>{{{{ /if }}}}.
-   - Secondary Action Button: {{{{ #if SecondaryButtonText }}}}<a href=""{{{{ SecondaryButtonLink }}}}"">{{{{ SecondaryButtonText }}}}</a>{{{{ /if }}}}.
-   - Slider / Carousel Mode (Swiper, Slick, Owl, Splide, Bootstrap Carousel):
+2. Hero Banners, Image Sliders & Body Sections (Category: hero / slider / body / bodysections / PageSection / PageSectionList):
+{CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec()}
+   - Additional Slider / Carousel Rules (Swiper, Slick, Owl, Splide, Bootstrap Carousel):
      * Discard infinite-loop cloned slides (e.g. 'swiper-slide-duplicate', 'slick-cloned').
      * Strip library runtime state classes from slides ('swiper-slide-active', 'swiper-slide-visible', 'slick-active') and containers ('swiper-initialized', 'slick-initialized').
-     * Strip runtime inline styling ('width: ...px', 'transform: translate3d(...)', 'opacity: 0|1') while keeping background-image: url('{{{{ ImageUrl }}}}').
+     * Strip runtime inline styling ('width: ...px', 'transform: translate3d(...)', 'opacity: 0|1') while keeping background-image: url('{{{{ PageSectionList.ImageUrl }}}}').
      * Strip auto-generated IDs and aria attributes (id=""swiper-wrapper-..."", data-swiper-slide-index=""..."").
-     * Wrap repeating slides in:
-       {{{{#each PageSectionLists}}}}
-         <div class=""[clean slide classes]"">
-           {{{{#if ImageUrl}}}}<div class=""item-bg"" style=""background-image: url('{{{{ ImageUrl }}}}');""></div>{{{{/if}}}}
-           {{{{#if MiniTitle}}}}<span class=""[original classes]"">{{{{ MiniTitle }}}}</span>{{{{/if}}}}
-           <h1 class=""[original classes]"">{{{{ Title }}}}</h1>
-           <p class=""[original classes]"">{{{{ Description }}}}</p>
-           {{{{#if ButtonText}}}}<a href=""{{{{ ButtonLink }}}}"">{{{{ ButtonText }}}}</a>{{{{/if}}}}
-           {{{{#if SecondaryButtonText}}}}<a href=""{{{{ SecondaryButtonLink }}}}"">{{{{ SecondaryButtonText }}}}</a>{{{{/if}}}}
-         </div>
-       {{{{/each}}}}
-
-3. Body Sections & Content Blocks (Category: body / bodysections / PageSection):
-   - Page Headline: {{{{ Title }}}}
-   - Subtitle / Eyebrow Badge: {{{{ MiniTitle }}}}
-   - Summary Paragraph: {{{{ Description }}}}
-   - Pure Rich HTML Body (Terms & Conditions, Privacy Policy, Story Narrative): {{{{ FullDescription }}}}
-   - Highlight / Quote: {{{{ Qoute }}}}
-   - Primary Image: src=""{{{{ ImageUrl }}}}""
-   - Secondary Image / Collage: src=""{{{{ SecondImageUrl }}}}""
-   - Video URL: src=""{{{{ VideoUrl }}}}""
-   - YouTube Embed: src=""{{{{ YoutubeUrlLink }}}}""
-   - Root Icon Class: <i class=""{{{{ IconText }}}}""></i>
-   - Primary CTA Button: {{{{ ButtonText }}}} with href=""{{{{ ButtonLink }}}}""
-   - Secondary CTA Button: {{{{ SecondaryButtonText }}}} with href=""{{{{ SecondaryButtonLink }}}}""
-   - Route / Anchor: href=""{{{{ DirectUrl }}}}""
-   - Dynamic Form Embeds (Contact Us, Newsletter, Quote Request): {{{{ Form ""Contact_Us"" }}}} or {{{{ FormEmbed }}}}
-   - Custom Container Class: {{{{ CustomClass }}}}
-
-3. Repeatable Child Cards / Slides (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials, Hero Sliders):
-   Wrap repeating cards/items in:
-   {{{{#each PageSectionLists}}}}
-     <div class=""card"">
-       <i class=""{{{{ PageSectionList.IconText }}}}""></i>
-       <span class=""badge"">{{{{ PageSectionList.MiniTitle }}}}</span>
-       <img src=""{{{{ PageSectionList.ImageUrl }}}}"" alt=""{{{{ PageSectionList.Title }}}}"" />
-       <h3>{{{{ PageSectionList.Title }}}}</h3>
-       <p>{{{{ PageSectionList.Description }}}}</p>
-       <small>{{{{ PageSectionList.MoreDescription }}}}</small>
-       <a href=""{{{{ PageSectionList.ButtonLink }}}}"" class=""btn"">{{{{ PageSectionList.ButtonText }}}}</a>
-     </div>
-   {{{{/each}}}}
 
 4. Footers (Category: footer):
    - Brand Identity:
@@ -4863,8 +4820,7 @@ User Message: ""{prompt}""
 
 CANONICAL OZIKOL TOKENS KNOWLEDGE:
 - Navigation Menus: {{{{ HomeUrl }}}}, {{{{ BrandLogo }}}}, {{{{ BrandName }}}}, {{{{ BrandIdentity }}}}, {{{{#each NavItems=""first""}}}}, {{{{#each NavItems=""middle""}}}}, {{{{#each NavItems=""last""}}}}, {{{{#each MainMenuItems=""top""}}}}, {{{{#each MenuCtaButtons}}}}, {{{{ LoginUrl }}}}, {{{{ LoginText }}}}.
-- Root Section Tokens: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ FullDescription }}}}, {{{{ Qoute }}}}, {{{{ ImageUrl }}}}, {{{{ SecondImageUrl }}}}, {{{{ VideoUrl }}}}, {{{{ YoutubeUrlLink }}}}, {{{{ IconText }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}, {{{{ SecondButtonText }}}}, {{{{ SecondButtonLink }}}}, {{{{ DirectUrl }}}}.
-- Repeating Cards Loop: {{{{#SectionLists}}}} ... {{{{#/SectionLists}}}} (using child tokens: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ MoreDescription }}}}, {{{{ IconText }}}}, {{{{ ImageUrl }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}).
+{CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec()}
 
 Instructions:
 - If the user is greeting you (e.g. 'hi', 'hello', 'hey'), respond warmly, concisely and naturally as Ozi AI, mentioning how you can assist them on this active screen ({request.PageTitle ?? "Studio Console"}). Do NOT repeat robotic scripts.

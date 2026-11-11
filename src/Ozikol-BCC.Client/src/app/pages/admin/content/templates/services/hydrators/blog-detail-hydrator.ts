@@ -116,8 +116,8 @@ export function hydrateBlogDetail(template: string, ctx: HydrationContext): stri
     }).join('\n');
   });
 
-  // 6. Article Content & Body (Triple-mustaches first to preserve HTML tags)
-  const resolvedBody = ctx.body || ctx.fullDescription || ctx.content || ctx.description || '<p>Article content goes here.</p>';
+  // 6. Article Content & Body (Triple-mustaches first to preserve HTML tags; no summary/description fallback)
+  const resolvedBody = ctx.body || ctx.fullDescription || ctx.content || '<p>Article content goes here.</p>';
   output = output.replace(/\{\{\{\s*(?:Body|FullDescription|Content)\s*\}\}\}/gi, resolvedBody);
   output = output.replace(/\{\{\s*(?:Body|FullDescription|Content)\s*\}\}/gi, resolvedBody);
 

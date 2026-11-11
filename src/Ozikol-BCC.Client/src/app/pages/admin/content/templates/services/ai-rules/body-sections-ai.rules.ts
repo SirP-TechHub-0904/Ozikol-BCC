@@ -1,4 +1,5 @@
 import type { AiRuleContext, ICategoryAiRule } from './category-ai-rule.interface';
+import { getBodySectionTargetPlaceholders } from '../canonical-tokens.registry';
 
 /**
  * AI Transformation Rule Strategy for Body Sections, Feature Grids, Services, Pricing, FAQs & Cards ('body' / 'cards').
@@ -7,84 +8,51 @@ export class BodySectionsAiRule implements ICategoryAiRule {
   readonly categoryKey = 'body';
   readonly displayName = 'Body Section';
 
-  readonly targetPlaceholders: string[] = [
-    '{{ PageSection.Title }}',
-    '{{ PageSection.MiniTitle }}',
-    '{{ PageSection.Description }}',
-    '{{ PageSection.FullDescription }}',
-    '{{ PageSection.ImageUrl }}',
-    '{{ PageSection.ButtonText }}',
-    '{{ PageSection.ButtonLink }}',
-    '{{#each PageSectionLists}}',
-    '{{ PageSectionList.Title }}',
-    '{{ PageSectionList.MiniTitle }}',
-    '{{ PageSectionList.Description }}',
-    '{{ PageSectionList.MoreDescription }}',
-    '{{ PageSectionList.ImageUrl }}',
-    '{{ PageSectionList.IconText }}',
-    '{{ PageSectionList.ButtonText }}',
-    '{{ PageSectionList.ButtonLink }}',
-    '{{ PageSectionList.SecondButtonText }}',
-    '{{ PageSectionList.SecondButtonLink }}',
-    '{{ PageSectionList.SortOrder }}',
-    '{{ Title }}',
-    '{{ MiniTitle }}',
-    '{{ Description }}',
-    '{{ FullDescription }}',
-    '{{ Qoute }}',
-    '{{ ImageUrl }}',
-    '{{ SecondImageUrl }}',
-    '{{ VideoUrl }}',
-    '{{ YoutubeUrlLink }}',
-    '{{ IconText }}',
-    '{{ ButtonText }}',
-    '{{ ButtonLink }}',
-    '{{ SecondButtonText }}',
-    '{{ SecondButtonLink }}',
-    '{{ DirectUrl }}',
-    '{{ MoreDescription }}',
-    '{{ SortOrder }}',
-    '{{ Form "Contact_Us" }}',
-    '{{ CustomClass }}'
-  ];
+  readonly targetPlaceholders: string[] = getBodySectionTargetPlaceholders();
 
   buildSurgicalPrompt(context: AiRuleContext): string {
     return `You are a specialized surgical code transformer for Ozikol BCC CMS Body Sections (Feature Grids, Service Lists, Pricing Tables, FAQs, Testimonials, Process Steps, Split Showcases, Stats Counters, CTA Banners).
 Your mission is to analyze raw HTML markup and surgically replace static text and repeated hardcoded cards with canonical Ozikol Handlebars tokens.
 
+STRICT 1-TO-1 DISCRETE FIELD CONTRACT (NEVER CONFLATE DESCRIPTION WITH FULLDESCRIPTION):
+- {{ PageSection.Description }} maps strictly to the short plain-text summary field (PageSection.Description).
+- {{{ PageSection.FullDescription }}} maps strictly to the rich WYSIWYG HTML body field (PageSection.FullDescription) and MUST always render inside a <div> (NEVER inside <p>, and NEVER reuse Description).
+- Inside {{#each PageSectionLists}}, {{ PageSectionList.Description }} is short card text and {{{ PageSectionList.MoreDescription }}} is extended rich HTML card detail.
+- ALWAYS prefix parent tokens with PageSection. and repeating item tokens with PageSectionList. so there is zero scope ambiguity.
+
 TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
 
 1. SECTION-LEVEL HEADERS & NARRATIVE (PageSection):
    - Eyebrow / Kicker / Category Badge:
-     {{#if MiniTitle}}<span class="[original badge classes]">{{ MiniTitle }}</span>{{/if}}
+     {{#if PageSection.MiniTitle}}<span class="[original badge classes]">{{ PageSection.MiniTitle }}</span>{{/if}}
    - Main Section Title / Headline:
-     {{ Title }} (preserve existing <h2> or <h3> tag and its classes)
-   - Intro Subtitle / Paragraph Excerpt:
-     {{#if Description}}<p class="[original intro classes]">{{ Description }}</p>{{/if}}
-   - Rich Body / Extended Description (for Split showcases):
-     {{{ FullDescription }}}
+     {{ PageSection.Title }} (preserve existing <h2> or <h3> tag and its classes)
+   - Short Introductory Summary (plain text excerpt only):
+     {{#if PageSection.Description}}<p class="[original intro classes]">{{ PageSection.Description }}</p>{{/if}}
+   - Extended Rich HTML Narrative (split showcases, long WYSIWYG copy):
+     {{#if PageSection.FullDescription}}<div class="[original rich-text classes]">{{{ PageSection.FullDescription }}}</div>{{/if}}
    - Highlight Quote / Blockquote:
-     {{#if Qoute}}<blockquote class="[original classes]"><p>{{ Qoute }}</p></blockquote>{{/if}}
+     {{#if PageSection.Qoute}}<blockquote class="[original classes]"><p>{{ PageSection.Qoute }}</p></blockquote>{{/if}}
 
 2. SECTION-LEVEL CTAs (Dual Action Buttons):
    - Primary Action Button:
-     {{#if ButtonText}}
-       <a href="{{ ButtonLink }}" class="[original btn classes]">{{ ButtonText }}</a>
+     {{#if PageSection.ButtonText}}
+       <a href="{{ PageSection.ButtonLink }}" class="[original btn classes]">{{ PageSection.ButtonText }}</a>
      {{/if}}
    - Secondary Action Button (if present):
-     {{#if SecondButtonText}}
-       <a href="{{ SecondButtonLink }}" class="[original secondary btn classes]">{{ SecondButtonText }}</a>
+     {{#if PageSection.SecondButtonText}}
+       <a href="{{ PageSection.SecondButtonLink }}" class="[original secondary btn classes]">{{ PageSection.SecondButtonText }}</a>
      {{/if}}
 
 3. SECTION-LEVEL MEDIA & VIDEO (PageSection):
    - Primary Graphic / Hero Showcase / Split Visual:
-     {{#if ImageUrl}}<img src="{{ ImageUrl }}" alt="{{ Title }}" class="[original img classes]" />{{/if}}
+     {{#if PageSection.ImageUrl}}<img src="{{ PageSection.ImageUrl }}" alt="{{ PageSection.Title }}" class="[original img classes]" />{{/if}}
    - Secondary Collage Visual:
-     {{#if SecondImageUrl}}<img src="{{ SecondImageUrl }}" alt="Showcase" class="[original classes]" />{{/if}}
+     {{#if PageSection.SecondImageUrl}}<img src="{{ PageSection.SecondImageUrl }}" alt="Showcase" class="[original classes]" />{{/if}}
    - Direct Video URL:
-     {{#if VideoUrl}}<video src="{{ VideoUrl }}" class="[original video classes]"></video>{{/if}}
+     {{#if PageSection.VideoUrl}}<video src="{{ PageSection.VideoUrl }}" class="[original video classes]"></video>{{/if}}
    - YouTube / Video Popup Link:
-     {{#if YoutubeUrlLink}}<a href="{{ YoutubeUrlLink }}" class="[original video-btn classes]">{{/if}}
+     {{#if PageSection.YoutubeUrlLink}}<a href="{{ PageSection.YoutubeUrlLink }}" class="[original video-btn classes]">{{/if}}
 
 4. REPEATABLE CHILD ITEMS LOOP (PageSectionLists - MANDATORY SCOPING):
    Detect repeating sibling elements in grids, rows, accordions, or carousels (e.g. 3, 4, or 6 feature columns, service boxes, pricing tier cards, testimonial cards, process step boxes, FAQ items).

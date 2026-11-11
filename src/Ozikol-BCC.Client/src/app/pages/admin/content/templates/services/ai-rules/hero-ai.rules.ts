@@ -1,4 +1,5 @@
 import type { AiRuleContext, ICategoryAiRule } from './category-ai-rule.interface';
+import { getHeroSectionTargetPlaceholders } from '../canonical-tokens.registry';
 
 /**
  * AI Transformation Rule Strategy for Hero Banners & Showcase Sliders ('hero').
@@ -7,70 +8,45 @@ export class HeroAiRule implements ICategoryAiRule {
   readonly categoryKey = 'hero';
   readonly displayName = 'Hero Section';
 
-  readonly targetPlaceholders: string[] = [
-    '{{ PageSection.Title }}',
-    '{{ PageSection.MiniTitle }}',
-    '{{ PageSection.Description }}',
-    '{{ PageSection.ImageUrl }}',
-    '{{ PageSection.ButtonText }}',
-    '{{ PageSection.ButtonLink }}',
-    '{{#each PageSectionLists}}',
-    '{{ PageSectionList.Title }}',
-    '{{ PageSectionList.MiniTitle }}',
-    '{{ PageSectionList.Description }}',
-    '{{ PageSectionList.ImageUrl }}',
-    '{{ PageSectionList.ButtonText }}',
-    '{{ PageSectionList.ButtonLink }}',
-    '{{ PageSectionList.SecondaryButtonText }}',
-    '{{ PageSectionList.SecondaryButtonLink }}',
-    '{{ Title }}',
-    '{{ MiniTitle }}',
-    '{{ SubTitle }}',
-    '{{ Description }}',
-    '{{ FullDescription }}',
-    '{{ ButtonText }}',
-    '{{ ButtonLink }}',
-    '{{ SecondaryButtonText }}',
-    '{{ SecondaryButtonLink }}',
-    '{{ ImageUrl }}',
-    '{{ SecondImageUrl }}',
-    '{{ VideoUrl }}',
-    '{{ YoutubeUrlLink }}',
-    '{{ CustomClass }}'
-  ];
+  readonly targetPlaceholders: string[] = getHeroSectionTargetPlaceholders();
 
   buildSurgicalPrompt(context: AiRuleContext): string {
     return `You are a specialized surgical code transformer for Ozikol BCC CMS Hero Sections and Banners.
 Your mission is to replace static text, images, and action links in the provided HTML with canonical Ozikol Handlebars tokens.
 
+STRICT 1-TO-1 DISCRETE FIELD CONTRACT:
+- Parent Hero fields MUST use PageSection.* prefix ({{ PageSection.Title }}, {{ PageSection.Description }}, {{{ PageSection.FullDescription }}}).
+- Slide repeater fields inside {{#each PageSectionLists}} MUST use PageSectionList.* prefix ({{ PageSectionList.Title }}, {{ PageSectionList.Description }}, {{{ PageSectionList.MoreDescription }}}).
+- NEVER reuse Description where FullDescription/MoreDescription belongs, and ALWAYS render {{{ PageSection.FullDescription }}} / {{{ PageSectionList.MoreDescription }}} inside a <div>.
+
 TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
 1. Headlines & Eyebrows:
-   - Eyebrow / Subtitle / Badge: {{ MiniTitle }} or {{ SubTitle }}
-   - Main Hero Headline / H1: {{ Title }}
-   - Hero Description Paragraph: {{ Description }}
-   - Extended Text / Supporting Copy: {{ FullDescription }}
+   - Eyebrow / Subtitle / Badge: {{#if PageSection.MiniTitle}}<span class="[original classes]">{{ PageSection.MiniTitle }}</span>{{/if}}
+   - Main Hero Headline / H1: {{ PageSection.Title }}
+   - Short Hero Summary Paragraph: {{#if PageSection.Description}}<p class="[original classes]">{{ PageSection.Description }}</p>{{/if}}
+   - Extended Rich Supporting Copy: {{#if PageSection.FullDescription}}<div class="[original classes]">{{{ PageSection.FullDescription }}}</div>{{/if}}
 
 2. Call to Action (CTA) Buttons:
    - Primary Action Button:
-     {{#if ButtonText}}
-       <a href="{{ ButtonLink }}" class="[original classes]">{{ ButtonText }}</a>
+     {{#if PageSection.ButtonText}}
+       <a href="{{ PageSection.ButtonLink }}" class="[original classes]">{{ PageSection.ButtonText }}</a>
      {{/if}}
    - Secondary Action Button:
-     {{#if SecondaryButtonText}}
-       <a href="{{ SecondaryButtonLink }}" class="[original classes]">{{ SecondaryButtonText }}</a>
+     {{#if PageSection.SecondButtonText}}
+       <a href="{{ PageSection.SecondButtonLink }}" class="[original classes]">{{ PageSection.SecondButtonText }}</a>
      {{/if}}
 
 3. Visual Media & Backgrounds:
    - Main Hero Image / Graphic:
-     {{#if ImageUrl}}
-       <img src="{{ ImageUrl }}" alt="{{ Title }}" class="[original classes]" />
+     {{#if PageSection.ImageUrl}}
+       <img src="{{ PageSection.ImageUrl }}" alt="{{ PageSection.Title }}" class="[original classes]" />
      {{/if}}
    - Background Cover Image:
-     {{#if ImageUrl}}
-       <div class="[original classes]" style="background-image: url('{{ ImageUrl }}');"></div>
+     {{#if PageSection.ImageUrl}}
+       <div class="[original classes]" style="background-image: url('{{ PageSection.ImageUrl }}');"></div>
      {{/if}}
-   - Secondary Image: {{ SecondImageUrl }}
-   - Video / Reel embed: {{ VideoUrl }} or {{ YoutubeUrlLink }}
+   - Secondary Image: {{ PageSection.SecondImageUrl }}
+   - Video / Reel embed: {{ PageSection.VideoUrl }} or {{ PageSection.YoutubeUrlLink }}
 
 4. Slider & Carousel Mode (Universal for Swiper, Slick, Owl, Splide, Bootstrap Carousel, etc.):
    When HTML contains a slider / carousel:
