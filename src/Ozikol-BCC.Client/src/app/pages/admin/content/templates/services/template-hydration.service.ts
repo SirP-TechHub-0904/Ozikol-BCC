@@ -472,21 +472,25 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{#if\s+ImageUrl\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.imageUrl ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+MiniTitle\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.miniTitle ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
-        renderedItem = renderedItem.replace(/\{\{#if\s+MoreDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.moreDescription ? content : ''));
-        renderedItem = renderedItem.replace(/\{\{#if\s+Description\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.description ? content : ''));
+        const iDesc = item.description || item.moreDescription || item.fullDescription || '';
+        const iFullDesc = item.fullDescription || item.moreDescription || item.description || '';
+
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?MoreDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iFullDesc ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?FullDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iFullDesc ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?Description\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iDesc ? content : ''));
 
         // Replace item-level tokens
-        renderedItem = renderedItem.replace(/\{\{\s*IconText\s*\}\}/gi, icon);
-        renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
-        renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
-        renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || '');
-        renderedItem = renderedItem.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
-        renderedItem = renderedItem.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || '');
-        renderedItem = renderedItem.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || '#');
-        renderedItem = renderedItem.replace(/\{\{\s*DirectUrl\s*\}\}/gi, item.directUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?IconText\s*\}\}/gi, icon);
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?Icon\s*\}\}/gi, icon);
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?MiniTitle\s*\}\}/gi, item.miniTitle || '');
+        renderedItem = renderedItem.replace(/\{\{\{?\s*(?:PageSectionList\.)?Description\s*\}?\}\}/gi, iDesc);
+        renderedItem = renderedItem.replace(/\{\{\{?\s*(?:PageSectionList\.)?(?:MoreDescription|FullDescription)\s*\}?\}\}/gi, iFullDesc);
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ImageUrl\s*\}\}/gi, item.imageUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?DirectUrl\s*\}\}/gi, item.directUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*SortOrder\s*\}\}/gi, (item.sortOrder !== undefined ? item.sortOrder : idx + 1).toString());
         renderedItem = renderedItem.replace(/\{\{\s*Index\s*\}\}/gi, (idx + 1).toString());
 
@@ -911,7 +915,17 @@ export class TemplateHydrationService {
       HomeUrl: homeUrl,
       websiteUrl: homeUrl,
       WebsiteUrl: homeUrl,
-      'Brand.WebsiteUrl': homeUrl
+      'Brand.WebsiteUrl': homeUrl,
+      'PageSection.Title': ctx.title || ctx.Title || '',
+      'PageSection.MiniTitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
+      'PageSection.Subtitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
+      'PageSection.Description': ctx.description || ctx.Description || ctx.fullDescription || ctx.FullDescription || '',
+      'PageSection.FullDescription': ctx.fullDescription || ctx.FullDescription || ctx.description || ctx.Description || '',
+      'PageSection.ButtonText': ctx.buttonText || ctx.ButtonText || '',
+      'PageSection.ButtonLink': ctx.buttonLink || ctx.ButtonLink || '',
+      'PageSection.ImageUrl': ctx.imageUrl || ctx.ImageUrl || '',
+      'PageSection.IconText': ctx.iconText || ctx.IconText || '',
+      'PageSection.Icon': ctx.iconText || ctx.IconText || ctx.icon || ''
     };
 
     let prevCondOutput = '';

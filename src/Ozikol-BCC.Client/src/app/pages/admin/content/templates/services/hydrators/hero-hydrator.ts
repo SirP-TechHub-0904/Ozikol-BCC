@@ -72,14 +72,17 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?SecondaryButtonText', Boolean(item.secondaryButtonText && item.secondaryButtonText.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Icon', Boolean(item.icon && item.icon.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Description', Boolean(item.description && item.description.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MoreDescription', Boolean(item.moreDescription && item.moreDescription.trim().length > 0));
+      const slideDesc = item.description || item.moreDescription || item.fullDescription || '';
+      const slideFullDesc = item.fullDescription || item.moreDescription || item.description || '';
+
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Description', Boolean(slideDesc && slideDesc.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:MoreDescription|FullDescription)', Boolean(slideFullDesc && slideFullDesc.trim().length > 0));
 
       // Slide Item Scalars (supports {{ PageSectionList.Title }}, {{ Title }}, {{ this.Title }})
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Title\s*\}\}/gi, item.title || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
-      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, item.description || '');
-      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, slideDesc);
+      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?(?:MoreDescription|FullDescription)\s*\}?\}\}/gi, slideFullDesc);
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || item.iconText || 'star');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || item.icon || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
