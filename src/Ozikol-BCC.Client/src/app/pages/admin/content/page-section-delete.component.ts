@@ -68,7 +68,7 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
 
             <div class="record-details">
-              <h2 class="record-title">{{ section.title }}</h2>
+              <h2 class="record-title">{{ section.title || '(Untitled Section)' }}</h2>
               <p class="record-sub">{{ section.subTitle || 'No subheadline specified.' }} &bull; Layout Type: <strong>{{ section.layoutType || 'Standard' }}</strong></p>
 
               <div class="meta-row">
@@ -211,7 +211,7 @@ import { ToastService } from '../../../core/services/toast.service';
               To confirm that you understand these consequences and intend to permanently destroy this page section, please type the exact section title:
             </p>
             <div class="target-title-pill" (click)="copyTitle()" title="Click to copy">
-              <code>{{ section.title }}</code>
+              <code>{{ getExpectedConfirmationText() }}</code>
             </div>
           </div>
 
@@ -852,9 +852,13 @@ export class PageSectionDeleteComponent implements OnInit {
     }
   }
 
+  getExpectedConfirmationText(): string {
+    return (this.section?.title || '').trim() || 'DELETE';
+  }
+
   isTitleMatched(): boolean {
-    if (!this.section?.title || !this.confirmationInput) return false;
-    return this.confirmationInput.trim().toLowerCase() === this.section.title.trim().toLowerCase();
+    if (!this.section || !this.confirmationInput) return false;
+    return this.confirmationInput.trim().toLowerCase() === this.getExpectedConfirmationText().toLowerCase();
   }
 
   canProceedWithDeletion(): boolean {
@@ -864,10 +868,9 @@ export class PageSectionDeleteComponent implements OnInit {
   }
 
   copyTitle(): void {
-    if (this.section?.title) {
-      navigator.clipboard?.writeText(this.section.title);
-      this.confirmationInput = this.section.title;
-    }
+    const expected = this.getExpectedConfirmationText();
+    navigator.clipboard?.writeText(expected);
+    this.confirmationInput = expected;
   }
 
   executeDelete(): void {

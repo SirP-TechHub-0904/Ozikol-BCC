@@ -43,7 +43,7 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
             </div>
             <div class="form-grid">
               <div class="form-group full-width">
-                <label>SECTION MAIN TITLE *</label>
+                <label>SECTION MAIN TITLE</label>
                 <input type="text" [(ngModel)]="section.title" class="form-control font-bold" placeholder="e.g. Empowering Our Community Through Action">
               </div>
 
@@ -1890,11 +1890,6 @@ export class PageSectionEditComponent implements OnInit, AfterViewInit {
 
   // --- Save / Create Section ---
   saveSection(): void {
-    if (!this.section?.title?.trim()) {
-      this.toast.warning('Section Title is required.');
-      return;
-    }
-
     if (this.showHtmlSource) {
       // already in fullDescription
     } else {

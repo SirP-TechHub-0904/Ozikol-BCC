@@ -43,7 +43,7 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
             </div>
             <div class="form-grid">
               <div class="form-group full-width">
-                <label>ITEM TITLE *</label>
+                <label>ITEM TITLE</label>
                 <input type="text" [(ngModel)]="item.title" class="form-control font-bold" placeholder="e.g. Health Outreach Program, Leadership Team">
               </div>
 
@@ -431,7 +431,7 @@ import { FilePickerModalComponent } from '../../../shared/components/file-picker
               </div>
               <select [(ngModel)]="item.pageSectionId" (ngModelChange)="onParentSectionChange($event)" class="form-control" [disabled]="!isEditMode && parentSection">
                 <option [ngValue]="null">-- Select Layout Section --</option>
-                <option *ngFor="let s of allSections" [ngValue]="s.id">{{ s.title }} ({{ s.templateKey || 'Block' }})</option>
+                <option *ngFor="let s of allSections" [ngValue]="s.id">{{ s.title || '(Untitled Section)' }} ({{ s.templateKey || 'Block' }})</option>
               </select>
 
               <!-- Active Parent Section Template Quick-Edit Card -->
@@ -1566,11 +1566,6 @@ export class PageSectionListEditComponent implements OnInit, AfterViewInit {
 
   // --- Save / Create ---
   saveItem(): void {
-    if (!this.item?.title?.trim()) {
-      this.toast.warning('Item Title is required.');
-      return;
-    }
-
     if (this.showHtmlSource) {
       // already in moreDescription
     } else {

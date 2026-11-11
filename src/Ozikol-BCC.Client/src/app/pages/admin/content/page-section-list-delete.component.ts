@@ -63,7 +63,7 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
 
             <div class="record-details">
-              <h2 class="record-title">{{ item.title }}</h2>
+              <h2 class="record-title">{{ item.title || '(Untitled Sub-Item)' }}</h2>
               <p class="record-sub">{{ item.description || 'No description provided.' }}</p>
 
               <div class="meta-row">
@@ -101,7 +101,7 @@ import { ToastService } from '../../../core/services/toast.service';
               To confirm that you understand these consequences and intend to permanently destroy this item, please type the exact item title:
             </p>
             <div class="target-title-pill" (click)="copyTitle()" title="Click to copy">
-              <code>{{ item.title }}</code>
+              <code>{{ getExpectedConfirmationText() }}</code>
             </div>
           </div>
 
@@ -394,7 +394,7 @@ export class PageSectionListDeleteComponent implements OnInit {
     private toast: ToastService,
     private route: ActivatedRoute,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(qp => {
@@ -427,16 +427,19 @@ export class PageSectionListDeleteComponent implements OnInit {
     });
   }
 
+  getExpectedConfirmationText(): string {
+    return (this.item?.title || '').trim() || 'DELETE';
+  }
+
   isTitleMatched(): boolean {
-    if (!this.item?.title || !this.confirmationInput) return false;
-    return this.confirmationInput.trim().toLowerCase() === this.item.title.trim().toLowerCase();
+    if (!this.item || !this.confirmationInput) return false;
+    return this.confirmationInput.trim().toLowerCase() === this.getExpectedConfirmationText().toLowerCase();
   }
 
   copyTitle(): void {
-    if (this.item?.title) {
-      navigator.clipboard?.writeText(this.item.title);
-      this.confirmationInput = this.item.title;
-    }
+    const expected = this.getExpectedConfirmationText();
+    navigator.clipboard?.writeText(expected);
+    this.confirmationInput = expected;
   }
 
   executeDelete(): void {
@@ -448,7 +451,7 @@ export class PageSectionListDeleteComponent implements OnInit {
     this.api.delete<any>(`ContentApi/section-lists/${this.itemId}`).subscribe({
       next: () => {
         this.deleting = false;
-        this.toast.success(`Section item '${this.item.title}' deleted successfully.`);
+        this.toast.success(`Section item '${this.item?.title || '(Untitled Sub-Item)'}' deleted successfully.`);
         if (this.returnUrl) {
           this.router.navigateByUrl(this.returnUrl);
         } else if (this.item?.pageSectionId) {

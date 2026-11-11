@@ -87,7 +87,7 @@ import {
                     (orderCommit)="commitSubItemOrder(item, $event)"
                   ></app-cms-order-cell>
                 </td>
-                <td><strong>{{ item.title }}</strong></td>
+                <td><strong>{{ item.title || '(Untitled Sub-Item)' }}</strong></td>
                 <td>
                   <span class="icon-chip" *ngIf="item.iconText"><i [class]="item.iconText"></i> {{ item.iconText }}</span>
                   <span class="mini-pill" *ngIf="item.miniTitle">{{ item.miniTitle }}</span>
@@ -303,12 +303,13 @@ export class PageSectionDetailsComponent implements OnInit {
   }
 
   async deleteSubItem(item: any): Promise<void> {
-    const confirmed = await this.toast.confirm('Delete Item', `Are you sure you want to delete "${item.title}"?`, 'Delete', 'Cancel', 'danger');
+    const label = item.title || '(Untitled Sub-Item)';
+    const confirmed = await this.toast.confirm('Delete Item', `Are you sure you want to delete "${label}"?`, 'Delete', 'Cancel', 'danger');
     if (!confirmed) return;
 
     this.api.delete<any>(`ContentApi/section-lists/${item.id}`).subscribe({
       next: () => {
-        this.toast.success(`Item "${item.title}" deleted.`);
+        this.toast.success(`Item "${label}" deleted.`);
         this.loadSection();
       },
       error: (err) => {
