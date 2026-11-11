@@ -491,7 +491,7 @@ interface SystemPageOption {
 
                   <div class="cta-route-indicator">
                     <span class="material-symbols-outlined icon-route">alt_route</span>
-                    <span>Target Route: <strong>/{{ page.directUrl || 'route' }}</strong> (Inherited directly from Section 2: Page Destination)</span>
+                    <span>Target Route: <strong>{{ formattedTargetRoute }}</strong> (Inherited directly from Section 2: Page Destination)</span>
                   </div>
 
                   <!-- Contextual notice when page points to registration -->
@@ -2153,7 +2153,7 @@ export class WebPageEditComponent implements OnInit {
 
   systemPages: SystemPageOption[] = [
     { title: 'Member Registration ("Get Started")', slug: '/register', icon: 'how_to_reg', desc: 'Configured in User Manager > Form Builder (adjust questions & layout there)' },
-    { title: 'Member / Staff Login', slug: '/login', icon: 'login', desc: 'Authentication and sign-in portal' },
+    { title: 'Member / Staff Login', slug: '/auth/login', icon: 'login', desc: 'Authentication and sign-in portal' },
     { title: 'Blog & Articles Feed', slug: '/blog', icon: 'article', desc: 'Editorial article archive and categories' },
     { title: 'Store Catalog', slug: '/store', icon: 'storefront', desc: 'E-commerce products and pricing catalog' },
     { title: 'Shopping Cart', slug: '/store/cart', icon: 'shopping_cart', desc: 'Customer checkout shopping cart' }
@@ -2219,6 +2219,13 @@ export class WebPageEditComponent implements OnInit {
 
   get fullLiveUrl(): string {
     return this.livePageUrl;
+  }
+
+  get formattedTargetRoute(): string {
+    const direct = (this.page?.directUrl || '').trim();
+    if (!direct) return '/route';
+    if (direct.startsWith('http://') || direct.startsWith('https://')) return direct;
+    return '/' + direct.replace(/^\/+/, '');
   }
 
   initDefaultPage(): void {
@@ -2322,11 +2329,14 @@ export class WebPageEditComponent implements OnInit {
     }
   }
 
-    onTitleInput(): void {
+  onTitleInput(): void {
     if (!this.page?.title?.trim()) {
       return;
     }
-    this.generateUniqueSlug(this.page.title);
+    // Only auto-generate the slug from title if destination type is a custom modular section page
+    if (this.destinationType === 'section') {
+      this.generateUniqueSlug(this.page.title);
+    }
   }
 
   onHomePageToggle(): void {
@@ -2456,6 +2466,8 @@ export class WebPageEditComponent implements OnInit {
   isSystemSlug(slug: string): boolean {
     const clean = (slug || '').trim().toLowerCase();
     return this.systemPages.some(s => s.slug.toLowerCase() === clean) ||
+           clean === '/login' ||
+           clean === '/auth/login' ||
            clean === '/register' ||
            clean === (this.registrationSlug || '').toLowerCase();
   }
@@ -2480,7 +2492,10 @@ export class WebPageEditComponent implements OnInit {
           const direct = (this.page.directUrl || '').trim();
           if (this.isSystemSlug(direct)) {
             this.destinationType = 'system';
-            this.selectedSystemPage = direct;
+            this.selectedSystemPage = direct.toLowerCase() === '/login' ? '/auth/login' : direct;
+            if (direct.toLowerCase() === '/login') {
+              this.page.directUrl = '/auth/login';
+            }
           } else if (this.page.enableDirectUrl || direct.startsWith('http://') || direct.startsWith('https://')) {
             this.destinationType = 'direct';
           } else {

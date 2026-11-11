@@ -134,7 +134,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </div>
               <div class="info-row">
                 <span>Direct Route:</span>
-                <code>/{{ page.directUrl }}</code>
+                <code>{{ displayDirectRoute }}</code>
               </div>
               <div class="info-row">
                 <span>Menu Category:</span>
@@ -276,9 +276,16 @@ export class WebPageDetailsComponent implements OnInit {
   loading = false;
   activeTab = 'sections';
 
+  get displayDirectRoute(): string {
+    if (!this.page?.directUrl) return '/';
+    const val = this.page.directUrl.trim();
+    if (val.startsWith('http://') || val.startsWith('https://')) return val;
+    return '/' + val.replace(/^\/+/, '');
+  }
+
   get headerSubtitle(): string {
     return this.page
-      ? `Direct Route: /${this.page.directUrl || ''} • ${this.page.pageSections?.length || 0} Layout Section Blocks`
+      ? `Direct Route: ${this.displayDirectRoute} • ${this.page.pageSections?.length || 0} Layout Section Blocks`
       : 'Page layout sections, metadata, and routing configuration.';
   }
 
