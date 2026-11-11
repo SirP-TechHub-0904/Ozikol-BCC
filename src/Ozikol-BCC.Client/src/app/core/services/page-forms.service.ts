@@ -7,7 +7,7 @@ export interface PageFormFieldItem {
   fieldKey: string;
   label: string;
   placeholder?: string;
-  fieldType: 'text' | 'email' | 'phone' | 'textarea' | 'dropdown' | 'pill_select' | 'checkbox' | 'number';
+  fieldType: 'text' | 'email' | 'phone' | 'textarea' | 'dropdown' | 'pill_select' | 'checkbox' | 'number' | 'date' | 'time' | 'datetime';
   optionsJson?: string;
   isRequired: boolean;
   sortOrder: number;

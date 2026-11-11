@@ -22,6 +22,32 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
         [loading]="saving"
       ></app-page-header>
 
+      <!-- Real-Time Auto-Save & Draft Protection Bar -->
+      <div class="autosave-bar">
+        <div class="autosave-left">
+          <div class="save-indicator" [ngClass]="autoSaveStatus">
+            <span *ngIf="autoSaveStatus === 'saving'" class="material-symbols-outlined spin">sync</span>
+            <span *ngIf="autoSaveStatus === 'saved'" class="material-symbols-outlined text-success">check_circle</span>
+            <span *ngIf="autoSaveStatus === 'unsaved'" class="dot-unsaved"></span>
+            <span *ngIf="autoSaveStatus === 'error'" class="material-symbols-outlined text-danger">error</span>
+
+            <span class="status-msg">
+              <ng-container *ngIf="autoSaveStatus === 'saving'">Saving changes automatically...</ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'saved'">All changes saved in real time {{ lastSavedTime ? '(' + (lastSavedTime | date:'mediumTime') + ')' : '' }}</ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'unsaved'">Unsaved changes (saving in a moment...)</ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'error'">Auto-save failed. <button type="button" class="btn-retry-inline" (click)="performAutoSave()">Retry Now</button></ng-container>
+            </span>
+          </div>
+        </div>
+        <div class="autosave-right" *ngIf="hasDraftRestored">
+          <span class="draft-badge">
+            <span class="material-symbols-outlined">history</span>
+            Restored from local backup
+          </span>
+          <button type="button" class="btn-discard-draft" (click)="discardDraft()" title="Discard restored draft">Discard Draft</button>
+        </div>
+      </div>
+
       <!-- Main Layout: Left Settings & Fields / Right Live Preview -->
       <div class="builder-grid">
         <!-- Form Settings & Fields Column -->
@@ -43,6 +69,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                   type="text"
                   [(ngModel)]="form.title"
                   (input)="onTitleChange()"
+                  (ngModelChange)="onDataChanged()"
                   placeholder="e.g. Service Request & Project Intake"
                   class="form-control"
                   required>
@@ -54,6 +81,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                 <input
                   type="text"
                   [(ngModel)]="form.formKey"
+                  (ngModelChange)="onDataChanged()"
                   placeholder="e.g. service-request"
                   class="form-control font-mono"
                   [disabled]="isEditMode"
@@ -66,7 +94,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                 <input
                   type="email"
                   [(ngModel)]="form.notificationEmail"
-                  placeholder="e.g. inquiries@mycompany.com"
+                  (ngModelChange)="onDataChanged()"
+                  placeholder="name@company.com"
                   class="form-control">
                 <small class="hint">Optional. Forward newly submitted inquiries to this address.</small>
               </div>
@@ -75,6 +104,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                 <label>Description / Subtitle</label>
                 <textarea
                   [(ngModel)]="form.description"
+                  (ngModelChange)="onDataChanged()"
                   rows="2"
                   placeholder="Brief introductory guidance for visitors filling this form..."
                   class="form-control"></textarea>
@@ -85,6 +115,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                 <input
                   type="text"
                   [(ngModel)]="form.submitButtonText"
+                  (ngModelChange)="onDataChanged()"
                   placeholder="Submit Inquiry"
                   class="form-control">
               </div>
@@ -94,13 +125,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                 <input
                   type="text"
                   [(ngModel)]="form.successMessage"
+                  (ngModelChange)="onDataChanged()"
                   placeholder="Thank you! We have received your request and will follow up shortly."
                   class="form-control">
               </div>
 
               <div class="form-group col-span-2">
                 <label class="toggle-label">
-                  <input type="checkbox" [(ngModel)]="form.isActive">
+                  <input type="checkbox" [(ngModel)]="form.isActive" (ngModelChange)="onDataChanged()">
                   <span class="toggle-text">Active on Public Website</span>
                 </label>
                 <small class="hint">When disabled, public visitors will not be able to submit this form.</small>
@@ -179,6 +211,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                         type="text"
                         [(ngModel)]="field.label"
                         (input)="onFieldLabelChange(field)"
+                        (ngModelChange)="onDataChanged()"
                         placeholder="e.g. Which service are you interested in?"
                         class="form-control">
                     </div>
@@ -188,6 +221,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       <input
                         type="text"
                         [(ngModel)]="field.fieldKey"
+                        (ngModelChange)="onDataChanged()"
                         placeholder="e.g. services"
                         class="form-control font-mono">
                       <small class="hint">Identifier stored in submission data payload.</small>
@@ -195,12 +229,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
 
                     <div class="form-group">
                       <label>Input Type <span class="required">*</span></label>
-                      <select [(ngModel)]="field.fieldType" class="form-control">
+                      <select [(ngModel)]="field.fieldType" (ngModelChange)="onDataChanged()" class="form-control">
                         <option value="pill_select">Pill Select (Multi-choice tags)</option>
                         <option value="dropdown">Dropdown Select</option>
                         <option value="text">Single-line Text</option>
                         <option value="email">Email Address</option>
                         <option value="phone">Phone Number</option>
+                        <option value="date">Date Picker</option>
+                        <option value="time">Time Picker</option>
+                        <option value="datetime">Date &amp; Time Picker</option>
                         <option value="textarea">Multi-line Textarea / Brief</option>
                         <option value="number">Numeric</option>
                         <option value="checkbox">Agreement Checkbox</option>
@@ -215,8 +252,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       </label>
                       <textarea
                         [(ngModel)]="field.optionsJson"
+                        (ngModelChange)="onDataChanged()"
                         rows="2"
-                        placeholder="e.g. Web Design & UI, Cloud Engineering, Security Audit, Mobile App Dev"
+                        placeholder="e.g. Security Audit, Patrol Guarding, Event Security, Access Control"
                         class="form-control"></textarea>
                       <small class="hint">Enter each option separated by commas. Visitors will choose from these items.</small>
                     </div>
@@ -226,13 +264,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       <input
                         type="text"
                         [(ngModel)]="field.placeholder"
-                        placeholder="e.g. Select timeline or Enter your name"
+                        (ngModelChange)="onDataChanged()"
+                        placeholder="e.g. Select timeline or Enter details"
                         class="form-control">
                     </div>
 
                     <div class="form-group">
                       <label>Grid Layout Width</label>
-                      <select [(ngModel)]="field.gridWidth" class="form-control">
+                      <select [(ngModel)]="field.gridWidth" (ngModelChange)="onDataChanged()" class="form-control">
                         <option value="col-md-12">Full Width (100%)</option>
                         <option value="col-md-6">Half Width (50%)</option>
                         <option value="col-md-4">One Third (33.3%)</option>
@@ -241,7 +280,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
 
                     <div class="form-group col-span-2">
                       <label class="toggle-label">
-                        <input type="checkbox" [(ngModel)]="field.isRequired">
+                        <input type="checkbox" [(ngModel)]="field.isRequired" (ngModelChange)="onDataChanged()">
                         <span class="toggle-text">Mandatory / Required question</span>
                       </label>
                     </div>
@@ -306,6 +345,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                     [type]="field.fieldType === 'number' ? 'number' : (field.fieldType === 'email' ? 'email' : 'text')"
                     class="form-control"
                     [placeholder]="field.placeholder || ('Enter ' + (field.label || 'value'))"
+                    disabled>
+
+                  <!-- Date & Time inputs preview -->
+                  <input
+                    *ngIf="['date', 'time', 'datetime'].includes(field.fieldType)"
+                    [type]="field.fieldType === 'datetime' ? 'datetime-local' : field.fieldType"
+                    class="form-control"
+                    [placeholder]="field.placeholder || ''"
                     disabled>
 
                   <!-- Checkbox preview -->
@@ -475,6 +522,75 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
     .preview-submit-wrap { margin-top: 18px; }
     .preview-btn { width: 100%; justify-content: center; }
 
+    /* Auto-Save & Draft Protection Bar */
+    .autosave-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #475569;
+    }
+    .save-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    .save-indicator .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .save-indicator.saving { color: #0050e5; }
+    .save-indicator.saved { color: #16a34a; }
+    .save-indicator.unsaved { color: #d97706; }
+    .save-indicator.error { color: #dc2626; }
+    .dot-unsaved {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d97706;
+      display: inline-block;
+      animation: pulse 1.5s infinite;
+    }
+    .btn-retry-inline {
+      background: none;
+      border: none;
+      color: #0050e5;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0;
+      margin-left: 4px;
+    }
+    .draft-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid #bfdbfe;
+    }
+    .draft-badge .material-symbols-outlined { font-size: 14px; }
+    .btn-discard-draft {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: 8px;
+      text-decoration: underline;
+    }
+    .btn-discard-draft:hover { color: #dc2626; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
@@ -484,6 +600,12 @@ export class FormBuilderComponent implements OnInit {
   formId: string | null = null;
   saving = false;
   activeFieldIndex = 0;
+
+  // Real-time auto-save & draft states
+  autoSaveStatus: 'saved' | 'saving' | 'unsaved' | 'error' = 'saved';
+  lastSavedTime: Date | null = null;
+  hasDraftRestored = false;
+  private autoSaveDebounceTimer: any = null;
 
   get headerTitle(): string {
     return this.isEditMode ? `Edit: ${this.form.title || ''}` : 'Create Dynamic Website Form';
@@ -519,6 +641,10 @@ export class FormBuilderComponent implements OnInit {
 
   fields: PageFormFieldItem[] = [];
 
+  get draftStorageKey(): string {
+    return `bcp_form_draft_${this.formId || 'new'}`;
+  }
+
   constructor(
     private formsService: PageFormsService,
     private route: ActivatedRoute,
@@ -534,12 +660,12 @@ export class FormBuilderComponent implements OnInit {
         this.formId = id;
         this.loadForm(id);
       } else {
-        // Seed default starter questions for new form
+        // Seed default starter questions for new form (using clean professional placeholders)
         this.fields = [
           {
             fieldKey: 'full_name',
             label: 'Your Full Name',
-            placeholder: 'e.g. John Doe',
+            placeholder: 'e.g. First Last',
             fieldType: 'text',
             isRequired: true,
             sortOrder: 1,
@@ -548,7 +674,7 @@ export class FormBuilderComponent implements OnInit {
           {
             fieldKey: 'email',
             label: 'Work Email Address',
-            placeholder: 'e.g. john@example.com',
+            placeholder: 'name@company.com',
             fieldType: 'email',
             isRequired: true,
             sortOrder: 2,
@@ -557,29 +683,177 @@ export class FormBuilderComponent implements OnInit {
           {
             fieldKey: 'message',
             label: 'Message / Project Brief',
-            placeholder: 'Describe your goals or questions in detail...',
+            placeholder: 'Describe your goals or requirements in detail...',
             fieldType: 'textarea',
             isRequired: true,
             sortOrder: 3,
             gridWidth: 'col-md-12'
           }
         ];
+        this.checkAndRestoreDraft();
       }
     });
   }
 
+  /// <summary>
+  /// Loads form entity and fields from the API. Falls back to local draft if server fails or draft is newer.
+  /// </summary>
+  /// <param name="id">The unique form GUID.</param>
   loadForm(id: string): void {
     this.formsService.getFormById(id).subscribe({
       next: (res: any) => {
         if (res && res.isSuccess && res.data) {
           this.form = res.data;
           this.fields = res.data.fields || [];
+          this.lastSavedTime = res.data.updatedAtUtc ? new Date(res.data.updatedAtUtc) : null;
+          this.autoSaveStatus = 'saved';
+          this.checkAndRestoreDraft(res.data.updatedAtUtc);
         } else {
           this.toast.error(res?.message || 'Failed to load form details.');
+          this.checkAndRestoreDraft();
         }
       },
       error: () => {
-        this.toast.error('Network error loading form details.');
+        this.toast.error('Network error loading form details. Attempting to restore from local backup...');
+        this.checkAndRestoreDraft();
+      }
+    });
+  }
+
+  /// <summary>
+  /// Saves current in-memory form and fields to localStorage draft backup.
+  /// </summary>
+  saveLocalDraft(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const draft = {
+        formId: this.formId,
+        form: this.form,
+        fields: this.fields,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem(this.draftStorageKey, JSON.stringify(draft));
+    } catch {
+      // Ignore private browsing or quota limits
+    }
+  }
+
+  /// <summary>
+  /// Restores unsaved changes from local draft storage if available and newer than database record.
+  /// </summary>
+  /// <param name="serverUpdatedAt">Optional ISO string of last server update.</param>
+  checkAndRestoreDraft(serverUpdatedAt?: string): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(this.draftStorageKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft || !draft.form) return;
+
+      if (serverUpdatedAt && draft.savedAt) {
+        const draftTime = new Date(draft.savedAt).getTime();
+        const serverTime = new Date(serverUpdatedAt).getTime();
+        if (draftTime <= serverTime) {
+          localStorage.removeItem(this.draftStorageKey);
+          return;
+        }
+      }
+
+      if (draft.fields && draft.fields.length > 0) {
+        this.form = { ...this.form, ...draft.form };
+        this.fields = draft.fields;
+        this.hasDraftRestored = true;
+        this.toast.info('Restored your form modifications from local backup.');
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  /// <summary>
+  /// Clears the local draft storage and reloads server version.
+  /// </summary>
+  discardDraft(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.draftStorageKey);
+    }
+    this.hasDraftRestored = false;
+    if (this.formId) {
+      this.loadForm(this.formId);
+    }
+    this.toast.success('Local draft discarded.');
+  }
+
+  /// <summary>
+  /// Triggers debounced real-time auto-saving and persists local draft immediately.
+  /// </summary>
+  onDataChanged(): void {
+    this.saveLocalDraft();
+    this.autoSaveStatus = 'unsaved';
+
+    if (this.autoSaveDebounceTimer) {
+      clearTimeout(this.autoSaveDebounceTimer);
+    }
+
+    this.autoSaveDebounceTimer = setTimeout(() => {
+      this.performAutoSave();
+    }, 1500);
+  }
+
+  /// <summary>
+  /// Executes debounced background saving without navigating away from the builder.
+  /// </summary>
+  performAutoSave(): void {
+    if (!this.form.title?.trim() || !this.form.formKey?.trim() || this.fields.length === 0) {
+      return;
+    }
+
+    if (this.saving) {
+      return;
+    }
+
+    this.autoSaveStatus = 'saving';
+    this.reindexFields();
+
+    const payload: Partial<PageFormItem> = {
+      ...this.form,
+      fields: this.fields
+    };
+
+    const action = this.isEditMode && this.formId
+      ? this.formsService.updateForm(this.formId, payload)
+      : this.formsService.createForm(payload);
+
+    action.subscribe({
+      next: (res: any) => {
+        if (res && res.isSuccess) {
+          this.autoSaveStatus = 'saved';
+          this.lastSavedTime = new Date();
+
+          if (!this.formId && res.data?.id) {
+            this.formId = res.data.id;
+            this.isEditMode = true;
+            if (typeof window !== 'undefined') {
+              window.history.replaceState({}, '', `/content/console/forms/edit/${this.formId}`);
+            }
+          }
+
+          if (res.data?.fields && Array.isArray(res.data.fields)) {
+            const serverFields = res.data.fields;
+            this.fields.forEach((f, idx) => {
+              if (serverFields[idx]?.id) {
+                f.id = serverFields[idx].id;
+              }
+            });
+          }
+
+          this.saveLocalDraft();
+        } else {
+          this.autoSaveStatus = 'error';
+        }
+      },
+      error: () => {
+        this.autoSaveStatus = 'error';
       }
     });
   }
@@ -592,16 +866,18 @@ export class FormBuilderComponent implements OnInit {
         .trim()
         .replace(/\s+/g, '-');
     }
+    this.onDataChanged();
   }
 
   onFieldLabelChange(field: PageFormFieldItem): void {
-    if (!field.fieldKey || field.fieldKey.startsWith('field_')) {
+    if (!field.fieldKey || field.fieldKey.startsWith('question_') || field.fieldKey.startsWith('field_')) {
       field.fieldKey = field.label
         .toLowerCase()
         .replace(/[^a-z0-9\s_]/g, '')
         .trim()
         .replace(/\s+/g, '_');
     }
+    this.onDataChanged();
   }
 
   getFieldTypeLabel(type: string): string {
@@ -611,6 +887,9 @@ export class FormBuilderComponent implements OnInit {
       case 'text': return 'Text';
       case 'email': return 'Email';
       case 'phone': return 'Phone';
+      case 'date': return 'Date';
+      case 'time': return 'Time';
+      case 'datetime': return 'Date & Time';
       case 'textarea': return 'Textarea';
       case 'number': return 'Number';
       case 'checkbox': return 'Checkbox';
@@ -634,6 +913,7 @@ export class FormBuilderComponent implements OnInit {
       gridWidth: 'col-md-12'
     });
     this.activeFieldIndex = this.fields.length - 1;
+    this.onDataChanged();
   }
 
   removeField(idx: number): void {
@@ -642,6 +922,7 @@ export class FormBuilderComponent implements OnInit {
     if (this.activeFieldIndex >= this.fields.length) {
       this.activeFieldIndex = this.fields.length - 1;
     }
+    this.onDataChanged();
   }
 
   moveField(idx: number, delta: number): void {
@@ -652,6 +933,7 @@ export class FormBuilderComponent implements OnInit {
     this.fields[target] = temp;
     this.reindexFields();
     this.activeFieldIndex = target;
+    this.onDataChanged();
   }
 
   private reindexFields(): void {
@@ -669,6 +951,10 @@ export class FormBuilderComponent implements OnInit {
   }
 
   saveForm(): void {
+    if (this.autoSaveDebounceTimer) {
+      clearTimeout(this.autoSaveDebounceTimer);
+    }
+
     if (!this.form.title?.trim()) {
       this.toast.error('Form title is required.');
       return;
@@ -685,6 +971,7 @@ export class FormBuilderComponent implements OnInit {
     }
 
     this.saving = true;
+    this.autoSaveStatus = 'saving';
     this.reindexFields();
 
     const payload: Partial<PageFormItem> = {
@@ -700,18 +987,24 @@ export class FormBuilderComponent implements OnInit {
       next: (res: any) => {
         this.saving = false;
         if (res && res.isSuccess) {
+          this.autoSaveStatus = 'saved';
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem(this.draftStorageKey);
+          }
           this.toast.success(this.isEditMode ? 'Form updated successfully.' : 'Form created successfully.');
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('forms_updated'));
           }
           this.router.navigate(['/content/console/forms']);
         } else {
+          this.autoSaveStatus = 'error';
           this.toast.error(res?.message || 'Failed to save form.');
         }
       },
       error: (err: any) => {
         this.saving = false;
-        this.toast.error('An error occurred while saving the form.');
+        this.autoSaveStatus = 'error';
+        this.toast.error('An error occurred while saving the form. Your local draft has been safely preserved.');
       }
     });
   }

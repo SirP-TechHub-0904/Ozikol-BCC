@@ -204,9 +204,12 @@ namespace Ozikol_BCC.Api.Controllers
             var existingFields = form.Fields.ToList();
             var incomingFields = dto.Fields ?? new List<PageFormFieldDto>();
 
-            var incomingIds = incomingFields.Where(f => f.Id.HasValue).Select(f => f.Id!.Value).ToHashSet();
+            var incomingIds = incomingFields.Where(f => f.Id.HasValue && f.Id.Value != Guid.Empty).Select(f => f.Id!.Value).ToHashSet();
             var toRemove = existingFields.Where(f => !incomingIds.Contains(f.Id)).ToList();
-            _context.PageFormFields.RemoveRange(toRemove);
+            if (toRemove.Count > 0)
+            {
+                _context.PageFormFields.RemoveRange(toRemove);
+            }
 
             int order = 1;
             foreach (var fieldDto in incomingFields)
@@ -227,6 +230,24 @@ namespace Ozikol_BCC.Api.Controllers
                         existing.SortOrder = targetOrder;
                         existing.GridWidth = string.IsNullOrWhiteSpace(fieldDto.GridWidth) ? "col-md-12" : fieldDto.GridWidth.Trim();
                         existing.HelpText = fieldDto.HelpText?.Trim();
+                    }
+                    else
+                    {
+                        // Stale ID from client - insert cleanly with fresh Guid
+                        form.Fields.Add(new PageFormField
+                        {
+                            Id = Guid.NewGuid(),
+                            PageFormId = form.Id,
+                            FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey) ? $"field_{order}" : fieldDto.FieldKey.Trim().ToLowerInvariant(),
+                            Label = fieldDto.Label?.Trim() ?? $"Question {order}",
+                            Placeholder = fieldDto.Placeholder?.Trim(),
+                            FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant(),
+                            OptionsJson = fieldDto.OptionsJson,
+                            IsRequired = fieldDto.IsRequired,
+                            SortOrder = targetOrder,
+                            GridWidth = string.IsNullOrWhiteSpace(fieldDto.GridWidth) ? "col-md-12" : fieldDto.GridWidth.Trim(),
+                            HelpText = fieldDto.HelpText?.Trim()
+                        });
                     }
                 }
                 else
@@ -249,7 +270,61 @@ namespace Ozikol_BCC.Api.Controllers
                 order++;
             }
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogWarning(ex, "Concurrency conflict during form update {FormId}. Re-synchronizing...", id);
+
+                // Clear tracker and re-synchronize from clean database state
+                _context.ChangeTracker.Clear();
+
+                var freshForm = await _context.PageForms
+                    .Include(f => f.Fields)
+                    .FirstOrDefaultAsync(f => f.Id == id);
+
+                if (freshForm != null)
+                {
+                    freshForm.Title = dto.Title.Trim();
+                    freshForm.Description = dto.Description?.Trim();
+                    freshForm.SubmitButtonText = string.IsNullOrWhiteSpace(dto.SubmitButtonText) ? "Submit" : dto.SubmitButtonText.Trim();
+                    freshForm.SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
+                        ? "Thank you! Your submission has been received."
+                        : dto.SuccessMessage.Trim();
+                    freshForm.NotificationEmail = dto.NotificationEmail?.Trim();
+                    freshForm.IsActive = dto.IsActive;
+                    freshForm.UpdatedAtUtc = DateTime.UtcNow;
+
+                    _context.PageFormFields.RemoveRange(freshForm.Fields);
+                    await _context.SaveChangesAsync();
+
+                    int reorder = 1;
+                    foreach (var fieldDto in incomingFields)
+                    {
+                        freshForm.Fields.Add(new PageFormField
+                        {
+                            Id = Guid.NewGuid(),
+                            PageFormId = freshForm.Id,
+                            FieldKey = string.IsNullOrWhiteSpace(fieldDto.FieldKey) ? $"field_{reorder}" : fieldDto.FieldKey.Trim().ToLowerInvariant(),
+                            Label = fieldDto.Label?.Trim() ?? $"Question {reorder}",
+                            Placeholder = fieldDto.Placeholder?.Trim(),
+                            FieldType = string.IsNullOrWhiteSpace(fieldDto.FieldType) ? "text" : fieldDto.FieldType.Trim().ToLowerInvariant(),
+                            OptionsJson = fieldDto.OptionsJson,
+                            IsRequired = fieldDto.IsRequired,
+                            SortOrder = fieldDto.SortOrder > 0 ? fieldDto.SortOrder : reorder,
+                            GridWidth = string.IsNullOrWhiteSpace(fieldDto.GridWidth) ? "col-md-12" : fieldDto.GridWidth.Trim(),
+                            HelpText = fieldDto.HelpText?.Trim()
+                        });
+                        reorder++;
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return Ok(ApiResponse<object>.SuccessResponse(freshForm, "Form updated successfully."));
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(form, "Form updated successfully."));
         }
 
