@@ -894,6 +894,7 @@ export class TemplateHydrationService {
     const logoUrl = ctx.BrandLogo || ctx.brandLogo || ctx.LogoUrl || ctx.logoUrl || ctx.CompanyLogo || ctx.companyLogo || ctx['Brand.LogoUrl'] || ctx['Brand.WhiteLogoUrl'] || ctx.WhiteLogoUrl || ctx.whiteLogoUrl || opts.editorTokens?.brand?.logoUrl || '';
     const homeUrl = ctx.HomeUrl || ctx.homeUrl || ctx.WebsiteUrl || ctx.websiteUrl || ctx['Brand.WebsiteUrl'] || '/';
     const hasBrandLogo = Boolean(logoUrl && logoUrl.trim().length > 0);
+    const isBtnDisabled = Boolean(ctx.disableButton || ctx.DisableButton);
 
     const conditionPool = {
       ...artDetail,
@@ -923,8 +924,18 @@ export class TemplateHydrationService {
       'PageSection.Subtitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
       'PageSection.Description': ctx.description || ctx.Description || ctx.fullDescription || ctx.FullDescription || '',
       'PageSection.FullDescription': ctx.fullDescription || ctx.FullDescription || ctx.description || ctx.Description || '',
-      'PageSection.ButtonText': ctx.buttonText || ctx.ButtonText || '',
-      'PageSection.ButtonLink': ctx.buttonLink || ctx.ButtonLink || '',
+      'ButtonText': !isBtnDisabled ? (ctx.buttonText || ctx.ButtonText || '') : '',
+      'ButtonLink': !isBtnDisabled ? (ctx.buttonLink || ctx.ButtonLink || '') : '',
+      'SecondButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondButtonText || '') : '',
+      'SecondButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondButtonLink || '') : '',
+      'SecondaryButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondaryButtonText || '') : '',
+      'SecondaryButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondaryButtonLink || '') : '',
+      'PageSection.ButtonText': !isBtnDisabled ? (ctx.buttonText || ctx.ButtonText || '') : '',
+      'PageSection.ButtonLink': !isBtnDisabled ? (ctx.buttonLink || ctx.ButtonLink || '') : '',
+      'PageSection.SecondButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondButtonText || '') : '',
+      'PageSection.SecondButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondButtonLink || '') : '',
+      'PageSection.SecondaryButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondaryButtonText || '') : '',
+      'PageSection.SecondaryButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondaryButtonLink || '') : '',
       'PageSection.ImageUrl': ctx.imageUrl || ctx.ImageUrl || '',
       'PageSection.IconText': ctx.iconText || ctx.IconText || '',
       'PageSection.Icon': ctx.iconText || ctx.IconText || ctx.icon || ''

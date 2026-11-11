@@ -111,10 +111,11 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   const hasHeroMiniTitle = Boolean((ctx.miniTitle && ctx.miniTitle.trim().length > 0) || (ctx.subTitle && ctx.subTitle.trim().length > 0));
   const hasHeroDesc = Boolean((ctx.description && ctx.description.trim().length > 0) || (ctx.fullDescription && ctx.fullDescription.trim().length > 0));
   const hasHeroFullDesc = Boolean((ctx.fullDescription && ctx.fullDescription.trim().length > 0) || (ctx.description && ctx.description.trim().length > 0));
-  const hasHeroButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0);
-  const hasHeroButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#');
-  const hasHeroSecondButton = Boolean((ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0) || (ctx.secondButtonText && ctx.secondButtonText.trim().length > 0));
-  const hasHeroSecondButtonLink = Boolean((ctx.secondaryButtonLink && ctx.secondaryButtonLink.trim().length > 0 && ctx.secondaryButtonLink !== '#') || (ctx.secondButtonLink && ctx.secondButtonLink.trim().length > 0 && ctx.secondButtonLink !== '#'));
+  const isHeroButtonDisabled = Boolean(ctx.disableButton || (ctx as any).DisableButton);
+  const hasHeroButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0 && !isHeroButtonDisabled);
+  const hasHeroButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#' && !isHeroButtonDisabled);
+  const hasHeroSecondButton = Boolean(((ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0) || (ctx.secondButtonText && ctx.secondButtonText.trim().length > 0)) && !isHeroButtonDisabled);
+  const hasHeroSecondButtonLink = Boolean(((ctx.secondaryButtonLink && ctx.secondaryButtonLink.trim().length > 0 && ctx.secondaryButtonLink !== '#') || (ctx.secondButtonLink && ctx.secondButtonLink.trim().length > 0 && ctx.secondButtonLink !== '#')) && !isHeroButtonDisabled);
   const hasHeroImage = Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0);
   const hasHeroSecondImage = Boolean(ctx.secondImageUrl && ctx.secondImageUrl.trim().length > 0);
   const hasHeroVideo = Boolean(ctx.videoUrl && ctx.videoUrl.trim().length > 0);
@@ -143,10 +144,10 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:Quote|Qoute)\s*\}\}/gi, ctx.quote || ctx.qoute || '');
 
   // 5. Button Scalars (for Root Section)
-  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, ctx.buttonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondaryButtonText|SecondButtonText)\s*\}\}/gi, ctx.secondaryButtonText || ctx.secondButtonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondaryButtonLink|SecondButtonLink)\s*\}\}/gi, ctx.secondaryButtonLink || ctx.secondButtonLink || '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.buttonText || '') : '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.buttonLink || '#') : '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondaryButtonText|SecondButtonText)\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.secondaryButtonText || ctx.secondButtonText || '') : '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondaryButtonLink|SecondButtonLink)\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.secondaryButtonLink || ctx.secondButtonLink || '#') : '#');
   output = output.replace(/\{\{\s*(?:PageSection\.)?DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
 
   // 6. Media & Icon Scalars (for Root Section)

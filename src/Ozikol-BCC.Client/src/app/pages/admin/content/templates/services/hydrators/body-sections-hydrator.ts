@@ -29,10 +29,11 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   const hasMiniTitle = Boolean((ctx.miniTitle && ctx.miniTitle.trim().length > 0) || (ctx.subTitle && ctx.subTitle.trim().length > 0));
   const hasDesc = Boolean((ctx.description && ctx.description.trim().length > 0) || (ctx.fullDescription && ctx.fullDescription.trim().length > 0));
   const hasFullDesc = Boolean((ctx.fullDescription && ctx.fullDescription.trim().length > 0) || (ctx.description && ctx.description.trim().length > 0));
-  const hasButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0);
-  const hasButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#');
-  const hasSecondButton = Boolean((ctx.secondButtonText && ctx.secondButtonText.trim().length > 0) || (ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0));
-  const hasSecondButtonLink = Boolean((ctx.secondButtonLink && ctx.secondButtonLink.trim().length > 0 && ctx.secondButtonLink !== '#') || (ctx.secondaryButtonLink && ctx.secondaryButtonLink.trim().length > 0 && ctx.secondaryButtonLink !== '#'));
+  const isButtonDisabled = Boolean(ctx.disableButton || (ctx as any).DisableButton);
+  const hasButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0 && !isButtonDisabled);
+  const hasButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#' && !isButtonDisabled);
+  const hasSecondButton = Boolean(((ctx.secondButtonText && ctx.secondButtonText.trim().length > 0) || (ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0)) && !isButtonDisabled);
+  const hasSecondButtonLink = Boolean(((ctx.secondButtonLink && ctx.secondButtonLink.trim().length > 0 && ctx.secondButtonLink !== '#') || (ctx.secondaryButtonLink && ctx.secondaryButtonLink.trim().length > 0 && ctx.secondaryButtonLink !== '#')) && !isButtonDisabled);
   const hasImage = Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0);
   const hasSecondImage = Boolean(ctx.secondImageUrl && ctx.secondImageUrl.trim().length > 0);
   const hasVideo = Boolean(ctx.videoUrl && ctx.videoUrl.trim().length > 0);
@@ -80,6 +81,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ImageUrl', hasImage);
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ButtonText', hasButton);
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ButtonLink', hasButtonLink);
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)(?:SecondButtonText|SecondaryButtonText)', hasSecondButton);
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)(?:SecondButtonLink|SecondaryButtonLink)', hasSecondButtonLink);
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)(?:IconText|Icon)', hasIcon);
 
       // Parent PageSection tokens accessible inside loop via PageSection. or ../
@@ -88,8 +91,10 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)Description\s*\}?\}\}/gi, ctx.description || ctx.fullDescription || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
-      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, ctx.buttonText || '');
-      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonText || '') : '');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonLink || '#') : '#');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, !isButtonDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || '') : '');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, !isButtonDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || '#') : '#');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
 
       // Item Card Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
@@ -136,10 +141,10 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || ctx.fullDescription || '');
   output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:Quote|Qoute)\s*\}\}/gi, ctx.quote || ctx.qoute || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, ctx.buttonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, ctx.secondButtonText || ctx.secondaryButtonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, ctx.secondButtonLink || ctx.secondaryButtonLink || '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonText || '') : '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, !isButtonDisabled ? (ctx.buttonLink || '#') : '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, !isButtonDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || '') : '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, !isButtonDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || '#') : '#');
   output = output.replace(/\{\{\s*(?:PageSection\.)?ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');

@@ -27,6 +27,7 @@ export interface HydrationContext {
   secondaryButtonLink?: string;
   secondButtonText?: string;
   secondButtonLink?: string;
+  disableButton?: boolean;
   directUrl?: string;
   imageUrl?: string;
   secondImageUrl?: string;
