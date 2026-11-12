@@ -170,6 +170,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                   <div class="field-header-right" (click)="$event.stopPropagation()">
                     <button
                       type="button"
+                      class="btn-insert-below"
+                      (click)="addField(idx)"
+                      title="Insert Question Below">
+                      <span class="material-symbols-outlined">add</span>
+                    </button>
+                    <button
+                      type="button"
                       class="btn-sort"
                       [disabled]="idx === 0"
                       (click)="moveField(idx, -1)"
@@ -463,10 +470,11 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
     .req-star { color: #dc2626; font-weight: 700; }
 
     .field-header-right { display: flex; align-items: center; gap: 4px; }
-    .btn-sort, .btn-remove-field {
+    .btn-insert-below, .btn-sort, .btn-remove-field {
       border: none; background: transparent; padding: 4px; border-radius: 6px;
       cursor: pointer; color: #64748b; display: flex; align-items: center;
     }
+    .btn-insert-below:hover { background: #eff6ff; color: #0050e5; }
     .btn-sort:hover:not(:disabled) { background: #e2e8f0; color: #0f172a; }
     .btn-sort:disabled { opacity: 0.3; cursor: not-allowed; }
     .btn-remove-field:hover { background: #fee2e2; color: #dc2626; }
@@ -1041,19 +1049,29 @@ export class FormBuilderComponent implements OnInit {
     this.activeFieldIndex = this.activeFieldIndex === idx ? -1 : idx;
   }
 
-  addField(): void {
-    const newIdx = this.fields.length;
-    const defaultLabel = `Question ${newIdx + 1}`;
-    this.fields.push({
-      fieldKey: this.buildUniqueFieldKey(defaultLabel, newIdx),
+  /// <summary>
+  /// Inserts a new question directly below the specified index (or the active question),
+  /// falling back to the bottom of the list when no question is active.
+  /// </summary>
+  /// <param name="afterIndex">Optional explicit field index to insert after.</param>
+  addField(afterIndex?: number): void {
+    const anchor = afterIndex !== undefined ? afterIndex : this.activeFieldIndex;
+    const insertIdx = anchor >= 0 && anchor < this.fields.length ? anchor + 1 : this.fields.length;
+    const defaultLabel = `Question ${this.fields.length + 1}`;
+
+    this.fields.splice(insertIdx, 0, {
+      fieldKey: '',
       label: defaultLabel,
       placeholder: '',
       fieldType: 'text',
       isRequired: false,
-      sortOrder: newIdx + 1,
+      sortOrder: insertIdx + 1,
       gridWidth: 'col-md-12'
     });
-    this.activeFieldIndex = this.fields.length - 1;
+
+    // Recompute 1-based sortOrder and unique fieldKey across all fields after insertion
+    this.reindexFields();
+    this.activeFieldIndex = insertIdx;
     this.onDataChanged();
   }
 
