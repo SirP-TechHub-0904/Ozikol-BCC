@@ -113,6 +113,9 @@ export class SectionFormCompositorService {
         <form class="oz-injected-form oz-composed-form" data-form-key="${this.escapeAttr(formKey)}" onsubmit="event.preventDefault();">
           <div class="row g-3">
             ${fieldsHtml}
+            <div class="col-12 oz-recaptcha-wrap my-2">
+              <div class="g-recaptcha" data-sitekey=""></div>
+            </div>
             <div class="col-12 mt-3">
               <button type="submit" class="oz-comp-submit-btn">${submitLabel}</button>
             </div>
@@ -172,6 +175,23 @@ export class SectionFormCompositorService {
     }
 
     if (type === 'checkbox') {
+      const legalLinks = this.parseLegalLinks(field.optionsJson);
+      if (legalLinks.length > 0) {
+        const linksHtml = legalLinks.map((lnk, idx) => {
+          const sep = idx === 0 ? ' ' : (idx === legalLinks.length - 1 ? ' and ' : ', ');
+          const href = this.escapeAttr(lnk.href);
+          const text = this.escapeHtml(lnk.linkText);
+          return `${sep}<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" style="color:#0050E5;font-weight:600;text-decoration:underline;">${text}</a>`;
+        }).join('');
+        return `
+          <div class="${colClass}">
+            <label class="oz-comp-choice oz-comp-single-check">
+              <input type="checkbox" name="${key}" value="true" ${reqAttr} />
+              <span>${label}${linksHtml}${reqMark}</span>
+            </label>
+            ${help}
+          </div>`;
+      }
       if (options.length > 0) {
         const checkItems = options.map(opt => `
           <label class="oz-comp-choice">
@@ -464,6 +484,27 @@ export class SectionFormCompositorService {
       return optionsJson.split(',').map(s => s.trim()).filter(Boolean);
     }
     return [];
+  }
+
+  /** Parses structured legal consent links stored in `optionsJson` for single Agreement Checkboxes. */
+  private parseLegalLinks(optionsJson?: string): Array<{ linkText: string; href: string }> {
+    if (!optionsJson) return [];
+    try {
+      const parsed = JSON.parse(optionsJson);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((x: any) => x && typeof x === 'object' && (x.linkText || x.pageSlug || x.customUrl))
+        .map((x: any) => {
+          const custom = x.customUrl ? String(x.customUrl).trim() : '';
+          const slug = x.pageSlug && x.pageSlug !== '__custom__' ? String(x.pageSlug).replace(/^\/+/, '') : '';
+          return {
+            linkText: String(x.linkText || 'Terms & Conditions'),
+            href: custom || (slug ? `/p/${slug}` : '#')
+          };
+        });
+    } catch {
+      return [];
+    }
   }
 
   private escapeHtml(str: string): string {

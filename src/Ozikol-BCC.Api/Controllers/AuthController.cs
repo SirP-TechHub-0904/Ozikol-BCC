@@ -331,7 +331,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return Unauthorized(ApiResponse<object>.FailureResponse("Invalid email or password credentials."));
             }
 
-            // Check tenant policy: Enforce Email Confirmation before login with schema resilience
+            // Check tenant policy: Enforce Email Confirmation and Admin Approval before login with schema resilience
             MisConfigurationSetting? tenantSetting = null;
             try
             {
@@ -342,9 +342,47 @@ namespace Ozikol_BCC.Api.Controllers
                 _logger.LogWarning(ex, "Could not load MisConfigurationSettings for email confirmation check; continuing with standard policy.");
             }
 
-            if (tenantSetting != null && tenantSetting.RequireConfirmedEmailToLogin && !user.EmailConfirmed)
+            bool requireEmailVerification = tenantSetting?.RequireConfirmedEmailToLogin ?? false;
+            if (!requireEmailVerification && activeDbContext != null)
             {
-                return StatusCode(403, ApiResponse<object>.FailureResponse("Email confirmation is required by workspace policy before you can sign in."));
+                try
+                {
+                    var policyField = await activeDbContext.BcpRegistrationFormFields
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
+                    if (policyField != null && !string.IsNullOrWhiteSpace(policyField.OptionsJson))
+                    {
+                        using var policyDoc = JsonDocument.Parse(policyField.OptionsJson);
+                        if (TryGetPolicyBool(policyDoc.RootElement, "RequireEmailVerification", "requireEmailVerification", out var policyVerify))
+                        {
+                            requireEmailVerification = policyVerify;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            bool isPrivilegedAdmin = await activeUserManager.IsInRoleAsync(user, "SuperAdmin")
+                || await activeUserManager.IsInRoleAsync(user, "Admin");
+
+            if (!isPrivilegedAdmin && requireEmailVerification && !user.EmailConfirmed)
+            {
+                return StatusCode(403, new
+                {
+                    success = false,
+                    message = "Email confirmation is required by workspace policy before you can sign in.",
+                    data = new { requiresEmailVerification = true, email = user.Email }
+                });
+            }
+
+            if (!isPrivilegedAdmin && user.UserStatus == UserStatus.Pending)
+            {
+                return StatusCode(403, new
+                {
+                    success = false,
+                    message = "Your account is currently pending administrator approval. You will be notified once your account is active.",
+                    data = new { requiresApproval = true, email = user.Email }
+                });
             }
 
             // --- 2FA / MFA Trust Device Check ---
@@ -1251,32 +1289,304 @@ namespace Ozikol_BCC.Api.Controllers
             return await RequestPasswordOtp(request);
         }
 
+        /// <summary>
+        /// Verifies a 6-digit email OTP code, confirms the user's email, and activates Pending accounts
+        /// unless administrator approval is also required by tenant policy.
+        /// </summary>
+        /// <param name="request">Email and 6-digit OTP payload.</param>
+        /// <returns>Verification status indicating whether the account is now active or awaiting admin approval.</returns>
         [HttpPost("otp/verify")]
         [AllowAnonymous]
         public async Task<IActionResult> VerifyGeneralOtp([FromBody] ResetPasswordWithOtpRequest request)
         {
+            return await VerifyEmailOtp(request);
+        }
+
+        /// <summary>
+        /// Verifies a newly registered user's 6-digit email verification OTP, marks EmailConfirmed = true,
+        /// and transitions UserStatus from Pending to Active when administrator approval is not required.
+        /// </summary>
+        /// <param name="request">Email and 6-digit OTP payload.</param>
+        /// <returns>Verification result with account activation status.</returns>
+        [HttpPost("verify-email-otp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmailOtp([FromBody] ResetPasswordWithOtpRequest request)
+        {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Otp))
             {
-                return BadRequest(ApiResponse<object>.FailureResponse("Email and OTP code are required."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Email and 6-digit verification code are required."));
             }
 
-            var user = await _userManager.FindByEmailAsync(request.Email.Trim());
-            if (user == null) return BadRequest(ApiResponse<object>.FailureResponse("Invalid code."));
+            var cleanEmail = request.Email.Trim();
+            var user = await _userManager.FindByEmailAsync(cleanEmail);
+            if (user == null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid email address or verification code."));
+            }
 
-            var tokenData = await _userManager.GetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp");
-            if (string.IsNullOrEmpty(tokenData)) return BadRequest(ApiResponse<object>.FailureResponse("No pending OTP found."));
+            var trimmedOtp = request.Otp.Trim();
+
+            // Check dedicated email verification token first, then fall back to general OTP token
+            var tokenData = await _userManager.GetAuthenticationTokenAsync(user, "OzikolEmailVerify", "EmailVerificationOtp");
+            var tokenProvider = "OzikolEmailVerify";
+            var tokenName = "EmailVerificationOtp";
+            if (string.IsNullOrEmpty(tokenData))
+            {
+                tokenData = await _userManager.GetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp");
+                tokenProvider = "OzikolReset";
+                tokenName = "PasswordResetOtp";
+            }
+
+            if (string.IsNullOrEmpty(tokenData))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No pending verification code found. Please request a new code."));
+            }
 
             var parts = tokenData.Split(':');
-            if (parts.Length != 2 || parts[0] != request.Otp.Trim())
+            if (parts.Length != 2 || parts[0] != trimmedOtp)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Incorrect 6-digit verification code."));
             }
 
-            user.EmailConfirmed = true;
-            await _userManager.UpdateAsync(user);
-            await _userManager.RemoveAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp");
+            if (long.TryParse(parts[1], out var expiryTicks) && DateTime.UtcNow.Ticks > expiryTicks)
+            {
+                await _userManager.RemoveAuthenticationTokenAsync(user, tokenProvider, tokenName);
+                return BadRequest(ApiResponse<object>.FailureResponse("Verification code has expired. Please request a new one."));
+            }
 
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Email verified successfully."));
+            user.EmailConfirmed = true;
+            bool requiresApproval = await IsApprovalRequiredForTenantAsync();
+            if (!requiresApproval && user.UserStatus == UserStatus.Pending)
+            {
+                user.UserStatus = UserStatus.Active;
+            }
+
+            await _userManager.UpdateAsync(user);
+            await _userManager.RemoveAuthenticationTokenAsync(user, "OzikolEmailVerify", "EmailVerificationOtp");
+            await _userManager.RemoveAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp");
+            if (_dbContext != null)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+
+            bool isActive = user.UserStatus == UserStatus.Active;
+            var msg = isActive
+                ? "Email verified successfully! Your account is now active and ready to sign in."
+                : "Email verified successfully! Your account is now awaiting administrator approval.";
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                emailConfirmed = true,
+                isActive,
+                requiresApproval,
+                email = user.Email
+            }, msg));
+        }
+
+        /// <summary>
+        /// Dispatches a fresh 6-digit email verification OTP to an unconfirmed registrant's email address.
+        /// </summary>
+        /// <param name="request">Target email address payload.</param>
+        /// <returns>Success confirmation once the verification email is queued.</returns>
+        [HttpPost("resend-email-otp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendEmailOtp([FromBody] RequestOtpRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Email address is required."));
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+            if (user == null)
+            {
+                return Ok(ApiResponse<object>.SuccessResponse(null, "If an account exists with this email, a 6-digit verification code has been dispatched."));
+            }
+
+            if (user.EmailConfirmed)
+            {
+                return Ok(ApiResponse<object>.SuccessResponse(new { alreadyConfirmed = true }, "This email address is already verified."));
+            }
+
+            await QueueEmailVerificationOtpAsync(user);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "A fresh 6-digit verification code has been sent to your email address."));
+        }
+
+        /// <summary>
+        /// Generates a 6-digit email verification OTP, stores it with a 15-minute expiry, and queues the verification email.
+        /// </summary>
+        /// <param name="user">The newly registered or unconfirmed user profile.</param>
+        private async Task QueueEmailVerificationOtpAsync(Profile user)
+        {
+            var otpCode = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+            var expiryTicks = DateTime.UtcNow.AddMinutes(15).Ticks;
+            var tokenValue = $"{otpCode}:{expiryTicks}";
+
+            await _userManager.SetAuthenticationTokenAsync(user, "OzikolEmailVerify", "EmailVerificationOtp", tokenValue);
+            await _userManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", tokenValue);
+
+            if (_dbContext != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                {
+                    Id = Guid.CreateVersion7(),
+                    RelatedUserId = user.Id,
+                    RecipientEmail = user.Email,
+                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                    Subject = "Verify Your Email Address — 6-Digit Code",
+                    HtmlBody = $@"
+                        <p style='color:#475569; font-size:14px; line-height:1.5; margin-top:0;'>Welcome! Please verify your email address by entering this 6-digit code on the verification page:</p>
+                        <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:18px; margin:20px 0; text-align:center;'>
+                            <span style='font-size:32px; font-weight:800; color:#0050e5; letter-spacing:6px; font-family:monospace;'>{otpCode}</span>
+                        </div>
+                        <p style='color:#64748b; font-size:12.5px; margin-bottom:0;'>This code is valid for 15 minutes. Your account remains inactive until your email is verified.</p>",
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.Urgent,
+                    EventType = BcpEventType.LoginOtp,
+                    Status = BcpQueueStatus.Queued,
+                    CreatedAt = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the current tenant's onboarding policy requires administrator approval before activation.
+        /// </summary>
+        /// <returns>True when admin approval is required; otherwise false.</returns>
+        private async Task<bool> IsApprovalRequiredForTenantAsync()
+        {
+            bool requireApproval = false;
+            try
+            {
+                if (_dbContext != null)
+                {
+                    var settings = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                    if (settings != null)
+                        requireApproval = settings.RequireApprovalBeforeLogin;
+
+                    var policyField = await _dbContext.BcpRegistrationFormFields
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
+                    if (policyField != null && !string.IsNullOrWhiteSpace(policyField.OptionsJson))
+                    {
+                        using var doc = JsonDocument.Parse(policyField.OptionsJson);
+                        if (TryGetPolicyBool(doc.RootElement, "RequireApprovalBeforeLogin", "requireApprovalBeforeLogin", out var rabl))
+                            requireApproval = rabl;
+                        if (TryGetPolicyBool(doc.RootElement, "CollectInfoOnly", "collectInfoOnly", out var cio) && cio)
+                            requireApproval = true;
+                    }
+                }
+            }
+            catch { }
+            return requireApproval;
+        }
+
+        /// <summary>
+        /// Reads a boolean property from a policy JSON element, checking both PascalCase and camelCase names.
+        /// </summary>
+        private static bool TryGetPolicyBool(JsonElement root, string pascalName, string camelName, out bool value)
+        {
+            if (root.TryGetProperty(pascalName, out var p) && (p.ValueKind == JsonValueKind.True || p.ValueKind == JsonValueKind.False))
+            {
+                value = p.GetBoolean();
+                return true;
+            }
+            if (root.TryGetProperty(camelName, out var c) && (c.ValueKind == JsonValueKind.True || c.ValueKind == JsonValueKind.False))
+            {
+                value = c.GetBoolean();
+                return true;
+            }
+            value = false;
+            return false;
+        }
+
+        /// <summary>
+        /// Reads a non-empty string property from a policy JSON element, checking both PascalCase and camelCase names.
+        /// </summary>
+        private static bool TryGetPolicyString(JsonElement root, string pascalName, string camelName, out string value)
+        {
+            if (root.TryGetProperty(pascalName, out var p) && p.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(p.GetString()))
+            {
+                value = p.GetString()!;
+                return true;
+            }
+            if (root.TryGetProperty(camelName, out var c) && c.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(c.GetString()))
+            {
+                value = c.GetString()!;
+                return true;
+            }
+            value = string.Empty;
+            return false;
+        }
+
+        /// <summary>
+        /// Resolves prefilled registration details (name, email, phone, category) from a single-use
+        /// User Manager or feature invitation token for the central registration form.
+        /// </summary>
+        /// <param name="token">The invitation token from the registration email link.</param>
+        /// <returns>Prefilled applicant details when the token is valid and unused.</returns>
+        [HttpGet("invitation-prefill")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetInvitationPrefill([FromQuery] string token)
+        {
+            if (string.IsNullOrWhiteSpace(token) || _dbContext == null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invitation token is required."));
+            }
+
+            var cleanToken = token.Trim();
+            var bcpInv = await _dbContext.BcpUserInvitations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Token == cleanToken);
+
+            // Also check Invitations table (stores FullName/PhoneNumber for User Manager & feature invites)
+            var featureInv = await _dbContext.Invitations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Token == cleanToken);
+
+            if (bcpInv == null && featureInv == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Invitation link not found."));
+            }
+
+            if ((bcpInv != null && bcpInv.IsAccepted) || (featureInv != null && featureInv.IsUsed))
+            {
+                return StatusCode(410, ApiResponse<object>.FailureResponse("This invitation link has already been used."));
+            }
+
+            if ((bcpInv != null && bcpInv.ExpiresAt < DateTime.UtcNow) ||
+                (featureInv != null && featureInv.ExpiresUtc.HasValue && featureInv.ExpiresUtc.Value < DateTime.UtcNow))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This invitation link has expired. Please request a new link."));
+            }
+
+            var email = bcpInv?.Email ?? featureInv?.Email ?? string.Empty;
+            if (featureInv == null && !string.IsNullOrWhiteSpace(email))
+            {
+                featureInv = await _dbContext.Invitations
+                    .AsNoTracking()
+                    .Where(i => i.Email == email && !i.IsUsed)
+                    .OrderByDescending(i => i.CreatedUtc)
+                    .FirstOrDefaultAsync();
+            }
+
+            var fullName = featureInv?.FullName?.Trim() ?? string.Empty;
+            var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var firstName = nameParts.Length > 0 ? nameParts[0] : string.Empty;
+            var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                isValid = true,
+                email,
+                firstName,
+                lastName,
+                fullName,
+                phoneNumber = featureInv?.PhoneNumber ?? string.Empty,
+                bcpUserCategoryId = bcpInv?.BcpUserCategoryId,
+                roleName = bcpInv?.RoleName
+            }, "Invitation prefill loaded."));
         }
 
         [HttpPost("register")]
@@ -1289,8 +1599,8 @@ namespace Ozikol_BCC.Api.Controllers
             if (!string.IsNullOrWhiteSpace(model.ConfirmPassword) && model.Password != model.ConfirmPassword)
                 return BadRequest(ApiResponse<object>.FailureResponse("Passwords do not match."));
 
-            // Validate Google reCAPTCHA challenge token if provided
-            if (_recaptchaService != null && !string.IsNullOrWhiteSpace(model.RecaptchaToken))
+            // Enforce Google reCAPTCHA verification whenever reCAPTCHA keys are configured on the platform
+            if (_recaptchaService != null && !string.IsNullOrWhiteSpace(_recaptchaService.SiteKey))
             {
                 var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
                 var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(model.RecaptchaToken, clientIp);
@@ -1317,6 +1627,11 @@ namespace Ozikol_BCC.Api.Controllers
             // Durable layout & onboarding policy fallbacks (matches RegistrationFormApiController)
             bool allowPublicRegistration = settings?.AllowPublicRegistration ?? true;
             bool requireApprovalBeforeLogin = settings?.RequireApprovalBeforeLogin ?? false;
+            bool requireEmailVerification = settings?.RequireConfirmedEmailToLogin ?? false;
+            bool isFormDisabled = false;
+            bool isFormPublished = true;
+            bool requirePassword = true;
+            bool collectInfoOnly = false;
             string registrationSuccessMessage = !string.IsNullOrWhiteSpace(settings?.RegistrationSuccessMessage)
                 ? settings.RegistrationSuccessMessage
                 : "Registration successful! Welcome to the workspace.";
@@ -1332,12 +1647,27 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         using var doc = JsonDocument.Parse(policyConfigField.OptionsJson);
                         var root = doc.RootElement;
-                        if (root.TryGetProperty("allowPublicRegistration", out var aprProp) && aprProp.ValueKind == JsonValueKind.False)
-                            allowPublicRegistration = false;
-                        if (root.TryGetProperty("requireApprovalBeforeLogin", out var rablProp) && rablProp.ValueKind == JsonValueKind.True)
+                        if (TryGetPolicyBool(root, "AllowPublicRegistration", "allowPublicRegistration", out var aprVal))
+                            allowPublicRegistration = aprVal;
+                        if (TryGetPolicyBool(root, "RequireApprovalBeforeLogin", "requireApprovalBeforeLogin", out var rablVal))
+                            requireApprovalBeforeLogin = rablVal;
+                        if (TryGetPolicyBool(root, "RequireEmailVerification", "requireEmailVerification", out var revVal))
+                            requireEmailVerification = revVal;
+                        if (TryGetPolicyBool(root, "IsFormDisabled", "isFormDisabled", out var ifdVal))
+                            isFormDisabled = ifdVal;
+                        if (TryGetPolicyBool(root, "IsFormPublished", "isFormPublished", out var ifpVal))
+                            isFormPublished = ifpVal;
+                        if (TryGetPolicyBool(root, "RequirePassword", "requirePassword", out var rpVal))
+                            requirePassword = rpVal;
+                        if (TryGetPolicyBool(root, "CollectInfoOnly", "collectInfoOnly", out var cioVal) && cioVal)
+                        {
+                            collectInfoOnly = true;
+                            requirePassword = false;
                             requireApprovalBeforeLogin = true;
-                        if (root.TryGetProperty("registrationSuccessMessage", out var rsmProp) && !string.IsNullOrWhiteSpace(rsmProp.GetString()))
-                            registrationSuccessMessage = rsmProp.GetString()!;
+                            requireEmailVerification = false;
+                        }
+                        if (TryGetPolicyString(root, "RegistrationSuccessMessage", "registrationSuccessMessage", out var rsmVal))
+                            registrationSuccessMessage = rsmVal;
                     }
                 }
                 catch
@@ -1346,31 +1676,50 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            if (settings != null)
+            if (isFormDisabled)
             {
-                var password = model.Password;
-                if (password.Length < settings.PasswordMinLength)
-                    return BadRequest(ApiResponse<object>.FailureResponse($"Password must be at least {settings.PasswordMinLength} characters long."));
-                if (settings.PasswordRequireDigit && !password.Any(char.IsDigit))
-                    return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one numeric digit (0-9)."));
-                if (settings.PasswordRequireUppercase && !password.Any(char.IsUpper))
-                    return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one uppercase letter (A-Z)."));
-                if (settings.PasswordRequireLowercase && !password.Any(char.IsLower))
-                    return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one lowercase letter (a-z)."));
-                if (settings.PasswordRequireNonAlphanumeric && !password.Any(c => !char.IsLetterOrDigit(c)))
-                    return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one special symbol character."));
-
-                // screening blacklist
-                var compromised = new[] { "123456", "password", "password123", "qwerty", "admin123" };
-                if (compromised.Contains(password.ToLowerInvariant()))
-                    return BadRequest(ApiResponse<object>.FailureResponse("This password is on the security blacklist due to high risk. Choose a more secure password."));
+                return StatusCode(403, ApiResponse<object>.FailureResponse("The registration form is currently disabled. No new registrations are accepted at this time."));
             }
-            else
+
+            if (!isFormPublished && string.IsNullOrWhiteSpace(model.InvitationToken))
             {
-                // Fallback blacklist screening when settings table cannot be fully queried
-                var compromised = new[] { "123456", "password", "password123", "qwerty", "admin123" };
-                if (compromised.Contains(model.Password.ToLowerInvariant()))
-                    return BadRequest(ApiResponse<object>.FailureResponse("This password is on the security blacklist due to high risk. Choose a more secure password."));
+                return StatusCode(403, ApiResponse<object>.FailureResponse("This registration form is currently unpublished and not accessible to the public."));
+            }
+
+            if ((!requirePassword || collectInfoOnly) && string.IsNullOrWhiteSpace(model.Password))
+            {
+                // Generate an internal cryptographic password when info-only or passwordless onboarding is enabled
+                model.Password = $"Oz!{Convert.ToHexString(RandomNumberGenerator.GetBytes(12))}a1";
+            }
+
+            if (requirePassword && !collectInfoOnly)
+            {
+                if (settings != null)
+                {
+                    var password = model.Password ?? string.Empty;
+                    if (password.Length < settings.PasswordMinLength)
+                        return BadRequest(ApiResponse<object>.FailureResponse($"Password must be at least {settings.PasswordMinLength} characters long."));
+                    if (settings.PasswordRequireDigit && !password.Any(char.IsDigit))
+                        return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one numeric digit (0-9)."));
+                    if (settings.PasswordRequireUppercase && !password.Any(char.IsUpper))
+                        return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one uppercase letter (A-Z)."));
+                    if (settings.PasswordRequireLowercase && !password.Any(char.IsLower))
+                        return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one lowercase letter (a-z)."));
+                    if (settings.PasswordRequireNonAlphanumeric && !password.Any(c => !char.IsLetterOrDigit(c)))
+                        return BadRequest(ApiResponse<object>.FailureResponse("Password must contain at least one special symbol character."));
+
+                    // screening blacklist
+                    var compromised = new[] { "123456", "password", "password123", "qwerty", "admin123" };
+                    if (compromised.Contains(password.ToLowerInvariant()))
+                        return BadRequest(ApiResponse<object>.FailureResponse("This password is on the security blacklist due to high risk. Choose a more secure password."));
+                }
+                else
+                {
+                    // Fallback blacklist screening when settings table cannot be fully queried
+                    var compromised = new[] { "123456", "password", "password123", "qwerty", "admin123" };
+                    if (compromised.Contains((model.Password ?? string.Empty).ToLowerInvariant()))
+                        return BadRequest(ApiResponse<object>.FailureResponse("This password is on the security blacklist due to high risk. Choose a more secure password."));
+                }
             }
 
             var existing = await _userManager.FindByEmailAsync(model.Email);
@@ -1396,20 +1745,33 @@ namespace Ozikol_BCC.Api.Controllers
                 ? await _memberIdGenerator.GenerateMemberIdAsync(model.FirstName, model.LastName, catName)
                 : "CC-" + DateTime.UtcNow.ToString("yyMM") + "-" + RandomNumberGenerator.GetInt32(100, 999);
 
-            // Check invitation token
+            // Check invitation token (supports both User Manager BcpUserInvitations and feature Invitations)
             BcpUserInvitation? invitation = null;
+            Invitation? featureInvitation = null;
             if (!string.IsNullOrEmpty(model.InvitationToken) && _dbContext != null)
             {
+                var emailLower = model.Email.Trim().ToLowerInvariant();
                 invitation = await _dbContext.BcpUserInvitations
-                    .FirstOrDefaultAsync(i => i.Token == model.InvitationToken && i.Email == model.Email.Trim().ToLowerInvariant() && !i.IsAccepted);
-                if (invitation == null || invitation.ExpiresAt < DateTime.UtcNow)
+                    .FirstOrDefaultAsync(i => i.Token == model.InvitationToken && i.Email == emailLower && !i.IsAccepted);
+                featureInvitation = await _dbContext.Invitations
+                    .FirstOrDefaultAsync(i => i.Token == model.InvitationToken && i.Email.ToLower() == emailLower && !i.IsUsed);
+
+                if (invitation != null && invitation.ExpiresAt < DateTime.UtcNow)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("The invitation token link is invalid or has expired. Please request a new invitation."));
+                }
+                if (featureInvitation != null && featureInvitation.ExpiresUtc.HasValue && featureInvitation.ExpiresUtc.Value < DateTime.UtcNow)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("The invitation token link is invalid or has expired. Please request a new invitation."));
+                }
+                if (invitation == null && featureInvitation == null)
                 {
                     return BadRequest(ApiResponse<object>.FailureResponse("The invitation token link is invalid or has expired. Please request a new invitation."));
                 }
             }
 
             // Check public self-registration policy
-            if (invitation == null && !allowPublicRegistration)
+            if (invitation == null && featureInvitation == null && !allowPublicRegistration)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Public registration is currently disabled for this organization. Please request an invitation link from an administrator."));
             }
@@ -1450,7 +1812,8 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var requireApproval = requireApprovalBeforeLogin && invitation == null;
-            var initialStatus = requireApproval ? UserStatus.Pending : UserStatus.Active;
+            var needsEmailOtp = requireEmailVerification && invitation == null && featureInvitation == null && !collectInfoOnly;
+            var initialStatus = (requireApproval || needsEmailOtp) ? UserStatus.Pending : UserStatus.Active;
 
             var customAttrs = model.CustomAttributes != null
                 ? new Dictionary<string, object>(model.CustomAttributes)
@@ -1458,7 +1821,20 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!string.IsNullOrWhiteSpace(model.ReferralCode))
             {
-                customAttrs["referral_code"] = model.ReferralCode.Trim().ToUpperInvariant();
+                var cleanRefCode = model.ReferralCode.Trim().ToUpperInvariant();
+                customAttrs["referral_code"] = cleanRefCode;
+                if (_dbContext != null)
+                {
+                    var referrerId = await _dbContext.Users
+                        .AsNoTracking()
+                        .Where(u => u.MemberId != null && u.MemberId.ToUpper() == cleanRefCode && u.UserStatus == UserStatus.Active)
+                        .Select(u => u.Id)
+                        .FirstOrDefaultAsync();
+                    if (!string.IsNullOrEmpty(referrerId))
+                    {
+                        customAttrs["referred_by_profile_id"] = referrerId;
+                    }
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(model.OrganizationType))
@@ -1572,6 +1948,10 @@ namespace Ozikol_BCC.Api.Controllers
                 invitation.IsAccepted = true;
                 invitation.AcceptedAt = DateTime.UtcNow;
             }
+            if (featureInvitation != null && _dbContext != null)
+            {
+                featureInvitation.IsUsed = true;
+            }
 
             // Log activity
             if (_dbContext != null)
@@ -1592,6 +1972,24 @@ namespace Ozikol_BCC.Api.Controllers
                 await _dbContext.SaveChangesAsync();
             }
 
+            // If email OTP verification is required, keep account Pending/inactive, dispatch 6-digit OTP, and redirect to verification page
+            if (needsEmailOtp)
+            {
+                await QueueEmailVerificationOtpAsync(newUser);
+                var emailVerifyResponse = new
+                {
+                    userId = newUser.Id,
+                    email = newUser.Email,
+                    fullName = newUser.FullName,
+                    memberId = newUser.MemberId,
+                    status = "PendingEmailVerification",
+                    requiresEmailVerification = true,
+                    requiresApproval = requireApproval,
+                    message = registrationSuccessMessage
+                };
+                return Ok(ApiResponse<object>.SuccessResponse(emailVerifyResponse, registrationSuccessMessage));
+            }
+
             // If approval is required by the tenant's onboarding policy, do not issue an immediate JWT token
             if (requireApproval)
             {
@@ -1603,9 +2001,10 @@ namespace Ozikol_BCC.Api.Controllers
                     memberId = newUser.MemberId,
                     status = "PendingApproval",
                     requiresApproval = true,
-                    message = "Your registration has been submitted and is currently pending administrator verification. You will be notified once your account is active."
+                    requiresEmailVerification = false,
+                    message = registrationSuccessMessage
                 };
-                return Ok(ApiResponse<object>.SuccessResponse(pendingResponse, "Registration submitted successfully! Your account is pending administrator review."));
+                return Ok(ApiResponse<object>.SuccessResponse(pendingResponse, registrationSuccessMessage));
             }
 
             var token = await GenerateJwtTokenAsync(newUser);

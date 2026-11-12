@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -39,6 +39,9 @@ interface UserCategory {
 interface RegistrationPolicy {
   allowPublicRegistration: boolean;
   requireApprovalBeforeLogin: boolean;
+  requireEmailVerification?: boolean;
+  isFormDisabled?: boolean;
+  isFormPublished?: boolean;
   registrationWelcomeMessage: string;
   registrationFormTitle?: string;
   registrationSuccessMessage: string;
@@ -49,9 +52,36 @@ interface RegistrationPolicy {
   pageShellLayout?: 'website' | 'auth';
   formLayoutMode: 'single' | 'sections' | 'stepper' | 'pages';
   requirePassword: boolean;
+  collectInfoOnly?: boolean;
   allowSaveAndContinue: boolean;
   unpublishedCoreFields: string[];
+  deletedCoreFields?: string[];
+  coreFieldOrder?: string[];
   customSections: string[];
+  coreCategoryTitle?: string;
+  coreCategorySubtitle?: string;
+  coreFieldLabels?: Record<string, string>;
+  coreFieldHints?: Record<string, string>;
+  legalConsents?: RegistrationLegalConsentItem[];
+}
+
+interface RegistrationLegalConsentLink {
+  linkText: string;
+  pageId?: string | null;
+  pageSlug?: string | null;
+  customUrl?: string | null;
+}
+
+interface RegistrationLegalConsentItem {
+  id: string;
+  label: string;
+  linkText: string;
+  pageId?: string | null;
+  pageSlug?: string | null;
+  customUrl?: string | null;
+  isRequired: boolean;
+  isActive: boolean;
+  links?: RegistrationLegalConsentLink[];
 }
 
 interface IndustryTemplate {
@@ -95,16 +125,52 @@ interface IndustryTemplate {
           </p>
         </div>
         <div class="rf-header-actions">
+          <button
+            type="button"
+            class="rf-btn"
+            [ngClass]="policy.isFormDisabled ? 'rf-btn-danger-active' : 'rf-btn-outline'"
+            (click)="toggleFormDisabled()"
+            [disabled]="savingPolicy"
+            title="When disabled, the public registration form is blurred and no one can register."
+          >
+            <span class="material-symbols-outlined">{{ policy.isFormDisabled ? 'block' : 'pause_circle' }}</span>
+            <span>{{ policy.isFormDisabled ? 'Form Disabled (Click to Enable)' : 'Disable Form' }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="rf-btn"
+            [ngClass]="policy.isFormPublished === false ? 'rf-btn-warn-active' : 'rf-btn-publish-active'"
+            (click)="toggleFormPublished()"
+            [disabled]="savingPolicy"
+            title="Publish or unpublish the registration form for public access."
+          >
+            <span class="material-symbols-outlined">{{ policy.isFormPublished === false ? 'visibility_off' : 'public' }}</span>
+            <span>{{ policy.isFormPublished === false ? 'Unpublished (Click to Publish)' : 'Published' }}</span>
+          </button>
+
           <a routerLink="/auth/register" target="_blank" class="rf-btn rf-btn-outline">
             <span class="material-symbols-outlined">open_in_new</span>
             <span>Live "Get Started" Page</span>
           </a>
-          <button type="button" class="rf-btn rf-btn-primary" (click)="openCreateModal()">
+          <button type="button" class="rf-btn rf-btn-primary" (click)="createInlineField({ position: 'top' })">
             <span class="material-symbols-outlined">add_circle</span>
             <span>Add Custom Question</span>
           </button>
         </div>
       </div>
+
+      <!-- Top Form State Notice Banners -->
+      <div *ngIf="policy.isFormDisabled" class="rf-top-status-banner rf-top-status-disabled">
+        <span class="material-symbols-outlined">blur_on</span>
+        <span><strong>Form Disabled:</strong> The form builder is blurred and no one can register until you click "Form Disabled (Click to Enable)" above.</span>
+      </div>
+      <div *ngIf="!policy.isFormDisabled && policy.isFormPublished === false" class="rf-top-status-banner rf-top-status-unpub">
+        <span class="material-symbols-outlined">visibility_off</span>
+        <span><strong>Form Unpublished:</strong> You can still edit the form here, while the public registration page is hidden and not accessible to visitors.</span>
+      </div>
+
+      <div class="rf-builder-body-wrap" [class.rf-builder-blurred]="policy.isFormDisabled">
 
       <!-- Master Policy Configuration Card (Compact & Modern) -->
       <div class="rf-policy-card">
@@ -152,7 +218,21 @@ interface IndustryTemplate {
             </label>
           </div>
 
-          <!-- Toggle 3: Affiliate Referral Code -->
+          <!-- Toggle 3: Require Email Verification (OTP) -->
+          <div class="rf-toggle-box" [class.active]="policy.requireEmailVerification">
+            <div class="rf-toggle-info">
+              <span class="rf-toggle-label">Require Email Verification (OTP)</span>
+              <span class="rf-toggle-desc">
+                {{ policy.requireEmailVerification ? 'Inactive until 6-digit email OTP verified.' : 'No email OTP required at signup.' }}
+              </span>
+            </div>
+            <label class="rf-switch">
+              <input type="checkbox" [(ngModel)]="policy.requireEmailVerification" />
+              <span class="rf-slider"></span>
+            </label>
+          </div>
+
+          <!-- Toggle 4: Affiliate Referral Code -->
           <div class="rf-toggle-box" [class.active]="policy.enableAffiliateReferralCode !== false">
             <div class="rf-toggle-info">
               <span class="rf-toggle-label">Affiliate Promo Code</span>
@@ -584,165 +664,269 @@ interface IndustryTemplate {
                       <span class="material-symbols-outlined text-blue">shield_person</span>
                     </div>
                     <div>
-                      <div class="rf-cat-title-row">
-                        <h4 class="rf-cat-title">Default Category 1: Personal &amp; Account Credentials</h4>
-                        <span class="rf-badge-system-locked">
-                          <span class="material-symbols-outlined">lock</span>
-                          <span>System Protected (Cannot Delete)</span>
-                        </span>
+                      <div class="rf-cat-title-row" style="justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                          <h4 class="rf-cat-title">{{ policy.coreCategoryTitle || 'Default Category 1: Personal & Account Credentials' }}</h4>
+                          <span class="rf-badge-system-locked">
+                            <span class="material-symbols-outlined">lock</span>
+                            <span>System Protected (Cannot Delete)</span>
+                          </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                          <button *ngIf="(policy.deletedCoreFields?.length || 0) > 0"
+                                  type="button"
+                                  class="rf-btn-unpub"
+                                  (click)="restoreDeletedCoreFields()"
+                                  title="Restore deleted default fields">
+                            <span class="material-symbols-outlined">restore_from_trash</span>
+                            <span>Restore Deleted ({{ policy.deletedCoreFields?.length }})</span>
+                          </button>
+                          <button type="button"
+                                  class="rf-btn-unpub"
+                                  [class.is-active]="policy.collectInfoOnly"
+                                  (click)="toggleInfoOnlyMode()"
+                                  title="Switch between creating a login account or collecting info only without login">
+                            <span class="material-symbols-outlined">{{ policy.collectInfoOnly ? 'assignment_turned_in' : 'person_add' }}</span>
+                            <span>{{ policy.collectInfoOnly ? 'Info-Only Mode (No Login)' : 'Account + Login Mode' }}</span>
+                          </button>
+                          <button type="button"
+                                  class="rf-btn-unpub"
+                                  [class.is-active]="editingCoreCategory"
+                                  (click)="editingCoreCategory = !editingCoreCategory"
+                                  title="Customize category title, subtitle, and field labels">
+                            <span class="material-symbols-outlined">{{ editingCoreCategory ? 'close' : 'edit' }}</span>
+                            <span>{{ editingCoreCategory ? 'Done Editing' : 'Edit Labels' }}</span>
+                          </button>
+                          <button type="button"
+                                  class="rf-btn rf-btn-sm rf-btn-primary"
+                                  (click)="createInlineField({ sectionName: 'Personal Information', position: 'top' })"
+                                  title="Add a new custom field at the top of Personal Information">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            <span>+ Add Field</span>
+                          </button>
+                        </div>
                       </div>
-                      <p class="rf-cat-subtitle">Built-in identity fields required for authentication and member profiles. You can unpublish (hide) optional fields, but cannot delete them.</p>
+                      <p class="rf-cat-subtitle">{{ policy.coreCategorySubtitle || 'Built-in identity fields required for member profiles. You can customize labels or unpublish optional fields.' }}</p>
+
+                      <!-- Inline Editor for Category Title, Subtitle & Field Labels -->
+                      <div *ngIf="editingCoreCategory" style="margin-top: 12px; padding: 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; display: grid; gap: 12px; box-sizing: border-box; width: 100%; overflow: hidden;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; width: 100%; box-sizing: border-box;">
+                          <div style="min-width: 0;">
+                            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">SECTION TITLE</label>
+                            <input type="text" [(ngModel)]="policy.coreCategoryTitle" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff; color: #0f172a;" placeholder="e.g. Your Contact Details" />
+                          </div>
+                          <div style="min-width: 0;">
+                            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">SECTION SUBTITLE</label>
+                            <input type="text" [(ngModel)]="policy.coreCategorySubtitle" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff; color: #0f172a;" placeholder="e.g. Please provide your details below." />
+                          </div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                          <button type="button" class="rf-btn rf-btn-sm rf-btn-save" (click)="savePolicy(false); editingCoreCategory = false;" [disabled]="savingPolicy">
+                            <span class="material-symbols-outlined">save</span>
+                            <span>Save Labels</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Core Built-in Fields List -->
-                <div class="rf-core-table">
-                  <!-- First & Last Name -->
-                  <div class="rf-core-row">
+                <!-- Core Built-in Fields List (Draggable & Rearrangeable + Accepts Dropped Inputs) -->
+                <div class="rf-core-table"
+                     [class.rf-category-drop-active]="dragOverCategoryKey === 'Personal Information'"
+                     (dragover)="onCategoryFieldDragOver('Personal Information', $event)"
+                     (drop)="onCategoryFieldDrop('Personal Information', $event)">
+                  <div class="rf-core-row"
+                       *ngFor="let core of getOrderedCoreFields(); let ci = index"
+                       [class.rf-drag-over]="dragOverCoreFieldKey === core.key"
+                       draggable="true"
+                       (dragstart)="onCoreFieldDragStart(core.key, $event)"
+                       (dragover)="onCoreFieldDragOver(core.key, $event)"
+                       (drop)="onCoreFieldDrop(core.key, $event)"
+                       (dragend)="onCoreFieldDragEnd()">
                     <div class="rf-core-info">
-                      <span class="material-symbols-outlined rf-core-icon">person</span>
+                      <span class="material-symbols-outlined rf-drag-handle" title="Drag to reorder" style="cursor: grab; color: #94a3b8;">drag_indicator</span>
+                      <button type="button" class="rf-order-btn" (click)="moveCoreFieldUp(core.key)" [disabled]="ci === 0" title="Move Up">
+                        <span class="material-symbols-outlined">expand_less</span>
+                      </button>
+                      <button type="button" class="rf-order-btn" (click)="moveCoreFieldDown(core.key)" [disabled]="ci === getOrderedCoreFields().length - 1" title="Move Down">
+                        <span class="material-symbols-outlined">expand_more</span>
+                      </button>
+                      <span class="material-symbols-outlined rf-core-icon">{{ core.icon }}</span>
                       <div>
-                        <strong>First &amp; Last Name</strong>
-                        <span class="rf-core-hint">Stored in member Profile.FirstName &amp; Profile.LastName</span>
+                        <strong *ngIf="!editingCoreCategory">{{ getCoreLabel(core.key, core.defaultLabel) }}</strong>
+                        <input *ngIf="editingCoreCategory" type="text" [ngModel]="getCoreLabel(core.key, core.defaultLabel)" (ngModelChange)="setCoreLabel(core.key, $event)" style="width: 100%; max-width: 380px; box-sizing: border-box; display: block; margin-bottom: 4px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a;" />
+                        <span class="rf-core-hint">{{ getCoreFieldHintText(core.key, core.defaultHint) }}</span>
                       </div>
                     </div>
                     <div class="rf-core-controls">
-                      <span class="rf-badge-req">Mandatory</span>
-                      <span class="rf-badge-published">Published</span>
-                      <span class="rf-lock-badge" title="System Locked: Core account identity attribute cannot be deleted">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>Locked</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Email Address (Login Username) -->
-                  <div class="rf-core-row">
-                    <div class="rf-core-info">
-                      <span class="material-symbols-outlined rf-core-icon">mail</span>
-                      <div>
-                        <strong>Email Address (Login Username)</strong>
-                        <span class="rf-core-hint">Primary login credential and transactional communication address</span>
-                      </div>
-                    </div>
-                    <div class="rf-core-controls">
-                      <span class="rf-badge-req">Mandatory</span>
-                      <span class="rf-badge-published">Published</span>
-                      <span class="rf-lock-badge" title="System Locked: Core authentication identifier cannot be deleted">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>Locked</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Password & Confirm -->
-                  <div class="rf-core-row">
-                    <div class="rf-core-info">
-                      <span class="material-symbols-outlined rf-core-icon">key</span>
-                      <div>
-                        <strong>Account Password &amp; Confirm</strong>
-                        <span class="rf-core-hint">
-                          {{ policy.requirePassword
-                            ? 'Active — Applicants will specify a secure password during registration.'
-                            : 'Bypassed — Passwordless signup active; applicant will receive an activation email link.' }}
+                      <ng-container *ngIf="core.key === 'email'">
+                        <span class="rf-badge-req">{{ policy.collectInfoOnly ? 'Contact' : 'Mandatory' }}</span>
+                        <span class="rf-badge-published">Published</span>
+                      </ng-container>
+                      <ng-container *ngIf="core.key === 'password'">
+                        <span [class]="(!policy.collectInfoOnly && policy.requirePassword) ? 'rf-badge-req' : 'rf-badge-opt'">
+                          {{ policy.collectInfoOnly ? 'Info-Only' : (policy.requirePassword ? 'Required' : 'Bypassed') }}
                         </span>
-                      </div>
-                    </div>
-                    <div class="rf-core-controls">
-                      <span [class]="policy.requirePassword ? 'rf-badge-req' : 'rf-badge-opt'">
-                        {{ policy.requirePassword ? 'Required' : 'Bypassed' }}
-                      </span>
-                      <span [class]="policy.requirePassword ? 'rf-badge-published' : 'rf-badge-unpub'">
-                        {{ policy.requirePassword ? 'Published' : 'Unpublished' }}
-                      </span>
-                      <span class="rf-lock-badge" title="System Locked: Governed by Require Password switch above">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>Locked</span>
-                      </span>
-                    </div>
-                  </div>
+                        <button type="button"
+                                class="rf-btn-unpub"
+                                [class.is-active]="!policy.collectInfoOnly && policy.requirePassword"
+                                (click)="toggleRequirePasswordInline()">
+                          <span class="material-symbols-outlined">{{ (!policy.collectInfoOnly && policy.requirePassword) ? 'visibility' : 'visibility_off' }}</span>
+                          <span>{{ (!policy.collectInfoOnly && policy.requirePassword) ? 'Published' : 'Hidden' }}</span>
+                        </button>
+                      </ng-container>
+                      <ng-container *ngIf="core.key !== 'email' && core.key !== 'password'">
+                        <span [class]="isCoreFieldPublished(core.key) ? 'rf-badge-opt' : 'rf-badge-unpub'">
+                          {{ isCoreFieldPublished(core.key) ? (core.key === 'fullName' ? 'Published' : 'Optional') : 'Hidden' }}
+                        </span>
+                        <button type="button"
+                                class="rf-btn-unpub"
+                                [class.is-active]="isCoreFieldPublished(core.key)"
+                                (click)="toggleCoreFieldPublish(core.key)">
+                          <span class="material-symbols-outlined">{{ isCoreFieldPublished(core.key) ? 'visibility' : 'visibility_off' }}</span>
+                          <span>{{ isCoreFieldPublished(core.key) ? 'Published' : 'Unpublished' }}</span>
+                        </button>
+                      </ng-container>
 
-                  <!-- Phone Number (Unpublishable) -->
-                  <div class="rf-core-row">
-                    <div class="rf-core-info">
-                      <span class="material-symbols-outlined rf-core-icon">phone</span>
-                      <div>
-                        <strong>Phone Number</strong>
-                        <span class="rf-core-hint">Used for SMS alerts, two-factor authentication, and contact phone book</span>
-                      </div>
-                    </div>
-                    <div class="rf-core-controls">
-                      <span [class]="isCoreFieldPublished('phone') ? 'rf-badge-opt' : 'rf-badge-unpub'">
-                        {{ isCoreFieldPublished('phone') ? 'Optional' : 'Hidden' }}
-                      </span>
-                      <!-- Unpublish / Publish Toggle Switch -->
-                      <button type="button"
-                              class="rf-btn-unpub"
-                              [class.is-active]="isCoreFieldPublished('phone')"
-                              (click)="toggleCoreFieldPublish('phone')">
-                        <span class="material-symbols-outlined">{{ isCoreFieldPublished('phone') ? 'visibility' : 'visibility_off' }}</span>
-                        <span>{{ isCoreFieldPublished('phone') ? 'Published' : 'Unpublished' }}</span>
-                      </button>
-                      <span class="rf-lock-badge" title="System Field: Cannot be deleted, but can be hidden">
+                      <span *ngIf="!policy.collectInfoOnly && (core.key === 'email' || core.key === 'phone')"
+                            class="rf-lock-badge"
+                            title="System Protected: Cannot be deleted when login is enabled">
                         <span class="material-symbols-outlined">lock</span>
                         <span>No Delete</span>
                       </span>
+                      <button *ngIf="policy.collectInfoOnly || (core.key !== 'email' && core.key !== 'phone')"
+                              type="button"
+                              class="rf-btn-unpub"
+                              style="color: #dc2626; border-color: #fecaca; background: #fef2f2;"
+                              (click)="deleteCoreField(core.key)"
+                              title="Delete this field from the form">
+                        <span class="material-symbols-outlined">delete</span>
+                        <span>Delete</span>
+                      </button>
                     </div>
                   </div>
 
-                  <!-- Category Tier Selector (Unpublishable) -->
-                  <div class="rf-core-row">
-                    <div class="rf-core-info">
-                      <span class="material-symbols-outlined rf-core-icon">category</span>
-                      <div>
-                        <strong>Member Category Tier Selector</strong>
-                        <span class="rf-core-hint">Allows applicants to select their tier (e.g. Student, Executive, Affiliate)</span>
+                  <!-- Custom Fields Added to Personal Information (Inline Editable + Draggable + Auto-Save) -->
+                  <div *ngFor="let cf of getPersonalInfoCustomFields()"
+                       class="rf-core-row rf-inline-field-wrapper"
+                       [class.rf-field-expanded]="expandedFieldId === cf.id"
+                       [class.rf-drag-over]="isFieldDragOverById(cf.id)"
+                       [attr.data-field-id]="cf.id"
+                       draggable="true"
+                       (dragstart)="onFieldDragStartById(cf.id, $event)"
+                       (dragover)="onFieldDragOverById(cf.id, $event)"
+                       (drop)="onFieldDropById(cf.id, $event)"
+                       (dragend)="onFieldDragEnd()"
+                       style="flex-direction: column; align-items: stretch; gap: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                      <div class="rf-core-info" style="cursor: pointer;" (click)="toggleFieldExpand(cf.id)">
+                        <span class="material-symbols-outlined rf-drag-handle" title="Drag to reorder" style="cursor: grab; color: #94a3b8;">drag_indicator</span>
+                        <span class="material-symbols-outlined rf-core-icon">{{ getFieldTypeIcon(cf.fieldType) }}</span>
+                        <div>
+                          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <strong>{{ cf.label || '(Untitled Field)' }}</strong>
+                            <span *ngIf="expandedFieldId === cf.id" class="rf-editing-badge">Editing Now</span>
+                          </div>
+                          <span class="rf-core-hint">
+                            Custom {{ getFieldTypeLabel(cf.fieldType) }} in Personal Information
+                            <ng-container *ngIf="cf.helpText"> — {{ cf.helpText }}</ng-container>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="rf-core-controls">
+                        <span [class]="cf.isRequired ? 'rf-badge-req' : 'rf-badge-opt'">
+                          {{ cf.isRequired ? 'Required' : 'Optional' }}
+                        </span>
+                        <span [class]="cf.isActive ? 'rf-badge-published' : 'rf-badge-unpub'">
+                          {{ cf.isActive ? 'Active' : 'Hidden' }}
+                        </span>
+                        <button type="button"
+                                class="rf-btn-unpub"
+                                [class.is-active]="expandedFieldId === cf.id"
+                                (click)="toggleFieldExpand(cf.id)"
+                                title="Edit inline">
+                          <span class="material-symbols-outlined">{{ expandedFieldId === cf.id ? 'expand_less' : 'edit' }}</span>
+                          <span>{{ expandedFieldId === cf.id ? 'Collapse' : 'Edit' }}</span>
+                        </button>
+                        <button type="button"
+                                class="rf-btn-unpub"
+                                style="color: #dc2626; border-color: #fecaca; background: #fef2f2;"
+                                (click)="deleteField(cf)"
+                                title="Delete custom field">
+                          <span class="material-symbols-outlined">delete</span>
+                          <span>Delete</span>
+                        </button>
                       </div>
                     </div>
-                    <div class="rf-core-controls">
-                      <span [class]="isCoreFieldPublished('category') ? 'rf-badge-opt' : 'rf-badge-unpub'">
-                        {{ isCoreFieldPublished('category') ? 'Optional' : 'Hidden' }}
-                      </span>
-                      <button type="button"
-                              class="rf-btn-unpub"
-                              [class.is-active]="isCoreFieldPublished('category')"
-                              (click)="toggleCoreFieldPublish('category')">
-                        <span class="material-symbols-outlined">{{ isCoreFieldPublished('category') ? 'visibility' : 'visibility_off' }}</span>
-                        <span>{{ isCoreFieldPublished('category') ? 'Published' : 'Unpublished' }}</span>
-                      </button>
-                      <span class="rf-lock-badge" title="System Field: Cannot be deleted, but can be hidden">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>No Delete</span>
-                      </span>
+
+                    <!-- Inline Form Builder Editor for Personal Info Custom Field -->
+                    <div *ngIf="expandedFieldId === cf.id" class="rf-inline-editor-panel" (click)="$event.stopPropagation()">
+                      <div class="rf-inline-grid">
+                        <div class="rf-inline-col-2">
+                          <label>QUESTION / FIELD LABEL *</label>
+                          <input type="text" [attr.data-field-label-input]="cf.id" [(ngModel)]="cf.label" (ngModelChange)="onInlineFieldLabelChange(cf)" placeholder="e.g. Date of Birth, Company Name" />
+                          <span class="rf-readonly-key">Key: <code>{{ cf.fieldKey }}</code></span>
+                        </div>
+                        <div>
+                          <label>INPUT CONTROL TYPE</label>
+                          <select [(ngModel)]="cf.fieldType" (ngModelChange)="scheduleFieldAutoSave(cf)">
+                            <option value="text">Short Text</option>
+                            <option value="number">Number</option>
+                            <option value="select">Dropdown Select</option>
+                            <option value="date">Date Picker</option>
+                            <option value="textarea">Multiline Text</option>
+                            <option value="file">File / Photo Upload</option>
+                            <option value="checkbox">Single Checkbox</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>PLACEHOLDER TEXT</label>
+                          <input type="text" [(ngModel)]="cf.placeholder" (ngModelChange)="scheduleFieldAutoSave(cf)" placeholder="e.g. Enter value..." />
+                        </div>
+                        <div>
+                          <label>SECTION / CATEGORY</label>
+                          <select [(ngModel)]="cf.sectionName" (ngModelChange)="scheduleFieldAutoSave(cf)">
+                            <option value="Personal Information">Personal Information (Default Category 1)</option>
+                            <option value="">General / Unassigned</option>
+                            <option *ngFor="let sec of policy.customSections" [value]="sec">{{ sec }}</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>HELPER TEXT (OPTIONAL)</label>
+                          <input type="text" [(ngModel)]="cf.helpText" (ngModelChange)="scheduleFieldAutoSave(cf)" placeholder="Short guidance shown below the input" />
+                        </div>
+                      </div>
+                      <div *ngIf="cf.fieldType === 'select'" class="rf-inline-options-box">
+                        <label>DROPDOWN OPTIONS</label>
+                        <div class="rf-inline-opts-list">
+                          <span *ngFor="let opt of cf.options; let oi = index" class="rf-opt-chip">
+                            {{ opt }}
+                            <button type="button" (click)="removeInlineOption(cf, oi)">&times;</button>
+                          </span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 6px;">
+                          <input type="text" [(ngModel)]="inlineOptionDrafts[cf.id]" (keyup.enter)="addInlineOption(cf)" placeholder="Type option and press Enter..." style="flex: 1;" />
+                          <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="addInlineOption(cf)">Add</button>
+                        </div>
+                      </div>
+                      <div class="rf-inline-toggles">
+                        <label><input type="checkbox" [(ngModel)]="cf.isRequired" (ngModelChange)="scheduleFieldAutoSave(cf)" /> Required Field</label>
+                        <label><input type="checkbox" [(ngModel)]="cf.isActive" (ngModelChange)="scheduleFieldAutoSave(cf)" /> Active on Form</label>
+                        <label><input type="checkbox" [(ngModel)]="cf.showInWorkspaceProfile" (ngModelChange)="scheduleFieldAutoSave(cf)" /> Show on Member Profile</label>
+                      </div>
                     </div>
                   </div>
 
-                  <!-- Industry Sector / Organization Domain (Unpublishable) -->
-                  <div class="rf-core-row">
-                    <div class="rf-core-info">
-                      <span class="material-symbols-outlined rf-core-icon">apartment</span>
-                      <div>
-                        <strong>Industry / Organization Sector</strong>
-                        <span class="rf-core-hint">Allows applicants to specify their industry vertical. Can be unpublished to hide from registration.</span>
-                      </div>
-                    </div>
-                    <div class="rf-core-controls">
-                      <span [class]="isCoreFieldPublished('organizationType') ? 'rf-badge-opt' : 'rf-badge-unpub'">
-                        {{ isCoreFieldPublished('organizationType') ? 'Published' : 'Hidden' }}
-                      </span>
-                      <button type="button"
-                              class="rf-btn-unpub"
-                              [class.is-active]="isCoreFieldPublished('organizationType')"
-                              (click)="toggleCoreFieldPublish('organizationType')">
-                        <span class="material-symbols-outlined">{{ isCoreFieldPublished('organizationType') ? 'visibility' : 'visibility_off' }}</span>
-                        <span>{{ isCoreFieldPublished('organizationType') ? 'Published' : 'Unpublished' }}</span>
-                      </button>
-                      <span class="rf-lock-badge" title="System Field: Cannot be deleted, but can be hidden">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>No Delete</span>
-                      </span>
-                    </div>
+                  <!-- Bottom Add Field Bar inside Personal Information -->
+                  <div style="display: flex; justify-content: flex-end; padding-top: 8px;">
+                    <button type="button"
+                            class="rf-btn rf-btn-sm rf-btn-outline"
+                            (click)="createInlineField({ sectionName: 'Personal Information', position: 'bottom' })"
+                            title="Add another custom field at the bottom of Personal Information">
+                      <span class="material-symbols-outlined">add</span>
+                      <span>Add Field to Personal Information</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -752,148 +936,442 @@ interface IndustryTemplate {
               <!-- ======================================================= -->
               <div class="rf-custom-hierarchy-wrap">
                 
-                <!-- Action Bar for Custom Categories / Steps -->
+                <!-- Action Bar for Custom Categories / Steps (Top Add Controls + Auto-Save Status) -->
                 <div class="rf-hierarchy-toolbar">
                   <div class="rf-hierarchy-title">
                     <span class="material-symbols-outlined">view_cozy</span>
                     <span *ngIf="policy.formLayoutMode === 'single'">Unified Question Stream ({{ fields.length }} Questions)</span>
                     <span *ngIf="policy.formLayoutMode === 'sections'">Category Sections Hierarchy ({{ (policy.customSections.length || 0) + 1 }} Sections)</span>
                     <span *ngIf="policy.formLayoutMode === 'stepper' || policy.formLayoutMode === 'pages'">Staged Flow Sequence ({{ (policy.customSections.length || 0) + 1 }} Stages)</span>
+
+                    <span class="rf-autosave-pill" [attr.data-status]="autoSaveStatus">
+                      <span class="material-symbols-outlined" [class.spin]="autoSaveStatus === 'saving'">
+                        {{ autoSaveStatus === 'saving' ? 'sync' : (autoSaveStatus === 'error' ? 'error' : 'cloud_done') }}
+                      </span>
+                      <span>
+                        {{ autoSaveStatus === 'saving' ? 'Auto-saving...' : (autoSaveStatus === 'error' ? 'Save issue' : 'Auto-saved') }}
+                      </span>
+                    </span>
                   </div>
 
                   <div class="rf-hierarchy-actions">
-                    <!-- In Sections Mode: Add Category Section -->
-                    <button *ngIf="policy.formLayoutMode === 'sections'"
-                            type="button"
+                    <!-- Add Category / Step at Top (No Modal) -->
+                    <button type="button"
                             class="rf-btn rf-btn-sm rf-btn-outline"
-                            (click)="promptAddSection()">
+                            (click)="addSection('top')">
                       <span class="material-symbols-outlined">library_add</span>
-                      <span>+ Add Category Section</span>
+                      <span>+ Add {{ policy.formLayoutMode === 'stepper' || policy.formLayoutMode === 'pages' ? 'Step' : 'Category' }} (Top)</span>
                     </button>
 
-                    <!-- In Stepper / Pages Mode: Add Step Stage -->
-                    <button *ngIf="policy.formLayoutMode === 'stepper' || policy.formLayoutMode === 'pages'"
-                            type="button"
-                            class="rf-btn rf-btn-sm rf-btn-outline"
-                            (click)="promptAddSection()">
-                      <span class="material-symbols-outlined">playlist_add</span>
-                      <span>+ Add Step Stage</span>
-                    </button>
-
-                    <!-- Primary Add Question Button -->
-                    <button type="button" class="rf-btn rf-btn-sm rf-btn-primary" (click)="openCreateModal()">
+                    <!-- Add Question at Top (No Modal) -->
+                    <button type="button" class="rf-btn rf-btn-sm rf-btn-primary" (click)="createInlineField({ position: 'top' })">
                       <span class="material-symbols-outlined">add_circle</span>
-                      <span>Add Custom Question</span>
+                      <span>+ Add Question (Top)</span>
                     </button>
                   </div>
                 </div>
 
                 <!-- Empty State -->
-                <div *ngIf="!loadingFields && fields.length === 0" class="rf-empty-fields">
+                <div *ngIf="!loadingFields && fields.length === 0 && (!policy.customSections || policy.customSections.length === 0)" class="rf-empty-fields">
                   <span class="material-symbols-outlined rf-empty-icon">playlist_add</span>
                   <h4>No Custom Questions Added Yet</h4>
-                  <p>Your "Get Started" page is currently using standard personal credentials. Add questions like Student ID, Department, Company Name, or Document Uploads.</p>
-                  <button type="button" class="rf-btn rf-btn-primary" (click)="openCreateModal()">
+                  <p>Your "Get Started" page is currently using standard personal credentials. Add questions like Student ID, Department, Company Name, or Document Uploads directly inline.</p>
+                  <button type="button" class="rf-btn rf-btn-primary" (click)="createInlineField({ position: 'bottom' })">
                     <span class="material-symbols-outlined">add_circle</span>
                     <span>Add First Custom Question</span>
                   </button>
                 </div>
 
-                <!-- Section / Step Cards (if sections or stepper/pages mode) -->
-                <div *ngIf="policy.formLayoutMode !== 'single' && policy.customSections && policy.customSections.length > 0" class="rf-sections-deck">
-                  <div *ngFor="let sec of policy.customSections; let secIdx = index" class="rf-section-group-box">
-                    <div class="rf-sec-group-header">
+                <!-- Reusable Inline Field Card Template -->
+                <ng-template #inlineFieldCard let-field="field" let-i="index" let-total="total">
+                  <div class="rf-field-item"
+                       [class.inactive]="!field.isActive"
+                       [class.rf-drag-over]="isFieldDragOverById(field.id)"
+                       [class.rf-field-expanded]="expandedFieldId === field.id"
+                       [attr.data-field-id]="field.id"
+                       draggable="true"
+                       (dragstart)="onFieldDragStartById(field.id, $event)"
+                       (dragover)="onFieldDragOverById(field.id, $event)"
+                       (drop)="onFieldDropById(field.id, $event)"
+                       (dragend)="onFieldDragEnd()"
+                       style="flex-direction: column; align-items: stretch;">
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                      <div class="rf-field-reorder" style="display: flex; align-items: center; gap: 2px;">
+                        <span class="material-symbols-outlined rf-drag-handle" title="Drag to reorder question" style="cursor: grab; color: #94a3b8;">drag_indicator</span>
+                        <button type="button" class="rf-order-btn" (click)="moveFieldUpById(field.id)" [disabled]="i === 0" title="Move Up">
+                          <span class="material-symbols-outlined">expand_less</span>
+                        </button>
+                        <span class="rf-order-index">#{{ i + 1 }}</span>
+                        <button type="button" class="rf-order-btn" (click)="moveFieldDownById(field.id)" [disabled]="i === total - 1" title="Move Down">
+                          <span class="material-symbols-outlined">expand_more</span>
+                        </button>
+                      </div>
+
+                      <div class="rf-field-body" style="cursor: pointer;" (click)="toggleFieldExpand(field.id)">
+                        <div class="rf-field-top">
+                          <span class="rf-field-type-pill" [attr.data-type]="field.fieldType">
+                            <span class="material-symbols-outlined">{{ getFieldTypeIcon(field.fieldType) }}</span>
+                            <span>{{ getFieldTypeLabel(field.fieldType) }}</span>
+                          </span>
+                          <span *ngIf="field.isActive" class="rf-badge-active">Active</span>
+                          <span *ngIf="!field.isActive" class="rf-badge-disabled">Disabled (Hidden)</span>
+                          <span *ngIf="field.isRequired" class="rf-badge-req">Required</span>
+                          <span *ngIf="!field.isRequired" class="rf-badge-opt">Optional</span>
+                          <span *ngIf="expandedFieldId === field.id" class="rf-editing-badge">Editing Now</span>
+                        </div>
+                        <h4 class="rf-field-label">{{ field.label || '(Untitled Question)' }}</h4>
+                        <div class="rf-field-meta">
+                          <code>{{ field.fieldKey }}</code>
+                          <span *ngIf="field.placeholder" class="rf-meta-placeholder">Placeholder: "{{ field.placeholder }}"</span>
+                          <span *ngIf="field.options && field.options.length > 0" class="rf-meta-opts">{{ field.options.length }} options</span>
+                        </div>
+                      </div>
+
+                      <div class="rf-field-actions">
+                        <button type="button"
+                                class="rf-action-btn"
+                                (click)="createInlineFieldAfterId(field.id, field.sectionName)"
+                                title="Insert new question below this one">
+                          <span class="material-symbols-outlined">add</span>
+                        </button>
+                        <button type="button"
+                                class="rf-action-btn rf-btn-toggle-active"
+                                [class.is-active]="field.isActive"
+                                (click)="toggleFieldActive(field)"
+                                [title]="field.isActive ? 'Disable Question' : 'Enable Question'">
+                          <span class="material-symbols-outlined">{{ field.isActive ? 'visibility' : 'visibility_off' }}</span>
+                        </button>
+                        <button type="button"
+                                class="rf-action-btn"
+                                [class.is-active]="expandedFieldId === field.id"
+                                (click)="toggleFieldExpand(field.id)"
+                                title="Edit inline">
+                          <span class="material-symbols-outlined">{{ expandedFieldId === field.id ? 'expand_less' : 'edit' }}</span>
+                        </button>
+                        <button type="button" class="rf-action-btn rf-btn-del" (click)="deleteField(field)" title="Delete Question">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Inline Form Builder Editor Panel (Zero Modal, Auto-Saves) -->
+                    <div *ngIf="expandedFieldId === field.id" class="rf-inline-editor-panel" (click)="$event.stopPropagation()">
+                      <div class="rf-inline-grid">
+                        <div class="rf-inline-col-2">
+                          <label>QUESTION / FIELD LABEL *</label>
+                          <input type="text" [attr.data-field-label-input]="field.id" [(ngModel)]="field.label" (ngModelChange)="onInlineFieldLabelChange(field)" placeholder="e.g. Matriculation / Student ID" />
+                          <span class="rf-readonly-key">Key: <code>{{ field.fieldKey }}</code></span>
+                        </div>
+                        <div>
+                          <label>INPUT CONTROL TYPE</label>
+                          <select [(ngModel)]="field.fieldType" (ngModelChange)="scheduleFieldAutoSave(field)">
+                            <option value="text">Short Text</option>
+                            <option value="number">Number</option>
+                            <option value="select">Dropdown Select</option>
+                            <option value="date">Date Picker</option>
+                            <option value="textarea">Multiline Text</option>
+                            <option value="file">File / Photo Upload</option>
+                            <option value="checkbox">Single Checkbox</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>PLACEHOLDER TEXT</label>
+                          <input type="text" [(ngModel)]="field.placeholder" (ngModelChange)="scheduleFieldAutoSave(field)" placeholder="e.g. Enter value..." />
+                        </div>
+                        <div>
+                          <label>ASSIGNED CATEGORY TIER</label>
+                          <select [(ngModel)]="field.bcpUserCategoryId" (ngModelChange)="scheduleFieldAutoSave(field)">
+                            <option [ngValue]="null">Applies to All Categories (Global)</option>
+                            <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.name }}</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>SECTION / CATEGORY GROUP</label>
+                          <select [(ngModel)]="field.sectionName" (ngModelChange)="scheduleFieldAutoSave(field)">
+                            <option value="">General / Unassigned</option>
+                            <option value="Personal Information">Personal Information (Default Category 1)</option>
+                            <option *ngFor="let sec of policy.customSections" [value]="sec">{{ sec }}</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>HELPER GUIDANCE TEXT</label>
+                          <input type="text" [(ngModel)]="field.helpText" (ngModelChange)="scheduleFieldAutoSave(field)" placeholder="Optional hint for applicant" />
+                        </div>
+                        <div>
+                          <label>MIN LENGTH / VALUE</label>
+                          <input type="number" [(ngModel)]="field.minLength" (ngModelChange)="scheduleFieldAutoSave(field)" placeholder="e.g. 3" />
+                        </div>
+                        <div>
+                          <label>MAX LENGTH / VALUE</label>
+                          <input type="number" [(ngModel)]="field.maxLength" (ngModelChange)="scheduleFieldAutoSave(field)" placeholder="e.g. 50" />
+                        </div>
+                        <div>
+                          <label>REGEX PATTERN (OPTIONAL)</label>
+                          <input type="text" [(ngModel)]="field.patternRegex" (ngModelChange)="scheduleFieldAutoSave(field)" placeholder="e.g. ^[A-Z0-9-]+$" />
+                        </div>
+                        <div>
+                          <label>CUSTOM VALIDATION ERROR</label>
+                          <input type="text" [(ngModel)]="field.customErrorMessage" (ngModelChange)="scheduleFieldAutoSave(field)" placeholder="e.g. Please enter a valid code" />
+                        </div>
+                      </div>
+
+                      <div *ngIf="field.fieldType === 'select'" class="rf-inline-options-box">
+                        <label>DROPDOWN OPTIONS</label>
+                        <div class="rf-inline-opts-list">
+                          <span *ngFor="let opt of field.options; let oi = index" class="rf-opt-chip">
+                            {{ opt }}
+                            <button type="button" (click)="removeInlineOption(field, oi)">&times;</button>
+                          </span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 6px;">
+                          <input type="text" [(ngModel)]="inlineOptionDrafts[field.id]" (keyup.enter)="addInlineOption(field)" placeholder="Type option and press Enter..." style="flex: 1;" />
+                          <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="addInlineOption(field)">Add Option</button>
+                        </div>
+                      </div>
+
+                      <div class="rf-inline-toggles">
+                        <label><input type="checkbox" [(ngModel)]="field.isRequired" (ngModelChange)="scheduleFieldAutoSave(field)" /> Mark as Required Field</label>
+                        <label><input type="checkbox" [(ngModel)]="field.showInWorkspaceProfile" (ngModelChange)="scheduleFieldAutoSave(field)" /> Show on Member's Profile</label>
+                        <label><input type="checkbox" [(ngModel)]="field.isActive" (ngModelChange)="scheduleFieldAutoSave(field)" /> Active on Public Form</label>
+                      </div>
+                    </div>
+                  </div>
+                </ng-template>
+
+                <!-- Grouped Category / Step Cards (Each Category Card owns its inputs directly inside its border) -->
+                <ng-container *ngIf="policy.formLayoutMode !== 'single' && policy.customSections && policy.customSections.length > 0">
+                  <div *ngFor="let sec of policy.customSections; let secIdx = index; trackBy: trackByIndex"
+                       class="rf-category-card"
+                       [class.rf-drag-over]="dragOverSectionIndex === secIdx"
+                       [class.rf-category-drop-active]="dragOverCategoryKey === sec"
+                       draggable="true"
+                       (dragstart)="onSectionDragStart(secIdx, $event)"
+                       (dragover)="draggedFieldIndex !== null ? onCategoryFieldDragOver(sec, $event) : onSectionDragOver(secIdx, $event)"
+                       (drop)="draggedFieldIndex !== null ? onCategoryFieldDrop(sec, $event) : onSectionDrop(secIdx, $event)"
+                       (dragend)="onSectionDragEnd()">
+                    <div class="rf-category-card-header">
                       <div class="rf-sec-group-title">
-                        <span class="rf-sec-badge-num">{{ policy.formLayoutMode === 'sections' ? 'Category ' + (secIdx + 2) : 'Step ' + (secIdx + 2) }}</span>
+                        <span class="material-symbols-outlined rf-drag-handle" title="Drag to reorder category" style="cursor: grab; color: #94a3b8;">drag_indicator</span>
+                        <span class="rf-sec-badge-num">{{ policy.formLayoutMode === 'sections' ? 'Category ' + (secIdx + 2) : (policy.formLayoutMode === 'pages' ? 'Page ' + (secIdx + 2) : 'Step ' + (secIdx + 2)) }}</span>
                         <input type="text"
                                [(ngModel)]="policy.customSections[secIdx]"
+                               (ngModelChange)="schedulePolicyAutoSave()"
                                class="rf-inline-sec-input"
                                placeholder="e.g. Academic Background, Corporate Details" />
+                        <span class="rf-cat-count-pill">{{ getFieldsForSection(sec).length }} {{ getFieldsForSection(sec).length === 1 ? 'input' : 'inputs' }}</span>
                       </div>
                       <div class="rf-sec-group-actions">
+                        <button type="button" class="rf-order-btn" (click)="moveSectionUp(secIdx)" [disabled]="secIdx === 0" title="Move Category Up">
+                          <span class="material-symbols-outlined">expand_less</span>
+                        </button>
+                        <button type="button" class="rf-order-btn" (click)="moveSectionDown(secIdx)" [disabled]="secIdx === policy.customSections.length - 1" title="Move Category Down">
+                          <span class="material-symbols-outlined">expand_more</span>
+                        </button>
                         <button type="button" class="rf-btn-sec-del" (click)="removeCategorySection(secIdx)" title="Remove Section">
                           <span class="material-symbols-outlined">delete</span>
                         </button>
-                        <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="openCreateModalForSection(sec)">
+                        <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="createInlineField({ sectionName: sec, position: 'bottom' })">
                           <span class="material-symbols-outlined">add</span>
-                          <span>Add to this {{ policy.formLayoutMode === 'sections' ? 'Category' : 'Step' }}</span>
+                          <span>Add Input</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="rf-category-card-body">
+                      <div *ngIf="getFieldsForSection(sec).length === 0" class="rf-cat-empty-drop">
+                        <span>No inputs in <strong>{{ sec }}</strong> yet.</span>
+                        <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="createInlineField({ sectionName: sec, position: 'bottom' })">
+                          <span class="material-symbols-outlined">add</span>
+                          <span>Add First Input</span>
+                        </button>
+                      </div>
+                      <div *ngIf="getFieldsForSection(sec).length > 0" class="rf-fields-list">
+                        <ng-container *ngFor="let field of getFieldsForSection(sec); let i = index">
+                          <ng-container *ngTemplateOutlet="inlineFieldCard; context: { field: field, index: i, total: getFieldsForSection(sec).length }"></ng-container>
+                        </ng-container>
+                      </div>
+                      <div *ngIf="getFieldsForSection(sec).length > 0" style="display: flex; justify-content: flex-end; padding-top: 10px;">
+                        <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="createInlineField({ sectionName: sec, position: 'bottom' })">
+                          <span class="material-symbols-outlined">add</span>
+                          <span>Add Input to {{ sec }}</span>
                         </button>
                       </div>
                     </div>
                   </div>
+                </ng-container>
+
+                <!-- General / Unassigned Questions Card (or Single-Page Unified Stream) -->
+                <div *ngIf="!loadingFields && (policy.formLayoutMode === 'single' ? getNonPersonalFields().length > 0 : getUnassignedNonPersonalFields().length > 0)"
+                     class="rf-category-card rf-category-card-general"
+                     [class.rf-category-drop-active]="dragOverCategoryKey === ''"
+                     (dragover)="onCategoryFieldDragOver('', $event)"
+                     (drop)="onCategoryFieldDrop('', $event)">
+                  <div class="rf-category-card-header">
+                    <div class="rf-sec-group-title">
+                      <span class="rf-sec-badge-num" style="background: #475569;">{{ policy.formLayoutMode === 'single' ? 'Questions' : 'General' }}</span>
+                      <strong style="font-size: 13.5px; color: #0f172a;">
+                        {{ policy.formLayoutMode === 'single' ? 'Onboarding Questions (Single Page Flow)' : 'General / Unassigned Questions' }}
+                      </strong>
+                      <span class="rf-cat-count-pill">
+                        {{ (policy.formLayoutMode === 'single' ? getNonPersonalFields() : getUnassignedNonPersonalFields()).length }} inputs
+                      </span>
+                    </div>
+                    <div class="rf-sec-group-actions">
+                      <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="createInlineField({ position: 'bottom' })">
+                        <span class="material-symbols-outlined">add</span>
+                        <span>Add Input</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="rf-category-card-body">
+                    <div class="rf-fields-list">
+                      <ng-container *ngFor="let field of (policy.formLayoutMode === 'single' ? getNonPersonalFields() : getUnassignedNonPersonalFields()); let i = index">
+                        <ng-container *ngTemplateOutlet="inlineFieldCard; context: { field: field, index: i, total: (policy.formLayoutMode === 'single' ? getNonPersonalFields() : getUnassignedNonPersonalFields()).length }"></ng-container>
+                      </ng-container>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; padding-top: 10px;">
+                      <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="createInlineField({ position: 'bottom' })">
+                        <span class="material-symbols-outlined">add</span>
+                        <span>Add Input</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Fields List with Validation Rules -->
-                <div *ngIf="!loadingFields && fields.length > 0" class="rf-fields-list">
-                  <div *ngFor="let field of fields; let i = index" class="rf-field-item" [class.inactive]="!field.isActive">
-                    <div class="rf-field-reorder">
-                      <button type="button" class="rf-order-btn" (click)="moveFieldUp(i)" [disabled]="i === 0" title="Move Up">
-                        <span class="material-symbols-outlined">expand_less</span>
+                <!-- Bottom Add Controls (Add Category / Add Question at Bottom) -->
+                <div class="rf-bottom-add-bar">
+                  <button type="button"
+                          class="rf-btn rf-btn-sm rf-btn-outline"
+                          (click)="addSection('bottom')">
+                    <span class="material-symbols-outlined">library_add</span>
+                    <span>+ Add {{ policy.formLayoutMode === 'stepper' || policy.formLayoutMode === 'pages' ? 'Step' : 'Category' }} (Bottom)</span>
+                  </button>
+                  <button type="button" class="rf-btn rf-btn-sm rf-btn-primary" (click)="createInlineField({ position: 'bottom' })">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    <span>+ Add Question (Bottom)</span>
+                  </button>
+                </div>
+
+                <!-- Legal & Terms Consent Configuration Card -->
+                <div class="rf-category-card" style="margin-top: 14px;">
+                  <div class="rf-category-card-header">
+                    <div class="rf-sec-group-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span class="material-symbols-outlined" style="font-size: 16px; color: #0050E5;">gavel</span>
+                      <span style="background: #eef2ff; color: #0050E5; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;">Legal &amp; Terms</span>
+                      <span style="font-size: 12.5px; font-weight: 700; color: #0f172a;">Terms &amp; Legal Page Consent</span>
+                      <span class="rf-cat-count-pill">{{ (policy.legalConsents || []).length }} {{ (policy.legalConsents || []).length === 1 ? 'rule' : 'rules' }}</span>
+                    </div>
+                    <div class="rf-sec-group-actions">
+                      <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="addLegalConsent()">
+                        <span class="material-symbols-outlined">add</span>
+                        <span>Add Consent</span>
                       </button>
-                      <span class="rf-order-index">#{{ i + 1 }}</span>
-                      <button type="button" class="rf-order-btn" (click)="moveFieldDown(i)" [disabled]="i === fields.length - 1" title="Move Down">
-                        <span class="material-symbols-outlined">expand_more</span>
+                    </div>
+                  </div>
+                  <div class="rf-category-card-body">
+                    <div *ngIf="!policy.legalConsents || policy.legalConsents.length === 0" class="rf-cat-empty-drop">
+                      <span>No legal consent checkboxes configured. Add one to link Terms &amp; Conditions or Privacy Policy before submission.</span>
+                      <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="addLegalConsent()">
+                        <span class="material-symbols-outlined">add</span>
+                        <span>+ Add Terms Checkbox</span>
                       </button>
                     </div>
 
-                    <div class="rf-field-body">
-                      <div class="rf-field-top">
-                        <span class="rf-field-type-pill" [attr.data-type]="field.fieldType">
-                          <span class="material-symbols-outlined">{{ getFieldTypeIcon(field.fieldType) }}</span>
-                          <span>{{ getFieldTypeLabel(field.fieldType) }}</span>
-                        </span>
-                        
-                        <!-- Active / Disabled Soft Status -->
-                        <span *ngIf="field.isActive" class="rf-badge-active">Active</span>
-                        <span *ngIf="!field.isActive" class="rf-badge-disabled" title="Disabled: Question is hidden from new signups. Historical member answers are preserved.">Disabled (Hidden)</span>
-
-                        <!-- Validation Rule Badges -->
-                        <span *ngIf="field.isRequired" class="rf-badge-req">Required</span>
-                        <span *ngIf="!field.isRequired" class="rf-badge-opt">Optional</span>
-                        
-                        <span *ngIf="field.minLength || field.maxLength" class="rf-badge-val">
-                          Len: {{ field.minLength || 0 }}-{{ field.maxLength || '∞' }}
-                        </span>
-                        <span *ngIf="field.patternRegex" class="rf-badge-val" title="Regex: {{ field.patternRegex }}">
-                          Regex
-                        </span>
-
-                        <span *ngIf="field.categoryName" class="rf-badge-cat">
-                          <span class="material-symbols-outlined">sell</span>
-                          <span>{{ field.categoryName }}</span>
-                        </span>
-                        <span *ngIf="!field.categoryName" class="rf-badge-all">All Categories</span>
-
-                        <span *ngIf="field.sectionName" class="rf-badge-section">
-                          <span class="material-symbols-outlined">folder</span>
-                          <span>{{ field.sectionName }}</span>
-                        </span>
+                    <div *ngFor="let item of (policy.legalConsents || []); let li = index; trackBy: trackByIndex"
+                         style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; background: #ffffff; margin-bottom: 10px; box-sizing: border-box;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                          <span style="font-size: 12px; font-weight: 700; color: #0f172a;">Consent #{{ li + 1 }}</span>
+                          <span [style.background]="item.isRequired ? '#fef2f2' : '#f1f5f9'"
+                                [style.color]="item.isRequired ? '#dc2626' : '#475569'"
+                                style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;">
+                            {{ item.isRequired ? 'Compulsory' : 'Optional' }}
+                          </span>
+                          <span [style.background]="item.isActive ? '#ecfdf5' : '#f1f5f9'"
+                                [style.color]="item.isActive ? '#059669' : '#64748b'"
+                                style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;">
+                            {{ item.isActive ? 'Active' : 'Hidden' }}
+                          </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #334155; cursor: pointer;">
+                            <input type="checkbox" [(ngModel)]="item.isRequired" (ngModelChange)="schedulePolicyAutoSave()" style="cursor: pointer;" />
+                            <span>Compulsory</span>
+                          </label>
+                          <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #334155; cursor: pointer;">
+                            <input type="checkbox" [(ngModel)]="item.isActive" (ngModelChange)="schedulePolicyAutoSave()" style="cursor: pointer;" />
+                            <span>Active</span>
+                          </label>
+                          <button type="button"
+                                  (click)="removeLegalConsent(li)"
+                                  title="Remove Consent Rule"
+                                  style="width: 28px; height: 28px; border-radius: 7px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                          </button>
+                        </div>
                       </div>
 
-                      <h4 class="rf-field-label">{{ field.label }}</h4>
-                      <div class="rf-field-meta">
-                        <code>{{ field.fieldKey }}</code>
-                        <span *ngIf="field.placeholder" class="rf-meta-placeholder">Placeholder: "{{ field.placeholder }}"</span>
-                        <span *ngIf="field.options && field.options.length > 0" class="rf-meta-opts">{{ field.options.length }} options</span>
-                        <span *ngIf="field.customErrorMessage" class="rf-meta-err">Custom Error Set</span>
+                      <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Checkbox Prefix Text</label>
+                        <input type="text"
+                               [(ngModel)]="item.label"
+                               (ngModelChange)="schedulePolicyAutoSave()"
+                               placeholder="e.g. I agree to the"
+                               style="width: 100%; box-sizing: border-box; height: 34px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 12px; color: #0f172a; background: #ffffff;" />
                       </div>
-                      <p *ngIf="field.helpText" class="rf-field-help">{{ field.helpText }}</p>
-                    </div>
 
-                    <div class="rf-field-actions">
-                      <button type="button"
-                              class="rf-action-btn rf-btn-toggle-active"
-                              [class.is-active]="field.isActive"
-                              (click)="toggleFieldActive(field)"
-                              [title]="field.isActive ? 'Disable Question (Soft-hide from new applicants without losing historical data)' : 'Enable Question (Publish on registration form)'">
-                        <span class="material-symbols-outlined">{{ field.isActive ? 'visibility' : 'visibility_off' }}</span>
-                      </button>
-                      <button type="button" class="rf-action-btn" (click)="openEditModal(field)" title="Edit Question &amp; Validation">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                      <button type="button" class="rf-action-btn rf-btn-del" (click)="deleteField(field)" title="Delete Question">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
+                      <!-- Multi-Link Legal Pages List -->
+                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                          <span style="font-size: 11px; font-weight: 700; color: #334155;">Linked Legal Pages ({{ getConsentLinks(item).length }})</span>
+                          <button type="button"
+                                  class="rf-btn rf-btn-sm rf-btn-outline"
+                                  (click)="addConsentLink(item)">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">add_link</span>
+                            <span>Add Link</span>
+                          </button>
+                        </div>
+
+                        <div *ngFor="let lnk of getConsentLinks(item); let ki = index; trackBy: trackByIndex"
+                             style="display: grid; grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.3fr) auto; gap: 8px; align-items: end; margin-bottom: 8px;">
+                          <div>
+                            <label style="display: block; font-size: 10.5px; font-weight: 600; color: #64748b; margin-bottom: 3px;">Link Text #{{ ki + 1 }}</label>
+                            <input type="text"
+                                   [(ngModel)]="lnk.linkText"
+                                   (ngModelChange)="syncConsentLinksLegacy(item); schedulePolicyAutoSave()"
+                                   placeholder="e.g. Terms & Conditions"
+                                   style="width: 100%; box-sizing: border-box; height: 32px; padding: 0 9px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; color: #0f172a; background: #ffffff;" />
+                          </div>
+                          <div>
+                            <label style="display: block; font-size: 10.5px; font-weight: 600; color: #64748b; margin-bottom: 3px;">CMS Legal Page</label>
+                            <select [ngModel]="lnk.pageId || (lnk.pageSlug === '__custom__' || lnk.customUrl ? '__custom__' : '')"
+                                    (ngModelChange)="onConsentLinkPageSelected(item, lnk, $event)"
+                                    style="width: 100%; box-sizing: border-box; height: 32px; padding: 0 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; color: #0f172a; background: #ffffff;">
+                              <option value="">-- Select CMS Legal Page --</option>
+                              <option *ngFor="let p of cmsPages" [value]="p.id">
+                                {{ p.title }} (/p/{{ p.directUrl }}){{ p.publish ? '' : ' [Draft]' }}
+                              </option>
+                              <option value="__custom__">Custom URL / External Link...</option>
+                            </select>
+                          </div>
+                          <button *ngIf="getConsentLinks(item).length > 1"
+                                  type="button"
+                                  (click)="removeConsentLink(item, ki)"
+                                  title="Remove Link"
+                                  style="width: 30px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; background: #ffffff; color: #64748b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">close</span>
+                          </button>
+
+                          <div *ngIf="!lnk.pageId && (lnk.pageSlug === '__custom__' || (lnk.customUrl && lnk.customUrl.length > 0))"
+                               style="grid-column: 1 / -1;">
+                            <input type="text"
+                                   [(ngModel)]="lnk.customUrl"
+                                   (ngModelChange)="syncConsentLinksLegacy(item); schedulePolicyAutoSave()"
+                                   placeholder="e.g. /p/privacy-policy or https://..."
+                                   style="width: 100%; box-sizing: border-box; height: 32px; padding: 0 9px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; color: #0f172a; background: #ffffff;" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1050,6 +1528,135 @@ interface IndustryTemplate {
                 </div>
               </div>
 
+              <!-- Reusable Sandbox Templates (1-to-1 with Builder Order & Categories) -->
+              <ng-template #simFieldControl let-f="field">
+                <div class="rf-sim-group">
+                  <label class="rf-sim-label">
+                    {{ f.label }}
+                    <span *ngIf="f.isRequired" class="rf-sim-req">*</span>
+                  </label>
+                  <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'"
+                         [type]="f.fieldType === 'number' ? 'number' : 'text'"
+                         [(ngModel)]="simModel.customAnswers[f.fieldKey]"
+                         class="rf-sim-input"
+                         [placeholder]="f.placeholder || 'e.g. Enter details'" />
+                  <textarea *ngIf="f.fieldType === 'textarea'"
+                            class="rf-sim-input rf-sim-textarea"
+                            rows="2"
+                            [(ngModel)]="simModel.customAnswers[f.fieldKey]"
+                            [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
+                  <select *ngIf="f.fieldType === 'select'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input">
+                    <option value="">{{ f.placeholder || '-- Choose Option --' }}</option>
+                    <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
+                  </select>
+                  <input *ngIf="f.fieldType === 'date'" type="date" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input" />
+                  <div *ngIf="f.fieldType === 'file'"
+                       class="rf-sim-file-drop"
+                       [class.has-file]="simModel.uploadedMockFiles[f.fieldKey]"
+                       (click)="simulateFileUpload(f.fieldKey, $event)">
+                    <span class="material-symbols-outlined">{{ simModel.uploadedMockFiles[f.fieldKey] ? 'task' : 'cloud_upload' }}</span>
+                    <span>{{ simModel.uploadedMockFiles[f.fieldKey] ? ('Uploaded: ' + simModel.uploadedMockFiles[f.fieldKey]) : 'Click to simulate uploading document' }}</span>
+                  </div>
+                  <label *ngIf="f.fieldType === 'checkbox'" class="rf-sim-checkbox-label">
+                    <input type="checkbox" [(ngModel)]="simModel.customAnswers[f.fieldKey]" />
+                    <span>{{ f.placeholder || 'I confirm and agree to this policy' }}</span>
+                  </label>
+                  <span *ngIf="f.helpText" class="rf-sim-help">{{ f.helpText }}</span>
+                </div>
+              </ng-template>
+
+              <ng-template #simCoreFieldsBlock>
+                <ng-container *ngFor="let core of getOrderedCoreFields()">
+                  <!-- Core Name -->
+                  <div *ngIf="core.key === 'fullName' && isCoreFieldPublished('fullName')" class="rf-sim-grid-2">
+                    <div class="rf-sim-group">
+                      <label class="rf-sim-label">First Name *</label>
+                      <input type="text" [(ngModel)]="simModel.firstName" class="rf-sim-input" placeholder="e.g. First" />
+                    </div>
+                    <div class="rf-sim-group">
+                      <label class="rf-sim-label">Last Name *</label>
+                      <input type="text" [(ngModel)]="simModel.lastName" class="rf-sim-input" placeholder="e.g. Last" />
+                    </div>
+                  </div>
+
+                  <!-- Core Email -->
+                  <div *ngIf="core.key === 'email' && isCoreFieldPublished('email')" class="rf-sim-group">
+                    <label class="rf-sim-label">{{ getCoreLabel('email', 'Email Address (Login Username)') }} *</label>
+                    <input type="email" [(ngModel)]="simModel.email" class="rf-sim-input" placeholder="name@company.com" />
+                  </div>
+
+                  <!-- Core Password -->
+                  <ng-container *ngIf="core.key === 'password' && isCoreFieldPublished('password')">
+                    <div *ngIf="policy.requirePassword" class="rf-sim-grid-2">
+                      <div class="rf-sim-group">
+                        <label class="rf-sim-label">Password *</label>
+                        <input type="password" [(ngModel)]="simModel.password" class="rf-sim-input" placeholder="••••••••••••" />
+                      </div>
+                      <div class="rf-sim-group">
+                        <label class="rf-sim-label">Confirm Password *</label>
+                        <input type="password" [(ngModel)]="simModel.confirmPassword" class="rf-sim-input" placeholder="••••••••••••" />
+                      </div>
+                    </div>
+                    <div *ngIf="!policy.requirePassword && !policy.collectInfoOnly" class="rf-sim-alert-passwordless">
+                      <span class="material-symbols-outlined">magic_button</span>
+                      <span>Passwordless Signup: Magic activation link will be sent to your email.</span>
+                    </div>
+                  </ng-container>
+
+                  <!-- Core Phone -->
+                  <div *ngIf="core.key === 'phone' && isCoreFieldPublished('phone')" class="rf-sim-group">
+                    <label class="rf-sim-label">{{ getCoreLabel('phone', 'Phone Number') }}</label>
+                    <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                  </div>
+
+                  <!-- Core Category -->
+                  <div *ngIf="core.key === 'category' && isCoreFieldPublished('category')" class="rf-sim-group">
+                    <label class="rf-sim-label">{{ getCoreLabel('category', 'Member Category Tier') }}</label>
+                    <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
+                      <option [ngValue]="null">Standard Member (No Category Tier)</option>
+                      <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Core Organization Type / Industry Sector -->
+                  <div *ngIf="core.key === 'organizationType' && isCoreFieldPublished('organizationType')" class="rf-sim-group">
+                    <label class="rf-sim-label">{{ getCoreLabel('organizationType', 'Industry / Organization Sector') }}</label>
+                    <select class="rf-sim-input" [(ngModel)]="policy.defaultIndustrySector">
+                      <option value="">-- Select Industry Sector --</option>
+                      <option value="Business & Enterprise">Business &amp; Enterprise</option>
+                      <option value="Education & Academy">Education &amp; Academy</option>
+                      <option value="Healthcare & Care Services">Healthcare &amp; Care Services</option>
+                    </select>
+                  </div>
+                </ng-container>
+              </ng-template>
+
+              <ng-template #simLegalConsentsBlock>
+                <div *ngIf="activeSimLegalConsents.length > 0" style="display: flex; flex-direction: column; gap: 6px; margin: 10px 0;">
+                  <label *ngFor="let item of activeSimLegalConsents"
+                         style="display: flex; align-items: flex-start; gap: 7px; font-size: 11.5px; color: #334155; cursor: pointer; line-height: 1.4;">
+                    <input type="checkbox"
+                           [(ngModel)]="simAcceptedConsents[item.id]"
+                           style="margin-top: 2px; cursor: pointer;" />
+                    <span>
+                      {{ item.label }}
+                      <ng-container *ngFor="let lnk of getConsentLinks(item); let ki = index; let last = last">
+                        <span *ngIf="ki > 0">{{ last ? ' and ' : ', ' }}</span>
+                        <a *ngIf="lnk.linkText"
+                           [href]="getLegalConsentLinkHref(lnk)"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           (click)="$event.stopPropagation()"
+                           style="color: #0050E5; font-weight: 600; text-decoration: underline;">
+                          {{ lnk.linkText }}
+                        </a>
+                      </ng-container>
+                      <span *ngIf="item.isRequired" class="rf-sim-req">*</span>
+                    </span>
+                  </label>
+                </div>
+              </ng-template>
+
               <!-- INTERACTIVE FORM (When !simSubmitted) -->
               <div *ngIf="!simSubmitted">
                 <div class="rf-sim-header">
@@ -1062,91 +1669,26 @@ interface IndustryTemplate {
 
                 <!-- SIMULATION LAYOUT 1: SINGLE PAGE FORM -->
                 <div *ngIf="policy.formLayoutMode === 'single'" class="rf-sim-form rf-sim-single">
-                  <div class="rf-sim-stage-badge">SINGLE PAGE STREAM (ALL QUESTIONS)</div>
+                  <div class="rf-sim-stage-badge">Single Page Stream (All Questions)</div>
 
-                  <!-- Core Name -->
-                  <div class="rf-sim-grid-2">
-                    <div class="rf-sim-group">
-                      <label class="rf-sim-label">First Name *</label>
-                      <input type="text" [(ngModel)]="simModel.firstName" class="rf-sim-input" placeholder="e.g. First" />
-                    </div>
-                    <div class="rf-sim-group">
-                      <label class="rf-sim-label">Last Name *</label>
-                      <input type="text" [(ngModel)]="simModel.lastName" class="rf-sim-input" placeholder="e.g. Last" />
-                    </div>
-                  </div>
+                  <ng-container *ngTemplateOutlet="simCoreFieldsBlock"></ng-container>
 
-                  <!-- Core Email -->
-                  <div class="rf-sim-group">
-                    <label class="rf-sim-label">Email Address (Login Username) *</label>
-                    <input type="email" [(ngModel)]="simModel.email" class="rf-sim-input" placeholder="name@company.com" />
-                  </div>
+                  <!-- Personal Information Custom Fields -->
+                  <ng-container *ngFor="let f of simPersonalFields">
+                    <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                  </ng-container>
 
-                  <!-- Core Password -->
-                  <div *ngIf="policy.requirePassword" class="rf-sim-grid-2">
-                    <div class="rf-sim-group">
-                      <label class="rf-sim-label">Create Password *</label>
-                      <input type="password" [(ngModel)]="simModel.password" class="rf-sim-input" placeholder="••••••••••••" />
-                    </div>
-                    <div class="rf-sim-group">
-                      <label class="rf-sim-label">Confirm Password *</label>
-                      <input type="password" [(ngModel)]="simModel.confirmPassword" class="rf-sim-input" placeholder="••••••••••••" />
-                    </div>
-                  </div>
-                  <div *ngIf="!policy.requirePassword" class="rf-sim-alert-passwordless">
-                    <span class="material-symbols-outlined">magic_button</span>
-                    <span>Passwordless Signup: Magic activation link will be sent to your email.</span>
-                  </div>
+                  <!-- Custom Section Fields in Order -->
+                  <ng-container *ngFor="let sec of (policy.customSections || [])">
+                    <ng-container *ngFor="let f of getSimFieldsForSection(sec)">
+                      <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                    </ng-container>
+                  </ng-container>
 
-                  <!-- Core Phone -->
-                  <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
-                    <label class="rf-sim-label">Phone Number (Optional)</label>
-                    <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
-                  </div>
-
-                  <!-- Core Category -->
-                  <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
-                    <label class="rf-sim-label">Member Category / Tier</label>
-                    <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
-                      <option [ngValue]="null">Standard Member (No Category Tier)</option>
-                      <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-                    </select>
-                  </div>
-
-                  <!-- Custom Dynamic Questions -->
-                  <div *ngFor="let f of filteredSimFields" class="rf-sim-group">
-                    <label class="rf-sim-label">
-                      {{ f.label }}
-                      <span *ngIf="f.isRequired" class="rf-sim-req">*</span>
-                    </label>
-                    <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'"
-                           [type]="f.fieldType === 'number' ? 'number' : 'text'"
-                           [(ngModel)]="simModel.customAnswers[f.fieldKey]"
-                           class="rf-sim-input"
-                           [placeholder]="f.placeholder || 'e.g. Enter details'" />
-                    <textarea *ngIf="f.fieldType === 'textarea'"
-                              class="rf-sim-input rf-sim-textarea"
-                              rows="2"
-                              [(ngModel)]="simModel.customAnswers[f.fieldKey]"
-                              [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
-                    <select *ngIf="f.fieldType === 'select'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input">
-                      <option value="">{{ f.placeholder || '-- Choose Option --' }}</option>
-                      <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
-                    </select>
-                    <input *ngIf="f.fieldType === 'date'" type="date" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input" />
-                    <div *ngIf="f.fieldType === 'file'"
-                         class="rf-sim-file-drop"
-                         [class.has-file]="simModel.uploadedMockFiles[f.fieldKey]"
-                         (click)="simulateFileUpload(f.fieldKey, $event)">
-                      <span class="material-symbols-outlined">{{ simModel.uploadedMockFiles[f.fieldKey] ? 'task' : 'cloud_upload' }}</span>
-                      <span>{{ simModel.uploadedMockFiles[f.fieldKey] ? ('Uploaded: ' + simModel.uploadedMockFiles[f.fieldKey]) : 'Click to simulate uploading document' }}</span>
-                    </div>
-                    <label *ngIf="f.fieldType === 'checkbox'" class="rf-sim-checkbox-label">
-                      <input type="checkbox" [(ngModel)]="simModel.customAnswers[f.fieldKey]" />
-                      <span>{{ f.placeholder || 'I confirm and agree to this policy' }}</span>
-                    </label>
-                    <span *ngIf="f.helpText" class="rf-sim-help">{{ f.helpText }}</span>
-                  </div>
+                  <!-- General / Unassigned Fields -->
+                  <ng-container *ngFor="let f of simUnassignedNonPersonalFields">
+                    <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                  </ng-container>
 
                   <!-- Save & Continue Later Link -->
                   <div *ngIf="policy.allowSaveAndContinue" class="rf-sim-save-continue">
@@ -1164,6 +1706,8 @@ interface IndustryTemplate {
                       <span style="font-size: 11px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
                     </label>
                   </div>
+
+                  <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
 
                   <!-- Single Submit Button -->
                   <button type="button" class="rf-sim-btn rf-sim-btn-finish" (click)="testSubmitSimulation()">
@@ -1174,88 +1718,46 @@ interface IndustryTemplate {
 
                 <!-- SIMULATION LAYOUT 2: SINGLE PAGE + CATEGORY SECTIONS -->
                 <div *ngIf="policy.formLayoutMode === 'sections'" class="rf-sim-form rf-sim-sections">
-                  <!-- Section 1 Card: Personal Credentials -->
+                  <!-- Section 1 Card: Personal & Account Credentials -->
                   <div class="rf-sim-section-box">
                     <div class="rf-sim-sec-title">
                       <span class="material-symbols-outlined">badge</span>
                       <span>1. Personal &amp; Account Credentials</span>
                     </div>
 
-                    <div class="rf-sim-grid-2">
-                      <div class="rf-sim-group">
-                        <label class="rf-sim-label">First Name *</label>
-                        <input type="text" [(ngModel)]="simModel.firstName" class="rf-sim-input" placeholder="e.g. First" />
-                      </div>
-                      <div class="rf-sim-group">
-                        <label class="rf-sim-label">Last Name *</label>
-                        <input type="text" [(ngModel)]="simModel.lastName" class="rf-sim-input" placeholder="e.g. Last" />
-                      </div>
-                    </div>
+                    <ng-container *ngTemplateOutlet="simCoreFieldsBlock"></ng-container>
 
-                    <div class="rf-sim-group">
-                      <label class="rf-sim-label">Email Address (Login Username) *</label>
-                      <input type="email" [(ngModel)]="simModel.email" class="rf-sim-input" placeholder="name@company.com" />
-                    </div>
-
-                    <div *ngIf="policy.requirePassword" class="rf-sim-grid-2">
-                      <div class="rf-sim-group">
-                        <label class="rf-sim-label">Password *</label>
-                        <input type="password" [(ngModel)]="simModel.password" class="rf-sim-input" placeholder="••••••••••••" />
-                      </div>
-                      <div class="rf-sim-group">
-                        <label class="rf-sim-label">Confirm *</label>
-                        <input type="password" [(ngModel)]="simModel.confirmPassword" class="rf-sim-input" placeholder="••••••••••••" />
-                      </div>
-                    </div>
-
-                    <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
-                      <label class="rf-sim-label">Phone Number</label>
-                      <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
-                    </div>
-
-                    <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
-                      <label class="rf-sim-label">Category Tier</label>
-                      <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
-                        <option [ngValue]="null">Standard Member</option>
-                        <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-                      </select>
-                    </div>
+                    <!-- Custom Fields assigned to Personal Information -->
+                    <ng-container *ngFor="let f of simPersonalFields">
+                      <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                    </ng-container>
                   </div>
 
-                  <!-- Section 2 Card: Custom Business Questions -->
-                  <div class="rf-sim-section-box">
+                  <!-- Dynamic Category Section Cards (Matches Builder Order & Titles) -->
+                  <div *ngFor="let sec of (policy.customSections || []); let si = index" class="rf-sim-section-box">
                     <div class="rf-sim-sec-title">
-                      <span class="material-symbols-outlined">business</span>
-                      <span>2. Business &amp; Onboarding Profile</span>
+                      <span class="material-symbols-outlined">folder_open</span>
+                      <span>{{ si + 2 }}. {{ sec }}</span>
                     </div>
 
-                    <div *ngIf="filteredSimFields.length === 0" style="padding: 10px 0; font-size: 11px; color: #94a3b8;">
-                      No custom business questions mapped yet. Add questions in the builder.
+                    <div *ngIf="getSimFieldsForSection(sec).length === 0" style="padding: 8px 0; font-size: 11px; color: #94a3b8;">
+                      No active inputs in {{ sec }} yet.
                     </div>
 
-                    <div *ngFor="let f of filteredSimFields" class="rf-sim-group">
-                      <label class="rf-sim-label">
-                        {{ f.label }}
-                        <span *ngIf="f.isRequired" class="rf-sim-req">*</span>
-                      </label>
-                      <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'"
-                             [type]="f.fieldType === 'number' ? 'number' : 'text'"
-                             [(ngModel)]="simModel.customAnswers[f.fieldKey]"
-                             class="rf-sim-input"
-                             [placeholder]="f.placeholder || 'e.g. Enter details'" />
-                      <select *ngIf="f.fieldType === 'select'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input">
-                        <option value="">{{ f.placeholder || '-- Select --' }}</option>
-                        <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
-                      </select>
-                      <textarea *ngIf="f.fieldType === 'textarea'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input rf-sim-textarea" rows="2" [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
-                      <div *ngIf="f.fieldType === 'file'"
-                           class="rf-sim-file-drop"
-                           [class.has-file]="simModel.uploadedMockFiles[f.fieldKey]"
-                           (click)="simulateFileUpload(f.fieldKey, $event)">
-                        <span class="material-symbols-outlined">{{ simModel.uploadedMockFiles[f.fieldKey] ? 'task' : 'cloud_upload' }}</span>
-                        <span>{{ simModel.uploadedMockFiles[f.fieldKey] ? ('Uploaded: ' + simModel.uploadedMockFiles[f.fieldKey]) : 'Click to simulate uploading document' }}</span>
-                      </div>
+                    <ng-container *ngFor="let f of getSimFieldsForSection(sec)">
+                      <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                    </ng-container>
+                  </div>
+
+                  <!-- General / Unassigned Questions Card (Only shown if unassigned active fields exist) -->
+                  <div *ngIf="simUnassignedNonPersonalFields.length > 0" class="rf-sim-section-box">
+                    <div class="rf-sim-sec-title">
+                      <span class="material-symbols-outlined">list_alt</span>
+                      <span>{{ (policy.customSections.length || 0) + 2 }}. General Questions</span>
                     </div>
+                    <ng-container *ngFor="let f of simUnassignedNonPersonalFields">
+                      <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                    </ng-container>
                   </div>
 
                   <!-- Save & Continue Later Link -->
@@ -1274,6 +1776,8 @@ interface IndustryTemplate {
                       <span style="font-size: 11px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
                     </label>
                   </div>
+
+                  <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
 
                   <button type="button" class="rf-sim-btn rf-sim-btn-finish" (click)="testSubmitSimulation()">
                     <span class="material-symbols-outlined">how_to_reg</span>
@@ -1380,23 +1884,22 @@ interface IndustryTemplate {
 
                   <!-- Stepper Stage 3: Custom Details -->
                   <div *ngIf="simStep === 3" class="rf-sim-stage">
-                    <div class="rf-sim-stage-badge">STAGE 3: CUSTOM BUSINESS DETAILS</div>
-                    <div *ngFor="let f of filteredSimFields" class="rf-sim-group">
-                      <label class="rf-sim-label">{{ f.label }} <span *ngIf="f.isRequired" class="rf-sim-req">*</span></label>
-                      <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'" [type]="f.fieldType === 'number' ? 'number' : 'text'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input" [placeholder]="f.placeholder || 'e.g. Enter details'" />
-                      <select *ngIf="f.fieldType === 'select'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input">
-                        <option value="">{{ f.placeholder || '-- Select --' }}</option>
-                        <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
-                      </select>
-                      <textarea *ngIf="f.fieldType === 'textarea'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input rf-sim-textarea" rows="2" [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
-                      <div *ngIf="f.fieldType === 'file'"
-                           class="rf-sim-file-drop"
-                           [class.has-file]="simModel.uploadedMockFiles[f.fieldKey]"
-                           (click)="simulateFileUpload(f.fieldKey, $event)">
-                        <span class="material-symbols-outlined">{{ simModel.uploadedMockFiles[f.fieldKey] ? 'task' : 'cloud_upload' }}</span>
-                        <span>{{ simModel.uploadedMockFiles[f.fieldKey] ? ('Uploaded: ' + simModel.uploadedMockFiles[f.fieldKey]) : 'Click to simulate uploading document' }}</span>
-                      </div>
-                    </div>
+                    <div class="rf-sim-stage-badge">STAGE 3: CUSTOM DETAILS</div>
+                    <ng-container *ngFor="let f of simPersonalFields">
+                      <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                    </ng-container>
+                    <ng-container *ngFor="let sec of (policy.customSections || [])">
+                      <div *ngIf="getSimFieldsForSection(sec).length > 0" style="font-size: 11px; font-weight: 700; color: #334155; margin: 10px 0 4px;">{{ sec }}</div>
+                      <ng-container *ngFor="let f of getSimFieldsForSection(sec)">
+                        <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                      </ng-container>
+                    </ng-container>
+                    <ng-container *ngIf="simUnassignedNonPersonalFields.length > 0">
+                      <div *ngIf="(policy.customSections || []).length > 0" style="font-size: 11px; font-weight: 700; color: #334155; margin: 10px 0 4px;">General Questions</div>
+                      <ng-container *ngFor="let f of simUnassignedNonPersonalFields">
+                        <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                      </ng-container>
+                    </ng-container>
                     <div class="rf-sim-nav-row">
                       <button type="button" class="rf-sim-btn-sub" (click)="simStep = 2">
                         <span class="material-symbols-outlined">arrow_back</span>
@@ -1433,6 +1936,7 @@ interface IndustryTemplate {
                         <span>Save Draft &amp; Continue Later</span>
                       </a>
                     </div>
+                    <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
                     <div class="rf-sim-nav-row">
                       <button type="button" class="rf-sim-btn-sub" (click)="simStep = (fields.length > 0 ? 3 : 2)">
                         <span class="material-symbols-outlined">arrow_back</span>
@@ -1510,15 +2014,21 @@ interface IndustryTemplate {
                         <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
                       </select>
                     </div>
-                    <div *ngFor="let f of filteredSimFields" class="rf-sim-group">
-                      <label class="rf-sim-label">{{ f.label }} <span *ngIf="f.isRequired" class="rf-sim-req">*</span></label>
-                      <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'" [type]="f.fieldType === 'number' ? 'number' : 'text'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input" [placeholder]="f.placeholder || 'e.g. Details'" />
-                      <select *ngIf="f.fieldType === 'select'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input">
-                        <option value="">{{ f.placeholder || '-- Select --' }}</option>
-                        <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
-                      </select>
-                      <textarea *ngIf="f.fieldType === 'textarea'" [(ngModel)]="simModel.customAnswers[f.fieldKey]" class="rf-sim-input rf-sim-textarea" rows="2"></textarea>
-                    </div>
+                    <ng-container *ngFor="let f of simPersonalFields">
+                      <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                    </ng-container>
+                    <ng-container *ngFor="let sec of (policy.customSections || [])">
+                      <div *ngIf="getSimFieldsForSection(sec).length > 0" style="font-size: 11px; font-weight: 700; color: #334155; margin: 10px 0 4px;">{{ sec }}</div>
+                      <ng-container *ngFor="let f of getSimFieldsForSection(sec)">
+                        <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                      </ng-container>
+                    </ng-container>
+                    <ng-container *ngIf="simUnassignedNonPersonalFields.length > 0">
+                      <div *ngIf="(policy.customSections || []).length > 0" style="font-size: 11px; font-weight: 700; color: #334155; margin: 10px 0 4px;">General Questions</div>
+                      <ng-container *ngFor="let f of simUnassignedNonPersonalFields">
+                        <ng-container *ngTemplateOutlet="simFieldControl; context: { field: f }"></ng-container>
+                      </ng-container>
+                    </ng-container>
                     <div *ngIf="policy.allowSaveAndContinue" class="rf-sim-save-continue">
                       <a href="javascript:void(0)" class="rf-save-link" (click)="testSaveDraftSimulation()">
                         <span class="material-symbols-outlined">bookmark</span>
@@ -1552,6 +2062,7 @@ interface IndustryTemplate {
                         <span style="font-size: 11px; font-weight: 600; color: #334155;">Google reCAPTCHA Protected</span>
                       </label>
                     </div>
+                    <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
                     <div class="rf-sim-nav-row">
                       <button type="button" class="rf-sim-btn-sub" (click)="simStep = 2">
                         <span class="material-symbols-outlined">arrow_back</span>
@@ -2182,6 +2693,33 @@ interface IndustryTemplate {
       </div>
 
       <!-- =============================================================== -->
+      <!-- DELETE CONFIRMATION POP-UP (Replaces native browser confirm())   -->
+      <!-- =============================================================== -->
+      <div *ngIf="pendingDeleteConfirm" class="rf-modal-overlay" (click)="cancelDeleteConfirm()">
+        <div class="rf-modal-card" style="max-width: 440px; padding: 22px;" (click)="$event.stopPropagation()">
+          <div style="display: flex; align-items: flex-start; gap: 14px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span class="material-symbols-outlined" style="font-size: 22px;">delete_forever</span>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <h3 style="margin: 0 0 6px; font-size: 16px; font-weight: 700; color: #0f172a;">{{ pendingDeleteConfirm.title }}</h3>
+              <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.5;">{{ pendingDeleteConfirm.message }}</p>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+            <button type="button" class="rf-btn rf-btn-sm rf-btn-outline" (click)="cancelDeleteConfirm()">Cancel</button>
+            <button type="button"
+                    class="rf-btn rf-btn-sm"
+                    style="background: #dc2626; color: #ffffff; border: 1px solid #dc2626;"
+                    (click)="executeDeleteConfirm()">
+              <span class="material-symbols-outlined">delete</span>
+              <span>{{ pendingDeleteConfirm.confirmLabel }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
       <!-- MODAL 3: WIREFRAME SAMPLE MODAL WITH 1-CLICK APPLY BUTTON      -->
       <!-- =============================================================== -->
       <div *ngIf="showLayoutModal" class="rf-modal-overlay" (click)="closeLayoutModal()">
@@ -2387,6 +2925,7 @@ interface IndustryTemplate {
           </div>
         </div>
       </div>
+      </div>
 
       <!-- ============================================================= -->
       <!-- FULL-SCREEN LIVE DESKTOP LAYOUT PREVIEW MODAL POPUP           -->
@@ -2557,6 +3096,52 @@ interface IndustryTemplate {
       box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
     }
     .rf-btn-save:hover:not(:disabled) { background: #059669; }
+    .rf-btn-danger-active {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+    .rf-btn-danger-active:hover:not(:disabled) { background: #fee2e2; }
+    .rf-btn-warn-active {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fcd34d;
+    }
+    .rf-btn-warn-active:hover:not(:disabled) { background: #fef3c7; }
+    .rf-btn-publish-active {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #6ee7b7;
+    }
+    .rf-btn-publish-active:hover:not(:disabled) { background: #d1fae5; }
+    .rf-top-status-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      margin-bottom: 16px;
+    }
+    .rf-top-status-disabled {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+    .rf-top-status-unpub {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+    .rf-builder-body-wrap {
+      transition: filter 0.2s ease, opacity 0.2s ease;
+    }
+    .rf-builder-blurred {
+      filter: blur(5px);
+      opacity: 0.55;
+      pointer-events: none;
+      user-select: none;
+    }
 
     /* Policy Card (Compact & Modern) */
     .rf-policy-card {
@@ -3260,7 +3845,7 @@ interface IndustryTemplate {
     .rf-sim-form { display: flex; flex-direction: column; gap: 10px; }
     .rf-sim-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .rf-sim-group { display: flex; flex-direction: column; gap: 3px; }
-    .rf-sim-label { font-size: 10.5px; font-weight: 700; color: #475569; text-transform: uppercase; }
+    .rf-sim-label { font-size: 11.5px; font-weight: 600; color: #334155; }
     .rf-sim-req { color: #dc2626; margin-left: 2px; }
     .rf-sim-input {
       height: 34px;
@@ -5199,9 +5784,290 @@ interface IndustryTemplate {
       align-items: center;
       gap: 8px;
     }
+
+    /* Inline Form Builder: Auto-save status, expanded editor, options & drag-and-drop */
+    .rf-autosave-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .rf-autosave-pill .material-symbols-outlined { font-size: 15px; }
+    .rf-autosave-pill.saving { background: #eff6ff; color: #0050e5; border-color: #bfdbfe; }
+    .rf-autosave-pill.saved { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .rf-autosave-pill.error { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+    .rf-field-expanded {
+      border: 2px solid #0050e5 !important;
+      border-left: 5px solid #0050e5 !important;
+      background: #f5f8ff !important;
+      border-radius: 10px !important;
+      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.12) !important;
+    }
+    .rf-editing-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #0050e5;
+      color: #ffffff;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .rf-drag-over {
+      border-color: #0050e5 !important;
+      background: #eff6ff !important;
+      outline: 2px dashed #0050e5;
+      outline-offset: -2px;
+    }
+    .rf-inline-editor-panel {
+      margin-top: 12px;
+      padding-top: 14px;
+      border-top: 1px dashed #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .rf-inline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px 16px;
+    }
+    .rf-inline-grid > div {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+    .rf-inline-grid label,
+    .rf-inline-options-box > label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .rf-inline-grid input,
+    .rf-inline-grid select,
+    .rf-inline-options-box input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .rf-inline-grid input:focus,
+    .rf-inline-grid select:focus,
+    .rf-inline-options-box input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
+    }
+    .rf-inline-col-2 {
+      grid-column: span 2;
+    }
+    @media (max-width: 640px) {
+      .rf-inline-col-2 { grid-column: span 1; }
+    }
+    .rf-inline-options-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rf-inline-opts-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .rf-opt-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 3px 8px 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .rf-opt-chip button {
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0 2px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .rf-opt-chip button:hover { color: #dc2626; }
+    .rf-inline-opt-add {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .rf-inline-opt-add input {
+      flex: 1;
+      min-width: 0;
+    }
+    .rf-inline-toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      padding-top: 4px;
+    }
+    .rf-inline-toggles label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+    }
+    .rf-bottom-add-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 12px 16px;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    /* Grouped Category Cards & Moderate Compact Icons */
+    .rf-category-card {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      background: #ffffff;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .rf-category-card-general {
+      border-style: dashed;
+      border-color: #94a3b8;
+    }
+    .rf-category-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .rf-category-card-body {
+      padding: 14px 16px;
+      background: #ffffff;
+    }
+    .rf-category-drop-active {
+      border-color: #0050e5 !important;
+      background: #eff6ff !important;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.14) !important;
+    }
+    .rf-cat-count-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 10.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .rf-cat-empty-drop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .rf-readonly-key {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .rf-readonly-key code {
+      background: #f1f5f9;
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #334155;
+      font-size: 10.5px;
+    }
+    .rf-btn-sm {
+      font-size: 11.5px !important;
+      padding: 5px 10px !important;
+    }
+    .rf-field-label {
+      font-size: 13px !important;
+    }
+    .rf-inline-sec-input {
+      font-size: 12.5px !important;
+    }
+    .rf-action-btn {
+      width: 26px !important;
+      height: 26px !important;
+      border-radius: 7px !important;
+    }
+    .rf-action-btn .material-symbols-outlined,
+    .rf-btn-sec-del .material-symbols-outlined {
+      font-size: 15px !important;
+    }
+    .rf-btn-sec-del {
+      width: 26px !important;
+      height: 26px !important;
+    }
+    .rf-order-btn {
+      width: 20px !important;
+      height: 20px !important;
+    }
+    .rf-order-btn .material-symbols-outlined {
+      font-size: 14px !important;
+    }
+    .rf-drag-handle {
+      font-size: 16px !important;
+    }
+    .rf-core-icon {
+      font-size: 17px !important;
+      width: 30px !important;
+      height: 30px !important;
+    }
+    .rf-btn .material-symbols-outlined {
+      font-size: 15px !important;
+    }
   `]
 })
-export class RegistrationFormBuilderComponent implements OnInit {
+export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
   fields: RegistrationField[] = [];
   categories: UserCategory[] = [];
   loadingFields = false;
@@ -5209,6 +6075,9 @@ export class RegistrationFormBuilderComponent implements OnInit {
   policy: RegistrationPolicy = {
     allowPublicRegistration: true,
     requireApprovalBeforeLogin: false,
+    requireEmailVerification: false,
+    isFormDisabled: false,
+    isFormPublished: true,
     registrationFormTitle: 'Create Your Account',
     registrationWelcomeMessage: 'Join our member directory and workspace portal.',
     registrationSuccessMessage: 'Registration successful! Welcome to the portal.',
@@ -5218,18 +6087,55 @@ export class RegistrationFormBuilderComponent implements OnInit {
     pageShellLayout: 'website',
     formLayoutMode: 'single',
     requirePassword: true,
+    collectInfoOnly: false,
     allowSaveAndContinue: false,
     unpublishedCoreFields: [],
-    customSections: ['Business & Professional Details']
+    deletedCoreFields: [],
+    customSections: ['Business & Professional Details'],
+    coreCategoryTitle: 'Default Category 1: Personal & Account Credentials',
+    coreCategorySubtitle: 'Built-in identity fields required for member profiles. You can customize labels or unpublish optional fields.',
+    coreFieldLabels: {},
+    coreFieldHints: {}
   };
   savingPolicy = false;
+  editingCoreCategory = false;
+
+  // Inline Form Builder state (modal-free editing, drag-and-drop, and auto-save)
+  autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+  expandedFieldId: string | null = null;
+  inlineOptionDrafts: Record<string, string> = {};
+  draggedFieldIndex: number | null = null;
+  dragOverFieldIndex: number | null = null;
+  draggedSectionIndex: number | null = null;
+  dragOverSectionIndex: number | null = null;
+  dragOverCategoryKey: string | null = null;
+  draggedCoreFieldKey: string | null = null;
+  dragOverCoreFieldKey: string | null = null;
+  private readonly defaultCoreFieldDefs = [
+    { key: 'fullName', icon: 'person', defaultLabel: 'First & Last Name', defaultHint: 'Stored in member Profile.FirstName & Profile.LastName' },
+    { key: 'email', icon: 'mail', defaultLabel: 'Email Address (Login Username)', defaultHint: 'Primary contact and login identifier' },
+    { key: 'password', icon: 'key', defaultLabel: 'Account Password & Confirm', defaultHint: 'Active — Applicants will specify a secure password during registration.' },
+    { key: 'phone', icon: 'phone', defaultLabel: 'Phone Number', defaultHint: 'Used for SMS alerts, two-factor authentication, and contact phone book' },
+    { key: 'category', icon: 'category', defaultLabel: 'Member Category Tier Selector', defaultHint: 'Allows applicants to select their tier (e.g. Student, Executive, Affiliate)' },
+    { key: 'organizationType', icon: 'apartment', defaultLabel: 'Industry / Organization Sector', defaultHint: 'Allows applicants to specify their industry vertical. Can be unpublished or deleted from registration.' }
+  ];
+  private fieldAutoSaveTimers: Record<string, any> = {};
+  private policyAutoSaveTimer: any = null;
 
   // Card 3 State: Layout Modes & Samples
   activeSampleTab: 'single' | 'sections' | 'stepper' | 'pages' = 'single';
   showLayoutModal = false;
+  pendingDeleteConfirm: {
+    title: string;
+    message: string;
+    confirmLabel: string;
+    onConfirm: () => void;
+  } | null = null;
   showFullScreenPreview = false;
   activeTooltip: string | null = null;
   newSectionName = '';
+  cmsPages: Array<{ id: string; title: string; directUrl: string; publish: boolean }> = [];
+  simAcceptedConsents: Record<string, boolean> = {};
 
   // Live simulation & interactive sandbox testing state
   simStep: number = 1;
@@ -5633,17 +6539,457 @@ export class RegistrationFormBuilderComponent implements OnInit {
     this.loadPolicy();
     this.loadCategories();
     this.loadFields();
+    this.loadCmsPages();
+  }
+
+  /**
+   * Loads tenant CMS pages so administrators can link legal pages (e.g. Terms & Conditions, Privacy Policy)
+   * directly to registration consent checkboxes.
+   */
+  loadCmsPages(): void {
+    this.api.get<any>('ContentApi/pages').subscribe({
+      next: (res) => {
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        this.cmsPages = list
+          .filter((p: any) => p && p.id && p.title)
+          .map((p: any) => ({
+            id: String(p.id),
+            title: String(p.title),
+            directUrl: String(p.directUrl || '').replace(/^\/+/, ''),
+            publish: Boolean(p.publish)
+          }));
+      },
+      error: () => {
+        // Non-blocking: admin can still enter a custom URL if pages fail to load
+      }
+    });
+  }
+
+  /** Active legal consent rules rendered in the sandbox preview. */
+  get activeSimLegalConsents(): RegistrationLegalConsentItem[] {
+    return (this.policy.legalConsents || []).filter(c => c.isActive !== false);
+  }
+
+  /** Adds a new legal/terms consent checkbox rule and schedules policy auto-save. */
+  addLegalConsent(): void {
+    if (!this.policy.legalConsents) {
+      this.policy.legalConsents = [];
+    }
+    const id = 'consent_' + Math.random().toString(36).slice(2, 9);
+    this.policy.legalConsents.push({
+      id,
+      label: 'I agree to the',
+      linkText: 'Terms & Conditions',
+      pageId: null,
+      pageSlug: null,
+      customUrl: null,
+      isRequired: true,
+      isActive: true,
+      links: [
+        { linkText: 'Terms & Conditions', pageId: null, pageSlug: null, customUrl: null }
+      ]
+    });
+    this.schedulePolicyAutoSave();
+  }
+
+  /** Returns the normalized list of links for a consent item (supports legacy single-link items). */
+  getConsentLinks(item: RegistrationLegalConsentItem): RegistrationLegalConsentLink[] {
+    if (!item.links || item.links.length === 0) {
+      item.links = [{
+        linkText: item.linkText || 'Terms & Conditions',
+        pageId: item.pageId ?? null,
+        pageSlug: item.pageSlug ?? null,
+        customUrl: item.customUrl ?? null
+      }];
+    }
+    return item.links;
+  }
+
+  /** Adds an additional legal page link inside an existing consent checkbox. */
+  addConsentLink(item: RegistrationLegalConsentItem): void {
+    const links = this.getConsentLinks(item);
+    links.push({
+      linkText: 'Privacy Policy',
+      pageId: null,
+      pageSlug: null,
+      customUrl: null
+    });
+    this.syncConsentLinksLegacy(item);
+    this.schedulePolicyAutoSave();
+  }
+
+  /** Removes a link from a consent checkbox (keeps at least 1). */
+  removeConsentLink(item: RegistrationLegalConsentItem, index: number): void {
+    const links = this.getConsentLinks(item);
+    if (links.length <= 1) return;
+    links.splice(index, 1);
+    this.syncConsentLinksLegacy(item);
+    this.schedulePolicyAutoSave();
+  }
+
+  /** Mirrors the first link back onto legacy single-link properties for compatibility. */
+  syncConsentLinksLegacy(item: RegistrationLegalConsentItem): void {
+    const first = item.links?.[0];
+    if (first) {
+      item.linkText = first.linkText;
+      item.pageId = first.pageId ?? null;
+      item.pageSlug = first.pageSlug ?? null;
+      item.customUrl = first.customUrl ?? null;
+    }
+  }
+
+  /** Removes a legal consent rule by index and schedules policy auto-save. */
+  removeLegalConsent(index: number): void {
+    if (!this.policy.legalConsents) return;
+    this.policy.legalConsents.splice(index, 1);
+    this.schedulePolicyAutoSave();
+  }
+
+  /** Handles CMS page dropdown selection for a specific link inside a legal consent rule. */
+  onConsentLinkPageSelected(item: RegistrationLegalConsentItem, lnk: RegistrationLegalConsentLink, selectedValue: string): void {
+    if (selectedValue === '__custom__') {
+      lnk.pageId = null;
+      lnk.pageSlug = '__custom__';
+      lnk.customUrl = lnk.customUrl || '';
+    } else if (!selectedValue) {
+      lnk.pageId = null;
+      lnk.pageSlug = null;
+      lnk.customUrl = null;
+    } else {
+      const page = this.cmsPages.find(p => p.id === selectedValue);
+      lnk.pageId = selectedValue;
+      lnk.pageSlug = page?.directUrl || null;
+      lnk.customUrl = null;
+      if (page && (!lnk.linkText || lnk.linkText === 'Terms & Conditions' || lnk.linkText === 'Privacy Policy')) {
+        lnk.linkText = page.title;
+      }
+    }
+    this.syncConsentLinksLegacy(item);
+    this.schedulePolicyAutoSave();
+  }
+
+  /** Resolves the clickable href for an individual legal consent link. */
+  getLegalConsentLinkHref(lnk: RegistrationLegalConsentLink): string {
+    if (lnk.customUrl && lnk.customUrl.trim()) {
+      return lnk.customUrl.trim();
+    }
+    if (lnk.pageSlug && lnk.pageSlug !== '__custom__') {
+      return '/p/' + lnk.pageSlug.replace(/^\/+/, '');
+    }
+    return '#';
   }
 
   loadPolicy(): void {
     this.api.get<any>('RegistrationFormApi/policy').subscribe({
       next: (res) => {
         if (res?.data) {
-          this.policy = { ...this.policy, ...res.data };
+          this.policy = {
+            ...this.policy,
+            ...res.data,
+            coreFieldLabels: res.data.coreFieldLabels || {},
+            coreFieldHints: res.data.coreFieldHints || {},
+            legalConsents: res.data.legalConsents || []
+          };
         }
       },
       error: () => {}
     });
+  }
+
+  /**
+   * Returns the customized label for a core field or its fallback default.
+   */
+  getCoreLabel(key: string, fallback: string): string {
+    return this.policy.coreFieldLabels?.[key]?.trim() || fallback;
+  }
+
+  /**
+   * Updates a core field's custom display label in policy state.
+   */
+  setCoreLabel(key: string, value: string): void {
+    if (!this.policy.coreFieldLabels) {
+      this.policy.coreFieldLabels = {};
+    }
+    this.policy.coreFieldLabels[key] = value;
+  }
+
+  /**
+   * Toggles Info-Only (No Login) mode. When enabled, hides password fields
+   * and marks submissions for admin review without issuing login credentials.
+   */
+  toggleInfoOnlyMode(): void {
+    this.policy.collectInfoOnly = !this.policy.collectInfoOnly;
+    if (this.policy.collectInfoOnly) {
+      this.policy.requirePassword = false;
+      this.policy.requireApprovalBeforeLogin = true;
+    } else {
+      this.policy.requirePassword = true;
+    }
+    this.savePolicy(false);
+  }
+
+  /**
+   * Returns active (non-deleted) core fields in the administrator's configured drag-and-drop order.
+   */
+  getOrderedCoreFields(): Array<{ key: string; icon: string; defaultLabel: string; defaultHint: string }> {
+    const order = (this.policy.coreFieldOrder && this.policy.coreFieldOrder.length > 0)
+      ? this.policy.coreFieldOrder
+      : this.defaultCoreFieldDefs.map(d => d.key);
+    const orderedKeys = [
+      ...order.filter(k => this.defaultCoreFieldDefs.some(d => d.key === k)),
+      ...this.defaultCoreFieldDefs.map(d => d.key).filter(k => !order.includes(k))
+    ];
+    return orderedKeys
+      .map(k => this.defaultCoreFieldDefs.find(d => d.key === k)!)
+      .filter(d => !this.isCoreFieldDeleted(d.key));
+  }
+
+  /**
+   * Resolves the dynamic helper hint for a core field.
+   */
+  getCoreFieldHintText(key: string, defaultHint: string): string {
+    if (key === 'password') {
+      return this.policy.collectInfoOnly
+        ? 'Hidden — Info-Only Mode is active. Submissions collect details without creating login credentials.'
+        : (this.policy.requirePassword
+          ? 'Active — Applicants will specify a secure password during registration.'
+          : 'Bypassed — Passwordless signup active; applicant will receive an activation email link.');
+    }
+    return defaultHint;
+  }
+
+  private ensureCoreFieldOrder(): string[] {
+    if (!this.policy.coreFieldOrder || this.policy.coreFieldOrder.length === 0) {
+      this.policy.coreFieldOrder = this.defaultCoreFieldDefs.map(d => d.key);
+    }
+    for (const def of this.defaultCoreFieldDefs) {
+      if (!this.policy.coreFieldOrder.includes(def.key)) {
+        this.policy.coreFieldOrder.push(def.key);
+      }
+    }
+    return this.policy.coreFieldOrder;
+  }
+
+  onCoreFieldDragStart(key: string, event: DragEvent): void {
+    this.draggedCoreFieldKey = key;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', key);
+    }
+  }
+
+  onCoreFieldDragOver(key: string, event: DragEvent): void {
+    if (!this.draggedCoreFieldKey) return;
+    event.preventDefault();
+    this.dragOverCoreFieldKey = key;
+  }
+
+  onCoreFieldDrop(targetKey: string, event: DragEvent): void {
+    event.preventDefault();
+    if (!this.draggedCoreFieldKey || this.draggedCoreFieldKey === targetKey) {
+      this.onCoreFieldDragEnd();
+      return;
+    }
+    const order = this.ensureCoreFieldOrder();
+    const fromIdx = order.indexOf(this.draggedCoreFieldKey);
+    const toIdx = order.indexOf(targetKey);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const [moved] = order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, moved);
+      this.schedulePolicyAutoSave();
+    }
+    this.onCoreFieldDragEnd();
+  }
+
+  onCoreFieldDragEnd(): void {
+    this.draggedCoreFieldKey = null;
+    this.dragOverCoreFieldKey = null;
+  }
+
+  moveCoreFieldUp(key: string): void {
+    const visible = this.getOrderedCoreFields();
+    const visIdx = visible.findIndex(c => c.key === key);
+    if (visIdx <= 0) return;
+    const prevKey = visible[visIdx - 1].key;
+    const order = this.ensureCoreFieldOrder();
+    const a = order.indexOf(key);
+    const b = order.indexOf(prevKey);
+    if (a !== -1 && b !== -1) {
+      [order[a], order[b]] = [order[b], order[a]];
+      this.schedulePolicyAutoSave();
+    }
+  }
+
+  moveCoreFieldDown(key: string): void {
+    const visible = this.getOrderedCoreFields();
+    const visIdx = visible.findIndex(c => c.key === key);
+    if (visIdx === -1 || visIdx >= visible.length - 1) return;
+    const nextKey = visible[visIdx + 1].key;
+    const order = this.ensureCoreFieldOrder();
+    const a = order.indexOf(key);
+    const b = order.indexOf(nextKey);
+    if (a !== -1 && b !== -1) {
+      [order[a], order[b]] = [order[b], order[a]];
+      this.schedulePolicyAutoSave();
+    }
+  }
+
+  /**
+   * Returns custom questions assigned directly to Personal Information (Default Category 1).
+   */
+  getPersonalInfoCustomFields(): RegistrationField[] {
+    return (this.fields || []).filter(f => {
+      const sec = (f.sectionName || '').trim().toLowerCase();
+      return sec === 'personal information' || sec === '__core__';
+    });
+  }
+
+  /**
+   * Returns custom questions outside Personal Information so they are not duplicated across lists.
+   */
+  getNonPersonalFields(): RegistrationField[] {
+    return (this.fields || []).filter(f => {
+      const sec = (f.sectionName || '').trim().toLowerCase();
+      return sec !== 'personal information' && sec !== '__core__';
+    });
+  }
+
+  /**
+   * Returns custom questions belonging to a specific category section card.
+   */
+  getFieldsForSection(sec: string): RegistrationField[] {
+    const target = (sec || '').trim().toLowerCase();
+    return (this.fields || []).filter(f => (f.sectionName || '').trim().toLowerCase() === target);
+  }
+
+  /**
+   * Returns non-personal fields that are not assigned to any active custom category section.
+   */
+  getUnassignedNonPersonalFields(): RegistrationField[] {
+    const activeSections = (this.policy.customSections || []).map(s => (s || '').trim().toLowerCase());
+    return this.getNonPersonalFields().filter(f => {
+      const s = (f.sectionName || '').trim().toLowerCase();
+      return !s || !activeSections.includes(s);
+    });
+  }
+
+  /**
+   * TrackBy helper for inline editable section titles so inputs keep focus while typing.
+   */
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  /**
+   * Checks whether a field card is the active drag-over target by its unique ID.
+   */
+  isFieldDragOverById(fieldId: string): boolean {
+    if (this.dragOverFieldIndex === null) return false;
+    const idx = this.fields.findIndex(f => f.id === fieldId);
+    return idx !== -1 && idx === this.dragOverFieldIndex;
+  }
+
+  /**
+   * Moves a field up in `this.fields` by resolving its unique ID.
+   */
+  moveFieldUpById(fieldId: string): void {
+    const idx = this.fields.findIndex(f => f.id === fieldId);
+    if (idx > 0) this.moveFieldUp(idx);
+  }
+
+  /**
+   * Moves a field down in `this.fields` by resolving its unique ID.
+   */
+  moveFieldDownById(fieldId: string): void {
+    const idx = this.fields.findIndex(f => f.id === fieldId);
+    if (idx !== -1 && idx < this.fields.length - 1) this.moveFieldDown(idx);
+  }
+
+  /**
+   * Inserts a new inline field immediately after the specified field ID.
+   */
+  createInlineFieldAfterId(fieldId: string, sectionName?: string): void {
+    const idx = this.fields.findIndex(f => f.id === fieldId);
+    this.createInlineField({
+      position: 'after',
+      afterIndex: idx >= 0 ? idx : this.fields.length - 1,
+      sectionName
+    });
+  }
+
+  /**
+   * Returns true if a core field was deleted by the administrator.
+   */
+  isCoreFieldDeleted(key: string): boolean {
+    return Array.isArray(this.policy.deletedCoreFields) && this.policy.deletedCoreFields.includes(key);
+  }
+
+  /**
+   * Deletes a core field from the registration form (only Email and Phone are protected when login is enabled).
+   */
+  /**
+   * Opens a styled confirmation pop-up before deleting a core field from the registration form.
+   */
+  deleteCoreField(key: string): void {
+    if (!this.policy.collectInfoOnly && (key === 'email' || key === 'phone')) {
+      this.toast.error('Email and Phone Number cannot be deleted while Login mode is active.');
+      return;
+    }
+    const label = this.getCoreLabel(key, key);
+    this.pendingDeleteConfirm = {
+      title: `Delete "${label}"?`,
+      message: 'This field will be removed from the registration form. You can restore deleted core fields anytime using Restore Deleted.',
+      confirmLabel: 'Delete Field',
+      onConfirm: () => {
+        if (!this.policy.deletedCoreFields) {
+          this.policy.deletedCoreFields = [];
+        }
+        if (!this.policy.deletedCoreFields.includes(key)) {
+          this.policy.deletedCoreFields.push(key);
+        }
+        if (key === 'password') {
+          this.policy.requirePassword = false;
+        }
+        this.savePolicy(false);
+      }
+    };
+  }
+
+  /**
+   * Cancels and closes the active delete confirmation pop-up.
+   */
+  cancelDeleteConfirm(): void {
+    this.pendingDeleteConfirm = null;
+  }
+
+  /**
+   * Executes the confirmed deletion action and closes the pop-up.
+   */
+  executeDeleteConfirm(): void {
+    const action = this.pendingDeleteConfirm?.onConfirm;
+    this.pendingDeleteConfirm = null;
+    if (action) action();
+  }
+
+  /**
+   * Restores all deleted default core fields back into Default Category 1.
+   */
+  restoreDeletedCoreFields(): void {
+    this.policy.deletedCoreFields = [];
+    this.savePolicy(false);
+  }
+
+  /**
+   * Toggles password requirement directly from the Account Password row.
+   */
+  toggleRequirePasswordInline(): void {
+    if (this.policy.collectInfoOnly) {
+      this.policy.collectInfoOnly = false;
+      this.policy.requirePassword = true;
+    } else {
+      this.policy.requirePassword = !this.policy.requirePassword;
+    }
+    this.savePolicy(false);
   }
 
   /**
@@ -5723,6 +7069,36 @@ export class RegistrationFormBuilderComponent implements OnInit {
       if (!f.isActive) return false;
       if (!f.bcpUserCategoryId) return true; // Global field
       return f.bcpUserCategoryId === this.simulatedCategoryId;
+    });
+  }
+
+  /**
+   * Active custom fields assigned to Default Category 1 (Personal Information).
+   */
+  get simPersonalFields(): RegistrationField[] {
+    return this.filteredSimFields.filter(f => {
+      const s = (f.sectionName || '').trim().toLowerCase();
+      return s === 'personal information' || s === '__core__';
+    });
+  }
+
+  /**
+   * Active custom fields belonging to a specific custom category section in the preview.
+   */
+  getSimFieldsForSection(sec: string): RegistrationField[] {
+    const target = (sec || '').trim().toLowerCase();
+    return this.filteredSimFields.filter(f => (f.sectionName || '').trim().toLowerCase() === target);
+  }
+
+  /**
+   * Active non-personal custom fields that are not assigned to any custom category section.
+   */
+  get simUnassignedNonPersonalFields(): RegistrationField[] {
+    const activeSections = (this.policy.customSections || []).map(s => (s || '').trim().toLowerCase());
+    return this.filteredSimFields.filter(f => {
+      const s = (f.sectionName || '').trim().toLowerCase();
+      if (s === 'personal information' || s === '__core__') return false;
+      return !s || !activeSections.includes(s);
     });
   }
 
@@ -5883,18 +7259,26 @@ export class RegistrationFormBuilderComponent implements OnInit {
   }
 
   deleteField(field: RegistrationField): void {
-    if (confirm(`Are you sure you want to remove the question "${field.label}" from the registration form?`)) {
-      this.api.delete<any>(`RegistrationFormApi/fields/${field.id}`).subscribe({
-        next: () => {
-          this.toast.success('Question removed.');
-          this.loadFields();
-          this.broadcastFormUpdate();
-        },
-        error: (err) => {
-          this.toast.error(err?.error?.message || 'Could not remove question.');
-        }
-      });
-    }
+    this.pendingDeleteConfirm = {
+      title: `Delete "${field.label || 'this input'}"?`,
+      message: 'This custom input will be permanently removed from your registration form.',
+      confirmLabel: 'Delete Input',
+      onConfirm: () => {
+        this.api.delete<any>(`RegistrationFormApi/fields/${field.id}`).subscribe({
+          next: () => {
+            if (this.expandedFieldId === field.id) {
+              this.expandedFieldId = null;
+            }
+            this.toast.success('Question removed.');
+            this.loadFields();
+            this.broadcastFormUpdate();
+          },
+          error: (err) => {
+            this.toast.error(err?.error?.message || 'Could not remove question.');
+          }
+        });
+      }
+    };
   }
 
   moveFieldUp(index: number): void {
@@ -5913,16 +7297,23 @@ export class RegistrationFormBuilderComponent implements OnInit {
     this.persistOrder();
   }
 
+  /**
+   * Persists the current field ordering to the backend and updates auto-save status.
+   */
   private persistOrder(): void {
     const orders = this.fields.map((f, idx) => ({
       fieldId: f.id,
       sortOrder: idx + 1
     }));
+    this.autoSaveStatus = 'saving';
     this.api.put<any>('RegistrationFormApi/fields/reorder', orders).subscribe({
       next: () => {
+        this.autoSaveStatus = 'saved';
         this.broadcastFormUpdate();
       },
-      error: () => {}
+      error: () => {
+        this.autoSaveStatus = 'error';
+      }
     });
   }
 
@@ -6024,6 +7415,30 @@ export class RegistrationFormBuilderComponent implements OnInit {
    * @param mode Layout mode key ('single' | 'sections' | 'stepper' | 'pages').
    * @returns Friendly title of the presentation layout.
    */
+  /**
+   * Toggles the top-level Form Disabled state (blurs the builder, automatically unpublishes, and blocks all registrations).
+   */
+  toggleFormDisabled(): void {
+    this.policy.isFormDisabled = !this.policy.isFormDisabled;
+    if (this.policy.isFormDisabled) {
+      this.policy.isFormPublished = false;
+    }
+    this.savePolicy();
+  }
+
+  /**
+   * Toggles the top-level Form Published state (controls public accessibility).
+   * A disabled form cannot be published until it is enabled first.
+   */
+  toggleFormPublished(): void {
+    if (this.policy.isFormDisabled && this.policy.isFormPublished === false) {
+      this.toast.info('Enable the form first before publishing it to the public.');
+      return;
+    }
+    this.policy.isFormPublished = this.policy.isFormPublished === false ? true : false;
+    this.savePolicy();
+  }
+
   getLayoutName(mode: string): string {
     switch (mode) {
       case 'sections': return 'Single Page with Category Sections';
@@ -6081,9 +7496,10 @@ export class RegistrationFormBuilderComponent implements OnInit {
   }
 
   /**
-   * Displays an interactive browser prompt to add a new category section or step stage.
+   * Adds a new category section or step inline at the top or bottom without a browser prompt.
+   * @param position Placement within `policy.customSections` ('top' or 'bottom').
    */
-  promptAddSection(): void {
+  addSection(position: 'top' | 'bottom' = 'bottom'): void {
     if (!this.policy.customSections) {
       this.policy.customSections = [];
     }
@@ -6091,12 +7507,116 @@ export class RegistrationFormBuilderComponent implements OnInit {
     const defaultLabel = this.policy.formLayoutMode === 'sections'
       ? `Category ${nextNum}: Additional Information`
       : `Step ${nextNum}: Additional Stage`;
-    const label = prompt('Enter title for new category section or step:', defaultLabel);
-    if (label && label.trim()) {
-      this.policy.customSections.push(label.trim());
-      this.savePolicy();
-      this.toast.success(`Added "${label.trim()}" to form hierarchy.`);
+    if (position === 'top') {
+      this.policy.customSections.unshift(defaultLabel);
+    } else {
+      this.policy.customSections.push(defaultLabel);
     }
+    this.schedulePolicyAutoSave();
+    this.toast.success(`Added "${defaultLabel}" (${position}). Edit the title inline anytime.`);
+  }
+
+  /**
+   * Legacy wrapper preserved for compatibility; delegates to inline `addSection`.
+   */
+  promptAddSection(): void {
+    this.addSection('bottom');
+  }
+
+  /**
+   * Schedules a debounced auto-save of policy changes (such as inline section title edits).
+   */
+  schedulePolicyAutoSave(): void {
+    this.autoSaveStatus = 'saving';
+    if (this.policyAutoSaveTimer) {
+      clearTimeout(this.policyAutoSaveTimer);
+    }
+    this.policyAutoSaveTimer = setTimeout(() => {
+      this.api.put<any>('RegistrationFormApi/policy', this.policy).subscribe({
+        next: () => {
+          this.autoSaveStatus = 'saved';
+          this.broadcastFormUpdate();
+        },
+        error: () => {
+          this.autoSaveStatus = 'error';
+          this.toast.error('Auto-save failed for category sections.');
+        }
+      });
+    }, 550);
+  }
+
+  /**
+   * Moves a custom category section one position up and auto-saves the policy.
+   * @param index Current zero-based index of the section.
+   */
+  moveSectionUp(index: number): void {
+    if (!this.policy.customSections || index <= 0) return;
+    const arr = this.policy.customSections;
+    [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+    this.schedulePolicyAutoSave();
+  }
+
+  /**
+   * Moves a custom category section one position down and auto-saves the policy.
+   * @param index Current zero-based index of the section.
+   */
+  moveSectionDown(index: number): void {
+    if (!this.policy.customSections || index >= this.policy.customSections.length - 1) return;
+    const arr = this.policy.customSections;
+    [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
+    this.schedulePolicyAutoSave();
+  }
+
+  /**
+   * Starts dragging a category section card.
+   * @param index Index of the dragged section.
+   * @param event Native drag event.
+   */
+  onSectionDragStart(index: number, event: DragEvent): void {
+    this.draggedSectionIndex = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  /**
+   * Highlights a category section card as a valid drop target.
+   * @param index Hovered section index.
+   * @param event Native dragover event.
+   */
+  onSectionDragOver(index: number, event: DragEvent): void {
+    if (this.draggedSectionIndex === null) return;
+    event.preventDefault();
+    this.dragOverSectionIndex = index;
+  }
+
+  /**
+   * Reorders category sections on drop and triggers auto-save.
+   * @param targetIndex Target drop index.
+   * @param event Native drop event.
+   */
+  onSectionDrop(targetIndex: number, event: DragEvent): void {
+    event.preventDefault();
+    if (this.draggedSectionIndex === null || !this.policy.customSections) {
+      this.onSectionDragEnd();
+      return;
+    }
+    const fromIndex = this.draggedSectionIndex;
+    if (fromIndex !== targetIndex && fromIndex >= 0 && fromIndex < this.policy.customSections.length) {
+      const [moved] = this.policy.customSections.splice(fromIndex, 1);
+      this.policy.customSections.splice(targetIndex, 0, moved);
+      this.schedulePolicyAutoSave();
+    }
+    this.onSectionDragEnd();
+  }
+
+  /**
+   * Clears category section drag-and-drop state.
+   */
+  onSectionDragEnd(): void {
+    this.draggedSectionIndex = null;
+    this.dragOverSectionIndex = null;
   }
 
   /**
@@ -6106,20 +7626,363 @@ export class RegistrationFormBuilderComponent implements OnInit {
   removeCategorySection(index: number): void {
     if (!this.policy.customSections || index < 0 || index >= this.policy.customSections.length) return;
     const name = this.policy.customSections[index];
-    if (confirm(`Remove "${name}"? Any questions assigned to this section will remain in the form as unassigned.`)) {
-      this.policy.customSections.splice(index, 1);
-      this.savePolicy();
-      this.toast.info(`Removed "${name}".`);
+    this.pendingDeleteConfirm = {
+      title: `Delete Category "${name}"?`,
+      message: 'Any inputs assigned to this category will remain in the form under General / Unassigned Questions.',
+      confirmLabel: 'Delete Category',
+      onConfirm: () => {
+        this.policy.customSections.splice(index, 1);
+        this.schedulePolicyAutoSave();
+        this.toast.info(`Removed "${name}".`);
+      }
+    };
+  }
+
+  /**
+   * Creates a new custom field inline (modal-free) at the top, bottom, or after a given index,
+   * persists it immediately, and expands its inline editor.
+   * @param options Placement and optional pre-assigned section name.
+   */
+  createInlineField(options: { sectionName?: string; position?: 'top' | 'bottom' | 'after'; afterIndex?: number } = {}): void {
+    const position = options.position ?? 'bottom';
+    const uniqueSuffix = Date.now().toString().slice(-4);
+    const label = options.sectionName === 'Personal Information'
+      ? `Personal Field ${uniqueSuffix}`
+      : `New Question ${uniqueSuffix}`;
+    const fieldKey = `field_${uniqueSuffix}`;
+
+    const payload: Partial<RegistrationField> = {
+      label,
+      fieldKey,
+      placeholder: 'Enter response',
+      fieldType: 'text',
+      options: [],
+      isRequired: false,
+      sortOrder: this.fields.length + 1,
+      isActive: true,
+      bcpUserCategoryId: null,
+      helpText: '',
+      showInWorkspaceProfile: true,
+      sectionName: options.sectionName || ''
+    };
+
+    this.autoSaveStatus = 'saving';
+    this.api.post<any>('RegistrationFormApi/fields', payload).subscribe({
+      next: (res) => {
+        const createdId = res?.data?.id || '';
+        const createdKey = res?.data?.fieldKey || fieldKey;
+        const createdField: RegistrationField = {
+          id: createdId,
+          fieldKey: createdKey,
+          label,
+          placeholder: payload.placeholder,
+          fieldType: 'text',
+          options: [],
+          isRequired: false,
+          sortOrder: payload.sortOrder || this.fields.length + 1,
+          isActive: true,
+          bcpUserCategoryId: null,
+          helpText: '',
+          showInWorkspaceProfile: true,
+          sectionName: payload.sectionName
+        };
+
+        if (position === 'top') {
+          this.fields.unshift(createdField);
+          this.persistOrder();
+        } else if (position === 'after' && options.afterIndex !== undefined && options.afterIndex >= 0) {
+          this.fields.splice(options.afterIndex + 1, 0, createdField);
+          this.persistOrder();
+        } else {
+          this.fields.push(createdField);
+          this.autoSaveStatus = 'saved';
+          this.broadcastFormUpdate();
+        }
+
+        this.expandedFieldId = createdField.id;
+        this.focusFieldEditor(createdField.id);
+        this.toast.success('Field added inline. Edit its details below — changes auto-save.');
+      },
+      error: (err) => {
+        this.autoSaveStatus = 'error';
+        this.toast.error(err?.error?.message || 'Could not add field inline.');
+      }
+    });
+  }
+
+  /**
+   * Toggles the inline editor drawer for a specific field card and scrolls/focuses it when opened.
+   * @param fieldId Unique identifier of the field to expand or collapse.
+   */
+  toggleFieldExpand(fieldId: string): void {
+    const opening = this.expandedFieldId !== fieldId;
+    this.expandedFieldId = opening ? fieldId : null;
+    if (opening) {
+      this.focusFieldEditor(fieldId);
     }
   }
 
   /**
-   * Opens the question creator drawer with the section name pre-populated.
+   * Smoothly scrolls the active field card into view and focuses its label input.
+   * @param fieldId Unique identifier of the field being edited.
+   */
+  private focusFieldEditor(fieldId: string): void {
+    setTimeout(() => {
+      const card = document.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement | null;
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      const input = document.querySelector(`[data-field-label-input="${fieldId}"]`) as HTMLInputElement | null;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 60);
+  }
+
+  /**
+   * Updates a field's slug key when appropriate and schedules an inline auto-save.
+   * @param field The field being edited inline.
+   */
+  onInlineFieldLabelChange(field: RegistrationField): void {
+    if (!field.fieldKey || field.fieldKey.startsWith('field_')) {
+      const slug = (field.label || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      if (slug) {
+        field.fieldKey = slug;
+      }
+    }
+    this.scheduleFieldAutoSave(field);
+  }
+
+  /**
+   * Debounces and persists inline edits to a custom field via `PUT RegistrationFormApi/fields/{id}`.
+   * @param field The modified registration field.
+   */
+  scheduleFieldAutoSave(field: RegistrationField): void {
+    if (!field?.id) return;
+    this.autoSaveStatus = 'saving';
+    if (this.fieldAutoSaveTimers[field.id]) {
+      clearTimeout(this.fieldAutoSaveTimers[field.id]);
+    }
+    this.fieldAutoSaveTimers[field.id] = setTimeout(() => {
+      this.api.put<any>(`RegistrationFormApi/fields/${field.id}`, field).subscribe({
+        next: () => {
+          this.autoSaveStatus = 'saved';
+          this.broadcastFormUpdate();
+        },
+        error: () => {
+          this.autoSaveStatus = 'error';
+          this.toast.error(`Auto-save failed for "${field.label}".`);
+        }
+      });
+    }, 550);
+  }
+
+  /**
+   * Appends a new choice option to a select/radio/checkbox field inline and auto-saves.
+   * @param field The target option-based field.
+   */
+  addInlineOption(field: RegistrationField): void {
+    const draft = (this.inlineOptionDrafts[field.id] || '').trim();
+    if (!draft) return;
+    if (!field.options) field.options = [];
+    if (!field.options.includes(draft)) {
+      field.options.push(draft);
+      this.inlineOptionDrafts[field.id] = '';
+      this.scheduleFieldAutoSave(field);
+    }
+  }
+
+  /**
+   * Removes an option chip from an option-based field inline and auto-saves.
+   * @param field The target option-based field.
+   * @param optIdx Zero-based index of the option to remove.
+   */
+  removeInlineOption(field: RegistrationField, optIdx: number): void {
+    if (!field.options || optIdx < 0 || optIdx >= field.options.length) return;
+    field.options.splice(optIdx, 1);
+    this.scheduleFieldAutoSave(field);
+  }
+
+  /**
+   * Starts dragging a custom field card by its index in `this.fields`.
+   * @param index Index in `this.fields`.
+   * @param event Native drag event.
+   */
+  onFieldDragStart(index: number, event: DragEvent): void {
+    this.draggedFieldIndex = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  /**
+   * Highlights a custom field card as a drop target.
+   * @param index Hovered index in `this.fields`.
+   * @param event Native dragover event.
+   */
+  onFieldDragOver(index: number, event: DragEvent): void {
+    if (this.draggedFieldIndex === null) return;
+    event.preventDefault();
+    this.dragOverFieldIndex = index;
+  }
+
+  /**
+   * Reorders `this.fields` when a field card is dropped and auto-saves order.
+   * @param targetIndex Target drop index in `this.fields`.
+   * @param event Native drop event.
+   */
+  onFieldDrop(targetIndex: number, event: DragEvent): void {
+    event.preventDefault();
+    if (this.draggedFieldIndex === null) {
+      this.onFieldDragEnd();
+      return;
+    }
+    const fromIndex = this.draggedFieldIndex;
+    if (fromIndex !== targetIndex && fromIndex >= 0 && fromIndex < this.fields.length && targetIndex >= 0 && targetIndex < this.fields.length) {
+      const [moved] = this.fields.splice(fromIndex, 1);
+      this.fields.splice(targetIndex, 0, moved);
+      this.persistOrder();
+    }
+    this.onFieldDragEnd();
+  }
+
+  /**
+   * Clears field drag-and-drop visual state.
+   */
+  onFieldDragEnd(): void {
+    this.draggedFieldIndex = null;
+    this.dragOverFieldIndex = null;
+    this.dragOverCategoryKey = null;
+  }
+
+  /**
+   * Starts dragging a custom field by its field ID (stops propagation so parent category cards don't start dragging).
+   * @param fieldId Field ID within `this.fields`.
+   * @param event Native drag event.
+   */
+  onFieldDragStartById(fieldId: string, event: DragEvent): void {
+    event.stopPropagation();
+    const idx = this.fields.findIndex(f => f.id === fieldId);
+    if (idx !== -1) this.onFieldDragStart(idx, event);
+  }
+
+  /**
+   * Highlights a custom field drop target by its field ID.
+   * @param fieldId Target field ID.
+   * @param event Native dragover event.
+   */
+  onFieldDragOverById(fieldId: string, event: DragEvent): void {
+    if (this.draggedFieldIndex === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const idx = this.fields.findIndex(f => f.id === fieldId);
+    if (idx !== -1) this.onFieldDragOver(idx, event);
+  }
+
+  /**
+   * Reorders a custom field on drop and, when dropped onto a field in another category, moves it into that category automatically.
+   * @param targetFieldId Target field ID.
+   * @param event Native drop event.
+   */
+  onFieldDropById(targetFieldId: string, event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const targetIdx = this.fields.findIndex(f => f.id === targetFieldId);
+    if (this.draggedFieldIndex === null || targetIdx === -1) {
+      this.onFieldDragEnd();
+      return;
+    }
+
+    const fromIndex = this.draggedFieldIndex;
+    const draggedField = this.fields[fromIndex];
+    const targetField = this.fields[targetIdx];
+    const targetSection = targetField?.sectionName || '';
+
+    if (draggedField && (draggedField.sectionName || '') !== targetSection) {
+      draggedField.sectionName = targetSection;
+      this.persistFieldSectionChange(draggedField);
+    }
+
+    if (fromIndex !== targetIdx && fromIndex >= 0 && fromIndex < this.fields.length) {
+      const [moved] = this.fields.splice(fromIndex, 1);
+      const newTargetIdx = this.fields.findIndex(f => f.id === targetFieldId);
+      this.fields.splice(newTargetIdx >= 0 ? newTargetIdx : targetIdx, 0, moved);
+      this.persistOrder();
+    }
+    this.onFieldDragEnd();
+  }
+
+  /**
+   * Highlights a category card or Personal Information container when dragging a field over it.
+   * @param sectionName Target category name ('' for General, 'Personal Information' for Default Category 1).
+   * @param event Native dragover event.
+   */
+  onCategoryFieldDragOver(sectionName: string, event: DragEvent): void {
+    if (this.draggedFieldIndex === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOverCategoryKey = sectionName;
+  }
+
+  /**
+   * Moves a dragged field into the target category card on drop and auto-saves immediately.
+   * @param sectionName Target category name ('' for General, 'Personal Information' for Default Category 1).
+   * @param event Native drop event.
+   */
+  onCategoryFieldDrop(sectionName: string, event: DragEvent): void {
+    if (this.draggedFieldIndex === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const draggedField = this.fields[this.draggedFieldIndex];
+    if (draggedField && (draggedField.sectionName || '') !== sectionName) {
+      draggedField.sectionName = sectionName;
+      this.persistFieldSectionChange(draggedField);
+      const destLabel = sectionName || 'General / Unassigned';
+      this.toast.success(`Moved "${draggedField.label}" to ${destLabel}.`);
+    }
+    this.onFieldDragEnd();
+  }
+
+  /**
+   * Persists a field's updated category/section assignment immediately to the backend.
+   */
+  private persistFieldSectionChange(field: RegistrationField): void {
+    this.autoSaveStatus = 'saving';
+    this.api.put<any>(`RegistrationFormApi/fields/${field.id}`, field).subscribe({
+      next: () => {
+        this.autoSaveStatus = 'saved';
+        this.broadcastFormUpdate();
+      },
+      error: () => {
+        this.autoSaveStatus = 'error';
+        this.toast.error(`Could not move "${field.label}" to new category.`);
+      }
+    });
+  }
+
+  /**
+   * Cleans up pending auto-save debounce timers when the component is destroyed.
+   */
+  ngOnDestroy(): void {
+    if (this.policyAutoSaveTimer) {
+      clearTimeout(this.policyAutoSaveTimer);
+    }
+    Object.values(this.fieldAutoSaveTimers).forEach(t => {
+      if (t) clearTimeout(t);
+    });
+  }
+
+  /**
+   * Creates a new field inline inside the specified category section.
    * @param secName Name of the section or step stage to pre-fill.
    */
   openCreateModalForSection(secName: string): void {
-    this.openCreateModal();
-    this.modalField.sectionName = secName;
+    this.createInlineField({ sectionName: secName, position: 'bottom' });
   }
 
   /**
@@ -6200,6 +8063,12 @@ export class RegistrationFormBuilderComponent implements OnInit {
       return;
     }
 
+    const missingConsent = this.activeSimLegalConsents.find(c => c.isRequired && !this.simAcceptedConsents[c.id]);
+    if (missingConsent) {
+      this.toast.warning(`Test Validation: Please accept "${missingConsent.linkText || missingConsent.label}" before submitting.`);
+      return;
+    }
+
     this.simDraftSaved = false;
     this.simSubmitted = true;
     this.toast.success('Simulation test passed! Review the captured onboarding summary.');
@@ -6258,6 +8127,10 @@ export class RegistrationFormBuilderComponent implements OnInit {
 
     this.simSubmitted = false;
     this.simDraftSaved = false;
+    for (const c of this.activeSimLegalConsents) {
+      this.simAcceptedConsents[c.id] = true;
+    }
+
     this.toast.success('Auto-filled sandbox preview with sample test data! You can test submission.');
   }
 
@@ -6276,6 +8149,7 @@ export class RegistrationFormBuilderComponent implements OnInit {
       uploadedMockFiles: {},
       reCaptchaChecked: true
     };
+    this.simAcceptedConsents = {};
     this.simStep = 1;
     this.simSubmitted = false;
     this.simDraftSaved = false;

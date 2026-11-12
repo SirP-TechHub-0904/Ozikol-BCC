@@ -27,6 +27,7 @@ interface RegistrationFormField {
   bcpUserCategoryId?: string | null;
   helpText?: string;
   showInWorkspaceProfile: boolean;
+  sectionName?: string;
 }
 
 /**
@@ -84,8 +85,34 @@ interface WizardStep {
               </div>
             </div>
 
+            <!-- Unpublished / Not Accessible Notice -->
+            <div *ngIf="!isLoadingSchema && policy.isFormPublished === false" class="disabled-state-card fade-in">
+              <div class="disabled-icon-wrap">
+                <span class="material-symbols-outlined">visibility_off</span>
+              </div>
+              <h3>{{ 'auth.form_unpublished' | translate:'Form Not Accessible' }}</h3>
+              <p>{{ 'auth.form_unpublished_msg' | translate:'This registration form is currently unpublished and not accessible to the public.' }}</p>
+              <a routerLink="/" class="btn-signin-redirect">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span>{{ 'auth.return_to_home' | translate:'Return to Home' }}</span>
+              </a>
+            </div>
+
+            <!-- Form Disabled Notice (Clean state for users; no blurred form shown) -->
+            <div *ngIf="!isLoadingSchema && policy.isFormPublished !== false && policy.isFormDisabled" class="disabled-state-card fade-in">
+              <div class="disabled-icon-wrap">
+                <span class="material-symbols-outlined">block</span>
+              </div>
+              <h3>{{ 'auth.form_disabled_title' | translate:'Registration Temporarily Disabled' }}</h3>
+              <p>{{ 'auth.form_disabled_msg' | translate:'This registration form is currently disabled. No new registrations are accepted at this time.' }}</p>
+              <a routerLink="/auth/login" class="btn-signin-redirect">
+                <span class="material-symbols-outlined">login</span>
+                <span>{{ 'auth.go_to_member_signin' | translate:'Go to Member Sign In' }}</span>
+              </a>
+            </div>
+
             <!-- Public Registration Disabled Notice -->
-            <div *ngIf="!isLoadingSchema && policy.allowPublicRegistration === false" class="disabled-state-card fade-in">
+            <div *ngIf="!isLoadingSchema && policy.isFormPublished !== false && !policy.isFormDisabled && policy.allowPublicRegistration === false" class="disabled-state-card fade-in">
               <div class="disabled-icon-wrap">
                 <span class="material-symbols-outlined">lock_clock</span>
               </div>
@@ -174,7 +201,7 @@ interface WizardStep {
             </div>
 
             <!-- Active Registration Form Container -->
-            <div *ngIf="!isLoadingSchema && policy.allowPublicRegistration !== false && !registrationSuccess">
+            <div *ngIf="!isLoadingSchema && policy.isFormPublished !== false && !policy.isFormDisabled && policy.allowPublicRegistration !== false && !registrationSuccess">
               
               <!-- Alert Error Banner -->
               <div *ngIf="errorMessage" class="error-banner fade-in">
@@ -195,6 +222,42 @@ interface WizardStep {
                   </button>
                 </div>
               </div>
+
+              <!-- Invitation Prefill Banner -->
+              <div *ngIf="invitationPrefilled && !draftRestored" class="draft-banner fade-in" style="background: #eff6ff; border-color: #bfdbfe; color: #1e40af;">
+                <div class="draft-info">
+                  <span class="material-symbols-outlined draft-icon" style="color: #0050E5;">mark_email_read</span>
+                  <span>Your details were pre-filled from your invitation link. Complete the remaining fields below to finish &amp; sign in.</span>
+                </div>
+              </div>
+
+              <!-- Reusable Legal & Terms Consent Checkboxes -->
+              <ng-template #legalConsentsBlock>
+                <div *ngIf="activeLegalConsents.length > 0" style="display: flex; flex-direction: column; gap: 8px; margin: 14px 0;">
+                  <label *ngFor="let item of activeLegalConsents"
+                         style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #334155; cursor: pointer; line-height: 1.45;">
+                    <input type="checkbox"
+                           [(ngModel)]="acceptedConsents[item.id]"
+                           [ngModelOptions]="{ standalone: true }"
+                           style="margin-top: 3px; cursor: pointer;" />
+                    <span>
+                      {{ item.label }}
+                      <ng-container *ngFor="let lnk of getConsentLinks(item); let ki = index; let last = last">
+                        <span *ngIf="ki > 0">{{ last ? ' and ' : ', ' }}</span>
+                        <a *ngIf="lnk.linkText"
+                           [href]="getLegalConsentHref(lnk)"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           (click)="$event.stopPropagation()"
+                           style="color: #0050E5; font-weight: 600; text-decoration: underline;">
+                          {{ lnk.linkText }}
+                        </a>
+                      </ng-container>
+                      <span *ngIf="item.isRequired" class="req-star">*</span>
+                    </span>
+                  </label>
+                </div>
+              </ng-template>
 
               <!-- =================================================================== -->
               <!-- MODE 1: SINGLE PAGE FORM FLOW (Continuous Stream - Matches Preview) -->
@@ -333,6 +396,38 @@ interface WizardStep {
                       </div>
                     </div>
                   </div>
+
+                  <!-- Custom Fields assigned to Personal Information -->
+                  <div class="dynamic-fields-grid" *ngIf="personalDynamicFields.length > 0" style="margin-top: 14px;">
+                    <div *ngFor="let field of personalDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
+                      <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
+                        <label [for]="'dyn_' + field.fieldKey" class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                        <input [id]="'dyn_' + field.fieldKey" [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'p_' + field.fieldKey" [placeholder]="field.placeholder || ('e.g. ' + field.label)" class="form-input" [required]="field.isRequired" />
+                        <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
+                      </div>
+                      <div class="form-group" *ngIf="field.fieldType === 'select'">
+                        <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                        <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'p_' + field.fieldKey" class="form-select" [required]="field.isRequired">
+                          <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                          <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
+                        </select>
+                      </div>
+                      <div class="form-group" *ngIf="field.fieldType === 'textarea'">
+                        <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                        <textarea [(ngModel)]="customAttributes[field.fieldKey]" [name]="'p_' + field.fieldKey" rows="3" class="custom-textarea" [placeholder]="field.placeholder || ('e.g. ' + field.label)" [required]="field.isRequired"></textarea>
+                      </div>
+                      <div class="checkbox-form-group" *ngIf="field.fieldType === 'checkbox'">
+                        <label class="custom-checkbox-wrap">
+                          <input type="checkbox" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'p_' + field.fieldKey" />
+                          <span>{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></span>
+                        </label>
+                      </div>
+                      <div class="form-group" *ngIf="field.fieldType === 'file'">
+                        <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                        <input type="file" (change)="onFileSelected($event, field.fieldKey)" class="form-input" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Section 2: Profile & Sector -->
@@ -416,7 +511,7 @@ interface WizardStep {
                 </div>
 
                 <!-- Section 3: Dynamic Onboarding Questions -->
-                <div class="stream-section" *ngIf="visibleDynamicFields.length > 0">
+                <div class="stream-section" *ngIf="additionalDynamicFields.length > 0">
                   <div class="section-divider">
                     <span class="divider-title">Onboarding Information</span>
                   </div>
@@ -424,7 +519,7 @@ interface WizardStep {
 
                   <div class="dynamic-fields-grid">
                     <div
-                      *ngFor="let field of visibleDynamicFields"
+                      *ngFor="let field of additionalDynamicFields"
                       class="dynamic-field-item"
                       [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'"
                     >
@@ -567,8 +662,9 @@ interface WizardStep {
                     <div id="g-recaptcha-reg" class="g-recaptcha"></div>
                   </div>
 
-                  <!-- Terms & Agreement Note -->
-                  <p class="terms-note">
+                  <!-- Terms & Agreement Checkboxes or Fallback Note -->
+                  <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
+                  <p *ngIf="activeLegalConsents.length === 0" class="terms-note">
                     By clicking Register, you agree to our workspace terms of service, acceptable use policies, and privacy statement.
                   </p>
 
@@ -606,90 +702,110 @@ interface WizardStep {
                 </div>
               </form>
 
+              <!-- Reusable Dynamic Field Renderer for Public Registration -->
+              <ng-template #publicDynamicField let-field="field" let-prefix="prefix">
+                <div class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
+                  <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                    <input [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="prefix + field.fieldKey" [placeholder]="field.placeholder || ('e.g. ' + field.label)" class="form-input" [required]="field.isRequired" />
+                    <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
+                  </div>
+                  <div class="form-group" *ngIf="field.fieldType === 'select'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                    <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="prefix + field.fieldKey" class="form-select" [required]="field.isRequired">
+                      <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                      <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
+                    </select>
+                    <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
+                  </div>
+                  <div class="form-group" *ngIf="field.fieldType === 'textarea'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                    <textarea [(ngModel)]="customAttributes[field.fieldKey]" [name]="prefix + field.fieldKey" rows="3" class="custom-textarea" [placeholder]="field.placeholder || ('e.g. ' + field.label)" [required]="field.isRequired"></textarea>
+                    <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
+                  </div>
+                  <div class="checkbox-form-group" *ngIf="field.fieldType === 'checkbox'">
+                    <label class="custom-checkbox-wrap">
+                      <input type="checkbox" [(ngModel)]="customAttributes[field.fieldKey]" [name]="prefix + field.fieldKey" [required]="field.isRequired" />
+                      <span class="checkbox-mark"></span>
+                      <span class="checkbox-label-text">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></span>
+                    </label>
+                    <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
+                  </div>
+                  <div class="form-group" *ngIf="field.fieldType === 'file'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                    <input type="file" (change)="onFileSelected($event, field.fieldKey)" class="form-input" />
+                    <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
+                  </div>
+                </div>
+              </ng-template>
+
               <!-- =================================================================== -->
-              <!-- MODE 2: CATEGORY SECTIONS FLOW (Grouped Cards)                      -->
+              <!-- MODE 2: CATEGORY SECTIONS FLOW (Single Source of Truth)             -->
               <!-- =================================================================== -->
               <form *ngIf="policy.formLayoutMode === 'sections'" class="register-form sections-mode-stream" novalidate>
-                <!-- Card Section 1: Credentials -->
+                <!-- Card Section 1: Default Category 1 (Personal & Account Credentials) -->
                 <div class="section-card-box">
                   <div class="section-card-header">
                     <div class="sec-badge-num">1</div>
                     <div class="sec-header-meta">
-                      <h3>Account Credentials</h3>
-                      <p>Enter your primary account identity and secure access password.</p>
+                      <h3>{{ policy.coreCategoryTitle || 'Personal & Account Credentials' }}</h3>
+                      <p>{{ policy.coreCategorySubtitle || 'Enter your primary account identity and secure access details.' }}</p>
                     </div>
                   </div>
                   <div class="section-card-body">
-                    <div class="name-row-flex">
-                      <div class="form-group title-col" *ngIf="userSettings.enableTitle">
-                        <label class="form-label">Title</label>
-                        <div class="input-wrapper">
-                          <select [(ngModel)]="model.title" name="sec_title" class="form-input">
-                            <option value="">None</option>
-                            <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
-                          </select>
+                    <ng-container *ngFor="let coreKey of orderedCoreFieldKeys">
+                      <div *ngIf="coreKey === 'fullName'" class="name-row-flex">
+                        <div class="form-group first-name-col">
+                          <label class="form-label">First Name <span class="req-star">*</span></label>
+                          <div class="input-wrapper">
+                            <span class="material-symbols-outlined input-icon">person</span>
+                            <input type="text" [(ngModel)]="model.firstName" name="sec_firstName" placeholder="e.g. First Name" class="form-input" required />
+                          </div>
+                        </div>
+                        <div class="form-group last-name-col">
+                          <label class="form-label">Last Name <span class="req-star">*</span></label>
+                          <div class="input-wrapper">
+                            <span class="material-symbols-outlined input-icon">person</span>
+                            <input type="text" [(ngModel)]="model.lastName" name="sec_lastName" placeholder="e.g. Last Name" class="form-input" required />
+                          </div>
                         </div>
                       </div>
-                      <div class="form-group first-name-col">
-                        <label class="form-label">First Name <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                          <span class="material-symbols-outlined input-icon">person</span>
-                          <input type="text" [(ngModel)]="model.firstName" name="sec_firstName" placeholder="e.g. First Name" class="form-input" required />
-                        </div>
-                      </div>
-                      <div class="form-group last-name-col">
-                        <label class="form-label">Last Name <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                          <span class="material-symbols-outlined input-icon">person</span>
-                          <input type="text" [(ngModel)]="model.lastName" name="sec_lastName" placeholder="e.g. Last Name" class="form-input" required />
-                        </div>
-                      </div>
-                      <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
-                        <label class="form-label">Suffix</label>
-                        <div class="input-wrapper">
-                          <input type="text" [(ngModel)]="model.suffix" name="sec_suffix" placeholder="e.g. mni, PhD" class="form-input" />
-                        </div>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Email Address <span class="req-star">*</span></label>
-                      <div class="input-wrapper">
-                        <span class="material-symbols-outlined input-icon">mail</span>
-                        <input type="email" [(ngModel)]="model.email" name="sec_email" placeholder="name@company.com" class="form-input" required />
-                      </div>
-                    </div>
-                    <div *ngIf="isPasswordRequired" class="form-grid-2">
-                      <div class="form-group">
-                        <label class="form-label">Password <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                          <span class="material-symbols-outlined input-icon">key</span>
-                          <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.password" (input)="onPasswordInput(model.password)" name="sec_pwd" placeholder="Password" class="form-input" required />
-                        </div>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label">Confirm Password <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                          <span class="material-symbols-outlined input-icon">check_circle</span>
-                          <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.confirmPassword" name="sec_cpwd" placeholder="Confirm Password" class="form-input" required />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Card Section 2: Sector & Tier -->
-                <div class="section-card-box">
-                  <div class="section-card-header">
-                    <div class="sec-badge-num">2</div>
-                    <div class="sec-header-meta">
-                      <h3>Sector & Member Category</h3>
-                      <p>Select your organization domain and applicable membership tier.</p>
-                    </div>
-                  </div>
-                  <div class="section-card-body">
-                    <div class="form-grid-2">
-                      <div class="form-group" *ngIf="!isCoreFieldUnpublished('organizationType')">
-                        <label class="form-label">Industry Sector <span class="req-star">*</span></label>
+                      <div *ngIf="coreKey === 'email'" class="form-group">
+                        <label class="form-label">{{ getCoreLabel('email', 'Email Address') }} <span class="req-star">*</span></label>
+                        <div class="input-wrapper">
+                          <span class="material-symbols-outlined input-icon">mail</span>
+                          <input type="email" [(ngModel)]="model.email" name="sec_email" placeholder="name@company.com" class="form-input" required />
+                        </div>
+                      </div>
+
+                      <div *ngIf="coreKey === 'password' && isPasswordRequired" class="form-grid-2">
+                        <div class="form-group">
+                          <label class="form-label">Password <span class="req-star">*</span></label>
+                          <div class="input-wrapper">
+                            <span class="material-symbols-outlined input-icon">key</span>
+                            <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.password" (input)="onPasswordInput(model.password)" name="sec_pwd" placeholder="Password" class="form-input" required />
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label">Confirm Password <span class="req-star">*</span></label>
+                          <div class="input-wrapper">
+                            <span class="material-symbols-outlined input-icon">check_circle</span>
+                            <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.confirmPassword" name="sec_cpwd" placeholder="Confirm Password" class="form-input" required />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div *ngIf="coreKey === 'phone'" class="form-group">
+                        <label class="form-label">{{ getCoreLabel('phone', 'Phone Number') }}</label>
+                        <div class="input-wrapper">
+                          <span class="material-symbols-outlined input-icon">phone</span>
+                          <input type="text" [(ngModel)]="model.phoneNumber" name="sec_phone" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
+                        </div>
+                      </div>
+
+                      <div *ngIf="coreKey === 'organizationType'" class="form-group">
+                        <label class="form-label">{{ getCoreLabel('organizationType', 'Industry / Organization Sector') }} <span class="req-star">*</span></label>
                         <div class="input-wrapper">
                           <span class="material-symbols-outlined input-icon">apartment</span>
                           <select [(ngModel)]="model.organizationType" name="sec_orgType" class="form-select" required>
@@ -698,63 +814,59 @@ interface WizardStep {
                           </select>
                         </div>
                       </div>
-                      <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
-                        <label class="form-label">Phone Number</label>
-                        <div class="input-wrapper">
-                          <span class="material-symbols-outlined input-icon">phone</span>
-                          <input type="text" [(ngModel)]="model.phoneNumber" name="sec_phone" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
-                        </div>
-                      </div>
-                    </div>
 
-                    <!-- Category Selector -->
-                    <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
-                      <label class="form-label">Member Tier</label>
-                      <div class="category-cards-grid">
-                        <div *ngFor="let cat of categories" class="category-card" [class.selected]="model.bcpUserCategoryId === cat.id" (click)="selectCategory(cat.id)">
-                          <div class="cat-radio-badge"><span class="material-symbols-outlined" *ngIf="model.bcpUserCategoryId === cat.id">check</span></div>
-                          <div class="cat-card-body"><strong class="cat-card-title">{{ cat.name }}</strong></div>
+                      <div *ngIf="coreKey === 'category' && categories.length > 0" class="form-group category-picker-group">
+                        <label class="form-label">{{ getCoreLabel('category', 'Member Tier') }}</label>
+                        <div class="category-cards-grid">
+                          <div *ngFor="let cat of categories" class="category-card" [class.selected]="model.bcpUserCategoryId === cat.id" (click)="selectCategory(cat.id)">
+                            <div class="cat-radio-badge"><span class="material-symbols-outlined" *ngIf="model.bcpUserCategoryId === cat.id">check</span></div>
+                            <div class="cat-card-body"><strong class="cat-card-title">{{ cat.name }}</strong></div>
+                          </div>
                         </div>
                       </div>
+                    </ng-container>
+
+                    <!-- Custom Fields assigned to Personal Information -->
+                    <div class="dynamic-fields-grid" *ngIf="personalDynamicFields.length > 0" style="margin-top: 14px;">
+                      <ng-container *ngFor="let field of personalDynamicFields">
+                        <ng-container *ngTemplateOutlet="publicDynamicField; context: { field: field, prefix: 'sec_p_' }"></ng-container>
+                      </ng-container>
                     </div>
                   </div>
                 </div>
 
-                <!-- Card Section 3: Onboarding Questions -->
-                <div class="section-card-box" *ngIf="visibleDynamicFields.length > 0">
+                <!-- Dynamic Category Section Cards from Form Builder -->
+                <ng-container *ngFor="let sec of (policy.customSections || []); let si = index">
+                  <div class="section-card-box" *ngIf="getDynamicFieldsForSection(sec).length > 0">
+                    <div class="section-card-header">
+                      <div class="sec-badge-num">{{ si + 2 }}</div>
+                      <div class="sec-header-meta">
+                        <h3>{{ sec }}</h3>
+                      </div>
+                    </div>
+                    <div class="section-card-body">
+                      <div class="dynamic-fields-grid">
+                        <ng-container *ngFor="let field of getDynamicFieldsForSection(sec)">
+                          <ng-container *ngTemplateOutlet="publicDynamicField; context: { field: field, prefix: 'sec_' }"></ng-container>
+                        </ng-container>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Unassigned Active Fields (Only shown if any exist) -->
+                <div class="section-card-box" *ngIf="unassignedAdditionalDynamicFields.length > 0">
                   <div class="section-card-header">
-                    <div class="sec-badge-num">3</div>
+                    <div class="sec-badge-num">{{ (policy.customSections || []).length + 2 }}</div>
                     <div class="sec-header-meta">
-                      <h3>Onboarding Information</h3>
-                      <p>Custom questions requested by the organization administrator.</p>
+                      <h3>Additional Information</h3>
                     </div>
                   </div>
                   <div class="section-card-body">
                     <div class="dynamic-fields-grid">
-                      <div *ngFor="let field of visibleDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
-                        <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
-                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
-                          <input [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'sec_' + field.fieldKey" [placeholder]="field.placeholder || field.label" class="form-input" [required]="field.isRequired" />
-                        </div>
-                        <div class="form-group" *ngIf="field.fieldType === 'select'">
-                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
-                          <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'sec_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
-                            <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
-                          </select>
-                        </div>
-                        <div class="form-group" *ngIf="field.fieldType === 'textarea'">
-                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
-                          <textarea [(ngModel)]="customAttributes[field.fieldKey]" [name]="'sec_' + field.fieldKey" rows="3" class="custom-textarea" [placeholder]="field.placeholder || field.label" [required]="field.isRequired"></textarea>
-                        </div>
-                        <div class="checkbox-form-group" *ngIf="field.fieldType === 'checkbox'">
-                          <label class="custom-checkbox-wrap">
-                            <input type="checkbox" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'sec_' + field.fieldKey" [required]="field.isRequired" />
-                            <span class="checkbox-mark"></span>
-                            <span class="checkbox-label-text">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></span>
-                          </label>
-                        </div>
-                      </div>
+                      <ng-container *ngFor="let field of unassignedAdditionalDynamicFields">
+                        <ng-container *ngTemplateOutlet="publicDynamicField; context: { field: field, prefix: 'sec_u_' }"></ng-container>
+                      </ng-container>
                     </div>
                   </div>
                 </div>
@@ -763,6 +875,12 @@ interface WizardStep {
                 <div class="oz-recaptcha-wrap" *ngIf="recaptchaSiteKey">
                   <div id="g-recaptcha-reg-sec" class="g-recaptcha"></div>
                 </div>
+
+                <!-- Terms & Agreement Checkboxes -->
+                <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
+                <p *ngIf="activeLegalConsents.length === 0" class="terms-note">
+                  By clicking Register, you agree to our workspace terms of service, acceptable use policies, and privacy statement.
+                </p>
 
                 <!-- Inline Error Banner -->
                 <div *ngIf="errorMessage" class="error-banner fade-in" style="margin-top: 14px; margin-bottom: 14px;">
@@ -849,6 +967,36 @@ interface WizardStep {
                         <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.confirmPassword" name="st_cpw" placeholder="Confirm Password" class="form-input" required />
                       </div>
                     </div>
+                    <!-- Custom Fields assigned to Personal Information -->
+                    <div class="dynamic-fields-grid" *ngIf="personalDynamicFields.length > 0" style="margin-top: 14px;">
+                      <div *ngFor="let field of personalDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
+                        <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <input [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_p_' + field.fieldKey" [placeholder]="field.placeholder || ('e.g. ' + field.label)" class="form-input" [required]="field.isRequired" />
+                        </div>
+                        <div class="form-group" *ngIf="field.fieldType === 'select'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_p_' + field.fieldKey" class="form-select" [required]="field.isRequired">
+                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
+                          </select>
+                        </div>
+                        <div class="form-group" *ngIf="field.fieldType === 'textarea'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <textarea [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_p_' + field.fieldKey" rows="3" class="custom-textarea" [placeholder]="field.placeholder || ('e.g. ' + field.label)" [required]="field.isRequired"></textarea>
+                        </div>
+                        <div class="checkbox-form-group" *ngIf="field.fieldType === 'checkbox'">
+                          <label class="custom-checkbox-wrap">
+                            <input type="checkbox" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_p_' + field.fieldKey" />
+                            <span>{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></span>
+                          </label>
+                        </div>
+                        <div class="form-group" *ngIf="field.fieldType === 'file'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <input type="file" (change)="onFileSelected($event, field.fieldKey)" class="form-input" />
+                        </div>
+                      </div>
+                    </div>
                     <div class="wizard-actions">
                       <button type="button" class="btn-auth-submit" (click)="goToNextStep()">
                         <span>Continue</span>
@@ -907,13 +1055,13 @@ interface WizardStep {
                   </div>
 
                   <!-- Stage 3: Dynamic Questions -->
-                  <div *ngIf="currentStep === 3 && visibleDynamicFields.length > 0" class="stage-section fade-in">
+                  <div *ngIf="currentStep === 3 && additionalDynamicFields.length > 0" class="stage-section fade-in">
                     <div class="section-divider">
                       <span class="divider-title">Onboarding Information</span>
                     </div>
                     <p class="section-subnote">Please complete the required details configured for your membership profile.</p>
                     <div class="dynamic-fields-grid">
-                      <div *ngFor="let field of visibleDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
+                      <div *ngFor="let field of additionalDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
                         <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <input [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_' + field.fieldKey" [placeholder]="field.placeholder || ('e.g. ' + field.label)" class="form-input" [required]="field.isRequired" />
@@ -1016,7 +1164,8 @@ interface WizardStep {
                       <span class="material-symbols-outlined">error</span>
                       <span>{{ errorMessage }}</span>
                     </div>
-                    <p class="terms-note">By clicking Register, you agree to our workspace terms of service and acceptable use policies.</p>
+                    <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
+                    <p *ngIf="activeLegalConsents.length === 0" class="terms-note">By clicking Register, you agree to our workspace terms of service and acceptable use policies.</p>
                     <div class="wizard-actions">
                       <button type="button" class="btn-auth-secondary" (click)="goToPreviousStep()"><span class="material-symbols-outlined">arrow_back</span><span>Previous</span></button>
                       <button type="button" (click)="onRegister()" [disabled]="loading" class="btn-auth-submit btn-finish">
@@ -1081,6 +1230,36 @@ interface WizardStep {
                         <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.confirmPassword" name="pg_cpw" placeholder="••••••••" class="form-input" required />
                       </div>
                     </div>
+                    <!-- Custom Fields assigned to Personal Information -->
+                    <div class="dynamic-fields-grid" *ngIf="personalDynamicFields.length > 0" style="margin-top: 14px;">
+                      <div *ngFor="let field of personalDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
+                        <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <input [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_p_' + field.fieldKey" [placeholder]="field.placeholder || ('e.g. ' + field.label)" class="form-input" [required]="field.isRequired" />
+                        </div>
+                        <div class="form-group" *ngIf="field.fieldType === 'select'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_p_' + field.fieldKey" class="form-select" [required]="field.isRequired">
+                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
+                          </select>
+                        </div>
+                        <div class="form-group" *ngIf="field.fieldType === 'textarea'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <textarea [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_p_' + field.fieldKey" rows="3" class="custom-textarea" [placeholder]="field.placeholder || ('e.g. ' + field.label)" [required]="field.isRequired"></textarea>
+                        </div>
+                        <div class="checkbox-form-group" *ngIf="field.fieldType === 'checkbox'">
+                          <label class="custom-checkbox-wrap">
+                            <input type="checkbox" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_p_' + field.fieldKey" />
+                            <span>{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></span>
+                          </label>
+                        </div>
+                        <div class="form-group" *ngIf="field.fieldType === 'file'">
+                          <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
+                          <input type="file" (change)="onFileSelected($event, field.fieldKey)" class="form-input" />
+                        </div>
+                      </div>
+                    </div>
                     <div class="wizard-actions">
                       <button type="button" class="btn-auth-submit" (click)="goToNextStep()"><span>Next Page</span><span class="material-symbols-outlined">arrow_forward</span></button>
                     </div>
@@ -1136,13 +1315,13 @@ interface WizardStep {
                   </div>
 
                   <!-- Page 3: Dynamic Onboarding Questions (When configured by tenant) -->
-                  <div *ngIf="currentStep === 3 && visibleDynamicFields.length > 0" class="page-content fade-in">
+                  <div *ngIf="currentStep === 3 && additionalDynamicFields.length > 0" class="page-content fade-in">
                     <div class="section-divider">
                       <span class="divider-title">Onboarding Information</span>
                     </div>
                     <p class="section-subnote">Please complete the details configured for your membership profile.</p>
                     <div class="dynamic-fields-grid">
-                      <div *ngFor="let field of visibleDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
+                      <div *ngFor="let field of additionalDynamicFields" class="dynamic-field-item" [class.full-width]="field.fieldType === 'textarea' || field.fieldType === 'file'">
                         <div class="form-group" *ngIf="field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'date'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <input [type]="field.fieldType" [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_' + field.fieldKey" [placeholder]="field.placeholder || ('e.g. ' + field.label)" class="form-input" [required]="field.isRequired" />
@@ -1247,7 +1426,8 @@ interface WizardStep {
                       <span>{{ errorMessage }}</span>
                     </div>
 
-                    <p class="terms-note">By clicking Register, you agree to our workspace terms of service and acceptable use policies.</p>
+                    <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
+                    <p *ngIf="activeLegalConsents.length === 0" class="terms-note">By clicking Register, you agree to our workspace terms of service and acceptable use policies.</p>
                     <div class="wizard-actions">
                       <button type="button" class="btn-auth-secondary" (click)="goToPreviousStep()"><span class="material-symbols-outlined">arrow_back</span><span>Previous</span></button>
                       <button type="button" (click)="onRegister()" [disabled]="loading" class="btn-auth-submit btn-finish">
@@ -1266,6 +1446,50 @@ interface WizardStep {
     </ng-template>
   `,
   styles: [`
+    .reg-form-stage-wrap {
+      position: relative;
+    }
+    .form-blurred-content {
+      filter: blur(6px);
+      opacity: 0.55;
+      pointer-events: none;
+      user-select: none;
+    }
+    .form-disabled-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 64px;
+    }
+    .form-disabled-overlay-card {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #fecaca;
+      border-radius: 16px;
+      padding: 28px 24px;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    }
+    .form-disabled-overlay-card .overlay-icon {
+      font-size: 36px;
+      color: #dc2626;
+      margin-bottom: 10px;
+    }
+    .form-disabled-overlay-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .form-disabled-overlay-card p {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #475569;
+    }
     :host {
       display: block;
       width: 100%;
@@ -1718,7 +1942,8 @@ interface WizardStep {
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
-    .dynamic-field-item.full-width {
+    .dynamic-field-item.full-width,
+    .dynamic-field-item:only-child {
       grid-column: 1 / -1;
     }
 
@@ -2273,6 +2498,12 @@ interface WizardStep {
       to { opacity: 1; transform: translateY(0); }
     }
 
+    .name-row-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .name-row-flex .title-col { flex: 0 0 110px; }
+    .name-row-flex .first-name-col { flex: 1 1 180px; }
+    .name-row-flex .last-name-col { flex: 1 1 180px; }
+    .name-row-flex .suffix-col { flex: 0 0 130px; }
+
     @media (max-width: 768px) {
       .register-card {
         padding: 24px 18px;
@@ -2284,14 +2515,7 @@ interface WizardStep {
       .category-cards-grid {
         grid-template-columns: 1fr;
       }
-      .name-row-flex { display: flex; gap: 12px; flex-wrap: wrap; }
-      .name-row-flex .title-col { flex: 0 0 110px; }
-      .name-row-flex .first-name-col { flex: 1 1 150px; }
-      .name-row-flex .last-name-col { flex: 1 1 150px; }
-      .name-row-flex .suffix-col { flex: 0 0 130px; }
-      @media (max-width: 600px) {
-        .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
-      }
+      .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
       .topbar-inner {
         padding: 12px 16px;
       }
@@ -2348,14 +2572,85 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
    * Dynamic custom attributes dictionary (fieldKey -> value).
    */
   customAttributes: { [key: string]: any } = {};
+  acceptedConsents: Record<string, boolean> = {};
+
+  /** Ordered list of active core field keys matching Form Builder Default Category 1. */
+  get orderedCoreFieldKeys(): string[] {
+    const defaults = ['fullName', 'email', 'password', 'phone', 'category', 'organizationType'];
+    const order = (this.policy as any).coreFieldOrder?.length
+      ? (this.policy as any).coreFieldOrder as string[]
+      : defaults;
+    const merged = [
+      ...order.filter(k => defaults.includes(k)),
+      ...defaults.filter(k => !order.includes(k))
+    ];
+    return merged.filter(k => !this.isCoreFieldUnpublished(k === 'phone' ? 'phoneNumber' : k));
+  }
+
+  /** Resolves custom core field label configured in Form Builder. */
+  getCoreLabel(key: string, fallback: string): string {
+    return this.policy.coreFieldLabels?.[key]?.trim() || fallback;
+  }
+
+  /** Returns active custom fields belonging to a specific Form Builder category section. */
+  getDynamicFieldsForSection(sec: string): RegistrationFormField[] {
+    const target = (sec || '').trim().toLowerCase();
+    return this.additionalDynamicFields.filter(f => (f.sectionName || '').trim().toLowerCase() === target);
+  }
+
+  /** Returns active non-personal custom fields not assigned to any custom section. */
+  get unassignedAdditionalDynamicFields(): RegistrationFormField[] {
+    const active = (this.policy.customSections || []).map((s: string) => (s || '').trim().toLowerCase());
+    return this.additionalDynamicFields.filter(f => {
+      const s = (f.sectionName || '').trim().toLowerCase();
+      return !s || !active.includes(s);
+    });
+  }
+
+  /** Active legal/terms consent checkboxes configured in Form Builder. */
+  get activeLegalConsents(): any[] {
+    const list = (this.policy as any)?.legalConsents;
+    return Array.isArray(list) ? list.filter((c: any) => c && c.isActive !== false) : [];
+  }
+
+  /** Returns normalized list of legal links for a consent checkbox (supports legacy single-link items). */
+  getConsentLinks(item: any): any[] {
+    if (Array.isArray(item?.links) && item.links.length > 0) {
+      return item.links;
+    }
+    if (item?.linkText || item?.pageSlug || item?.customUrl) {
+      return [{
+        linkText: item.linkText || 'Terms & Conditions',
+        pageId: item.pageId ?? null,
+        pageSlug: item.pageSlug ?? null,
+        customUrl: item.customUrl ?? null
+      }];
+    }
+    return [];
+  }
+
+  /** Resolves the public URL for a linked legal/CMS page. */
+  getLegalConsentHref(item: any): string {
+    if (item?.customUrl && String(item.customUrl).trim()) {
+      return String(item.customUrl).trim();
+    }
+    if (item?.pageSlug && item.pageSlug !== '__custom__') {
+      return '/p/' + String(item.pageSlug).replace(/^\/+/, '');
+    }
+    return '#';
+  }
 
   categories: any[] = [];
   dynamicFields: RegistrationFormField[] = [];
   visibleDynamicFields: RegistrationFormField[] = [];
+  personalDynamicFields: RegistrationFormField[] = [];
+  additionalDynamicFields: RegistrationFormField[] = [];
 
   policy = {
     allowPublicRegistration: true,
     requireApprovalBeforeLogin: false,
+    isFormDisabled: false,
+    isFormPublished: true,
     formTitle: 'Create Your Account',
     welcomeMessage: '',
     successMessage: '',
@@ -2365,9 +2660,17 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     pageShellLayout: 'website' as 'website' | 'auth',
     formLayoutMode: 'single' as 'single' | 'sections' | 'stepper' | 'pages',
     requirePassword: true,
+    collectInfoOnly: false,
     allowSaveAndContinue: false,
     unpublishedCoreFields: [] as string[],
+    deletedCoreFields: [] as string[],
     customSections: [] as string[],
+    coreCategoryTitle: '',
+    coreCategorySubtitle: '',
+    coreFieldOrder: [] as string[],
+    coreFieldLabels: {} as Record<string, string>,
+    coreFieldHints: {} as Record<string, string>,
+    legalConsents: [] as any[],
     customCss: ''
   };
 
@@ -2406,6 +2709,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Draft & Resume State
   draftRestored = false;
+  invitationPrefilled = false;
 
   constructor(
     private api: ApiService,
@@ -2423,17 +2727,34 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
       document.body.classList.add('public-website-mode');
     }
 
-    // Inspect query parameters for pre-authorized workspace invitation token
+    // Inspect query parameters for invitation token and optional prefill values
     this.route.queryParams.subscribe(params => {
-      if (params['token']) {
-        this.model.invitationToken = params['token'];
-      }
+      const decodeParam = (val: any): string => {
+        if (!val) return '';
+        try { return decodeURIComponent(String(val)).trim(); } catch { return String(val).trim(); }
+      };
+
       if (params['email']) {
-        try {
-          this.model.email = decodeURIComponent(params['email']).trim();
-        } catch {
-          this.model.email = params['email'].trim();
-        }
+        this.model.email = decodeParam(params['email']);
+      }
+      if (params['firstName']) {
+        this.model.firstName = decodeParam(params['firstName']);
+        this.invitationPrefilled = true;
+      }
+      if (params['lastName']) {
+        this.model.lastName = decodeParam(params['lastName']);
+        this.invitationPrefilled = true;
+      }
+      if (params['phone'] || params['phoneNumber']) {
+        this.model.phoneNumber = decodeParam(params['phone'] || params['phoneNumber']);
+        this.invitationPrefilled = true;
+      }
+      if (params['categoryId']) {
+        this.model.bcpUserCategoryId = decodeParam(params['categoryId']);
+      }
+      if (params['token']) {
+        this.model.invitationToken = String(params['token']).trim();
+        this.loadInvitationPrefill(this.model.invitationToken);
       }
     });
 
@@ -2442,6 +2763,34 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadBrandSettings();
     this.loadSiteCodeInjections();
     this.tryRestoreDraft();
+  }
+
+  /**
+   * Fetches prefilled user details (first name, last name, email, phone, category)
+   * when an applicant arrives via a dedicated User Manager or feature email link (?token=...).
+   */
+  loadInvitationPrefill(token: string): void {
+    if (!token) return;
+    this.api.get<any>(`Auth/invitation-prefill?token=${encodeURIComponent(token)}`).subscribe({
+      next: (res) => {
+        const data = res?.data || res;
+        if (!data) return;
+        if (data.email && !this.model.email) this.model.email = data.email;
+        if (data.firstName && !this.model.firstName) this.model.firstName = data.firstName;
+        if (data.lastName && !this.model.lastName) this.model.lastName = data.lastName;
+        if (data.phoneNumber && !this.model.phoneNumber) this.model.phoneNumber = data.phoneNumber;
+        if (data.bcpUserCategoryId && !this.model.bcpUserCategoryId) {
+          this.model.bcpUserCategoryId = data.bcpUserCategoryId;
+          this.filterVisibleDynamicFields();
+        }
+        this.invitationPrefilled = true;
+      },
+      error: (err) => {
+        if (err?.status === 410 || err?.status === 400) {
+          this.errorMessage = err?.error?.message || 'This invitation link is invalid or has already been used.';
+        }
+      }
+    });
   }
 
   loadUserSettings(): void {
@@ -2483,14 +2832,23 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
    * Checks whether password is required by policy.
    */
   get isPasswordRequired(): boolean {
-    return this.policy.requirePassword !== false;
+    return this.policy.requirePassword !== false && !this.policy.collectInfoOnly;
   }
 
   /**
-   * Determines if a core form field has been toggled to unpublished/hidden in the builder.
+   * Returns a customized core field display label when configured by admin, or the default label.
+   */
+  getCoreFieldLabel(key: string, fallback: string): string {
+    return this.policy.coreFieldLabels?.[key]?.trim() || fallback;
+  }
+
+  /**
+   * Determines if a core form field has been unpublished or deleted in the builder.
    */
   isCoreFieldUnpublished(fieldKey: string): boolean {
-    return Array.isArray(this.policy.unpublishedCoreFields) && this.policy.unpublishedCoreFields.includes(fieldKey);
+    const unpublished = Array.isArray(this.policy.unpublishedCoreFields) && this.policy.unpublishedCoreFields.includes(fieldKey);
+    const deleted = Array.isArray(this.policy.deletedCoreFields) && this.policy.deletedCoreFields.includes(fieldKey);
+    return unpublished || deleted;
   }
 
   /**
@@ -2592,6 +2950,10 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!f.bcpUserCategoryId) return true;
       return f.bcpUserCategoryId === selectedCatId;
     });
+    const isPersonal = (f: RegistrationFormField) =>
+      f.sectionName === 'Personal Information' || f.sectionName === '__core__';
+    this.personalDynamicFields = this.visibleDynamicFields.filter(isPersonal);
+    this.additionalDynamicFields = this.visibleDynamicFields.filter(f => !isPersonal(f));
   }
 
   /**
@@ -2653,30 +3015,32 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Step 1: Account Credentials
     if (stepNumber === 1) {
-      if (!this.model.firstName?.trim()) {
-        this.errorMessage = 'Please enter your first name.';
-        this.toast.error(this.errorMessage);
-        this.focusInputField('s_firstName', 'st_fn', 'pg_fn', 'sec_firstName');
-        return false;
-      }
-      if (this.model.firstName.trim().length < 2) {
-        this.errorMessage = 'First name must be at least 2 characters.';
-        this.toast.error(this.errorMessage);
-        this.focusInputField('s_firstName', 'st_fn', 'pg_fn', 'sec_firstName');
-        return false;
-      }
+      if (!this.isCoreFieldUnpublished('fullName')) {
+        if (!this.model.firstName?.trim()) {
+          this.errorMessage = 'Please enter your first name.';
+          this.toast.error(this.errorMessage);
+          this.focusInputField('s_firstName', 'st_fn', 'pg_fn', 'sec_firstName');
+          return false;
+        }
+        if (this.model.firstName.trim().length < 2) {
+          this.errorMessage = 'First name must be at least 2 characters.';
+          this.toast.error(this.errorMessage);
+          this.focusInputField('s_firstName', 'st_fn', 'pg_fn', 'sec_firstName');
+          return false;
+        }
 
-      if (!this.model.lastName?.trim()) {
-        this.errorMessage = 'Please enter your last name.';
-        this.toast.error(this.errorMessage);
-        this.focusInputField('s_lastName', 'st_ln', 'pg_ln', 'sec_lastName');
-        return false;
-      }
-      if (this.model.lastName.trim().length < 2) {
-        this.errorMessage = 'Last name must be at least 2 characters.';
-        this.toast.error(this.errorMessage);
-        this.focusInputField('s_lastName', 'st_ln', 'pg_ln', 'sec_lastName');
-        return false;
+        if (!this.model.lastName?.trim()) {
+          this.errorMessage = 'Please enter your last name.';
+          this.toast.error(this.errorMessage);
+          this.focusInputField('s_lastName', 'st_ln', 'pg_ln', 'sec_lastName');
+          return false;
+        }
+        if (this.model.lastName.trim().length < 2) {
+          this.errorMessage = 'Last name must be at least 2 characters.';
+          this.toast.error(this.errorMessage);
+          this.focusInputField('s_lastName', 'st_ln', 'pg_ln', 'sec_lastName');
+          return false;
+        }
       }
 
       if (!this.model.email?.trim()) {
@@ -2700,6 +3064,18 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
           this.toast.error(this.errorMessage);
           this.focusInputField('s_password', 'st_pw', 'pg_pw', 'sec_pwd');
           return false;
+        }
+      }
+
+      for (const field of this.personalDynamicFields) {
+        const val = this.customAttributes[field.fieldKey];
+        if (field.isRequired) {
+          if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
+            this.errorMessage = `Please complete the required field: ${field.label}`;
+            this.toast.error(this.errorMessage);
+            this.focusInputField('dyn_' + field.fieldKey);
+            return false;
+          }
         }
       }
       return true;
@@ -2727,8 +3103,8 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // Step 3: Dynamic Onboarding Questions
-    if (stepNumber === 3 && this.visibleDynamicFields.length > 0) {
-      for (const field of this.visibleDynamicFields) {
+    if (stepNumber === 3 && this.additionalDynamicFields.length > 0) {
+      for (const field of this.additionalDynamicFields) {
         const val = this.customAttributes[field.fieldKey];
         if (field.isRequired) {
           if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
@@ -2807,6 +3183,14 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
         if (schema) {
           this.policy.allowPublicRegistration = schema.allowPublicRegistration ?? true;
           this.policy.requireApprovalBeforeLogin = schema.requireApprovalBeforeLogin ?? false;
+          this.policy.isFormDisabled = schema.isFormDisabled ?? false;
+          this.policy.isFormPublished = schema.isFormPublished ?? true;
+
+          if (this.policy.isFormDisabled || this.policy.isFormPublished === false) {
+            this.router.navigate(['/404'], { skipLocationChange: true });
+            return;
+          }
+
           this.policy.formTitle = schema.formTitle || 'Create Your Account';
           this.policy.welcomeMessage = schema.welcomeMessage || '';
           this.policy.successMessage = schema.successMessage || '';
@@ -2816,9 +3200,17 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
           this.policy.pageShellLayout = (schema.pageShellLayout as any) || 'website';
           this.policy.formLayoutMode = (schema.formLayoutMode as any) || 'single';
           this.policy.requirePassword = schema.requirePassword ?? true;
+          this.policy.collectInfoOnly = schema.collectInfoOnly ?? false;
           this.policy.allowSaveAndContinue = schema.allowSaveAndContinue ?? false;
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
+          this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
+          this.policy.coreCategoryTitle = schema.coreCategoryTitle || '';
+          this.policy.coreCategorySubtitle = schema.coreCategorySubtitle || '';
+          this.policy.coreFieldOrder = schema.coreFieldOrder || [];
+          this.policy.coreFieldLabels = schema.coreFieldLabels || {};
+          this.policy.coreFieldHints = schema.coreFieldHints || {};
+          this.policy.legalConsents = schema.legalConsents || [];
           this.policy.customCss = schema.customCss || '';
 
           if (schema.customCss && typeof document !== 'undefined') {
@@ -3001,13 +3393,14 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
   private loadRecaptchaScript(): void {
     if (typeof document === 'undefined') return;
 
-    if ((window as any).grecaptcha) {
+    const grecaptcha = (window as any).grecaptcha;
+    if (grecaptcha && typeof grecaptcha.render === 'function') {
       this.recaptchaLoaded = true;
-      this.initRecaptcha();
+      this.initRecaptcha(0);
       return;
     }
 
-    if (document.getElementById('oz-recaptcha-script')) {
+    if (document.getElementById('oz-recaptcha-script') || document.querySelector('script[src*="recaptcha/api.js"]')) {
       this.recaptchaLoaded = true;
       return;
     }
@@ -3019,7 +3412,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     script.defer = true;
     script.onload = () => {
       this.recaptchaLoaded = true;
-      this.initRecaptcha();
+      this.initRecaptcha(0);
     };
     document.head.appendChild(script);
   }
@@ -3037,9 +3430,10 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Renders the Google reCAPTCHA widget in the DOM container.
+   * Renders the Google reCAPTCHA widget in the active DOM container without clobbering
+   * an already-initialized widget or erasing a solved challenge token.
    */
-  private initRecaptcha(): void {
+  private initRecaptcha(attempt: number = 0): void {
     if (!this.recaptchaSiteKey) {
       if (environment.recaptchaSiteKey) {
         this.recaptchaSiteKey = environment.recaptchaSiteKey;
@@ -3049,46 +3443,65 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const container = this.getRecaptchaContainer();
-    if (!container) return;
+    if (!container) {
+      if (attempt < 20) {
+        setTimeout(() => this.initRecaptcha(attempt + 1), 200);
+      }
+      return;
+    }
 
-    const grecaptcha = (window as any).grecaptcha;
-    if (grecaptcha && grecaptcha.render) {
+    // If this container already hosts a rendered widget for the current site key, preserve it
+    if (container.children.length > 0 && container.getAttribute('data-widget-id') !== null) {
+      const existingId = Number(container.getAttribute('data-widget-id'));
+      if (!Number.isNaN(existingId)) {
+        this.recaptchaWidgetId = existingId;
+      }
+      return;
+    }
+
+    const renderWidget = () => {
       try {
-        if (container.children.length > 0 && this.recaptchaWidgetId !== null) {
-          try {
-            grecaptcha.reset(this.recaptchaWidgetId);
-          } catch {
-            container.innerHTML = '';
-            this.recaptchaWidgetId = grecaptcha.render(container, {
-              sitekey: this.recaptchaSiteKey,
-              callback: (token: string) => {
-                this.model.recaptchaToken = token;
-                this.errorMessage = '';
-              },
-              'expired-callback': () => {
-                this.model.recaptchaToken = '';
-              }
-            });
+        const g = (window as any).grecaptcha;
+        if (!g || typeof g.render !== 'function') {
+          if (attempt < 30) {
+            setTimeout(() => this.initRecaptcha(attempt + 1), 250);
           }
-        } else {
-          container.innerHTML = '';
-          this.recaptchaWidgetId = grecaptcha.render(container, {
-            sitekey: this.recaptchaSiteKey,
-            callback: (token: string) => {
-              this.model.recaptchaToken = token;
-              this.errorMessage = '';
-            },
-            'expired-callback': () => {
-              this.model.recaptchaToken = '';
-            }
-          });
+          return;
         }
+
+        const activeContainer = this.getRecaptchaContainer();
+        if (!activeContainer || activeContainer.children.length > 0) {
+          return;
+        }
+
+        const widgetId = g.render(activeContainer, {
+          sitekey: this.recaptchaSiteKey,
+          callback: (token: string) => {
+            this.model.recaptchaToken = token;
+            this.errorMessage = '';
+          },
+          'expired-callback': () => {
+            this.model.recaptchaToken = '';
+          }
+        });
+        this.recaptchaWidgetId = widgetId;
+        activeContainer.setAttribute('data-widget-id', String(widgetId));
+        activeContainer.setAttribute('data-sitekey', this.recaptchaSiteKey);
       } catch (err) {
         console.warn('reCAPTCHA render notice:', err);
       }
+    };
+
+    const grecaptcha = (window as any).grecaptcha;
+    if (grecaptcha && typeof grecaptcha.ready === 'function') {
+      grecaptcha.ready(renderWidget);
+    } else if (grecaptcha && typeof grecaptcha.render === 'function') {
+      renderWidget();
     } else {
       this.loadRecaptchaScript();
-      setTimeout(() => this.initRecaptcha(), 300);
+      if (attempt < 30) {
+        setTimeout(() => this.initRecaptcha(attempt + 1), 250);
+      }
     }
   }
 
@@ -3243,6 +3656,15 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
   onRegister(): void {
     this.errorMessage = '';
 
+    if (this.policy.isFormDisabled) {
+      this.errorMessage = 'The registration form is currently disabled. No new registrations are accepted at this time.';
+      return;
+    }
+    if (this.policy.isFormPublished === false) {
+      this.errorMessage = 'This registration form is currently unpublished and not accessible.';
+      return;
+    }
+
     // Validate all wizard stages before submitting
     for (let s = 1; s <= this.totalSteps; s++) {
       if (!this.validateStep(s)) {
@@ -3253,22 +3675,44 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
+    const missingConsent = this.activeLegalConsents.find(c => c.isRequired && !this.acceptedConsents[c.id]);
+    if (missingConsent) {
+      this.errorMessage = `Please accept "${missingConsent.linkText || missingConsent.label || 'Terms & Conditions'}" before submitting.`;
+      return;
+    }
+
     // 3. reCAPTCHA token check (safely wrapped to never throw uncaught client error)
-    if (this.recaptchaSiteKey && (window as any).grecaptcha) {
-      try {
-        if (this.recaptchaWidgetId !== null) {
-          const responseToken = (window as any).grecaptcha.getResponse(this.recaptchaWidgetId);
-          if (responseToken) {
-            this.model.recaptchaToken = responseToken;
+    if (this.recaptchaSiteKey) {
+      const grecaptcha = (window as any).grecaptcha;
+      const container = this.getRecaptchaContainer();
+      const attrId = container?.getAttribute('data-widget-id');
+      const activeWidgetId = attrId !== null && attrId !== undefined && attrId !== ''
+        ? Number(attrId)
+        : this.recaptchaWidgetId;
+
+      if (grecaptcha && typeof grecaptcha.getResponse === 'function') {
+        try {
+          if (activeWidgetId !== null && !Number.isNaN(activeWidgetId)) {
+            const responseToken = grecaptcha.getResponse(activeWidgetId);
+            if (responseToken) {
+              this.model.recaptchaToken = responseToken;
+            }
+          } else {
+            const defaultToken = grecaptcha.getResponse();
+            if (defaultToken) {
+              this.model.recaptchaToken = defaultToken;
+            }
           }
-        } else {
-          const defaultToken = (window as any).grecaptcha.getResponse();
-          if (defaultToken) {
-            this.model.recaptchaToken = defaultToken;
-          }
+        } catch (captchaErr) {
+          console.warn('reCAPTCHA getResponse check:', captchaErr);
         }
-      } catch (captchaErr) {
-        console.warn('reCAPTCHA getResponse check:', captchaErr);
+      }
+
+      if (!this.model.recaptchaToken && container) {
+        const scopedToken = container.querySelector<HTMLTextAreaElement>('textarea[name="g-recaptcha-response"]')?.value;
+        if (scopedToken) {
+          this.model.recaptchaToken = scopedToken;
+        }
       }
 
       if (!this.model.recaptchaToken) {
@@ -3308,6 +3752,19 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
           sessionStorage.removeItem('oz_reg_pwd_session');
         } catch {}
         this.draftRestored = false;
+
+        // Check if tenant requires email OTP verification before account activation
+        if (res?.data?.requiresEmailVerification === true) {
+          const msg = res?.message || this.policy.successMessage || 'Registration successful! Please verify your email address.';
+          this.toast.success(msg);
+          this.router.navigate(['/auth/verify-email'], {
+            queryParams: {
+              email: this.model.email,
+              requiresApproval: res?.data?.requiresApproval ? '1' : '0'
+            }
+          });
+          return;
+        }
 
         // Check if tenant requires administrator approval before login
         if (res?.data?.requiresApproval === true) {
@@ -3360,6 +3817,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
             (window as any).grecaptcha.reset(this.recaptchaWidgetId);
           } catch { }
         }
+        this.model.recaptchaToken = '';
       }
     });
   }

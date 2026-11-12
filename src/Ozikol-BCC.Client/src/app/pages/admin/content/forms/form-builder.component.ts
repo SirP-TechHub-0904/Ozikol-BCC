@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageFormsService, PageFormItem, PageFormFieldItem } from '../../../../core/services/page-forms.service';
+import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/components/page-header/page-header.component';
 
@@ -261,6 +262,66 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                       <small class="hint">Enter each option separated by commas. Visitors will choose from these items.</small>
                     </div>
 
+                    <!-- Linked Legal Pages for Agreement Checkbox -->
+                    <div class="form-group col-span-2" *ngIf="field.fieldType === 'checkbox'">
+                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                          <span style="font-size: 11.5px; font-weight: 700; color: #334155;">
+                            Linked Legal Pages ({{ getCheckboxLinks(field).length }})
+                          </span>
+                          <button type="button"
+                                  (click)="addCheckboxLink(field)"
+                                  style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; color: #0050E5; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">add_link</span>
+                            <span>Add Link</span>
+                          </button>
+                        </div>
+
+                        <div *ngIf="getCheckboxLinks(field).length === 0" style="font-size: 11.5px; color: #64748b;">
+                          Optional: Click <strong>Add Link</strong> to attach Terms &amp; Conditions, Privacy Policy, or any CMS Legal Page to this checkbox.
+                        </div>
+
+                        <div *ngFor="let lnk of getCheckboxLinks(field); let ki = index"
+                             style="display: grid; grid-template-columns: minmax(130px, 1fr) minmax(170px, 1.3fr) auto; gap: 8px; align-items: end; margin-bottom: 8px;">
+                          <div>
+                            <label style="display: block; font-size: 10.5px; font-weight: 600; color: #64748b; margin-bottom: 3px;">Link Text #{{ ki + 1 }}</label>
+                            <input type="text"
+                                   [ngModel]="lnk.linkText"
+                                   (ngModelChange)="updateCheckboxLinkText(field, ki, $event)"
+                                   placeholder="e.g. Terms & Conditions"
+                                   class="form-control" />
+                          </div>
+                          <div>
+                            <label style="display: block; font-size: 10.5px; font-weight: 600; color: #64748b; margin-bottom: 3px;">CMS Legal Page</label>
+                            <select [ngModel]="lnk.pageId || (lnk.pageSlug === '__custom__' || lnk.customUrl ? '__custom__' : '')"
+                                    (ngModelChange)="onCheckboxLinkPageSelected(field, ki, $event)"
+                                    class="form-control">
+                              <option value="">-- Select CMS Legal Page --</option>
+                              <option *ngFor="let p of cmsPages" [value]="p.id">
+                                {{ p.title }} (/p/{{ p.directUrl }}){{ p.publish ? '' : ' [Draft]' }}
+                              </option>
+                              <option value="__custom__">Custom URL / External Link...</option>
+                            </select>
+                          </div>
+                          <button type="button"
+                                  (click)="removeCheckboxLink(field, ki)"
+                                  title="Remove Link"
+                                  style="width: 32px; height: 36px; border-radius: 6px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                          </button>
+
+                          <div *ngIf="!lnk.pageId && (lnk.pageSlug === '__custom__' || (lnk.customUrl && lnk.customUrl.length > 0))"
+                               style="grid-column: 1 / -1;">
+                            <input type="text"
+                                   [ngModel]="lnk.customUrl"
+                                   (ngModelChange)="updateCheckboxLinkCustomUrl(field, ki, $event)"
+                                   placeholder="e.g. /p/terms-conditions or https://..."
+                                   class="form-control" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div class="form-group col-span-2">
                       <label>Placeholder Text</label>
                       <input
@@ -359,7 +420,20 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                   <!-- Checkbox preview -->
                   <label *ngIf="field.fieldType === 'checkbox'" class="preview-checkbox">
                     <input type="checkbox" disabled>
-                    <span>{{ field.placeholder || field.label }}</span>
+                    <span>
+                      {{ field.placeholder || field.label }}
+                      <ng-container *ngFor="let lnk of getCheckboxLinks(field); let ki = index; let last = last">
+                        <span>{{ ki === 0 ? ' ' : (last ? ' and ' : ', ') }}</span>
+                        <a *ngIf="lnk.linkText"
+                           [href]="getLegalLinkHref(lnk)"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           (click)="$event.stopPropagation()"
+                           style="color: #0050E5; font-weight: 600; text-decoration: underline;">
+                          {{ lnk.linkText }}
+                        </a>
+                      </ng-container>
+                    </span>
                   </label>
                 </div>
               </div>
@@ -680,14 +754,18 @@ export class FormBuilderComponent implements OnInit {
     return `bcp_form_draft_${this.formId || 'new'}`;
   }
 
+  cmsPages: Array<{ id: string; title: string; directUrl: string; publish: boolean }> = [];
+
   constructor(
     private formsService: PageFormsService,
+    private api: ApiService,
     private route: ActivatedRoute,
     private router: Router,
     private toast: ToastService
   ) {}
 
   ngOnInit(): void {
+    this.loadCmsPages();
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       this.loadExistingFormKeys(id);
@@ -1124,6 +1202,108 @@ export class FormBuilderComponent implements OnInit {
       .split(',')
       .map(s => s.trim())
       .filter(s => s.length > 0);
+  }
+
+  /** Loads CMS pages so Agreement Checkboxes can link to Terms, Privacy, or any CMS page. */
+  loadCmsPages(): void {
+    this.api.get<any>('ContentApi/pages').subscribe({
+      next: (res) => {
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        this.cmsPages = list
+          .filter((p: any) => p && p.id && p.title)
+          .map((p: any) => ({
+            id: String(p.id),
+            title: String(p.title),
+            directUrl: String(p.directUrl || '').replace(/^\/+/, ''),
+            publish: Boolean(p.publish)
+          }));
+      },
+      error: () => {}
+    });
+  }
+
+  /** Parses legal consent links stored in `field.optionsJson` for `checkbox` fields. */
+  getCheckboxLinks(field: PageFormFieldItem): Array<{ linkText: string; pageId?: string | null; pageSlug?: string | null; customUrl?: string | null }> {
+    if (!field.optionsJson) return [];
+    try {
+      const parsed = JSON.parse(field.optionsJson);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveCheckboxLinks(field: PageFormFieldItem, links: Array<{ linkText: string; pageId?: string | null; pageSlug?: string | null; customUrl?: string | null }>): void {
+    field.optionsJson = links.length > 0 ? JSON.stringify(links) : '';
+    this.onDataChanged();
+  }
+
+  /** Adds a linked legal page entry to an Agreement Checkbox field. */
+  addCheckboxLink(field: PageFormFieldItem): void {
+    const links = [...this.getCheckboxLinks(field)];
+    links.push({
+      linkText: links.length === 0 ? 'Terms & Conditions' : 'Privacy Policy',
+      pageId: null,
+      pageSlug: null,
+      customUrl: null
+    });
+    this.saveCheckboxLinks(field, links);
+  }
+
+  /** Removes a linked legal page entry from an Agreement Checkbox field. */
+  removeCheckboxLink(field: PageFormFieldItem, index: number): void {
+    const links = [...this.getCheckboxLinks(field)];
+    links.splice(index, 1);
+    this.saveCheckboxLinks(field, links);
+  }
+
+  /** Updates the clickable link label for a checkbox legal link. */
+  updateCheckboxLinkText(field: PageFormFieldItem, index: number, value: string): void {
+    const links = [...this.getCheckboxLinks(field)];
+    if (!links[index]) return;
+    links[index] = { ...links[index], linkText: value };
+    this.saveCheckboxLinks(field, links);
+  }
+
+  /** Updates the custom URL for a checkbox legal link. */
+  updateCheckboxLinkCustomUrl(field: PageFormFieldItem, index: number, value: string): void {
+    const links = [...this.getCheckboxLinks(field)];
+    if (!links[index]) return;
+    links[index] = { ...links[index], customUrl: value };
+    this.saveCheckboxLinks(field, links);
+  }
+
+  /** Handles CMS Legal Page dropdown selection for a checkbox link. */
+  onCheckboxLinkPageSelected(field: PageFormFieldItem, index: number, selectedValue: string): void {
+    const links = [...this.getCheckboxLinks(field)];
+    const current = links[index];
+    if (!current) return;
+
+    if (selectedValue === '__custom__') {
+      links[index] = { ...current, pageId: null, pageSlug: '__custom__', customUrl: current.customUrl || '' };
+    } else if (!selectedValue) {
+      links[index] = { ...current, pageId: null, pageSlug: null, customUrl: null };
+    } else {
+      const page = this.cmsPages.find(p => p.id === selectedValue);
+      const nextText = (!current.linkText || current.linkText === 'Terms & Conditions' || current.linkText === 'Privacy Policy')
+        ? (page?.title || current.linkText)
+        : current.linkText;
+      links[index] = {
+        ...current,
+        linkText: nextText,
+        pageId: selectedValue,
+        pageSlug: page?.directUrl || null,
+        customUrl: null
+      };
+    }
+    this.saveCheckboxLinks(field, links);
+  }
+
+  /** Resolves the public href for a checkbox legal link. */
+  getLegalLinkHref(lnk: { pageSlug?: string | null; customUrl?: string | null }): string {
+    if (lnk.customUrl && lnk.customUrl.trim()) return lnk.customUrl.trim();
+    if (lnk.pageSlug && lnk.pageSlug !== '__custom__') return '/p/' + lnk.pageSlug.replace(/^\/+/, '');
+    return '#';
   }
 
   saveForm(): void {

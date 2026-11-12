@@ -634,12 +634,31 @@ namespace Ozikol_BCC.Api.Controllers
             };
             _dbContext.BcpUserInvitations.Add(invitation);
 
+            // Store optional prefill details (FirstName, LastName, PhoneNumber) in Invitations without requiring schema changes
+            var combinedFullName = !string.IsNullOrWhiteSpace(request.FullName)
+                ? request.FullName.Trim()
+                : $"{request.FirstName?.Trim()} {request.LastName?.Trim()}".Trim();
+            if (!string.IsNullOrWhiteSpace(combinedFullName) || !string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                _dbContext.Invitations.Add(new Invitation
+                {
+                    Id = Guid.CreateVersion7(),
+                    FullName = combinedFullName,
+                    Email = emailClean,
+                    PhoneNumber = request.PhoneNumber?.Trim(),
+                    Token = token,
+                    ExpiresUtc = invitation.ExpiresAt,
+                    IsUsed = false,
+                    CreatedUtc = DateTime.UtcNow
+                });
+            }
+
             // 5. Resolve client register link host dynamically
             var origin = Request.Headers.Origin.FirstOrDefault() 
                 ?? Request.Headers.Referer.FirstOrDefault() 
                 ?? $"{Request.Scheme}://{Request.Host}";
 
-            var registrationUrl = $"{origin.TrimEnd('/')}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}";
+            var registrationUrl = $"{origin.TrimEnd('/')}/register?token={token}&email={Uri.EscapeDataString(emailClean)}";
 
             // Resolve dynamic tenant brand name
             var tenantSettings = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
@@ -2520,6 +2539,26 @@ namespace Ozikol_BCC.Api.Controllers
         /// Gets or sets an optional welcome note from the issuing administrator.
         /// </summary>
         public string? CustomMessage { get; set; }
+
+        /// <summary>
+        /// Optional prefilled first name for the invited user.
+        /// </summary>
+        public string? FirstName { get; set; }
+
+        /// <summary>
+        /// Optional prefilled last name for the invited user.
+        /// </summary>
+        public string? LastName { get; set; }
+
+        /// <summary>
+        /// Optional prefilled full name for the invited user.
+        /// </summary>
+        public string? FullName { get; set; }
+
+        /// <summary>
+        /// Optional prefilled phone number for the invited user.
+        /// </summary>
+        public string? PhoneNumber { get; set; }
     }
 
     public class PasswordPolicyUpdateRequest

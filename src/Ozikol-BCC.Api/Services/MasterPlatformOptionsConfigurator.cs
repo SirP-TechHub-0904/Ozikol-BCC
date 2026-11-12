@@ -201,4 +201,66 @@ namespace Ozikol_BCC.Api.Services
             }
         }
     }
+
+    /// <summary>
+    /// Dynamically resolves Google reCAPTCHA SiteKey and SecretKey credentials stored in <see cref="MasterPlatformSetting"/>
+    /// so tenant API forms and public registration share the exact same key pair configured in Central Works.
+    /// </summary>
+    public sealed class MasterPlatformRecaptchaCredentialProvider : Ozikol_BCC.Infrastructure.Services.Recaptcha.IRecaptchaCredentialProvider
+    {
+        private readonly IServiceProvider _serviceProvider;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MasterPlatformRecaptchaCredentialProvider"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">Application service provider for resolving scoped MasterCatalogDbContext on demand.</param>
+        public MasterPlatformRecaptchaCredentialProvider(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        }
+
+        /// <summary>
+        /// Reads and decrypts the central platform Google reCAPTCHA SiteKey and SecretKey from the Master Catalog database.
+        /// </summary>
+        /// <returns>Tuple of decrypted SiteKey and SecretKey, or nulls if unavailable.</returns>
+        public (string? SiteKey, string? SecretKey) GetCredentials()
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                var settings = db?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1);
+                if (settings == null)
+                {
+                    return (null, null);
+                }
+
+                string? siteKey = null;
+                if (!string.IsNullOrWhiteSpace(settings.GoogleReCaptchaSiteKey))
+                {
+                    var val = OzikolDataCipher.DecryptIfNeeded(settings.GoogleReCaptchaSiteKey)?.Trim();
+                    if (!string.IsNullOrWhiteSpace(val) && !val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                    {
+                        siteKey = val;
+                    }
+                }
+
+                string? secretKey = null;
+                if (!string.IsNullOrWhiteSpace(settings.GoogleReCaptchaSecretKey))
+                {
+                    var val = OzikolDataCipher.DecryptIfNeeded(settings.GoogleReCaptchaSecretKey)?.Trim();
+                    if (!string.IsNullOrWhiteSpace(val) && !val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                    {
+                        secretKey = val;
+                    }
+                }
+
+                return (siteKey, secretKey);
+            }
+            catch
+            {
+                return (null, null);
+            }
+        }
+    }
 }

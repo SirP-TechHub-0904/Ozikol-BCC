@@ -978,17 +978,18 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private initRecaptcha(): void {
+  private initRecaptcha(attempt: number = 0): void {
     if (typeof document === 'undefined' || !this.recaptchaSiteKey) return;
-    if (!document.getElementById('google-recaptcha-script')) {
+    if (!document.getElementById('google-recaptcha-script') && !document.querySelector('script[src*="recaptcha/api.js"]')) {
       const script = document.createElement('script');
       script.id = 'google-recaptcha-script';
-      script.src = 'https://www.google.com/recaptcha/api.js';
+      script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
       script.async = true;
       script.defer = true;
+      script.onload = () => this.initRecaptcha(0);
       document.head.appendChild(script);
     }
-    setTimeout(() => {
+    const renderWfWidgets = () => {
       try {
         const grecaptcha = (window as any).grecaptcha;
         if (grecaptcha && typeof grecaptcha.render === 'function') {
@@ -996,16 +997,26 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
             const el = document.getElementById(id);
             if (el && el.children.length === 0) {
               try {
-                grecaptcha.render(el, {
+                const wid = grecaptcha.render(el, {
                   sitekey: this.recaptchaSiteKey,
                   callback: () => { this.reCaptchaChecked = true; }
                 });
+                el.setAttribute('data-widget-id', String(wid));
               } catch {}
             }
           });
+        } else if (attempt < 25) {
+          setTimeout(() => this.initRecaptcha(attempt + 1), 250);
         }
       } catch {}
-    }, 350);
+    };
+
+    const g = (window as any).grecaptcha;
+    if (g && typeof g.ready === 'function') {
+      g.ready(renderWfWidgets);
+    } else if (attempt < 25) {
+      setTimeout(() => this.initRecaptcha(attempt + 1), 250);
+    }
   }
 
   submitOnboarding(): void {

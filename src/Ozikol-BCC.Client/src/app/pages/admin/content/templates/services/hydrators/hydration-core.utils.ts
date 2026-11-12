@@ -425,6 +425,9 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
     if (formKey === 'newsletter_subscribe' || formKey === 'newsletter' || formKey === 'subscribe') {
       return `<form class="oz-injected-form oz-newsletter-form" data-form-key="Newsletter" onsubmit="event.preventDefault();">
   <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
+  <div class="oz-recaptcha-wrap my-2">
+    <div class="g-recaptcha" data-sitekey=""></div>
+  </div>
   <button type="submit" class="btn btn-primary fw-semibold text-nowrap" style="margin-top: 10px;">Subscribe</button>
 </form>`;
     }

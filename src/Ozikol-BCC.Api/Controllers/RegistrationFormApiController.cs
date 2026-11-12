@@ -83,6 +83,15 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
+            var fieldSections = await LoadFieldSectionsAsync();
+            foreach (var f in fields)
+            {
+                if (fieldSections.TryGetValue(f.Id.ToString(), out var secName))
+                {
+                    f.SectionName = secName;
+                }
+            }
+
             return Ok(ApiResponse<List<RegistrationFormFieldDto>>.SuccessResponse(fields, "Registration form fields retrieved successfully."));
         }
 
@@ -148,6 +157,11 @@ namespace Ozikol_BCC.Api.Controllers
             _context.BcpRegistrationFormFields.Add(entity);
             await _context.SaveChangesAsync();
 
+            if (!string.IsNullOrWhiteSpace(dto.SectionName))
+            {
+                await SaveFieldSectionAsync(entity.Id, dto.SectionName);
+            }
+
             _logger.LogInformation("Created dynamic registration form field '{FieldKey}' ({Label})", entity.FieldKey, entity.Label);
 
             return Ok(ApiResponse<object>.SuccessResponse(new { id = entity.Id, fieldKey = entity.FieldKey }, "Field created successfully."));
@@ -188,6 +202,7 @@ namespace Ozikol_BCC.Api.Controllers
             entity.UpdatedAtUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await SaveFieldSectionAsync(entity.Id, dto.SectionName);
 
             return Ok(ApiResponse<object>.SuccessResponse(null, "Registration field updated successfully."));
         }
@@ -259,6 +274,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     policy.AllowPublicRegistration = config.AllowPublicRegistration;
                     policy.RequireApprovalBeforeLogin = config.RequireApprovalBeforeLogin;
+                    policy.RequireEmailVerification = config.RequireConfirmedEmailToLogin;
                     if (!string.IsNullOrWhiteSpace(config.RegistrationWelcomeMessage))
                         policy.RegistrationWelcomeMessage = config.RegistrationWelcomeMessage;
                     if (!string.IsNullOrWhiteSpace(config.RegistrationSuccessMessage))
@@ -290,14 +306,31 @@ namespace Ozikol_BCC.Api.Controllers
                         policy.PageShellLayout = !string.IsNullOrWhiteSpace(extra.PageShellLayout) ? extra.PageShellLayout : policy.PageShellLayout;
                         policy.FormLayoutMode = !string.IsNullOrWhiteSpace(extra.FormLayoutMode) ? extra.FormLayoutMode : policy.FormLayoutMode;
                         policy.RequirePassword = extra.RequirePassword;
+                        policy.CollectInfoOnly = extra.CollectInfoOnly;
                         policy.AllowSaveAndContinue = extra.AllowSaveAndContinue;
                         policy.UnpublishedCoreFields = extra.UnpublishedCoreFields ?? new();
+                        policy.DeletedCoreFields = extra.DeletedCoreFields ?? new();
+                        policy.CoreFieldOrder = extra.CoreFieldOrder ?? new();
                         policy.CustomSections = extra.CustomSections ?? new();
+                        if (!string.IsNullOrWhiteSpace(extra.CoreCategoryTitle))
+                            policy.CoreCategoryTitle = extra.CoreCategoryTitle;
+                        if (!string.IsNullOrWhiteSpace(extra.CoreCategorySubtitle))
+                            policy.CoreCategorySubtitle = extra.CoreCategorySubtitle;
+                        if (extra.CoreFieldLabels != null && extra.CoreFieldLabels.Count > 0)
+                            policy.CoreFieldLabels = extra.CoreFieldLabels;
+                        if (extra.CoreFieldHints != null && extra.CoreFieldHints.Count > 0)
+                            policy.CoreFieldHints = extra.CoreFieldHints;
 
                         if (extra.AllowPublicRegistration.HasValue)
                             policy.AllowPublicRegistration = extra.AllowPublicRegistration.Value;
                         if (extra.RequireApprovalBeforeLogin.HasValue)
                             policy.RequireApprovalBeforeLogin = extra.RequireApprovalBeforeLogin.Value;
+                        if (extra.RequireEmailVerification.HasValue)
+                            policy.RequireEmailVerification = extra.RequireEmailVerification.Value;
+                        if (extra.IsFormDisabled.HasValue)
+                            policy.IsFormDisabled = extra.IsFormDisabled.Value;
+                        if (extra.IsFormPublished.HasValue)
+                            policy.IsFormPublished = extra.IsFormPublished.Value;
                         if (!string.IsNullOrWhiteSpace(extra.RegistrationWelcomeMessage))
                             policy.RegistrationWelcomeMessage = extra.RegistrationWelcomeMessage;
                         if (!string.IsNullOrWhiteSpace(extra.RegistrationFormTitle))
@@ -312,6 +345,7 @@ namespace Ozikol_BCC.Api.Controllers
                             policy.DefaultIndustrySector = extra.DefaultIndustrySector;
                         if (!string.IsNullOrWhiteSpace(extra.CustomCss))
                             policy.CustomCss = extra.CustomCss;
+                        policy.LegalConsents = extra.LegalConsents ?? new();
                     }
                 }
             }
@@ -353,12 +387,24 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     PageShellLayout = !string.IsNullOrWhiteSpace(dto.PageShellLayout) ? dto.PageShellLayout.Trim().ToLowerInvariant() : "website",
                     FormLayoutMode = !string.IsNullOrWhiteSpace(dto.FormLayoutMode) ? dto.FormLayoutMode : "single",
-                    RequirePassword = dto.RequirePassword,
+                    RequirePassword = dto.CollectInfoOnly ? false : dto.RequirePassword,
+                    CollectInfoOnly = dto.CollectInfoOnly,
                     AllowSaveAndContinue = dto.AllowSaveAndContinue,
                     UnpublishedCoreFields = dto.UnpublishedCoreFields ?? new(),
+                    DeletedCoreFields = dto.DeletedCoreFields ?? new(),
+                    CoreFieldOrder = dto.CoreFieldOrder ?? new(),
                     CustomSections = dto.CustomSections ?? new(),
+                    CoreCategoryTitle = !string.IsNullOrWhiteSpace(dto.CoreCategoryTitle) ? dto.CoreCategoryTitle.Trim() : "Default Category 1: Personal & Account Credentials",
+                    CoreCategorySubtitle = !string.IsNullOrWhiteSpace(dto.CoreCategorySubtitle) ? dto.CoreCategorySubtitle.Trim() : "Built-in identity fields required for member profiles. Customize labels or toggle optional fields.",
+                    CoreFieldLabels = dto.CoreFieldLabels ?? new(),
+                    CoreFieldHints = dto.CoreFieldHints ?? new(),
+                    FieldSections = await LoadFieldSectionsAsync(),
+                    LegalConsents = dto.LegalConsents ?? new(),
                     AllowPublicRegistration = dto.AllowPublicRegistration,
-                    RequireApprovalBeforeLogin = dto.RequireApprovalBeforeLogin,
+                    RequireApprovalBeforeLogin = dto.CollectInfoOnly ? true : dto.RequireApprovalBeforeLogin,
+                    RequireEmailVerification = dto.CollectInfoOnly ? false : dto.RequireEmailVerification,
+                    IsFormDisabled = dto.IsFormDisabled,
+                    IsFormPublished = dto.IsFormDisabled ? false : dto.IsFormPublished,
                     RegistrationWelcomeMessage = !string.IsNullOrWhiteSpace(dto.RegistrationWelcomeMessage) ? dto.RegistrationWelcomeMessage.Trim() : "Join our member directory and workspace portal.",
                     RegistrationFormTitle = !string.IsNullOrWhiteSpace(dto.RegistrationFormTitle) ? dto.RegistrationFormTitle.Trim() : "Create Your Account",
                     RegistrationSuccessMessage = !string.IsNullOrWhiteSpace(dto.RegistrationSuccessMessage) ? dto.RegistrationSuccessMessage.Trim() : "Registration successful! Welcome to the portal.",
@@ -410,6 +456,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                     config.AllowPublicRegistration = dto.AllowPublicRegistration;
                     config.RequireApprovalBeforeLogin = dto.RequireApprovalBeforeLogin;
+                    config.RequireConfirmedEmailToLogin = dto.CollectInfoOnly ? false : dto.RequireEmailVerification;
                     config.RegistrationWelcomeMessage = extra.RegistrationWelcomeMessage;
                     config.RegistrationSuccessMessage = extra.RegistrationSuccessMessage;
                     config.RegistrationUrlSlug = cleanSlug;
@@ -699,9 +746,16 @@ namespace Ozikol_BCC.Api.Controllers
             string pageShellLayout = "website";
             string formLayoutMode = "single";
             bool requirePassword = true;
+            bool collectInfoOnly = false;
             bool allowSaveAndContinue = false;
             List<string> unpublishedCoreFields = new();
+            List<string> deletedCoreFields = new();
+            List<string> coreFieldOrder = new();
             List<string> customSections = new();
+            string coreCategoryTitle = "Default Category 1: Personal & Account Credentials";
+            string coreCategorySubtitle = "Built-in identity fields required for member profiles.";
+            Dictionary<string, string> coreFieldLabels = new();
+            Dictionary<string, string> coreFieldHints = new();
 
             RegistrationLayoutConfigExtra? extra = null;
             if (policyConfigField != null && !string.IsNullOrWhiteSpace(policyConfigField.OptionsJson))
@@ -713,10 +767,29 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         pageShellLayout = !string.IsNullOrWhiteSpace(extra.PageShellLayout) ? extra.PageShellLayout : "website";
                         formLayoutMode = !string.IsNullOrWhiteSpace(extra.FormLayoutMode) ? extra.FormLayoutMode : "single";
-                        requirePassword = extra.RequirePassword;
+                        collectInfoOnly = extra.CollectInfoOnly;
+                        requirePassword = collectInfoOnly ? false : extra.RequirePassword;
                         allowSaveAndContinue = extra.AllowSaveAndContinue;
                         unpublishedCoreFields = extra.UnpublishedCoreFields ?? new();
+                        deletedCoreFields = extra.DeletedCoreFields ?? new();
+                        coreFieldOrder = extra.CoreFieldOrder ?? new();
                         customSections = extra.CustomSections ?? new();
+                        if (!string.IsNullOrWhiteSpace(extra.CoreCategoryTitle))
+                            coreCategoryTitle = extra.CoreCategoryTitle;
+                        if (!string.IsNullOrWhiteSpace(extra.CoreCategorySubtitle))
+                            coreCategorySubtitle = extra.CoreCategorySubtitle;
+                        coreFieldLabels = extra.CoreFieldLabels ?? new();
+                        coreFieldHints = extra.CoreFieldHints ?? new();
+                        if (extra.FieldSections != null && extra.FieldSections.Count > 0)
+                        {
+                            foreach (var f in fields)
+                            {
+                                if (extra.FieldSections.TryGetValue(f.Id.ToString(), out var secName))
+                                {
+                                    f.SectionName = secName;
+                                }
+                            }
+                        }
                     }
                 }
                 catch { }
@@ -726,6 +799,9 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 allowPublicRegistration = (extra != null && extra.AllowPublicRegistration.HasValue) ? extra.AllowPublicRegistration.Value : (config?.AllowPublicRegistration ?? true),
                 requireApprovalBeforeLogin = (extra != null && extra.RequireApprovalBeforeLogin.HasValue) ? extra.RequireApprovalBeforeLogin.Value : (config?.RequireApprovalBeforeLogin ?? false),
+                requireEmailVerification = (extra != null && extra.RequireEmailVerification.HasValue) ? extra.RequireEmailVerification.Value : (config?.RequireConfirmedEmailToLogin ?? false),
+                isFormDisabled = (extra != null && extra.IsFormDisabled.HasValue) ? extra.IsFormDisabled.Value : false,
+                isFormPublished = (extra != null && extra.IsFormDisabled == true) ? false : ((extra != null && extra.IsFormPublished.HasValue) ? extra.IsFormPublished.Value : true),
                 formTitle = (extra != null && !string.IsNullOrWhiteSpace(extra.RegistrationFormTitle)) ? extra.RegistrationFormTitle : "Create Your Account",
                 welcomeMessage = (extra != null && !string.IsNullOrWhiteSpace(extra.RegistrationWelcomeMessage)) ? extra.RegistrationWelcomeMessage : (!string.IsNullOrWhiteSpace(config?.RegistrationWelcomeMessage) ? config.RegistrationWelcomeMessage : "Join our member directory and workspace portal."),
                 successMessage = (extra != null && !string.IsNullOrWhiteSpace(extra.RegistrationSuccessMessage)) ? extra.RegistrationSuccessMessage : (!string.IsNullOrWhiteSpace(config?.RegistrationSuccessMessage) ? config.RegistrationSuccessMessage : "Registration successful! Welcome to the portal."),
@@ -735,10 +811,18 @@ namespace Ozikol_BCC.Api.Controllers
                 pageShellLayout,
                 formLayoutMode,
                 requirePassword,
+                collectInfoOnly,
                 allowSaveAndContinue,
                 unpublishedCoreFields,
+                deletedCoreFields,
+                coreFieldOrder,
                 customSections,
+                coreCategoryTitle,
+                coreCategorySubtitle,
+                coreFieldLabels,
+                coreFieldHints,
                 customCss = extra?.CustomCss ?? string.Empty,
+                legalConsents = extra?.LegalConsents ?? new List<RegistrationLegalConsentItemDto>(),
                 recaptchaSiteKey = _recaptchaService?.SiteKey,
                 brandName = !string.IsNullOrWhiteSpace(site?.BrandName) ? site.BrandName : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Workspace"),
                 logoUrl = site?.CompanyLogoUrl ?? site?.LogoUrl,
@@ -751,6 +835,85 @@ namespace Ozikol_BCC.Api.Controllers
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(schema, "Public registration schema retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Loads the persisted field-to-section mapping from the layout policy metadata row.
+        /// </summary>
+        private async Task<Dictionary<string, string>> LoadFieldSectionsAsync()
+        {
+            var policyRow = await _context.BcpRegistrationFormFields
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
+            if (policyRow == null || string.IsNullOrWhiteSpace(policyRow.OptionsJson))
+                return new Dictionary<string, string>();
+            try
+            {
+                var extra = JsonSerializer.Deserialize<RegistrationLayoutConfigExtra>(policyRow.OptionsJson);
+                return extra?.FieldSections ?? new Dictionary<string, string>();
+            }
+            catch
+            {
+                return new Dictionary<string, string>();
+            }
+        }
+
+        /// <summary>
+        /// Persists a single field's assigned category/section name in the layout policy metadata row.
+        /// </summary>
+        private async Task SaveFieldSectionAsync(Guid fieldId, string? sectionName)
+        {
+            var policyRow = await _context.BcpRegistrationFormFields
+                .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
+
+            RegistrationLayoutConfigExtra extra;
+            if (policyRow != null && !string.IsNullOrWhiteSpace(policyRow.OptionsJson))
+            {
+                try
+                {
+                    extra = JsonSerializer.Deserialize<RegistrationLayoutConfigExtra>(policyRow.OptionsJson)
+                        ?? new RegistrationLayoutConfigExtra();
+                }
+                catch
+                {
+                    extra = new RegistrationLayoutConfigExtra();
+                }
+            }
+            else
+            {
+                extra = new RegistrationLayoutConfigExtra();
+            }
+
+            extra.FieldSections ??= new Dictionary<string, string>();
+            var key = fieldId.ToString();
+            if (string.IsNullOrWhiteSpace(sectionName))
+                extra.FieldSections.Remove(key);
+            else
+                extra.FieldSections[key] = sectionName.Trim();
+
+            var serialized = JsonSerializer.Serialize(extra);
+            if (policyRow == null)
+            {
+                policyRow = new BcpRegistrationFormField
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "__form_layout_policy__",
+                    Label = "System Registration Policy Config",
+                    FieldType = "system",
+                    IsActive = false,
+                    IsRequired = false,
+                    SortOrder = -100,
+                    OptionsJson = serialized,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                _context.BcpRegistrationFormFields.Add(policyRow);
+            }
+            else
+            {
+                policyRow.OptionsJson = serialized;
+                policyRow.UpdatedAtUtc = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
         }
     }
 
@@ -788,6 +951,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? CategoryName { get; set; }
         public string? HelpText { get; set; }
         public bool ShowInWorkspaceProfile { get; set; }
+        public string? SectionName { get; set; }
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
     }
@@ -808,6 +972,7 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? BcpUserCategoryId { get; set; }
         public string? HelpText { get; set; }
         public bool ShowInWorkspaceProfile { get; set; } = true;
+        public string? SectionName { get; set; }
     }
 
     /// <summary>
@@ -825,6 +990,7 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? BcpUserCategoryId { get; set; }
         public string? HelpText { get; set; }
         public bool ShowInWorkspaceProfile { get; set; }
+        public string? SectionName { get; set; }
     }
 
     /// <summary>
@@ -845,11 +1011,25 @@ namespace Ozikol_BCC.Api.Controllers
         public string PageShellLayout { get; set; } = "website";
         public string FormLayoutMode { get; set; } = "single";
         public bool RequirePassword { get; set; } = true;
+        public bool CollectInfoOnly { get; set; } = false;
         public bool AllowSaveAndContinue { get; set; } = false;
         public List<string> UnpublishedCoreFields { get; set; } = new();
+        public List<string> DeletedCoreFields { get; set; } = new();
+        public List<string> CoreFieldOrder { get; set; } = new();
         public List<string> CustomSections { get; set; } = new();
+        public string? CoreCategoryTitle { get; set; }
+        public string? CoreCategorySubtitle { get; set; }
+        public Dictionary<string, string>? CoreFieldLabels { get; set; }
+        public Dictionary<string, string>? CoreFieldHints { get; set; }
+        public Dictionary<string, string>? FieldSections { get; set; }
         public bool? AllowPublicRegistration { get; set; }
         public bool? RequireApprovalBeforeLogin { get; set; }
+        /// <summary>When true, new registrants must verify their email via 6-digit OTP before their account becomes active.</summary>
+        public bool? RequireEmailVerification { get; set; }
+        /// <summary>When true, the registration form is disabled and blurred on the public page so no one can register.</summary>
+        public bool? IsFormDisabled { get; set; }
+        /// <summary>When false, the registration form is unpublished and not accessible by the public.</summary>
+        public bool? IsFormPublished { get; set; }
         public string? RegistrationWelcomeMessage { get; set; }
         public string? RegistrationFormTitle { get; set; }
         public string? RegistrationSuccessMessage { get; set; }
@@ -857,6 +1037,58 @@ namespace Ozikol_BCC.Api.Controllers
         public bool? EnableAffiliateReferralCode { get; set; }
         public string? DefaultIndustrySector { get; set; }
         public string? CustomCss { get; set; }
+        public List<RegistrationLegalConsentItemDto> LegalConsents { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Represents a configurable legal/terms consent checkbox displayed on the public registration form.
+    /// </summary>
+    public class RegistrationLegalConsentItemDto
+    {
+        /// <summary>Unique identifier for the consent rule.</summary>
+        public string Id { get; set; } = string.Empty;
+
+        /// <summary>Prefix text shown next to the checkbox (e.g. "I agree to the").</summary>
+        public string Label { get; set; } = "I agree to the";
+
+        /// <summary>Clickable link label (e.g. "Terms &amp; Conditions").</summary>
+        public string LinkText { get; set; } = "Terms & Conditions";
+
+        /// <summary>Optional linked CMS WebPage ID.</summary>
+        public Guid? PageId { get; set; }
+
+        /// <summary>Linked CMS WebPage slug (DirectUrl) used to open the legal page.</summary>
+        public string? PageSlug { get; set; }
+
+        /// <summary>Optional custom URL if linking outside CMS pages.</summary>
+        public string? CustomUrl { get; set; }
+
+        /// <summary>When true, applicant must check this box before submitting registration.</summary>
+        public bool IsRequired { get; set; } = true;
+
+        /// <summary>When true, this consent checkbox is shown on the public registration form.</summary>
+        public bool IsActive { get; set; } = true;
+
+        /// <summary>Optional list of multiple legal page links displayed within this single consent checkbox.</summary>
+        public List<RegistrationLegalConsentLinkDto> Links { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Represents an individual clickable legal page link inside a registration consent checkbox.
+    /// </summary>
+    public class RegistrationLegalConsentLinkDto
+    {
+        /// <summary>Clickable link label (e.g. "Terms &amp; Conditions" or "Privacy Policy").</summary>
+        public string LinkText { get; set; } = string.Empty;
+
+        /// <summary>Optional linked CMS WebPage ID.</summary>
+        public Guid? PageId { get; set; }
+
+        /// <summary>Linked CMS WebPage slug (DirectUrl) used to open the legal page.</summary>
+        public string? PageSlug { get; set; }
+
+        /// <summary>Optional custom URL if linking outside CMS pages.</summary>
+        public string? CustomUrl { get; set; }
     }
 
     /// <summary>
@@ -866,6 +1098,12 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public bool AllowPublicRegistration { get; set; } = true;
         public bool RequireApprovalBeforeLogin { get; set; } = false;
+        /// <summary>When true, new public registrants must verify their email address via 6-digit OTP before signing in.</summary>
+        public bool RequireEmailVerification { get; set; } = false;
+        /// <summary>When true, the registration form is disabled and blurred so no one can register.</summary>
+        public bool IsFormDisabled { get; set; } = false;
+        /// <summary>When false, the registration form is unpublished and inaccessible to the public.</summary>
+        public bool IsFormPublished { get; set; } = true;
         public string RegistrationWelcomeMessage { get; set; } = "Join our member directory and workspace portal.";
         public string RegistrationFormTitle { get; set; } = "Create Your Account";
         public string RegistrationSuccessMessage { get; set; } = "Registration successful! Welcome to the portal.";
@@ -895,20 +1133,60 @@ namespace Ozikol_BCC.Api.Controllers
         public bool RequirePassword { get; set; } = true;
 
         /// <summary>
+        /// When true, registration operates in info-only intake mode without requiring a login password
+        /// or granting immediate login access.
+        /// </summary>
+        public bool CollectInfoOnly { get; set; } = false;
+
+        /// <summary>
+        /// Editable display title for Default Category 1 (Personal &amp; Account Credentials).
+        /// </summary>
+        public string CoreCategoryTitle { get; set; } = "Default Category 1: Personal & Account Credentials";
+
+        /// <summary>
+        /// Editable subtitle description for Default Category 1.
+        /// </summary>
+        public string CoreCategorySubtitle { get; set; } = "Built-in identity fields required for member profiles. Customize labels or toggle optional fields.";
+
+        /// <summary>
+        /// Custom display labels keyed by core field key (fullName, email, password, phone, category, industry).
+        /// </summary>
+        public Dictionary<string, string> CoreFieldLabels { get; set; } = new();
+
+        /// <summary>
+        /// Custom helper descriptions keyed by core field key.
+        /// </summary>
+        public Dictionary<string, string> CoreFieldHints { get; set; } = new();
+
+        /// <summary>
         /// When true, applicants can save partial registration drafts and continue later.
         /// </summary>
         public bool AllowSaveAndContinue { get; set; } = false;
 
         /// <summary>
         /// List of unpublished (hidden) core identity fields (e.g. ["phone", "category"]).
-        /// Core fields can be unpublished by admin, but never deleted.
         /// </summary>
         public List<string> UnpublishedCoreFields { get; set; } = new();
+
+        /// <summary>
+        /// List of deleted core fields removed from the registration form (all core fields except email and phone when login is required).
+        /// </summary>
+        public List<string> DeletedCoreFields { get; set; } = new();
+
+        /// <summary>
+        /// Ordered list of core field keys for Personal Information layout ordering.
+        /// </summary>
+        public List<string> CoreFieldOrder { get; set; } = new();
 
         /// <summary>
         /// Custom section/step category names created by administrator.
         /// </summary>
         public List<string> CustomSections { get; set; } = new();
+
+        /// <summary>
+        /// Configurable legal/terms consent checkboxes (compulsory or optional) linked to CMS legal pages.
+        /// </summary>
+        public List<RegistrationLegalConsentItemDto> LegalConsents { get; set; } = new();
     }
 
     /// <summary>
@@ -926,5 +1204,6 @@ namespace Ozikol_BCC.Api.Controllers
         public int SortOrder { get; set; }
         public Guid? BcpUserCategoryId { get; set; }
         public string? HelpText { get; set; }
+        public string? SectionName { get; set; }
     }
 }

@@ -7,6 +7,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 /**
  * Interface representing a unified workspace-wide activity or authentication audit log entry.
@@ -692,7 +693,7 @@ export class IdentityAuditLogsComponent implements OnInit {
   modules: string[] = [];
 
   page = 1;
-  pageSize = 25;
+  pageSize = getSavedPageSize('audit_logs', 25);
   totalCount = 0;
   totalPages = 1;
 
@@ -865,7 +866,7 @@ export class IdentityAuditLogsComponent implements OnInit {
   }
 
   onPageSizeChange(newSize: number): void {
-    this.pageSize = Number(newSize) || 25;
+    this.pageSize = savePageSizePreference('audit_logs', newSize, 25);
     this.loadLogs(1);
   }
 

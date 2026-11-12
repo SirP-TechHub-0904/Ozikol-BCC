@@ -8,6 +8,7 @@ import { ExportService, ExportColumn } from '../../../core/services/export.servi
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 @Component({
   selector: 'app-users-list',
@@ -423,7 +424,7 @@ export class UsersListComponent implements OnInit {
   showCategoryExportMenu = false;
 
   // Pagination
-  pageSize = 10;
+  pageSize = getSavedPageSize('users_list', 10);
   currentPage = 1;
   totalPages = 1;
   totalPagesArray: number[] = [];
@@ -590,6 +591,7 @@ export class UsersListComponent implements OnInit {
   }
 
   onPageSizeChange(): void {
+    this.pageSize = savePageSizePreference('users_list', this.pageSize, 10);
     this.currentPage = 1;
     this.updatePagination();
   }

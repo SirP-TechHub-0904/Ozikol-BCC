@@ -990,6 +990,9 @@ export class TemplateHydrationService {
       if (isNewsletter) {
         return `<form class="oz-dynamic-form oz-form-newsletter" data-form-key="${key}" onsubmit="event.preventDefault();">
           <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
+          <div class="oz-recaptcha-wrap my-2">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
           <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" style="margin-top: 10px;">Subscribe</button>
         </form>`;
       }

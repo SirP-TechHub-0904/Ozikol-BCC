@@ -1074,7 +1074,7 @@ export class LoginComponent implements OnInit {
         }
 
         // If unconfirmed email required by policy (403), open OTP verification dialog
-        if (err.status === 403) {
+        if (err.status === 403 && (err?.error?.data?.requiresEmailVerification === true || (err?.error?.message || '').toLowerCase().includes('email confirmation'))) {
           this.showOtpVerifyModal = true;
           this.onRequestNewOtp();
           return;

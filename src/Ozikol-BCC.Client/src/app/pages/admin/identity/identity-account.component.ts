@@ -8,6 +8,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { SignalRService } from '../../../core/services/signalr.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
 
 /**
@@ -1729,7 +1730,7 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   loginLogs: LoginAuditItem[] = [];
   loadingLogs: boolean = false;
   loginPage: number = 1;
-  loginPageSize: number = 10;
+  loginPageSize: number = getSavedPageSize('login_history', 10);
   loginTotalCount: number = 0;
   loginTotalPages: number = 1;
   hasOlderRecords: boolean = false;
@@ -2149,7 +2150,7 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    * @param newSize New page size (10, 25, 50).
    */
   onLoginPageSizeChange(newSize: number): void {
-    this.loginPageSize = Number(newSize) || 10;
+    this.loginPageSize = savePageSizePreference('login_history', newSize, 10);
     this.loginPage = 1;
     this.loadLoginHistory(1);
   }

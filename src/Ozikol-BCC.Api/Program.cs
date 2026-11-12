@@ -60,6 +60,8 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                 .AddMailcowSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
+            builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Recaptcha.IRecaptchaCredentialProvider, Ozikol_BCC.Api.Services.MasterPlatformRecaptchaCredentialProvider>();
+
             builder.Services.AddPostmarkEmailServices(builder.Configuration);
             builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.EmailServices.Postmark.Configuration.PostmarkOptions>, Ozikol_BCC.Api.Services.MasterPlatformPostmarkPostConfigure>();
             builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudinarySettings>, Ozikol_BCC.Api.Services.MasterPlatformCloudinaryPostConfigure>();
@@ -302,9 +304,11 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
             });
 
             builder.Services.AddScoped<Ozikol_BCC.Api.Filters.ApiErrorTrackingResultFilter>();
+            builder.Services.AddScoped<Ozikol_BCC.Api.Filters.WebsiteContentInvalidationActionFilter>();
             builder.Services.AddControllers(options =>
                 {
                     options.Filters.AddService<Ozikol_BCC.Api.Filters.ApiErrorTrackingResultFilter>();
+                    options.Filters.AddService<Ozikol_BCC.Api.Filters.WebsiteContentInvalidationActionFilter>();
                 })
                 .AddJsonOptions(options =>
                 {

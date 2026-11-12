@@ -3,6 +3,7 @@ import { LandingComponent } from './pages/landing/landing.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/auth/register/register.component';
 import { ResetPasswordComponent } from './pages/auth/reset-password/reset-password.component';
+import { VerifyEmailComponent } from './pages/auth/verify-email/verify-email.component';
 import { AccessDeniedComponent } from './pages/auth/access-denied/access-denied.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 
@@ -156,6 +157,7 @@ export const routes: Routes = [
       { path: 'login', component: LoginComponent },
       { path: 'reset-password', component: ResetPasswordComponent },
       { path: 'forgot-password', component: ResetPasswordComponent },
+      { path: 'verify-email', component: VerifyEmailComponent },
       { path: 'access-denied', component: AccessDeniedComponent },
       { path: 'feature-unavailable', component: FeatureUnavailableComponent },
       { path: 'feature-not-available', redirectTo: 'feature-unavailable', pathMatch: 'full' },
@@ -180,6 +182,7 @@ export const routes: Routes = [
   { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
+  { path: 'verify-email', redirectTo: 'auth/verify-email', pathMatch: 'full' },
   { path: 'access-denied', redirectTo: 'auth/access-denied', pathMatch: 'full' },
   { path: 'feature-unavailable', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
   { path: 'feature-not-available', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },

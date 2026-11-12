@@ -17,6 +17,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [AllowAnonymous]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [Tags("Website Content Delivery - Public UI")]
     public class WebsiteContentApiController : ControllerBase
     {
@@ -618,30 +619,21 @@ namespace Ozikol_BCC.Api.Controllers
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            // 1. Dynamic Google reCAPTCHA Verification
-            // Single-field email forms (e.g. newsletter subscriptions, waitlists, alert captures) are compact inline inputs designed for narrow footers/sidebars where reCAPTCHA boxes do not fit.
-            // Multi-field forms (2+ fields: contact inquiries, service requests, quote requests) enforce reCAPTCHA challenge verification to eliminate bot spam.
-            var isSingleFieldEmailCapture = form.Fields.Count <= 1 &&
-                form.Fields.All(f => f.FieldType.Equals("email", StringComparison.OrdinalIgnoreCase) ||
-                                     f.FieldKey.Contains("email", StringComparison.OrdinalIgnoreCase));
-
-            if (!isSingleFieldEmailCapture)
+            // 1. Compulsory Google reCAPTCHA Verification across ALL public and CMS forms
+            var recaptchaToken = payload?.RecaptchaToken;
+            if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
             {
-                var recaptchaToken = payload?.RecaptchaToken;
-                if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
-                {
-                    recaptchaToken = gToken.ToString();
-                }
-                if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("recaptchaToken", out var rToken) && rToken != null)
-                {
-                    recaptchaToken = rToken.ToString();
-                }
+                recaptchaToken = gToken.ToString();
+            }
+            if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("recaptchaToken", out var rToken) && rToken != null)
+            {
+                recaptchaToken = rToken.ToString();
+            }
 
-                var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaToken, clientIp);
-                if (!isCaptchaValid)
-                {
-                    return BadRequest(ApiResponse.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
-                }
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaToken, clientIp);
+            if (!isCaptchaValid)
+            {
+                return BadRequest(ApiResponse.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
             }
 
             // 2. Validate all required fields with synonym support

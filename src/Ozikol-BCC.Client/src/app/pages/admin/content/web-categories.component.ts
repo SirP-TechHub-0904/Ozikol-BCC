@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 /**
  * Web Navigation Categories management console.
@@ -1026,7 +1027,7 @@ export class WebCategoriesComponent implements OnInit {
   categories: any[] = [];
   searchTerm = '';
   selectedZoneFilter: number | null = null;
-  pageSize = 10;
+  pageSize = getSavedPageSize('web_categories', 10);
   currentPage = 1;
 
   draggedCategoryIndex: number | null = null;
@@ -1190,6 +1191,7 @@ export class WebCategoriesComponent implements OnInit {
   }
 
   onPageSizeChange(): void {
+    this.pageSize = savePageSizePreference('web_categories', this.pageSize, 10);
     this.currentPage = 1;
   }
 

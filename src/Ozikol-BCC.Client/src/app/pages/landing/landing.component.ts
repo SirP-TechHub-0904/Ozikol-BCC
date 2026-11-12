@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml, Title, Meta } from '@angular/platform-browser';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommitteesService } from '../../core/services/committees.service';
+import { WebsiteSyncService } from '../../core/services/website-sync.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
 import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
 import { SectionFormCompositorService } from '../admin/content/templates/services/section-form-compositor.service';
@@ -762,7 +764,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   brandName: string = '';
   brandLogoUrl: string = '';
   brandInfo: any = {};
-  recaptchaSiteKey: string = '6LdBsb8tAAAAAPuXWg5SLjjbPVZd0_-v1w4WbK6H';
+  recaptchaSiteKey: string = '';
+  private recaptchaConfigFetched: boolean = false;
   activeTemplates: any[] = [];
   categories: any[] = [];
   publishedPages: any[] = [];
@@ -816,6 +819,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   committeeDirectoryMode: boolean = false;
 
   private routeSub: Subscription | null = null;
+  private readonly destroy$ = new Subject<void>();
+  private syncConnected: boolean = false;
+  private cacheBusterVersion: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -824,6 +830,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     private committeesService: CommitteesService,
     public cartService: CartService,
     private toastService: ToastService,
+    private websiteSync: WebsiteSyncService,
     private templateHydration: TemplateHydrationService,
     private contentHydration: ContentHydrationService,
     private formCompositor: SectionFormCompositorService,
@@ -884,6 +891,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     // Unlock native document scrolling for public website mode (unless embedded inside an admin preview)
     if (!this.previewMode) {
       document.body.classList.add('public-website-mode');
+      this.startWebsiteSyncListener();
     }
 
     if (this.embeddedShellMode) {
@@ -958,6 +966,39 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  /**
+   * Connects to real-time SignalR WebSocket & BroadcastChannel invalidation feeds
+   * so any saved CMS, form, template, or branding edit clears stale cache and refreshes automatically.
+   */
+  private startWebsiteSyncListener(): void {
+    if (this.syncConnected) {
+      return;
+    }
+    this.syncConnected = true;
+    this.websiteSync.connect();
+
+    this.websiteSync.contentUpdated$
+      .pipe(debounceTime(250), takeUntil(this.destroy$))
+      .subscribe(event => {
+        this.cacheBusterVersion = event?.version || Date.now();
+        this.recaptchaConfigFetched = false;
+        this.recaptchaSiteKey = '';
+        this.loadSiteData(true);
+      });
+  }
+
+  /**
+   * Appends a cache-busting query token after a WebSocket invalidation event so browsers
+   * and proxies fetch fresh API payloads immediately.
+   */
+  private withCacheBuster(path: string): string {
+    if (!this.cacheBusterVersion) {
+      return path;
+    }
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}_v=${this.cacheBusterVersion}`;
+  }
+
   ngOnDestroy(): void {
     // Re-lock or restore default dashboard mode
     if (!this.previewMode) {
@@ -971,6 +1012,14 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       document.getElementById('tenant-dynamic-theme-styles')?.remove();
     }
 
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    if (this.syncConnected) {
+      this.websiteSync.disconnect();
+      this.syncConnected = false;
+    }
+
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
@@ -982,8 +1031,10 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
    * 2. Fetches page-specific sections or blog articles depending on activeSlug.
    * 3. Executes TemplateHydrationService to assemble and sanitize the final HTML document.
    */
-  loadSiteData(): void {
-    this.loading = true;
+  loadSiteData(silentRefresh: boolean = false): void {
+    if (!silentRefresh) {
+      this.loading = true;
+    }
     this.error = false;
 
     // Concurrently fetch foundational website metadata
@@ -1062,7 +1113,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private fetchBrandSettings(): Promise<void> {
     return new Promise((resolve) => {
       // 1. Fetch public UI settings (always accessible anonymously)
-      this.apiService.get('WebsiteContentApi/ui-settings').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/ui-settings')).subscribe({
         next: (uiRes: any) => {
           if (uiRes?.data) {
             const data = uiRes.data;
@@ -1220,7 +1271,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         resolve();
         return;
       }
-      this.apiService.get('WebsiteContentApi/ticker').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/ticker')).subscribe({
         next: (res: any) => {
           if (res?.success && Array.isArray(res.data)) {
             this.tickerItems = res.data;
@@ -1489,7 +1540,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchActiveTemplates(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/theme/active-templates')).subscribe({
         next: (res: any) => {
           this.activeTemplates = res?.data || [];
           resolve();
@@ -1511,7 +1562,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchNavigationCategories(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/categories').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/categories')).subscribe({
         next: (res: any) => {
           this.categories = res?.data || [];
           resolve();
@@ -1531,7 +1582,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchPublishedPages(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/pages').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/pages')).subscribe({
         next: (res: any) => {
           this.publishedPages = res?.data || [];
           resolve();
@@ -1551,7 +1602,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchCodeInjections(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/code-injections?preserveTokens=true').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/code-injections?preserveTokens=true')).subscribe({
         next: (res: any) => {
           const data = res?.data || {};
           this.codeInjections = {
@@ -1568,7 +1619,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchHomeSections(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/sections?pageSet=home').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/sections?pageSet=home')).subscribe({
         next: (res: any) => {
           this.sections = res?.data || [];
           resolve();
@@ -1580,7 +1631,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchRecentBlogs(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/blogs?limit=3')).subscribe({
         next: (res: any) => {
           this.blogs = res?.data || [];
           resolve();
@@ -1592,7 +1643,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchAllBlogs(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/blogs').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/blogs')).subscribe({
         next: (res: any) => {
           this.blogs = res?.data || [];
           resolve();
@@ -1605,7 +1656,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private fetchSingleBlog(id: string): Promise<void> {
     return new Promise((resolve) => {
       const cleanId = (id || '').trim();
-      this.apiService.get(`WebsiteContentApi/blogs/${cleanId}`).subscribe({
+      this.apiService.get(this.withCacheBuster(`WebsiteContentApi/blogs/${cleanId}`)).subscribe({
         next: (res: any) => {
           this.currentArticle = res?.data || null;
           if (this.blogs.length === 0) {
@@ -1616,7 +1667,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         },
         error: () => {
           // Graceful fallback: match by ID or slug within the full published blog list
-          this.apiService.get('WebsiteContentApi/blogs').subscribe({
+          this.apiService.get(this.withCacheBuster('WebsiteContentApi/blogs')).subscribe({
             next: (allRes: any) => {
               const allBlogs: any[] = allRes?.data || [];
               this.blogs = allBlogs;
@@ -1638,7 +1689,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private fetchPageBySlug(slug: string): Promise<void> {
     return new Promise((resolve) => {
       const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
-      this.apiService.get(`WebsiteContentApi/pages/slug/${clean}`).subscribe({
+      this.apiService.get(this.withCacheBuster(`WebsiteContentApi/pages/slug/${clean}`)).subscribe({
         next: (res: any) => {
           const loadedPage = res?.data || null;
           // Strictly reject unpublished pages
@@ -3074,6 +3125,51 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
 
   /**
+   * Builds a hydrated Breadcrumb section for system/fallback pages (such as 404 Not Found and embedded auth/registration shells).
+   */
+  private buildFallbackBreadcrumbSection(pageTitle: string, pageDesc: string): SectionTemplateUnit | undefined {
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    if (!breadcrumbTemplate) return undefined;
+
+    const existingPageWithBg = (this.publishedPages || []).find(p => p.imageUrl || p.ImageUrl || p.headerImageUrl || p.backgroundImageUrl);
+    const fallbackPageBg =
+      existingPageWithBg?.imageUrl ||
+      existingPageWithBg?.ImageUrl ||
+      existingPageWithBg?.headerImageUrl ||
+      existingPageWithBg?.backgroundImageUrl;
+    const effectiveBg = this.resolveBreadcrumbBackgroundImage(
+      breadcrumbTemplate,
+      null,
+      [fallbackPageBg, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80']
+    );
+    const breadcrumbData = {
+      title: pageTitle,
+      Title: pageTitle,
+      pageTitle: pageTitle,
+      miniTitle: this.brandName || '',
+      description: pageDesc,
+      backgroundImageUrl: effectiveBg,
+      imageUrl: effectiveBg,
+      breadcrumbTrail: [
+        { label: 'Home', url: '/', isActive: false },
+        { label: pageTitle, url: '#', isActive: true }
+      ],
+      breadcrumbs: [
+        { title: 'Home', url: '/', isActive: false },
+        { title: pageTitle, url: '#', isActive: true }
+      ]
+    };
+    return {
+      id: breadcrumbTemplate.id,
+      name: breadcrumbTemplate.name,
+      category: 'breadcrumb',
+      html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+      css: breadcrumbTemplate.cssStyles,
+      js: breadcrumbTemplate.jsScript
+    };
+  }
+
+  /**
    * Fallback 404 handler for missing pages.
    */
   private composeNotFoundPage(): void {
@@ -3087,6 +3183,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       css: menuTemplate.cssStyles,
       js: menuTemplate.jsScript
     } : undefined;
+
+    const breadcrumbSection = this.buildFallbackBreadcrumbSection(
+      'Page Not Found',
+      'The page you are looking for does not exist, has been relocated, or is currently unavailable.'
+    );
 
     const bodySectionsList: SectionTemplateUnit[] = [{
       name: '404 Not Found',
@@ -3505,6 +3606,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       pageSlug: '404',
       codeInjections: this.allCodeInjectionsList,
       headerSection,
+      breadcrumbSection,
       bodySections: bodySectionsList,
       footerSection,
       ribbonSection: this.buildRibbonSection(),
@@ -4741,46 +4843,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     } : undefined;
 
     // 2. Breadcrumb Header Section Unit (exact same active breadcrumb template & tenant page background image)
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    let breadcrumbSection: SectionTemplateUnit | undefined;
-    if (breadcrumbTemplate) {
-      const existingPageWithBg = (this.publishedPages || []).find(p => p.imageUrl || p.ImageUrl || p.headerImageUrl || p.backgroundImageUrl);
-      const fallbackPageBg =
-        existingPageWithBg?.imageUrl ||
-        existingPageWithBg?.ImageUrl ||
-        existingPageWithBg?.headerImageUrl ||
-        existingPageWithBg?.backgroundImageUrl;
-      const effectiveBg = this.resolveBreadcrumbBackgroundImage(
-        breadcrumbTemplate,
-        null,
-        [fallbackPageBg, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80']
-      );
-      const breadcrumbData = {
-        title: pageTitle,
-        Title: pageTitle,
-        pageTitle: pageTitle,
-        miniTitle: this.brandName || '',
-        description: pageDesc,
-        backgroundImageUrl: effectiveBg,
-        imageUrl: effectiveBg,
-        breadcrumbTrail: [
-          { label: 'Home', url: '/', isActive: false },
-          { label: pageTitle, url: '#', isActive: true }
-        ],
-        breadcrumbs: [
-          { title: 'Home', url: '/', isActive: false },
-          { title: pageTitle, url: '#', isActive: true }
-        ]
-      };
-      breadcrumbSection = {
-        id: breadcrumbTemplate.id,
-        name: breadcrumbTemplate.name,
-        category: 'breadcrumb',
-        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
-        css: breadcrumbTemplate.cssStyles,
-        js: breadcrumbTemplate.jsScript
-      };
-    }
+    const breadcrumbSection = this.buildFallbackBreadcrumbSection(pageTitle, pageDesc);
 
     // 3. Body Slot Marker (splits top and bottom around <ng-content> in finalizeRender)
     const bodySectionsList: SectionTemplateUnit[] = [{
@@ -5025,51 +5088,122 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
    * Dynamically loads Google reCAPTCHA script tag if not yet present in the document.
    */
   private loadRecaptchaScript(): void {
-    if (document.getElementById('google-recaptcha-script')) {
+    if (typeof document === 'undefined') return;
+    if ((window as any).grecaptcha || document.querySelector('script[src*="recaptcha/api.js"]')) {
       return;
     }
     const script = document.createElement('script');
     script.id = 'google-recaptcha-script';
-    script.src = 'https://www.google.com/recaptcha/api.js';
+    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
     script.async = true;
     script.defer = true;
+    script.onload = () => this.initRecaptchas(0);
     document.head.appendChild(script);
   }
 
   /**
-   * Discovers all .g-recaptcha containers on the rendered page and renders or assigns the site key.
+   * Discovers all .g-recaptcha containers on the rendered page and explicitly renders
+   * each widget with the configured SiteKey while persisting per-form widget IDs.
    */
-  private initRecaptchas(): void {
+  private initRecaptchas(attempt: number = 0): void {
+    if (typeof document === 'undefined') return;
+
+    const root = this.elementRef.nativeElement;
+    const recaptchaContainers = root.querySelectorAll('.g-recaptcha') as NodeListOf<HTMLElement>;
+    if (!recaptchaContainers || recaptchaContainers.length === 0) {
+      return;
+    }
+
+    // Fetch live site key from backend if ui-settings has not supplied it yet
+    if (!this.recaptchaSiteKey) {
+      if (!this.recaptchaConfigFetched) {
+        this.recaptchaConfigFetched = true;
+        this.apiService.get(this.withCacheBuster('WebsiteContentApi/recaptcha-config')).subscribe({
+          next: (res: any) => {
+            const siteKey = res?.data?.siteKey;
+            if (siteKey) {
+              this.recaptchaSiteKey = siteKey;
+              this.initRecaptchas(0);
+            }
+          },
+          error: () => {}
+        });
+      }
+      return;
+    }
+
     this.loadRecaptchaScript();
 
-    setTimeout(() => {
+    const renderContainers = () => {
       try {
-        const root = this.elementRef.nativeElement;
-        const recaptchaContainers = root.querySelectorAll('.g-recaptcha');
-        recaptchaContainers.forEach((container: HTMLElement) => {
-          if (!container.getAttribute('data-sitekey') || container.getAttribute('data-sitekey') === '') {
-            container.setAttribute('data-sitekey', this.recaptchaSiteKey);
+        const grecaptcha = (window as any).grecaptcha;
+        if (!grecaptcha || typeof grecaptcha.render !== 'function') {
+          if (attempt < 30) {
+            setTimeout(() => this.initRecaptchas(attempt + 1), 250);
           }
-          const grecaptcha = (window as any).grecaptcha;
-          if (grecaptcha && typeof grecaptcha.render === 'function' && container.children.length === 0) {
+          return;
+        }
+
+        recaptchaContainers.forEach((container: HTMLElement) => {
+          container.setAttribute('data-sitekey', this.recaptchaSiteKey);
+          if (container.children.length === 0) {
             try {
-              grecaptcha.render(container, {
+              const widgetId = grecaptcha.render(container, {
                 sitekey: this.recaptchaSiteKey
               });
-            } catch (renderErr) {
-              // Ignore if already initialized
+              container.setAttribute('data-widget-id', String(widgetId));
+            } catch {
+              // Ignore if already initialized on this container
             }
           }
         });
       } catch (e) {
         console.warn('reCAPTCHA init deferred:', e);
       }
-    }, 300);
+    };
+
+    const grecaptcha = (window as any).grecaptcha;
+    if (grecaptcha && typeof grecaptcha.ready === 'function') {
+      grecaptcha.ready(renderContainers);
+    } else if (grecaptcha && typeof grecaptcha.render === 'function') {
+      setTimeout(renderContainers, 50);
+    } else if (attempt < 30) {
+      setTimeout(() => this.initRecaptchas(attempt + 1), 250);
+    }
+  }
+
+  /**
+   * Resolves the rendered reCAPTCHA widget ID associated with a specific form, if any.
+   */
+  private resolveFormRecaptchaWidgetId(form: HTMLFormElement): number | null {
+    const container = form.querySelector('.g-recaptcha') as HTMLElement | null;
+    const rawId = container?.getAttribute('data-widget-id');
+    if (rawId === null || rawId === undefined || rawId === '') {
+      return null;
+    }
+    const parsed = Number(rawId);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  /**
+   * Resets only the reCAPTCHA widget bound to the submitted form.
+   */
+  private resetFormRecaptcha(widgetId: number | null): void {
+    try {
+      const grecaptcha = (window as any).grecaptcha;
+      if (grecaptcha && typeof grecaptcha.reset === 'function') {
+        if (widgetId !== null) {
+          grecaptcha.reset(widgetId);
+        } else {
+          grecaptcha.reset();
+        }
+      }
+    } catch {}
   }
 
   /**
    * Submits a public interactive form (e.g., Contact Us, Newsletter, Service Request)
-   * to WebsiteContentApi/forms/{formKey}/submit.
+   * to WebsiteContentApi/forms/{formKey}/submit with compulsory reCAPTCHA verification.
    */
   private submitDynamicForm(form: HTMLFormElement, submitBtn: HTMLElement): void {
     const rawKey = form.getAttribute('data-form-key') || form.id || 'Contact_Us';
@@ -5090,15 +5224,31 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       }
     });
 
-    // Retrieve Google reCAPTCHA response token from form inputs or global grecaptcha
-    let recaptchaToken = (dataPayload['g-recaptcha-response'] as string) || '';
+    // Retrieve Google reCAPTCHA response token specifically for this form's widget
+    const widgetId = this.resolveFormRecaptchaWidgetId(form);
+    const grecaptcha = (window as any).grecaptcha;
+    let recaptchaToken = '';
+
+    if (widgetId !== null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
+      try {
+        recaptchaToken = grecaptcha.getResponse(widgetId) || '';
+      } catch {}
+    }
+
     if (!recaptchaToken) {
-      const grecaptcha = (window as any).grecaptcha;
-      if (grecaptcha && typeof grecaptcha.getResponse === 'function') {
-        try {
-          recaptchaToken = grecaptcha.getResponse() || '';
-        } catch {}
-      }
+      const scopedResponse = form.querySelector<HTMLTextAreaElement>('textarea[name="g-recaptcha-response"]')?.value;
+      recaptchaToken = (scopedResponse || (dataPayload['g-recaptcha-response'] as string) || '').trim();
+    }
+
+    if (!recaptchaToken && grecaptcha && typeof grecaptcha.getResponse === 'function' && widgetId === null) {
+      try {
+        recaptchaToken = grecaptcha.getResponse() || '';
+      } catch {}
+    }
+
+    if (this.recaptchaSiteKey && !recaptchaToken) {
+      this.toastService.warning('Please complete the Google reCAPTCHA verification to continue.');
+      return;
     }
 
     const originalText = submitBtn.innerHTML;
@@ -5116,18 +5266,14 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const successMsg = res?.message || 'Thank you! Your submission has been received.';
         this.toastService.success(successMsg);
         form.reset();
-        try {
-          (window as any).grecaptcha?.reset();
-        } catch {}
+        this.resetFormRecaptcha(widgetId);
       },
       error: (err: any) => {
         submitBtn.removeAttribute('disabled');
         submitBtn.innerHTML = originalText;
         const errorMsg = err?.error?.message || 'Unable to submit your request. Please check all fields.';
         this.toastService.error(errorMsg);
-        try {
-          (window as any).grecaptcha?.reset();
-        } catch {}
+        this.resetFormRecaptcha(widgetId);
       }
     });
   }

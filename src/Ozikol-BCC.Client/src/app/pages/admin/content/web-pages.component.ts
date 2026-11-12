@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 /**
  * Published & Draft Web Pages management console.
@@ -165,7 +166,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <td>
                   <div class="page-title-cell">
                     <div class="title-row">
-                      <strong class="page-title">{{ page.title }}</strong>
+                      <a [routerLink]="['/content/console/pages/details', page.id]" class="page-title-link" [title]="'Manage Sections for ' + page.title">
+                        <strong class="page-title">{{ page.title }}</strong>
+                      </a>
                       <span class="home-pill" *ngIf="page.isHomePage" title="Root Homepage">🏠 Home</span>
                       <span class="cta-pill" *ngIf="page.isMenuCTA">CTA Button</span>
                     </div>
@@ -814,9 +817,21 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       gap: 6px;
       flex-wrap: wrap;
     }
+    .page-title-link {
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+    }
+    .page-title-link:hover .page-title {
+      color: #0050e5;
+      text-decoration: underline;
+    }
     .page-title {
       font-size: 14px;
       color: #0f172a;
+      transition: color 0.15s ease;
     }
     .home-pill {
       background: #dbeafe;
@@ -1206,7 +1221,7 @@ export class WebPagesComponent implements OnInit {
   searchTerm = '';
   selectedTagFilter: string | null = null;
   selectedZoneFilter: number | null = null;
-  pageSize = 10;
+  pageSize = getSavedPageSize('web_pages', 10);
   currentPage = 1;
 
   draggedPageIndex: number | null = null;
@@ -1449,6 +1464,7 @@ export class WebPagesComponent implements OnInit {
   }
 
   onPageSizeChange(): void {
+    this.pageSize = savePageSizePreference('web_pages', this.pageSize, 10);
     this.currentPage = 1;
   }
 

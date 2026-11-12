@@ -2381,11 +2381,16 @@ export class WebPageEditComponent implements OnInit {
   }
 
   onTitleInput(): void {
-    if (!this.page?.title?.trim()) {
+    if (!this.page?.title?.trim() || this.page?.isHomePage) {
       return;
     }
-    // Only auto-generate the slug from title if destination type is a custom modular section page
-    if (this.destinationType === 'section') {
+
+    const currentDirect = (this.page.directUrl || '').trim().toLowerCase();
+    const isExternalUrl = currentDirect.startsWith('http://') || currentDirect.startsWith('https://');
+
+    // Auto-regenerate the slug when the title is modified on internal/modular pages
+    // (preserve external http(s) URLs and system routes like /auth/login or /blog).
+    if (this.destinationType !== 'system' && !isExternalUrl && !this.isSystemSlug(currentDirect)) {
       this.generateUniqueSlug(this.page.title);
     }
   }
@@ -2758,7 +2763,12 @@ export class WebPageEditComponent implements OnInit {
         next: (res) => {
           this.saving = false;
           this.toast.success(res?.message || 'Web page created successfully!');
-          this.router.navigate(['/content/console/pages']);
+          const createdPageId = res?.data?.id || res?.data?.Id;
+          if (createdPageId) {
+            this.router.navigate(['/content/console/pages/details', createdPageId]);
+          } else {
+            this.router.navigate(['/content/console/pages']);
+          }
         },
         error: (err) => {
           this.saving = false;

@@ -668,7 +668,8 @@ namespace Ozikol_BCC.Api.Controllers
                 _ => "application/octet-stream"
             };
 
-            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            // Require revalidation so overwritten or re-uploaded template assets never stay stale in browser/CDN caches.
+            Response.Headers["Cache-Control"] = "public, max-age=0, must-revalidate";
             return PhysicalFile(filePath, contentType, enableRangeProcessing: true);
         }
 
@@ -889,17 +890,33 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
-            // Ensure unique slug or root homepage path
+            // Ensure unique slug or root homepage path; auto-regenerate slug if Title changed on edit
             if (updated.IsHomePage)
             {
                 existing.DirectUrl = "/";
             }
             else
             {
-                var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) && updated.DirectUrl != "/" ? updated.DirectUrl : updated.Title;
-                if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                var titleChanged = !string.Equals(existing.Title?.Trim(), updated.Title?.Trim(), StringComparison.Ordinal);
+                var incomingUrl = updated.DirectUrl?.Trim();
+                var isExternalUrl = !string.IsNullOrWhiteSpace(incomingUrl) &&
+                    (incomingUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+                var slugWasNotManuallyChanged = string.IsNullOrWhiteSpace(incomingUrl) ||
+                    incomingUrl == "/" ||
+                    string.Equals(incomingUrl, existing.DirectUrl?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                if (titleChanged && !isExternalUrl && slugWasNotManuallyChanged && !string.IsNullOrWhiteSpace(updated.Title))
                 {
-                    existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                    existing.DirectUrl = await GenerateUniqueSlugAsync(updated.Title, id, false);
+                }
+                else
+                {
+                    var targetSlug = !string.IsNullOrWhiteSpace(incomingUrl) && incomingUrl != "/" ? incomingUrl : updated.Title;
+                    if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                    {
+                        existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                    }
                 }
             }
 
