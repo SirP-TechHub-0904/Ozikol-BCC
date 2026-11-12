@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpErrorResponse } from '@angular/common/http';
+import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { TenantStateService } from '../services/tenant-state.service';
+import { WebsiteSyncService } from '../services/website-sync.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -19,8 +20,29 @@ export class AuthInterceptor implements HttpInterceptor {
 
   constructor(
     private router: Router,
-    private tenantState: TenantStateService
+    private tenantState: TenantStateService,
+    private websiteSync: WebsiteSyncService
   ) {}
+
+  private isWebsiteMutationRequest(request: HttpRequest<unknown>): boolean {
+    const method = request.method.toUpperCase();
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      return false;
+    }
+
+    const url = request.url.toLowerCase();
+    const isWatchedEndpoint =
+      url.includes('/api/contentapi') ||
+      url.includes('/api/pageformsapi') ||
+      url.includes('/api/settingsapi') ||
+      url.includes('/api/committeesapi');
+
+    if (!isWatchedEndpoint) {
+      return false;
+    }
+
+    return !url.includes('/ai-') && !url.includes('/preview') && !url.includes('/inspect');
+  }
 
   private isPublicUrl(url: string): boolean {
     return this.publicPaths.some(path => url.includes(path));
@@ -72,6 +94,11 @@ export class AuthInterceptor implements HttpInterceptor {
     request = request.clone({ setHeaders: headers });
 
     return next.handle(request).pipe(
+      tap((event: HttpEvent<unknown>) => {
+        if (event instanceof HttpResponse && this.isWebsiteMutationRequest(request)) {
+          this.websiteSync.notifyLocalMutation(request.url);
+        }
+      }),
       catchError((error: HttpErrorResponse) => {
         const isPublic = this.isPublicUrl(request.url);
 

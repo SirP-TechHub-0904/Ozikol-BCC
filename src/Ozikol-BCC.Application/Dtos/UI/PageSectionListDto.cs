@@ -15,6 +15,8 @@ namespace Ozikol_BCC.Application.Dtos.UI
         public string? MiniTitle { get; set; }
         public string? ButtonLink { get; set; }
         public string? ButtonText { get; set; }
+        public string? SecondButtonText { get; set; }
+        public string? SecondButtonLink { get; set; }
         public string? DirectUrl { get; set; }
         public string? MoreDescription { get; set; }
     }

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 /**
  * Web Navigation Categories management console.
@@ -613,6 +614,60 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       background: #fbfcfe;
     }
 
+    /* Zone Arrangement Filter Tabs */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: #f8fafc;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      width: 100%;
+      box-sizing: border-box;
+      flex-wrap: wrap;
+    }
+    .filter-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-btn:hover {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: #e2e8f0;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .filter-btn.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.22);
+    }
+    .filter-sep {
+      display: inline-block;
+      width: 1px;
+      height: 20px;
+      background: #cbd5e1;
+      margin: 0 4px;
+    }
+
     /* Drag-and-Drop & Arrow Reordering Styling */
     .tag-order-cell {
       display: flex;
@@ -972,7 +1027,7 @@ export class WebCategoriesComponent implements OnInit {
   categories: any[] = [];
   searchTerm = '';
   selectedZoneFilter: number | null = null;
-  pageSize = 10;
+  pageSize = getSavedPageSize('web_categories', 10);
   currentPage = 1;
 
   draggedCategoryIndex: number | null = null;
@@ -1136,6 +1191,7 @@ export class WebCategoriesComponent implements OnInit {
   }
 
   onPageSizeChange(): void {
+    this.pageSize = savePageSizePreference('web_categories', this.pageSize, 10);
     this.currentPage = 1;
   }
 

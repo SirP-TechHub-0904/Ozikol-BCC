@@ -652,6 +652,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("EmergencyContactEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("EmergencyContactName")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -4479,6 +4483,25 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<decimal?>("FineAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("FineAttached")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FineAuthorizedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FineReason")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("FineStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<decimal?>("HourlyChargeRate")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -4508,6 +4531,12 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ReportContent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReportSubmissionUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("RequiredWorkspaceStationId")
                         .HasColumnType("uniqueidentifier");
@@ -4981,6 +5010,11 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<int>("NoShowCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("PreferredWorkingTime")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<decimal>("PunctualityScorePercent")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(5,2)");
@@ -5008,6 +5042,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("WeeklyAvailabilityJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WorkingAvailability")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -6421,6 +6463,54 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BlogCategories");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.CmsMediaFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("StorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("StorageProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UploadedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CmsMediaFiles");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.ContactUs", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7536,12 +7626,26 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("FixedAfterFooter")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("FormCustomWidthPercent")
+                        .HasColumnType("int");
+
                     b.Property<string>("FormKey")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("FormPlacementMode")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("FormWidthPreset")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("FullDescription")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HideSectionImageWhenFormActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("HtmlTemplate")
                         .HasColumnType("nvarchar(max)");
@@ -7696,6 +7800,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<int>("RibonSortOrder")
                         .HasColumnType("int");
+
+                    b.Property<string>("SecondButtonLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SecondButtonText")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
@@ -8269,6 +8381,37 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasIndex("PageCategoryId");
 
                     b.ToTable("WebPages");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageSectionLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PageSectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PageSortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WebPageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PageSectionId");
+
+                    b.HasIndex("WebPageId", "PageSectionId")
+                        .IsUnique();
+
+                    b.ToTable("WebPageSectionLinks");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageViewLog", b =>
@@ -9725,6 +9868,25 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("PageCategory");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageSectionLink", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.PageSection", "PageSection")
+                        .WithMany("LinkedPages")
+                        .HasForeignKey("PageSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ozikol_BCC.Domain.Models.WebPage", "WebPage")
+                        .WithMany("SectionLinks")
+                        .HasForeignKey("WebPageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PageSection");
+
+                    b.Navigation("WebPage");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPageViewLog", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.WebPage", "WebPage")
@@ -9984,6 +10146,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageSection", b =>
                 {
+                    b.Navigation("LinkedPages");
+
                     b.Navigation("PageSectionLists");
                 });
 
@@ -9995,6 +10159,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.WebPage", b =>
                 {
                     b.Navigation("PageSections");
+
+                    b.Navigation("SectionLinks");
                 });
 #pragma warning restore 612, 618
         }

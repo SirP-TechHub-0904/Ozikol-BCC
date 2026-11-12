@@ -27,6 +27,7 @@ export interface HydrationContext {
   secondaryButtonLink?: string;
   secondButtonText?: string;
   secondButtonLink?: string;
+  disableButton?: boolean;
   directUrl?: string;
   imageUrl?: string;
   secondImageUrl?: string;
@@ -424,6 +425,9 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
     if (formKey === 'newsletter_subscribe' || formKey === 'newsletter' || formKey === 'subscribe') {
       return `<form class="oz-injected-form oz-newsletter-form" data-form-key="Newsletter" onsubmit="event.preventDefault();">
   <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
+  <div class="oz-recaptcha-wrap my-2">
+    <div class="g-recaptcha" data-sitekey=""></div>
+  </div>
   <button type="submit" class="btn btn-primary fw-semibold text-nowrap" style="margin-top: 10px;">Subscribe</button>
 </form>`;
     }
@@ -505,19 +509,154 @@ export function replaceCommonScalars(template: string, ctx: HydrationContext): s
   output = output.replace(/\{\{\s*WorkingHours\s*\}\}/gi, ctx.workingHours || '');
   output = output.replace(/\{\{\s*HomeUrl\s*\}\}/gi, ctx.homeUrl || '/');
   output = output.replace(/\{\{\s*ContactUrl\s*\}\}/gi, (ctx as any).contactUrl || '/contact');
-  output = output.replace(/\{\{\s*LoginUrl\s*\}\}/gi, ctx.loginUrl || '/auth/login');
-  output = output.replace(/\{\{\s*LoginText\s*\}\}/gi, ctx.loginText || 'Sign In');
+  output = output.replace(/\{\{\s*(?:LoginUrl|AuthUrl|PortalUrl)\s*\}\}/gi, ctx.loginUrl || (ctx as any).LoginUrl || '/auth/login');
+  output = output.replace(/\{\{\s*(?:LoginText|LoginTitle|AuthText|PortalText)\s*\}\}/gi, ctx.loginText || (ctx as any).LoginText || 'Sign In');
   output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, ctx.customClass || '');
 
   return output;
 }
 
 /**
- * Scrubs any leftover unrendered tokens (supporting both {{ Token }} and {{{ Token }}}).
+ * Scrubs any leftover unrendered tokens (supporting both {{ Token }} and {{{ Token }}}),
+ * and eliminates empty <img> tags (where src is empty, whitespace, or missing) so browsers
+ * never display broken image icon placeholders.
  */
 export function scrubRemainingTokens(template: string): string {
   let output = template.replace(/\{\{#each\s+[^}]+\}\}[\s\S]*?\{\{\/each\}\}/gi, '');
   output = output.replace(/\{\{#if\s+[^}]+\}\}[\s\S]*?\{\{\/if\}\}/gi, '');
   output = output.replace(/\{\{\{?\s*[^}]+\s*\}?\}\}/gi, '');
+  // Clean up any empty <img> tags (src="" or missing src) to prevent broken image icon boxes
+  output = output.replace(/<img\b(?![^>]*\bsrc=["'][^"'\s#]+["'])[^>]*>/gi, '');
   return output;
+}
+
+/**
+ * Parsed representation of an icon token value.
+ */
+export interface ResolvedIcon {
+  raw: string;
+  isHtml: boolean;
+  isImage: boolean;
+  isFontClass: boolean;
+  className: string;
+  imageUrl: string;
+  html: string;
+}
+
+/**
+ * Resolves an icon value into its constituent parts (class, HTML tag, or image URL).
+ * Handles:
+ * - Full HTML snippet: <i class="fa-solid fa-calendar-check"></i>
+ * - Pure font class: fa-solid fa-calendar-check, tji-phone, bi bi-check, etc.
+ * - Image URL: https://.../icon.svg, /images/icon.png, ./assets/icon.svg
+ * - Material Symbols name: calendar_today, verified, check_circle
+ */
+export function resolveSmartIcon(rawIcon: string, altText = 'Icon'): ResolvedIcon {
+  const raw = (rawIcon || '').trim();
+  if (!raw) {
+    return {
+      raw: '',
+      isHtml: false,
+      isImage: false,
+      isFontClass: false,
+      className: '',
+      imageUrl: '',
+      html: ''
+    };
+  }
+
+  // Check 1: Full HTML tag (e.g. <i class="..."></i> or <svg>...</svg> or <img ...>)
+  if (raw.startsWith('<') && raw.endsWith('>')) {
+    const classMatch = raw.match(/class=["']([^"']+)["']/i);
+    const srcMatch = raw.match(/src=["']([^"']+)["']/i);
+    const className = classMatch ? classMatch[1].trim() : '';
+    const imageUrl = srcMatch ? srcMatch[1].trim() : '';
+    const isImage = raw.toLowerCase().startsWith('<img') || Boolean(imageUrl);
+
+    return {
+      raw,
+      isHtml: true,
+      isImage,
+      isFontClass: Boolean(className && !isImage),
+      className,
+      imageUrl,
+      html: raw
+    };
+  }
+
+  // Check 2: Image URL (.svg, .png, .jpg, .webp, http://, https://, /assets/...)
+  const isImageUrl = /^(?:https?:\/\/|\/|\.\/)/i.test(raw) || /\.(?:svg|png|jpe?g|webp|gif|ico)(?:\?.*)?$/i.test(raw);
+  if (isImageUrl) {
+    return {
+      raw,
+      isHtml: false,
+      isImage: true,
+      isFontClass: false,
+      className: '',
+      imageUrl: raw,
+      html: `<img src="${raw}" alt="${altText}" />`
+    };
+  }
+
+  // Check 3: Font icon class or Material symbol
+  const cleanClass = raw.replace(/[<>"']/g, '').trim();
+  return {
+    raw,
+    isHtml: false,
+    isImage: false,
+    isFontClass: true,
+    className: cleanClass,
+    imageUrl: '',
+    html: `<i class="${cleanClass}"></i>`
+  };
+}
+
+/**
+ * Replaces icon tokens in template HTML with maximum resilience across all theme patterns.
+ * Handles:
+ * 1. Inside <img> tag: <img [^>]*src=["']\s*\{\{\s*(?:Prefix\.)?Token\s*\}\}\s*["'][^>]*>
+ *    - If image URL: preserves <img> and sets src="${imageUrl}"
+ *    - If font icon: transforms <img> to <i class="..."></i> or renders the icon HTML
+ * 2. Inside class attribute: class="... {{ Token }} ..." -> sets className
+ * 3. Standalone {{ Token }} or {{{ Token }}} -> renders complete html snippet
+ */
+export function hydrateIconTokens(template: string, tokenPattern: string, iconValue: string, altText = 'Icon'): string {
+  if (!template) return '';
+  const resolved = resolveSmartIcon(iconValue, altText);
+  if (!resolved.raw) {
+    return template;
+  }
+
+  let result = template;
+
+  // 1. Check for <img [^>]*src=["']\s*\{\{\s*Token\s*\}\}\s*["'][^>]*>
+  const imgPattern = new RegExp(`<img\\b([^>]*?)src=["']\\s*\\{\\{\\s*${tokenPattern}\\s*\\}\\}\\s*["']([^>]*?)>`, 'gi');
+  result = result.replace(imgPattern, (_match, beforeSrc, afterSrc) => {
+    if (resolved.isImage) {
+      return `<img${beforeSrc}src="${resolved.imageUrl}"${afterSrc}>`;
+    }
+    // It is a font icon or HTML snippet!
+    // Extract any existing classes on the <img> (e.g. "w-100", "icon-img") except w-100 which might distort fonts
+    const combinedAttrs = `${beforeSrc} ${afterSrc}`;
+    const classMatch = combinedAttrs.match(/class=["']([^"']+)["']/i);
+    const existingImgClass = classMatch ? classMatch[1].replace(/\bw-100\b/g, '').trim() : '';
+    const finalClass = [resolved.className, existingImgClass].filter(Boolean).join(' ');
+
+    if (resolved.isHtml && !resolved.className) {
+      return resolved.html;
+    }
+    return `<i class="${finalClass}" aria-hidden="true"></i>`;
+  });
+
+  // 2. Check for class="... {{ Token }} ..." or class='... {{ Token }} ...'
+  const classAttrPattern = new RegExp(`(class=["'][^"']*?)\\{\\{\\s*${tokenPattern}\\s*\\}\\}([^"']*?["'])`, 'gi');
+  result = result.replace(classAttrPattern, (_match, prefix, suffix) => {
+    return `${prefix}${resolved.className || resolved.raw}${suffix}`;
+  });
+
+  // 3. Check for standalone {{{ Token }}} or {{ Token }}
+  const standalonePattern = new RegExp(`\\{\\{\\{?\\s*${tokenPattern}\\s*\\}?\\}\\}`, 'gi');
+  result = result.replace(standalonePattern, resolved.html);
+
+  return result;
 }

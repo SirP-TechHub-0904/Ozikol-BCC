@@ -10,17 +10,17 @@ namespace Ozikol_BCC.Infrastructure.Services.Recaptcha;
 
 /// <summary>
 /// Production implementation of Google reCAPTCHA v2 / v3 verification service.
-/// Queries the Google siteverify API endpoint with resilient fallback for local development environments.
+/// Dynamically resolves credentials from central MasterPlatformSettings via <see cref="IRecaptchaCredentialProvider"/>
+/// with environment/appsettings fallback, and validates tokens directly against Google's siteverify API.
 /// </summary>
 public class GoogleRecaptchaService : IRecaptchaService
 {
     private const string GoogleVerifyEndpoint = "https://www.google.com/recaptcha/api/siteverify";
-    private const string StandardTestSiteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
-    private const string StandardTestSecretKey = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe";
 
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GoogleRecaptchaService> _logger;
+    private readonly IRecaptchaCredentialProvider? _credentialProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GoogleRecaptchaService"/> class.
@@ -28,24 +28,33 @@ public class GoogleRecaptchaService : IRecaptchaService
     /// <param name="httpClient">Shared HTTP client instance for remote API calls.</param>
     /// <param name="configuration">Application configuration provider.</param>
     /// <param name="logger">Logger provider.</param>
+    /// <param name="credentialProvider">Optional central platform credential provider backed by Master DB settings.</param>
     public GoogleRecaptchaService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<GoogleRecaptchaService> logger)
+        ILogger<GoogleRecaptchaService> logger,
+        IRecaptchaCredentialProvider? credentialProvider = null)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _credentialProvider = credentialProvider;
     }
 
     /// <summary>
     /// Gets the public Google reCAPTCHA site key for client widget rendering.
-    /// Resolves from .env, appsettings, and system environment variables, defaulting to standard test keys if not configured.
+    /// Dynamically resolves from Central MasterPlatformSettings with .env/appsettings fallback.
     /// </summary>
     public string SiteKey
     {
         get
         {
+            var dbCredentials = _credentialProvider?.GetCredentials();
+            if (!string.IsNullOrWhiteSpace(dbCredentials?.SiteKey))
+            {
+                return dbCredentials.Value.SiteKey!.Trim();
+            }
+
             var key = _configuration["GoogleReCaptcha:SiteKey"]
                 ?? _configuration["GoogleRecaptcha:SiteKey"]
                 ?? _configuration["GoogleReCaptcha__SiteKey"]
@@ -53,20 +62,24 @@ public class GoogleRecaptchaService : IRecaptchaService
                 ?? Environment.GetEnvironmentVariable("GoogleReCaptcha__SiteKey")
                 ?? Environment.GetEnvironmentVariable("RECAPTCHA_SITE_KEY");
 
-            var resolved = !string.IsNullOrWhiteSpace(key) ? key.Trim() : StandardTestSiteKey;
-            _logger.LogInformation("Google reCAPTCHA resolved SiteKey: {SiteKeyPrefix}...", resolved.Length >= 8 ? resolved.Substring(0, 8) : resolved);
-            return resolved;
+            return !string.IsNullOrWhiteSpace(key) ? key.Trim() : string.Empty;
         }
     }
 
     /// <summary>
     /// Gets the private Google reCAPTCHA secret key for backend verification.
-    /// Resolves from .env, appsettings, and system environment variables, defaulting to standard test keys if not configured.
+    /// Dynamically resolves from Central MasterPlatformSettings with .env/appsettings fallback.
     /// </summary>
     private string SecretKey
     {
         get
         {
+            var dbCredentials = _credentialProvider?.GetCredentials();
+            if (!string.IsNullOrWhiteSpace(dbCredentials?.SecretKey))
+            {
+                return dbCredentials.Value.SecretKey!.Trim();
+            }
+
             var secret = _configuration["GoogleReCaptcha:SecretKey"]
                 ?? _configuration["GoogleRecaptcha:SecretKey"]
                 ?? _configuration["GoogleReCaptcha__SecretKey"]
@@ -74,33 +87,30 @@ public class GoogleRecaptchaService : IRecaptchaService
                 ?? Environment.GetEnvironmentVariable("GoogleReCaptcha__SecretKey")
                 ?? Environment.GetEnvironmentVariable("RECAPTCHA_SECRET_KEY");
 
-            return !string.IsNullOrWhiteSpace(secret) ? secret.Trim() : StandardTestSecretKey;
+            return !string.IsNullOrWhiteSpace(secret) ? secret.Trim() : string.Empty;
         }
     }
 
     /// <summary>
-    /// Validates the token returned by the Google reCAPTCHA widget by calling the Google verification endpoint.
-    /// Logs detailed diagnostics to aid troubleshooting in development and production environments.
+    /// Validates the token returned by the Google reCAPTCHA widget by calling Google's siteverify endpoint.
     /// </summary>
     /// <param name="recaptchaResponse">The response token string from the g-recaptcha-response form parameter.</param>
     /// <param name="remoteIp">Optional client remote IP address.</param>
-    /// <returns>True if verification succeeds or passes development mock; otherwise false.</returns>
+    /// <returns>True if Google confirms verification succeeded; otherwise false.</returns>
     public async Task<bool> ValidateTokenAsync(string? recaptchaResponse, string? remoteIp = null)
     {
         _logger.LogInformation("reCAPTCHA validation initiated for client IP: {RemoteIp}. Token length: {TokenLength}", remoteIp ?? "unknown", recaptchaResponse?.Length ?? 0);
 
-        // 1. If response is completely missing and not running with test keys, reject immediately
         if (string.IsNullOrWhiteSpace(recaptchaResponse))
         {
             _logger.LogWarning("reCAPTCHA response token is empty or null from IP: {RemoteIp}.", remoteIp ?? "unknown");
+            return false;
+        }
 
-            // Allow dev bypass if running purely locally with test key and response omitted
-            if (SecretKey == StandardTestSecretKey)
-            {
-                _logger.LogInformation("Running with standard test secret key; allowing bypass for empty token in development.");
-                return true;
-            }
-
+        var activeSecret = SecretKey;
+        if (string.IsNullOrWhiteSpace(activeSecret))
+        {
+            _logger.LogError("Google reCAPTCHA secret key is not configured in MasterPlatformSettings, .env, or appsettings.");
             return false;
         }
 
@@ -108,11 +118,17 @@ public class GoogleRecaptchaService : IRecaptchaService
         {
             var parameters = new List<KeyValuePair<string, string>>
             {
-                new("secret", SecretKey),
+                new("secret", activeSecret),
                 new("response", recaptchaResponse)
             };
 
-            if (!string.IsNullOrWhiteSpace(remoteIp))
+            // Forward only external public IPs so localhost / internal reverse-proxy addresses do not cause Google siteverify mismatches
+            if (!string.IsNullOrWhiteSpace(remoteIp)
+                && !remoteIp.StartsWith("127.", StringComparison.Ordinal)
+                && !remoteIp.StartsWith("10.", StringComparison.Ordinal)
+                && !remoteIp.StartsWith("172.", StringComparison.Ordinal)
+                && !remoteIp.StartsWith("192.168.", StringComparison.Ordinal)
+                && remoteIp != "::1")
             {
                 parameters.Add(new("remoteip", remoteIp));
             }
@@ -126,7 +142,7 @@ public class GoogleRecaptchaService : IRecaptchaService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("reCAPTCHA endpoint returned non-success HTTP status {StatusCode}.", response.StatusCode);
-                return SecretKey == StandardTestSecretKey;
+                return false;
             }
 
             using var doc = JsonDocument.Parse(json);
@@ -138,12 +154,12 @@ public class GoogleRecaptchaService : IRecaptchaService
             }
 
             _logger.LogWarning("reCAPTCHA verification FAILED. Response: {ResponseJson}", json);
-            return SecretKey == StandardTestSecretKey;
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception encountered while verifying Google reCAPTCHA token.");
-            return SecretKey == StandardTestSecretKey;
+            return false;
         }
     }
 }

@@ -3,6 +3,7 @@ import { LandingComponent } from './pages/landing/landing.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/auth/register/register.component';
 import { ResetPasswordComponent } from './pages/auth/reset-password/reset-password.component';
+import { VerifyEmailComponent } from './pages/auth/verify-email/verify-email.component';
 import { AccessDeniedComponent } from './pages/auth/access-denied/access-denied.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 
@@ -91,6 +92,7 @@ import { FormsListComponent } from './pages/admin/content/forms/forms-list.compo
 import { FormBuilderComponent } from './pages/admin/content/forms/form-builder.component';
 import { FormSubmissionsComponent } from './pages/admin/content/forms/form-submissions.component';
 import { WebPagesComponent } from './pages/admin/content/web-pages.component';
+import { FileManagerComponent } from './pages/admin/content/file-manager.component';
 import { WebPageDetailsComponent } from './pages/admin/content/web-page-details.component';
 import { WebPageEditComponent } from './pages/admin/content/web-page-edit.component';
 import { WebCategoriesComponent } from './pages/admin/content/web-categories.component';
@@ -155,6 +157,7 @@ export const routes: Routes = [
       { path: 'login', component: LoginComponent },
       { path: 'reset-password', component: ResetPasswordComponent },
       { path: 'forgot-password', component: ResetPasswordComponent },
+      { path: 'verify-email', component: VerifyEmailComponent },
       { path: 'access-denied', component: AccessDeniedComponent },
       { path: 'feature-unavailable', component: FeatureUnavailableComponent },
       { path: 'feature-not-available', redirectTo: 'feature-unavailable', pathMatch: 'full' },
@@ -179,6 +182,7 @@ export const routes: Routes = [
   { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
+  { path: 'verify-email', redirectTo: 'auth/verify-email', pathMatch: 'full' },
   { path: 'access-denied', redirectTo: 'auth/access-denied', pathMatch: 'full' },
   { path: 'feature-unavailable', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
   { path: 'feature-not-available', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
@@ -400,6 +404,8 @@ export const routes: Routes = [
       { path: 'content/console/blogs/delete/:id', component: BlogDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blog-categories', component: BlogCategoriesManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blog-categories/delete/:id', component: BlogCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/files', component: FileManagerComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/file-manager', redirectTo: 'content/console/files', pathMatch: 'full' },
 
       // 6. Commerce & Store Studio Suite (Console Only)
       { path: 'products/console', component: ProductsListComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },

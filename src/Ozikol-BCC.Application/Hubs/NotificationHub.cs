@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Application.Dtos.NotifyDtos;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 
 namespace Ozikol_BCC.Application.Hubs
 {
@@ -33,25 +35,34 @@ namespace Ozikol_BCC.Application.Hubs
             // Join workspace-wide broadcast announcements group
             await Groups.AddToGroupAsync(Context.ConnectionId, "broadcast");
 
-            // Extract tenant key from query parameters, HTTP headers, or JWT claims
+            // Join every resolved tenant identifier group (canonical ITenantProvider tenant,
+            // query ?tenantKey / ?tenant, X-Tenant-Key header, X-Tenant-Domain header, or JWT claims)
+            // so both custom-domain storefronts and workspace subdomains receive instant updates.
             var httpContext = Context.GetHttpContext();
-            var tenantKey = httpContext?.Request.Query["tenantKey"].ToString();
-            if (string.IsNullOrWhiteSpace(tenantKey))
-            {
-                tenantKey = httpContext?.Request.Query["tenant"].ToString();
-            }
-            if (string.IsNullOrWhiteSpace(tenantKey))
-            {
-                tenantKey = httpContext?.Request.Headers["X-Tenant-Key"].ToString();
-            }
-            if (string.IsNullOrWhiteSpace(tenantKey))
-            {
-                tenantKey = Context.User?.FindFirst("tenant_key")?.Value ?? Context.User?.FindFirst("TenantKey")?.Value;
-            }
+            var tenantProvider = httpContext?.RequestServices.GetService(typeof(ITenantProvider)) as ITenantProvider;
 
-            if (!string.IsNullOrWhiteSpace(tenantKey))
+            var candidateKeys = new[]
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant_{tenantKey.Trim().ToLowerInvariant()}");
+                tenantProvider?.CurrentTenant,
+                httpContext?.Request.Query["tenantKey"].ToString(),
+                httpContext?.Request.Query["tenant"].ToString(),
+                httpContext?.Request.Headers["X-Tenant-Key"].ToString(),
+                httpContext?.Request.Headers["X-Tenant-Domain"].ToString(),
+                Context.User?.FindFirst("tenant_key")?.Value,
+                Context.User?.FindFirst("TenantKey")?.Value
+            };
+
+            var joinedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var rawKey in candidateKeys)
+            {
+                if (!string.IsNullOrWhiteSpace(rawKey))
+                {
+                    var groupName = $"tenant_{rawKey.Trim().ToLowerInvariant()}";
+                    if (joinedGroups.Add(groupName))
+                    {
+                        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+                    }
+                }
             }
 
             await base.OnConnectedAsync();

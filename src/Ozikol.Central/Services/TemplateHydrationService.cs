@@ -104,7 +104,8 @@ namespace Ozikol.Central.Services
                             MasterTemplateId = masterTemplate.Id,
                             Title = mSec.Title,
                             MiniTitle = mSec.MiniTitle,
-                            Description = mSec.SubTitle ?? mSec.Description,
+                            // Keep short summary (Description) strictly separate from rich body (FullDescription)
+                            Description = mSec.SubTitle,
                             FullDescription = mSec.Description,
                             ImageUrl = mSec.PrimaryImageUrl,
                             SecondImageUrl = mSec.SecondaryImageUrl,

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
+using Ozikol_BCC.Application.Constants;
 using Ozikol_BCC.Application.Services.Cloudinary;
 
 namespace Ozikol.Central.Services
@@ -526,9 +527,8 @@ Your job is to perform a strict 4-pillar cleanup for this section without invent
 
 PILLAR 1: HTML CLEANUP & MUSTACHE TOKENS
 - Clean and normalize the HTML markup. Keep all original class names, IDs, SVGs, and DOM structure intact.
-- Parameterize all hardcoded titles, headings, descriptions, buttons, and image URLs with standard Mustache tokens:
-  Single values: {{{{Title}}}}, {{{{MiniTitle}}}}, {{{{Description}}}}, {{{{ActionText}}}}, {{{{ActionUrl}}}}, {{{{ImageUrl}}}}, {{{{ImageAlt}}}}
-  Repeater lists: {{{{#each SectionLists}}}}...{{{{/each}}}} with {{{{Title}}}}, {{{{Description}}}}, {{{{IconText}}}}, {{{{ActionUrl}}}}, {{{{ImageUrl}}}}
+- Parameterize all hardcoded titles, headings, descriptions, buttons, and image URLs using strictly the canonical tokens below (zero cross-fallback):
+{CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec()}
   Organization info: {{{{Organization.Name}}}}, {{{{Organization.Phone}}}}, {{{{Organization.Email}}}}
 
 PILLAR 2: CSS PRECISION TREE-SHAKING (STRICT: ZERO INVENTED CODE)
@@ -739,13 +739,14 @@ Your task is to modify the provided section's HTML Template and Scoped CSS accor
 
 CORE ARCHITECTURAL RULES:
 1. Strict Section Independence: All CSS selectors MUST be scoped under the section container id (e.g. #sec_... or #s_...). NEVER output global element rules without container prefix.
-2. Dynamic Content Placeholders: Maintain and introduce clean placeholders like {{Hero_Title}}, {{Hero_Subtitle}}, {{Company_Name}}, {{Logo_Url}}, {{Button_Text}}, {{Button_Url}}, {{Image_Url}}, {{#each Features}}...{{/each}}.
+2. Dynamic Content Placeholders (Strict 1-to-1 Discrete Fields):
+" + CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec() + @"
 3. Modern Premium Aesthetics: Ensure responsive mobile/tablet styling, clean flexbox/grid layout, smooth transitions, and high contrast.
 4. Output Format: Return ONLY a valid, raw JSON object (without markdown code fences or backticks) matching this exact JSON schema:
 {
   ""html_template"": ""<section id='...' class='...'>...</section>"",
   ""scoped_css"": ""#sec_... { ... }"",
-  ""placeholders"": [""Hero_Title"", ""Button_Text""],
+  ""placeholders"": [""PageSection.Title"", ""PageSection.Description"", ""PageSection.FullDescription"", ""PageSection.ButtonText""],
   ""explanation"": ""Brief explanation of what was changed.""
 }";
 
@@ -950,7 +951,8 @@ Analyze the provided UI screenshot, web design mockup, or Figma visual and decom
 RULES FOR MODULAR DECOMPOSITION:
 1. Multi-Section vs Single Section: If the image shows a full webpage with multiple stacked sections (e.g. Header Menu, Hero Banner, Features 3-Col, Testimonials, Pricing, Footer), decompose EACH part into its own distinct section. If it is a single isolated component, output 1 section.
 2. Section Independence & Scoped CSS: For each section, assign a unique id (e.g. sec_hero_vis1, sec_body_vis1). ALL CSS rules for that section MUST be strictly scoped under `#sec_...` (e.g. `#sec_hero_vis1 .hero-title { ... }`). Recreate the visual typography, colors, padding, gradients, shadows, and borders from the image.
-3. Placeholders: Use standardized tokens: `{{Hero_Title}}`, `{{Hero_Subtitle}}`, `{{Button_Text}}`, `{{Button_Url}}`, `{{Company_Name}}`, `{{Logo_Url}}`, `{{Image_Url}}`, `{{#each Items}}...{{/each}}`.
+3. Placeholders (Strict 1-to-1 Discrete Fields):
+" + CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec() + @"
 4. Output JSON Schema: Return ONLY a raw valid JSON object (without markdown fences):
 {
   ""job_id"": ""job_vis_..."",

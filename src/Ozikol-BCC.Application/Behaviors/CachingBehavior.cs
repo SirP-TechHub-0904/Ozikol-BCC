@@ -34,7 +34,7 @@ namespace Ozikol_BCC.Application.Behaviors
         {
             if (request is ICacheableQuery cacheableQuery)
             {
-                var cacheKey = BuildTenantCacheKey(cacheableQuery.CacheKey);
+                var cacheKey = await BuildTenantCacheKeyAsync(cacheableQuery.CacheKey, cancellationToken);
                 try
                 {
                     var cachedData = await _cache.GetStringAsync(cacheKey, cancellationToken);
@@ -87,19 +87,19 @@ namespace Ozikol_BCC.Application.Behaviors
             return await next();
         }
 
-        private string BuildTenantCacheKey(string queryCacheKey)
+        /// <summary>
+        /// Builds a tenant- and epoch-isolated cache key so content edits immediately invalidate
+        /// stale query results for the active tenant without affecting other tenants.
+        /// </summary>
+        /// <param name="queryCacheKey">The base query cache key.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The versioned distributed cache key.</returns>
+        private async Task<string> BuildTenantCacheKeyAsync(string queryCacheKey, CancellationToken cancellationToken)
         {
-            var tenant = string.IsNullOrWhiteSpace(_tenantProvider.CurrentTenant)
-                ? "system"
-                : _tenantProvider.CurrentTenant;
+            var safeTenant = WebsiteContentCacheEpoch.NormalizeTenantSegment(_tenantProvider.CurrentTenant);
+            var epoch = await WebsiteContentCacheEpoch.GetEpochAsync(_cache, _tenantProvider.CurrentTenant, cancellationToken);
 
-            var safeTenant = tenant
-                .Replace(":", "_", StringComparison.Ordinal)
-                .Replace("/", "_", StringComparison.Ordinal)
-                .Replace("\\", "_", StringComparison.Ordinal)
-                .Trim();
-
-            return $"tenant-{safeTenant}:{queryCacheKey}";
+            return $"tenant-{safeTenant}:v{epoch}:{queryCacheKey}";
         }
     }
 }

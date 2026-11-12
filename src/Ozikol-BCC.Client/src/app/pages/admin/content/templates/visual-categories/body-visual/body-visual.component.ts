@@ -8,6 +8,7 @@ import { ApiService } from '../../../../../../core/services/api.service';
 import { ToastService } from '../../../../../../core/services/toast.service';
 import { UniversalPreviewModalService } from '../../services/universal-preview-modal.service';
 import { TemplateSecurityScannerService } from '../../services/template-security-scanner.service';
+import { getBodySectionToolbarTokens } from '../../services/canonical-tokens.registry';
 
 /**
  * Dedicated category studio component for creating and editing Body Section templates.
@@ -246,11 +247,25 @@ import { TemplateSecurityScannerService } from '../../services/template-security
                   </button>
                 </div>
                 <div class="repeater-body">
+                  <label class="field-label mb-1">
+                    <span>Card Short Description</span>
+                    <code [innerText]="'{{ PageSectionList.Description }}'"></code>
+                  </label>
                   <textarea
                     [(ngModel)]="item.description"
                     class="form-control inspector-input textarea-short"
                     rows="2"
-                    placeholder="e.g. Card description text..."
+                    placeholder="e.g. Card concise summary text..."
+                  ></textarea>
+                  <label class="field-label mt-2 mb-1">
+                    <span>Card Extended Detail (HTML)</span>
+                    <code [innerText]="'{{{ PageSectionList.MoreDescription }}}'"></code>
+                  </label>
+                  <textarea
+                    [(ngModel)]="item.moreDescription"
+                    class="form-control inspector-input textarea-short"
+                    rows="2"
+                    placeholder="e.g. <p>Optional extended rich card details...</p>"
                   ></textarea>
                 </div>
               </div>
@@ -292,14 +307,27 @@ import { TemplateSecurityScannerService } from '../../services/template-security
 
               <div class="form-group col-span-2">
                 <label class="field-label">
-                  <span>Section Lead Description</span>
-                  <code [innerText]="'{{ Description }}'"></code>
+                  <span>Section Short Description (Introductory Summary)</span>
+                  <code [innerText]="'{{ PageSection.Description }}'"></code>
                 </label>
                 <textarea
                   [(ngModel)]="sampleContent.description"
                   class="form-control inspector-input textarea-short"
                   rows="3"
-                  placeholder="e.g. Unified toolchain built from the ground up..."
+                  placeholder="e.g. Concise section overview or excerpt..."
+                ></textarea>
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Section Full Extended Description (Rich WYSIWYG HTML)</span>
+                  <code [innerText]="'{{{ PageSection.FullDescription }}}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.fullDescription"
+                  class="form-control inspector-input textarea-short"
+                  rows="4"
+                  placeholder="e.g. <p>Detailed rich HTML narrative distinct from the short introductory summary...</p>"
                 ></textarea>
               </div>
             </div>
@@ -1016,20 +1044,8 @@ export class BodyVisualComponent implements OnInit {
   sampleContent: any = {};
   bodyPresets: SectionPreset[] = [];
 
-  bodyTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ PageSectionList.Icon }}</span>\n    <h3>{{ PageSectionList.Title }}</h3>\n    <p>{{ PageSectionList.Description }}</p>\n  </div>\n{{/each}}', description: 'Repeats over child items/cards in PageSectionList.' },
-    { label: 'Card Title', token: '{{ PageSectionList.Title }}', description: 'Child item/card headline in PageSectionList.' },
-    { label: 'Card MiniTitle', token: '{{ PageSectionList.MiniTitle }}', description: 'Child item/card badge/price in PageSectionList.' },
-    { label: 'Card Description', token: '{{ PageSectionList.Description }}', description: 'Child item/card summary in PageSectionList.' },
-    { label: 'Card ImageUrl', token: '{{ PageSectionList.ImageUrl }}', description: 'Child item/card visual thumbnail in PageSectionList.' },
-    { label: 'Section Title', token: '{{ PageSection.Title }}', description: 'Parent section main heading / title.' },
-    { label: 'Section MiniTitle', token: '{{ PageSection.MiniTitle }}', description: 'Parent eyebrow kicker badge or category label.' },
-    { label: 'Section Description', token: '{{ PageSection.Description }}', description: 'Parent section intro description or subtitle.' },
-    { label: 'FullDescription', token: '{{{ FullDescription }}}', description: 'Extended rich HTML body content for split showcases.' },
-    { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Primary section graphic or hero image.' },
-    { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button display label.' },
-    { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination URL.' }
-  ];
+  bodyTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> =
+    getBodySectionToolbarTokens();
 
   constructor(
     private api: ApiService,
@@ -1123,7 +1139,8 @@ export class BodyVisualComponent implements OnInit {
     if (!this.sampleContent.pageSectionLists) this.sampleContent.pageSectionLists = [];
     this.sampleContent.pageSectionLists.push({
       title: 'New Feature Capability',
-      description: 'High performance capability designed for speed and reliability.',
+      description: 'Concise feature summary text.',
+      moreDescription: '<p>Extended technical overview for this feature item.</p>',
       icon: 'check_circle'
     });
   }

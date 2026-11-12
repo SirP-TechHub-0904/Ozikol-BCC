@@ -1,15 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import {
+  CmsOrderCellComponent,
+  CmsDragDropReorderHelper,
+  reorderListToTop,
+  reorderListStep,
+  reorderListByMove,
+  assignStepOrders
+} from './cms-order-cell.component';
 
 @Component({
   selector: 'app-page-sections',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, CmsOrderCellComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -128,6 +136,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     title="Select / Deselect all sections on this view"
                   >
                 </th>
+                <th style="width: 145px;">ORDER</th>
                 <th>SECTION TITLE</th>
                 <th>PARENT PAGE</th>
                 <th>TEMPLATE KEY</th>
@@ -138,7 +147,18 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let sec of filteredSections" [class.selected-row]="isSectionSelected(sec.id)">
+              <tr
+                *ngFor="let sec of filteredSections; let i = index"
+                [class.selected-row]="isSectionSelected(sec.id)"
+                draggable="true"
+                (dragstart)="sectionReorder.onDragStart($event, i)"
+                (dragover)="sectionReorder.onDragOver($event, i)"
+                (dragleave)="sectionReorder.onDragLeave(i)"
+                (drop)="onSectionDrop($event, i)"
+                (dragend)="sectionReorder.reset()"
+                [class.row-dragged]="sectionReorder.draggedIndex === i"
+                [class.row-drag-over]="sectionReorder.dragOverIndex === i"
+              >
                 <td style="width: 44px; text-align: center;">
                   <input
                     type="checkbox"
@@ -146,6 +166,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     [checked]="isSectionSelected(sec.id)"
                     (change)="toggleSectionSelection(sec.id)"
                   >
+                </td>
+                <td>
+                  <app-cms-order-cell
+                    [order]="sec.pageSortOrder || 0"
+                    [isFirst]="isFirstInGroup(filteredSections, i, sectionParentKey)"
+                    [isLast]="isLastInGroup(filteredSections, i, sectionParentKey)"
+                    [disabled]="savingOrder"
+                    entityLabel="section"
+                    (moveToTop)="moveSection(i, 'top')"
+                    (moveUp)="moveSection(i, 'up')"
+                    (moveDown)="moveSection(i, 'down')"
+                    (orderCommit)="commitSectionOrder(sec, $event)"
+                  ></app-cms-order-cell>
                 </td>
                 <td>
                   <strong>{{ sec.title || '(Untitled Section)' }}</strong>
@@ -176,7 +209,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </span>
                 </td>
                 <td>
-                  <div class="action-buttons">
+                  <div class="action-dropdown-wrapper">
                     <a [routerLink]="['/content/console/sections/details', sec.id]" class="btn-action btn-details" title="Manage sub-items">
                       <span class="material-symbols-outlined">list</span>
                       <span>Sub-Items</span>
@@ -185,14 +218,38 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: getSectionDeleteReturnUrl(sec) }" class="btn-action btn-delete" title="Delete Section">
-                      <span class="material-symbols-outlined">delete</span>
-                    </a>
+
+                    <!-- More Actions Dropdown Toggle -->
+                    <div class="dropdown-container" [class.open]="openActionDropdownId === sec.id">
+                      <button
+                        type="button"
+                        class="btn-action btn-dropdown-toggle"
+                        (click)="toggleActionDropdown(sec.id, $event)"
+                        title="More actions">
+                        <span class="material-symbols-outlined">more_vert</span>
+                      </button>
+
+                      <div class="dropdown-menu-card" *ngIf="openActionDropdownId === sec.id" (click)="$event.stopPropagation()">
+                        <button type="button" class="dropdown-item" (click)="openSingleSectionTransfer(sec, 'copy')">
+                          <span class="material-symbols-outlined fs-6 text-primary">content_copy</span>
+                          <span>Copy to Another Page...</span>
+                        </button>
+                        <button type="button" class="dropdown-item" (click)="openSingleSectionTransfer(sec, 'move')">
+                          <span class="material-symbols-outlined fs-6 text-secondary">drive_file_move</span>
+                          <span>Move to Another Page...</span>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <a [routerLink]="['/content/console/sections/delete', sec.id]" [queryParams]="{ returnUrl: getSectionDeleteReturnUrl(sec) }" class="dropdown-item text-danger" (click)="closeActionDropdown()">
+                          <span class="material-symbols-outlined fs-6">delete</span>
+                          <span>Delete Section</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
               <tr *ngIf="filteredSections.length === 0">
-                <td colspan="8" class="empty-cell">No sections found matching your filter criteria.</td>
+                <td colspan="9" class="empty-cell">No sections found matching your filter criteria.</td>
               </tr>
             </tbody>
           </table>
@@ -215,17 +272,28 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     title="Select / Deselect all sub-items on this view"
                   >
                 </th>
+                <th style="width: 145px;">ORDER</th>
                 <th>SUB-ITEM / CARD TITLE</th>
                 <th>PARENT SECTION</th>
                 <th>PARENT PAGE</th>
                 <th>BUTTON / DESTINATION</th>
-                <th>SORT ORDER</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of filteredSubItems" [class.selected-row]="isSubItemSelected(item.id)">
+              <tr
+                *ngFor="let item of filteredSubItems; let i = index"
+                [class.selected-row]="isSubItemSelected(item.id)"
+                draggable="true"
+                (dragstart)="subItemReorder.onDragStart($event, i)"
+                (dragover)="subItemReorder.onDragOver($event, i)"
+                (dragleave)="subItemReorder.onDragLeave(i)"
+                (drop)="onSubItemDrop($event, i)"
+                (dragend)="subItemReorder.reset()"
+                [class.row-dragged]="subItemReorder.draggedIndex === i"
+                [class.row-drag-over]="subItemReorder.dragOverIndex === i"
+              >
                 <td style="width: 44px; text-align: center;">
                   <input
                     type="checkbox"
@@ -233,6 +301,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     [checked]="isSubItemSelected(item.id)"
                     (change)="toggleSubItemSelection(item.id)"
                   >
+                </td>
+                <td>
+                  <app-cms-order-cell
+                    [order]="item.sortOrder || 0"
+                    [isFirst]="isFirstInGroup(filteredSubItems, i, subItemParentKey)"
+                    [isLast]="isLastInGroup(filteredSubItems, i, subItemParentKey)"
+                    [disabled]="savingOrder"
+                    entityLabel="sub-item"
+                    (moveToTop)="moveSubItem(i, 'top')"
+                    (moveUp)="moveSubItem(i, 'up')"
+                    (moveDown)="moveSubItem(i, 'down')"
+                    (orderCommit)="commitSubItemOrder(item, $event)"
+                  ></app-cms-order-cell>
                 </td>
                 <td>
                   <strong>{{ item.title || '(Untitled Item)' }}</strong>
@@ -259,21 +340,44 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <code class="small text-muted" *ngIf="item.buttonLink"> &rarr; {{ item.buttonLink }}</code>
                   <span class="badge-none" *ngIf="!item.buttonText &amp;&amp; !item.buttonLink">-</span>
                 </td>
-                <td><code>#{{ item.sortOrder || 0 }}</code></td>
                 <td>
                   <span class="status-pill" [class.published]="!item.disable" [class.draft]="item.disable">
                     {{ !item.disable ? 'Active' : 'Disabled' }}
                   </span>
                 </td>
                 <td>
-                  <div class="action-buttons">
+                  <div class="action-dropdown-wrapper">
                     <a [routerLink]="['/content/console/sections/lists/edit', item.id]" class="btn-action btn-edit" title="Edit sub-item">
                       <span class="material-symbols-outlined">edit</span>
                       <span>Edit</span>
                     </a>
-                    <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: getSubItemDeleteReturnUrl(item) }" class="btn-action btn-delete" title="Delete Item">
-                      <span class="material-symbols-outlined">delete</span>
-                    </a>
+
+                    <!-- Sub-Item Dropdown Toggle -->
+                    <div class="dropdown-container" [class.open]="openSubItemDropdownId === item.id">
+                      <button
+                        type="button"
+                        class="btn-action btn-dropdown-toggle"
+                        (click)="toggleSubItemDropdown(item.id, $event)"
+                        title="More actions">
+                        <span class="material-symbols-outlined">more_vert</span>
+                      </button>
+
+                      <div class="dropdown-menu-card" *ngIf="openSubItemDropdownId === item.id" (click)="$event.stopPropagation()">
+                        <button type="button" class="dropdown-item" (click)="openSingleSubItemTransfer(item, 'copy')">
+                          <span class="material-symbols-outlined fs-6 text-primary">content_copy</span>
+                          <span>Copy to Another Section...</span>
+                        </button>
+                        <button type="button" class="dropdown-item" (click)="openSingleSubItemTransfer(item, 'move')">
+                          <span class="material-symbols-outlined fs-6 text-secondary">drive_file_move</span>
+                          <span>Move to Another Section...</span>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <a [routerLink]="['/content/console/sections/lists/delete', item.id]" [queryParams]="{ returnUrl: getSubItemDeleteReturnUrl(item) }" class="dropdown-item text-danger" (click)="closeActionDropdown()">
+                          <span class="material-symbols-outlined fs-6">delete</span>
+                          <span>Delete Sub-Item</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -528,6 +632,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     .selected-row { background: #f0f7ff !important; }
+    tr.row-dragged { opacity: 0.45; background: #f1f5f9 !important; }
+    tr.row-drag-over { border-top: 2.5px solid #0050e5 !important; background: #eff6ff !important; }
 
     .cms-checkbox {
       width: 17px; height: 17px; accent-color: #0050e5; cursor: pointer;
@@ -541,6 +647,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe;
     }
     .page-pill.global { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
+    .page-pills-container { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .badge-linked {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px;
+      border-radius: 6px; font-size: 11px; font-weight: 700;
+      background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+    }
+    .badge-link-count {
+      display: inline-flex; align-items: center; padding: 2px 6px;
+      border-radius: 6px; font-size: 11px; font-weight: 700;
+      background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;
+    }
+    .btn-info { background: #0284c7; color: #ffffff; border: 1px solid #0284c7; }
+    .btn-info:hover { background: #0369a1; }
     .btn-preview-tag { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 11.5px; font-weight: 700; }
     .badge-none { color: #94a3b8; font-size: 12px; }
 
@@ -553,6 +672,34 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .status-pill.draft { background: #fee2e2; color: #dc2626; }
 
     .action-buttons { display: flex; gap: 6px; align-items: center; }
+    .action-dropdown-wrapper { display: flex; align-items: center; gap: 6px; }
+    .dropdown-container { position: relative; }
+    .btn-dropdown-toggle {
+      background: #f1f5f9; color: #475569; padding: 6px 6px; border-radius: 6px;
+    }
+    .btn-dropdown-toggle:hover, .dropdown-container.open .btn-dropdown-toggle {
+      background: #e2e8f0; color: #0f172a;
+    }
+    .dropdown-menu-card {
+      position: absolute; top: calc(100% + 4px); right: 0; min-width: 210px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0, 0, 0, 0.04);
+      padding: 6px; z-index: 1050; animation: dropdownFadeIn 0.15s ease-out;
+    }
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px;
+      font-size: 12.5px; font-weight: 500; color: #334155; text-decoration: none;
+      background: none; border: none; border-radius: 6px; cursor: pointer; text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    .dropdown-item:hover { background: #f8fafc; color: #0f172a; }
+    .dropdown-item.text-danger { color: #dc2626; }
+    .dropdown-item.text-danger:hover { background: #fee2e2; color: #b91c1c; }
+    .dropdown-divider { height: 1px; background: #f1f5f9; margin: 4px 0; }
     .btn-action {
       display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px;
       border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
@@ -635,13 +782,24 @@ export class PageSectionsComponent implements OnInit {
   selectedSectionIds = new Set<string>();
   selectedSubItemIds = new Set<string>();
 
+  // Drag-and-Drop & Arrow Reorder State
+  sectionReorder = new CmsDragDropReorderHelper();
+  subItemReorder = new CmsDragDropReorderHelper();
+  savingOrder = false;
+  readonly sectionParentKey = (sec: any): string => (sec?.webPageId || '__global__').toString();
+  readonly subItemParentKey = (item: any): string => (item?.pageSectionId || '__unassigned__').toString();
+
+  // Row Action Dropdown States
+  openActionDropdownId: string | null = null;
+  openSubItemDropdownId: string | null = null;
+
   // Modals
   showBulkDeleteSectionsModal = false;
   showBulkDeleteSubItemsModal = false;
 
   // Bulk Transfer Properties
   showBulkTransferSectionsModal = false;
-  transferSectionsMode: 'move' | 'copy' = 'move';
+  transferSectionsMode: 'move' | 'copy' | 'link' = 'move';
   targetTransferPageId = '';
   transferringSections = false;
 
@@ -897,10 +1055,80 @@ export class PageSectionsComponent implements OnInit {
   // ==========================================
 
   // ==========================================
+  // ROW ACTION DROPDOWN MENUS
+  // ==========================================
+
+  /**
+   * Toggles the row action dropdown menu for a section.
+   * @param secId Section GUID identifier.
+   * @param event Mouse click event to stop propagation.
+   */
+  toggleActionDropdown(secId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.openActionDropdownId = this.openActionDropdownId === secId ? null : secId;
+    this.openSubItemDropdownId = null;
+  }
+
+  /**
+   * Toggles the row action dropdown menu for a sub-item.
+   * @param itemId Sub-item GUID identifier.
+   * @param event Mouse click event to stop propagation.
+   */
+  toggleSubItemDropdown(itemId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.openSubItemDropdownId = this.openSubItemDropdownId === itemId ? null : itemId;
+    this.openActionDropdownId = null;
+  }
+
+  /**
+   * Closes all open action dropdown menus.
+   */
+  closeActionDropdown(): void {
+    this.openActionDropdownId = null;
+    this.openSubItemDropdownId = null;
+  }
+
+  /**
+   * Global document listener to close active dropdowns on outside click.
+   */
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeActionDropdown();
+  }
+
+  /**
+   * Opens the transfer modal for a single section directly from the row dropdown.
+   * @param sec Target layout section entity.
+   * @param mode Transfer mode: 'copy' or 'move'.
+   */
+  openSingleSectionTransfer(sec: any, mode: 'move' | 'copy' | 'link'): void {
+    this.closeActionDropdown();
+    this.selectedSectionIds.clear();
+    this.selectedSectionIds.add(sec.id);
+    this.transferSectionsMode = mode;
+    this.targetTransferPageId = sec.webPageId || this.filterPageId || (this.allPages.length > 0 ? this.allPages[0].id : '');
+    this.showBulkTransferSectionsModal = true;
+  }
+
+  /**
+   * Opens the transfer modal for a single sub-item directly from the row dropdown.
+   * @param item Target sub-item entity.
+   * @param mode Transfer mode: 'copy' or 'move'.
+   */
+  openSingleSubItemTransfer(item: any, mode: 'move' | 'copy'): void {
+    this.closeActionDropdown();
+    this.selectedSubItemIds.clear();
+    this.selectedSubItemIds.add(item.id);
+    this.transferSubItemsMode = mode;
+    this.targetTransferSectionId = item.pageSectionId || (this.sections.length > 0 ? this.sections[0].id : '');
+    this.showBulkTransferSubItemsModal = true;
+  }
+
+  // ==========================================
   // BULK TRANSFER SECTIONS (MOVE & COPY)
   // ==========================================
 
-  openBulkTransferSectionsModal(mode: 'move' | 'copy'): void {
+  openBulkTransferSectionsModal(mode: 'move' | 'copy' | 'link'): void {
     if (this.selectedSectionIds.size === 0) return;
     this.transferSectionsMode = mode;
     this.targetTransferPageId = this.filterPageId || (this.allPages.length > 0 ? this.allPages[0].id : '');
@@ -986,5 +1214,142 @@ export class PageSectionsComponent implements OnInit {
   getSubItemDeleteReturnUrl(item: any): string {
     const pageId = this.filterPageId || item.pageSection?.webPageId;
     return pageId ? `/content/console/sections?webPageId=${pageId}` : '/content/console/sections';
+  }
+
+  // ==========================================
+  // DRAG-AND-DROP & ARROW REORDERING (SECTIONS & SUB-ITEMS)
+  // ==========================================
+
+  /** Returns true when row at the given index is first within its parent group. */
+  isFirstInGroup(list: any[], index: number, parentKeyFn: (item: any) => string): boolean {
+    if (index <= 0 || index >= list.length) return true;
+    const key = parentKeyFn(list[index]);
+    return parentKeyFn(list[index - 1]) !== key;
+  }
+
+  /** Returns true when row at the given index is last within its parent group. */
+  isLastInGroup(list: any[], index: number, parentKeyFn: (item: any) => string): boolean {
+    if (index < 0 || index >= list.length - 1) return true;
+    const key = parentKeyFn(list[index]);
+    return parentKeyFn(list[index + 1]) !== key;
+  }
+
+  moveSection(filteredIndex: number, dir: 'top' | 'up' | 'down'): void {
+    this.handleGroupMove(this.filteredSections, this.sections, filteredIndex, dir, this.sectionParentKey, 'pageSortOrder', 'ContentApi/sections/reorder');
+  }
+
+  onSectionDrop(event: DragEvent, targetFilteredIndex: number): void {
+    this.handleGroupDrop(event, this.sectionReorder, this.filteredSections, this.sections, targetFilteredIndex, this.sectionParentKey, 'pageSortOrder', 'ContentApi/sections/reorder', 'parent page');
+  }
+
+  commitSectionOrder(sec: any, newOrder: number): void {
+    sec.pageSortOrder = newOrder;
+    this.sortGroupedList(this.sections, this.sectionParentKey, 'pageSortOrder');
+    this.persistReorder('ContentApi/sections/reorder', [{ id: sec.id, sortOrder: newOrder }], `Order for "${sec.title || 'Section'}" updated to #${newOrder}.`);
+  }
+
+  moveSubItem(filteredIndex: number, dir: 'top' | 'up' | 'down'): void {
+    this.handleGroupMove(this.filteredSubItems, this.allSubItems, filteredIndex, dir, this.subItemParentKey, 'sortOrder', 'ContentApi/section-lists/reorder');
+  }
+
+  onSubItemDrop(event: DragEvent, targetFilteredIndex: number): void {
+    this.handleGroupDrop(event, this.subItemReorder, this.filteredSubItems, this.allSubItems, targetFilteredIndex, this.subItemParentKey, 'sortOrder', 'ContentApi/section-lists/reorder', 'parent section');
+  }
+
+  commitSubItemOrder(item: any, newOrder: number): void {
+    item.sortOrder = newOrder;
+    this.sortGroupedList(this.allSubItems, this.subItemParentKey, 'sortOrder');
+    this.persistReorder('ContentApi/section-lists/reorder', [{ id: item.id, sortOrder: newOrder }], `Order for "${item.title || 'Sub-Item'}" updated to #${newOrder}.`);
+  }
+
+  private handleGroupMove(
+    filteredList: any[],
+    masterList: any[],
+    filteredIndex: number,
+    dir: 'top' | 'up' | 'down',
+    parentKeyFn: (item: any) => string,
+    orderField: string,
+    endpoint: string
+  ): void {
+    const target = filteredList[filteredIndex];
+    if (!target) return;
+    const key = parentKeyFn(target);
+    const siblings = masterList.filter(x => parentKeyFn(x) === key);
+    const siblingIdx = siblings.findIndex(x => x.id === target.id);
+    if (siblingIdx === -1) return;
+
+    const reordered =
+      dir === 'top'
+        ? reorderListToTop(siblings, siblingIdx)
+        : reorderListStep(siblings, siblingIdx, dir === 'up' ? -1 : 1);
+    if (!reordered) return;
+
+    const payload = assignStepOrders(reordered, orderField, 10);
+    this.sortGroupedList(masterList, parentKeyFn, orderField);
+    this.persistReorder(endpoint, payload);
+  }
+
+  private handleGroupDrop(
+    event: DragEvent,
+    helper: CmsDragDropReorderHelper,
+    filteredList: any[],
+    masterList: any[],
+    targetFilteredIndex: number,
+    parentKeyFn: (item: any) => string,
+    orderField: string,
+    endpoint: string,
+    groupLabel: string
+  ): void {
+    const move = helper.consumeDrop(event, targetFilteredIndex);
+    if (!move) return;
+
+    const draggedItem = filteredList[move.fromIndex];
+    const targetItem = filteredList[move.toIndex];
+    if (!draggedItem || !targetItem) return;
+
+    const key = parentKeyFn(draggedItem);
+    if (parentKeyFn(targetItem) !== key) {
+      this.toast.warning(`Drag within items of the same ${groupLabel}, or filter to view a single page.`);
+      return;
+    }
+
+    const siblings = masterList.filter(x => parentKeyFn(x) === key);
+    const fromSiblingIdx = siblings.findIndex(x => x.id === draggedItem.id);
+    const toSiblingIdx = siblings.findIndex(x => x.id === targetItem.id);
+    const reordered = reorderListByMove(siblings, fromSiblingIdx, toSiblingIdx);
+    if (!reordered) return;
+
+    const payload = assignStepOrders(reordered, orderField, 10);
+    this.sortGroupedList(masterList, parentKeyFn, orderField);
+    this.persistReorder(endpoint, payload);
+  }
+
+  private sortGroupedList(masterList: any[], parentKeyFn: (item: any) => string, orderField: string): void {
+    const groupFirstIndex = new Map<string, number>();
+    masterList.forEach((item, idx) => {
+      const k = parentKeyFn(item);
+      if (!groupFirstIndex.has(k)) groupFirstIndex.set(k, idx);
+    });
+    masterList.sort((a, b) => {
+      const ga = groupFirstIndex.get(parentKeyFn(a)) ?? 0;
+      const gb = groupFirstIndex.get(parentKeyFn(b)) ?? 0;
+      if (ga !== gb) return ga - gb;
+      return (a[orderField] || 0) - (b[orderField] || 0);
+    });
+  }
+
+  private persistReorder(endpoint: string, payload: Array<{ id: string; sortOrder: number }>, successMsg?: string): void {
+    this.savingOrder = true;
+    this.api.put<any>(endpoint, payload).subscribe({
+      next: () => {
+        this.savingOrder = false;
+        if (successMsg) this.toast.success(successMsg);
+      },
+      error: (err) => {
+        this.savingOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save reorder changes.');
+        this.loadSections();
+      }
+    });
   }
 }

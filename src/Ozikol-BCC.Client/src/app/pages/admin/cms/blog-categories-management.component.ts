@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 @Component({
   selector: 'app-blog-categories-management',
@@ -607,7 +608,7 @@ export class BlogCategoriesManagementComponent implements OnInit {
   isEditing = false;
   modalError = '';
   canEdit = false;
-  pageSize = 10;
+  pageSize = getSavedPageSize('cms_blog_categories', 10);
   currentPage = 1;
 
   currentCat: any = {
@@ -781,6 +782,7 @@ export class BlogCategoriesManagementComponent implements OnInit {
   }
 
   onPageSizeChange(): void {
+    this.pageSize = savePageSizePreference('cms_blog_categories', this.pageSize, 10);
     this.currentPage = 1;
   }
 

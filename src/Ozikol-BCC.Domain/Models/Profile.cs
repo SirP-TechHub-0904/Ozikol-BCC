@@ -52,7 +52,7 @@ namespace Ozikol_BCC.Domain.Models
         /// Business account state used by Console user management in addition to Identity lockout.
         /// </summary>
         [Display(Name = "User Status")]
-        public UserStatus UserStatus { get; set; }
+        public UserStatus UserStatus { get; set; } = UserStatus.Active;
 
         /// <summary>
         /// Unique member/employee identification code (e.g. CC-2026-0042).

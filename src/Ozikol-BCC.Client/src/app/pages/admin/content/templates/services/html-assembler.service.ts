@@ -105,6 +105,21 @@ export class HtmlAssemblerService {
   constructor(private templateHydration: TemplateHydrationService) {}
 
   /**
+   * Sanitizes final hydrated section HTML before assembly to strip any leftover unhydrated
+   * CMS block or scalar tags (both scoped `PageSection.*` / `PageSectionList.*` and unscoped).
+   * Guarantees SEO `<meta name="description">` and visual section bodies never leak raw tokens.
+   * @param html Hydrated HTML markup for a single section.
+   * @returns Clean rendered markup with residual template tags removed.
+   */
+  scrubResidualCmsTokens(html: string): string {
+    if (!html) return '';
+    return html
+      .replace(/\{\{\s*(?:#if|#unless|#each|\/if|\/unless|\/each|else)\b[^}]*\}\}/gi, '')
+      .replace(/\{\{\{\s*[^}]+\s*\}\}\}/g, '')
+      .replace(/\{\{\s*[^}]+\s*\}\}/g, '');
+  }
+
+  /**
    * Filters and sorts code injection tags for a specific target zone by ascending SortOrder.
    * @param tags Array of all code injection tags.
    * @param zone Target document zone ('head', 'body_open', or 'footer').
@@ -185,7 +200,7 @@ export class HtmlAssemblerService {
     // 3. Pillar 3: Single Section Markup & Scoped Styles
     const cleanStyle = this.cleanCss(options.css);
     const cleanScript = this.cleanJs(options.js);
-    const sectionHtml = options.html || '';
+    const sectionHtml = this.scrubResidualCmsTokens(options.html || '');
 
     // 4. Pillar 4: Footer Scripts (</body>)
     const sortedFooterTags = this.filterAndSortTags(options.codeInjections, 'footer', suite)
@@ -334,9 +349,9 @@ export class HtmlAssemblerService {
       orderedSections.push(ribbonSection);
     }
 
-    // Aggregate visual HTML markup
+    // Aggregate visual HTML markup (scrubbing any unhydrated CMS tokens while leaving document <meta name="description"> strictly SEO-only)
     const visualBodyMarkup = orderedSections
-      .map(s => s.html || '')
+      .map(s => this.scrubResidualCmsTokens(s.html || ''))
       .filter(h => h.trim().length > 0)
       .join('\n\n');
 

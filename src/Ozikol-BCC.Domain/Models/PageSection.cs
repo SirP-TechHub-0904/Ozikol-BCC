@@ -272,15 +272,55 @@ namespace Ozikol_BCC.Domain.Models
         public string? FormKey { get; set; }
 
         /// <summary>
+        /// Layout position mode when composing an attached form onto a section whose template lacks a form placeholder:
+        /// "beside_left", "beside_right", "before_section", or "after_section".
+        /// </summary>
+        [MaxLength(30)]
+        public string? FormPlacementMode { get; set; } = "beside_right";
+
+        /// <summary>
+        /// Width preset for an attached dynamic form container: "30", "50", "100", or "custom".
+        /// </summary>
+        [MaxLength(20)]
+        public string? FormWidthPreset { get; set; } = "50";
+
+        /// <summary>
+        /// Custom percentage width (20-80) applied when FormWidthPreset is set to "custom".
+        /// </summary>
+        public int? FormCustomWidthPercent { get; set; }
+
+        /// <summary>
+        /// When true and a side-by-side form is composed next to this section, hides the section image so the form replaces the media column cleanly.
+        /// </summary>
+        public bool HideSectionImageWhenFormActive { get; set; } = false;
+
+        /// <summary>
         /// Navigation collection of repeatable child items (slides, feature cards, pricing tiers, office locations).
         /// Injected into templates via {{#each PageSectionLists}} loops.
         /// </summary>
         public ICollection<PageSectionList> PageSectionLists { get; set; } = new List<PageSectionList>();
 
         /// <summary>
+        /// Navigation collection of secondary web pages where this shared section is linked via WebPageSectionLink.
+        /// </summary>
+        public ICollection<WebPageSectionLink> LinkedPages { get; set; } = new List<WebPageSectionLink>();
+
+        /// <summary>
         /// Total number of repeatable child items (cards, lists) attached to this section. Computed / non-persisted property.
         /// </summary>
         [NotMapped]
         public int ListCount { get; set; }
+
+        /// <summary>
+        /// Indicates if this section is linked from another primary parent page. Computed / non-persisted property.
+        /// </summary>
+        [NotMapped]
+        public bool IsLinkedSection { get; set; } = false;
+
+        /// <summary>
+        /// Number of other pages this section is linked to. Computed / non-persisted property.
+        /// </summary>
+        [NotMapped]
+        public int LinkedPageCount { get; set; } = 0;
     }
 }

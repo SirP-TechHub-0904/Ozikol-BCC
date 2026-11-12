@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pagination-storage.util';
 
 @Component({
   selector: 'app-blogs-management',
@@ -617,7 +618,7 @@ export class BlogsManagementComponent implements OnInit {
   selectedCategory = '';
   loading = false;
   canEdit = false;
-  pageSize = 10;
+  pageSize = getSavedPageSize('cms_blogs', 10);
   currentPage = 1;
 
   constructor(private api: ApiService, private toast: ToastService) {}
@@ -815,6 +816,7 @@ export class BlogsManagementComponent implements OnInit {
   }
 
   onPageSizeChange(): void {
+    this.pageSize = savePageSizePreference('cms_blogs', this.pageSize, 10);
     this.currentPage = 1;
   }
 

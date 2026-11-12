@@ -17,16 +17,18 @@ interface SystemPageOption {
 }
 
 /**
- * Unified Full-Width 8-Row Card Studio for Creating and Editing WebPages.
+ * Unified Full-Width 10-Row Card Studio for Creating and Editing WebPages.
  * Follows the sequential card architecture:
- * - Row 1: Title & Auto-Generated Direct URL (https:// preview & collision auto-increment)
- * - Row 2: Category & Hierarchy (Dropdown Group & Parent Page)
- * - Row 3: Navigation Placements & Positions (Zones, Header, Dropdown, Footer, Top Bar, CTA)
- * - Row 4: Page Destination Type (Modular Section Page vs. Built-in System Page vs. Direct URL)
- * - Row 5: Page Breadcrumb & Header Banner Background Image (Custom breadcrumb background)
- * - Row 6: Publishing, Access & Styling (Publish, Home Page, Security, Legal, Custom CSS)
- * - Row 7: SEO & Meta Information (Meta Title, Description, Keywords, Tags)
- * - Row 8: [Edit Mode Only] Audit Metadata & Jump to Section Builder
+ * - Row 1: Page Title & Auto-Generated Direct URL (https:// preview & collision auto-increment)
+ * - Row 2: Page Role & Access Decisions (Website Root Landing Page /, Security Protected, Legal & Compliance)
+ * - Row 3: Page Destination Type (Modular Section Page vs. Built-in System Page vs. Direct URL)
+ * - Row 4: Category & Hierarchy (Dropdown Group & Parent Page)
+ * - Row 5: Navigation Placements & Positions (Zones, Header, Dropdown, Footer, Top Bar, CTA)
+ * - Row 6: Page Breadcrumb & Header Banner Background Image (Custom breadcrumb background)
+ * - Row 7: Publishing Status (Standalone Publish / Draft toggle)
+ * - Row 8: Styling, Ordering & News Ribbon (Custom CSS Class, Sort Order, Breaking News Ribbon)
+ * - Row 9: SEO & Meta Information (Meta Title, Description, Keywords, Tags)
+ * - Row 10: [Edit Mode Only] Audit Metadata & Jump to Section Builder
  */
 @Component({
   selector: 'app-web-page-edit',
@@ -129,19 +131,71 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 2: Destination Type (Section vs. System vs. Direct)  -->
+        <!-- ROW 2: Page Role & Access Decisions (Top Decision Card)  -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
             <div class="row-num-tag">2</div>
             <div class="row-title-box">
               <div class="row-title-heading">
-                <h3>Page Destination &amp; Content Type</h3>
+                <h3>Page Role &amp; Access Decisions</h3>
                 <button type="button" class="btn-info-pop" [class.active]="isDescOpen(2)" (click)="toggleDesc(2)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
               <div class="row-desc-drawer" *ngIf="isDescOpen(2)">
+                <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
+                <span>Decide early whether this page is your domain root homepage (/), requires authenticated login access, or serves as a legal compliance document.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row-card-body">
+            <div class="checkbox-row-grid">
+              <!-- Website Root Home Page -->
+              <label class="toggle-card-item" [class.checked]="page.isHomePage">
+                <input type="checkbox" [(ngModel)]="page.isHomePage" (change)="onHomePageToggle()">
+                <div class="toggle-card-details">
+                  <strong>Website Root Landing Page (/)</strong>
+                  <p>When enabled, acts as the primary root homepage of your tenant domain.</p>
+                </div>
+              </label>
+
+              <!-- Security Protected Page -->
+              <label class="toggle-card-item" [class.checked]="page.securityPage">
+                <input type="checkbox" [(ngModel)]="page.securityPage">
+                <div class="toggle-card-details">
+                  <strong>Security Protected Page</strong>
+                  <p>Requires authenticated member / staff login credentials to view.</p>
+                </div>
+              </label>
+
+              <!-- Legal & Compliance Document -->
+              <label class="toggle-card-item" [class.checked]="page.isLegal">
+                <input type="checkbox" [(ngModel)]="page.isLegal">
+                <div class="toggle-card-details">
+                  <strong>Legal &amp; Compliance Document</strong>
+                  <p>Flags page as Privacy Policy, Terms of Service, or Cookie Policy.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 3: Destination Type (Section vs. System vs. Direct)  -->
+        <!-- ======================================================== -->
+        <div class="row-card">
+          <div class="row-card-header">
+            <div class="row-num-tag">3</div>
+            <div class="row-title-box">
+              <div class="row-title-heading">
+                <h3>Page Destination &amp; Content Type</h3>
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(3)" (click)="toggleDesc(3)" title="Click to view explanation for this section">
+                  <span class="material-symbols-outlined">info</span>
+                </button>
+              </div>
+              <div class="row-desc-drawer" *ngIf="isDescOpen(3)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Choose if this is a custom CMS section page, a built-in system app (login, blog, store), or a direct URL.</span>
               </div>
@@ -263,19 +317,19 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 3: Category & Hierarchy                              -->
+        <!-- ROW 4: Category & Hierarchy                              -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
-            <div class="row-num-tag">3</div>
+            <div class="row-num-tag">4</div>
             <div class="row-title-box">
               <div class="row-title-heading">
                 <h3>Menu Category &amp; Page Hierarchy</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(3)" (click)="toggleDesc(3)" title="Click to view explanation for this section">
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(4)" (click)="toggleDesc(4)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(3)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(4)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Group this page inside a dropdown menu or nest it beneath a parent page.</span>
               </div>
@@ -314,19 +368,19 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 4: Positions & Navigation Placements                 -->
+        <!-- ROW 5: Positions & Navigation Placements                 -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
-            <div class="row-num-tag">4</div>
+            <div class="row-num-tag">5</div>
             <div class="row-title-box">
               <div class="row-title-heading">
                 <h3>Navigation Placements &amp; Positions</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(4)" (click)="toggleDesc(4)" title="Click to view explanation for this section">
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(5)" (click)="toggleDesc(5)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(4)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(5)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Select which zones and website headers/footers will render this page link.</span>
               </div>
@@ -399,7 +453,7 @@ interface SystemPageOption {
                     <span class="toggle-text">
                       <strong>Inside Category Dropdown</strong>
                       <small *ngIf="page.pageCategoryId">Nested inside the selected Category dropdown.</small>
-                      <small *ngIf="!page.pageCategoryId" class="text-warn">Requires a Category selected in Row 2.</small>
+                      <small *ngIf="!page.pageCategoryId" class="text-warn">Requires a Category selected in Section 4.</small>
                     </span>
                   </label>
                   <div class="sort-input-box" *ngIf="page.showInMenuDropDown && page.pageCategoryId">
@@ -491,7 +545,7 @@ interface SystemPageOption {
 
                   <div class="cta-route-indicator">
                     <span class="material-symbols-outlined icon-route">alt_route</span>
-                    <span>Target Route: <strong>/{{ page.directUrl || 'route' }}</strong> (Inherited directly from Section 2: Page Destination)</span>
+                    <span>Target Route: <strong>{{ formattedTargetRoute }}</strong> (Inherited directly from Section 3: Page Destination)</span>
                   </div>
 
                   <!-- Contextual notice when page points to registration -->
@@ -516,19 +570,19 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 5: Page Breadcrumb & Header Banner Background Image  -->
+        <!-- ROW 6: Page Breadcrumb & Header Banner Background Image  -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
-            <div class="row-num-tag bg-purple-tag">5</div>
+            <div class="row-num-tag bg-purple-tag">6</div>
             <div class="row-title-box">
               <div class="row-title-heading">
                 <h3>Page Breadcrumb &amp; Header Banner Background Image</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(5)" (click)="toggleDesc(5)" title="Click to view explanation for this section">
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(6)" (click)="toggleDesc(6)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(5)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(6)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Custom background image rendered behind the page title and breadcrumb navigation trail across the top of this page.</span>
               </div>
@@ -578,66 +632,62 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 6: Publishing, Access & Styling Checkboxes           -->
+        <!-- ROW 7: Publishing Status (Standalone Card)               -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
-            <div class="row-num-tag">6</div>
+            <div class="row-num-tag">7</div>
             <div class="row-title-box">
               <div class="row-title-heading">
-                <h3>Publishing, Access &amp; Styling</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(6)" (click)="toggleDesc(6)" title="Click to view explanation for this section">
+                <h3>Publishing Status</h3>
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(7)" (click)="toggleDesc(7)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(6)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(7)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
-                <span>Control live visitor availability, access control permissions, and custom CSS styling.</span>
+                <span>Controls whether this page is active and publicly reachable on your website or kept offline as a draft.</span>
+              </div>
+            </div>
+            <span class="badge-status" [class.published]="page.publish" [class.draft]="!page.publish">
+              {{ page.publish ? 'Published' : 'Draft / Offline' }}
+            </span>
+          </div>
+
+          <div class="row-card-body">
+            <label class="toggle-card-item" [class.checked]="page.publish">
+              <input type="checkbox" [(ngModel)]="page.publish">
+              <div class="toggle-card-details">
+                <strong>Publish Page</strong>
+                <p>Make this page active, live, and publicly visible to visitors.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 8: Styling, Ordering & News Ribbon                   -->
+        <!-- ======================================================== -->
+        <div class="row-card">
+          <div class="row-card-header">
+            <div class="row-num-tag">8</div>
+            <div class="row-title-box">
+              <div class="row-title-heading">
+                <h3>Styling, Ordering &amp; News Ribbon</h3>
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(8)" (click)="toggleDesc(8)" title="Click to view explanation for this section">
+                  <span class="material-symbols-outlined">info</span>
+                </button>
+              </div>
+              <div class="row-desc-drawer" *ngIf="isDescOpen(8)">
+                <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
+                <span>Configure custom CSS classes, peer sort ordering, and Breaking News Ribbon ticker placement.</span>
               </div>
             </div>
           </div>
 
           <div class="row-card-body">
-            <div class="checkbox-row-grid">
-              <!-- Publish Page -->
-              <label class="toggle-card-item" [class.checked]="page.publish">
-                <input type="checkbox" [(ngModel)]="page.publish">
-                <div class="toggle-card-details">
-                  <strong>Publish Page</strong>
-                  <p>Make this page active, live, and publicly visible to visitors.</p>
-                </div>
-              </label>
-
-              <!-- Website Root Home Page -->
-              <label class="toggle-card-item" [class.checked]="page.isHomePage">
-                <input type="checkbox" [(ngModel)]="page.isHomePage" (change)="onHomePageToggle()">
-                <div class="toggle-card-details">
-                  <strong>Website Root Landing Page (/)</strong>
-                  <p>When enabled, acts as the primary root homepage of your tenant domain.</p>
-                </div>
-              </label>
-
-              <!-- Security Protected Page -->
-              <label class="toggle-card-item" [class.checked]="page.securityPage">
-                <input type="checkbox" [(ngModel)]="page.securityPage">
-                <div class="toggle-card-details">
-                  <strong>Security Protected Page</strong>
-                  <p>Requires authenticated member / staff login credentials to view.</p>
-                </div>
-              </label>
-
-              <!-- Legal & Compliance Document -->
-              <label class="toggle-card-item" [class.checked]="page.isLegal">
-                <input type="checkbox" [(ngModel)]="page.isLegal">
-                <div class="toggle-card-details">
-                  <strong>Legal &amp; Compliance Document</strong>
-                  <p>Flags page as Privacy Policy, Terms of Service, or Cookie Policy.</p>
-                </div>
-              </label>
-            </div>
-
             <!-- Custom CSS Class & Sort Order -->
-            <div class="form-grid-2 form-mt-16">
+            <div class="form-grid-2">
               <div class="form-group">
                 <label class="form-label">CUSTOM CSS CLASS</label>
                 <div class="input-with-icon">
@@ -717,16 +767,16 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 7: SEO & Meta Information                            -->
+        <!-- ROW 9: SEO & Meta Information                            -->
         <!-- ======================================================== -->
         <div class="row-card">
           <div class="row-card-header">
-            <div class="row-num-tag">7</div>
+            <div class="row-num-tag">9</div>
             <div class="row-title-box">
               <div class="row-title-heading" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <h3>SEO Meta Information &amp; Tags</h3>
-                  <button type="button" class="btn-info-pop" [class.active]="isDescOpen(7)" (click)="toggleDesc(7)" title="Click to view explanation for this section">
+                  <button type="button" class="btn-info-pop" [class.active]="isDescOpen(9)" (click)="toggleDesc(9)" title="Click to view explanation for this section">
                     <span class="material-symbols-outlined">info</span>
                   </button>
                 </div>
@@ -735,7 +785,7 @@ interface SystemPageOption {
                   <span>{{ isGeneratingSeo ? 'Analyzing...' : '⚡ Auto-Generate with AI' }}</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(7)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(9)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Optimize for Google indexing, browser tab title, search snippets, and page grouping tags.</span>
               </div>
@@ -821,19 +871,19 @@ interface SystemPageOption {
         </div>
 
         <!-- ======================================================== -->
-        <!-- ROW 8: [EDIT MODE ONLY] Audit Metadata & Section Builder -->
+        <!-- ROW 10: [EDIT MODE ONLY] Audit Metadata & Section Builder -->
         <!-- ======================================================== -->
         <div class="row-card row-card-audit" *ngIf="isEditMode">
           <div class="row-card-header">
-            <div class="row-num-tag bg-green-tag">8</div>
+            <div class="row-num-tag bg-green-tag">10</div>
             <div class="row-title-box">
               <div class="row-title-heading">
                 <h3>Lifecycle Audit &amp; Layout Sections</h3>
-                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(8)" (click)="toggleDesc(8)" title="Click to view explanation for this section">
+                <button type="button" class="btn-info-pop" [class.active]="isDescOpen(10)" (click)="toggleDesc(10)" title="Click to view explanation for this section">
                   <span class="material-symbols-outlined">info</span>
                 </button>
               </div>
-              <div class="row-desc-drawer" *ngIf="isDescOpen(8)">
+              <div class="row-desc-drawer" *ngIf="isDescOpen(10)">
                 <span class="material-symbols-outlined desc-info-icon">lightbulb</span>
                 <span>Creation and modification timestamps, cumulative view traffic, and direct builder access.</span>
               </div>
@@ -2153,7 +2203,7 @@ export class WebPageEditComponent implements OnInit {
 
   systemPages: SystemPageOption[] = [
     { title: 'Member Registration ("Get Started")', slug: '/register', icon: 'how_to_reg', desc: 'Configured in User Manager > Form Builder (adjust questions & layout there)' },
-    { title: 'Member / Staff Login', slug: '/login', icon: 'login', desc: 'Authentication and sign-in portal' },
+    { title: 'Member / Staff Login', slug: '/auth/login', icon: 'login', desc: 'Authentication and sign-in portal' },
     { title: 'Blog & Articles Feed', slug: '/blog', icon: 'article', desc: 'Editorial article archive and categories' },
     { title: 'Store Catalog', slug: '/store', icon: 'storefront', desc: 'E-commerce products and pricing catalog' },
     { title: 'Shopping Cart', slug: '/store/cart', icon: 'shopping_cart', desc: 'Customer checkout shopping cart' }
@@ -2219,6 +2269,14 @@ export class WebPageEditComponent implements OnInit {
 
   get fullLiveUrl(): string {
     return this.livePageUrl;
+  }
+
+  get formattedTargetRoute(): string {
+    if (this.page?.isHomePage) return '/';
+    const direct = (this.page?.directUrl || '').trim();
+    if (!direct) return '/route';
+    if (direct.startsWith('http://') || direct.startsWith('https://')) return direct;
+    return '/' + direct.replace(/^\/+/, '');
   }
 
   initDefaultPage(): void {
@@ -2322,11 +2380,19 @@ export class WebPageEditComponent implements OnInit {
     }
   }
 
-    onTitleInput(): void {
-    if (!this.page?.title?.trim()) {
+  onTitleInput(): void {
+    if (!this.page?.title?.trim() || this.page?.isHomePage) {
       return;
     }
-    this.generateUniqueSlug(this.page.title);
+
+    const currentDirect = (this.page.directUrl || '').trim().toLowerCase();
+    const isExternalUrl = currentDirect.startsWith('http://') || currentDirect.startsWith('https://');
+
+    // Auto-regenerate the slug when the title is modified on internal/modular pages
+    // (preserve external http(s) URLs and system routes like /auth/login or /blog).
+    if (this.destinationType !== 'system' && !isExternalUrl && !this.isSystemSlug(currentDirect)) {
+      this.generateUniqueSlug(this.page.title);
+    }
   }
 
   onHomePageToggle(): void {
@@ -2334,6 +2400,12 @@ export class WebPageEditComponent implements OnInit {
       this.page.directUrl = '/';
       this.isSlugAutoGenerated = true;
       this.slugHasCollision = false;
+      // Ensure the Website Root Landing Page uses the Modular Section Page builder unless pointing externally
+      const direct = (this.page.directUrl || '').trim().toLowerCase();
+      if (!direct.startsWith('http://') && !direct.startsWith('https://') && !this.isSystemSlug(direct)) {
+        this.destinationType = 'section';
+        this.page.enableDirectUrl = false;
+      }
     } else {
       this.generateUniqueSlug(this.page.title || 'page');
     }
@@ -2454,10 +2526,15 @@ export class WebPageEditComponent implements OnInit {
   }
 
   isSystemSlug(slug: string): boolean {
-    const clean = (slug || '').trim().toLowerCase();
-    return this.systemPages.some(s => s.slug.toLowerCase() === clean) ||
-           clean === '/register' ||
-           clean === (this.registrationSlug || '').toLowerCase();
+    const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
+    return this.systemPages.some(s => s.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+           clean === 'login' ||
+           clean === 'auth-login' ||
+           clean === 'auth/login' ||
+           clean === 'register' ||
+           clean === 'auth-register' ||
+           clean === 'auth/register' ||
+           clean === (this.registrationSlug || '').toLowerCase().replace(/^\/+/, '');
   }
 
   private slugify(text: string): string {
@@ -2476,21 +2553,42 @@ export class WebPageEditComponent implements OnInit {
         this.loading = false;
         this.page = res?.data;
         if (this.page) {
-          // Detect destination type
+          // Detect destination type & enforce root landing page normalization
           const direct = (this.page.directUrl || '').trim();
+          const lowerDirect = direct.toLowerCase();
+          const isExternalUrl = lowerDirect.startsWith('http://') || lowerDirect.startsWith('https://');
+          const isRootAlias = !!this.page.isHomePage || lowerDirect === '/' || lowerDirect === 'home' || lowerDirect === '/home';
+
           if (this.isSystemSlug(direct)) {
             this.destinationType = 'system';
-            this.selectedSystemPage = direct;
-          } else if (this.page.enableDirectUrl || direct.startsWith('http://') || direct.startsWith('https://')) {
+            const clean = lowerDirect.replace(/^\/+/, '');
+            if (clean === 'login' || clean === 'auth-login' || clean === 'auth/login') {
+              this.selectedSystemPage = '/auth/login';
+              this.page.directUrl = '/auth/login';
+            } else if (clean === 'register' || clean === 'auth-register' || clean === 'auth/register') {
+              this.selectedSystemPage = this.registrationSlug || '/register';
+              this.page.directUrl = this.selectedSystemPage;
+            } else {
+              this.selectedSystemPage = direct.startsWith('/') ? direct : '/' + direct;
+              this.page.directUrl = this.selectedSystemPage;
+            }
+          } else if (isRootAlias && !isExternalUrl) {
+            // Root Landing Pages default to Modular Section Page even when enableDirectUrl was seeded true
+            this.page.isHomePage = true;
+            this.page.directUrl = '/';
+            this.destinationType = 'section';
+            this.page.enableDirectUrl = false;
+          } else if (isExternalUrl || (this.page.enableDirectUrl && !(this.page.pageSections?.length > 0))) {
             this.destinationType = 'direct';
           } else {
             this.destinationType = 'section';
           }
 
-          // If page is root homepage or directUrl is / or home, enforce homepage flag & '/' directUrl
-          if (this.page.isHomePage || direct === '/' || direct === 'home' || direct === '/home') {
+          if (isRootAlias) {
             this.page.isHomePage = true;
-            this.page.directUrl = '/';
+            if (!isExternalUrl && !this.isSystemSlug(direct)) {
+              this.page.directUrl = '/';
+            }
           }
 
           this.tagsList = (this.page.tags || '')
@@ -2665,7 +2763,12 @@ export class WebPageEditComponent implements OnInit {
         next: (res) => {
           this.saving = false;
           this.toast.success(res?.message || 'Web page created successfully!');
-          this.router.navigate(['/content/console/pages']);
+          const createdPageId = res?.data?.id || res?.data?.Id;
+          if (createdPageId) {
+            this.router.navigate(['/content/console/pages/details', createdPageId]);
+          } else {
+            this.router.navigate(['/content/console/pages']);
+          }
         },
         error: (err) => {
           this.saving = false;

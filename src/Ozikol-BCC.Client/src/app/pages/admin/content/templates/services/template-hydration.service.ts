@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { hydrateIconTokens } from './hydrators/hydration-core.utils';
 
 /**
  * Options and environment state required for template hydration.
@@ -471,24 +472,36 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{#if\s+IconText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (icon ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+ImageUrl\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.imageUrl ? content : ''));
         renderedItem = renderedItem.replace(/\{\{#if\s+MiniTitle\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.miniTitle ? content : ''));
-        renderedItem = renderedItem.replace(/\{\{#if\s+ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
-        renderedItem = renderedItem.replace(/\{\{#if\s+MoreDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.moreDescription ? content : ''));
-        renderedItem = renderedItem.replace(/\{\{#if\s+Description\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.description ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?(?:SecondButtonText|SecondaryButtonText)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => ((item.secondButtonText || item.secondaryButtonText) ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?(?:SecondButtonLink|SecondaryButtonLink)\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => ((item.secondButtonLink || item.secondaryButtonLink) ? content : ''));
+        const iDesc = item.description || '';
+        const iFullDesc = item.moreDescription || item.fullDescription || '';
+
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?MoreDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iFullDesc ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?FullDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iFullDesc ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+(?:PageSectionList\.)?Description\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (iDesc ? content : ''));
 
         // Replace item-level tokens
-        renderedItem = renderedItem.replace(/\{\{\s*IconText\s*\}\}/gi, icon);
-        renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
-        renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
-        renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || '');
-        renderedItem = renderedItem.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
-        renderedItem = renderedItem.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || '');
-        renderedItem = renderedItem.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || '#');
-        renderedItem = renderedItem.replace(/\{\{\s*DirectUrl\s*\}\}/gi, item.directUrl || '');
+        if (icon) {
+          renderedItem = hydrateIconTokens(renderedItem, '(?:PageSectionList\\.)?(?:IconText|Icon)', icon, item.title || 'Item Icon');
+        }
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?MiniTitle\s*\}\}/gi, item.miniTitle || '');
+        renderedItem = renderedItem.replace(/\{\{\{?\s*(?:PageSectionList\.)?Description\s*\}?\}\}/gi, iDesc);
+        renderedItem = renderedItem.replace(/\{\{\{?\s*(?:PageSectionList\.)?(?:MoreDescription|FullDescription)\s*\}?\}\}/gi, iFullDesc);
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ImageUrl\s*\}\}/gi, item.imageUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?(?:SecondButtonText|SecondaryButtonText)\s*\}\}/gi, item.secondButtonText || item.secondaryButtonText || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?(?:SecondButtonLink|SecondaryButtonLink)\s*\}\}/gi, item.secondButtonLink || item.secondaryButtonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?DirectUrl\s*\}\}/gi, item.directUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*SortOrder\s*\}\}/gi, (item.sortOrder !== undefined ? item.sortOrder : idx + 1).toString());
         renderedItem = renderedItem.replace(/\{\{\s*Index\s*\}\}/gi, (idx + 1).toString());
+        renderedItem = renderedItem.replace(/\{\{\s*@index\s*\}\}/gi, idx.toString());
+        renderedItem = renderedItem.replace(/\{\{\s*@number\s*\}\}/gi, (idx + 1).toString());
+        renderedItem = renderedItem.replace(/\{\{\s*(?:PageSectionList\.)?(?:Id|UniqueId)\s*\}\}/gi, (item.id || `item-${idx + 1}`).toString());
 
         return renderedItem;
       }).join('\n');
@@ -878,8 +891,8 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // BackgroundImageUrl scalar
-    const bgImage = bcPool.backgroundImageUrl || bcPool.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80';
+    // BackgroundImageUrl scalar (no default fallback - empty if not uploaded)
+    const bgImage = bcPool.backgroundImageUrl || bcPool.imageUrl || '';
     output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, bgImage);
 
     // 6h. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
@@ -888,6 +901,7 @@ export class TemplateHydrationService {
     const logoUrl = ctx.BrandLogo || ctx.brandLogo || ctx.LogoUrl || ctx.logoUrl || ctx.CompanyLogo || ctx.companyLogo || ctx['Brand.LogoUrl'] || ctx['Brand.WhiteLogoUrl'] || ctx.WhiteLogoUrl || ctx.whiteLogoUrl || opts.editorTokens?.brand?.logoUrl || '';
     const homeUrl = ctx.HomeUrl || ctx.homeUrl || ctx.WebsiteUrl || ctx.websiteUrl || ctx['Brand.WebsiteUrl'] || '/';
     const hasBrandLogo = Boolean(logoUrl && logoUrl.trim().length > 0);
+    const isBtnDisabled = Boolean(ctx.disableButton || ctx.DisableButton);
 
     const conditionPool = {
       ...artDetail,
@@ -911,7 +925,27 @@ export class TemplateHydrationService {
       HomeUrl: homeUrl,
       websiteUrl: homeUrl,
       WebsiteUrl: homeUrl,
-      'Brand.WebsiteUrl': homeUrl
+      'Brand.WebsiteUrl': homeUrl,
+      'PageSection.Title': ctx.title || ctx.Title || '',
+      'PageSection.MiniTitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
+      'PageSection.Subtitle': ctx.miniTitle || ctx.MiniTitle || ctx.subTitle || ctx.Subtitle || '',
+      'PageSection.Description': ctx.description || ctx.Description || '',
+      'PageSection.FullDescription': ctx.fullDescription || ctx.FullDescription || '',
+      'ButtonText': !isBtnDisabled ? (ctx.buttonText || ctx.ButtonText || '') : '',
+      'ButtonLink': !isBtnDisabled ? (ctx.buttonLink || ctx.ButtonLink || '') : '',
+      'SecondButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondButtonText || '') : '',
+      'SecondButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondButtonLink || '') : '',
+      'SecondaryButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondaryButtonText || '') : '',
+      'SecondaryButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondaryButtonLink || '') : '',
+      'PageSection.ButtonText': !isBtnDisabled ? (ctx.buttonText || ctx.ButtonText || '') : '',
+      'PageSection.ButtonLink': !isBtnDisabled ? (ctx.buttonLink || ctx.ButtonLink || '') : '',
+      'PageSection.SecondButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondButtonText || '') : '',
+      'PageSection.SecondButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondButtonLink || '') : '',
+      'PageSection.SecondaryButtonText': !isBtnDisabled ? (ctx.secondButtonText || ctx.secondaryButtonText || ctx.SecondaryButtonText || '') : '',
+      'PageSection.SecondaryButtonLink': !isBtnDisabled ? (ctx.secondButtonLink || ctx.secondaryButtonLink || ctx.SecondaryButtonLink || '') : '',
+      'PageSection.ImageUrl': ctx.imageUrl || ctx.ImageUrl || '',
+      'PageSection.IconText': ctx.iconText || ctx.IconText || '',
+      'PageSection.Icon': ctx.iconText || ctx.IconText || ctx.icon || ''
     };
 
     let prevCondOutput = '';
@@ -956,6 +990,9 @@ export class TemplateHydrationService {
       if (isNewsletter) {
         return `<form class="oz-dynamic-form oz-form-newsletter" data-form-key="${key}" onsubmit="event.preventDefault();">
           <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
+          <div class="oz-recaptcha-wrap my-2">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
           <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" style="margin-top: 10px;">Subscribe</button>
         </form>`;
       }
@@ -1015,16 +1052,16 @@ export class TemplateHydrationService {
 
     // 7. Scalar placeholders matching C# Domain Models (PageSection, PageSectionList, BrandSettings)
     // Rich-text triple mustache unescaped passes
-    output = output.replace(/\{\{\{\s*FullDescription\s*\}\}\}/gi, ctx.fullDescription || ctx.description || '');
-    output = output.replace(/\{\{\{\s*Description\s*\}\}\}/gi, ctx.description || ctx.fullDescription || '');
+    output = output.replace(/\{\{\{\s*(?:PageSection\.)?FullDescription\s*\}\}\}/gi, ctx.fullDescription || ctx.FullDescription || '');
+    output = output.replace(/\{\{\{\s*(?:PageSection\.)?Description\s*\}\}\}/gi, ctx.description || ctx.Description || '');
     output = output.replace(/\{\{\{\s*Article\.Body\s*\}\}\}/gi, artBody);
 
-    // Standard PageSection model properties
-    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || ctx.Title || opts.previewBlogContent?.title || '');
-    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || ctx.MiniTitle || opts.previewBlogContent?.miniTitle || '');
-    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
-    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.Description || ctx.text || opts.previewBlogContent?.description || '');
-    output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.FullDescription || ctx.description || '');
+    // Standard PageSection model properties (1 DB Column = 1 Token, zero cross-fallback)
+    output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || ctx.Title || opts.previewBlogContent?.title || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?MiniTitle\s*\}\}/gi, ctx.miniTitle || ctx.MiniTitle || opts.previewBlogContent?.miniTitle || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?Text\s*\}\}/gi, ctx.text || ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?Description\s*\}\}/gi, ctx.description || ctx.Description || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*(?:PageSection\.)?FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.FullDescription || '');
     output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || ctx.Qoute || ctx.Quote || '');
     output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || ctx.Quote || ctx.Qoute || '');
     output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || ctx.DirectUrl || '');

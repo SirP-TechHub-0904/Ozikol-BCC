@@ -63,8 +63,10 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<Blog> Blogs { get; set; }
     public DbSet<BlogCategory> BlogCategories { get; set; }
     public DbSet<PageSection> PageSections { get; set; }
+    public DbSet<WebPageSectionLink> WebPageSectionLinks { get; set; } = null!;
     public DbSet<PageSectionList> PageSectionLists { get; set; }
     public DbSet<TenantInstalledTemplate> TenantInstalledTemplates { get; set; } = null!;
+    public DbSet<CmsMediaFile> CmsMediaFiles { get; set; } = null!;
     public DbSet<PageCategory> PageCategories { get; set; }
     public DbSet<NewsLetter> NewsLetter { get; set; }
     public DbSet<ContactUsCategory> ContactUsCategories { get; set; }
@@ -830,6 +832,21 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         modelBuilder.Entity<PageForm>()
             .HasIndex(f => f.FormKey)
             .IsUnique();
+
+        modelBuilder.Entity<WebPageSectionLink>(entity =>
+        {
+            entity.HasIndex(l => new { l.WebPageId, l.PageSectionId }).IsUnique();
+
+            entity.HasOne(l => l.WebPage)
+                .WithMany(p => p.SectionLinks)
+                .HasForeignKey(l => l.WebPageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(l => l.PageSection)
+                .WithMany(s => s.LinkedPages)
+                .HasForeignKey(l => l.PageSectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<PageSection>()
             .HasOne(s => s.PageForm)

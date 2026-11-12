@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Constants;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Application.Services.Cloudflare;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -188,6 +189,248 @@ namespace Ozikol_BCC.Api.Controllers
                 _logger?.LogError(finalEx, "[ContentApi] All media upload storage pipelines failed.");
                 return StatusCode(500, ApiResponse<object>.FailureResponse($"Media upload failed: {finalEx.Message}"));
             }
+        }
+
+        // ==========================================
+        // 0.0B. CMS FILE MANAGER (Website Media & Asset Repository)
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all uploaded website files managed in the CMS Studio File Manager,
+        /// optionally filtered by search term or file type, ordered newest first.
+        /// </summary>
+        /// <param name="search">Optional filename or URL search filter.</param>
+        /// <param name="fileType">Optional exact file type/extension filter (e.g. "PDF", "PNG").</param>
+        /// <returns>Ordered list of CMS media files.</returns>
+        [HttpGet("files")]
+        public async Task<IActionResult> GetCmsFiles([FromQuery] string? search = null, [FromQuery] string? fileType = null)
+        {
+            var query = _context.CmsMediaFiles.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(f =>
+                    f.FileName.ToLower().Contains(term) ||
+                    f.FileUrl.ToLower().Contains(term) ||
+                    f.FileType.ToLower().Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(fileType) && !string.Equals(fileType, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                var typeFilter = fileType.Trim().ToUpperInvariant();
+                query = query.Where(f => f.FileType.ToUpper() == typeFilter);
+            }
+
+            var files = await query
+                .OrderByDescending(f => f.CreatedAtUtc)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(files, "CMS files retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Uploads any file intended for website usage (images, PDFs, documents, videos, icons, etc.)
+        /// through the resilient storage pipeline (Cloudflare R2 / Cloudinary / Local fallback)
+        /// and registers it in the CmsMediaFiles repository table.
+        /// </summary>
+        /// <param name="file">The uploaded file from multipart/form-data.</param>
+        /// <returns>The created CmsMediaFile metadata record containing the public URL.</returns>
+        [HttpPost("files/upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadCmsFile([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
+            }
+
+            var extension = Path.GetExtension(file.FileName)?.TrimStart('.').ToUpperInvariant();
+            var normalizedType = string.IsNullOrWhiteSpace(extension) ? "FILE" : extension;
+            var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+            var isImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
+                          new[] { "PNG", "JPG", "JPEG", "GIF", "WEBP", "SVG", "ICO", "AVIF", "BMP" }.Contains(normalizedType);
+
+            string? finalUrl = null;
+            string? storageKey = null;
+            string storageProvider = "LocalDisk";
+
+            // Resolve custom tenant BYOS Cloudinary settings if configured
+            string? customCloud = null;
+            string? customKey = null;
+            string? customSecret = null;
+
+            try
+            {
+                var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                if (config?.UseCustomStorage == true &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                {
+                    customCloud = config.CustomCloudinaryCloudName;
+                    customKey = config.CustomCloudinaryApiKey;
+                    customSecret = config.CustomCloudinaryApiSecret;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[ContentApi] Failed to inspect MisConfigurationSettings during CMS file upload.");
+            }
+
+            var folder = "bcp-cms-files";
+
+            // 1. For non-image files (PDF, DOCX, MP4, ZIP, etc.), prefer Cloudflare R2 first for exact MIME delivery
+            if (!isImage && _r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    await using var stream = file.OpenReadStream();
+                    var result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folder}");
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        finalUrl = result.Url;
+                        storageKey = result.SafeFileName ?? file.FileName;
+                        storageProvider = "CloudflareR2";
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[ContentApi] Cloudflare R2 upload failed for file {FileName}. Trying Cloudinary.", file.FileName);
+                }
+            }
+
+            // 2. Try Cloudinary (Image pipeline for images, Raw Document pipeline for non-images)
+            if (string.IsNullOrWhiteSpace(finalUrl))
+            {
+                try
+                {
+                    var (secureUrl, publicId) = isImage
+                        ? await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret)
+                        : await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
+
+                    if (!string.IsNullOrWhiteSpace(secureUrl))
+                    {
+                        finalUrl = secureUrl;
+                        storageKey = publicId;
+                        storageProvider = "Cloudinary";
+                    }
+                }
+                catch (Exception cldEx)
+                {
+                    _logger?.LogWarning(cldEx, "[ContentApi] Cloudinary upload failed for file {FileName}. Proceeding to next storage fallback.", file.FileName);
+                }
+            }
+
+            // 3. Resilient fallback to Cloudflare R2 if image upload skipped or failed Cloudinary
+            if (string.IsNullOrWhiteSpace(finalUrl) && _r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                    await using var stream = file.OpenReadStream();
+                    var result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folder}");
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        finalUrl = result.Url;
+                        storageKey = result.SafeFileName ?? file.FileName;
+                        storageProvider = "CloudflareR2";
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[ContentApi] Cloudflare R2 fallback failed for {FileName}. Using local storage.", file.FileName);
+                }
+            }
+
+            // 4. Local disk fallback (wwwroot/uploads/cms-files) so upload never halts in local dev
+            if (string.IsNullOrWhiteSpace(finalUrl))
+            {
+                try
+                {
+                    var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "cms-files");
+                    Directory.CreateDirectory(uploadsDir);
+
+                    var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
+                    var filePath = Path.Combine(uploadsDir, safeName);
+
+                    await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(fileStream);
+                    }
+
+                    var scheme = Request?.Scheme ?? "https";
+                    var host = Request?.Host.Value ?? "localhost";
+                    finalUrl = $"{scheme}://{host}/uploads/cms-files/{Uri.EscapeDataString(safeName)}";
+                    storageKey = safeName;
+                    storageProvider = "LocalDisk";
+                }
+                catch (Exception diskEx)
+                {
+                    _logger?.LogError(diskEx, "[ContentApi] All storage pipelines failed for file {FileName}.", file.FileName);
+                    return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to upload file: {diskEx.Message}"));
+                }
+            }
+
+            var uploadedBy = User?.Identity?.Name ?? User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+            var mediaFile = new CmsMediaFile
+            {
+                Id = Guid.NewGuid(),
+                FileName = Path.GetFileName(file.FileName),
+                FileUrl = finalUrl,
+                StorageKey = storageKey,
+                FileType = normalizedType,
+                ContentType = contentType,
+                FileSizeBytes = file.Length,
+                StorageProvider = storageProvider,
+                UploadedBy = uploadedBy,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            _context.CmsMediaFiles.Add(mediaFile);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(mediaFile, $"File '{mediaFile.FileName}' uploaded successfully."));
+        }
+
+        /// <summary>
+        /// Deletes a file entry from the CMS Studio File Manager repository.
+        /// </summary>
+        /// <param name="id">Unique identifier of the CmsMediaFile record.</param>
+        /// <returns>Confirmation response.</returns>
+        [HttpDelete("files/{id:guid}")]
+        public async Task<IActionResult> DeleteCmsFile(Guid id)
+        {
+            var mediaFile = await _context.CmsMediaFiles.FindAsync(id);
+            if (mediaFile == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("File record not found."));
+            }
+
+            // Clean up local file if stored on local disk
+            if (string.Equals(mediaFile.StorageProvider, "LocalDisk", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(mediaFile.StorageKey))
+            {
+                try
+                {
+                    var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "cms-files", mediaFile.StorageKey);
+                    if (System.IO.File.Exists(localPath))
+                    {
+                        System.IO.File.Delete(localPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "[ContentApi] Failed to remove local file {Key} during delete.", mediaFile.StorageKey);
+                }
+            }
+
+            _context.CmsMediaFiles.Remove(mediaFile);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"File '{mediaFile.FileName}' deleted successfully."));
         }
 
         // ==========================================
@@ -425,7 +668,8 @@ namespace Ozikol_BCC.Api.Controllers
                 _ => "application/octet-stream"
             };
 
-            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            // Require revalidation so overwritten or re-uploaded template assets never stay stale in browser/CDN caches.
+            Response.Headers["Cache-Control"] = "public, max-age=0, must-revalidate";
             return PhysicalFile(filePath, contentType, enableRangeProcessing: true);
         }
 
@@ -469,7 +713,47 @@ namespace Ozikol_BCC.Api.Controllers
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (page == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
-            page.SectionCount = await _context.PageSections.CountAsync(s => s.WebPageId == page.Id);
+
+            // Calculate linked page counts for primary sections
+            var sectionIds = page.PageSections?.Select(s => s.Id).ToList() ?? new List<Guid>();
+            var linkCounts = await _context.WebPageSectionLinks
+                .Where(l => sectionIds.Contains(l.PageSectionId))
+                .GroupBy(l => l.PageSectionId)
+                .Select(g => new { SectionId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.SectionId, x => x.Count);
+
+            foreach (var sec in page.PageSections ?? Enumerable.Empty<PageSection>())
+            {
+                sec.LinkedPageCount = linkCounts.TryGetValue(sec.Id, out var count) ? count : 0;
+            }
+
+            // Also load secondary linked sections placed on this page
+            var secondaryLinks = await _context.WebPageSectionLinks
+                .Where(l => l.WebPageId == page.Id)
+                .Include(l => l.PageSection!)
+                    .ThenInclude(s => s.WebPage)
+                .Include(l => l.PageSection!)
+                    .ThenInclude(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                .OrderBy(l => l.PageSortOrder)
+                .ToListAsync();
+
+            if (secondaryLinks.Count > 0)
+            {
+                var combined = (page.PageSections ?? new List<PageSection>()).ToList();
+                foreach (var link in secondaryLinks)
+                {
+                    if (link.PageSection != null && !combined.Any(s => s.Id == link.PageSectionId))
+                    {
+                        var clone = link.PageSection;
+                        clone.PageSortOrder = link.PageSortOrder;
+                        clone.IsLinkedSection = true;
+                        combined.Add(clone);
+                    }
+                }
+                page.PageSections = combined.OrderBy(s => s.PageSortOrder).ToList();
+            }
+
+            page.SectionCount = page.PageSections?.Count ?? 0;
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
@@ -606,17 +890,33 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = await _context.WebPages.FindAsync(id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
-            // Ensure unique slug or root homepage path
+            // Ensure unique slug or root homepage path; auto-regenerate slug if Title changed on edit
             if (updated.IsHomePage)
             {
                 existing.DirectUrl = "/";
             }
             else
             {
-                var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) && updated.DirectUrl != "/" ? updated.DirectUrl : updated.Title;
-                if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                var titleChanged = !string.Equals(existing.Title?.Trim(), updated.Title?.Trim(), StringComparison.Ordinal);
+                var incomingUrl = updated.DirectUrl?.Trim();
+                var isExternalUrl = !string.IsNullOrWhiteSpace(incomingUrl) &&
+                    (incomingUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+                var slugWasNotManuallyChanged = string.IsNullOrWhiteSpace(incomingUrl) ||
+                    incomingUrl == "/" ||
+                    string.Equals(incomingUrl, existing.DirectUrl?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                if (titleChanged && !isExternalUrl && slugWasNotManuallyChanged && !string.IsNullOrWhiteSpace(updated.Title))
                 {
-                    existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                    existing.DirectUrl = await GenerateUniqueSlugAsync(updated.Title, id, false);
+                }
+                else
+                {
+                    var targetSlug = !string.IsNullOrWhiteSpace(incomingUrl) && incomingUrl != "/" ? incomingUrl : updated.Title;
+                    if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                    {
+                        existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                    }
                 }
             }
 
@@ -1028,6 +1328,16 @@ Reply ONLY with the valid JSON object.";
 
 
 
+        private static string FormatPageUrl(string? directUrl, Guid id)
+        {
+            if (string.IsNullOrWhiteSpace(directUrl)) return $"/page/{id}";
+            var trimmed = directUrl.Trim();
+            if (trimmed == "/" || trimmed == "home") return "/";
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return trimmed;
+            return "/" + trimmed.TrimStart('/');
+        }
+
         private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null, bool isHomePage = false)
         {
             if (isHomePage || rawInput?.Trim() == "/")
@@ -1036,11 +1346,24 @@ Reply ONLY with the valid JSON object.";
             }
 
             if (string.IsNullOrWhiteSpace(rawInput)) rawInput = "page";
-            // Strip leading / trailing slashes and normalize
-            var cleaned = rawInput.Trim().Trim('/');
-            var baseSlug = Regex.Replace(cleaned.ToLowerInvariant(), @"[^a-z0-9\-_]", "-");
-            baseSlug = Regex.Replace(baseSlug, @"-+", "-").Trim('-');
-            if (string.IsNullOrEmpty(baseSlug)) baseSlug = "page";
+
+            var trimmed = rawInput.Trim();
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+
+            // Preserve path slashes for multi-segment slugs (e.g. auth/login, store/cart)
+            var segments = trimmed.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var cleanedSegments = segments.Select(seg =>
+            {
+                var baseSeg = Regex.Replace(seg.ToLowerInvariant(), @"[^a-z0-9\-_]", "-");
+                baseSeg = Regex.Replace(baseSeg, @"-+", "-").Trim('-');
+                return string.IsNullOrEmpty(baseSeg) ? "page" : baseSeg;
+            });
+
+            var baseSlug = "/" + string.Join("/", cleanedSegments);
+            if (baseSlug == "/") baseSlug = "/page";
 
             var slug = baseSlug;
             while (await _context.WebPages.AnyAsync(p => p.DirectUrl == slug && (!excludePageId.HasValue || p.Id != excludePageId.Value)))
@@ -1191,26 +1514,127 @@ Reply ONLY with the valid JSON object.";
             }
         }
 
-        [HttpDelete("categories/{id:guid}")]
-        public async Task<IActionResult> DeleteCategory(Guid id, [FromQuery] string? confirmationTitle = null)
+        /// <summary>
+        /// Payload for unbinding a single page or all bound pages from a category.
+        /// </summary>
+        public class UnbindCategoryPagesRequest
         {
-            var existing = await _context.PageCategories.Include(c => c.WebPages).FirstOrDefaultAsync(c => c.Id == id);
+            /// <summary>
+            /// Optional page identifier to unbind only one page; when null, all bound pages are unbound.
+            /// </summary>
+            public Guid? WebPageId { get; set; }
+        }
+
+        /// <summary>
+        /// Unbinds one or all web pages attached to a navigation category so the category can be safely deleted.
+        /// </summary>
+        /// <param name="id">Unique identifier of the category.</param>
+        /// <param name="request">Optional request specifying a single WebPageId to unbind.</param>
+        /// <returns>Standardized API response with the number of unbound pages and remaining bound count.</returns>
+        [HttpPost("categories/{id:guid}/unbind-pages")]
+        public async Task<IActionResult> UnbindCategoryPages(Guid id, [FromBody] UnbindCategoryPagesRequest? request = null)
+        {
+            var category = await _context.PageCategories.FindAsync(id);
+            if (category == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
+            }
+
+            var query = _context.WebPages.Where(p => p.PageCategoryId == id);
+            if (request?.WebPageId.HasValue == true && request.WebPageId.Value != Guid.Empty)
+            {
+                query = query.Where(p => p.Id == request.WebPageId.Value);
+            }
+
+            var pagesToUnbind = await query.ToListAsync();
+            foreach (var page in pagesToUnbind)
+            {
+                page.PageCategoryId = null;
+                page.PageCategory = null;
+                page.UpdatedAtUtc = DateTime.UtcNow;
+            }
+
+            if (pagesToUnbind.Count > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            var remainingCount = await _context.WebPages.CountAsync(p => p.PageCategoryId == id);
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                unboundCount = pagesToUnbind.Count,
+                remainingCount
+            }, $"{pagesToUnbind.Count} page(s) unbound from '{category.Title}'."));
+        }
+
+        /// <summary>
+        /// Deletes a navigation page category after verifying title confirmation.
+        /// Rejects deletion if any web pages remain bound to the category so admins unbind them explicitly first.
+        /// </summary>
+        /// <param name="id">Unique identifier of the category to delete.</param>
+        /// <param name="confirmationTitle">Exact category title typed by the admin to confirm deletion.</param>
+        /// <returns>Standardized API response confirming category deletion or reporting bound pages.</returns>
+        [HttpDelete("categories/{id:guid}")]
+        public async Task<IActionResult> DeleteCategory(
+            Guid id,
+            [FromQuery] string? confirmationTitle = null)
+        {
+            var existing = await _context.PageCategories
+                .Include(c => c.WebPages)
+                .Include(c => c.Children)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
+
+            if (!string.IsNullOrWhiteSpace(confirmationTitle) &&
+                !string.Equals(confirmationTitle.Trim(), existing.Title?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Confirmation title mismatch. Type the exact category title to delete."));
+            }
 
             if (existing.WebPages != null && existing.WebPages.Any())
             {
-                var pageTitles = existing.WebPages.Select(p => p.Title).ToList();
-                return BadRequest(ApiResponse<object>.FailureResponse($"Cannot delete category '{existing.Title}' because {existing.WebPages.Count} web page(s) belong to it: [{string.Join(", ", pageTitles)}]. Move or delete those pages first."));
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "The category has some pages binded. Unbind all bound pages first."));
             }
 
-            if (!string.IsNullOrWhiteSpace(confirmationTitle) && !string.Equals(confirmationTitle.Trim(), existing.Title?.Trim(), StringComparison.OrdinalIgnoreCase))
+            // Unbind any child sub-categories and flush FK nulls before deleting parent category
+            var hadChildren = existing.Children != null && existing.Children.Any();
+            if (hadChildren)
             {
-                return BadRequest(ApiResponse<object>.FailureResponse($"Confirmation title mismatch. Please type '{existing.Title}' exactly."));
+                UnbindCategoryDependencies(existing);
+                await _context.SaveChangesAsync();
             }
 
             _context.PageCategories.Remove(existing);
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Category '{existing.Title}' deleted successfully."));
+        }
+
+        /// <summary>
+        /// Unbinds attached web pages and child sub-categories from a category prior to deletion.
+        /// </summary>
+        /// <param name="category">Loaded category entity with WebPages and Children collections.</param>
+        private static void UnbindCategoryDependencies(PageCategory category)
+        {
+            if (category.WebPages != null && category.WebPages.Any())
+            {
+                foreach (var page in category.WebPages.ToList())
+                {
+                    page.PageCategoryId = null;
+                    page.PageCategory = null;
+                }
+                category.WebPages.Clear();
+            }
+
+            if (category.Children != null && category.Children.Any())
+            {
+                foreach (var child in category.Children.ToList())
+                {
+                    child.ParentId = null;
+                    child.Parent = null;
+                }
+                category.Children.Clear();
+            }
         }
 
         /// <summary>
@@ -1246,6 +1670,7 @@ Reply ONLY with the valid JSON object.";
             var categories = await _context.PageCategories
                 .Where(c => targetIds.Contains(c.Id))
                 .Include(c => c.WebPages)
+                .Include(c => c.Children)
                 .ToListAsync();
 
             if (!categories.Any())
@@ -1255,23 +1680,15 @@ Reply ONLY with the valid JSON object.";
 
             foreach (var cat in categories)
             {
-                if (cat.WebPages != null && cat.WebPages.Any())
+                if (cat.WebPages != null && cat.WebPages.Any() && !request.UnlinkPages)
                 {
-                    if (request.UnlinkPages)
-                    {
-                        foreach (var page in cat.WebPages)
-                        {
-                            page.PageCategoryId = null;
-                        }
-                    }
-                    else
-                    {
-                        return BadRequest(ApiResponse<object>.FailureResponse(
-                            $"Cannot delete category '{cat.Title}' because it contains {cat.WebPages.Count} linked web page(s). Enable page unlinking to proceed."));
-                    }
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Cannot delete category '{cat.Title}' because it contains {cat.WebPages.Count} linked web page(s). Enable page unlinking to proceed."));
                 }
+                UnbindCategoryDependencies(cat);
             }
 
+            await _context.SaveChangesAsync();
             _context.PageCategories.RemoveRange(categories);
             await _context.SaveChangesAsync();
 
@@ -1323,7 +1740,51 @@ Reply ONLY with the valid JSON object.";
                 query = query.OrderBy(s => s.WebPageId).ThenBy(s => s.PageSortOrder);
             }
 
+            if (webPageId.HasValue)
+            {
+                var directSections = await query.Where(s => s.WebPageId == webPageId.Value).ToListAsync();
+
+                var linkedSectionLinks = await _context.WebPageSectionLinks
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.WebPage)
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                    .Include(l => l.PageSection!)
+                        .ThenInclude(s => s.PageForm)
+                            .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
+                    .Where(l => l.WebPageId == webPageId.Value && l.PageSection != null)
+                    .ToListAsync();
+
+                var combined = new List<PageSection>(directSections);
+                foreach (var link in linkedSectionLinks)
+                {
+                    if (link.PageSection != null && !combined.Any(s => s.Id == link.PageSectionId))
+                    {
+                        var clone = link.PageSection;
+                        clone.PageSortOrder = link.PageSortOrder;
+                        clone.IsLinkedSection = true;
+                        combined.Add(clone);
+                    }
+                }
+
+                combined = combined.OrderBy(s => s.PageSortOrder).ToList();
+                return Ok(ApiResponse<object>.SuccessResponse(combined, "Page sections retrieved."));
+            }
+
             var sections = await query.ToListAsync();
+            var linkCounts = await _context.WebPageSectionLinks
+                .GroupBy(l => l.PageSectionId)
+                .Select(g => new { SectionId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.SectionId, x => x.Count);
+
+            foreach (var sec in sections)
+            {
+                if (linkCounts.TryGetValue(sec.Id, out var count))
+                {
+                    sec.LinkedPageCount = count;
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(sections, "Page sections retrieved."));
         }
 
@@ -1339,6 +1800,7 @@ Reply ONLY with the valid JSON object.";
 
             if (section == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
             section.ListCount = await _context.PageSectionLists.CountAsync(l => l.PageSectionId == id);
+            section.LinkedPageCount = await _context.WebPageSectionLinks.CountAsync(l => l.PageSectionId == id);
             return Ok(ApiResponse<object>.SuccessResponse(section, "Section details retrieved."));
         }
 
@@ -1390,9 +1852,67 @@ Reply ONLY with the valid JSON object.";
             existing.WebPageId = updated.WebPageId == Guid.Empty ? null : updated.WebPageId;
             existing.PageFormId = updated.PageFormId == Guid.Empty ? null : updated.PageFormId;
             existing.FormKey = updated.FormKey;
+            existing.FormPlacementMode = updated.FormPlacementMode;
+            existing.FormWidthPreset = updated.FormWidthPreset;
+            existing.FormCustomWidthPercent = updated.FormCustomWidthPercent;
+            existing.HideSectionImageWhenFormActive = updated.HideSectionImageWhenFormActive;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Section updated successfully."));
+        }
+
+        /// <summary>
+        /// Batch reorders multiple layout sections atomically with updated PageSortOrder values.
+        /// When <paramref name="webPageId"/> is provided, secondary linked sections on that page
+        /// update their per-page <see cref="WebPageSectionLink.PageSortOrder"/> without mutating the primary page's order.
+        /// </summary>
+        /// <param name="items">Ordered list of section IDs and newly assigned sort orders.</param>
+        /// <param name="webPageId">Optional target WebPage ID context (used for linked sections).</param>
+        /// <returns>Success response confirming the reordered count.</returns>
+        [HttpPut("sections/reorder")]
+        public async Task<IActionResult> ReorderSections([FromBody] List<ReorderItemRequest> items, [FromQuery] Guid? webPageId = null)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).Distinct().ToList();
+            var itemMap = items.GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.Last().SortOrder);
+
+            var sections = await _context.PageSections
+                .Where(s => ids.Contains(s.Id))
+                .ToListAsync();
+
+            Dictionary<Guid, WebPageSectionLink> linkMap = new();
+            if (webPageId.HasValue)
+            {
+                var links = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == webPageId.Value && ids.Contains(l.PageSectionId))
+                    .ToListAsync();
+                linkMap = links.GroupBy(l => l.PageSectionId).ToDictionary(g => g.Key, g => g.First());
+            }
+
+            var updatedCount = 0;
+            foreach (var section in sections)
+            {
+                if (!itemMap.TryGetValue(section.Id, out var newSortOrder)) continue;
+
+                // If viewing a secondary linked page, persist ordering on the WebPageSectionLink record
+                if (webPageId.HasValue && section.WebPageId != webPageId.Value && linkMap.TryGetValue(section.Id, out var link))
+                {
+                    link.PageSortOrder = newSortOrder;
+                    updatedCount++;
+                }
+                else
+                {
+                    section.PageSortOrder = newSortOrder;
+                    updatedCount++;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{updatedCount} layout section(s) reordered successfully."));
         }
 
         /// <summary>
@@ -1621,6 +2141,8 @@ Reply ONLY with the valid JSON object.";
                                 IconText = sub.IconText,
                                 ButtonText = sub.ButtonText,
                                 ButtonLink = sub.ButtonLink,
+                                SecondButtonText = sub.SecondButtonText,
+                                SecondButtonLink = sub.SecondButtonLink,
                                 SortOrder = sub.SortOrder,
                                 Disable = sub.Disable,
 
@@ -1641,7 +2163,7 @@ Reply ONLY with the valid JSON object.";
                     targetPageTitle = targetPage.Title
                 }, $"{clonedSections.Count} section(s) copied successfully to '{targetPage.Title}'."));
             }
-            else
+            else if (string.Equals(request.Action, "move", StringComparison.OrdinalIgnoreCase))
             {
                 // MOVE
                 var sections = await _context.PageSections
@@ -1672,6 +2194,244 @@ Reply ONLY with the valid JSON object.";
                     targetPageTitle = targetPage.Title
                 }, $"{sections.Count} section(s) moved successfully to '{targetPage.Title}'."));
             }
+            else if (string.Equals(request.Action, "link", StringComparison.OrdinalIgnoreCase))
+            {
+                var originalSections = await _context.PageSections
+                    .Where(s => targetIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (!originalSections.Any())
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("None of the specified sections were found to link."));
+                }
+
+                var maxDirectSort = await _context.PageSections
+                    .Where(s => s.WebPageId == request.TargetPageId)
+                    .MaxAsync(s => (int?)s.PageSortOrder) ?? 0;
+
+                var maxLinkedSort = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == request.TargetPageId)
+                    .MaxAsync(l => (int?)l.PageSortOrder) ?? 0;
+
+                var currentMaxSort = Math.Max(maxDirectSort, maxLinkedSort);
+
+                var existingLinks = await _context.WebPageSectionLinks
+                    .Where(l => l.WebPageId == request.TargetPageId && targetIds.Contains(l.PageSectionId))
+                    .ToListAsync();
+
+                var createdLinks = new List<WebPageSectionLink>();
+
+                foreach (var sec in originalSections)
+                {
+                    if (sec.WebPageId == request.TargetPageId) continue;
+
+                    var existingLink = existingLinks.FirstOrDefault(l => l.PageSectionId == sec.Id);
+                    if (existingLink == null)
+                    {
+                        currentMaxSort++;
+                        var newLink = new WebPageSectionLink
+                        {
+                            Id = Guid.NewGuid(),
+                            WebPageId = request.TargetPageId,
+                            PageSectionId = sec.Id,
+                            PageSortOrder = currentMaxSort,
+                            IsVisible = true,
+                            CreatedAtUtc = DateTime.UtcNow
+                        };
+                        _context.WebPageSectionLinks.Add(newLink);
+                        createdLinks.Add(newLink);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    linkedCount = createdLinks.Count,
+                    targetPageId = request.TargetPageId,
+                    targetPageTitle = targetPage.Title
+                }, $"{createdLinks.Count} layout section(s) linked to '{targetPage.Title}' successfully."));
+            }
+            else
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"Unknown transfer action '{request.Action}'. Supported: copy, move, link."));
+            }
+        }
+
+        // ==========================================
+        // SECTION MULTI-PAGE LINKING ENDPOINTS
+        // ==========================================
+
+        public class SaveSectionPageLinksRequest
+        {
+            /// <summary>
+            /// Collection of secondary page placement links for this section.
+            /// </summary>
+            public List<SectionPageLinkInput> Links { get; set; } = new();
+        }
+
+        public class SectionPageLinkInput
+        {
+            /// <summary>
+            /// Unique identifier of the target WebPage.
+            /// </summary>
+            public Guid WebPageId { get; set; }
+
+            /// <summary>
+            /// Sort order of the section on this specific page.
+            /// </summary>
+            public int PageSortOrder { get; set; } = 0;
+
+            /// <summary>
+            /// Visibility toggle for this page placement.
+            /// </summary>
+            public bool IsVisible { get; set; } = true;
+        }
+
+        /// <summary>
+        /// Retrieves the primary parent page and all secondary linked page placements for a specific section.
+        /// </summary>
+        /// <param name="id">Unique identifier of the section.</param>
+        /// <returns>Primary page details, current active links with sort orders, and list of available other pages.</returns>
+        [HttpGet("sections/{id:guid}/page-links")]
+        public async Task<IActionResult> GetSectionPageLinks(Guid id)
+        {
+            var section = await _context.PageSections
+                .Include(s => s.WebPage)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (section == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
+            }
+
+            var links = await _context.WebPageSectionLinks
+                .Include(l => l.WebPage)
+                .Where(l => l.PageSectionId == id)
+                .OrderBy(l => l.PageSortOrder)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.WebPageId,
+                    PageTitle = l.WebPage != null ? l.WebPage.Title : "Unknown Page",
+                    DirectUrl = l.WebPage != null ? l.WebPage.DirectUrl : string.Empty,
+                    l.PageSortOrder,
+                    l.IsVisible,
+                    l.CreatedAtUtc
+                })
+                .ToListAsync();
+
+            var allPages = await _context.WebPages
+                .OrderBy(p => p.SortOrder)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Title,
+                    p.DirectUrl,
+                    p.Publish
+                })
+                .ToListAsync();
+
+            var primaryPageId = section.WebPageId;
+            var linkedPageIds = links.Select(l => l.WebPageId).ToHashSet();
+            var availablePages = allPages
+                .Where(p => p.Id != primaryPageId && !linkedPageIds.Contains(p.Id))
+                .ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                sectionId = section.Id,
+                sectionTitle = section.Title ?? "Untitled Section",
+                primaryPageId = section.WebPageId,
+                primaryPageTitle = section.WebPage != null ? section.WebPage.Title : "None (Global)",
+                primaryPageSortOrder = section.PageSortOrder,
+                linkedPages = links,
+                availablePages = availablePages
+            }, "Section page links retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Saves or synchronizes secondary multi-page placements for a layout section.
+        /// </summary>
+        /// <param name="id">Unique identifier of the section.</param>
+        /// <param name="request">Collection of desired page links with sort orders and visibility.</param>
+        /// <returns>Updated collection of page links.</returns>
+        [HttpPut("sections/{id:guid}/page-links")]
+        public async Task<IActionResult> SaveSectionPageLinks(Guid id, [FromBody] SaveSectionPageLinksRequest request)
+        {
+            var section = await _context.PageSections.FindAsync(id);
+            if (section == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
+            }
+
+            var existingLinks = await _context.WebPageSectionLinks
+                .Where(l => l.PageSectionId == id)
+                .ToListAsync();
+
+            var submittedLinks = request?.Links ?? new List<SectionPageLinkInput>();
+
+            // Do not allow linking to its own primary parent page
+            submittedLinks = submittedLinks.Where(l => l.WebPageId != section.WebPageId).ToList();
+
+            var submittedPageIds = submittedLinks.Select(l => l.WebPageId).ToHashSet();
+
+            // 1. Remove links not present in submitted list
+            var linksToRemove = existingLinks.Where(l => !submittedPageIds.Contains(l.WebPageId)).ToList();
+            if (linksToRemove.Count > 0)
+            {
+                _context.WebPageSectionLinks.RemoveRange(linksToRemove);
+            }
+
+            // 2. Update existing or insert new links
+            foreach (var input in submittedLinks)
+            {
+                var existing = existingLinks.FirstOrDefault(l => l.WebPageId == input.WebPageId);
+                if (existing != null)
+                {
+                    existing.PageSortOrder = input.PageSortOrder;
+                    existing.IsVisible = input.IsVisible;
+                }
+                else
+                {
+                    _context.WebPageSectionLinks.Add(new WebPageSectionLink
+                    {
+                        Id = Guid.NewGuid(),
+                        WebPageId = input.WebPageId,
+                        PageSectionId = id,
+                        PageSortOrder = input.PageSortOrder,
+                        IsVisible = input.IsVisible,
+                        CreatedAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return await GetSectionPageLinks(id);
+        }
+
+        /// <summary>
+        /// Unlinks a shared section from a secondary web page without deleting the section entity itself.
+        /// </summary>
+        /// <param name="id">Unique identifier of the section.</param>
+        /// <param name="webPageId">Unique identifier of the web page from which to unlink the section.</param>
+        /// <returns>Standard API response confirming unlinking.</returns>
+        [HttpDelete("sections/{id:guid}/page-links/{webPageId:guid}")]
+        public async Task<IActionResult> UnlinkSectionFromPage(Guid id, Guid webPageId)
+        {
+            var link = await _context.WebPageSectionLinks
+                .FirstOrDefaultAsync(l => l.PageSectionId == id && l.WebPageId == webPageId);
+
+            if (link == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Link between this section and page was not found."));
+            }
+
+            _context.WebPageSectionLinks.Remove(link);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Section unlinked successfully from this page."));
         }
 
 
@@ -1737,6 +2497,8 @@ Reply ONLY with the valid JSON object.";
             existing.VideoKey = updated.VideoKey;
             existing.ButtonText = updated.ButtonText;
             existing.ButtonLink = updated.ButtonLink;
+            existing.SecondButtonText = updated.SecondButtonText;
+            existing.SecondButtonLink = updated.SecondButtonLink;
             existing.DirectUrl = updated.DirectUrl;
             existing.CustomClass = updated.CustomClass;
             existing.SortOrder = updated.SortOrder;
@@ -1748,6 +2510,38 @@ Reply ONLY with the valid JSON object.";
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Section sub-item updated successfully."));
+        }
+
+        /// <summary>
+        /// Batch reorders multiple repeating section sub-items (<see cref="PageSectionList"/>) atomically with updated SortOrder values.
+        /// </summary>
+        /// <param name="items">Ordered list of sub-item IDs and newly assigned sort orders.</param>
+        /// <returns>Success response confirming the reordered count.</returns>
+        [HttpPut("section-lists/reorder")]
+        public async Task<IActionResult> ReorderSectionLists([FromBody] List<ReorderItemRequest> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).Distinct().ToList();
+            var itemMap = items.GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.Last().SortOrder);
+
+            var subItems = await _context.PageSectionLists
+                .Where(l => ids.Contains(l.Id))
+                .ToListAsync();
+
+            foreach (var subItem in subItems)
+            {
+                if (itemMap.TryGetValue(subItem.Id, out var newSortOrder))
+                {
+                    subItem.SortOrder = newSortOrder;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{subItems.Count} repeating sub-item(s) reordered successfully."));
         }
 
         [HttpDelete("section-lists/{id:guid}")]
@@ -1878,6 +2672,8 @@ Reply ONLY with the valid JSON object.";
                         IconText = orig.IconText,
                         ButtonText = orig.ButtonText,
                         ButtonLink = orig.ButtonLink,
+                        SecondButtonText = orig.SecondButtonText,
+                        SecondButtonLink = orig.SecondButtonLink,
                         SortOrder = currentMaxSort,
                         Disable = orig.Disable,
                         CustomClass = orig.CustomClass
@@ -1893,7 +2689,7 @@ Reply ONLY with the valid JSON object.";
                     targetSectionTitle = targetSection.Title
                 }, $"{clonedItems.Count} sub-item(s) copied successfully to section '{targetSection.Title}'."));
             }
-            else
+            else if (string.Equals(request.Action, "move", StringComparison.OrdinalIgnoreCase))
             {
                 // MOVE
                 var subItems = await _context.PageSectionLists
@@ -1923,6 +2719,10 @@ Reply ONLY with the valid JSON object.";
                     count = subItems.Count,
                     targetSectionTitle = targetSection.Title
                 }, $"{subItems.Count} sub-item(s) moved successfully to section '{targetSection.Title}'."));
+            }
+            else
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"Unknown transfer action '{request.Action}'. Supported: copy, move."));
             }
         }
 
@@ -3878,57 +4678,13 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
      * NEVER invent non-existent tokens like Brand.Email, Brand.Address, Brand.Phone, Brand.LogoUrl, or PageCategories.
      * NEVER truncate or stop after closing header tags. Return 100% of the entire HTML document including all sibling drawers and overlays.
 
-2. Hero Banners & Image Sliders (Category: hero / slider):
-   - Static Hero: Headline {{{{ Title }}}}, Eyebrow {{{{ MiniTitle }}}}, Lead {{{{ Description }}}}, Image src=""{{{{ ImageUrl }}}}"" or style=""background-image: url('{{{{ ImageUrl }}}}');"".
-   - Primary Action Button: {{{{ #if ButtonText }}}}<a href=""{{{{ ButtonLink }}}}"">{{{{ ButtonText }}}}</a>{{{{ /if }}}}.
-   - Secondary Action Button: {{{{ #if SecondaryButtonText }}}}<a href=""{{{{ SecondaryButtonLink }}}}"">{{{{ SecondaryButtonText }}}}</a>{{{{ /if }}}}.
-   - Slider / Carousel Mode (Swiper, Slick, Owl, Splide, Bootstrap Carousel):
+2. Hero Banners, Image Sliders & Body Sections (Category: hero / slider / body / bodysections / PageSection / PageSectionList):
+{CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec()}
+   - Additional Slider / Carousel Rules (Swiper, Slick, Owl, Splide, Bootstrap Carousel):
      * Discard infinite-loop cloned slides (e.g. 'swiper-slide-duplicate', 'slick-cloned').
      * Strip library runtime state classes from slides ('swiper-slide-active', 'swiper-slide-visible', 'slick-active') and containers ('swiper-initialized', 'slick-initialized').
-     * Strip runtime inline styling ('width: ...px', 'transform: translate3d(...)', 'opacity: 0|1') while keeping background-image: url('{{{{ ImageUrl }}}}').
+     * Strip runtime inline styling ('width: ...px', 'transform: translate3d(...)', 'opacity: 0|1') while keeping background-image: url('{{{{ PageSectionList.ImageUrl }}}}').
      * Strip auto-generated IDs and aria attributes (id=""swiper-wrapper-..."", data-swiper-slide-index=""..."").
-     * Wrap repeating slides in:
-       {{{{#each PageSectionLists}}}}
-         <div class=""[clean slide classes]"">
-           {{{{#if ImageUrl}}}}<div class=""item-bg"" style=""background-image: url('{{{{ ImageUrl }}}}');""></div>{{{{/if}}}}
-           {{{{#if MiniTitle}}}}<span class=""[original classes]"">{{{{ MiniTitle }}}}</span>{{{{/if}}}}
-           <h1 class=""[original classes]"">{{{{ Title }}}}</h1>
-           <p class=""[original classes]"">{{{{ Description }}}}</p>
-           {{{{#if ButtonText}}}}<a href=""{{{{ ButtonLink }}}}"">{{{{ ButtonText }}}}</a>{{{{/if}}}}
-           {{{{#if SecondaryButtonText}}}}<a href=""{{{{ SecondaryButtonLink }}}}"">{{{{ SecondaryButtonText }}}}</a>{{{{/if}}}}
-         </div>
-       {{{{/each}}}}
-
-3. Body Sections & Content Blocks (Category: body / bodysections / PageSection):
-   - Page Headline: {{{{ Title }}}}
-   - Subtitle / Eyebrow Badge: {{{{ MiniTitle }}}}
-   - Summary Paragraph: {{{{ Description }}}}
-   - Pure Rich HTML Body (Terms & Conditions, Privacy Policy, Story Narrative): {{{{ FullDescription }}}}
-   - Highlight / Quote: {{{{ Qoute }}}}
-   - Primary Image: src=""{{{{ ImageUrl }}}}""
-   - Secondary Image / Collage: src=""{{{{ SecondImageUrl }}}}""
-   - Video URL: src=""{{{{ VideoUrl }}}}""
-   - YouTube Embed: src=""{{{{ YoutubeUrlLink }}}}""
-   - Root Icon Class: <i class=""{{{{ IconText }}}}""></i>
-   - Primary CTA Button: {{{{ ButtonText }}}} with href=""{{{{ ButtonLink }}}}""
-   - Secondary CTA Button: {{{{ SecondaryButtonText }}}} with href=""{{{{ SecondaryButtonLink }}}}""
-   - Route / Anchor: href=""{{{{ DirectUrl }}}}""
-   - Dynamic Form Embeds (Contact Us, Newsletter, Quote Request): {{{{ Form ""Contact_Us"" }}}} or {{{{ FormEmbed }}}}
-   - Custom Container Class: {{{{ CustomClass }}}}
-
-3. Repeatable Child Cards / Slides (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials, Hero Sliders):
-   Wrap repeating cards/items in:
-   {{{{#each PageSectionLists}}}}
-     <div class=""card"">
-       <i class=""{{{{ PageSectionList.IconText }}}}""></i>
-       <span class=""badge"">{{{{ PageSectionList.MiniTitle }}}}</span>
-       <img src=""{{{{ PageSectionList.ImageUrl }}}}"" alt=""{{{{ PageSectionList.Title }}}}"" />
-       <h3>{{{{ PageSectionList.Title }}}}</h3>
-       <p>{{{{ PageSectionList.Description }}}}</p>
-       <small>{{{{ PageSectionList.MoreDescription }}}}</small>
-       <a href=""{{{{ PageSectionList.ButtonLink }}}}"" class=""btn"">{{{{ PageSectionList.ButtonText }}}}</a>
-     </div>
-   {{{{/each}}}}
 
 4. Footers (Category: footer):
    - Brand Identity:
@@ -4085,8 +4841,7 @@ User Message: ""{prompt}""
 
 CANONICAL OZIKOL TOKENS KNOWLEDGE:
 - Navigation Menus: {{{{ HomeUrl }}}}, {{{{ BrandLogo }}}}, {{{{ BrandName }}}}, {{{{ BrandIdentity }}}}, {{{{#each NavItems=""first""}}}}, {{{{#each NavItems=""middle""}}}}, {{{{#each NavItems=""last""}}}}, {{{{#each MainMenuItems=""top""}}}}, {{{{#each MenuCtaButtons}}}}, {{{{ LoginUrl }}}}, {{{{ LoginText }}}}.
-- Root Section Tokens: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ FullDescription }}}}, {{{{ Qoute }}}}, {{{{ ImageUrl }}}}, {{{{ SecondImageUrl }}}}, {{{{ VideoUrl }}}}, {{{{ YoutubeUrlLink }}}}, {{{{ IconText }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}, {{{{ SecondButtonText }}}}, {{{{ SecondButtonLink }}}}, {{{{ DirectUrl }}}}.
-- Repeating Cards Loop: {{{{#SectionLists}}}} ... {{{{#/SectionLists}}}} (using child tokens: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ MoreDescription }}}}, {{{{ IconText }}}}, {{{{ ImageUrl }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}).
+{CanonicalCmsPlaceholders.BuildSectionAndListPromptSpec()}
 
 Instructions:
 - If the user is greeting you (e.g. 'hi', 'hello', 'hey'), respond warmly, concisely and naturally as Ozi AI, mentioning how you can assist them on this active screen ({request.PageTitle ?? "Studio Console"}). Do NOT repeat robotic scripts.
@@ -5488,6 +6243,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                             ImageUrl = item.ImageUrl,
                             ButtonText = item.ButtonText,
                             ButtonLink = item.ButtonLink,
+                            SecondButtonText = item.SecondButtonText,
+                            SecondButtonLink = item.SecondButtonLink,
                             SortOrder = itemOrder++
                         };
                         _context.PageSectionLists.Add(child);
@@ -5560,7 +6317,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                                    ? p.DirectUrl
+                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
                                 showInFooter = p.ShowInFooter,
                                 showInMenu = true
                             })
@@ -5584,7 +6343,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                                    ? p.DirectUrl
+                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
                                 showInFooter = true,
                                 showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
                             })
@@ -5602,7 +6363,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
                     })
                     .ToListAsync();
 
@@ -5616,7 +6379,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
                     })
                     .ToListAsync();
 
@@ -5714,7 +6479,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
                     })
                     .ToListAsync();
 
@@ -5728,7 +6495,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         id = p.Id,
                         title = p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
+                            ? p.DirectUrl
+                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
                         tags = p.Tags
                     })
                     .ToListAsync();
@@ -6200,6 +6969,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                             ImageUrl = item.ImageUrl,
                                             ButtonText = item.ButtonText,
                                             ButtonLink = item.ButtonLink,
+                                            SecondButtonText = item.SecondButtonText,
+                                            SecondButtonLink = item.SecondButtonLink,
                                             SortOrder = itemSort++
                                         };
                                         _context.PageSectionLists.Add(child);
@@ -7123,6 +7894,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? ImageUrl { get; set; }
         public string? ButtonText { get; set; }
         public string? ButtonLink { get; set; }
+        public string? SecondButtonText { get; set; }
+        public string? SecondButtonLink { get; set; }
     }
 
     public class CreateCodeInjectionRequest
@@ -7321,6 +8094,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? ImageUrl { get; set; }
         public string? ButtonText { get; set; }
         public string? ButtonLink { get; set; }
+        public string? SecondButtonText { get; set; }
+        public string? SecondButtonLink { get; set; }
     }
 
     public class ImportablePageDto

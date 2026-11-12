@@ -3,13 +3,16 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml, Title, Meta } from '@angular/platform-browser';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommitteesService } from '../../core/services/committees.service';
+import { WebsiteSyncService } from '../../core/services/website-sync.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
 import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
+import { SectionFormCompositorService } from '../admin/content/templates/services/section-form-compositor.service';
 import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
 
 /**
@@ -761,7 +764,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   brandName: string = '';
   brandLogoUrl: string = '';
   brandInfo: any = {};
-  recaptchaSiteKey: string = '6LdBsb8tAAAAAPuXWg5SLjjbPVZd0_-v1w4WbK6H';
+  recaptchaSiteKey: string = '';
+  private recaptchaConfigFetched: boolean = false;
   activeTemplates: any[] = [];
   categories: any[] = [];
   publishedPages: any[] = [];
@@ -815,6 +819,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   committeeDirectoryMode: boolean = false;
 
   private routeSub: Subscription | null = null;
+  private readonly destroy$ = new Subject<void>();
+  private syncConnected: boolean = false;
+  private cacheBusterVersion: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -823,8 +830,10 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     private committeesService: CommitteesService,
     public cartService: CartService,
     private toastService: ToastService,
+    private websiteSync: WebsiteSyncService,
     private templateHydration: TemplateHydrationService,
     private contentHydration: ContentHydrationService,
+    private formCompositor: SectionFormCompositorService,
     private htmlAssembler: HtmlAssemblerService,
     private sanitizer: DomSanitizer,
     private titleService: Title,
@@ -882,6 +891,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     // Unlock native document scrolling for public website mode (unless embedded inside an admin preview)
     if (!this.previewMode) {
       document.body.classList.add('public-website-mode');
+      this.startWebsiteSyncListener();
     }
 
     if (this.embeddedShellMode) {
@@ -956,6 +966,39 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  /**
+   * Connects to real-time SignalR WebSocket & BroadcastChannel invalidation feeds
+   * so any saved CMS, form, template, or branding edit clears stale cache and refreshes automatically.
+   */
+  private startWebsiteSyncListener(): void {
+    if (this.syncConnected) {
+      return;
+    }
+    this.syncConnected = true;
+    this.websiteSync.connect();
+
+    this.websiteSync.contentUpdated$
+      .pipe(debounceTime(250), takeUntil(this.destroy$))
+      .subscribe(event => {
+        this.cacheBusterVersion = event?.version || Date.now();
+        this.recaptchaConfigFetched = false;
+        this.recaptchaSiteKey = '';
+        this.loadSiteData(true);
+      });
+  }
+
+  /**
+   * Appends a cache-busting query token after a WebSocket invalidation event so browsers
+   * and proxies fetch fresh API payloads immediately.
+   */
+  private withCacheBuster(path: string): string {
+    if (!this.cacheBusterVersion) {
+      return path;
+    }
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}_v=${this.cacheBusterVersion}`;
+  }
+
   ngOnDestroy(): void {
     // Re-lock or restore default dashboard mode
     if (!this.previewMode) {
@@ -969,6 +1012,14 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       document.getElementById('tenant-dynamic-theme-styles')?.remove();
     }
 
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    if (this.syncConnected) {
+      this.websiteSync.disconnect();
+      this.syncConnected = false;
+    }
+
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
@@ -980,8 +1031,10 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
    * 2. Fetches page-specific sections or blog articles depending on activeSlug.
    * 3. Executes TemplateHydrationService to assemble and sanitize the final HTML document.
    */
-  loadSiteData(): void {
-    this.loading = true;
+  loadSiteData(silentRefresh: boolean = false): void {
+    if (!silentRefresh) {
+      this.loading = true;
+    }
     this.error = false;
 
     // Concurrently fetch foundational website metadata
@@ -1029,7 +1082,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       } else {
         // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
         await this.fetchPageBySlug(this.currentSlug);
-        this.composeContentPage();
+        if (this.currentPage?.isHomePage || this.currentPage?.IsHomePage) {
+          // Safeguard: root landing pages stored under legacy slugs still render full homepage composition
+          await Promise.all([
+            this.fetchHomeSections(),
+            this.fetchRecentBlogs()
+          ]);
+          this.composeHomepage();
+        } else {
+          this.composeContentPage();
+        }
       }
 
       this.loading = false;
@@ -1051,7 +1113,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private fetchBrandSettings(): Promise<void> {
     return new Promise((resolve) => {
       // 1. Fetch public UI settings (always accessible anonymously)
-      this.apiService.get('WebsiteContentApi/ui-settings').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/ui-settings')).subscribe({
         next: (uiRes: any) => {
           if (uiRes?.data) {
             const data = uiRes.data;
@@ -1209,7 +1271,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         resolve();
         return;
       }
-      this.apiService.get('WebsiteContentApi/ticker').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/ticker')).subscribe({
         next: (res: any) => {
           if (res?.success && Array.isArray(res.data)) {
             this.tickerItems = res.data;
@@ -1478,7 +1540,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchActiveTemplates(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/theme/active-templates')).subscribe({
         next: (res: any) => {
           this.activeTemplates = res?.data || [];
           resolve();
@@ -1500,7 +1562,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchNavigationCategories(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/categories').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/categories')).subscribe({
         next: (res: any) => {
           this.categories = res?.data || [];
           resolve();
@@ -1520,7 +1582,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchPublishedPages(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/pages').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/pages')).subscribe({
         next: (res: any) => {
           this.publishedPages = res?.data || [];
           resolve();
@@ -1540,7 +1602,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchCodeInjections(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/code-injections?preserveTokens=true').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/code-injections?preserveTokens=true')).subscribe({
         next: (res: any) => {
           const data = res?.data || {};
           this.codeInjections = {
@@ -1557,7 +1619,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchHomeSections(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/sections?pageSet=home').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/sections?pageSet=home')).subscribe({
         next: (res: any) => {
           this.sections = res?.data || [];
           resolve();
@@ -1569,7 +1631,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchRecentBlogs(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/blogs?limit=3')).subscribe({
         next: (res: any) => {
           this.blogs = res?.data || [];
           resolve();
@@ -1581,7 +1643,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
   private fetchAllBlogs(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/blogs').subscribe({
+      this.apiService.get(this.withCacheBuster('WebsiteContentApi/blogs')).subscribe({
         next: (res: any) => {
           this.blogs = res?.data || [];
           resolve();
@@ -1594,7 +1656,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private fetchSingleBlog(id: string): Promise<void> {
     return new Promise((resolve) => {
       const cleanId = (id || '').trim();
-      this.apiService.get(`WebsiteContentApi/blogs/${cleanId}`).subscribe({
+      this.apiService.get(this.withCacheBuster(`WebsiteContentApi/blogs/${cleanId}`)).subscribe({
         next: (res: any) => {
           this.currentArticle = res?.data || null;
           if (this.blogs.length === 0) {
@@ -1605,7 +1667,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         },
         error: () => {
           // Graceful fallback: match by ID or slug within the full published blog list
-          this.apiService.get('WebsiteContentApi/blogs').subscribe({
+          this.apiService.get(this.withCacheBuster('WebsiteContentApi/blogs')).subscribe({
             next: (allRes: any) => {
               const allBlogs: any[] = allRes?.data || [];
               this.blogs = allBlogs;
@@ -1627,7 +1689,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private fetchPageBySlug(slug: string): Promise<void> {
     return new Promise((resolve) => {
       const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
-      this.apiService.get(`WebsiteContentApi/pages/slug/${clean}`).subscribe({
+      this.apiService.get(this.withCacheBuster(`WebsiteContentApi/pages/slug/${clean}`)).subscribe({
         next: (res: any) => {
           const loadedPage = res?.data || null;
           // Strictly reject unpublished pages
@@ -1721,19 +1783,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
-        const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
-        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
-        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
-        const sectionData = this.buildSectionContext(sec);
-        bodySectionsList.push({
-          id: sec.id || secTemplate.id,
-          name: sec.title || secTemplate.name,
-          category: 'body',
-          html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
-          css: activeCss,
-          js: activeJs,
-          sortOrder: sec.homePageSortOrder ?? sec.pageSortOrder ?? 0
-        });
+        bodySectionsList.push(
+          this.composeBodySectionUnit(sec, secTemplate, sec.homePageSortOrder ?? sec.pageSortOrder ?? 0)
+        );
       }
     }
 
@@ -1804,18 +1856,20 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
                     (sec.templateKey || '').toLowerCase() === 'breadcrumb_banner'
     );
 
-    // Row 5 custom background image uploaded for this page takes highest priority
+    // Row 6 custom background image uploaded for this page takes highest priority;
+    // when omitted, prefer the active breadcrumb template's configured sample background image.
     const pageCustomBg = this.currentPage.imageUrl || 
                          this.currentPage.ImageUrl || 
                          this.currentPage.headerImageUrl || 
                          this.currentPage.backgroundImageUrl;
 
-    const effectiveBg = pageCustomBg || 
-                        heroSection?.imageUrl || 
-                        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
-
     const pageTitle = this.currentPage.title || heroSection?.title || '';
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    const effectiveBg = this.resolveBreadcrumbBackgroundImage(
+      breadcrumbTemplate,
+      pageCustomBg,
+      [heroSection?.imageUrl, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80']
+    );
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const breadcrumbData = {
@@ -1858,19 +1912,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       for (const sec of pageSections) {
         const secTemplate = this.findTemplateForSection(sec);
         if (secTemplate) {
-          const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
-          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
-          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
-          const sectionData = this.buildSectionContext(sec);
-          bodySectionsList.push({
-            id: sec.id || secTemplate.id,
-            name: sec.title || secTemplate.name,
-            category: 'body',
-            html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
-            css: activeCss,
-            js: activeJs,
-            sortOrder: sec.pageSortOrder ?? 0
-          });
+          bodySectionsList.push(this.composeBodySectionUnit(sec, secTemplate, sec.pageSortOrder ?? 0));
         }
       }
     } else {
@@ -1948,7 +1990,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const blogPage = this.publishedPages.find(p => (p.slug || '').toLowerCase() === 'blog' || (p.directUrl || '').toLowerCase() === 'blog');
-      const blogBg = blogPage?.imageUrl || blogPage?.ImageUrl || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80';
+      const blogPageBg = blogPage?.imageUrl || blogPage?.ImageUrl || blogPage?.headerImageUrl || blogPage?.backgroundImageUrl;
+      const blogBg = this.resolveBreadcrumbBackgroundImage(
+        breadcrumbTemplate,
+        blogPageBg,
+        ['https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80']
+      );
       const blogTitle = blogPage?.title || 'Blog';
       const breadcrumbData = {
         title: blogTitle,
@@ -2102,14 +2149,18 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     } : undefined;
 
     // 2. Breadcrumb Header Section Unit
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     const defaultCover = 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80';
-    const resolvedCover = this.currentArticle.imageUrl || this.currentArticle.coverImageUrl || defaultCover;
+    const resolvedCover = this.resolveBreadcrumbBackgroundImage(
+      breadcrumbTemplate,
+      this.currentArticle.imageUrl || this.currentArticle.coverImageUrl,
+      [defaultCover]
+    );
     const categoryTitle = this.currentArticle.blogCategory?.categoryName || this.currentArticle.blogCategory?.title || this.currentArticle.categoryName || 'Platform Insights';
     const pubDate = this.currentArticle.date
       ? new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       : 'Recently Published';
 
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const breadcrumbData = {
@@ -2376,7 +2427,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      const coverImg = c.coverBannerUrl || c.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80';
+      const coverImg = this.resolveBreadcrumbBackgroundImage(
+        breadcrumbTemplate,
+        c.coverBannerUrl || c.imageUrl,
+        ['https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80']
+      );
       const breadcrumbData = {
         title: committeeName,
         Title: committeeName,
@@ -3070,6 +3125,51 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
 
   /**
+   * Builds a hydrated Breadcrumb section for system/fallback pages (such as 404 Not Found and embedded auth/registration shells).
+   */
+  private buildFallbackBreadcrumbSection(pageTitle: string, pageDesc: string): SectionTemplateUnit | undefined {
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    if (!breadcrumbTemplate) return undefined;
+
+    const existingPageWithBg = (this.publishedPages || []).find(p => p.imageUrl || p.ImageUrl || p.headerImageUrl || p.backgroundImageUrl);
+    const fallbackPageBg =
+      existingPageWithBg?.imageUrl ||
+      existingPageWithBg?.ImageUrl ||
+      existingPageWithBg?.headerImageUrl ||
+      existingPageWithBg?.backgroundImageUrl;
+    const effectiveBg = this.resolveBreadcrumbBackgroundImage(
+      breadcrumbTemplate,
+      null,
+      [fallbackPageBg, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80']
+    );
+    const breadcrumbData = {
+      title: pageTitle,
+      Title: pageTitle,
+      pageTitle: pageTitle,
+      miniTitle: this.brandName || '',
+      description: pageDesc,
+      backgroundImageUrl: effectiveBg,
+      imageUrl: effectiveBg,
+      breadcrumbTrail: [
+        { label: 'Home', url: '/', isActive: false },
+        { label: pageTitle, url: '#', isActive: true }
+      ],
+      breadcrumbs: [
+        { title: 'Home', url: '/', isActive: false },
+        { title: pageTitle, url: '#', isActive: true }
+      ]
+    };
+    return {
+      id: breadcrumbTemplate.id,
+      name: breadcrumbTemplate.name,
+      category: 'breadcrumb',
+      html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+      css: breadcrumbTemplate.cssStyles,
+      js: breadcrumbTemplate.jsScript
+    };
+  }
+
+  /**
    * Fallback 404 handler for missing pages.
    */
   private composeNotFoundPage(): void {
@@ -3083,6 +3183,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       css: menuTemplate.cssStyles,
       js: menuTemplate.jsScript
     } : undefined;
+
+    const breadcrumbSection = this.buildFallbackBreadcrumbSection(
+      'Page Not Found',
+      'The page you are looking for does not exist, has been relocated, or is currently unavailable.'
+    );
 
     const bodySectionsList: SectionTemplateUnit[] = [{
       name: '404 Not Found',
@@ -3501,6 +3606,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       pageSlug: '404',
       codeInjections: this.allCodeInjectionsList,
       headerSection,
+      breadcrumbSection,
       bodySections: bodySectionsList,
       footerSection,
       ribbonSection: this.buildRibbonSection(),
@@ -3774,7 +3880,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         if (!childPages || childPages.length === 0) return;
 
         const pagesList = childPages.map((p: any) => {
-          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          const isHome = p.isHomePage === true || p.IsHomePage === true;
+          const pUrl = isHome ? '/' : `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
           usedUrls.add(pUrl.toLowerCase());
           return {
             title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
@@ -3813,8 +3920,13 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
                    (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
                    !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
       .forEach(p => {
-        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '');
-        const pUrl = (rawUrl === '' || rawUrl.toLowerCase() === 'home') ? '/' : `/${rawUrl}`;
+        const isHome = p.isHomePage === true || p.IsHomePage === true;
+        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').trim();
+        const pUrl = isHome
+          ? '/'
+          : (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+            ? rawUrl
+            : ((rawUrl === '' || rawUrl.toLowerCase() === 'home' || rawUrl === '/') ? '/' : `/${rawUrl.replace(/^\/+/, '')}`));
         const pLower = pUrl.toLowerCase();
 
         // Avoid duplicating if URL is already in a dropdown or already added
@@ -3844,11 +3956,24 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const topBarPages = (this.publishedPages || [])
       .filter(p => (p.publish !== false && p.Publish !== false) && (normalizeZone(p.menuPosition) === 'top' || p.showInMenuTopBar === true || p.showInTopBar === true))
       .sort((a, b) => (a.topBarSortOrder || a.TopBarSortOrder || a.sortOrder || 0) - (b.topBarSortOrder || b.TopBarSortOrder || b.sortOrder || 0))
-      .map(p => ({
-        title: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        customClass: p.customClass || ''
-      }));
+      .map(p => {
+        const raw = (p.directUrl || p.slug || '').trim();
+        const finalUrl = raw.startsWith('http://') || raw.startsWith('https://')
+          ? raw
+          : (raw === '/' || raw === 'home' ? '/' : `/${raw.replace(/^\/+/, '')}`);
+        const isAuthDirect = (raw.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
+        const displayTitle = isAuthDirect && authed
+          ? (isAdmin ? 'Admin Console' : 'Member Portal')
+          : (p.title || p.Title || '');
+        const targetUrl = isAuthDirect && authed
+          ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace')
+          : finalUrl;
+        return {
+          title: displayTitle,
+          url: targetUrl,
+          customClass: p.customClass || ''
+        };
+      });
 
     // 4. CTA Buttons: Driven purely from publishedPages where isMenuCTA is true
     const menuCtaButtons = (this.publishedPages || [])
@@ -3926,8 +4051,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
+      activateLoginInMenu: isLoginActive && isLoginInMenu,
       ActivateLoginInMenu: isLoginActive && isLoginInMenu,
+      loginText: loginText,
       LoginText: loginText,
+      loginUrl: loginUrl,
       LoginUrl: loginUrl
     };
 
@@ -4135,8 +4263,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
+      activateLoginInFooter: isLoginActive && isLoginInFooter,
       ActivateLoginInFooter: isLoginActive && isLoginInFooter,
+      loginText: loginText,
       LoginText: loginText,
+      loginUrl: loginUrl,
       LoginUrl: loginUrl
     };
 
@@ -4158,6 +4289,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       Description: item.description || '',
       moreDescription: item.moreDescription || '',
       MoreDescription: item.moreDescription || '',
+      fullDescription: item.moreDescription || '',
+      FullDescription: item.moreDescription || '',
       icon: item.iconText || item.icon || '',
       imageUrl: item.imageUrl || dbHeroSection?.imageUrl || '',
       ImageUrl: item.imageUrl || dbHeroSection?.imageUrl || '',
@@ -4165,8 +4298,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       ButtonText: item.buttonText || '',
       buttonLink: item.buttonLink || '#',
       ButtonLink: item.buttonLink || '#',
+      secondButtonText: item.secondButtonText || item.secondaryButtonText || '',
+      SecondButtonText: item.secondButtonText || item.secondaryButtonText || '',
       secondaryButtonText: item.secondaryButtonText || item.secondButtonText || '',
       SecondaryButtonText: item.secondaryButtonText || item.secondButtonText || '',
+      secondButtonLink: item.secondButtonLink || item.secondaryButtonLink || '#',
+      SecondButtonLink: item.secondButtonLink || item.secondaryButtonLink || '#',
       secondaryButtonLink: item.secondaryButtonLink || item.secondButtonLink || '#',
       SecondaryButtonLink: item.secondaryButtonLink || item.secondButtonLink || '#',
       sortOrder: item.sortOrder || idx + 1
@@ -4183,6 +4320,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       MiniTitle: dbHeroSection?.miniTitle || firstSlide.miniTitle || '',
       description: dbHeroSection?.description || firstSlide.description || '',
       Description: dbHeroSection?.description || firstSlide.description || '',
+      fullDescription: dbHeroSection?.fullDescription || '',
+      FullDescription: dbHeroSection?.fullDescription || '',
       imageUrl: dbHeroSection?.imageUrl || firstSlide.imageUrl || '',
       ImageUrl: dbHeroSection?.imageUrl || firstSlide.imageUrl || '',
       buttonText: dbHeroSection?.buttonText || firstSlide.buttonText || '',
@@ -4201,9 +4340,39 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   /**
+   * Hydrates a body section template and applies external form layout composition only
+   * when an attached form exists and the template itself lacks an inline form token.
+   */
+  private composeBodySectionUnit(sec: any, secTemplate: any, sortOrder: number): SectionTemplateUnit {
+    const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+    const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
+    const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
+    const hasInlineForm = /\{\{\s*(?:Form|form)\b/i.test(activeHtml || '');
+    const shouldHideMedia = Boolean(
+      sec.hideSectionImageWhenFormActive &&
+      !hasInlineForm &&
+      (sec.pageFormId || sec.formKey || sec.pageForm) &&
+      sec.formWidthPreset !== '100'
+    );
+    const sectionData = this.buildSectionContext(sec, shouldHideMedia);
+    const hydratedBody = this.contentHydration.hydrate(activeHtml, sectionData, 'body');
+    const composed = this.formCompositor.compose(hydratedBody, sec);
+
+    return {
+      id: sec.id || secTemplate.id,
+      name: sec.title || secTemplate.name,
+      category: 'body',
+      html: composed.html,
+      css: [activeCss, composed.css].filter(Boolean).join('\n\n'),
+      js: activeJs,
+      sortOrder
+    };
+  }
+
+  /**
    * Formats a PageSection database entity into the token context expected by TemplateHydrationService.
    */
-  private buildSectionContext(sec: any): any {
+  private buildSectionContext(sec: any, suppressImage: boolean = false): any {
     const listItems = (sec.pageSectionLists || sec.items || []).map((item: any, idx: number) => ({
       id: item.id,
       title: item.title || '',
@@ -4214,6 +4383,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       Description: item.description || '',
       moreDescription: item.moreDescription || '',
       MoreDescription: item.moreDescription || '',
+      fullDescription: item.moreDescription || '',
+      FullDescription: item.moreDescription || '',
       iconText: item.iconText || item.icon || '',
       IconText: item.iconText || item.icon || '',
       icon: item.iconText || item.icon || '',
@@ -4225,6 +4396,14 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       ButtonText: item.buttonText || '',
       buttonLink: item.buttonLink || '',
       ButtonLink: item.buttonLink || '',
+      secondButtonText: item.secondButtonText || item.secondaryButtonText || '',
+      SecondButtonText: item.secondButtonText || item.secondaryButtonText || '',
+      secondaryButtonText: item.secondButtonText || item.secondaryButtonText || '',
+      SecondaryButtonText: item.secondButtonText || item.secondaryButtonText || '',
+      secondButtonLink: item.secondButtonLink || item.secondaryButtonLink || '',
+      SecondButtonLink: item.secondButtonLink || item.secondaryButtonLink || '',
+      secondaryButtonLink: item.secondButtonLink || item.secondaryButtonLink || '',
+      SecondaryButtonLink: item.secondButtonLink || item.secondaryButtonLink || '',
       directUrl: item.directUrl || '',
       DirectUrl: item.directUrl || '',
       sortOrder: item.sortOrder || idx + 1
@@ -4241,12 +4420,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       Quote: sec.quote || sec.qoute || '',
       description: sec.description || '',
       Description: sec.description || '',
-      fullDescription: sec.fullDescription || sec.description || '',
-      FullDescription: sec.fullDescription || sec.description || '',
-      imageUrl: sec.imageUrl || '',
-      ImageUrl: sec.imageUrl || '',
-      secondImageUrl: sec.secondImageUrl || '',
-      SecondImageUrl: sec.secondImageUrl || '',
+      fullDescription: sec.fullDescription || '',
+      FullDescription: sec.fullDescription || '',
+      imageUrl: suppressImage ? '' : (sec.imageUrl || ''),
+      ImageUrl: suppressImage ? '' : (sec.imageUrl || ''),
+      secondImageUrl: suppressImage ? '' : (sec.secondImageUrl || ''),
+      SecondImageUrl: suppressImage ? '' : (sec.secondImageUrl || ''),
       videoUrl: sec.videoUrl || '',
       VideoUrl: sec.videoUrl || '',
       youtubeUrlLink: sec.youtubeUrlLink || sec.videoUrl || '',
@@ -4279,6 +4458,65 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       articles: this.blogs && this.blogs.length > 0 ? this.mapBlogArticles(this.blogs) : [],
       Articles: this.blogs && this.blogs.length > 0 ? this.mapBlogArticles(this.blogs) : []
     };
+  }
+
+  /**
+   * Resolves the breadcrumb banner background image using priority:
+   * 1) Explicit page/entity image uploaded in CMS
+   * 2) Default background/image from the active breadcrumb template's sample content JSON
+   * 3) Ordered fallback URLs (e.g. hero image or default backdrop)
+   * @param breadcrumbTemplate Active installed breadcrumb template record.
+   * @param pageImageUrl Explicit image configured on the target page/article/group.
+   * @param fallbacks Secondary fallback URLs checked only if the template sample defines no image.
+   * @returns Non-empty resolved image URL string (or empty string if all sources are empty).
+   */
+  private resolveBreadcrumbBackgroundImage(
+    breadcrumbTemplate: any,
+    pageImageUrl?: string | null,
+    fallbacks: Array<string | undefined | null> = []
+  ): string {
+    const cleanPageImg = (pageImageUrl || '').trim();
+    if (cleanPageImg) return cleanPageImg;
+
+    const templateSampleImg = this.getTemplateSampleBackgroundImage(breadcrumbTemplate);
+    if (templateSampleImg) return templateSampleImg;
+
+    for (const candidate of fallbacks) {
+      const clean = (candidate || '').trim();
+      if (clean) return clean;
+    }
+
+    return '';
+  }
+
+  /**
+   * Extracts the default background or image URL from an active template's sample JSON payload.
+   * @param template Installed template object (`defaultContentJson`, `mockJson`, or `sampleContent`).
+   * @returns Configured sample image URL, or empty string if absent/unparseable.
+   */
+  private getTemplateSampleBackgroundImage(template: any): string {
+    if (!template) return '';
+
+    let sample: any = template.sampleContent;
+    if (!sample) {
+      const rawJson = template.defaultContentJson || template.mockJson;
+      if (typeof rawJson === 'string' && rawJson.trim().startsWith('{')) {
+        try {
+          sample = JSON.parse(rawJson);
+        } catch {
+          sample = null;
+        }
+      }
+    }
+
+    if (!sample || typeof sample !== 'object') return '';
+    return (
+      sample.backgroundImageUrl ||
+      sample.BackgroundImageUrl ||
+      sample.imageUrl ||
+      sample.ImageUrl ||
+      ''
+    ).toString().trim();
   }
 
   private findActiveTemplate(category: string): any {
@@ -4605,41 +4843,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     } : undefined;
 
     // 2. Breadcrumb Header Section Unit (exact same active breadcrumb template & tenant page background image)
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    let breadcrumbSection: SectionTemplateUnit | undefined;
-    if (breadcrumbTemplate) {
-      const existingPageWithBg = (this.publishedPages || []).find(p => p.imageUrl || p.ImageUrl || p.headerImageUrl || p.backgroundImageUrl);
-      const effectiveBg = existingPageWithBg?.imageUrl ||
-                          existingPageWithBg?.ImageUrl ||
-                          existingPageWithBg?.headerImageUrl ||
-                          existingPageWithBg?.backgroundImageUrl ||
-                          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
-      const breadcrumbData = {
-        title: pageTitle,
-        Title: pageTitle,
-        pageTitle: pageTitle,
-        miniTitle: this.brandName || '',
-        description: pageDesc,
-        backgroundImageUrl: effectiveBg,
-        imageUrl: effectiveBg,
-        breadcrumbTrail: [
-          { label: 'Home', url: '/', isActive: false },
-          { label: pageTitle, url: '#', isActive: true }
-        ],
-        breadcrumbs: [
-          { title: 'Home', url: '/', isActive: false },
-          { title: pageTitle, url: '#', isActive: true }
-        ]
-      };
-      breadcrumbSection = {
-        id: breadcrumbTemplate.id,
-        name: breadcrumbTemplate.name,
-        category: 'breadcrumb',
-        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
-        css: breadcrumbTemplate.cssStyles,
-        js: breadcrumbTemplate.jsScript
-      };
-    }
+    const breadcrumbSection = this.buildFallbackBreadcrumbSection(pageTitle, pageDesc);
 
     // 3. Body Slot Marker (splits top and bottom around <ng-content> in finalizeRender)
     const bodySectionsList: SectionTemplateUnit[] = [{
@@ -4884,51 +5088,122 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
    * Dynamically loads Google reCAPTCHA script tag if not yet present in the document.
    */
   private loadRecaptchaScript(): void {
-    if (document.getElementById('google-recaptcha-script')) {
+    if (typeof document === 'undefined') return;
+    if ((window as any).grecaptcha || document.querySelector('script[src*="recaptcha/api.js"]')) {
       return;
     }
     const script = document.createElement('script');
     script.id = 'google-recaptcha-script';
-    script.src = 'https://www.google.com/recaptcha/api.js';
+    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
     script.async = true;
     script.defer = true;
+    script.onload = () => this.initRecaptchas(0);
     document.head.appendChild(script);
   }
 
   /**
-   * Discovers all .g-recaptcha containers on the rendered page and renders or assigns the site key.
+   * Discovers all .g-recaptcha containers on the rendered page and explicitly renders
+   * each widget with the configured SiteKey while persisting per-form widget IDs.
    */
-  private initRecaptchas(): void {
+  private initRecaptchas(attempt: number = 0): void {
+    if (typeof document === 'undefined') return;
+
+    const root = this.elementRef.nativeElement;
+    const recaptchaContainers = root.querySelectorAll('.g-recaptcha') as NodeListOf<HTMLElement>;
+    if (!recaptchaContainers || recaptchaContainers.length === 0) {
+      return;
+    }
+
+    // Fetch live site key from backend if ui-settings has not supplied it yet
+    if (!this.recaptchaSiteKey) {
+      if (!this.recaptchaConfigFetched) {
+        this.recaptchaConfigFetched = true;
+        this.apiService.get(this.withCacheBuster('WebsiteContentApi/recaptcha-config')).subscribe({
+          next: (res: any) => {
+            const siteKey = res?.data?.siteKey;
+            if (siteKey) {
+              this.recaptchaSiteKey = siteKey;
+              this.initRecaptchas(0);
+            }
+          },
+          error: () => {}
+        });
+      }
+      return;
+    }
+
     this.loadRecaptchaScript();
 
-    setTimeout(() => {
+    const renderContainers = () => {
       try {
-        const root = this.elementRef.nativeElement;
-        const recaptchaContainers = root.querySelectorAll('.g-recaptcha');
-        recaptchaContainers.forEach((container: HTMLElement) => {
-          if (!container.getAttribute('data-sitekey') || container.getAttribute('data-sitekey') === '') {
-            container.setAttribute('data-sitekey', this.recaptchaSiteKey);
+        const grecaptcha = (window as any).grecaptcha;
+        if (!grecaptcha || typeof grecaptcha.render !== 'function') {
+          if (attempt < 30) {
+            setTimeout(() => this.initRecaptchas(attempt + 1), 250);
           }
-          const grecaptcha = (window as any).grecaptcha;
-          if (grecaptcha && typeof grecaptcha.render === 'function' && container.children.length === 0) {
+          return;
+        }
+
+        recaptchaContainers.forEach((container: HTMLElement) => {
+          container.setAttribute('data-sitekey', this.recaptchaSiteKey);
+          if (container.children.length === 0) {
             try {
-              grecaptcha.render(container, {
+              const widgetId = grecaptcha.render(container, {
                 sitekey: this.recaptchaSiteKey
               });
-            } catch (renderErr) {
-              // Ignore if already initialized
+              container.setAttribute('data-widget-id', String(widgetId));
+            } catch {
+              // Ignore if already initialized on this container
             }
           }
         });
       } catch (e) {
         console.warn('reCAPTCHA init deferred:', e);
       }
-    }, 300);
+    };
+
+    const grecaptcha = (window as any).grecaptcha;
+    if (grecaptcha && typeof grecaptcha.ready === 'function') {
+      grecaptcha.ready(renderContainers);
+    } else if (grecaptcha && typeof grecaptcha.render === 'function') {
+      setTimeout(renderContainers, 50);
+    } else if (attempt < 30) {
+      setTimeout(() => this.initRecaptchas(attempt + 1), 250);
+    }
+  }
+
+  /**
+   * Resolves the rendered reCAPTCHA widget ID associated with a specific form, if any.
+   */
+  private resolveFormRecaptchaWidgetId(form: HTMLFormElement): number | null {
+    const container = form.querySelector('.g-recaptcha') as HTMLElement | null;
+    const rawId = container?.getAttribute('data-widget-id');
+    if (rawId === null || rawId === undefined || rawId === '') {
+      return null;
+    }
+    const parsed = Number(rawId);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  /**
+   * Resets only the reCAPTCHA widget bound to the submitted form.
+   */
+  private resetFormRecaptcha(widgetId: number | null): void {
+    try {
+      const grecaptcha = (window as any).grecaptcha;
+      if (grecaptcha && typeof grecaptcha.reset === 'function') {
+        if (widgetId !== null) {
+          grecaptcha.reset(widgetId);
+        } else {
+          grecaptcha.reset();
+        }
+      }
+    } catch {}
   }
 
   /**
    * Submits a public interactive form (e.g., Contact Us, Newsletter, Service Request)
-   * to WebsiteContentApi/forms/{formKey}/submit.
+   * to WebsiteContentApi/forms/{formKey}/submit with compulsory reCAPTCHA verification.
    */
   private submitDynamicForm(form: HTMLFormElement, submitBtn: HTMLElement): void {
     const rawKey = form.getAttribute('data-form-key') || form.id || 'Contact_Us';
@@ -4949,15 +5224,31 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       }
     });
 
-    // Retrieve Google reCAPTCHA response token from form inputs or global grecaptcha
-    let recaptchaToken = (dataPayload['g-recaptcha-response'] as string) || '';
+    // Retrieve Google reCAPTCHA response token specifically for this form's widget
+    const widgetId = this.resolveFormRecaptchaWidgetId(form);
+    const grecaptcha = (window as any).grecaptcha;
+    let recaptchaToken = '';
+
+    if (widgetId !== null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
+      try {
+        recaptchaToken = grecaptcha.getResponse(widgetId) || '';
+      } catch {}
+    }
+
     if (!recaptchaToken) {
-      const grecaptcha = (window as any).grecaptcha;
-      if (grecaptcha && typeof grecaptcha.getResponse === 'function') {
-        try {
-          recaptchaToken = grecaptcha.getResponse() || '';
-        } catch {}
-      }
+      const scopedResponse = form.querySelector<HTMLTextAreaElement>('textarea[name="g-recaptcha-response"]')?.value;
+      recaptchaToken = (scopedResponse || (dataPayload['g-recaptcha-response'] as string) || '').trim();
+    }
+
+    if (!recaptchaToken && grecaptcha && typeof grecaptcha.getResponse === 'function' && widgetId === null) {
+      try {
+        recaptchaToken = grecaptcha.getResponse() || '';
+      } catch {}
+    }
+
+    if (this.recaptchaSiteKey && !recaptchaToken) {
+      this.toastService.warning('Please complete the Google reCAPTCHA verification to continue.');
+      return;
     }
 
     const originalText = submitBtn.innerHTML;
@@ -4975,18 +5266,14 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const successMsg = res?.message || 'Thank you! Your submission has been received.';
         this.toastService.success(successMsg);
         form.reset();
-        try {
-          (window as any).grecaptcha?.reset();
-        } catch {}
+        this.resetFormRecaptcha(widgetId);
       },
       error: (err: any) => {
         submitBtn.removeAttribute('disabled');
         submitBtn.innerHTML = originalText;
         const errorMsg = err?.error?.message || 'Unable to submit your request. Please check all fields.';
         this.toastService.error(errorMsg);
-        try {
-          (window as any).grecaptcha?.reset();
-        } catch {}
+        this.resetFormRecaptcha(widgetId);
       }
     });
   }

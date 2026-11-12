@@ -190,6 +190,16 @@ export interface SuiteInfoDetail {
                   </button>
                 </div>
               </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/content/console/files" [class.active]="isParentActive('/content/console/files')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">folder_shared</span>{{ 'nav.file_manager' | translate:'File Manager' }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/files')" (click)="togglePin('File Manager', '/content/console/files', 'folder_shared')" [title]="isPinned('/content/console/files') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/content/console/files') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
               <li class="sub-nav-divider">
                 <span class="sub-divider-text">{{ 'adm.form_inquiries_leads' | translate:'Form Inquiries & Leads' }}</span>
               </li>

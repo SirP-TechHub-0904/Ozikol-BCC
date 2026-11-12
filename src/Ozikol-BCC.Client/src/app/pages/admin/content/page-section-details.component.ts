@@ -5,11 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import {
+  CmsOrderCellComponent,
+  CmsDragDropReorderHelper,
+  reorderListToTop,
+  reorderListStep,
+  reorderListByMove,
+  assignStepOrders
+} from './cms-order-cell.component';
 
 @Component({
   selector: 'app-page-section-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent, CmsOrderCellComponent],
   template: `
     <div class="cms-page-container">
       <!-- Standardized Reusable Page Header -->
@@ -49,23 +57,48 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <th>ITEM TITLE</th>
                 <th>MINI TITLE / ICON</th>
                 <th>DESCRIPTION</th>
-                <th>BUTTON</th>
+                <th>BUTTONS</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of section.pageSectionLists">
-                <td><span class="order-badge">#{{ item.sortOrder }}</span></td>
-                <td><strong>{{ item.title }}</strong></td>
+              <tr
+                *ngFor="let item of section.pageSectionLists; let i = index"
+                draggable="true"
+                (dragstart)="subItemReorder.onDragStart($event, i)"
+                (dragover)="subItemReorder.onDragOver($event, i)"
+                (dragleave)="subItemReorder.onDragLeave(i)"
+                (drop)="onSubItemDrop($event, i)"
+                (dragend)="subItemReorder.reset()"
+                [class.row-dragged]="subItemReorder.draggedIndex === i"
+                [class.row-drag-over]="subItemReorder.dragOverIndex === i"
+              >
+                <td>
+                  <app-cms-order-cell
+                    [order]="item.sortOrder || 0"
+                    [isFirst]="i === 0"
+                    [isLast]="i === section.pageSectionLists.length - 1"
+                    [disabled]="savingOrder"
+                    entityLabel="sub-item"
+                    (moveToTop)="moveSubItemToTop(i)"
+                    (moveUp)="moveSubItemUp(i)"
+                    (moveDown)="moveSubItemDown(i)"
+                    (orderCommit)="commitSubItemOrder(item, $event)"
+                  ></app-cms-order-cell>
+                </td>
+                <td><strong>{{ item.title || '(Untitled Sub-Item)' }}</strong></td>
                 <td>
                   <span class="icon-chip" *ngIf="item.iconText"><i [class]="item.iconText"></i> {{ item.iconText }}</span>
                   <span class="mini-pill" *ngIf="item.miniTitle">{{ item.miniTitle }}</span>
                 </td>
                 <td><span class="desc-preview">{{ item.description | slice:0:60 }}...</span></td>
                 <td>
-                  <span class="btn-preview-tag" *ngIf="item.buttonText">{{ item.buttonText }}</span>
-                  <span class="badge-none" *ngIf="!item.buttonText">-</span>
+                  <div class="btn-preview-stack" *ngIf="item.buttonText || item.secondButtonText">
+                    <span class="btn-preview-tag" *ngIf="item.buttonText">{{ item.buttonText }}</span>
+                    <span class="btn-preview-tag secondary" *ngIf="item.secondButtonText">{{ item.secondButtonText }}</span>
+                  </div>
+                  <span class="badge-none" *ngIf="!item.buttonText && !item.secondButtonText">-</span>
                 </td>
                 <td>
                   <span class="status-pill" [class.published]="!item.disable" [class.draft]="item.disable">
@@ -127,12 +160,16 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       font-weight: 700; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-transform: uppercase;
     }
     .cms-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; }
+    tr.row-dragged { opacity: 0.45; background: #f1f5f9 !important; }
+    tr.row-drag-over { border-top: 2.5px solid #0050e5 !important; background: #eff6ff !important; }
 
     .order-badge { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; color: #0f172a; }
     .mini-pill { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-left: 6px; }
     .icon-chip { font-size: 12px; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
     .desc-preview { color: #475569; font-size: 12px; }
+    .btn-preview-stack { display: flex; flex-wrap: wrap; gap: 4px; }
     .btn-preview-tag { background: #eff6ff; color: #0050e5; padding: 3px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; }
+    .btn-preview-tag.secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
     .badge-none { color: #94a3b8; font-size: 11px; }
     .status-pill { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
     .status-pill.published { background: #dcfce7; color: #15803d; }
@@ -181,8 +218,18 @@ export class PageSectionDetailsComponent implements OnInit {
   sectionId = '';
   section: any = null;
   loading = false;
+  savingOrder = false;
+  webPageIdParam: string | null = null;
+  subItemReorder = new CmsDragDropReorderHelper();
+
+  get targetWebPageId(): string | null {
+    return this.section?.webPageId || this.webPageIdParam || null;
+  }
 
   get headerEyebrow(): string {
+    if (this.section?.webPage?.title) {
+      return `CMS Studio / Page Sections / ${this.section.webPage.title}`;
+    }
     return this.section?.webPageId
       ? 'CMS Studio / Page Sections / Web Page'
       : 'CMS Studio / Page Sections';
@@ -195,19 +242,32 @@ export class PageSectionDetailsComponent implements OnInit {
   }
 
   get headerButtons(): PageHeaderButton[] {
-    return [
+    const btns: PageHeaderButton[] = [
       {
-        text: 'Back',
-        icon: 'arrow_back',
+        text: 'Back to Pages',
+        icon: 'auto_stories',
+        routerLink: '/content/console/pages'
+      },
+      {
+        text: this.section?.webPage?.title ? `Page: ${this.section.webPage.title}` : 'Page Sections',
+        icon: 'layers',
+        routerLink: this.targetWebPageId
+          ? `/content/console/pages/details/${this.targetWebPageId}`
+          : '/content/console/pages'
+      },
+      {
+        text: 'All Sections',
+        icon: 'view_list',
         routerLink: '/content/console/sections'
       },
       {
-        text: 'Edit Section Block',
+        text: 'Edit Section',
         icon: 'edit',
         isPrimary: true,
         routerLink: `/content/console/sections/edit/${this.sectionId}`
       }
     ];
+    return btns;
   }
 
   constructor(
@@ -217,6 +277,9 @@ export class PageSectionDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      this.webPageIdParam = params.get('webPageId');
+    });
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -240,16 +303,77 @@ export class PageSectionDetailsComponent implements OnInit {
   }
 
   async deleteSubItem(item: any): Promise<void> {
-    const confirmed = await this.toast.confirm('Delete Item', `Are you sure you want to delete "${item.title}"?`, 'Delete', 'Cancel', 'danger');
+    const label = item.title || '(Untitled Sub-Item)';
+    const confirmed = await this.toast.confirm('Delete Item', `Are you sure you want to delete "${label}"?`, 'Delete', 'Cancel', 'danger');
     if (!confirmed) return;
 
     this.api.delete<any>(`ContentApi/section-lists/${item.id}`).subscribe({
       next: () => {
-        this.toast.success(`Item "${item.title}" deleted.`);
+        this.toast.success(`Item "${label}" deleted.`);
         this.loadSection();
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to delete sub-item.');
+      }
+    });
+  }
+
+  // ==========================================
+  // DRAG-AND-DROP & ARROW REORDERING
+  // ==========================================
+
+  /** Moves a sub-item directly to the top of this section. */
+  moveSubItemToTop(index: number): void {
+    const next = reorderListToTop(this.section?.pageSectionLists || [], index);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Moves a sub-item one position up within this section. */
+  moveSubItemUp(index: number): void {
+    const next = reorderListStep(this.section?.pageSectionLists || [], index, -1);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Moves a sub-item one position down within this section. */
+  moveSubItemDown(index: number): void {
+    const next = reorderListStep(this.section?.pageSectionLists || [], index, 1);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Drops a dragged sub-item onto the target index and persists the new sort order. */
+  onSubItemDrop(event: DragEvent, targetIndex: number): void {
+    const move = this.subItemReorder.consumeDrop(event, targetIndex);
+    if (!move) return;
+    const next = reorderListByMove(this.section?.pageSectionLists || [], move.fromIndex, move.toIndex);
+    if (next) this.applyAndSaveSubItemReorder(next);
+  }
+
+  /** Updates an individual sub-item's inline SortOrder and persists immediately. */
+  commitSubItemOrder(item: any, newOrder: number): void {
+    item.sortOrder = newOrder;
+    const items = [...(this.section?.pageSectionLists || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    this.section.pageSectionLists = items;
+    const payload = items.map((l: any) => ({ id: l.id, sortOrder: l.sortOrder || 0 }));
+    this.persistSubItemReorder(payload, `Order for "${item.title || 'Item'}" updated to #${newOrder}.`);
+  }
+
+  private applyAndSaveSubItemReorder(orderedList: any[]): void {
+    const payload = assignStepOrders(orderedList, 'sortOrder', 10);
+    this.section.pageSectionLists = orderedList;
+    this.persistSubItemReorder(payload);
+  }
+
+  private persistSubItemReorder(payload: Array<{ id: string; sortOrder: number }>, successMsg?: string): void {
+    this.savingOrder = true;
+    this.api.put<any>('ContentApi/section-lists/reorder', payload).subscribe({
+      next: () => {
+        this.savingOrder = false;
+        if (successMsg) this.toast.success(successMsg);
+      },
+      error: (err) => {
+        this.savingOrder = false;
+        this.toast.error(err?.error?.message || 'Failed to save sub-item order.');
+        this.loadSection();
       }
     });
   }

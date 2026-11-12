@@ -4,7 +4,8 @@ import {
   replaceDepthAwareEach,
   replaceCommonScalars,
   scrubRemainingTokens,
-  injectDynamicForms
+  injectDynamicForms,
+  hydrateIconTokens
 } from './hydration-core.utils';
 
 /**
@@ -51,80 +52,128 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       rendered = rendered.replace(/\{\{\s*@activeClass\s*\}\}/gi, idx === 0 ? 'active' : '');
 
       // Parent PageSection conditionals inside slide loop
+      const hasHeroDescOutside = Boolean(ctx.description && ctx.description.trim().length > 0);
+      const hasHeroFullDescOutside = Boolean(ctx.fullDescription && ctx.fullDescription.trim().length > 0);
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)MiniTitle', Boolean(ctx.miniTitle || ctx.subTitle));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ImageUrl', Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)SecondaryButtonText', Boolean(ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)Description', Boolean(ctx.description && ctx.description.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)Description', hasHeroDescOutside);
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSection\\.|\\.\\.\\/)FullDescription', hasHeroFullDescOutside);
 
       // Parent PageSection tokens accessible inside slide loop via PageSection. or ../
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)Title\s*\}\}/gi, ctx.title || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
       rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)Description\s*\}?\}\}/gi, ctx.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:\.\.\/|PageSection\.)FullDescription\s*\}?\}\}/gi, ctx.fullDescription || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonText\s*\}\}/gi, ctx.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:\.\.\/|PageSection\.)(?:IconText|Icon)\s*\}\}/gi, ctx.iconText || '');
 
       // Slide Item Conditionals (matches {{#if PageSectionList.MiniTitle}} or {{#if MiniTitle}})
+      const isFirst = idx === 0;
+      const isLast = idx === activeItems.length - 1;
+      const indexNumber = idx + 1;
+      const itemId = item.id || `slide-${indexNumber}`;
+
+      rendered = resolveDepthAwareIf(rendered, '@first', isFirst);
+      rendered = resolveDepthAwareIf(rendered, '@last', isLast);
+      rendered = rendered.replace(/\{\{#unless\s+@first\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isFirst ? '' : '$1');
+      rendered = rendered.replace(/\{\{#unless\s+@last\}\}([\s\S]*?)\{\{\/unless\}\}/gi, isLast ? '' : '$1');
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MiniTitle', Boolean(item.miniTitle || item.subTitle));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ImageUrl', Boolean(item.imageUrl && item.imageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?ButtonText', Boolean(item.buttonText && item.buttonText.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?SecondaryButtonText', Boolean(item.secondaryButtonText && item.secondaryButtonText.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondaryButtonText|SecondButtonText)', Boolean((item.secondButtonText && item.secondButtonText.trim().length > 0) || (item.secondaryButtonText && item.secondaryButtonText.trim().length > 0)));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:SecondaryButtonLink|SecondButtonLink)', Boolean((item.secondButtonLink && item.secondButtonLink.trim().length > 0 && item.secondButtonLink !== '#') || (item.secondaryButtonLink && item.secondaryButtonLink.trim().length > 0 && item.secondaryButtonLink !== '#')));
       rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Icon', Boolean(item.icon && item.icon.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Description', Boolean(item.description && item.description.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?MoreDescription', Boolean(item.moreDescription && item.moreDescription.trim().length > 0));
+      const slideDesc = item.description || '';
+      const slideFullDesc = item.moreDescription || item.fullDescription || '';
+
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?Description', Boolean(slideDesc && slideDesc.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, '(?:PageSectionList\\.|this\\.)?(?:MoreDescription|FullDescription)', Boolean(slideFullDesc && slideFullDesc.trim().length > 0));
 
       // Slide Item Scalars (supports {{ PageSectionList.Title }}, {{ Title }}, {{ this.Title }})
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Title\s*\}\}/gi, item.title || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
-      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, item.description || '');
-      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?Icon\s*\}\}/gi, item.icon || 'star');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?IconText\s*\}\}/gi, item.iconText || '');
+      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?Description\s*\}?\}\}/gi, slideDesc);
+      rendered = rendered.replace(/\{\{\{?\s*(?:PageSectionList\.|this\.)?(?:MoreDescription|FullDescription)\s*\}?\}\}/gi, slideFullDesc);
+
+      // Polymorphic Slide Icon Replacement
+      const slideIconVal = item.iconText || item.icon || '';
+      if (slideIconVal) {
+        rendered = hydrateIconTokens(rendered, '(?:PageSectionList\\.|this\\.)?(?:IconText|Icon)', slideIconVal, item.title || 'Slide Icon');
+      }
+
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonText\s*\}\}/gi, item.buttonText || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ButtonLink\s*\}\}/gi, item.buttonLink || '#');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?SecondaryButtonText\s*\}\}/gi, item.secondaryButtonText || '');
-      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?SecondaryButtonLink\s*\}\}/gi, item.secondaryButtonLink || '#');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:SecondaryButtonText|SecondButtonText)\s*\}\}/gi, item.secondButtonText || item.secondaryButtonText || '');
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?(?:SecondaryButtonLink|SecondButtonLink)\s*\}\}/gi, item.secondButtonLink || item.secondaryButtonLink || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?ImageUrl\s*\}\}/gi, item.imageUrl || ctx.imageUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?VideoUrl\s*\}\}/gi, item.videoUrl || '');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?DirectUrl\s*\}\}/gi, item.directUrl || '#');
       rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.|this\.)?CustomClass\s*\}\}/gi, item.customClass || '');
       rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(idx));
-      rendered = rendered.replace(/\{\{\s*@number\s*\}\}/gi, String(idx + 1));
+      rendered = rendered.replace(/\{\{\s*(?:@number|Index)\s*\}\}/gi, String(indexNumber));
+      rendered = rendered.replace(/\{\{\s*(?:PageSectionList\.)?(?:Id|UniqueId)\s*\}\}/gi, String(itemId));
+      rendered = rendered.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(item.sortOrder ?? indexNumber));
 
       return rendered;
     }).join('\n');
   });
 
-  // 3. Media Conditionals (for Root Section)
-  output = resolveDepthAwareIf(output, 'ImageUrl', Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'SecondImageUrl', Boolean(ctx.secondImageUrl && ctx.secondImageUrl.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'VideoUrl', Boolean(ctx.videoUrl && ctx.videoUrl.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'YoutubeUrlLink', Boolean(ctx.youtubeUrlLink && ctx.youtubeUrlLink.trim().length > 0));
+  // 3. Section Headline & Media Conditionals (for Root Section)
+  const hasHeroTitle = Boolean(ctx.title && ctx.title.trim().length > 0);
+  const hasHeroMiniTitle = Boolean((ctx.miniTitle && ctx.miniTitle.trim().length > 0) || (ctx.subTitle && ctx.subTitle.trim().length > 0));
+  const hasHeroDesc = Boolean(ctx.description && ctx.description.trim().length > 0);
+  const hasHeroFullDesc = Boolean(ctx.fullDescription && ctx.fullDescription.trim().length > 0);
+  const isHeroButtonDisabled = Boolean(ctx.disableButton || (ctx as any).DisableButton);
+  const hasHeroButton = Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0 && !isHeroButtonDisabled);
+  const hasHeroButtonLink = Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0 && ctx.buttonLink !== '#' && !isHeroButtonDisabled);
+  const hasHeroSecondButton = Boolean(((ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0) || (ctx.secondButtonText && ctx.secondButtonText.trim().length > 0)) && !isHeroButtonDisabled);
+  const hasHeroSecondButtonLink = Boolean(((ctx.secondaryButtonLink && ctx.secondaryButtonLink.trim().length > 0 && ctx.secondaryButtonLink !== '#') || (ctx.secondButtonLink && ctx.secondButtonLink.trim().length > 0 && ctx.secondButtonLink !== '#')) && !isHeroButtonDisabled);
+  const hasHeroImage = Boolean(ctx.imageUrl && ctx.imageUrl.trim().length > 0);
+  const hasHeroSecondImage = Boolean(ctx.secondImageUrl && ctx.secondImageUrl.trim().length > 0);
+  const hasHeroVideo = Boolean(ctx.videoUrl && ctx.videoUrl.trim().length > 0);
+  const hasHeroYoutube = Boolean(ctx.youtubeUrlLink && ctx.youtubeUrlLink.trim().length > 0);
+  const hasHeroIcon = Boolean(ctx.iconText && ctx.iconText.trim().length > 0);
 
-  // 4. Action Button Conditionals (for Root Section)
-  output = resolveDepthAwareIf(output, 'ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
-  output = resolveDepthAwareIf(output, 'SecondaryButtonText', Boolean(ctx.secondaryButtonText && ctx.secondaryButtonText.trim().length > 0));
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?Title', hasHeroTitle);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:MiniTitle|Subtitle|SubTitle)', hasHeroMiniTitle);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?Description', hasHeroDesc);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?FullDescription', hasHeroFullDesc);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?ButtonText', hasHeroButton);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?ButtonLink', hasHeroButtonLink);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:SecondaryButtonText|SecondButtonText)', hasHeroSecondButton);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:SecondaryButtonLink|SecondButtonLink)', hasHeroSecondButtonLink);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?ImageUrl', hasHeroImage);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?SecondImageUrl', hasHeroSecondImage);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?VideoUrl', hasHeroVideo);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?YoutubeUrlLink', hasHeroYoutube);
+  output = resolveDepthAwareIf(output, '(?:PageSection\\.)?(?:IconText|Icon)', hasHeroIcon);
 
-  // 5. Headline Scalars (for Root Section - supports {{ Title }} or {{ PageSection.Title }})
+  // 4. Headline Scalars (for Root Section - supports {{ Title }} or {{ PageSection.Title }})
   output = output.replace(/\{\{\s*(?:PageSection\.)?Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?Description\s*\}\}/gi, ctx.description || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.description || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?Qoute\s*\}\}/gi, ctx.qoute || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?Description\s*\}?\}\}/gi, ctx.description || '');
+  output = output.replace(/\{\{\{?\s*(?:PageSection\.)?FullDescription\s*\}?\}\}/gi, ctx.fullDescription || '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:Quote|Qoute)\s*\}\}/gi, ctx.quote || ctx.qoute || '');
 
-  // 6. Button Scalars (for Root Section)
-  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, ctx.buttonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || '');
-  output = output.replace(/\{\{\s*(?:PageSection\.)?SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || '#');
+  // 5. Button Scalars (for Root Section)
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonText\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.buttonText || '') : '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?ButtonLink\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.buttonLink || '#') : '#');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondaryButtonText|SecondButtonText)\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.secondaryButtonText || ctx.secondButtonText || '') : '');
+  output = output.replace(/\{\{\s*(?:PageSection\.)?(?:SecondaryButtonLink|SecondButtonLink)\s*\}\}/gi, !isHeroButtonDisabled ? (ctx.secondaryButtonLink || ctx.secondButtonLink || '#') : '#');
   output = output.replace(/\{\{\s*(?:PageSection\.)?DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
 
-  // 7. Media Scalars (for Root Section)
+  // 6. Media & Icon Scalars (for Root Section)
   output = output.replace(/\{\{\s*(?:PageSection\.)?ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
   output = output.replace(/\{\{\s*(?:PageSection\.)?YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
+  if (ctx.iconText) {
+    output = hydrateIconTokens(output, '(?:PageSection\\.)?(?:IconText|Icon)', ctx.iconText, ctx.title || 'Hero Icon');
+  }
 
   // 8. Replace Brand Scalars & CustomClass
   output = replaceCommonScalars(output, ctx);
