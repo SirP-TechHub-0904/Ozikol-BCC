@@ -32,19 +32,19 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
             <span *ngIf="autoSaveStatus === 'error'" class="material-symbols-outlined text-danger">error</span>
 
             <span class="status-msg">
-              <ng-container *ngIf="autoSaveStatus === 'saving'">Saving changes automatically...</ng-container>
-              <ng-container *ngIf="autoSaveStatus === 'saved'">All changes saved in real time {{ lastSavedTime ? '(' + (lastSavedTime | date:'mediumTime') + ')' : '' }}</ng-container>
-              <ng-container *ngIf="autoSaveStatus === 'unsaved'">Unsaved changes (saving in a moment...)</ng-container>
-              <ng-container *ngIf="autoSaveStatus === 'error'">Auto-save failed. <button type="button" class="btn-retry-inline" (click)="performAutoSave()">Retry Now</button></ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'saving'">Saving...</ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'saved'">Saved {{ lastSavedTime ? '(' + (lastSavedTime | date:'mediumTime') + ')' : '' }}</ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'unsaved'">Unsaved changes</ng-container>
+              <ng-container *ngIf="autoSaveStatus === 'error'">Save failed. <button type="button" class="btn-retry-inline" (click)="performAutoSave()">Retry</button></ng-container>
             </span>
           </div>
         </div>
         <div class="autosave-right" *ngIf="hasDraftRestored">
           <span class="draft-badge">
             <span class="material-symbols-outlined">history</span>
-            Restored from local backup
+            Restored
           </span>
-          <button type="button" class="btn-discard-draft" (click)="discardDraft()" title="Discard restored draft">Discard Draft</button>
+          <button type="button" class="btn-discard-draft" (click)="discardDraft()" title="Discard restored draft">Discard</button>
         </div>
       </div>
 
@@ -717,19 +717,30 @@ export class FormBuilderComponent implements OnInit {
         if (res && res.isSuccess && res.data) {
           this.form = res.data;
           this.fields = res.data.fields || [];
-          this.lastSavedTime = res.data.updatedAtUtc ? new Date(res.data.updatedAtUtc) : null;
+          this.lastSavedTime = res.data.updatedAtUtc ? new Date(this.parseUtcMillis(res.data.updatedAtUtc)) : null;
           this.autoSaveStatus = 'saved';
           this.checkAndRestoreDraft(res.data.updatedAtUtc);
         } else {
-          this.toast.error(res?.message || 'Failed to load form details.');
+          this.toast.error(res?.message || 'Load failed.');
           this.checkAndRestoreDraft();
         }
       },
       error: () => {
-        this.toast.error('Network error loading form details. Attempting to restore from local backup...');
+        this.toast.error('Load failed.');
         this.checkAndRestoreDraft();
       }
     });
+  }
+
+  /// <summary>
+  /// Removes stored local drafts and clears restored draft indicator.
+  /// </summary>
+  private clearLocalDraft(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.draftStorageKey);
+      localStorage.removeItem('bcp_form_draft_new');
+    }
+    this.hasDraftRestored = false;
   }
 
   /// <summary>
@@ -775,7 +786,7 @@ export class FormBuilderComponent implements OnInit {
         this.form = { ...this.form, ...draft.form };
         this.fields = draft.fields;
         this.hasDraftRestored = true;
-        this.toast.info('Restored your form modifications from local backup.');
+        this.toast.info('Restored.');
       }
     } catch {
       // Ignore parse errors
@@ -786,14 +797,11 @@ export class FormBuilderComponent implements OnInit {
   /// Clears the local draft storage and reloads server version.
   /// </summary>
   discardDraft(): void {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(this.draftStorageKey);
-    }
-    this.hasDraftRestored = false;
+    this.clearLocalDraft();
     if (this.formId) {
       this.loadForm(this.formId);
     }
-    this.toast.success('Local draft discarded.');
+    this.toast.success('Discarded.');
   }
 
   /// <summary>
@@ -882,7 +890,8 @@ export class FormBuilderComponent implements OnInit {
             });
           }
 
-          this.saveLocalDraft();
+          // Clear local draft once server persistence succeeds so reopening does not falsely restore saved changes.
+          this.clearLocalDraft();
         } else {
           this.autoSaveStatus = 'error';
         }
@@ -1136,23 +1145,21 @@ export class FormBuilderComponent implements OnInit {
         this.saving = false;
         if (res && res.isSuccess) {
           this.autoSaveStatus = 'saved';
-          if (typeof localStorage !== 'undefined') {
-            localStorage.removeItem(this.draftStorageKey);
-          }
-          this.toast.success(this.isEditMode ? 'Form updated successfully.' : 'Form created successfully.');
+          this.clearLocalDraft();
+          this.toast.success(this.isEditMode ? 'Updated.' : 'Saved.');
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('forms_updated'));
           }
           this.router.navigate(['/content/console/forms']);
         } else {
           this.autoSaveStatus = 'error';
-          this.toast.error(res?.message || 'Failed to save form.');
+          this.toast.error(res?.message || 'Save failed.');
         }
       },
-      error: (err: any) => {
+      error: () => {
         this.saving = false;
         this.autoSaveStatus = 'error';
-        this.toast.error('An error occurred while saving the form. Your local draft has been safely preserved.');
+        this.toast.error('Save failed.');
       }
     });
   }
