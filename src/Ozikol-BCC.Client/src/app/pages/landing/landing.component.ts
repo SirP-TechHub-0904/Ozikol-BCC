@@ -1805,18 +1805,20 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
                     (sec.templateKey || '').toLowerCase() === 'breadcrumb_banner'
     );
 
-    // Row 5 custom background image uploaded for this page takes highest priority
+    // Row 6 custom background image uploaded for this page takes highest priority;
+    // when omitted, prefer the active breadcrumb template's configured sample background image.
     const pageCustomBg = this.currentPage.imageUrl || 
                          this.currentPage.ImageUrl || 
                          this.currentPage.headerImageUrl || 
                          this.currentPage.backgroundImageUrl;
 
-    const effectiveBg = pageCustomBg || 
-                        heroSection?.imageUrl || 
-                        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
-
     const pageTitle = this.currentPage.title || heroSection?.title || '';
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    const effectiveBg = this.resolveBreadcrumbBackgroundImage(
+      breadcrumbTemplate,
+      pageCustomBg,
+      [heroSection?.imageUrl, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80']
+    );
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const breadcrumbData = {
@@ -1937,7 +1939,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const blogPage = this.publishedPages.find(p => (p.slug || '').toLowerCase() === 'blog' || (p.directUrl || '').toLowerCase() === 'blog');
-      const blogBg = blogPage?.imageUrl || blogPage?.ImageUrl || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80';
+      const blogPageBg = blogPage?.imageUrl || blogPage?.ImageUrl || blogPage?.headerImageUrl || blogPage?.backgroundImageUrl;
+      const blogBg = this.resolveBreadcrumbBackgroundImage(
+        breadcrumbTemplate,
+        blogPageBg,
+        ['https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80']
+      );
       const blogTitle = blogPage?.title || 'Blog';
       const breadcrumbData = {
         title: blogTitle,
@@ -2091,14 +2098,18 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     } : undefined;
 
     // 2. Breadcrumb Header Section Unit
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     const defaultCover = 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80';
-    const resolvedCover = this.currentArticle.imageUrl || this.currentArticle.coverImageUrl || defaultCover;
+    const resolvedCover = this.resolveBreadcrumbBackgroundImage(
+      breadcrumbTemplate,
+      this.currentArticle.imageUrl || this.currentArticle.coverImageUrl,
+      [defaultCover]
+    );
     const categoryTitle = this.currentArticle.blogCategory?.categoryName || this.currentArticle.blogCategory?.title || this.currentArticle.categoryName || 'Platform Insights';
     const pubDate = this.currentArticle.date
       ? new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       : 'Recently Published';
 
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const breadcrumbData = {
@@ -2365,7 +2376,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      const coverImg = c.coverBannerUrl || c.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80';
+      const coverImg = this.resolveBreadcrumbBackgroundImage(
+        breadcrumbTemplate,
+        c.coverBannerUrl || c.imageUrl,
+        ['https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80']
+      );
       const breadcrumbData = {
         title: committeeName,
         Title: committeeName,
@@ -4343,6 +4358,65 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     };
   }
 
+  /**
+   * Resolves the breadcrumb banner background image using priority:
+   * 1) Explicit page/entity image uploaded in CMS
+   * 2) Default background/image from the active breadcrumb template's sample content JSON
+   * 3) Ordered fallback URLs (e.g. hero image or default backdrop)
+   * @param breadcrumbTemplate Active installed breadcrumb template record.
+   * @param pageImageUrl Explicit image configured on the target page/article/group.
+   * @param fallbacks Secondary fallback URLs checked only if the template sample defines no image.
+   * @returns Non-empty resolved image URL string (or empty string if all sources are empty).
+   */
+  private resolveBreadcrumbBackgroundImage(
+    breadcrumbTemplate: any,
+    pageImageUrl?: string | null,
+    fallbacks: Array<string | undefined | null> = []
+  ): string {
+    const cleanPageImg = (pageImageUrl || '').trim();
+    if (cleanPageImg) return cleanPageImg;
+
+    const templateSampleImg = this.getTemplateSampleBackgroundImage(breadcrumbTemplate);
+    if (templateSampleImg) return templateSampleImg;
+
+    for (const candidate of fallbacks) {
+      const clean = (candidate || '').trim();
+      if (clean) return clean;
+    }
+
+    return '';
+  }
+
+  /**
+   * Extracts the default background or image URL from an active template's sample JSON payload.
+   * @param template Installed template object (`defaultContentJson`, `mockJson`, or `sampleContent`).
+   * @returns Configured sample image URL, or empty string if absent/unparseable.
+   */
+  private getTemplateSampleBackgroundImage(template: any): string {
+    if (!template) return '';
+
+    let sample: any = template.sampleContent;
+    if (!sample) {
+      const rawJson = template.defaultContentJson || template.mockJson;
+      if (typeof rawJson === 'string' && rawJson.trim().startsWith('{')) {
+        try {
+          sample = JSON.parse(rawJson);
+        } catch {
+          sample = null;
+        }
+      }
+    }
+
+    if (!sample || typeof sample !== 'object') return '';
+    return (
+      sample.backgroundImageUrl ||
+      sample.BackgroundImageUrl ||
+      sample.imageUrl ||
+      sample.ImageUrl ||
+      ''
+    ).toString().trim();
+  }
+
   private findActiveTemplate(category: string): any {
     const target = (category || '').toLowerCase().replace(/[-_]/g, '');
     return this.activeTemplates.find(t => {
@@ -4671,11 +4745,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const existingPageWithBg = (this.publishedPages || []).find(p => p.imageUrl || p.ImageUrl || p.headerImageUrl || p.backgroundImageUrl);
-      const effectiveBg = existingPageWithBg?.imageUrl ||
-                          existingPageWithBg?.ImageUrl ||
-                          existingPageWithBg?.headerImageUrl ||
-                          existingPageWithBg?.backgroundImageUrl ||
-                          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
+      const fallbackPageBg =
+        existingPageWithBg?.imageUrl ||
+        existingPageWithBg?.ImageUrl ||
+        existingPageWithBg?.headerImageUrl ||
+        existingPageWithBg?.backgroundImageUrl;
+      const effectiveBg = this.resolveBreadcrumbBackgroundImage(
+        breadcrumbTemplate,
+        null,
+        [fallbackPageBg, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80']
+      );
       const breadcrumbData = {
         title: pageTitle,
         Title: pageTitle,
