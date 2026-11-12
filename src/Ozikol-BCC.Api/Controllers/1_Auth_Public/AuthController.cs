@@ -134,6 +134,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 "IdentityManager", "Identity Manager",
                 "UserManager", "User Manager",
+                "CmsStudioManager", "CMS Studio Manager",
                 "CmsManager", "ContentManager", "CommerceManager",
                 "GlobalEditor", "Global Editor",
                 "FeatureEditor", "Feature Editor",
@@ -264,6 +265,26 @@ namespace Ozikol_BCC.Api.Controllers
             if (user == null)
             {
                 _logger.LogWarning("❌ [Login] User not found for email: {Email}", model.Email);
+
+                // Audit unknown-email login attempt as Suspicious without leaking email existence to caller
+                if (activeDbContext != null)
+                {
+                    var unknownCtx = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(HttpContext);
+                    var compactUa = UserAgentParser.Parse(unknownCtx.UserAgent ?? Request.Headers.UserAgent.ToString()).FriendlyDeviceTitle;
+                    activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
+                    {
+                        Id = Guid.CreateVersion7(),
+                        UserId = null,
+                        Email = (model.Email ?? string.Empty).Trim(),
+                        IpAddress = unknownCtx.IpAddress,
+                        SystemId = unknownCtx.SystemId,
+                        Status = "Failed (Invalid Credentials)",
+                        UserAgent = compactUa,
+                        Timestamp = DateTime.UtcNow
+                    });
+                    await activeDbContext.SaveChangesAsync();
+                }
+
                 return Unauthorized(ApiResponse<object>.FailureResponse("Invalid email or password credentials."));
             }
 
@@ -291,7 +312,7 @@ namespace Ozikol_BCC.Api.Controllers
                 result.Succeeded, result.IsLockedOut, result.IsNotAllowed, result.RequiresTwoFactor);
             if (result.IsLockedOut)
             {
-                // Audit Lockout
+                // Audit Lockout (Critical)
                 if (activeDbContext != null)
                 {
                     activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
@@ -307,12 +328,24 @@ namespace Ozikol_BCC.Api.Controllers
                     });
                     await activeDbContext.SaveChangesAsync();
                 }
-                return StatusCode(423, ApiResponse<object>.FailureResponse("Account is temporarily locked out due to multiple failed login attempts. Please try again later."));
+
+                // Compute remaining lockout seconds for live frontend countdown
+                var lockEnd = user.LockoutEnd?.UtcDateTime ?? DateTime.UtcNow.AddMinutes(15);
+                var secondsRemaining = Math.Max(1, (int)(lockEnd - DateTime.UtcNow).TotalSeconds);
+
+                return StatusCode(423, ApiResponse<object>.FailureResponse(
+                    "Account is temporarily locked out due to 3 failed login attempts. Please wait 15 minutes before trying again.",
+                    data: new { isLockedOut = true, lockoutSecondsRemaining = secondsRemaining, lockoutEnd = lockEnd }));
             }
 
             if (!result.Succeeded)
             {
-                // Audit Failure
+                // Re-fetch user to get fresh AccessFailedCount
+                var freshUser = await activeUserManager.FindByIdAsync(user.Id);
+                var failedCount = freshUser?.AccessFailedCount ?? 1;
+                var remainingAttempts = Math.Max(0, 3 - failedCount);
+
+                // Audit Failure (Suspicious)
                 if (activeDbContext != null)
                 {
                     activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
@@ -328,7 +361,12 @@ namespace Ozikol_BCC.Api.Controllers
                     });
                     await activeDbContext.SaveChangesAsync();
                 }
-                return Unauthorized(ApiResponse<object>.FailureResponse("Invalid email or password credentials."));
+
+                var warningMsg = remainingAttempts > 0
+                    ? $"Invalid email or password credentials. {remainingAttempts} attempt{(remainingAttempts == 1 ? "" : "s")} remaining before account is temporarily locked for 15 minutes."
+                    : "Invalid email or password credentials. Your account is about to be locked.";
+
+                return Unauthorized(ApiResponse<object>.FailureResponse(warningMsg, data: new { remainingAttempts }));
             }
 
             // Check tenant policy: Enforce Email Confirmation and Admin Approval before login with schema resilience
@@ -666,6 +704,21 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var assignedFeatureKeysOnLogin = new List<string>();
+            if (activeDbContext != null)
+            {
+                try
+                {
+                    assignedFeatureKeysOnLogin = await activeDbContext.BcpUserFeatureRoles
+                        .AsNoTracking()
+                        .Where(f => f.ProfileId == user.Id && f.IsActive && f.FeatureAreaKey != null)
+                        .Select(f => f.FeatureAreaKey!)
+                        .Distinct()
+                        .ToListAsync();
+                }
+                catch { /* ignore schema drift */ }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -681,7 +734,8 @@ namespace Ozikol_BCC.Api.Controllers
                 OnboardingStep = onboardingStep,
                 Roles = userRoles,
                 EffectivePermissions = effectivePermsOnLogin,
-                LicensedTenantFeatures = licensedFeaturesOnLogin
+                LicensedTenantFeatures = licensedFeaturesOnLogin,
+                AssignedFeatureKeys = assignedFeatureKeysOnLogin
             };
 
             return Ok(ApiResponse<LoginResponseModel>.SuccessResponse(responseData, "Authentication successful."));
@@ -947,6 +1001,21 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var assignedFeatureKeysOnMfa = new List<string>();
+            if (activeDbContext != null)
+            {
+                try
+                {
+                    assignedFeatureKeysOnMfa = await activeDbContext.BcpUserFeatureRoles
+                        .AsNoTracking()
+                        .Where(f => f.ProfileId == user.Id && f.IsActive && f.FeatureAreaKey != null)
+                        .Select(f => f.FeatureAreaKey!)
+                        .Distinct()
+                        .ToListAsync();
+                }
+                catch { /* ignore schema drift */ }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -958,7 +1027,8 @@ namespace Ozikol_BCC.Api.Controllers
                 MustChangePassword = user.MustChangePassword,
                 Roles = userRoles,
                 EffectivePermissions = effectivePermsOnLogin,
-                LicensedTenantFeatures = licensedFeaturesOnLogin
+                LicensedTenantFeatures = licensedFeaturesOnLogin,
+                AssignedFeatureKeys = assignedFeatureKeysOnMfa
             };
 
             // Set secure custom response header for trust token if selected
@@ -2662,6 +2732,12 @@ namespace Ozikol_BCC.Api.Controllers
         /// List of active licensed modular feature codes for the user's organization.
         /// </summary>
         public List<string> LicensedTenantFeatures { get; set; } = new();
+
+        /// <summary>
+        /// Specific modular feature authority keys assigned to this individual user via BcpUserFeatureRoles.
+        /// When present on a non-admin account, the user is strictly scoped to these feature areas.
+        /// </summary>
+        public List<string> AssignedFeatureKeys { get; set; } = new();
     }
 
     /// <summary>

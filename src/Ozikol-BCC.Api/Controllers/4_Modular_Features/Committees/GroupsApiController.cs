@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using static Ozikol_BCC.Domain.Enum.Enum;
 using MediatR;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Application.Commands.BcpGroupCommands;
 using Ozikol_BCC.Application.Queries.BcpGroupQueries;
 
@@ -17,11 +18,12 @@ namespace Ozikol_BCC.Api.Controllers
 {
     /// <summary>
     /// REST API for BCP group management: CRUD, members, invitations, and locking.
-    /// Maps to api/groups.
+    /// Maps to api/groups. Protected by bcp-committees modular feature check.
     /// </summary>
     [ApiController]
     [Route("api/groups")]
     [Authorize]
+    [RequireFeature("bcp-committees")]
     public class GroupsApiController : ControllerBase
     {
         private readonly DashboardDbContext _db;

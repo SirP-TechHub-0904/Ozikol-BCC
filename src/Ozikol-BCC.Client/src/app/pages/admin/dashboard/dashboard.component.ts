@@ -193,9 +193,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </thead>
               <tbody>
                 <tr *ngFor="let audit of metrics?.recentActivities">
-                  <td><span class="status-pill violet">{{ audit.action }}</span></td>
+                  <td>
+                    <span class="status-pill" [ngClass]="getActionBadgeClass(audit.action)">
+                      <span class="material-symbols-outlined action-mini-icon">{{ getActionIcon(audit.action) }}</span>
+                      <span>{{ formatAction(audit.action) }}</span>
+                    </span>
+                  </td>
                   <td><strong>{{ audit.user }}</strong></td>
-                  <td>{{ audit.details }}</td>
+                  <td class="details-cell">{{ formatDetails(audit.details, audit.action) }}</td>
                   <td class="code-cell">{{ audit.timestamp | date:'short' }}</td>
                 </tr>
                 <tr *ngIf="!metrics?.recentActivities?.length">
@@ -313,6 +318,30 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .action-title { font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); }
     .action-desc { font-size: 11px; color: var(--sidebar-header-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .arrow { color: var(--sidebar-header-color); }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status-pill.good { background: #dcfce7; color: #15803d; }
+    .status-pill.info { background: #eff6ff; color: #0050e5; }
+    .status-pill.violet { background: #f3e8ff; color: #7e22ce; }
+    .status-pill.amber { background: #fef3c7; color: #b45309; }
+    .status-pill.red { background: #fee2e2; color: #b91c1c; }
+    .status-pill.muted { background: #f1f5f9; color: #64748b; }
+    .action-mini-icon { font-size: 14px; }
+    .details-cell {
+      max-width: 520px;
+      line-height: 1.45;
+      color: #334155;
+      font-size: 12.5px;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -340,6 +369,63 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadMetrics();
+  }
+
+  formatAction(action?: string): string {
+    if (!action) return 'Activity';
+    const clean = action.trim();
+    if (clean === 'LOGIN_SUCCESS') return 'User Sign-In';
+    if (clean === 'LOGIN_FAILED') return 'Failed Sign-In';
+    if (clean === 'PASSWORD_RESET') return 'Password Reset';
+    if (clean.includes('SiteCodeInjectionTag')) return 'Custom Code & Styles';
+    if (clean.includes('TenantInstalledTemplate')) return 'Section Template';
+    return clean;
+  }
+
+  getActionBadgeClass(action?: string): string {
+    if (!action) return 'muted';
+    const a = action.toLowerCase();
+    if (a.includes('login_success') || a.includes('sign-in') || a.includes('success')) return 'good';
+    if (a.includes('code') || a.includes('sitecode') || a.includes('template') || a.includes('page') || a.includes('cms')) return 'info';
+    if (a.includes('role') || a.includes('permission') || a.includes('user') || a.includes('profile')) return 'violet';
+    if (a.includes('fail') || a.includes('delete') || a.includes('critical') || a.includes('suspend') || a.includes('revok')) return 'red';
+    if (a.includes('warning') || a.includes('reset') || a.includes('alert')) return 'amber';
+    return 'violet';
+  }
+
+  getActionIcon(action?: string): string {
+    if (!action) return 'info';
+    const a = action.toLowerCase();
+    if (a.includes('login_success') || a.includes('sign-in')) return 'login';
+    if (a.includes('code') || a.includes('sitecode')) return 'code';
+    if (a.includes('template')) return 'layers';
+    if (a.includes('page') || a.includes('section')) return 'article';
+    if (a.includes('role') || a.includes('permission')) return 'verified_user';
+    if (a.includes('delete') || a.includes('suspend')) return 'delete_forever';
+    if (a.includes('user') || a.includes('profile')) return 'person';
+    if (a.includes('password') || a.includes('reset')) return 'lock_reset';
+    return 'history';
+  }
+
+  formatDetails(details?: string, action?: string): string {
+    if (!details) return '';
+    let text = details.trim();
+
+    // 1. Strip internal timestamp change noise e.g. UpdatedAtUtc: '...' ➔ '...', LastUpdatedUtc: '...' ➔ '...'
+    text = text.replace(/(?:,\s*)?(?:UpdatedAtUtc|LastUpdatedUtc|ModifiedAt|CreatedAt|RowVersion):\s*'[^']*'\s*(?:➔|->)\s*'[^']*'/gi, '');
+
+    // 2. Clean up raw HTML code dumps: [HtmlTemplate: '<div...' ➔ '<div...']
+    text = text.replace(/HtmlTemplate:\s*'[^']*'\s*(?:➔|->)\s*'[^']*'/gi, 'Template layout updated');
+
+    // 3. Clean up trailing commas, empty brackets
+    text = text.replace(/\[,\s*/g, '[').replace(/\[\]/g, '').replace(/\[:\s*\]/g, '').trim();
+    if (text.endsWith(':')) text = text.slice(0, -1).trim();
+
+    // 4. Clean up raw entity names
+    text = text.replace(/SiteCodeInjectionTag/g, 'Custom Code & Styles')
+               .replace(/TenantInstalledTemplate/g, 'Section Template');
+
+    return text;
   }
 
   loadMetrics(): void {

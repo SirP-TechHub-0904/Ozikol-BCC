@@ -3186,6 +3186,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("CertificationAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CloudflareDnsApiToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("CloudflareR2AccessKeyId")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -3209,6 +3213,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("CloudflareTurnstileSiteKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CloudflareZoneId")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -3322,6 +3330,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<bool>("IsMaintenanceMode")
                         .HasColumnType("bit");
+
+                    b.Property<string>("MailcowApiKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MailcowApiUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MailcowSmtpHost")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("MaintenanceMessage")
                         .HasMaxLength(500)

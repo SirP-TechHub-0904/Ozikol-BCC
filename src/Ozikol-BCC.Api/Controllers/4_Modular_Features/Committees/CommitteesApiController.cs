@@ -22,6 +22,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Common.Errors;
 using Ozikol_BCC.Application.Hubs;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
@@ -39,7 +40,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/committees")]
-    [Authorize]
+    [RequireFeature("bcp-committees")]
     [Tags("Committees & Sub-Groups Suite (bcp-committees)")]
     public class CommitteesApiController : ControllerBase
     {

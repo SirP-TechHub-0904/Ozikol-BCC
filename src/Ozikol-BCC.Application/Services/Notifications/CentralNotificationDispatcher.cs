@@ -297,6 +297,25 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 };
 
                 _dbContext.BcpNotifications.Add(broadcastNotif);
+                _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                {
+                    Channel = BcpMessageChannel.InAppNotification,
+                    RelatedUserId = null,
+                    RecipientAddress = "All Users (Broadcast)",
+                    RecipientName = "Broadcast",
+                    Subject = inAppTitle,
+                    Content = inAppBody,
+                    ActionUrl = payload.ActionUrl,
+                    Icon = iconToUse,
+                    Category = payload.Category,
+                    Severity = payload.Severity,
+                    Priority = payload.Priority,
+                    EventType = payload.EventType,
+                    Status = BcpQueueStatus.Sent,
+                    SentAt = DateTime.UtcNow,
+                    MetadataJson = payload.MetadataJson,
+                    CreatedAt = DateTime.UtcNow
+                });
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 result.DispatchedInAppCount = 1;
 
@@ -332,6 +351,25 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     };
 
                     _dbContext.BcpNotifications.Add(notif);
+                    _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                    {
+                        Channel = BcpMessageChannel.InAppNotification,
+                        RelatedUserId = profile.Id,
+                        RecipientAddress = profile.UserName ?? profile.Email ?? profile.Id,
+                        RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
+                        Subject = inAppTitle,
+                        Content = inAppBody,
+                        ActionUrl = payload.ActionUrl,
+                        Icon = iconToUse,
+                        Category = payload.Category,
+                        Severity = payload.Severity,
+                        Priority = payload.Priority,
+                        EventType = payload.EventType,
+                        Status = BcpQueueStatus.Sent,
+                        SentAt = DateTime.UtcNow,
+                        MetadataJson = payload.MetadataJson,
+                        CreatedAt = DateTime.UtcNow
+                    });
                     createdNotifications.Add(notif);
                 }
 
@@ -361,7 +399,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// Dispatches push notifications tailored for mobile and desktop lock screens:
         /// Title <= 50 chars, Body <= 140 chars, with structured deep link data payload.
         /// </summary>
-        private Task DispatchPushChannelAsync(
+        private async Task DispatchPushChannelAsync(
             NotificationDispatchPayload payload,
             List<Profile> targetProfiles,
             NotificationDispatchResult result,
@@ -399,8 +437,62 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 "[CentralNotificationDispatcher] Push notification queued for target {Target} (Recipients: {Count}). Title='{Title}', Body='{Body}', Severity={Severity}, TenantKey={TenantKey}",
                 payload.TargetType, recipientCount, cleanPushTitle, cleanPushBody, payload.Severity, payload.TenantKey);
 
+            if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
+            {
+                _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                {
+                    Channel = BcpMessageChannel.Push,
+                    RelatedUserId = null,
+                    RecipientAddress = "All Devices (Push Broadcast)",
+                    RecipientName = "Push Broadcast",
+                    Subject = cleanPushTitle,
+                    Content = cleanPushBody,
+                    ActionUrl = payload.ActionUrl,
+                    Category = payload.Category,
+                    Severity = payload.Severity,
+                    Priority = payload.Priority,
+                    EventType = payload.EventType,
+                    Status = BcpQueueStatus.Sent,
+                    SentAt = DateTime.UtcNow,
+                    MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                foreach (var profile in targetProfiles)
+                {
+                    _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                    {
+                        Channel = BcpMessageChannel.Push,
+                        RelatedUserId = profile.Id,
+                        RecipientAddress = profile.UserName ?? profile.Email ?? profile.Id,
+                        RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
+                        Subject = cleanPushTitle,
+                        Content = cleanPushBody,
+                        ActionUrl = payload.ActionUrl,
+                        Category = payload.Category,
+                        Severity = payload.Severity,
+                        Priority = payload.Priority,
+                        EventType = payload.EventType,
+                        Status = BcpQueueStatus.Sent,
+                        SentAt = DateTime.UtcNow,
+                        MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save push BcpMessagePool records: {Msg}", ex.Message);
+            }
+
             result.DispatchedPushCount += recipientCount;
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -551,6 +643,23 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         CreatedAt = DateTime.UtcNow
                     });
 
+                    _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                    {
+                        Channel = BcpMessageChannel.Email,
+                        RelatedUserId = targetProfiles.FirstOrDefault(p => p.Email != null && p.Email.Equals(email, StringComparison.OrdinalIgnoreCase))?.Id,
+                        RecipientAddress = email,
+                        RecipientName = payload.RecipientName,
+                        Subject = safeSubject,
+                        Content = htmlBody,
+                        Category = payload.Category,
+                        Severity = payload.Severity,
+                        Priority = payload.Priority,
+                        EventType = payload.EventType,
+                        Status = BcpQueueStatus.Sent,
+                        SentAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
                     result.DispatchedEmailCount++;
                 }
                 catch (Exception ex)
@@ -565,6 +674,23 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         HtmlBody = !string.IsNullOrWhiteSpace(htmlBody) ? htmlBody : payload.Message,
                         Category = BcpMessageCategory.Communication,
                         Priority = BcpMessagePriority.Normal,
+                        Status = BcpQueueStatus.Failed,
+                        LastError = ex.Message,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                    {
+                        Channel = BcpMessageChannel.Email,
+                        RelatedUserId = targetProfiles.FirstOrDefault(p => p.Email != null && p.Email.Equals(email, StringComparison.OrdinalIgnoreCase))?.Id,
+                        RecipientAddress = email,
+                        RecipientName = payload.RecipientName,
+                        Subject = safeSubject,
+                        Content = !string.IsNullOrWhiteSpace(htmlBody) ? htmlBody : payload.Message,
+                        Category = payload.Category,
+                        Severity = payload.Severity,
+                        Priority = payload.Priority,
+                        EventType = payload.EventType,
                         Status = BcpQueueStatus.Failed,
                         LastError = ex.Message,
                         CreatedAt = DateTime.UtcNow
@@ -630,23 +756,81 @@ namespace Ozikol_BCC.Application.Services.Notifications
 
             foreach (var phone in phoneNumbers)
             {
+                var targetProfile = targetProfiles.FirstOrDefault(p => p.PhoneNumber != null && p.PhoneNumber.Equals(phone, StringComparison.OrdinalIgnoreCase));
                 try
                 {
                     var sent = await _smsService.SendSmsWithResult(phone, smsContent);
                     if (sent)
                     {
                         result.DispatchedSmsCount++;
+                        _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                        {
+                            Channel = BcpMessageChannel.Sms,
+                            RelatedUserId = targetProfile?.Id,
+                            RecipientAddress = phone,
+                            RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                            Subject = "SMS Notification",
+                            Content = smsContent,
+                            Category = payload.Category,
+                            Severity = payload.Severity,
+                            Priority = payload.Priority,
+                            EventType = payload.EventType,
+                            Status = BcpQueueStatus.Sent,
+                            SentAt = DateTime.UtcNow,
+                            CreatedAt = DateTime.UtcNow
+                        });
                     }
                     else
                     {
                         result.Errors.Add($"SMS gateway returned failure for '{phone}'.");
+                        _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                        {
+                            Channel = BcpMessageChannel.Sms,
+                            RelatedUserId = targetProfile?.Id,
+                            RecipientAddress = phone,
+                            RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                            Subject = "SMS Notification",
+                            Content = smsContent,
+                            Category = payload.Category,
+                            Severity = payload.Severity,
+                            Priority = payload.Priority,
+                            EventType = payload.EventType,
+                            Status = BcpQueueStatus.Failed,
+                            LastError = "SMS gateway returned delivery failure.",
+                            CreatedAt = DateTime.UtcNow
+                        });
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "[CentralNotificationDispatcher] SMS dispatch failed for {Phone}: {Msg}", phone, ex.Message);
                     result.Errors.Add($"SMS delivery to '{phone}' failed: {ex.Message}");
+                    _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                    {
+                        Channel = BcpMessageChannel.Sms,
+                        RelatedUserId = targetProfile?.Id,
+                        RecipientAddress = phone,
+                        RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                        Subject = "SMS Notification",
+                        Content = smsContent,
+                        Category = payload.Category,
+                        Severity = payload.Severity,
+                        Priority = payload.Priority,
+                        EventType = payload.EventType,
+                        Status = BcpQueueStatus.Failed,
+                        LastError = ex.Message,
+                        CreatedAt = DateTime.UtcNow
+                    });
                 }
+            }
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save SMS BcpMessagePool records: {Msg}", ex.Message);
             }
         }
 
@@ -654,7 +838,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// Dispatches transactional WhatsApp messages formatted with WhatsApp Markdown (*bold*, _italics_)
         /// or binds positional parameters ({{1}}, {{2}}) for Meta Cloud API approved HSM templates.
         /// </summary>
-        private Task DispatchWhatsAppChannelAsync(
+        private async Task DispatchWhatsAppChannelAsync(
             NotificationDispatchPayload payload,
             List<Profile> targetProfiles,
             NotificationDispatchResult result,
@@ -695,8 +879,40 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 "[CentralNotificationDispatcher] WhatsApp alert queued for {Count} recipients. HSM Template='{Template}', MessageLength={Len}",
                 phoneNumbers.Count, payload.WhatsAppTemplateName ?? "freeform-markdown", whatsAppBody.Length);
 
+            foreach (var phone in phoneNumbers)
+            {
+                var targetProfile = targetProfiles.FirstOrDefault(p => p.PhoneNumber != null && p.PhoneNumber.Equals(phone, StringComparison.OrdinalIgnoreCase));
+                _dbContext.BcpMessagePools.Add(new BcpMessagePool
+                {
+                    Channel = BcpMessageChannel.WhatsApp,
+                    RelatedUserId = targetProfile?.Id,
+                    RecipientAddress = phone,
+                    RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                    Subject = payload.Title ?? "WhatsApp Notification",
+                    Content = whatsAppBody,
+                    SenderOrTemplateName = payload.WhatsAppTemplateName ?? "freeform-markdown",
+                    ActionUrl = payload.ActionUrl,
+                    Category = payload.Category,
+                    Severity = payload.Severity,
+                    Priority = payload.Priority,
+                    EventType = payload.EventType,
+                    Status = BcpQueueStatus.Sent,
+                    SentAt = DateTime.UtcNow,
+                    MetadataJson = payload.MetadataJson,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save WhatsApp BcpMessagePool records: {Msg}", ex.Message);
+            }
+
             result.DispatchedWhatsAppCount += phoneNumbers.Count;
-            return Task.CompletedTask;
         }
 
         /// <summary>

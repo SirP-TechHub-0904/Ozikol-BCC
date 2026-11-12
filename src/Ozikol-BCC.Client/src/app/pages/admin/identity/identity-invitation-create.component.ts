@@ -1718,6 +1718,25 @@ export class IdentityInvitationCreateComponent implements OnInit {
       ]
     },
     {
+      name: 'CMS Studio Manager',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'CmsStudioManager',
+      tier: 'Domain Authority',
+      badgeClass: 'badge-cms',
+      icon: 'web',
+      summary: 'Full governance of Website & CMS Studio: pages, sections, brand settings, custom domains, forms, templates, and UI marketplace.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
+      allowedActions: [
+        'Manage CMS Studio pages, sections, categories, and media files',
+        'Configure Brand & Settings and Link Domain (custom domains)',
+        'Manage Forms, My Templates, CDN Assets, and UI Marketplace'
+      ],
+      restrictedActions: [
+        'Cannot grant system roles or manage user accounts',
+        'No access to billing or platform-wide identity governance'
+      ]
+    },
+    {
       name: 'Identity Manager',
       group: RoleGroup.Feature,
       featureAreaKey: 'IdentityManager',
@@ -1806,6 +1825,43 @@ export class IdentityInvitationCreateComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUserCategories();
+    this.loadDynamicFeatureRoles();
+  }
+
+  /**
+   * Loads published and available feature roles from Identity Roles Catalog.
+   */
+  private loadDynamicFeatureRoles(): void {
+    this.api.get<any>('identity/roles-catalog').subscribe({
+      next: (res) => {
+        const items: any[] = res?.data || [];
+        const existingNames = new Set(this.availableRoles.map(r => r.name.toLowerCase()));
+        for (const item of items) {
+          if (item && item.name && !existingNames.has(item.name.toLowerCase()) && item.group === 'system_feature') {
+            this.availableRoles.push({
+              name: item.name,
+              group: RoleGroup.Feature,
+              featureAreaKey: item.featureAreaKey || item.name.replace(/\s+/g, ''),
+              tier: 'Feature Authority',
+              badgeClass: 'badge-feature',
+              icon: item.icon || 'extension',
+              summary: item.description || `Governance of ${item.name}`,
+              defaultActionRole: ActionRoleType.FeatureEditor,
+              allowedActions: [
+                `Manage operations and configuration for ${item.name}`,
+                'View domain dashboards and records'
+              ],
+              restrictedActions: [
+                'Cannot modify other workspace domains or billing',
+                'Cannot grant system roles to other users'
+              ]
+            });
+            existingNames.add(item.name.toLowerCase());
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   /**

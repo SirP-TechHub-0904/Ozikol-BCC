@@ -13,6 +13,9 @@ on:
       - 'src/Ozikol-BCC.Domain/**'
       - 'src/Ozikol-BCC.Persistence.EF.SQL/**'
       - 'src/Ozikol-BCC.Application/**'
+      - 'src/Ozikol-BCC.Infrastructure/**'
+      - 'src/Ozikol.MasterDomain/**'
+      - 'src/Ozikol.MasterPersistence.EF.MasterSQL/**'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 

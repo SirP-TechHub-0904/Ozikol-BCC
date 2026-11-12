@@ -14,10 +14,13 @@ using System.Threading.Tasks;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 using Microsoft.AspNetCore.SignalR;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Common;
 using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Domain.Constants;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -36,6 +39,8 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IHubContext<GroupChatHub>? _hubContext;
         private readonly IHubContext<NotificationHub>? _notificationHubContext;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
+        private readonly MasterCatalogDbContext? _master;
+        private readonly ITenantProvider? _tenantProvider;
 
         public IdentityApiController(
             RoleManager<AppRole> roleManager,
@@ -43,7 +48,9 @@ namespace Ozikol_BCC.Api.Controllers
             DashboardDbContext dbContext,
             IHubContext<GroupChatHub>? hubContext = null,
             IHubContext<NotificationHub>? notificationHubContext = null,
-            ICentralNotificationDispatcher? notificationDispatcher = null)
+            ICentralNotificationDispatcher? notificationDispatcher = null,
+            MasterCatalogDbContext? master = null,
+            ITenantProvider? tenantProvider = null)
         {
             _roleManager = roleManager;
             _userManager = userManager;
@@ -51,6 +58,8 @@ namespace Ozikol_BCC.Api.Controllers
             _hubContext = hubContext;
             _notificationHubContext = notificationHubContext;
             _notificationDispatcher = notificationDispatcher;
+            _master = master;
+            _tenantProvider = tenantProvider;
         }
 
         /// <summary>
@@ -109,6 +118,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ("Admin", RoleCategory.Both),
                     ("Identity Manager", RoleCategory.BCP),
                     ("User Manager", RoleCategory.BCP),
+                    ("CMS Studio Manager", RoleCategory.BCP),
                     ("Global Editor", RoleCategory.BCP),
                     ("Feature Editor", RoleCategory.BCP),
                     ("Read Only", RoleCategory.BCP),
@@ -171,9 +181,10 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderBy(r => r.Name == "Admin" ? 1 :
                               r.Name == "Identity Manager" ? 2 :
                               r.Name == "User Manager" ? 3 :
-                              r.Name == "Global Editor" ? 4 :
-                              r.Name == "Feature Editor" ? 5 :
-                              r.Name == "Read Only" ? 6 : 7)
+                              r.Name == "CMS Studio Manager" ? 4 :
+                              r.Name == "Global Editor" ? 5 :
+                              r.Name == "Feature Editor" ? 6 :
+                              r.Name == "Read Only" ? 7 : 8)
                 .Select(r => new
                 {
                     r.Id,
@@ -277,6 +288,17 @@ namespace Ozikol_BCC.Api.Controllers
                     },
                     new
                     {
+                        Name = "CMS Studio Manager",
+                        Description = "Website and CMS administrator authorized to manage CMS Studio, Brand & Settings, Link Domain, Manage Forms, My Templates, and UI Marketplace.",
+                        Scope = "Website & CMS Studio Governance",
+                        CanAssign = true,
+                        Badge = "badge-cmsmanager",
+                        Icon = "web",
+                        Group = "system_feature",
+                        Order = 5
+                    },
+                    new
+                    {
                         Name = "Member",
                         Description = "Standard tenant member account with directory listing and personal workspace self-service capabilities.",
                         Scope = "Standard Member Access",
@@ -284,7 +306,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-member",
                         Icon = "person",
                         Group = "system_feature",
-                        Order = 5
+                        Order = 6
                     },
                     new
                     {
@@ -295,7 +317,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-editor",
                         Icon = "edit_square",
                         Group = "operational_level",
-                        Order = 6
+                        Order = 7
                     },
                     new
                     {
@@ -306,7 +328,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-feature",
                         Icon = "rule_settings",
                         Group = "operational_level",
-                        Order = 7
+                        Order = 8
                     },
                     new
                     {
@@ -317,9 +339,74 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-readonly",
                         Icon = "visibility",
                         Group = "operational_level",
-                        Order = 8
+                        Order = 9
                     }
                 };
+
+                // Dynamic Feature Authority Roles (Published & Available for Use capabilities from MasterFeatureCatalogs)
+                var dynamicFeatureDefs = new List<dynamic>();
+                if (_master != null)
+                {
+                    try
+                    {
+                        var tenantKey = _tenantProvider?.CurrentTenant;
+                        var masterTenant = !string.IsNullOrEmpty(tenantKey)
+                            ? await _master.MasterTenantCatalogs
+                                .Include(t => t.FeatureSubscriptions)
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(t => t.TenantKey.ToLower() == tenantKey.ToLower())
+                            : null;
+
+                        var publishedFeatures = await _master.MasterFeatureCatalogs
+                            .AsNoTracking()
+                            .Where(f => f.IsActive && f.IsPublished)
+                            .OrderBy(f => f.MenuTitle)
+                            .ToListAsync();
+
+                        // Core built-in domains already handled above
+                        var excludedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            "bcp-core-identity", "bcp-user-manager", "bcp-cms", "cms", "identity", "users"
+                        };
+
+                        int featureOrder = 10;
+                        foreach (var pf in publishedFeatures)
+                        {
+                            if (excludedCodes.Contains(pf.FeatureCode))
+                                continue;
+
+                            var sub = masterTenant?.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == pf.Id);
+                            bool isAvailable = masterTenant != null && masterTenant.UseCustomAvailability
+                                ? (sub?.IsAvailableForUseOverride ?? pf.IsAvailableForUse)
+                                : pf.IsAvailableForUse;
+
+                            if (!isAvailable)
+                                continue;
+
+                            var title = !string.IsNullOrWhiteSpace(pf.MenuTitle) ? pf.MenuTitle : pf.Name;
+                            var roleName = $"{title} Manager";
+                            var featureKey = pf.FeatureCode;
+
+                            dynamicFeatureDefs.Add(new
+                            {
+                                Name = roleName,
+                                Description = $"Feature domain administrator authorized strictly and exclusively to govern '{title}' ({pf.FeatureCode}).",
+                                Scope = $"{title} Governance Only",
+                                CanAssign = true,
+                                Badge = "badge-feature-authority",
+                                Icon = !string.IsNullOrWhiteSpace(pf.Icon) ? pf.Icon : "extension",
+                                Group = "system_feature",
+                                Order = featureOrder++,
+                                FeatureAreaKey = featureKey,
+                                IsDynamicFeature = true
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[IdentityApiController] Warning loading dynamic feature roles: {ex.Message}");
+                    }
+                }
 
                 // SuperAdmin tier is strictly visible only when an authenticated SuperAdmin is logged in.
                 // Standard administrators and lower operational roles must not see or manage the root SuperAdmin role.
@@ -329,13 +416,18 @@ namespace Ozikol_BCC.Api.Controllers
 
                 var visibleDefinitions = catalogDefinitions
                     .Where(def => isSuperAdmin || !string.Equals(def.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
-                    .OrderBy(def => def.Order)
+                    .Concat(dynamicFeatureDefs)
+                    .OrderBy(def => (int)def.Order)
                     .ToList();
 
                 var catalog = visibleDefinitions.Select(def =>
                 {
+                    string defName = (string)def.Name;
+                    string? defFeatureKey = null;
+                    try { defFeatureKey = (string?)def.FeatureAreaKey; } catch { }
+
                     var assignedUsers = allUserRoles
-                        .Where(ur => string.Equals(ur.RoleName, def.Name, StringComparison.OrdinalIgnoreCase))
+                        .Where(ur => string.Equals(ur.RoleName, defName, StringComparison.OrdinalIgnoreCase))
                         .Select(ur =>
                         {
                             profiles.TryGetValue(ur.UserId, out var p);
@@ -352,16 +444,46 @@ namespace Ozikol_BCC.Api.Controllers
                         })
                         .ToList();
 
+                    // If dynamic feature authority role, also include members explicitly assigned in BcpUserFeatureRoles
+                    if (!string.IsNullOrEmpty(defFeatureKey))
+                    {
+                        var featAssignedUserIds = featureRoles
+                            .Where(f => !string.IsNullOrEmpty(f.ProfileId) &&
+                                        string.Equals(f.FeatureAreaKey, defFeatureKey, StringComparison.OrdinalIgnoreCase))
+                            .Select(f => f.ProfileId!)
+                            .Distinct()
+                            .ToList();
+
+                        foreach (var fUid in featAssignedUserIds)
+                        {
+                            if (!assignedUsers.Any(u => u.userId == fUid))
+                            {
+                                profiles.TryGetValue(fUid, out var p);
+                                featureRolesByUser.TryGetValue(fUid, out var fList);
+                                assignedUsers.Add(new
+                                {
+                                    userId = fUid,
+                                    fullName = !string.IsNullOrWhiteSpace(p?.FullName) ? p.FullName : "Member",
+                                    email = p?.Email ?? "",
+                                    memberId = p?.MemberId ?? "",
+                                    avatarUrl = p?.AvatarUrl,
+                                    features = fList ?? new List<string> { defFeatureKey }
+                                });
+                            }
+                        }
+                    }
+
                     return new
                     {
-                        name = def.Name,
-                        description = def.Description,
-                        scope = def.Scope,
-                        canAssign = def.CanAssign,
-                        badge = def.Badge,
-                        icon = def.Icon,
-                        group = def.Group,
-                        order = def.Order,
+                        name = (string)def.Name,
+                        description = (string)def.Description,
+                        scope = (string)def.Scope,
+                        canAssign = (bool)def.CanAssign,
+                        badge = (string)def.Badge,
+                        icon = (string)def.Icon,
+                        group = (string)def.Group,
+                        order = (int)def.Order,
+                        featureAreaKey = defFeatureKey,
                         memberCount = assignedUsers.Count,
                         members = assignedUsers
                     };
@@ -400,7 +522,12 @@ namespace Ozikol_BCC.Api.Controllers
 
             await EnsureSeededRolesAsync();
 
-            if (!await _roleManager.RoleExistsAsync(request.RoleName))
+            var isDynamicFeatureRole = !await _roleManager.RoleExistsAsync(request.RoleName)
+                && (!string.IsNullOrWhiteSpace(request.FeatureArea) || request.RoleName.EndsWith(" Manager", StringComparison.OrdinalIgnoreCase));
+
+            var effectiveRoleToAssign = isDynamicFeatureRole ? "Feature Editor" : request.RoleName;
+
+            if (!await _roleManager.RoleExistsAsync(effectiveRoleToAssign))
                 return BadRequest(ApiResponse<object>.FailureResponse($"Role '{request.RoleName}' does not exist."));
 
             // Remove existing non-SuperAdmin roles to guarantee a single unambiguous active role
@@ -411,14 +538,18 @@ namespace Ozikol_BCC.Api.Controllers
                 await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
             }
 
-            var addRes = await _userManager.AddToRoleAsync(user, request.RoleName);
+            var addRes = await _userManager.AddToRoleAsync(user, effectiveRoleToAssign);
             if (!addRes.Succeeded)
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
 
-            // If Feature Editor, assign feature scope (default UserManager)
-            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            // If Feature Editor or Dynamic Feature Authority Role, assign scoped feature in BcpUserFeatureRoles
+            if (isDynamicFeatureRole || string.Equals(effectiveRoleToAssign, "Feature Editor", StringComparison.OrdinalIgnoreCase))
             {
-                var featureKey = request.ResolvedFeatureArea;
+                var featureKey = !string.IsNullOrWhiteSpace(request.FeatureArea)
+                    ? request.FeatureArea.Trim()
+                    : request.ResolvedFeatureArea;
+
+                // Deactivate other feature roles if assigning a single feature authority
                 var existingFeature = await _dbContext.BcpUserFeatureRoles
                     .FirstOrDefaultAsync(f => f.ProfileId == user.Id && f.FeatureAreaKey == featureKey);
 
@@ -440,6 +571,51 @@ namespace Ozikol_BCC.Api.Controllers
                     existingFeature.ActionRole = BcpActionRole.FeatureEditor;
                     existingFeature.IsActive = true;
                 }
+            }
+
+            // Audit Log: Record role assignment & flag privilege escalation
+            var callerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var callerEmail = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name ?? "Administrator";
+            var clientCtx = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(HttpContext);
+
+            bool isHighAuthority = string.Equals(request.RoleName, "Admin", StringComparison.OrdinalIgnoreCase);
+            var auditLog = new BcpActivityLog
+            {
+                Id = Guid.CreateVersion7(),
+                ActionType = isHighAuthority ? "CRITICAL_ROLE_ESCALATION" : "ROLE_ASSIGNMENT",
+                Description = isHighAuthority
+                    ? $"[CRITICAL] Privilege Escalation: Assigned high-authority role '{request.RoleName}' to '{user.FullName}' ({user.Email})."
+                    : $"Assigned role '{request.RoleName}' to '{user.FullName}' ({user.Email}).",
+                Module = "Identity & Access",
+                PerformedByProfileId = callerId,
+                PerformedByUserEmail = callerEmail,
+                PerformedByFullName = callerEmail,
+                TargetProfileId = user.Id,
+                TargetFullName = user.FullName,
+                Date = DateTime.UtcNow,
+                IpAddress = clientCtx.IpAddress,
+                SystemId = clientCtx.SystemId,
+                UserAgent = clientCtx.UserAgent
+            };
+            _dbContext.BcpActivityLogs.Add(auditLog);
+
+            // Alert SuperAdmins if high authority role (Admin) was granted
+            if (isHighAuthority && _notificationDispatcher != null)
+            {
+                var tenantKey = _tenantProvider?.CurrentTenant;
+                var superAdminUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.Contains("superadmin"));
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = superAdminUser != null ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                    TargetUserId = superAdminUser?.Id,
+                    TenantKey = tenantKey,
+                    Title = "Security Alert: Privilege Escalation",
+                    Message = $"Administrator '{callerEmail}' assigned 'Admin' role to member '{user.FullName}' ({user.Email}).",
+                    Severity = NotificationSeverity.Warning,
+                    Category = BcpMessageCategory.Security,
+                    Channels = NotificationChannels.InApp,
+                    ActionUrl = "/identity/console/audit-logs?severity=Critical"
+                });
             }
 
             await _dbContext.SaveChangesAsync();
@@ -474,15 +650,46 @@ namespace Ozikol_BCC.Api.Controllers
                 await _userManager.RemoveFromRoleAsync(user, request.RoleName);
             }
 
-            // Clear feature role if feature editor
-            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            // Clear feature role if feature editor or dynamic feature authority role
+            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase) ||
+                !await _roleManager.RoleExistsAsync(request.RoleName))
             {
                 var fRoles = await _dbContext.BcpUserFeatureRoles.Where(f => f.ProfileId == user.Id).ToListAsync();
                 if (fRoles.Any())
                 {
                     _dbContext.BcpUserFeatureRoles.RemoveRange(fRoles);
                 }
+                if (await _userManager.IsInRoleAsync(user, "Feature Editor"))
+                {
+                    await _userManager.RemoveFromRoleAsync(user, "Feature Editor");
+                }
             }
+
+            // Audit Log: Record role unassignment
+            var unassignCallerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var unassignCallerEmail = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name ?? "Administrator";
+            var unassignClientCtx = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(HttpContext);
+
+            bool isRevokingAdmin = string.Equals(request.RoleName, "Admin", StringComparison.OrdinalIgnoreCase);
+            var revokeLog = new BcpActivityLog
+            {
+                Id = Guid.CreateVersion7(),
+                ActionType = isRevokingAdmin ? "CRITICAL_ROLE_REVOCATION" : "ROLE_REVOCATION",
+                Description = isRevokingAdmin
+                    ? $"[CRITICAL] High-authority role '{request.RoleName}' was revoked from '{user.FullName}' ({user.Email})."
+                    : $"Revoked role '{request.RoleName}' from '{user.FullName}' ({user.Email}).",
+                Module = "Identity & Access",
+                PerformedByProfileId = unassignCallerId,
+                PerformedByUserEmail = unassignCallerEmail,
+                PerformedByFullName = unassignCallerEmail,
+                TargetProfileId = user.Id,
+                TargetFullName = user.FullName,
+                Date = DateTime.UtcNow,
+                IpAddress = unassignClientCtx.IpAddress,
+                SystemId = unassignClientCtx.SystemId,
+                UserAgent = unassignClientCtx.UserAgent
+            };
+            _dbContext.BcpActivityLogs.Add(revokeLog);
 
             await _dbContext.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(null, $"User '{user.Email}' unassigned from role '{request.RoleName}' successfully."));
@@ -939,13 +1146,18 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="search">Optional search term (user name, email, action, description, IP).</param>
         /// <param name="module">Optional module filter.</param>
         /// <returns>Paged collection of unified activity and authentication audit logs.</returns>
+        /// <summary>
+        /// Retrieves workspace security audit logs classified into Normal, Suspicious, and Critical severity tiers.
+        /// Includes live summary counters for the top-bar widget and dedicated audit log filtering.
+        /// </summary>
         [HttpGet("security-audit")]
-        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        [Authorize(Policy = AuthPolicies.IdentityAdmin)]
         public async Task<IActionResult> GetWorkspaceSecurityAuditLogs(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 25,
             [FromQuery] string? search = null,
-            [FromQuery] string? module = null)
+            [FromQuery] string? module = null,
+            [FromQuery] string? severity = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 5) pageSize = 5;
@@ -1007,14 +1219,14 @@ namespace Ozikol_BCC.Api.Controllers
                     nameByEmail[u.Email] = u.FullName;
             }
 
-            // 1. Fetch all operational activity logs across the workspace
+            // 1. Fetch operational activity logs across workspace (lightweight projection)
             var rawActivities = await _dbContext.BcpActivityLogs
                 .AsNoTracking()
                 .OrderByDescending(a => a.Date)
                 .Take(2000)
                 .ToListAsync();
 
-            // 2. Fetch all login authentication logs across the workspace
+            // 2. Fetch login authentication logs across workspace (lightweight projection)
             var rawLogins = await _dbContext.BcpLoginAuditLogs
                 .AsNoTracking()
                 .OrderByDescending(l => l.Timestamp)
@@ -1032,6 +1244,7 @@ namespace Ozikol_BCC.Api.Controllers
                 string Module,
                 string IpAddress,
                 string UserAgent,
+                string Severity,
                 DateTime Timestamp)>();
 
             foreach (var a in rawActivities)
@@ -1056,6 +1269,21 @@ namespace Ozikol_BCC.Api.Controllers
 
                 var (cleanAction, cleanDesc, cleanModule) = FormatActivityDisplay(a.ActionType, a.Description, a.Module);
 
+                // Classify Severity: Normal, Suspicious, Critical
+                string itemSeverity = "Normal";
+                var actionUpper = (cleanAction ?? "").ToUpperInvariant();
+                var descUpper = (cleanDesc ?? "").ToUpperInvariant();
+
+                if (actionUpper.Contains("CRITICAL") || actionUpper.Contains("MASS_DELETE") || descUpper.Contains("[CRITICAL]") || descUpper.Contains("TAMPER"))
+                {
+                    itemSeverity = "Critical";
+                }
+                else if (actionUpper.Contains("SUSPICIOUS") || actionUpper.Contains("UNAUTHORIZED") || actionUpper.Contains("DENIED") ||
+                         descUpper.Contains("[SUSPICIOUS]") || descUpper.Contains("ACCESS DENIED"))
+                {
+                    itemSeverity = "Suspicious";
+                }
+
                 unified.Add((
                     a.Id,
                     "activity",
@@ -1067,6 +1295,7 @@ namespace Ozikol_BCC.Api.Controllers
                     cleanModule,
                     a.IpAddress ?? "127.0.0.1",
                     a.UserAgent ?? "Web Browser",
+                    itemSeverity,
                     a.Date
                 ));
             }
@@ -1088,9 +1317,16 @@ namespace Ozikol_BCC.Api.Controllers
                 if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
                     fullName = resolvedByEmail;
 
-                var desc = l.Status != null && l.Status.Contains("Success", StringComparison.OrdinalIgnoreCase)
+                var isSuccess = l.Status != null && l.Status.Contains("Success", StringComparison.OrdinalIgnoreCase);
+                var isLockout = l.Status != null && l.Status.Contains("Locked", StringComparison.OrdinalIgnoreCase);
+
+                string loginSeverity = isLockout ? "Critical" : (isSuccess ? "Normal" : "Suspicious");
+
+                var desc = isSuccess
                     ? "Successful authentication sign-in"
-                    : (l.Status ?? "Authentication event");
+                    : (isLockout
+                        ? "Account temporarily locked out due to multiple failed login attempts"
+                        : (l.Status ?? "Failed login attempt (Invalid credentials)"));
 
                 unified.Add((
                     l.Id,
@@ -1103,9 +1339,15 @@ namespace Ozikol_BCC.Api.Controllers
                     "Authentication",
                     l.IpAddress ?? "127.0.0.1",
                     l.UserAgent ?? "Web Browser",
+                    loginSeverity,
                     l.Timestamp
                 ));
             }
+
+            // Summary metrics for top bar and dashboard tabs
+            var normalCount = unified.Count(x => string.Equals(x.Severity, "Normal", StringComparison.OrdinalIgnoreCase));
+            var suspiciousCount = unified.Count(x => string.Equals(x.Severity, "Suspicious", StringComparison.OrdinalIgnoreCase));
+            var criticalCount = unified.Count(x => string.Equals(x.Severity, "Critical", StringComparison.OrdinalIgnoreCase));
 
             // Collect distinct modules for filter dropdown
             var modules = unified
@@ -1114,6 +1356,15 @@ namespace Ozikol_BCC.Api.Controllers
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(m => m)
                 .ToList();
+
+            // Filter by Severity
+            if (!string.IsNullOrWhiteSpace(severity) && !string.Equals(severity, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                var cleanSev = severity.Trim();
+                unified = unified
+                    .Where(x => string.Equals(x.Severity, cleanSev, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
             // Apply module filter
             if (!string.IsNullOrWhiteSpace(module) && !string.Equals(module, "all", StringComparison.OrdinalIgnoreCase))
@@ -1163,6 +1414,7 @@ namespace Ozikol_BCC.Api.Controllers
                         h.Module,
                         h.IpAddress,
                         h.UserAgent,
+                        h.Severity,
                         Device = parsed.FriendlyDeviceTitle,
                         Browser = parsed.FriendlyBrowserDetails,
                         BrowserName = parsed.BrowserName,
@@ -1182,6 +1434,9 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 items = paged,
                 totalCount,
+                normalCount,
+                suspiciousCount,
+                criticalCount,
                 page,
                 pageSize,
                 totalPages,
@@ -1223,7 +1478,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="ids">List of audit log GUIDs to delete.</param>
         /// <returns>Bulk deletion result.</returns>
         [HttpPost("security-audit/bulk-delete")]
-        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        [Authorize(Policy = AuthPolicies.IdentityAdmin)]
         public async Task<IActionResult> BulkDeleteSecurityAuditLogs([FromBody] List<Guid> ids)
         {
             if (ids == null || ids.Count == 0)
@@ -1247,6 +1502,164 @@ namespace Ozikol_BCC.Api.Controllers
             await _dbContext.SaveChangesAsync();
 
             return Ok(ApiResponse<object>.SuccessResponse(new { deletedCount }, $"Deleted {deletedCount} audit log record(s)."));
+        }
+
+        /// <summary>
+        /// Clears audit logs selectively by severity tier (Normal, Suspicious, Critical, or All) and age threshold.
+        /// Prevents unbounded database bloat by purging old logs while preserving critical records.
+        /// </summary>
+        [HttpPost("security-audit/clear-by-category")]
+        [Authorize(Policy = AuthPolicies.IdentityAdmin)]
+        public async Task<IActionResult> ClearAuditLogsByCategory([FromBody] ClearAuditLogsRequest request)
+        {
+            var category = (request.Category ?? "all").Trim().ToLowerInvariant();
+            var olderThanDays = request.OlderThanDays ?? 0;
+            var cutoffUtc = olderThanDays > 0 ? DateTime.UtcNow.AddDays(-olderThanDays) : DateTime.UtcNow;
+
+            int deletedActivities = 0;
+            int deletedLogins = 0;
+
+            if (category == "all" || category == "normal")
+            {
+                var normActivities = await _dbContext.BcpActivityLogs
+                    .Where(a => a.Date <= cutoffUtc &&
+                                !a.ActionType.Contains("SUSPICIOUS") &&
+                                !a.ActionType.Contains("CRITICAL") &&
+                                !a.ActionType.Contains("MASS_DELETE") &&
+                                !a.Description.Contains("[SUSPICIOUS]") &&
+                                !a.Description.Contains("[CRITICAL]"))
+                    .ToListAsync();
+                deletedActivities += normActivities.Count;
+                _dbContext.BcpActivityLogs.RemoveRange(normActivities);
+
+                var normLogins = await _dbContext.BcpLoginAuditLogs
+                    .Where(l => l.Timestamp <= cutoffUtc &&
+                                l.Status != null &&
+                                l.Status.Contains("Success"))
+                    .ToListAsync();
+                deletedLogins += normLogins.Count;
+                _dbContext.BcpLoginAuditLogs.RemoveRange(normLogins);
+            }
+
+            if (category == "all" || category == "suspicious")
+            {
+                var suspActivities = await _dbContext.BcpActivityLogs
+                    .Where(a => a.Date <= cutoffUtc &&
+                                (a.ActionType.Contains("SUSPICIOUS") ||
+                                 a.ActionType.Contains("DENIED") ||
+                                 a.Description.Contains("[SUSPICIOUS]")))
+                    .ToListAsync();
+                deletedActivities += suspActivities.Count;
+                _dbContext.BcpActivityLogs.RemoveRange(suspActivities);
+
+                var suspLogins = await _dbContext.BcpLoginAuditLogs
+                    .Where(l => l.Timestamp <= cutoffUtc &&
+                                l.Status != null &&
+                                !l.Status.Contains("Success") &&
+                                !l.Status.Contains("Locked"))
+                    .ToListAsync();
+                deletedLogins += suspLogins.Count;
+                _dbContext.BcpLoginAuditLogs.RemoveRange(suspLogins);
+            }
+
+            if (category == "all" || category == "critical")
+            {
+                var critActivities = await _dbContext.BcpActivityLogs
+                    .Where(a => a.Date <= cutoffUtc &&
+                                (a.ActionType.Contains("CRITICAL") ||
+                                 a.ActionType.Contains("MASS_DELETE") ||
+                                 a.Description.Contains("[CRITICAL]")))
+                    .ToListAsync();
+                deletedActivities += critActivities.Count;
+                _dbContext.BcpActivityLogs.RemoveRange(critActivities);
+
+                var critLogins = await _dbContext.BcpLoginAuditLogs
+                    .Where(l => l.Timestamp <= cutoffUtc &&
+                                l.Status != null &&
+                                l.Status.Contains("Locked"))
+                    .ToListAsync();
+                deletedLogins += critLogins.Count;
+                _dbContext.BcpLoginAuditLogs.RemoveRange(critLogins);
+            }
+
+            var totalCleared = deletedActivities + deletedLogins;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                clearedCount = totalCleared,
+                deletedActivities,
+                deletedLogins,
+                category,
+                olderThanDays
+            }, $"Successfully cleared {totalCleared} {category} audit record(s)."));
+        }
+
+        /// <summary>
+        /// Records an authenticated client-side suspicious access attempt (e.g. user clicked or typed a restricted route/feature).
+        /// Creates a compact high-severity security audit log and dispatches a real-time notification to the workspace SuperAdmin.
+        /// </summary>
+        [HttpPost("security-audit/suspicious-access")]
+        public async Task<IActionResult> RecordSuspiciousAccessAttempt([FromBody] SuspiciousAccessReportRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name ?? "anonymous@workspace.local";
+
+            var clientCtx = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(HttpContext);
+            var attemptedUrl = (request.AttemptedUrl ?? "").Trim();
+            if (attemptedUrl.Length > 200) attemptedUrl = attemptedUrl.Substring(0, 200);
+
+            var friendlyDevice = UserAgentParser.Parse(clientCtx.UserAgent ?? Request.Headers.UserAgent.ToString()).FriendlyDeviceTitle;
+
+            var userRoles = User.Claims
+                .Where(c => c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+
+            var rolesSummary = userRoles.Count > 0 ? string.Join(", ", userRoles) : "Member";
+
+            var logEntry = new BcpActivityLog
+            {
+                Id = Guid.CreateVersion7(),
+                ActionType = "SUSPICIOUS_ACCESS_ATTEMPT",
+                Description = $"[SUSPICIOUS] User '{email}' (Role: {rolesSummary}) attempted to access unauthorized resource '{attemptedUrl}' from {friendlyDevice}.",
+                Module = "Security",
+                PerformedByProfileId = userId,
+                PerformedByUserEmail = email,
+                PerformedByFullName = email,
+                Date = DateTime.UtcNow,
+                IpAddress = clientCtx.IpAddress,
+                SystemId = clientCtx.SystemId,
+                UserAgent = friendlyDevice
+            };
+
+            _dbContext.BcpActivityLogs.Add(logEntry);
+            await _dbContext.SaveChangesAsync();
+
+            // Real-time notification dispatched to workspace SuperAdmin
+            if (_notificationDispatcher != null)
+            {
+                var tenantKey = _tenantProvider?.CurrentTenant;
+                var superAdminUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.Contains("superadmin"));
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = superAdminUser != null ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                    TargetUserId = superAdminUser?.Id,
+                    TenantKey = tenantKey,
+                    Title = "Security Alert: Suspicious Access Blocked",
+                    Message = $"User '{email}' was blocked attempting to access '{attemptedUrl}' ({friendlyDevice}).",
+                    Severity = NotificationSeverity.Warning,
+                    Channels = NotificationChannels.InApp,
+                    ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
+                    Module = "Security",
+                    Icon = "security_update_warning",
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.High
+                });
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { logId = logEntry.Id }, "Suspicious access attempt recorded."));
         }
 
         [HttpGet("password-policy")]
@@ -2607,5 +3020,26 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string RoleName { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
+    }
+
+    public class ClearAuditLogsRequest
+    {
+        /// <summary>
+        /// Severity category to clear: "all", "normal", "suspicious", or "critical".
+        /// </summary>
+        public string Category { get; set; } = "all";
+
+        /// <summary>
+        /// Optional age threshold in days (e.g. 7, 30, 90). If 0 or null, all matching logs are purged.
+        /// </summary>
+        public int? OlderThanDays { get; set; }
+    }
+
+    public class SuspiciousAccessReportRequest
+    {
+        /// <summary>
+        /// The restricted route or feature URL the user attempted to access.
+        /// </summary>
+        public string AttemptedUrl { get; set; } = string.Empty;
     }
 }

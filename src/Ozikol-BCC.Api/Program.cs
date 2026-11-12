@@ -5,14 +5,17 @@ using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Application;
 using Ozikol_BCC.Application.Hubs;
+using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Infrastructure.Extensions;
@@ -61,6 +64,7 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
             builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Recaptcha.IRecaptchaCredentialProvider, Ozikol_BCC.Api.Services.MasterPlatformRecaptchaCredentialProvider>();
+            builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Email.IMailInfrastructureCredentialProvider, Ozikol_BCC.Api.Services.MasterPlatformEmailInfrastructureCredentialProvider>();
 
             builder.Services.AddPostmarkEmailServices(builder.Configuration);
             builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.EmailServices.Postmark.Configuration.PostmarkOptions>, Ozikol_BCC.Api.Services.MasterPlatformPostmarkPostConfigure>();
@@ -120,8 +124,8 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                 options.Password.RequireDigit = false;
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-                options.Lockout.MaxFailedAccessAttempts = 10;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.MaxFailedAccessAttempts = 3;
                 options.Lockout.AllowedForNewUsers = true;
             })
             .AddEntityFrameworkStores<DashboardDbContext>()
@@ -182,6 +186,38 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                         return Task.CompletedTask;
                     }
                 };
+            });
+
+            // Single-source-of-truth Policy Authorization (normalizes spaced/unspaced roles & checks BcpUserFeatureRoles)
+            builder.Services.AddScoped<IAuthorizationHandler, CanonicalRoleAuthorizationHandler>();
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy(AuthPolicies.ConsoleDashboard, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(SystemRoles.ConsoleDashboardKeys)));
+                options.AddPolicy(AuthPolicies.CmsStudio, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(
+                        SystemRoles.CmsAccessKeys,
+                        new[] { "bcp-cms", "CMS", "CmsManager", "CmsStudioManager" })));
+                options.AddPolicy(AuthPolicies.IdentityAdmin, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(
+                        SystemRoles.IdentityAdminKeys,
+                        new[] { "IdentityManager", "IdentityAccessControl", "bcp-core-identity" })));
+                options.AddPolicy(AuthPolicies.UserManagement, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(
+                        SystemRoles.UserManagementKeys,
+                        new[] { "UserManager", "IdentityManager" })));
+                options.AddPolicy(AuthPolicies.CommerceStudio, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(
+                        SystemRoles.CommerceAccessKeys,
+                        new[] { "bcp-store-ecommerce", "CommerceStudio", "CommerceManager" })));
+                options.AddPolicy(AuthPolicies.CommunicationStudio, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(
+                        SystemRoles.CommunicationAccessKeys,
+                        new[] { "bcp-mass-communication", "NotificationStudio", "CommunicationManager" })));
+                options.AddPolicy(AuthPolicies.FormStudio, policy =>
+                    policy.Requirements.Add(new CanonicalRoleRequirement(
+                        SystemRoles.FormBuilderAccessKeys,
+                        new[] { "bcp-form-builder", "FormsSurveys", "FormBuilder" })));
             });
 
             // 4. CORS Policy for Multi-Tenant Angular SPA Client

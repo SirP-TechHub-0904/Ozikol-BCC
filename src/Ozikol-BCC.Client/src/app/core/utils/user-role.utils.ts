@@ -53,6 +53,55 @@ export function parseRoleString(roleStr: string): ParsedUserRole {
 }
 
 /**
+ * Retrieves the user's assigned feature keys stored in localStorage (from BcpUserFeatureRoles).
+ */
+export function getStoredUserFeatureKeys(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('bcp_user_feature_keys');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map(k => String(k).trim().toLowerCase()).filter(Boolean);
+      }
+    }
+  } catch { }
+  return [];
+}
+
+/**
+ * Checks whether the user holds explicit feature authority (via user_roles or bcp_user_feature_keys)
+ * for a specific modular capability.
+ */
+export function hasFeatureKeyAccess(featureKey: string, roles?: string[]): boolean {
+  const userRoles = roles ?? getStoredUserRoles();
+  if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles)) return true;
+
+  const target = (featureKey || '').trim().toLowerCase().replace(/[\s\-_]/g, '');
+  if (!target) return false;
+
+  // Check stored feature keys from BcpUserFeatureRoles
+  const keys = getStoredUserFeatureKeys();
+  if (keys.some(k => k.replace(/[\s\-_]/g, '') === target)) {
+    return true;
+  }
+
+  // Also check role strings
+  return hasFeatureScope(featureKey, userRoles);
+}
+
+/**
+ * Checks whether the current user is restricted to specific modular features only.
+ */
+export function isFeatureRestrictedStaff(roles?: string[]): boolean {
+  const userRoles = roles ?? getStoredUserRoles();
+  if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles) || isMemberOnly(userRoles)) {
+    return false;
+  }
+  return getStoredUserFeatureKeys().length > 0 || hasScopedFeatureAssignments(userRoles);
+}
+
+/**
  * Retrieves the current user's assigned roles from local storage or decodes the JWT access token.
  * 
  * @returns Array of role strings assigned to the authenticated user
@@ -163,10 +212,11 @@ function getEquivalentScopeKeys(targetScope: string): string[] {
   switch (clean) {
     case 'cms':
     case 'cmsmanager':
+    case 'cmsstudiomanager':
     case 'content':
     case 'contentmanager':
     case 'websitecms':
-      return ['cms', 'cmsmanager', 'content', 'contentmanager', 'websitecms'];
+      return ['cms', 'cmsmanager', 'cmsstudiomanager', 'content', 'contentmanager', 'websitecms'];
     case 'usermanager':
     case 'usermanagement':
     case 'users':
@@ -196,7 +246,7 @@ function getEquivalentScopeKeys(targetScope: string): string[] {
     case 'forms':
     case 'formsmanager':
     case 'formsintelligence':
-      return ['forms', 'formsmanager', 'formsintelligence', 'contentmanager', 'cms'];
+      return ['forms', 'formsmanager', 'formsintelligence', 'contentmanager', 'cms', 'cmsstudiomanager'];
     case 'billing':
     case 'billingmanager':
     case 'financebanking':
@@ -330,12 +380,16 @@ export function canAccessConsole(roles?: string[]): boolean {
   if (isGlobalAdmin(userRoles)) return true;
 
   const normalized = userRoles.map(normalizeRoleKey);
+  const assignedKeys = getStoredUserFeatureKeys();
+  if (assignedKeys.length > 0) return true;
+
   return normalized.some(r => [
     'superadmin',
     'admin',
     'systemadministrator',
     'usermanager',
     'identitymanager',
+    'cmsstudiomanager',
     'cmsmanager',
     'contentmanager',
     'commercemanager',
@@ -426,6 +480,12 @@ export function canAccessRoute(requiredRoles?: string[], targetUrl?: string, rol
     return true;
   }
 
+  // Allow CMS Studio Manager to access Brand & Settings and Link Domain under Website & CMS
+  if ((cleanUrl === '/settings/console' || cleanUrl.startsWith('/settings/console/custom-domain') || cleanUrl === '/admin/settings') &&
+      hasFeatureScope('cmsstudiomanager', userRoles)) {
+    return true;
+  }
+
   // Settings & Billing remain strictly restricted to SuperAdmin / Admin
   if (routeScope === 'settings' || routeScope === 'billingmanager') {
     return false;
@@ -474,7 +534,7 @@ export function canAccessRoute(requiredRoles?: string[], targetUrl?: string, rol
   // 2. Rule 1: Non-Admin / Non-SuperAdmin users can ONLY access routes for their assigned feature scope
   if (routeScope) {
     // Self-service account route under /identity/console/account is allowed for any console user
-    if (!cleanUrl.startsWith('/identity/console/account') && !hasFeatureScope(routeScope, userRoles)) {
+    if (!cleanUrl.startsWith('/identity/console/account') && !hasFeatureScope(routeScope, userRoles) && !hasFeatureKeyAccess(routeScope, userRoles)) {
       return false;
     }
   }
@@ -513,6 +573,7 @@ export function getUserPrimaryRoleName(roles?: string[]): string {
   if (normalized.includes('admin')) return 'Administrator';
   if (normalized.includes('identitymanager')) return 'Identity Manager';
   if (normalized.includes('usermanager')) return 'User Manager';
+  if (normalized.includes('cmsstudiomanager')) return 'CMS Studio Manager';
   if (normalized.includes('cmsmanager') || normalized.includes('contentmanager')) return 'CMS Manager';
   if (normalized.includes('commercemanager')) return 'Commerce Manager';
   if (normalized.includes('globaleditor') || normalized.includes('globaledit')) return 'Global Editor';
@@ -550,8 +611,8 @@ export function getReturnUrlForRole(roles?: string[]): string {
     return '/identity/console/dashboard';
   }
 
-  if (normalized.includes('cmsmanager') || normalized.includes('contentmanager') || hasFeatureScope('cms', userRoles)) {
-    return '/content/console/forms';
+  if (normalized.includes('cmsstudiomanager') || normalized.includes('cmsmanager') || normalized.includes('contentmanager') || hasFeatureScope('cms', userRoles)) {
+    return '/content/console';
   }
 
   return '/dashboard/console';

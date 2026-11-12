@@ -385,9 +385,87 @@ END";
                 });
             }
 
-            // 4. Seed MisConfigurationSetting (Currency, Quotas, Gateways)
+            // 4. Seed MisConfigurationSetting (Currency, Quotas, Gateways, Dedicated Mailcow + DNS)
             if (!await dbContext.MisConfigurationSettings.AnyAsync(cancellationToken))
             {
+                var cleanTenantKey = (request.TenantKey ?? "workspace").Trim().ToLowerInvariant();
+                var mailDomain = $"{cleanTenantKey}.ozikol.cloud";
+                var senderEmail = $"noreply@{mailDomain}";
+                string? encryptedSmtpPassword = null;
+
+                try
+                {
+                    var mailcow = _serviceProvider.GetService(typeof(Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService))
+                        as Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService;
+                    var cloudflareDns = _serviceProvider.GetService(typeof(Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService))
+                        as Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService;
+
+                    if (mailcow != null)
+                    {
+                        var mailboxPassword = $"OziMail!{Guid.NewGuid():N}"[..20];
+                        var domainOk = await mailcow.EnsureDomainExistsAsync(mailDomain, $"{request.OrganizationName} Transactional Mail Domain", cancellationToken);
+                        var mailboxOk = domainOk && await mailcow.EnsureMailboxExistsAsync(mailDomain, "noreply", mailboxPassword, request.OrganizationName, cancellationToken: cancellationToken);
+
+                        if (mailboxOk)
+                        {
+                            encryptedSmtpPassword = Ozikol.MasterDomain.Security.OzikolDataCipher.EncryptIfNeeded(mailboxPassword);
+                            if (cloudflareDns != null)
+                            {
+                                var dkimTxt = await mailcow.GetDkimRecordAsync(mailDomain, cancellationToken);
+                                var dnsResult = await cloudflareDns.EnsureTenantEmailDnsAsync(mailDomain, dkimTxt, cancellationToken);
+                                if (!dnsResult.Success)
+                                {
+                                    _logger.LogWarning("⚠️ [TenantProvisioning] Cloudflare DNS provisioning warning for '{Domain}': {Error}", mailDomain, dnsResult.ErrorMessage);
+                                }
+                            }
+
+                            // Send an automatic live confirmation email from the tenant's dedicated noreply address to the Get Started admin email
+                            if (!string.IsNullOrWhiteSpace(request.AdminEmail))
+                            {
+                                var smtpDispatcher = _serviceProvider.GetService(typeof(Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher))
+                                    as Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher;
+                                if (smtpDispatcher != null)
+                                {
+                                    var safeOrg = System.Net.WebUtility.HtmlEncode(request.OrganizationName);
+                                    var safeSender = System.Net.WebUtility.HtmlEncode(senderEmail);
+                                    var confirmHtml = $@"
+                                        <div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;"">
+                                            <h2 style=""color: #0050E5; margin: 0 0 10px 0;"">{safeOrg} — Email Service Active</h2>
+                                            <p style=""color: #334155; font-size: 14px; line-height: 1.6;"">
+                                                Your dedicated workspace notification mailbox (<strong>{safeSender}</strong>) has been automatically provisioned and authenticated with SPF, DKIM, and DMARC.
+                                            </p>
+                                            <p style=""color: #475569; font-size: 13.5px; line-height: 1.6; margin-bottom: 0;"">
+                                                Registration verification codes, member onboarding emails, and password resets for <strong>{safeOrg}</strong> are now live.
+                                            </p>
+                                        </div>";
+
+                                    await smtpDispatcher.SendEmailAsync(
+                                        toEmail: request.AdminEmail.Trim(),
+                                        subject: $"{request.OrganizationName} — Workspace Email Service Active",
+                                        htmlBody: confirmHtml,
+                                        fromEmail: senderEmail,
+                                        fromName: request.OrganizationName,
+                                        isCentralPlatformEmail: false,
+                                        tenantName: request.OrganizationName,
+                                        tenantAdminEmail: request.AdminEmail.Trim(),
+                                        cancellationToken: cancellationToken,
+                                        smtpUsernameOverride: senderEmail,
+                                        smtpPasswordOverride: encryptedSmtpPassword,
+                                        strictDeliveryCheck: true);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("⚠️ [TenantProvisioning] Could not auto-provision Mailcow mailbox '{SenderEmail}'. Check Central Works Mailcow settings.", senderEmail);
+                        }
+                    }
+                }
+                catch (Exception mailEx)
+                {
+                    _logger.LogWarning(mailEx, "⚠️ [TenantProvisioning] Non-blocking email provisioning warning for '{SenderEmail}'.", senderEmail);
+                }
+
                 dbContext.MisConfigurationSettings.Add(new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
@@ -397,9 +475,10 @@ END";
                     EmailProvider = "Mailcow",
                     SmtpHost = "mail.ozikol.cloud",
                     SmtpPort = 587,
-                    SmtpUsername = "noreply@ozikol.cloud",
+                    SmtpUsername = senderEmail,
+                    SmtpPassword = encryptedSmtpPassword,
                     SmtpEnableSsl = true,
-                    SenderEmail = $"noreply@{request.TenantKey?.ToLowerInvariant() ?? "workspace"}.ozikol.cloud",
+                    SenderEmail = senderEmail,
                     SenderName = request.OrganizationName,
                     MaximumUsers = 1000,
                     SessionTimeoutMinutes = 120,

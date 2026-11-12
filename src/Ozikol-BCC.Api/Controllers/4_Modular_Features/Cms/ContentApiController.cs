@@ -16,6 +16,7 @@ using Ozikol_BCC.Persistence.EF.SQL.Infrastructure;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterDomain.Blueprints;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Domain.Constants;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,CmsManager,ContentManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+    [Authorize(Policy = AuthPolicies.CmsStudio)]
     [Tags("Content CMS Suite - Studio Management")]
     public class ContentApiController : ControllerBase
     {

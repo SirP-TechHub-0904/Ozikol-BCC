@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System.Text.Json;
@@ -14,7 +16,8 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.FormStudio)]
+    [RequireFeature("bcp-form-builder")]
     [Tags("Content CMS - Manage Forms")]
     public class PageFormsApiController : ControllerBase
     {

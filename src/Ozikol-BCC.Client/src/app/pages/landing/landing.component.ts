@@ -58,8 +58,8 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       <!-- When embeddedShellMode is active, inject projected <ng-content> into the exact body section slot between Breadcrumb and Footer -->
       <main *ngIf="embeddedShellMode" class="dynamic-rendered-content">
         <div class="oz-embedded-top-shell" [innerHTML]="safeEmbeddedTopHtml"></div>
-        <section class="oz-embedded-body-slot py-5 bg-light" style="padding: 40px 16px; background: #f8fafc;">
-          <div class="container py-3" style="max-width: 720px; margin: 0 auto;">
+        <section class="oz-embedded-body-slot bg-light">
+          <div class="container" style="max-width: 720px; margin: 0 auto;">
             <ng-content></ng-content>
           </div>
         </section>
@@ -721,6 +721,15 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     }
     .oz-embedded-website-shell.oz-preview-shell .oz-embedded-body-slot {
       padding: 28px 16px;
+    }
+    @media (max-width: 768px) {
+      .oz-embedded-body-slot {
+        padding: 14px 6px;
+      }
+      .oz-embedded-body-slot > .container {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+      }
     }
   `]
 })

@@ -674,6 +674,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                 ("Admin", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.Both),
                 ("Identity Manager", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
                 ("User Manager", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
+                ("CMS Studio Manager", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
                 ("Global Editor", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
                 ("Feature Editor", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
                 ("Read Only", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),

@@ -224,7 +224,7 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           </ng-container>
-          <ng-container *ngIf="canAccessSuite('settings')">
+          <ng-container *ngIf="canAccessSuite('settings') || canAccessSuite('cms')">
           <div class="nav-item">
             <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
               <div class="nav-link-content">
@@ -972,6 +972,16 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')">
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/dashboard/messages" [class.active]="isCurrentRoute('/dashboard/messages')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">hub</span>{{ 'adm.communications_hub' | translate:'Communications Hub' }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/messages')" (click)="togglePin('Communications Hub', '/dashboard/messages', 'hub')" [title]="isPinned('/dashboard/messages') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/dashboard/messages') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>{{ 'adm.broadcasts_dashboard' | translate:'Broadcasts Dashboard' }}</span>
                   </a>
@@ -1597,6 +1607,24 @@ export interface SuiteInfoDetail {
                 <span>30</span><span>31</span>
               </div>
             </div>
+          </div>
+
+          <!-- Topbar Security Audit Mini Counter Dashboard (Normal, Suspicious, Critical) -->
+          <div class="security-mini-dashboard" *ngIf="canAccessSecurityMiniDashboard" title="Workspace Security Health">
+            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Normal' }" class="sec-stat-pill sec-normal" title="Normal security events">
+              <span class="sec-stat-dot dot-normal"></span>
+              <span class="sec-stat-val">{{ securityStats.normal }}</span>
+            </a>
+            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Suspicious' }" class="sec-stat-pill sec-suspicious" [class.has-alerts]="securityStats.suspicious > 0" title="Suspicious access & login alerts">
+              <span class="sec-stat-dot dot-suspicious"></span>
+              <span class="sec-stat-label">SUSP</span>
+              <span class="sec-stat-val">{{ securityStats.suspicious }}</span>
+            </a>
+            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Critical' }" class="sec-stat-pill sec-critical" [class.has-critical]="securityStats.critical > 0" title="Critical security & lockout alerts">
+              <span class="sec-stat-dot dot-critical"></span>
+              <span class="sec-stat-label">CRIT</span>
+              <span class="sec-stat-val">{{ securityStats.critical }}</span>
+            </a>
           </div>
 
           <!-- Help Trigger -->
@@ -3393,6 +3421,78 @@ export interface SuiteInfoDetail {
     .oz-flag-lg {
       font-size: 24px;
     }
+    /* Topbar Security Audit Mini Counter Dashboard */
+    .security-mini-dashboard {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      margin-right: 6px;
+    }
+    :host-context(.dark-mode) .security-mini-dashboard {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .sec-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 11.5px;
+      font-weight: 700;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .sec-stat-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .dot-normal { background: #10b981; }
+    .dot-suspicious { background: #f59e0b; }
+    .dot-critical { background: #ef4444; }
+    .sec-normal {
+      color: #059669;
+      background: #ecfdf5;
+    }
+    .sec-suspicious {
+      color: #b45309;
+      background: #fffbeb;
+    }
+    .sec-suspicious.has-alerts {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      animation: pulseAlert 2.5s infinite ease-in-out;
+    }
+    .sec-critical {
+      color: #dc2626;
+      background: #fef2f2;
+    }
+    .sec-critical.has-critical {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      animation: pulseAlert 1.5s infinite ease-in-out;
+    }
+    .sec-stat-label {
+      font-size: 9.5px;
+      letter-spacing: 0.04em;
+      opacity: 0.85;
+    }
+    .sec-stat-val {
+      font-variant-numeric: tabular-nums;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
     .oz-lang-modal-target-names {
       text-align: left;
     }
@@ -4200,6 +4300,27 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   public isAiOpen: boolean = false;
   public aiLayoutMode: 'floating' | 'docked-right' | 'docked-bottom' | 'minimized' = 'docked-right';
 
+  public securityStats = { normal: 0, suspicious: 0, critical: 0 };
+  public canAccessSecurityMiniDashboard = false;
+
+  private refreshSecurityStats(): void {
+    if (!this.canAccessSecurityMiniDashboard) return;
+    this.api.get<any>('IdentityApi/security-audit?page=1&pageSize=1').subscribe({
+      next: (res) => {
+        const d = res?.data;
+        if (d) {
+          this.securityStats = {
+            normal: Number(d.normalCount || 0),
+            suspicious: Number(d.suspiciousCount || 0),
+            critical: Number(d.criticalCount || 0)
+          };
+          this.cdr.markForCheck();
+        }
+      },
+      error: () => {}
+    });
+  }
+
   constructor(
     private api: ApiService, 
     private router: Router, 
@@ -4299,6 +4420,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
+
+    this.canAccessSecurityMiniDashboard = isGlobalAdmin(this.userRoles) || hasFeatureScope('identitymanager', this.userRoles);
+    if (this.canAccessSecurityMiniDashboard) {
+      this.refreshSecurityStats();
+    }
 
     // 2. Real-time SignalR security & branding listener
     this.signalR.startConnection();
@@ -5506,7 +5632,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     let tabTitle = 'Page';
     let tabIcon = 'description';
 
-    if (url.includes('/dashboard/mxmails') || url.includes('/admin/mxmails') || url.includes('/mxmails')) { tabTitle = 'MX Email Logs'; tabIcon = 'mark_email_read'; }
+    if (url.includes('/dashboard/messages') || url.includes('/admin/messages') || url.includes('/messages')) { tabTitle = 'Communications Hub'; tabIcon = 'hub'; }
+    else if (url.includes('/dashboard/mxmails') || url.includes('/admin/mxmails') || url.includes('/mxmails')) { tabTitle = 'MX Email Logs'; tabIcon = 'mark_email_read'; }
     else if (url.includes('/dashboard/mxsms') || url.includes('/admin/mxsms') || url.includes('/mxsms')) { tabTitle = 'MX SMS Logs'; tabIcon = 'sms'; }
     else if (url.includes('/users/console/notifications')) { tabTitle = 'Notification Studio'; tabIcon = 'campaign'; }
     else if (url.includes('/users/workspace/notifications')) { tabTitle = 'Notifications'; tabIcon = 'notifications'; }

@@ -240,6 +240,38 @@ namespace Ozikol.MasterDomain.Models
         public string EmailFromName { get; set; } = "Ozikol Cloud Security";
 
         /// <summary>
+        /// Gets or sets the Mailcow REST API base URL used for automated tenant domain, mailbox, and DKIM provisioning (e.g. "https://mail.ozikol.cloud").
+        /// </summary>
+        [MaxLength(500)]
+        public string? MailcowApiUrl { get; set; } = "https://mail.ozikol.cloud";
+
+        /// <summary>
+        /// Gets or sets the Mailcow REST API Key used for automated tenant domain and mailbox provisioning.
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(500)]
+        public string? MailcowApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Mailcow SMTP hostname used for MX and SPF DNS automation (e.g. "mail.ozikol.cloud").
+        /// </summary>
+        [MaxLength(255)]
+        public string? MailcowSmtpHost { get; set; } = "mail.ozikol.cloud";
+
+        /// <summary>
+        /// Gets or sets the Cloudflare Zone ID for the primary platform domain (e.g. ozikol.cloud) used to automate tenant MX, SPF, DKIM, and DMARC records.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudflareZoneId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Cloudflare API Token with Zone:DNS:Edit permissions for automated tenant email DNS provisioning.
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(500)]
+        public string? CloudflareDnsApiToken { get; set; }
+
+        /// <summary>
         /// Gets or sets the OneSignal REST API Key used for server-side push notifications.
         /// Stored encrypted transparently at rest via AES-256-GCM.
         /// </summary>

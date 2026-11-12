@@ -51,7 +51,8 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
         string? tenantAdminEmail = null,
         CancellationToken cancellationToken = default,
         string? smtpUsernameOverride = null,
-        string? smtpPasswordOverride = null)
+        string? smtpPasswordOverride = null,
+        bool strictDeliveryCheck = false)
     {
         if (string.IsNullOrWhiteSpace(toEmail) || string.IsNullOrWhiteSpace(subject))
         {
@@ -157,8 +158,8 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
                 return true;
             }
 
-            // In local development, if SMTP credentials are not yet provisioned, simulate successful delivery
-            if (isDev)
+            // In local development, if SMTP credentials are not yet provisioned and strict verification is off, simulate delivery
+            if (isDev && !strictDeliveryCheck)
             {
                 _logger.LogWarning(
                     "⚠️ [SmtpEmailDispatcher] [DEVELOPMENT] SMTP password is not configured for {Host}:{Port}. Simulating delivery of '{Subject}' to [{To}] from '{From}'.",
@@ -171,7 +172,7 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
         }
         catch (Exception ex)
         {
-            if (isDev)
+            if (isDev && !strictDeliveryCheck && string.IsNullOrWhiteSpace(smtpPasswordOverride))
             {
                 _logger.LogWarning(
                     ex,

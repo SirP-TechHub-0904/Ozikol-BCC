@@ -559,6 +559,10 @@ interface RoleMemberItem {
               <span class="material-symbols-outlined">manage_accounts</span>
               <span><strong>User Manager Domain Role:</strong> Members assigned to this role can manage user profiles, categories, and account statuses. They cannot assign roles unless also granted Identity Manager authority.</span>
             </div>
+            <div class="role-scope-notice notice-cmsmanager" *ngIf="activeModalRole.name === 'CMS Studio Manager'">
+              <span class="material-symbols-outlined">web</span>
+              <span><strong>CMS Studio Manager Domain Role:</strong> Members assigned to this role govern the entire Website &amp; CMS suite — including CMS Studio, Brand &amp; Settings, Link Domain, Manage Forms, My Templates, and UI Marketplace.</span>
+            </div>
 
             <!-- Assignment Form Section -->
             <div class="assign-section">
@@ -902,6 +906,8 @@ interface RoleMemberItem {
     .badge-admin { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
     .badge-identity { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
     .badge-usermanager { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-cmsmanager { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
+    .badge-feature-authority { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
     .badge-editor { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
     .badge-feature { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
     .badge-readonly { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
@@ -1131,6 +1137,11 @@ interface RoleMemberItem {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
       color: #166534;
+    }
+    .role-scope-notice.notice-cmsmanager {
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      color: #155e75;
     }
     .role-scope-notice span.material-symbols-outlined { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
 
@@ -1410,7 +1421,7 @@ export class IdentityRolesComponent implements OnInit {
    */
   get systemFeatureRoles(): RoleCatalogItem[] {
     return this.rolesCatalog
-      .filter(r => r.group === 'system_feature' || ['SuperAdmin', 'Admin', 'Identity Manager', 'User Manager', 'Member'].includes(r.name))
+      .filter(r => r.group === 'system_feature' || ['SuperAdmin', 'Admin', 'Identity Manager', 'User Manager', 'CMS Studio Manager', 'Member'].includes(r.name))
       .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
   }
 
