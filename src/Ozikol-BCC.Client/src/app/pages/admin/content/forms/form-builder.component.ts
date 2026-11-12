@@ -280,6 +280,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                   </div>
                 </div>
               </div>
+
+              <!-- Bottom Add Action (prevents scrolling back to top on long forms) -->
+              <div class="fields-bottom-actions">
+                <button type="button" class="btn-add-bottom" (click)="addField(fields.length - 1)">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Question</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -478,7 +486,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
     .btn-sort:hover:not(:disabled) { background: #e2e8f0; color: #0f172a; }
     .btn-sort:disabled { opacity: 0.3; cursor: not-allowed; }
     .btn-remove-field:hover { background: #fee2e2; color: #dc2626; }
-    .btn-sort span, .btn-remove-field span { font-size: 18px; }
+    .btn-insert-below span, .btn-sort span, .btn-remove-field span { font-size: 18px; }
+    .fields-bottom-actions { margin-top: 4px; }
+    .btn-add-bottom {
+      width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 16px; border-radius: 10px; border: 1px dashed #93c5fd;
+      background: #eff6ff; color: #0050e5; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-add-bottom:hover { background: #dbeafe; border-color: #0050e5; }
 
     .field-card-body {
       padding: 18px; border-top: 1px solid #f1f5f9; background: #fff;
