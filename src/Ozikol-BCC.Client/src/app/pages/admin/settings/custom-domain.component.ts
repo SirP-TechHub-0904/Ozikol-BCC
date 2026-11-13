@@ -149,7 +149,7 @@ interface DnsProbeResult {
                   class="form-control"
                   placeholder="e.g. www.company.org"
                   [(ngModel)]="customDomainInput"
-                  (keyup.enter)="saveCustomDomain()"
+                  (keyup.enter)="verifyAndSaveDomain()"
                   [disabled]="saving"
                 />
               </div>
@@ -160,34 +160,39 @@ interface DnsProbeResult {
 
             <!-- Action Buttons Bar -->
             <div class="actions-bar">
+              <!-- 1. Verify & Save Domain (Active when unverified; Inactive when verified) -->
               <button
                 type="button"
                 class="btn btn-primary"
-                (click)="saveCustomDomain()"
-                [disabled]="saving || !customDomainInput.trim()"
+                (click)="verifyAndSaveDomain()"
+                [disabled]="saving || !customDomainInput.trim() || isDomainVerified"
+                [title]="isDomainVerified ? 'Domain is verified and active' : 'Verify DNS and save custom domain'"
               >
                 <span class="material-symbols-outlined" [class.spin-icon]="saving">
-                  {{ saving ? 'sync' : 'save' }}
+                  {{ saving ? 'sync' : (isDomainVerified ? 'check_circle' : 'verified') }}
                 </span>
-                <span>{{ saving ? 'Updating Domain Routing...' : 'Save &amp; Bind Domain' }}</span>
+                <span>{{ saving ? 'Verifying &amp; Saving Domain...' : (isDomainVerified ? 'Domain Verified &amp; Active' : 'Verify &amp; Save Domain') }}</span>
               </button>
 
+              <!-- 2. Unbind Domain (Active when verified; Inactive when unverified) -->
               <button
                 type="button"
-                *ngIf="hasCustomDomain"
                 class="btn btn-danger-outline"
-                (click)="unlinkDomain()"
-                [disabled]="saving"
+                (click)="unbindDomain()"
+                [disabled]="saving || !isDomainVerified"
+                [title]="isDomainVerified ? 'Unbind and remove this custom domain' : 'Unbind is only active when domain is verified'"
               >
                 <span class="material-symbols-outlined">link_off</span>
-                <span>Unlink Domain</span>
+                <span>Unbind Domain</span>
               </button>
 
+              <!-- 3. Verify DNS Propagation (Diagnostics Only) -->
               <button
                 type="button"
                 class="btn btn-outline"
                 (click)="probeDns()"
                 [disabled]="probing || !customDomainInput.trim()"
+                title="Run real-time DNS diagnostic check against public root resolvers"
               >
                 <span class="material-symbols-outlined" [class.spin-icon]="probing">
                   {{ probing ? 'sync' : 'network_check' }}
@@ -1090,6 +1095,23 @@ export class CustomDomainComponent implements OnInit {
     return !!(this.customDomain && this.customDomain.trim());
   }
 
+  /**
+   * Indicates whether the domain is fully verified against DNS records (A record or CNAME).
+   * When true: "Unbind Domain" is active, and "Verify & Save Domain" is inactive.
+   * When false: "Verify & Save Domain" is active, and "Unbind Domain" is inactive.
+   */
+  get isDomainVerified(): boolean {
+    if (!this.hasCustomDomain) return false;
+    const currentInput = (this.customDomainInput || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    const activeDomain = (this.customDomain || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+
+    // If user edited the input to a different domain, it is unverified
+    if (currentInput !== activeDomain) return false;
+
+    // Verified when probe results confirm CNAME or A record match
+    return !!(this.probeResults && this.probeResults.cnamePassed);
+  }
+
   get liveCustomDomainUrl(): string {
     if (!this.customDomain) return '';
     const trimmed = this.customDomain.trim();
@@ -1181,6 +1203,7 @@ export class CustomDomainComponent implements OnInit {
 
           if (this.customDomain) {
             localStorage.setItem('tenant_custom_domain', this.customDomain);
+            this.probeDnsSilently(this.customDomain);
           } else {
             localStorage.removeItem('tenant_custom_domain');
           }
@@ -1199,45 +1222,62 @@ export class CustomDomainComponent implements OnInit {
     });
   }
 
-  saveCustomDomain(): void {
+  /**
+   * Verifies DNS records for the entered custom domain and binds it in the Master Catalog.
+   * If verification fails:
+   *   - The button is NOT disabled, allowing the user to easily retry after updating DNS.
+   *   - "Unbind Domain" remains disabled/inactive.
+   * If verification succeeds:
+   *   - The domain is bound, making "Unbind Domain" active and "Verify & Save Domain" inactive.
+   */
+  async verifyAndSaveDomain(): Promise<void> {
     const rawInput = (this.customDomainInput || '').trim();
     if (!rawInput) {
       this.toast.error('Please enter a valid domain name.', 'Validation Error');
       return;
     }
 
-    // Sanitize domain
     const cleanDomain = rawInput
       .replace(/^https?:\/\//i, '')
       .replace(/\/+$/, '')
       .trim();
 
     this.saving = true;
-    const payload = {
-      tenantKey: this.tenantKey,
-      customDomain: cleanDomain
-    };
 
-    this.api.put<any>('DashboardApi/update-custom-domain', payload).subscribe({
-      next: (res) => {
+    try {
+      // 1. Proactively probe DNS resolution first
+      const dnsPassed = await this.executeDnsProbe(cleanDomain);
+
+      if (!dnsPassed) {
+        // If DNS did NOT verify, reset saving immediately so the button is NOT disabled!
         this.saving = false;
-        const updated = res?.data || res?.Data;
-        this.customDomain = cleanDomain;
-        this.customDomainInput = cleanDomain;
-        localStorage.setItem('tenant_custom_domain', cleanDomain);
-        if (updated?.websiteUrl) {
-          this.websiteUrl = updated.websiteUrl;
-          localStorage.setItem('tenant_website_url', updated.websiteUrl);
-        }
+        this.toast.warning(
+          `Domain not yet pointed. DNS records do not match Platform IP '2.24.162.42' or '${this.cleanTargetHost}'. The button remains active so you can try again once your registrar updates.`,
+          'Verification Required'
+        );
+        return;
+      }
 
-        // Notify layout and other components of the updated domain
-        window.dispatchEvent(new CustomEvent('tenant_domain_updated', {
-          detail: { customDomain: cleanDomain }
-        }));
+      // 2. DNS is verified! Proceed to save & bind in Master Catalog & provision server routing
+      const payload = {
+        tenantKey: this.tenantKey,
+        customDomain: cleanDomain
+      };
 
-        const prov = updated?.provisioningStatus || updated?.ProvisioningStatus;
-        if (prov) {
-          if (prov.dnsProbe) {
+      this.api.put<any>('DashboardApi/update-custom-domain', payload).subscribe({
+        next: (res) => {
+          this.saving = false;
+          const updated = res?.data || res?.Data;
+          this.customDomain = cleanDomain;
+          this.customDomainInput = cleanDomain;
+          localStorage.setItem('tenant_custom_domain', cleanDomain);
+          if (updated?.websiteUrl) {
+            this.websiteUrl = updated.websiteUrl;
+            localStorage.setItem('tenant_website_url', updated.websiteUrl);
+          }
+
+          const prov = updated?.provisioningStatus || updated?.ProvisioningStatus;
+          if (prov?.dnsProbe) {
             this.probeResults = {
               domain: cleanDomain,
               expectedTarget: prov.dnsProbe.expectedTarget || '2.24.162.42',
@@ -1249,29 +1289,47 @@ export class CustomDomainComponent implements OnInit {
               detectedIps: prov.dnsProbe.detectedIps || [],
               isIpMatch: prov.dnsProbe.isIpMatch
             };
+          } else if (this.probeResults) {
+            this.probeResults.cnamePassed = true;
+            this.probeResults.routingReady = true;
+            this.probeResults.sslReady = true;
           }
-          if (prov.succeeded) {
-            this.toast.success(`Custom domain '${cleanDomain}' bound! Automated server routing and SSL active.`, 'Domain Operational');
-          } else if (prov.dnsVerified) {
-            this.toast.success(`Custom domain '${cleanDomain}' bound! DNS verified at 2.24.162.42.`, 'Domain Bound');
-          } else {
-            this.toast.info(`Domain saved to workspace. Update DNS A record to 2.24.162.42 to activate.`, 'DNS Setup Pending');
-          }
-        } else {
-          this.toast.success(`Custom domain '${cleanDomain}' linked successfully!`, 'Domain Bound');
+
+          // Notify layout and other components of the updated domain
+          window.dispatchEvent(new CustomEvent('tenant_domain_updated', {
+            detail: { customDomain: cleanDomain }
+          }));
+
+          this.toast.success(`Domain '${cleanDomain}' verified and saved successfully! Automated routing is active.`, 'Domain Verified');
+        },
+        error: (err) => {
+          // If save fails, reset saving so the button is NOT disabled
+          this.saving = false;
+          console.error('[Custom Domain] Failed to save custom domain:', err);
+          const errorMsg = err?.error?.message || err?.error?.Message || 'Failed to update custom domain.';
+          this.toast.error(errorMsg, 'Binding Failed');
         }
-      },
-      error: (err) => {
-        this.saving = false;
-        console.error('[Custom Domain] Failed to save custom domain:', err);
-        const errorMsg = err?.error?.message || err?.error?.Message || 'Failed to update custom domain.';
-        this.toast.error(errorMsg, 'Binding Failed');
-      }
-    });
+      });
+    } catch (err) {
+      // In case of error, reset saving so the button is NOT disabled
+      this.saving = false;
+      console.error('[Custom Domain] Error during domain verification:', err);
+      this.toast.error('An error occurred during domain verification. Please try again.', 'Error');
+    }
   }
 
-  unlinkDomain(): void {
-    if (!confirm(`Are you sure you want to unlink '${this.customDomain}'? Your website will revert to '${this.primaryDomain}'.`)) {
+  saveCustomDomain(): void {
+    this.verifyAndSaveDomain();
+  }
+
+  /**
+   * Unbinds the custom domain, removing custom routing and restoring the default host.
+   * When complete, "Verify & Save Domain" becomes active and "Unbind Domain" becomes inactive.
+   */
+  unbindDomain(): void {
+    if (!this.customDomain) return;
+
+    if (!confirm(`Are you sure you want to unbind '${this.customDomain}'? Your website will revert to '${this.primaryDomain}'.`)) {
       return;
     }
 
@@ -1284,6 +1342,7 @@ export class CustomDomainComponent implements OnInit {
     this.api.put<any>('DashboardApi/update-custom-domain', payload).subscribe({
       next: () => {
         this.saving = false;
+        const previousDomain = this.customDomain;
         this.customDomain = '';
         this.customDomainInput = '';
         this.probeResults = null;
@@ -1294,14 +1353,135 @@ export class CustomDomainComponent implements OnInit {
           detail: { customDomain: '' }
         }));
 
-        this.toast.success('Custom domain was unlinked. Reverted to default host.', 'Domain Unlinked');
+        this.toast.success(`Custom domain '${previousDomain}' was unbound. Reverted to default host.`, 'Domain Unbound');
       },
       error: (err) => {
         this.saving = false;
-        console.error('[Custom Domain] Failed to unlink domain:', err);
-        this.toast.error('Failed to unlink custom domain.', 'Error');
+        console.error('[Custom Domain] Failed to unbind domain:', err);
+        this.toast.error('Failed to unbind custom domain.', 'Error');
       }
     });
+  }
+
+  unlinkDomain(): void {
+    this.unbindDomain();
+  }
+
+  /**
+   * Probes DNS silently on page load to initialize verified state without showing toast notifications.
+   */
+  async probeDnsSilently(domain: string): Promise<void> {
+    try {
+      await this.executeDnsProbe(domain);
+    } catch (err) {
+      console.warn('[Custom Domain] Silent DNS probe warning:', err);
+    }
+  }
+
+  /**
+   * Central DNS probe executor that checks server probe API and falls back to public DoH.
+   */
+  async executeDnsProbe(domain: string): Promise<boolean> {
+    const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
+
+    // 1. Try server-side probe API first
+    try {
+      const serverRes: any = await this.api.get<any>(`DashboardApi/probe-custom-domain-dns?domain=${encodeURIComponent(cleanDomain)}`).toPromise();
+      const probeData = serverRes?.data || serverRes?.Data;
+      if (probeData) {
+        const passed = !!probeData.isDnsPointed;
+        this.probeResults = {
+          domain: cleanDomain,
+          expectedTarget: probeData.expectedTarget || '2.24.162.42',
+          detectedTarget: probeData.detectedTarget || cleanDomain,
+          cnamePassed: passed,
+          sslReady: passed,
+          routingReady: passed,
+          isNxDomain: !!probeData.isNxDomain,
+          detectedIps: probeData.detectedIps || [],
+          isIpMatch: !!probeData.isIpMatch
+        };
+        return passed;
+      }
+    } catch (apiErr) {
+      console.warn('[DNS Probe] Server DNS probe error, falling back to public DoH:', apiErr);
+    }
+
+    // 2. Fallback to public DoH resolvers
+    return await this.probeDnsPublicResolvers(cleanDomain);
+  }
+
+  /**
+   * Performs public Google / Cloudflare DoH resolution.
+   */
+  async probeDnsPublicResolvers(cleanDomain: string): Promise<boolean> {
+    const expectedHost = this.cleanTargetHost.toLowerCase();
+    let cnameData: any = null;
+    let aRecordData: any = null;
+
+    try {
+      const dohCnameUrl = `https://dns.google/resolve?name=${encodeURIComponent(cleanDomain)}&type=CNAME`;
+      const cnameRes = await fetch(dohCnameUrl, { headers: { 'Accept': 'application/json' } });
+      if (cnameRes.ok) cnameData = await cnameRes.json();
+    } catch {}
+
+    try {
+      const dohAUrl = `https://dns.google/resolve?name=${encodeURIComponent(cleanDomain)}&type=A`;
+      const aRes = await fetch(dohAUrl, { headers: { 'Accept': 'application/json' } });
+      if (aRes.ok) aRecordData = await aRes.json();
+    } catch {}
+
+    if (!cnameData && !aRecordData) {
+      try {
+        const cfUrl = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(cleanDomain)}&type=CNAME`;
+        const cfRes = await fetch(cfUrl, { headers: { 'Accept': 'application/dns-json' } });
+        if (cfRes.ok) cnameData = await cfRes.json();
+      } catch {}
+    }
+
+    const answers: any[] = [
+      ...(cnameData?.Answer || []),
+      ...(aRecordData?.Answer || [])
+    ];
+
+    const detectedCnames = answers
+      .filter(a => a.type === 5)
+      .map(a => (a.data || '').toLowerCase().replace(/\.$/, '').trim());
+
+    const detectedIps = answers
+      .filter(a => a.type === 1)
+      .map(a => a.data?.trim());
+
+    const cnameMatch = detectedCnames.some(c => c === expectedHost || c.includes(expectedHost) || c.endsWith('.ozikol.cloud'));
+    const validPlatformIps = ['2.24.162.42', '104.21.32.45', '172.67.182.206'];
+    const ipMatch = detectedIps.some(ip => validPlatformIps.includes(ip));
+    const dnsPassed = cnameMatch || ipMatch;
+    const isNxDomain = cnameData?.Status === 3 || aRecordData?.Status === 3;
+
+    let detectedTarget = '';
+    if (detectedCnames.length > 0) {
+      detectedTarget = detectedCnames[0];
+    } else if (detectedIps.length > 0) {
+      detectedTarget = `A Record IP: ${detectedIps.slice(0, 3).join(', ')}`;
+    } else if (isNxDomain) {
+      detectedTarget = 'NXDOMAIN (Domain not registered or has no DNS zone)';
+    } else {
+      detectedTarget = 'No CNAME or A records found on global DNS';
+    }
+
+    this.probeResults = {
+      domain: cleanDomain,
+      expectedTarget: expectedHost,
+      detectedTarget: detectedTarget,
+      cnamePassed: dnsPassed,
+      sslReady: dnsPassed,
+      routingReady: dnsPassed,
+      isNxDomain: isNxDomain,
+      detectedIps: detectedIps,
+      isIpMatch: ipMatch
+    };
+
+    return dnsPassed;
   }
 
   /**
@@ -1320,103 +1500,11 @@ export class CustomDomainComponent implements OnInit {
       .replace(/\/+$/, '')
       .trim();
 
-    const expectedHost = this.cleanTargetHost.toLowerCase();
     this.probing = true;
-    this.probeResults = null;
-
     try {
-      // 1. Query Google DNS-over-HTTPS (DoH) for CNAME record
-      let cnameData: any = null;
-      let aRecordData: any = null;
-
-      try {
-        const dohCnameUrl = `https://dns.google/resolve?name=${encodeURIComponent(cleanDomain)}&type=CNAME`;
-        const cnameRes = await fetch(dohCnameUrl, { headers: { 'Accept': 'application/json' } });
-        if (cnameRes.ok) {
-          cnameData = await cnameRes.json();
-        }
-      } catch (err) {
-        console.warn('[DNS Probe] Google DoH CNAME query error:', err);
-      }
-
-      // 2. Query Google DNS-over-HTTPS (DoH) for A record
-      try {
-        const dohAUrl = `https://dns.google/resolve?name=${encodeURIComponent(cleanDomain)}&type=A`;
-        const aRes = await fetch(dohAUrl, { headers: { 'Accept': 'application/json' } });
-        if (aRes.ok) {
-          aRecordData = await aRes.json();
-        }
-      } catch (err) {
-        console.warn('[DNS Probe] Google DoH A query error:', err);
-      }
-
-      // 3. Fallback to Cloudflare DoH if Google DNS returned no response
-      if (!cnameData && !aRecordData) {
-        try {
-          const cfUrl = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(cleanDomain)}&type=CNAME`;
-          const cfRes = await fetch(cfUrl, { headers: { 'Accept': 'application/dns-json' } });
-          if (cfRes.ok) {
-            cnameData = await cfRes.json();
-          }
-        } catch (cfErr) {
-          console.warn('[DNS Probe] Cloudflare DoH query error:', cfErr);
-        }
-      }
-
-      // Synthesize all answer records
-      const answers: any[] = [
-        ...(cnameData?.Answer || []),
-        ...(aRecordData?.Answer || [])
-      ];
-
-      // Extract detected CNAMEs (type 5) and normalize (strip trailing dot)
-      const detectedCnames = answers
-        .filter(a => a.type === 5)
-        .map(a => (a.data || '').toLowerCase().replace(/\.$/, '').trim());
-
-      // Extract detected IPv4 addresses (type 1)
-      const detectedIps = answers
-        .filter(a => a.type === 1)
-        .map(a => a.data?.trim());
-
-      // Compare against expected host (CNAME)
-      const cnameMatch = detectedCnames.some(c => c === expectedHost || c.includes(expectedHost) || c.endsWith('.ozikol.cloud'));
-
-      // Compare against platform server IP or Cloudflare edge IPs (A Record)
-      const validPlatformIps = ['2.24.162.42', '104.21.32.45', '172.67.182.206'];
-      const ipMatch = detectedIps.some(ip => validPlatformIps.includes(ip));
-
-      // Domain passes verification if either CNAME or A Record points to the platform
-      const dnsPassed = cnameMatch || ipMatch;
-
-      // Check if NXDOMAIN (DNS Status 3)
-      const isNxDomain = cnameData?.Status === 3 || aRecordData?.Status === 3;
-
-      let detectedTarget = '';
-      if (detectedCnames.length > 0) {
-        detectedTarget = detectedCnames[0];
-      } else if (detectedIps.length > 0) {
-        detectedTarget = `A Record IP: ${detectedIps.slice(0, 3).join(', ')}`;
-      } else if (isNxDomain) {
-        detectedTarget = 'NXDOMAIN (Domain not registered or has no DNS zone)';
-      } else {
-        detectedTarget = 'No CNAME or A records found on global DNS';
-      }
-
-      this.probeResults = {
-        domain: cleanDomain,
-        expectedTarget: expectedHost,
-        detectedTarget: detectedTarget,
-        cnamePassed: dnsPassed,
-        sslReady: dnsPassed,
-        routingReady: dnsPassed,
-        isNxDomain: isNxDomain,
-        detectedIps: detectedIps,
-        isIpMatch: ipMatch
-      };
-
+      const dnsPassed = await this.executeDnsProbe(cleanDomain);
       if (dnsPassed) {
-        const resolutionNote = ipMatch ? 'A Record IP (2.24.162.42)' : `'${expectedHost}'`;
+        const resolutionNote = this.probeResults?.isIpMatch ? 'A Record IP (2.24.162.42)' : `'${this.cleanTargetHost}'`;
         this.toast.success(`DNS verified! '${cleanDomain}' correctly points to ${resolutionNote}.`, 'DNS Verified');
 
         // Automatically trigger server routing and SSL provisioning in background
@@ -1440,13 +1528,10 @@ export class CustomDomainComponent implements OnInit {
         });
       } else {
         this.toast.warning(
-          `Domain not yet pointed. DNS records do not match '${expectedHost}' or Platform IP '2.24.162.42'. Live custom domain will remain inactive until pointed.`,
+          `Domain not yet pointed. DNS records do not match '${this.cleanTargetHost}' or Platform IP '2.24.162.42'. The button remains active.`,
           'Domain Not Yet Pointed'
         );
       }
-    } catch (error) {
-      console.error('[DNS Probe] Unexpected error running DNS probe:', error);
-      this.toast.error('Failed to probe public DNS. Please check your internet connection.', 'Probe Error');
     } finally {
       this.probing = false;
     }
