@@ -1164,37 +1164,18 @@ export interface SuiteInfoDetail {
           </div>
           </ng-container>
 
-          <!-- Suite 14: Security & Audit (Platform Protection) -->
+          <!-- Suite 14: Settings & Audit (Platform Protection & System Governance) -->
           <ng-container *ngIf="canAccessSuite('security_audit')">
           <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Security & Audit Overview'">
+            <span class="suite-header-text" style="display:inline-flex; align-items:center; gap:6px;">
+              <span class="material-symbols-outlined" style="font-size:15px; vertical-align:middle;">settings</span>
+              <span>{{ 'suite.security_audit' | translate:'SETTINGS & AUDIT' }}</span>
+            </span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Settings & Audit Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item">
-            <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">security</span>
-                <span>{{ 'nav.security_audit' | translate }}</span>
-                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/identity/console/error-codes" [class.active]="isCurrentRoute('/identity/console/error-codes')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">menu_book</span>
-                <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/error-codes')" (click)="togglePin('Error Codes', '/identity/console/error-codes', 'menu_book'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/error-codes') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/identity/console/error-codes') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
+          <!-- 1. General Settings (Brought to the top) -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/settings/console/general')" (click)="toggleMenu('general_settings')">
               <div class="nav-link-content">
@@ -1225,6 +1206,31 @@ export interface SuiteInfoDetail {
                 </div>
               </li>
             </ul>
+          </div>
+          <!-- 2. Security Audit -->
+          <div class="nav-item">
+            <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">security</span>
+                <span>{{ 'nav.security_audit' | translate }}</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <!-- 3. Error Codes -->
+          <div class="nav-item">
+            <a routerLink="/identity/console/error-codes" [class.active]="isCurrentRoute('/identity/console/error-codes')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/error-codes')" (click)="togglePin('Error Codes', '/identity/console/error-codes', 'menu_book'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/error-codes') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/error-codes') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
           </div>
           </ng-container>
         </ng-container>
@@ -3858,10 +3864,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     },
     security_audit: {
       key: 'security_audit',
-      badge: 'Suite 14 • Platform Protection',
-      icon: 'security',
-      title: 'Security & Audit',
-      shortDesc: 'Comprehensive platform security and compliance logging. Inspect immutable audit logs, review authentication history, enforce security policies, and manage active sessions.',
+      badge: 'Suite 14 • Settings & Audit',
+      icon: 'settings',
+      title: 'Settings & Audit',
+      shortDesc: 'Comprehensive workspace settings, system governance, and compliance audit logging. Manage notification services, workspace default currency, review immutable security audit logs, and inspect error codes.',
       whoUsesIt: 'Security administrators, IT directors, Compliance auditors, System administrators.',
       capabilities: [
         'Live Security & Audit Logs with IP tracking and payload inspection',
