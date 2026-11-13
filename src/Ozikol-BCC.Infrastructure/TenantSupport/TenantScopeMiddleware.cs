@@ -101,7 +101,9 @@ public class TenantScopeMiddleware
                                    path.StartsWith("/api/auth/resend-login-mfa", StringComparison.OrdinalIgnoreCase) ||
                                    path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase) ||
                                    path.StartsWith("/api/SettingsApi/brand", StringComparison.OrdinalIgnoreCase) ||
-                                   path.StartsWith("/api/SetupApi/client-config", StringComparison.OrdinalIgnoreCase);
+                                   path.StartsWith("/api/SetupApi/client-config", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/WebsiteContentApi", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/WebsiteContent", StringComparison.OrdinalIgnoreCase);
 
         if (!isAuthBootstrapPath && match != null && httpContext.User?.Identity?.IsAuthenticated == true)
         {
@@ -237,15 +239,18 @@ public class TenantScopeMiddleware
             }
         }
 
-        // 2. Priority 2: Check explicit HTTP headers sent by Angular SPA (X-Tenant-Key or X-Tenant-Domain)
+        // 2. Priority 2: Check explicit HTTP headers sent by Angular SPA (X-Tenant-Domain or X-Tenant-Key)
+        // X-Tenant-Domain takes precedence over X-Tenant-Key so custom domains resolve their canonical sovereign workspace
+        // even if the client SPA holds a fallback or inferred key in local memory.
+        if (httpContext.Request.Headers.TryGetValue("X-Tenant-Domain", out var headerTenantDomain) && !string.IsNullOrWhiteSpace(headerTenantDomain))
+        {
+            var cleanDomain = CleanIdentifier(headerTenantDomain.ToString());
+            if (!string.IsNullOrEmpty(cleanDomain)) return cleanDomain;
+        }
+
         if (httpContext.Request.Headers.TryGetValue("X-Tenant-Key", out var headerTenantKey) && !string.IsNullOrWhiteSpace(headerTenantKey))
         {
             return CleanIdentifier(headerTenantKey.ToString());
-        }
-
-        if (httpContext.Request.Headers.TryGetValue("X-Tenant-Domain", out var headerTenantDomain) && !string.IsNullOrWhiteSpace(headerTenantDomain))
-        {
-            return CleanIdentifier(headerTenantDomain.ToString());
         }
 
         // 2b. Priority 2b: Check explicit query parameters (?tenantKey=... or ?tenant=...)

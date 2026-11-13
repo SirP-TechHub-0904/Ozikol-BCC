@@ -73,11 +73,13 @@ export class AuthInterceptor implements HttpInterceptor {
     }
     let resolvedTenantKey = tenantKey;
     if (!resolvedTenantKey && hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      const parts = hostname.split('.');
-      if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
-        resolvedTenantKey = parts[0];
-      } else {
-        resolvedTenantKey = hostname;
+      const lower = hostname.toLowerCase();
+      const isPlatformDomain = lower.endsWith('.ozikol.cloud') || lower.endsWith('.localhost') || lower.endsWith('.127.0.0.1.nip.io');
+      if (isPlatformDomain) {
+        const parts = hostname.split('.');
+        if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
+          resolvedTenantKey = parts[0];
+        }
       }
     }
 

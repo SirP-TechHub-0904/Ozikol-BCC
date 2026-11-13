@@ -11,17 +11,27 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
+  private isPlatformSubdomain(hostname: string): boolean {
+    if (!hostname) return false;
+    const lower = hostname.toLowerCase();
+    return lower.endsWith('.ozikol.cloud') ||
+           lower.endsWith('.localhost') ||
+           lower.endsWith('.127.0.0.1.nip.io');
+  }
+
   private getTenantKey(): string | null {
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
     if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      const parts = hostname.split('.');
-      if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0].toLowerCase())) {
-        const subdomainTenant = parts[0].toLowerCase();
-        // Keep localStorage synchronized with active URL subdomain
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('tenant_key') !== subdomainTenant) {
-          localStorage.setItem('tenant_key', subdomainTenant);
+      if (this.isPlatformSubdomain(hostname)) {
+        const parts = hostname.split('.');
+        if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0].toLowerCase())) {
+          const subdomainTenant = parts[0].toLowerCase();
+          // Keep localStorage synchronized with active URL platform subdomain
+          if (typeof localStorage !== 'undefined' && localStorage.getItem('tenant_key') !== subdomainTenant) {
+            localStorage.setItem('tenant_key', subdomainTenant);
+          }
+          return subdomainTenant;
         }
-        return subdomainTenant;
       }
     }
     return typeof localStorage !== 'undefined' ? (localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain')) : null;
