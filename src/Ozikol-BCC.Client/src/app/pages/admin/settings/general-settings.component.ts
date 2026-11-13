@@ -331,7 +331,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                 <div class="billing-rules-list">
                   <div class="rule-item">
                     <span class="material-symbols-outlined rule-check">check_circle</span>
-                    <span><strong>Tenant Running Currency:</strong> Dictates internal commerce, invoices, POS, and payroll.</span>
+                    <span><strong>Workspace Running Currency:</strong> Dictates internal commerce, invoices, POS, and payroll.</span>
                   </div>
                   <div class="rule-item">
                     <span class="material-symbols-outlined rule-check">check_circle</span>

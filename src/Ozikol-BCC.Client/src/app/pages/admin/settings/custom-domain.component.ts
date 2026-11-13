@@ -33,7 +33,7 @@ interface DnsProbeResult {
 
 /**
  * Dedicated Custom Domain & DNS Routing Studio Component.
- * Enables tenant administrators to connect their custom apex and subdomain
+ * Enables workspace administrators to connect their custom apex and subdomain
  * with real-time Master Catalog synchronization, live propagation tests, and Cloudflare instructions.
  */
 @Component({
@@ -47,7 +47,7 @@ interface DnsProbeResult {
         eyebrow="DOMAIN ROUTING & DNS STUDIO"
         icon="dns"
         title="Custom Domain & DNS Setup"
-        subtitle="Route and connect your custom domain (e.g. www.mycompany.org) to your cloud tenant with automated routing, SSL encryption, and automatic domain verification."
+        subtitle="Route and connect your custom domain (e.g. www.mycompany.org) to your workspace with automated routing, SSL encryption, and automatic domain verification."
         [buttons]="headerButtons"
       ></app-page-header>
 
@@ -60,7 +60,7 @@ interface DnsProbeResult {
           </div>
           <div class="overview-content">
             <span class="overview-label">Default Platform Host</span>
-            <div class="overview-value">{{ cleanTargetHost || 'tenant.ozikol.cloud' }}</div>
+            <div class="overview-value">{{ cleanTargetHost || 'workspace.ozikol.cloud' }}</div>
             <div class="overview-status">
               <span class="badge badge-success"><span class="dot bg-green"></span> Always Active / Failover</span>
             </div>
@@ -238,7 +238,7 @@ interface DnsProbeResult {
                     {{ probeResults.routingReady ? 'check_circle' : 'pending' }}
                   </span>
                   <div class="probe-item-text">
-                    <span class="probe-item-label">Tenant Domain Routing Synchronized</span>
+                    <span class="probe-item-label">Workspace Domain Routing Synchronized</span>
                     <div *ngIf="!probeResults.routingReady" class="probe-subtext text-muted">
                       Routing configuration is saved, but incoming traffic cannot reach this server until DNS is pointed.
                     </div>
