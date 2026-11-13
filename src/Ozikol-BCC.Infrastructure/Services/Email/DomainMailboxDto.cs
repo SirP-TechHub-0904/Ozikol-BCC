@@ -48,3 +48,4 @@ public sealed class DomainMailboxDto
     /// </summary>
     public DateTime? CreatedUtc { get; set; }
 }
+

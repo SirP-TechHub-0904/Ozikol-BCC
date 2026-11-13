@@ -57,3 +57,4 @@ public sealed class EmailDnsRecordDto
     /// </summary>
     public string Key { get; set; } = string.Empty;
 }
+

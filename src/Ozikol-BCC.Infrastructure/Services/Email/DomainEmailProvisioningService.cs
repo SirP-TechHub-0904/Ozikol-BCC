@@ -546,3 +546,4 @@ internal static class HttpResponseMessageExtensions
     public static bool ok(this HttpResponseMessage response) =>
         response != null && response.IsSuccessStatusCode;
 }
+

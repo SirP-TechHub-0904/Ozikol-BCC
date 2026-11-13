@@ -412,15 +412,21 @@ interface DnsProbeResult {
               <tr *ngFor="let rec of dnsRecords">
                 <td><span class="dns-type-tag" [class.tag-cname]="rec.type === 'CNAME'" [class.tag-a]="rec.type === 'A'" [class.tag-txt]="rec.type === 'TXT'">{{ rec.type }}</span></td>
                 <td>
-                  <code>{{ rec.name }}</code>
+                  <div class="value-cell">
+                    <code>{{ rec.name }}</code>
+                    <button type="button" class="btn-copy" (click)="copyValue(rec.name, 'name_' + rec.key)" [title]="'Copy ' + rec.name">
+                      <span class="material-symbols-outlined">{{ copySuccess['name_' + rec.key] ? 'done' : 'content_copy' }}</span>
+                      <span>{{ copySuccess['name_' + rec.key] ? 'Copied' : 'Copy' }}</span>
+                    </button>
+                  </div>
                   <span *ngIf="rec.description" style="display:block; font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">{{ rec.description }}</span>
                 </td>
                 <td>
                   <div class="value-cell">
                     <code>{{ rec.target }}</code>
-                    <button type="button" class="btn-copy" (click)="copyValue(rec.target, rec.key)" [title]="'Copy ' + rec.target">
-                      <span class="material-symbols-outlined">{{ copySuccess[rec.key] ? 'done' : 'content_copy' }}</span>
-                      <span>{{ copySuccess[rec.key] ? 'Copied' : 'Copy' }}</span>
+                    <button type="button" class="btn-copy" (click)="copyValue(rec.target, 'val_' + rec.key)" [title]="'Copy ' + rec.target">
+                      <span class="material-symbols-outlined">{{ copySuccess['val_' + rec.key] ? 'done' : 'content_copy' }}</span>
+                      <span>{{ copySuccess['val_' + rec.key] ? 'Copied' : 'Copy' }}</span>
                     </button>
                   </div>
                 </td>
@@ -511,15 +517,31 @@ interface DnsProbeResult {
                     </span>
                   </td>
                   <td>
-                    <code>{{ rec.hostName }}</code>
+                    <div class="value-cell">
+                      <code>{{ rec.host || rec.name || rec.hostName || '@' }}</code>
+                      <button
+                        type="button"
+                        class="btn-copy"
+                        (click)="copyValue(rec.host || rec.name || rec.hostName || '@', 'host_' + (rec.key || rec.subType || rec.recordType))"
+                        [title]="'Copy Host / Name: ' + (rec.host || rec.name || rec.hostName || '@')"
+                      >
+                        <span class="material-symbols-outlined">{{ copySuccess['host_' + (rec.key || rec.subType || rec.recordType)] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['host_' + (rec.key || rec.subType || rec.recordType)] ? 'Copied' : 'Copy' }}</span>
+                      </button>
+                    </div>
                     <span class="rec-desc">{{ rec.description }}</span>
                   </td>
                   <td>
                     <div class="value-cell">
-                      <code class="code-long">{{ rec.recordValue }}</code>
-                      <button type="button" class="btn-copy" (click)="copyValue(rec.recordValue, 'email_' + rec.recordType)" [title]="'Copy ' + rec.recordType">
-                        <span class="material-symbols-outlined">{{ copySuccess['email_' + rec.recordType] ? 'done' : 'content_copy' }}</span>
-                        <span>{{ copySuccess['email_' + rec.recordType] ? 'Copied' : 'Copy' }}</span>
+                      <code class="code-long" [title]="rec.value || rec.recordValue || rec.target">{{ rec.value || rec.recordValue || rec.target }}</code>
+                      <button
+                        type="button"
+                        class="btn-copy"
+                        (click)="copyValue(rec.value || rec.recordValue || rec.target, 'val_' + (rec.key || rec.subType || rec.recordType))"
+                        [title]="'Copy Target Value'"
+                      >
+                        <span class="material-symbols-outlined">{{ copySuccess['val_' + (rec.key || rec.subType || rec.recordType)] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['val_' + (rec.key || rec.subType || rec.recordType)] ? 'Copied' : 'Copy' }}</span>
                       </button>
                     </div>
                     <span *ngIf="rec.detectedValue" class="detected-dns-note">
@@ -527,8 +549,8 @@ interface DnsProbeResult {
                     </span>
                   </td>
                   <td>
-                    <span class="priority-badge" *ngIf="rec.priority !== null && rec.priority !== undefined">Priority: {{ rec.priority }}</span>
-                    <span *ngIf="rec.priority === null || rec.priority === undefined" class="ttl-text">Auto / 300s</span>
+                    <span class="priority-badge" *ngIf="rec.recordType === 'MX' && rec.priority">Priority: {{ rec.priority }}</span>
+                    <span *ngIf="rec.recordType !== 'MX'" class="ttl-text">{{ rec.ttl || 'Auto / 300s' }}</span>
                   </td>
                   <td>
                     <span *ngIf="rec.isVerified" class="badge badge-success">
@@ -542,14 +564,14 @@ interface DnsProbeResult {
                     <button
                       type="button"
                       class="btn-verify-row"
-                      (click)="verifyEmailDnsRecord(rec.recordType)"
-                      [disabled]="verifyingDns[rec.recordType]"
+                      (click)="verifyEmailDnsRecord(rec.subType || rec.recordType)"
+                      [disabled]="verifyingDns[rec.subType || rec.recordType]"
                       title="Verify this DNS record on live root resolvers"
                     >
-                      <span class="material-symbols-outlined" [class.spin]="verifyingDns[rec.recordType]">
-                        {{ verifyingDns[rec.recordType] ? 'sync' : 'done_all' }}
+                      <span class="material-symbols-outlined" [class.spin]="verifyingDns[rec.subType || rec.recordType]">
+                        {{ verifyingDns[rec.subType || rec.recordType] ? 'sync' : 'done_all' }}
                       </span>
-                      <span>{{ verifyingDns[rec.recordType] ? 'Checking...' : 'Verify' }}</span>
+                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : 'Verify' }}</span>
                     </button>
                   </td>
                 </tr>
@@ -2153,38 +2175,67 @@ export class CustomDomainComponent implements OnInit {
   }
 
   get emailDnsRecords(): any[] {
-    return this.emailConfig?.dnsRecords || [
+    const rawList = this.emailConfig?.dnsRecords || this.emailConfig?.DnsRecords;
+    if (rawList && rawList.length > 0) {
+      return rawList.map((rec: any) => ({
+        ...rec,
+        host: rec.host || rec.Host || rec.name || rec.hostName || '@',
+        value: rec.value || rec.Value || rec.recordValue || rec.target || '',
+        subType: rec.subType || rec.SubType || rec.recordType || rec.RecordType || '',
+        recordType: rec.recordType || rec.RecordType || 'TXT',
+        priority: rec.priority !== undefined ? rec.priority : (rec.Priority !== undefined ? rec.Priority : null),
+        ttl: rec.ttl || rec.Ttl || 'Auto (300s)',
+        description: rec.description || rec.Description || '',
+        key: rec.key || rec.Key || rec.subType || rec.recordType || 'rec',
+        isVerified: !!(rec.isVerified || rec.IsVerified),
+        detectedValue: rec.detectedValue || rec.DetectedValue || null
+      }));
+    }
+
+    return [
       {
         recordType: 'MX',
-        hostName: '@',
-        recordValue: 'mail.ozikol.cloud',
+        subType: 'MX',
+        host: '@',
+        value: 'mail.ozikol.cloud',
         priority: 10,
+        ttl: 'Auto (300s)',
         description: 'Directs incoming email traffic to the Mailcow mail server',
-        isVerified: false
+        isVerified: false,
+        key: 'mx_primary'
       },
       {
         recordType: 'TXT',
-        hostName: '@',
-        recordValue: 'v=spf1 a mx a:mail.ozikol.cloud ~all',
+        subType: 'SPF',
+        host: '@',
+        value: 'v=spf1 a mx a:mail.ozikol.cloud ~all',
         priority: null,
+        ttl: 'Auto (300s)',
         description: 'SPF: Authorizes Mailcow server to send emails on behalf of this domain',
-        isVerified: false
+        isVerified: false,
+        key: 'txt_spf'
       },
       {
         recordType: 'TXT',
-        hostName: 'dkim._domainkey',
-        recordValue: 'v=DKIM1; k=rsa; p=(Pending Mailcow Key Generation)',
+        subType: 'DKIM',
+        host: 'dkim._domainkey',
+        value: 'v=DKIM1; k=rsa; p=(Generating 2048-bit key...)',
         priority: null,
+        ttl: 'Auto (300s)',
         description: 'DKIM: Cryptographic signature confirming outbound email authenticity',
-        isVerified: false
+        isVerified: false,
+        key: 'txt_dkim'
       },
       {
         recordType: 'TXT',
-        hostName: '_dmarc',
-        recordValue: 'v=DMARC1; p=none; sp=none; rua=mailto:dmarc-reports@mail.ozikol.cloud',
+        subType: 'DMARC',
+        host: '_dmarc',
+        value: `v=DMARC1; p=none; rua=mailto:dmarc@${this.customDomain || 'domain.com'}`,
         priority: null,
+        ttl: 'Auto (300s)',
         description: 'DMARC: Domain-based Message Authentication Reporting and Conformance policy',
-        isVerified: false
+        isVerified: false,
+        key: 'txt_dmarc'
       }
     ];
   }
@@ -2684,10 +2735,16 @@ export class CustomDomainComponent implements OnInit {
         if (result) {
           // Update local record status
           if (this.emailConfig?.dnsRecords) {
-            const rec = this.emailConfig.dnsRecords.find((r: any) => r.recordType?.toUpperCase() === recordType.toUpperCase());
+            const targetType = recordType.toUpperCase();
+            const rec = this.emailConfig.dnsRecords.find((r: any) =>
+              (r.subType && r.subType.toUpperCase() === targetType) ||
+              (r.recordType && r.recordType.toUpperCase() === targetType) ||
+              (r.SubType && r.SubType.toUpperCase() === targetType) ||
+              (r.RecordType && r.RecordType.toUpperCase() === targetType)
+            );
             if (rec) {
-              rec.isVerified = result.isVerified;
-              rec.detectedValue = result.detectedValue;
+              rec.isVerified = !!(result.isVerified ?? result.IsVerified);
+              rec.detectedValue = result.detectedValue ?? result.DetectedValue ?? null;
             }
           }
 
@@ -2878,12 +2935,46 @@ export class CustomDomainComponent implements OnInit {
   }
 
   copyValue(text: string, key: string): void {
-    if (!navigator?.clipboard) return;
-    navigator.clipboard.writeText(text).then(() => {
+    if (!text || text === 'undefined') {
+      this.toast.warning('No value available to copy.', 'Copy Warning');
+      return;
+    }
+
+    const cleanText = String(text).trim();
+
+    if (!navigator?.clipboard) {
+      const textarea = document.createElement('textarea');
+      textarea.value = cleanText;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        this.copySuccess[key] = true;
+        const displaySnippet = cleanText.length > 35 ? cleanText.substring(0, 35) + '...' : cleanText;
+        this.toast.success(`Copied: ${displaySnippet}`, 'Copied to Clipboard');
+        setTimeout(() => {
+          this.copySuccess[key] = false;
+        }, 2000);
+      } catch {
+        this.toast.error('Could not copy to clipboard.', 'Error');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+      return;
+    }
+
+    navigator.clipboard.writeText(cleanText).then(() => {
       this.copySuccess[key] = true;
+      const displaySnippet = cleanText.length > 35 ? cleanText.substring(0, 35) + '...' : cleanText;
+      this.toast.success(`Copied: ${displaySnippet}`, 'Copied to Clipboard');
       setTimeout(() => {
         this.copySuccess[key] = false;
       }, 2000);
+    }).catch(err => {
+      console.error('[Copy Error]', err);
+      this.toast.error('Failed to copy to clipboard.', 'Error');
     });
   }
 

@@ -47,3 +47,4 @@ public sealed class EmailDnsVerificationResult
     /// </summary>
     public string Message { get; set; } = string.Empty;
 }
+

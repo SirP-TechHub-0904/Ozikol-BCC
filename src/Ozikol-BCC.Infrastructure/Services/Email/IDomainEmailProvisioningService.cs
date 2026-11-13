@@ -77,3 +77,4 @@ public interface IDomainEmailProvisioningService
         string subType,
         CancellationToken cancellationToken = default);
 }
+

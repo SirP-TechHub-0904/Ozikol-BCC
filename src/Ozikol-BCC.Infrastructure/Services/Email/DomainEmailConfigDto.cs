@@ -72,3 +72,4 @@ public sealed class DomainEmailConfigDto
     /// </summary>
     public bool IsAllEmailDnsVerified => IsMxVerified && IsSpfVerified && IsDkimVerified && IsDmarcVerified;
 }
+
