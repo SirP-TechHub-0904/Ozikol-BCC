@@ -94,7 +94,7 @@ namespace Ozikol_BCC.Api.Controllers
             try
             {
                 // 1. Prioritize tenant's own operational running currency configured in Workspace Settings
-                var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
                 if (config != null && !string.IsNullOrWhiteSpace(config.CurrencyCode))
                 {
                     var configuredCode = config.CurrencyCode.Trim().ToUpperInvariant();
