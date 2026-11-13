@@ -136,6 +136,18 @@ export default {
           const respHeaders = new Headers(originRes.headers);
           respHeaders.set("Access-Control-Allow-Origin", "*");
           respHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
+          // Sanitize any cross-domain references in sitemap.xml at the edge
+          if (canonicalPath === "/sitemap.xml") {
+            let xmlText = await originRes.text();
+            xmlText = xmlText.replaceAll("https://ozikol.com/", "https://ozikol.cloud/");
+            respHeaders.set("Content-Type", "text/xml; charset=utf-8");
+            return new Response(xmlText, {
+              status: 200,
+              headers: respHeaders
+            });
+          }
+
           return new Response(originRes.body, {
             status: originRes.status,
             statusText: originRes.statusText,
