@@ -36,5 +36,22 @@ public interface IMailcowProvisioningService
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>The DKIM TXT record content, or null if not available.</returns>
     Task<string?> GetDkimRecordAsync(string domain, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all registered mailboxes under the specified domain from Mailcow.
+    /// </summary>
+    /// <param name="domain">The target domain name.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>List of active mailboxes on this domain.</returns>
+    Task<System.Collections.Generic.List<DomainMailboxDto>> GetDomainMailboxesAsync(string domain, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a mailbox from Mailcow permanently.
+    /// </summary>
+    /// <param name="domain">The domain name.</param>
+    /// <param name="localPart">The local mailbox part (e.g. "support").</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if deletion succeeded; false otherwise.</returns>
+    Task<bool> DeleteMailboxAsync(string domain, string localPart, CancellationToken cancellationToken = default);
 }
 

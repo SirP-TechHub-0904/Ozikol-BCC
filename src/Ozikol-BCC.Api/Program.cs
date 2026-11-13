@@ -61,6 +61,7 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                 .AddTenantSupport(builder.Configuration)
                 .AddRecaptchaSupport()
                 .AddMailcowSupport()
+                .AddCustomDomainSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
             builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Recaptcha.IRecaptchaCredentialProvider, Ozikol_BCC.Api.Services.MasterPlatformRecaptchaCredentialProvider>();

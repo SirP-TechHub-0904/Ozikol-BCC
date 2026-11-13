@@ -5,6 +5,8 @@ using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Domain.Constants;
+using Ozikol_BCC.Infrastructure.Services.Domain;
+using Ozikol_BCC.Infrastructure.Services.Email;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -17,11 +19,19 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _context;
         private readonly MasterCatalogDbContext _masterCatalogDbContext;
+        private readonly ICustomDomainProvisioningService _domainProvisioningService;
+        private readonly IDomainEmailProvisioningService _domainEmailService;
 
-        public DashboardApiController(DashboardDbContext context, MasterCatalogDbContext masterCatalogDbContext)
+        public DashboardApiController(
+            DashboardDbContext context,
+            MasterCatalogDbContext masterCatalogDbContext,
+            ICustomDomainProvisioningService domainProvisioningService,
+            IDomainEmailProvisioningService domainEmailService)
         {
             _context = context;
             _masterCatalogDbContext = masterCatalogDbContext;
+            _domainProvisioningService = domainProvisioningService;
+            _domainEmailService = domainEmailService;
         }
 
         public class DashboardMetricsDto
@@ -52,6 +62,16 @@ namespace Ozikol_BCC.Api.Controllers
             public string? AdminEmail { get; set; }
             public bool IsActive { get; set; }
             public DateTime CreatedUtc { get; set; }
+
+            /// <summary>
+            /// Live automated provisioning and SSL issuance status for the custom domain.
+            /// </summary>
+            public DomainProvisioningResult? ProvisioningStatus { get; set; }
+
+            /// <summary>
+            /// Real-time public DNS diagnostic report for the custom domain.
+            /// </summary>
+            public DomainDnsProbeResult? DnsStatus { get; set; }
         }
 
         public class RecentUserDto
@@ -260,9 +280,11 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Updates, binds, or unlinks a custom domain for a tenant directly in the Master Catalog Database.
+        /// Automatically validates domain syntax, verifies public DNS propagation, provisions Nginx reverse proxy
+        /// routing (isolating from Mailcow), and triggers automated Let's Encrypt SSL issuance.
         /// </summary>
         /// <param name="request">Payload containing tenant key and desired custom domain.</param>
-        /// <returns>Updated master tenant info response.</returns>
+        /// <returns>Updated master tenant info response with live provisioning results.</returns>
         [HttpPut("update-custom-domain")]
         [Authorize(Policy = AuthPolicies.CmsStudio)]
         public async Task<IActionResult> UpdateCustomDomain([FromBody] UpdateCustomDomainRequest request)
@@ -282,28 +304,48 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
             }
 
-            // Sanitize custom domain
+            DomainProvisioningResult? provResult = null;
+            DomainDnsProbeResult? dnsResult = null;
             string? cleanDomain = null;
+
             if (!string.IsNullOrWhiteSpace(request.CustomDomain))
             {
-                cleanDomain = request.CustomDomain.Trim().ToLowerInvariant()
-                    .Replace("https://", string.Empty)
-                    .Replace("http://", string.Empty)
-                    .TrimEnd('/');
-            }
+                var validation = _domainProvisioningService.ValidateDomain(request.CustomDomain);
+                if (!validation.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse(validation.ErrorMessage ?? "Invalid domain format."));
+                }
 
-            masterTenant.CustomDomain = cleanDomain;
-            if (!string.IsNullOrWhiteSpace(cleanDomain))
-            {
+                cleanDomain = validation.SanitizedDomain;
+
+                // Execute automated web routing and SSL provisioning pipeline
+                provResult = await _domainProvisioningService.ProvisionDomainAsync(
+                    masterTenant.TenantKey,
+                    cleanDomain,
+                    HttpContext.RequestAborted);
+
+                dnsResult = provResult.DnsProbe;
+                masterTenant.CustomDomain = cleanDomain;
                 masterTenant.WebsiteUrl = $"https://{cleanDomain}";
             }
             else
             {
+                // Unlinking domain: remove reverse proxy configuration
+                if (!string.IsNullOrWhiteSpace(masterTenant.CustomDomain))
+                {
+                    await _domainProvisioningService.DeprovisionDomainAsync(
+                        masterTenant.TenantKey,
+                        masterTenant.CustomDomain,
+                        HttpContext.RequestAborted);
+                }
+
+                masterTenant.CustomDomain = null;
                 masterTenant.WebsiteUrl = !string.IsNullOrWhiteSpace(masterTenant.PrimaryDomain)
                     ? $"https://{masterTenant.PrimaryDomain}"
                     : null;
             }
 
+            masterTenant.UpdatedUtc = DateTime.UtcNow;
             masterTenant.LastAccessedUtc = DateTime.UtcNow;
             await _masterCatalogDbContext.SaveChangesAsync();
 
@@ -319,10 +361,207 @@ namespace Ozikol_BCC.Api.Controllers
                 DatabaseName = masterTenant.DatabaseName,
                 AdminEmail = masterTenant.AdminEmail,
                 IsActive = masterTenant.IsActive,
-                CreatedUtc = masterTenant.CreatedUtc
+                CreatedUtc = masterTenant.CreatedUtc,
+                ProvisioningStatus = provResult,
+                DnsStatus = dnsResult
             };
 
-            return Ok(ApiResponse<MasterTenantDetailsDto>.SuccessResponse(tenantDetails, "Custom domain updated successfully."));
+            var message = provResult != null
+                ? (provResult.Succeeded ? provResult.Message : $"Custom domain registered. {provResult.Message}")
+                : "Custom domain unlinked successfully.";
+
+            return Ok(ApiResponse<MasterTenantDetailsDto>.SuccessResponse(tenantDetails, message));
+        }
+
+        /// <summary>
+        /// Probes public DNS resolvers to verify real-time propagation of an A record or CNAME.
+        /// </summary>
+        /// <param name="domain">The domain to query.</param>
+        /// <returns>Comprehensive DNS propagation diagnostic report.</returns>
+        [HttpGet("probe-custom-domain-dns")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> ProbeCustomDomainDns([FromQuery] string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain parameter is required."));
+            }
+
+            var probeResult = await _domainProvisioningService.ProbeDnsAsync(domain, HttpContext.RequestAborted);
+            return Ok(ApiResponse<DomainDnsProbeResult>.SuccessResponse(probeResult, probeResult.GuidanceMessage));
+        }
+
+        /// <summary>
+        /// Triggers automated Nginx reverse proxy configuration and Let's Encrypt SSL issuance for a verified custom domain.
+        /// Useful when DNS has finished propagating after initial domain registration.
+        /// </summary>
+        /// <param name="request">Payload containing tenant key and custom domain.</param>
+        /// <returns>Provisioning execution report.</returns>
+        [HttpPost("provision-custom-domain")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> ProvisionCustomDomain([FromBody] UpdateCustomDomainRequest request)
+        {
+            var host = HttpContext.Request.Host.ToString();
+            var tenantKeyHeader = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            var candidateKey = !string.IsNullOrWhiteSpace(request.TenantKey) ? request.TenantKey.Trim() : tenantKeyHeader;
+
+            var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(candidateKey) && t.TenantKey == candidateKey)
+                                       || t.PrimaryDomain == host 
+                                       || t.CustomDomain == host);
+
+            if (masterTenant == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
+            }
+
+            var targetDomain = !string.IsNullOrWhiteSpace(request.CustomDomain)
+                ? request.CustomDomain
+                : masterTenant.CustomDomain;
+
+            if (string.IsNullOrWhiteSpace(targetDomain))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No custom domain is linked to this workspace."));
+            }
+
+            var provResult = await _domainProvisioningService.ProvisionDomainAsync(
+                masterTenant.TenantKey,
+                targetDomain,
+                HttpContext.RequestAborted);
+
+            return Ok(ApiResponse<DomainProvisioningResult>.SuccessResponse(provResult, provResult.Message));
+        }
+
+        public class CreateCustomMailboxRequest
+        {
+            public string? TenantKey { get; set; }
+            public string Domain { get; set; } = string.Empty;
+            public string LocalPart { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
+            public string? DisplayName { get; set; }
+        }
+
+        public class SendDomainTestEmailRequest
+        {
+            public string? TenantKey { get; set; }
+            public string Domain { get; set; } = string.Empty;
+            public string RecipientEmail { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Retrieves the complete email configuration, active mailboxes, 1-free quota status,
+        /// and verified DNS records (MX, SPF, DKIM, DMARC) for a custom domain.
+        /// </summary>
+        [HttpGet("domain-email-config")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> GetDomainEmailConfig([FromQuery] string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain parameter is required."));
+            }
+
+            var config = await _domainEmailService.GetDomainEmailConfigAsync(domain, HttpContext.RequestAborted);
+            return Ok(ApiResponse<DomainEmailConfigDto>.SuccessResponse(config, "Email configuration retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Creates 1 free custom business mailbox (e.g. support@domain.com or info@domain.com) for the workspace.
+        /// Strictly enforces maximum 1 free custom mailbox quota.
+        /// </summary>
+        [HttpPost("create-custom-mailbox")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> CreateCustomMailbox([FromBody] CreateCustomMailboxRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Domain) || string.IsNullOrWhiteSpace(request.LocalPart))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain and mailbox username are required."));
+            }
+
+            var (success, message, mailbox) = await _domainEmailService.CreateCustomMailboxAsync(
+                request.TenantKey ?? string.Empty,
+                request.Domain,
+                request.LocalPart,
+                request.Password,
+                request.DisplayName ?? string.Empty,
+                HttpContext.RequestAborted);
+
+            if (!success)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(message));
+            }
+
+            return Ok(ApiResponse<DomainMailboxDto>.SuccessResponse(mailbox!, message));
+        }
+
+        /// <summary>
+        /// Deletes a custom mailbox so the tenant can create a different free mailbox address.
+        /// The platform "noreply" system mailbox cannot be deleted.
+        /// </summary>
+        [HttpDelete("delete-custom-mailbox")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> DeleteCustomMailbox([FromQuery] string domain, [FromQuery] string localPart)
+        {
+            if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(localPart))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain and mailbox name are required."));
+            }
+
+            var (success, message) = await _domainEmailService.DeleteCustomMailboxAsync(domain, localPart, HttpContext.RequestAborted);
+            if (!success)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(message));
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, message));
+        }
+
+        /// <summary>
+        /// Sends an authenticated deliverability test email from "noreply@{domain}" to verify DKIM, SPF, and delivery.
+        /// </summary>
+        [HttpPost("send-domain-test-email")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> SendDomainTestEmail([FromBody] SendDomainTestEmailRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Domain) || string.IsNullOrWhiteSpace(request.RecipientEmail))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain and recipient email are required."));
+            }
+
+            var host = HttpContext.Request.Host.ToString();
+            var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(request.TenantKey) && t.TenantKey == request.TenantKey)
+                                       || t.PrimaryDomain == host
+                                       || t.CustomDomain == host);
+
+            var (success, message) = await _domainEmailService.SendTestEmailAsync(
+                request.Domain,
+                request.RecipientEmail,
+                masterTenant?.OrganizationName,
+                HttpContext.RequestAborted);
+
+            if (!success)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(message));
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, message));
+        }
+
+        /// <summary>
+        /// Performs live public DNS verification for a specific email DNS record type (MX, SPF, DKIM, or DMARC).
+        /// </summary>
+        [HttpGet("verify-domain-email-dns")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> VerifyDomainEmailDns([FromQuery] string domain, [FromQuery] string subType)
+        {
+            if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(subType))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain and subType parameters are required."));
+            }
+
+            var result = await _domainEmailService.VerifyDnsRecordAsync(domain, subType, HttpContext.RequestAborted);
+            return Ok(ApiResponse<EmailDnsVerificationResult>.SuccessResponse(result, result.Message));
         }
 
         /// <summary>
