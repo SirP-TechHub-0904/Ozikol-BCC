@@ -15,6 +15,7 @@ interface DnsRecordEntry {
   target: string;
   ttl: string;
   key: string;
+  description?: string;
 }
 
 /**
@@ -29,6 +30,7 @@ interface DnsProbeResult {
   routingReady: boolean;
   isNxDomain: boolean;
   detectedIps: string[];
+  isIpMatch?: boolean;
 }
 
 /**
@@ -214,7 +216,10 @@ interface DnsProbeResult {
                     {{ probeResults.cnamePassed ? 'check_circle' : 'cancel' }}
                   </span>
                   <div class="probe-item-text">
-                    <span class="probe-item-label">CNAME Host Record Points to <code>{{ cleanTargetHost }}</code></span>
+                    <span class="probe-item-label">
+                      <span *ngIf="probeResults.isIpMatch">A Record Points to Platform IP <code>2.24.162.42</code></span>
+                      <span *ngIf="!probeResults.isIpMatch">DNS Host Record Points to <code>{{ cleanTargetHost }}</code></span>
+                    </span>
                     <div *ngIf="!probeResults.cnamePassed" class="probe-subtext">
                       <span class="subtext-alert">Current DNS Resolution:</span> <code class="text-danger-code">{{ probeResults.detectedTarget }}</code>
                     </div>
@@ -254,14 +259,14 @@ interface DnsProbeResult {
                 </div>
                 <p class="remediation-desc">
                   Public DNS resolvers (Google 8.8.8.8, Cloudflare 1.1.1.1) report that <strong>{{ probeResults.domain }}</strong>
-                  is <strong>not currently pointing</strong> to <strong>{{ cleanTargetHost }}</strong>.
+                  is <strong>not currently pointing</strong> to <strong>{{ cleanTargetHost }}</strong> or Platform IP <strong>2.24.162.42</strong>.
                   Anyone typing <code>https://{{ probeResults.domain }}</code> will receive a browser error (<code>DNS_PROBE_FINISHED_NXDOMAIN</code>).
                 </p>
                 <div class="remediation-steps">
                   <div class="remediation-step">
                     <span class="step-num-pill">1</span>
                     <div class="step-desc">
-                      Log in to your <strong>DNS Registrar</strong> (Cloudflare, GoDaddy, Namecheap, Route 53, etc.) where <strong>{{ probeResults.domain }}</strong> is registered.
+                      Log in to your <strong>DNS Registrar</strong> (Hostinger, GoDaddy, Namecheap, Cloudflare, Route 53, etc.) where <strong>{{ probeResults.domain }}</strong> is registered.
                     </div>
                   </div>
                   <div class="remediation-step">
@@ -273,12 +278,11 @@ interface DnsProbeResult {
                   <div class="remediation-step">
                     <span class="step-num-pill">3</span>
                     <div class="step-desc">
-                      Add or update your <strong>CNAME Record</strong>:
+                      Add or update your <strong>DNS Records</strong>:
                       <div class="code-snippet-box">
-                        <div class="code-row"><span>Type:</span> <strong>CNAME</strong></div>
-                        <div class="code-row"><span>Name / Host:</span> <strong>&#64;</strong> (apex root) or <strong>www</strong></div>
-                        <div class="code-row"><span>Target / Value:</span> <strong>{{ cleanTargetHost }}</strong></div>
-                        <div class="code-row"><span>TTL:</span> <strong>Automatic (or 300s)</strong></div>
+                        <div class="code-row"><span>Option 1 (Hostinger / GoDaddy A Record):</span> <strong>Type: A | Name: &#64; | Value: 2.24.162.42</strong></div>
+                        <div class="code-row"><span>Option 2 (Subdomain CNAME Record):</span> <strong>Type: CNAME | Name: www | Value: {{ cleanTargetHost }}</strong></div>
+                        <div class="code-row"><span>TTL:</span> <strong>Auto (or 300s)</strong></div>
                       </div>
                     </div>
                   </div>
@@ -401,8 +405,11 @@ interface DnsProbeResult {
             </thead>
             <tbody>
               <tr *ngFor="let rec of dnsRecords">
-                <td><span class="dns-type-tag" [class.tag-cname]="rec.type === 'CNAME'" [class.tag-txt]="rec.type === 'TXT'">{{ rec.type }}</span></td>
-                <td><code>{{ rec.name }}</code></td>
+                <td><span class="dns-type-tag" [class.tag-cname]="rec.type === 'CNAME'" [class.tag-a]="rec.type === 'A'" [class.tag-txt]="rec.type === 'TXT'">{{ rec.type }}</span></td>
+                <td>
+                  <code>{{ rec.name }}</code>
+                  <span *ngIf="rec.description" style="display:block; font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">{{ rec.description }}</span>
+                </td>
                 <td>
                   <div class="value-cell">
                     <code>{{ rec.target }}</code>
@@ -1102,7 +1109,7 @@ export class CustomDomainComponent implements OnInit {
 
   /**
    * DNS Records required to link custom domain.
-   * Only 2 CNAME records required for full apex and www domain resolution.
+   * Supports both standard CNAME routing and direct A record IP mapping for registrars (Hostinger, GoDaddy).
    */
   get dnsRecords(): DnsRecordEntry[] {
     const targetHost = this.cleanTargetHost;
@@ -1112,14 +1119,24 @@ export class CustomDomainComponent implements OnInit {
         name: 'www',
         target: targetHost,
         ttl: 'Auto (300s)',
-        key: 'cname_www'
+        key: 'cname_www',
+        description: 'Subdomain routing to your workspace'
+      },
+      {
+        type: 'A',
+        name: '@ (Apex Root)',
+        target: '2.24.162.42',
+        ttl: 'Auto (300s)',
+        key: 'a_root',
+        description: 'Recommended: for Hostinger, GoDaddy, Namecheap or any registrar requiring an IP'
       },
       {
         type: 'CNAME',
         name: '@ (Apex Root)',
         target: targetHost,
         ttl: 'Auto (300s)',
-        key: 'cname_root'
+        key: 'cname_root',
+        description: 'Alternative: for Cloudflare DNS or registrars supporting CNAME Flattening'
       }
     ];
   }
@@ -1338,8 +1355,15 @@ export class CustomDomainComponent implements OnInit {
         .filter(a => a.type === 1)
         .map(a => a.data?.trim());
 
-      // Compare against expected host
-      const cnameMatch = detectedCnames.some(c => c === expectedHost || c.includes(expectedHost));
+      // Compare against expected host (CNAME)
+      const cnameMatch = detectedCnames.some(c => c === expectedHost || c.includes(expectedHost) || c.endsWith('.ozikol.cloud'));
+
+      // Compare against platform server IP or Cloudflare edge IPs (A Record)
+      const validPlatformIps = ['2.24.162.42', '104.21.32.45', '172.67.182.206'];
+      const ipMatch = detectedIps.some(ip => validPlatformIps.includes(ip));
+
+      // Domain passes verification if either CNAME or A Record points to the platform
+      const dnsPassed = cnameMatch || ipMatch;
 
       // Check if NXDOMAIN (DNS Status 3)
       const isNxDomain = cnameData?.Status === 3 || aRecordData?.Status === 3;
@@ -1359,18 +1383,20 @@ export class CustomDomainComponent implements OnInit {
         domain: cleanDomain,
         expectedTarget: expectedHost,
         detectedTarget: detectedTarget,
-        cnamePassed: cnameMatch,
-        sslReady: cnameMatch,
-        routingReady: cnameMatch,
+        cnamePassed: dnsPassed,
+        sslReady: dnsPassed,
+        routingReady: dnsPassed,
         isNxDomain: isNxDomain,
-        detectedIps: detectedIps
+        detectedIps: detectedIps,
+        isIpMatch: ipMatch
       };
 
-      if (cnameMatch) {
-        this.toast.success(`DNS verified! '${cleanDomain}' correctly points to '${expectedHost}'.`, 'DNS Verified');
+      if (dnsPassed) {
+        const resolutionNote = ipMatch ? 'A Record IP (2.24.162.42)' : `'${expectedHost}'`;
+        this.toast.success(`DNS verified! '${cleanDomain}' correctly points to ${resolutionNote}.`, 'DNS Verified');
       } else {
         this.toast.warning(
-          `Domain not yet pointed. DNS records do not match '${expectedHost}'. Live custom domain will remain inactive until pointed.`,
+          `Domain not yet pointed. DNS records do not match '${expectedHost}' or Platform IP '2.24.162.42'. Live custom domain will remain inactive until pointed.`,
           'Domain Not Yet Pointed'
         );
       }
