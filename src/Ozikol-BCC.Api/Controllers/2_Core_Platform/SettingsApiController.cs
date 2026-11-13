@@ -311,6 +311,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var data = new BrandSettingsResponseDto
             {
+                TenantKey = _tenantProvider?.CurrentTenant,
                 CompanyName = companyName,
                 CompanyNameAbbreviation = abbreviation,
                 CompanyDescription = site?.CompanyDescription ?? site?.Tagline ?? "",
@@ -1459,6 +1460,11 @@ namespace Ozikol_BCC.Api.Controllers
 
     public class BrandSettingsResponseDto
     {
+        /// <summary>
+        /// Sovereign workspace tenant key resolved from database connection.
+        /// </summary>
+        public string? TenantKey { get; set; }
+
         public string CompanyName { get; set; } = "Workspace";
         public string CompanyNameAbbreviation { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;

@@ -279,10 +279,13 @@ public class TenantProvider : ITenantProvider
         ));
         if (match != null) return match;
 
-        // 3. CustomDomain match (port-agnostic, e.g. 'portal.cocacola.com')
+        // 3. CustomDomain match (port-agnostic, e.g. 'portal.cocacola.com' or 'nightpresssecurity.co.uk')
         match = tenants.FirstOrDefault(t => t.IsActive && !string.IsNullOrEmpty(t.CustomDomain) && (
             t.CustomDomain.Equals(clean, StringComparison.OrdinalIgnoreCase) ||
-            t.CustomDomain.Split(':')[0].Equals(hostWithoutPort, StringComparison.OrdinalIgnoreCase)
+            t.CustomDomain.Split(':')[0].Equals(hostWithoutPort, StringComparison.OrdinalIgnoreCase) ||
+            (t.CustomDomain.Contains('.') && t.CustomDomain.Split('.')[0].Equals(clean, StringComparison.OrdinalIgnoreCase)) ||
+            (t.CustomDomain.Contains('.') && t.CustomDomain.Split('.')[0].Equals(hostWithoutPort, StringComparison.OrdinalIgnoreCase)) ||
+            (!string.IsNullOrEmpty(subdomain) && t.CustomDomain.Contains('.') && t.CustomDomain.Split('.')[0].Equals(subdomain, StringComparison.OrdinalIgnoreCase))
         ));
         if (match != null) return match;
 

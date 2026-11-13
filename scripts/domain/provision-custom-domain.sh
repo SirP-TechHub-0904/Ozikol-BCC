@@ -32,6 +32,7 @@ CLEAN_DOMAIN=$(echo "$DOMAIN" | tr '[:upper:]' '[:lower:]' | sed -e 's|^https://
 # Configuration
 WEB_CLIENT_PORT="${WEB_CLIENT_PORT:-4200}"
 API_PORT="${API_PORT:-5000}"
+CLIENT_STATIC_ROOT="${CLIENT_STATIC_ROOT:-/var/www/ozikol-client}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@ozikol.cloud}"
 NGINX_SITES_AVAILABLE="/etc/nginx/sites-available"
 NGINX_SITES_ENABLED="/etc/nginx/sites-enabled"
@@ -122,8 +123,9 @@ cat <<SUB_EOF
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
-    location / {
-        proxy_pass http://127.0.0.1:${WEB_CLIENT_PORT}/;
+    # Hubs Proxy
+    location /hubs/ {
+        proxy_pass http://127.0.0.1:${API_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -133,6 +135,13 @@ cat <<SUB_EOF
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Static Angular SPA Client with fallback
+    root ${CLIENT_STATIC_ROOT};
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ /index.html;
     }
 SUB_EOF
 fi)
@@ -179,8 +188,9 @@ server {
     }
 
     # Web Client Proxy
-    location / {
-        proxy_pass http://127.0.0.1:${WEB_CLIENT_PORT}/;
+    # Hubs Proxy
+    location /hubs/ {
+        proxy_pass http://127.0.0.1:${API_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -190,6 +200,13 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Static Angular SPA Client with fallback
+    root ${CLIENT_STATIC_ROOT};
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ /index.html;
     }
 }
 SUB_EOF

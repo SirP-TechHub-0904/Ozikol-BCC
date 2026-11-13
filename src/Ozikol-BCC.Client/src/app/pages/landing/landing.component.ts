@@ -972,6 +972,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private extractSubdomainTenant(): string {
     if (typeof window === 'undefined') return '';
     const host = window.location.hostname.toLowerCase();
+    const isPlatformDomain = host.endsWith('.ozikol.cloud') || host.endsWith('.localhost') || host.endsWith('.127.0.0.1.nip.io');
+    if (!isPlatformDomain) return '';
     const parts = host.split('.');
     if (parts.length > 1 && !['localhost', '127.0.0.1', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
       return parts[0];
@@ -1142,6 +1144,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         next: (uiRes: any) => {
           if (uiRes?.data) {
             const data = uiRes.data;
+            if (data.tenantKey && typeof localStorage !== 'undefined') {
+              localStorage.setItem('tenant_key', data.tenantKey);
+            }
             const email = data.contactEmail || data.supportEmail || data.email || data.companyEmail || '';
             const phone = data.primaryPhone || data.phoneOne || data.phone || data.companyPhone || '';
             const address = data.address || data.addressOne || data.companyAddress || '';

@@ -60,24 +60,33 @@ export class TenantStateService {
       return;
     }
 
-    const parts = hostname.split('.');
-    const isSubdomain = parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0]);
-    if (!isSubdomain && parts.length <= 1) {
-      this.isCheckingSubject.next(false);
-      return;
+    const lower = hostname.toLowerCase();
+    const isPlatformDomain = lower.endsWith('.ozikol.cloud') || lower.endsWith('.localhost') || lower.endsWith('.127.0.0.1.nip.io');
+    let resolvedTenantKey: string | null = null;
+    if (isPlatformDomain) {
+      const parts = hostname.split('.');
+      if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
+        resolvedTenantKey = parts[0];
+      }
+    } else {
+      resolvedTenantKey = typeof localStorage !== 'undefined' ? localStorage.getItem('tenant_key') : null;
     }
 
-    const resolvedTenantKey = isSubdomain ? parts[0] : hostname;
-    const headers = new HttpHeaders({
-      'X-Tenant-Key': resolvedTenantKey,
+    let headers = new HttpHeaders({
       'X-Tenant-Domain': hostname
     });
+    if (resolvedTenantKey) {
+      headers = headers.set('X-Tenant-Key', resolvedTenantKey);
+    }
 
     const url = `${(environment.apiUrl || '').replace(/\/+$/, '')}/SettingsApi/brand`;
 
     try {
       const res: any = await firstValueFrom(this.http.get(url, { headers }));
       const data = res?.data || res;
+      if (data?.tenantKey && typeof localStorage !== 'undefined') {
+        localStorage.setItem('tenant_key', data.tenantKey);
+      }
       const dynamicTitle = data?.siteTitle || data?.websiteTitle || data?.brandName || data?.companyName;
       if (dynamicTitle && typeof document !== 'undefined') {
         document.title = dynamicTitle;

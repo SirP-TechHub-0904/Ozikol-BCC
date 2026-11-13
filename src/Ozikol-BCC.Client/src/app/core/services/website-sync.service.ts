@@ -198,9 +198,13 @@ export class WebsiteSyncService {
 
     const hostname = window.location.hostname;
     if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      const parts = hostname.split('.');
-      if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
-        return parts[0];
+      const lower = hostname.toLowerCase();
+      const isPlatformDomain = lower.endsWith('.ozikol.cloud') || lower.endsWith('.localhost') || lower.endsWith('.127.0.0.1.nip.io');
+      if (isPlatformDomain) {
+        const parts = hostname.split('.');
+        if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
+          return parts[0];
+        }
       }
       return hostname;
     }

@@ -6,6 +6,7 @@ using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -23,11 +24,16 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _context;
         private readonly IRecaptchaService _recaptchaService;
+        private readonly ITenantProvider? _tenantProvider;
 
-        public WebsiteContentApiController(DashboardDbContext context, IRecaptchaService recaptchaService)
+        public WebsiteContentApiController(
+            DashboardDbContext context,
+            IRecaptchaService recaptchaService,
+            ITenantProvider? tenantProvider = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
+            _tenantProvider = tenantProvider;
         }
 
         // ==========================================
@@ -921,6 +927,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var payload = new
                 {
+                    tenantKey = _tenantProvider?.CurrentTenant,
                     setting.Id,
                     setting.BrandName,
                     setting.CompanyName,
@@ -983,6 +990,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var defaultSetting = new
             {
+                tenantKey = _tenantProvider?.CurrentTenant,
                 BrandName = string.Empty,
                 SiteTitle = string.Empty,
                 Tagline = string.Empty,
