@@ -50,3 +50,4 @@ public sealed class DomainValidationResult
     public static DomainValidationResult Failure(string errorMessage) =>
         new(false, string.Empty, errorMessage);
 }
+

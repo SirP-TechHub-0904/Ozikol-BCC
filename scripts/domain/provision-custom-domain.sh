@@ -242,3 +242,4 @@ echo " Workspace: ${TENANT_KEY}"
 echo " Nginx config: ${CONF_FILE}"
 echo " URL: https://${CLEAN_DOMAIN}"
 echo "==================================================================="
+

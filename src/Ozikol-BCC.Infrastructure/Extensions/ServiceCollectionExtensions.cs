@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddCustomDomainSupport(this IServiceCollection services)
     {
         services.AddScoped<Ozikol_BCC.Infrastructure.Services.Domain.ICustomDomainProvisioningService, Ozikol_BCC.Infrastructure.Services.Domain.CustomDomainProvisioningService>();
+        services.AddHttpClient<Ozikol_BCC.Infrastructure.Services.Email.IDomainEmailProvisioningService, Ozikol_BCC.Infrastructure.Services.Email.DomainEmailProvisioningService>();
         return services;
     }
 }

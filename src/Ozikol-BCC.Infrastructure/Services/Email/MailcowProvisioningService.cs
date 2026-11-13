@@ -242,5 +242,98 @@ public sealed class MailcowProvisioningService : IMailcowProvisioningService
             return null;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<List<DomainMailboxDto>> GetDomainMailboxesAsync(string domain, CancellationToken cancellationToken = default)
+    {
+        var list = new List<DomainMailboxDto>();
+        if (string.IsNullOrWhiteSpace(domain)) return list;
+
+        ConfigureHttpClient();
+        if (!_httpClient.DefaultRequestHeaders.Contains("X-API-Key"))
+        {
+            return list;
+        }
+
+        try
+        {
+            var cleanDomain = domain.Trim().ToLowerInvariant();
+            var response = await _httpClient.GetAsync($"api/v1/get/mailbox/all/{cleanDomain}", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return list;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var username = el.TryGetProperty("username", out var u) ? u.GetString() ?? string.Empty : string.Empty;
+                    var name = el.TryGetProperty("name", out var n) ? n.GetString() ?? string.Empty : string.Empty;
+                    var active = el.TryGetProperty("active", out var a) && a.GetInt32() == 1;
+                    var quota = el.TryGetProperty("quota", out var q) ? q.GetInt64() : 0;
+
+                    if (!string.IsNullOrWhiteSpace(username))
+                    {
+                        var parts = username.Split('@');
+                        var local = parts[0];
+                        list.Add(new DomainMailboxDto
+                        {
+                            EmailAddress = username,
+                            LocalPart = local,
+                            Domain = cleanDomain,
+                            DisplayName = name,
+                            IsSystemMailbox = local.Equals("noreply", StringComparison.OrdinalIgnoreCase),
+                            IsActive = active,
+                            QuotaMb = (int)(quota / (1024 * 1024))
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve mailboxes for domain '{Domain}' from Mailcow.", domain);
+        }
+
+        return list;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteMailboxAsync(string domain, string localPart, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(localPart)) return false;
+
+        ConfigureHttpClient();
+        if (!_httpClient.DefaultRequestHeaders.Contains("X-API-Key")) return false;
+
+        try
+        {
+            var cleanDomain = domain.Trim().ToLowerInvariant();
+            var cleanLocal = localPart.Trim().ToLowerInvariant();
+            var email = $"{cleanLocal}@{cleanDomain}";
+
+            var payload = new[] { email };
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("api/v1/delete/mailbox", content, cancellationToken);
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.IsSuccessStatusCode && !responseBody.Contains("\"type\":\"danger\"", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Deleted mailbox '{Email}' on Mailcow.", email);
+                return true;
+            }
+
+            _logger.LogWarning("Mailcow delete mailbox failed for '{Email}': {Response}", email, responseBody);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete mailbox '{LocalPart}@{Domain}' on Mailcow.", localPart, domain);
+            return false;
+        }
+    }
 }
 

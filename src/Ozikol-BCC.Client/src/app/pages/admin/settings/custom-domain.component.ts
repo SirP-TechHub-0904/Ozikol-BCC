@@ -436,6 +436,415 @@ interface DnsProbeResult {
           </table>
         </div>
       </div>
+
+      <!-- Domain Email & Business Mailbox Suite -->
+      <div *ngIf="hasCustomDomain" class="email-suite-card">
+        <div class="card-header-bar email-suite-header">
+          <div class="header-title-group">
+            <div class="header-icon-box bg-blue">
+              <span class="material-symbols-outlined">mark_email_read</span>
+            </div>
+            <div>
+              <div class="suite-title-row">
+                <h3>Domain Email &amp; Business Mailboxes</h3>
+                <span class="badge" [class.badge-success]="emailConfig?.isFullyProvisioned" [class.badge-warning]="!emailConfig?.isFullyProvisioned">
+                  <span class="dot" [class.bg-green]="emailConfig?.isFullyProvisioned" [class.bg-amber]="!emailConfig?.isFullyProvisioned"></span>
+                  {{ emailConfig?.isFullyProvisioned ? 'Mail Server Active' : 'Setup In Progress' }}
+                </span>
+              </div>
+              <p class="card-subtitle">
+                Send and receive emails from your custom domain (e.g. <code>support&#64;{{ customDomain }}</code>). Includes 1 free custom mailbox and automated system sender.
+              </p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button
+              type="button"
+              class="btn-secondary-action"
+              (click)="loadDomainEmailConfig(customDomain)"
+              [disabled]="loadingEmailConfig"
+              title="Refresh email configurations from Mailcow"
+            >
+              <span class="material-symbols-outlined" [class.spin]="loadingEmailConfig">refresh</span>
+              <span>Refresh Mail Suite</span>
+            </button>
+            <button
+              type="button"
+              class="btn-primary-action"
+              (click)="verifyAllEmailDnsRecords()"
+              [disabled]="verifyingAllEmailDns"
+              title="Verify live propagation of MX, SPF, DKIM, and DMARC records"
+            >
+              <span class="material-symbols-outlined" [class.spin]="verifyingAllEmailDns">task_alt</span>
+              <span>Verify All Email DNS</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. Email DNS Authentication Matrix Table -->
+        <div class="email-section-block">
+          <div class="section-subheading">
+            <span class="material-symbols-outlined text-blue">verified_user</span>
+            <div>
+              <h4>Email DNS Records &amp; Anti-Spam Authentication</h4>
+              <p>Add these 4 DNS records to your domain registrar (Hostinger, Cloudflare, GoDaddy) so your emails deliver straight to the inbox and never to spam.</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="dns-table email-dns-table">
+              <thead>
+                <tr>
+                  <th style="width: 100px;">TYPE</th>
+                  <th style="width: 170px;">HOST / NAME</th>
+                  <th>VALUE / TARGET</th>
+                  <th style="width: 120px;">PRIORITY / TTL</th>
+                  <th style="width: 120px;">STATUS</th>
+                  <th style="width: 150px; text-align: right;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let rec of emailDnsRecords">
+                  <td>
+                    <span class="dns-type-tag" [class.tag-mx]="rec.recordType === 'MX'" [class.tag-txt]="rec.recordType === 'TXT'">
+                      {{ rec.recordType }}
+                    </span>
+                  </td>
+                  <td>
+                    <code>{{ rec.hostName }}</code>
+                    <span class="rec-desc">{{ rec.description }}</span>
+                  </td>
+                  <td>
+                    <div class="value-cell">
+                      <code class="code-long">{{ rec.recordValue }}</code>
+                      <button type="button" class="btn-copy" (click)="copyValue(rec.recordValue, 'email_' + rec.recordType)" [title]="'Copy ' + rec.recordType">
+                        <span class="material-symbols-outlined">{{ copySuccess['email_' + rec.recordType] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['email_' + rec.recordType] ? 'Copied' : 'Copy' }}</span>
+                      </button>
+                    </div>
+                    <span *ngIf="rec.detectedValue" class="detected-dns-note">
+                      Detected on DNS: <code>{{ rec.detectedValue }}</code>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="priority-badge" *ngIf="rec.priority !== null && rec.priority !== undefined">Priority: {{ rec.priority }}</span>
+                    <span *ngIf="rec.priority === null || rec.priority === undefined" class="ttl-text">Auto / 300s</span>
+                  </td>
+                  <td>
+                    <span *ngIf="rec.isVerified" class="badge badge-success">
+                      <span class="dot bg-green"></span> Verified
+                    </span>
+                    <span *ngIf="!rec.isVerified" class="badge badge-warning">
+                      <span class="dot bg-amber"></span> Pending
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button
+                      type="button"
+                      class="btn-verify-row"
+                      (click)="verifyEmailDnsRecord(rec.recordType)"
+                      [disabled]="verifyingDns[rec.recordType]"
+                      title="Verify this DNS record on live root resolvers"
+                    >
+                      <span class="material-symbols-outlined" [class.spin]="verifyingDns[rec.recordType]">
+                        {{ verifyingDns[rec.recordType] ? 'sync' : 'done_all' }}
+                      </span>
+                      <span>{{ verifyingDns[rec.recordType] ? 'Checking...' : 'Verify' }}</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Business Mailbox Management (System + 1 Free Custom Mailbox) -->
+        <div class="email-section-block">
+          <div class="section-subheading">
+            <span class="material-symbols-outlined text-purple">mark_email_unread</span>
+            <div class="title-with-quota">
+              <div>
+                <h4>Business Mailboxes</h4>
+                <p>Manage inboxes for your domain. Includes 1 free custom mailbox plus automated system sender.</p>
+              </div>
+              <div class="quota-pill" [class.quota-full]="(emailConfig?.customMailboxesUsed || 0) >= (emailConfig?.customMailboxesAllowed || 1)">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>Free Mailboxes: <strong>{{ emailConfig?.customMailboxesUsed || 0 }} / {{ emailConfig?.customMailboxesAllowed || 1 }}</strong> Used</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mailboxes-grid">
+            <!-- Mailbox Card: System Sender -->
+            <div class="mailbox-card system-mailbox-card">
+              <div class="mailbox-header">
+                <div class="mailbox-icon-tag bg-blue">
+                  <span class="material-symbols-outlined">smart_toy</span>
+                </div>
+                <div class="mailbox-info">
+                  <div class="mailbox-email">noreply&#64;{{ customDomain }}</div>
+                  <div class="mailbox-name">System Automated Sender</div>
+                </div>
+                <span class="badge badge-info">
+                  <span class="material-symbols-outlined badge-icon">lock</span> System Protected
+                </span>
+              </div>
+              <div class="mailbox-body">
+                <p class="mailbox-note">Used automatically by the BCC platform to dispatch system alerts, invoices, security tokens, and customer notifications.</p>
+                <div class="mailbox-meta">
+                  <span class="meta-item"><span class="material-symbols-outlined">storage</span> 2,048 MB Storage</span>
+                  <span class="meta-item"><span class="material-symbols-outlined">verified</span> Active</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mailbox Card: Custom Free Mailbox (if exists) -->
+            <div *ngIf="customMailbox" class="mailbox-card custom-mailbox-card">
+              <div class="mailbox-header">
+                <div class="mailbox-icon-tag bg-green">
+                  <span class="material-symbols-outlined">person</span>
+                </div>
+                <div class="mailbox-info">
+                  <div class="mailbox-email">{{ customMailbox.email }}</div>
+                  <div class="mailbox-name">{{ customMailbox.name || 'Custom Business Mailbox' }}</div>
+                </div>
+                <span class="badge badge-success">
+                  <span class="dot bg-green"></span> 1 Free Included
+                </span>
+              </div>
+              <div class="mailbox-body">
+                <p class="mailbox-note">Your designated custom business mailbox for inquiries, customer support, or executive correspondence.</p>
+                <div class="mailbox-meta">
+                  <span class="meta-item"><span class="material-symbols-outlined">storage</span> {{ customMailbox.quotaMb || 2048 }} MB Storage</span>
+                  <span class="meta-item"><span class="material-symbols-outlined">inbox</span> IMAP / SMTP Ready</span>
+                </div>
+                <div class="mailbox-actions">
+                  <button
+                    type="button"
+                    class="btn-delete-mailbox"
+                    (click)="deleteCustomMailbox(customMailbox)"
+                    [disabled]="deletingMailbox"
+                    title="Delete mailbox to free up slot"
+                  >
+                    <span class="material-symbols-outlined">delete</span>
+                    <span>{{ deletingMailbox ? 'Deleting...' : 'Delete Mailbox' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mailbox Creation Form (if custom mailbox not created) -->
+            <div *ngIf="!customMailbox" class="mailbox-card create-mailbox-card">
+              <div class="mailbox-header">
+                <div class="mailbox-icon-tag bg-purple">
+                  <span class="material-symbols-outlined">add_circle</span>
+                </div>
+                <div class="mailbox-info">
+                  <div class="mailbox-email">Create Your 1 Free Custom Mailbox</div>
+                  <div class="mailbox-name">Zero setup fees. Choose any custom address.</div>
+                </div>
+                <span class="badge badge-success">
+                  <span class="material-symbols-outlined badge-icon">check_circle</span> 1 Free Slot Available
+                </span>
+              </div>
+              <div class="mailbox-form">
+                <div class="form-row-compact">
+                  <div class="form-col">
+                    <label class="form-label-compact">Email Prefix <span class="required">*</span></label>
+                    <div class="prefix-input-wrap">
+                      <input
+                        type="text"
+                        class="form-control-compact"
+                        [(ngModel)]="newMailboxPrefix"
+                        placeholder="e.g. support or info"
+                      />
+                      <span class="domain-addon">&#64;{{ customDomain }}</span>
+                    </div>
+                  </div>
+                  <div class="form-col">
+                    <label class="form-label-compact">Display Name <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      class="form-control-compact"
+                      [(ngModel)]="newMailboxDisplayName"
+                      placeholder="e.g. Support Team"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row-compact">
+                  <div class="form-col full-width">
+                    <div class="label-with-action">
+                      <label class="form-label-compact">Password <span class="required">*</span></label>
+                      <button type="button" class="btn-text-link" (click)="generateSecurePassword()">
+                        <span class="material-symbols-outlined">key</span> Generate Strong Password
+                      </button>
+                    </div>
+                    <div class="password-input-wrap">
+                      <input
+                        [type]="showMailboxPassword ? 'text' : 'password'"
+                        class="form-control-compact"
+                        [(ngModel)]="newMailboxPassword"
+                        placeholder="e.g. Minimum 8 characters"
+                      />
+                      <button type="button" class="btn-toggle-eye" (click)="showMailboxPassword = !showMailboxPassword">
+                        <span class="material-symbols-outlined">{{ showMailboxPassword ? 'visibility_off' : 'visibility' }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-action-row">
+                  <button
+                    type="button"
+                    class="btn-create-mailbox"
+                    (click)="createCustomMailbox()"
+                    [disabled]="creatingMailbox || !newMailboxPrefix || !newMailboxPassword"
+                  >
+                    <span class="material-symbols-outlined">add</span>
+                    <span>{{ creatingMailbox ? 'Creating...' : 'Create Free Mailbox' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Deliverability Test & Mobile/Desktop Device Setup -->
+        <div class="email-bottom-split">
+          <!-- Left: Send Live Test Email Card -->
+          <div class="test-email-card">
+            <div class="section-subheading">
+              <span class="material-symbols-outlined text-green">send</span>
+              <div>
+                <h4>Send Live Test Email</h4>
+                <p>Verify outbound deliverability and confirm your custom domain routes emails smoothly to external inboxes.</p>
+              </div>
+            </div>
+
+            <div class="test-email-form">
+              <div class="form-group-compact">
+                <label class="form-label-compact">Send From</label>
+                <select class="form-control-compact" [(ngModel)]="testEmailSender">
+                  <option *ngFor="let m of emailConfig?.mailboxes" [value]="m.email">
+                    {{ m.email }} ({{ m.name }})
+                  </option>
+                  <option *ngIf="!emailConfig?.mailboxes?.length" [value]="'noreply@' + customDomain">
+                    noreply&#64;{{ customDomain }} (System Automated Sender)
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group-compact">
+                <label class="form-label-compact">Recipient Email Address <span class="required">*</span></label>
+                <input
+                  type="email"
+                  class="form-control-compact"
+                  [(ngModel)]="testEmailRecipient"
+                  placeholder="e.g. user@domain.com"
+                />
+              </div>
+
+              <button
+                type="button"
+                class="btn-send-test"
+                (click)="sendDomainTestEmail()"
+                [disabled]="sendingTestEmail || !testEmailRecipient"
+              >
+                <span class="material-symbols-outlined" [class.spin]="sendingTestEmail">
+                  {{ sendingTestEmail ? 'sync' : 'mark_email_read' }}
+                </span>
+                <span>{{ sendingTestEmail ? 'Dispatching...' : 'Send Test Email' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Mobile Device & Email Client Setup Card -->
+          <div class="client-setup-card">
+            <div class="section-subheading">
+              <span class="material-symbols-outlined text-blue">phonelink_setup</span>
+              <div>
+                <h4>Mobile &amp; Email Client Setup</h4>
+                <p>Connect your domain mailbox to iPhone, Android, Outlook, or Apple Mail using standard IMAP/SMTP.</p>
+              </div>
+            </div>
+
+            <!-- Device Tabs -->
+            <div class="client-tabs">
+              <button
+                type="button"
+                class="client-tab-btn"
+                [class.active]="selectedClientTab === 'ios'"
+                (click)="selectedClientTab = 'ios'"
+              >
+                <span class="material-symbols-outlined">phone_iphone</span>
+                <span>iOS (iPhone / iPad)</span>
+              </button>
+              <button
+                type="button"
+                class="client-tab-btn"
+                [class.active]="selectedClientTab === 'android'"
+                (click)="selectedClientTab = 'android'"
+              >
+                <span class="material-symbols-outlined">smartphone</span>
+                <span>Android (Gmail)</span>
+              </button>
+              <button
+                type="button"
+                class="client-tab-btn"
+                [class.active]="selectedClientTab === 'desktop'"
+                (click)="selectedClientTab = 'desktop'"
+              >
+                <span class="material-symbols-outlined">laptop</span>
+                <span>Desktop (Outlook/Mac)</span>
+              </button>
+            </div>
+
+            <!-- Step by step instructions per tab -->
+            <div class="tab-instructions">
+              <div *ngIf="selectedClientTab === 'ios'" class="instruction-list">
+                <div class="inst-step"><span>1</span> Open <strong>Settings</strong> &gt; <strong>Mail</strong> &gt; <strong>Accounts</strong> &gt; <strong>Add Account</strong>.</div>
+                <div class="inst-step"><span>2</span> Tap <strong>Other</strong> &gt; <strong>Add Mail Account</strong>.</div>
+                <div class="inst-step"><span>3</span> Enter your Name, your domain email address, and your mailbox password.</div>
+                <div class="inst-step"><span>4</span> Under <strong>Incoming Mail Server</strong> and <strong>Outgoing Mail Server</strong>, enter the Host and Ports below.</div>
+                <div class="inst-step"><span>5</span> Tap <strong>Save</strong>. iOS automatically activates SSL encryption.</div>
+              </div>
+
+              <div *ngIf="selectedClientTab === 'android'" class="instruction-list">
+                <div class="inst-step"><span>1</span> Open the <strong>Gmail app</strong> (or Samsung Email) &gt; Tap profile icon &gt; <strong>Add another account</strong>.</div>
+                <div class="inst-step"><span>2</span> Select <strong>Other</strong> &gt; Enter your domain email address.</div>
+                <div class="inst-step"><span>3</span> Select <strong>Personal (IMAP)</strong> and enter your mailbox password.</div>
+                <div class="inst-step"><span>4</span> Enter Incoming Server (<code>mail.ozikol.cloud</code>, Port 993, SSL/TLS).</div>
+                <div class="inst-step"><span>5</span> Enter Outgoing Server (<code>mail.ozikol.cloud</code>, Port 587, STARTTLS). Tap <strong>Next</strong>.</div>
+              </div>
+
+              <div *ngIf="selectedClientTab === 'desktop'" class="instruction-list">
+                <div class="inst-step"><span>1</span> In <strong>Outlook</strong> or <strong>Apple Mail</strong>, choose <strong>Add Account</strong> &gt; <strong>Manual Setup</strong> (IMAP).</div>
+                <div class="inst-step"><span>2</span> Username: Enter your full email address (e.g. <code *ngIf="customMailbox">{{ customMailbox.email }}</code><code *ngIf="!customMailbox">support&#64;{{ customDomain }}</code>).</div>
+                <div class="inst-step"><span>3</span> Incoming: <code>mail.ozikol.cloud</code> | Port <code>993</code> | SSL/TLS.</div>
+                <div class="inst-step"><span>4</span> Outgoing: <code>mail.ozikol.cloud</code> | Port <code>587</code> | STARTTLS (or 465 SSL/TLS).</div>
+                <div class="inst-step"><span>5</span> Authentication: Normal password.</div>
+              </div>
+            </div>
+
+            <!-- Server Connection Reference Box -->
+            <div class="server-specs-box">
+              <div class="spec-row">
+                <span class="spec-label">Incoming (IMAP):</span>
+                <span class="spec-val"><code>mail.ozikol.cloud</code> : Port <code>993</code> (SSL/TLS)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Outgoing (SMTP):</span>
+                <span class="spec-val"><code>mail.ozikol.cloud</code> : Port <code>587</code> (STARTTLS) or <code>465</code> (SSL/TLS)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Username:</span>
+                <span class="spec-val">Your Full Email Address</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -1073,6 +1482,633 @@ interface DnsProbeResult {
     .btn-copy .material-symbols-outlined, .btn-copy-full .material-symbols-outlined {
       font-size: 14px;
     }
+
+    /* Email Suite Card Styles */
+    .email-suite-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding-bottom: 24px;
+    }
+    .email-suite-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f1f5f9;
+      background: #fafbfc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header-title-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 280px;
+    }
+    .suite-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-secondary-action, .btn-primary-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-secondary-action {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+    .btn-secondary-action:hover:not(:disabled) {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-primary-action {
+      background: #0050e5;
+      border: 1px solid #0050e5;
+      color: #ffffff;
+    }
+    .btn-primary-action:hover:not(:disabled) {
+      background: #003ebd;
+    }
+    .btn-secondary-action:disabled, .btn-primary-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .email-section-block {
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .section-subheading {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .section-subheading .material-symbols-outlined {
+      font-size: 24px;
+      margin-top: 2px;
+    }
+    .section-subheading h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .section-subheading p {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0;
+    }
+    .title-with-quota {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .quota-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .quota-pill.quota-full {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+    .quota-pill .material-symbols-outlined {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .email-dns-table {
+      margin-top: 6px;
+    }
+    .tag-mx { background: #e0e7ff; color: #4338ca; }
+    .rec-desc {
+      display: block;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 3px;
+    }
+    .code-long {
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .detected-dns-note {
+      display: block;
+      font-size: 10px;
+      color: #059669;
+      margin-top: 4px;
+    }
+    .detected-dns-note code {
+      font-size: 10px;
+      background: #ecfdf5;
+      padding: 1px 4px;
+    }
+    .priority-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .ttl-text {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .btn-verify-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1d4ed8;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-verify-row:hover:not(:disabled) {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .btn-verify-row:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-verify-row .material-symbols-outlined {
+      font-size: 15px;
+    }
+
+    /* Mailboxes Grid */
+    .mailboxes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 6px;
+    }
+    .mailbox-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.15s ease;
+    }
+    .system-mailbox-card {
+      background: linear-gradient(to bottom, #ffffff, #f8fafc);
+      border-color: #cbd5e1;
+    }
+    .custom-mailbox-card {
+      background: linear-gradient(to bottom, #ffffff, #f0fdf4);
+      border-color: #86efac;
+    }
+    .create-mailbox-card {
+      background: linear-gradient(to bottom, #ffffff, #faf5ff);
+      border-color: #d8b4fe;
+    }
+    .mailbox-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .mailbox-icon-tag {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .mailbox-icon-tag .material-symbols-outlined {
+      font-size: 20px;
+      color: #ffffff;
+    }
+    .mailbox-info {
+      flex: 1;
+    }
+    .mailbox-email {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      word-break: break-all;
+    }
+    .mailbox-name {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 1px;
+    }
+    .badge-icon {
+      font-size: 12px;
+      margin-right: 2px;
+    }
+    .mailbox-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mailbox-note {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .mailbox-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 11px;
+      color: #475569;
+      font-weight: 600;
+    }
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-item .material-symbols-outlined {
+      font-size: 14px;
+      color: #64748b;
+    }
+    .mailbox-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+    .btn-delete-mailbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-delete-mailbox:hover:not(:disabled) {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+    .btn-delete-mailbox .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    /* Mailbox Creation Form */
+    .mailbox-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .form-row-compact {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .form-col {
+      flex: 1;
+      min-width: 140px;
+    }
+    .form-col.full-width {
+      flex: 1 1 100%;
+    }
+    .form-label-compact {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .prefix-input-wrap {
+      display: flex;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    .prefix-input-wrap .form-control-compact {
+      border: none;
+      flex: 1;
+      box-shadow: none;
+    }
+    .domain-addon {
+      background: #f1f5f9;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      border-left: 1px solid #cbd5e1;
+    }
+    .form-control-compact {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #0f172a;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .form-control-compact:focus {
+      border-color: #0050e5;
+    }
+    .label-with-action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .label-with-action .form-label-compact {
+      margin-bottom: 0;
+    }
+    .btn-text-link {
+      background: none;
+      border: none;
+      color: #0050e5;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0;
+    }
+    .btn-text-link:hover {
+      text-decoration: underline;
+    }
+    .btn-text-link .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .btn-toggle-eye {
+      position: absolute;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .btn-toggle-eye .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .form-action-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+    .btn-create-mailbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #7c3aed;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-create-mailbox:hover:not(:disabled) {
+      background: #6d28d9;
+    }
+    .btn-create-mailbox:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-create-mailbox .material-symbols-outlined {
+      font-size: 16px;
+    }
+
+    /* Bottom Split: Deliverability Test & Mobile/Desktop Device Setup */
+    .email-bottom-split {
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .email-bottom-split {
+        grid-template-columns: 1fr;
+      }
+    }
+    .test-email-card, .client-setup-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .test-email-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .form-group-compact {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .btn-send-test {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: all 0.15s ease;
+    }
+    .btn-send-test:hover:not(:disabled) {
+      background: #003ebd;
+    }
+    .btn-send-test:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-send-test .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    /* Device Tabs & Instructions */
+    .client-tabs {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .client-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      border: 1px solid transparent;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .client-tab-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .client-tab-btn.active {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #0050e5;
+      font-weight: 700;
+    }
+    .client-tab-btn .material-symbols-outlined {
+      font-size: 15px;
+    }
+    .tab-instructions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .instruction-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .inst-step {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .inst-step span {
+      background: #e2e8f0;
+      color: #1e293b;
+      font-weight: 700;
+      font-size: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .inst-step code {
+      font-size: 11px;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 4px;
+      color: #0f172a;
+    }
+    .server-specs-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .spec-label {
+      color: #64748b;
+      font-weight: 600;
+    }
+    .spec-val {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .spec-val code {
+      font-size: 11px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
   `]
 })
 export class CustomDomainComponent implements OnInit {
@@ -1091,8 +2127,66 @@ export class CustomDomainComponent implements OnInit {
 
   headerButtons: PageHeaderButton[] = [];
 
+  // Email Suite State
+  emailConfig: any = null;
+  loadingEmailConfig = false;
+  verifyingDns: { [key: string]: boolean } = {};
+  verifyingAllEmailDns = false;
+  newMailboxPrefix = '';
+  newMailboxDisplayName = '';
+  newMailboxPassword = '';
+  showMailboxPassword = false;
+  creatingMailbox = false;
+  deletingMailbox = false;
+  testEmailRecipient = '';
+  testEmailSender = '';
+  sendingTestEmail = false;
+  selectedClientTab: 'ios' | 'android' | 'desktop' = 'ios';
+
   get hasCustomDomain(): boolean {
     return !!(this.customDomain && this.customDomain.trim());
+  }
+
+  get customMailbox(): any | null {
+    if (!this.emailConfig?.mailboxes?.length) return null;
+    return this.emailConfig.mailboxes.find((m: any) => !m.isSystemMailbox) || null;
+  }
+
+  get emailDnsRecords(): any[] {
+    return this.emailConfig?.dnsRecords || [
+      {
+        recordType: 'MX',
+        hostName: '@',
+        recordValue: 'mail.ozikol.cloud',
+        priority: 10,
+        description: 'Directs incoming email traffic to the Mailcow mail server',
+        isVerified: false
+      },
+      {
+        recordType: 'TXT',
+        hostName: '@',
+        recordValue: 'v=spf1 a mx a:mail.ozikol.cloud ~all',
+        priority: null,
+        description: 'SPF: Authorizes Mailcow server to send emails on behalf of this domain',
+        isVerified: false
+      },
+      {
+        recordType: 'TXT',
+        hostName: 'dkim._domainkey',
+        recordValue: 'v=DKIM1; k=rsa; p=(Pending Mailcow Key Generation)',
+        priority: null,
+        description: 'DKIM: Cryptographic signature confirming outbound email authenticity',
+        isVerified: false
+      },
+      {
+        recordType: 'TXT',
+        hostName: '_dmarc',
+        recordValue: 'v=DMARC1; p=none; sp=none; rua=mailto:dmarc-reports@mail.ozikol.cloud',
+        priority: null,
+        description: 'DMARC: Domain-based Message Authentication Reporting and Conformance policy',
+        isVerified: false
+      }
+    ];
   }
 
   /**
@@ -1204,8 +2298,10 @@ export class CustomDomainComponent implements OnInit {
           if (this.customDomain) {
             localStorage.setItem('tenant_custom_domain', this.customDomain);
             this.probeDnsSilently(this.customDomain);
+            this.loadDomainEmailConfig(this.customDomain);
           } else {
             localStorage.removeItem('tenant_custom_domain');
+            this.emailConfig = null;
           }
           if (this.primaryDomain) {
             localStorage.setItem('tenant_primary_domain', this.primaryDomain);
@@ -1300,6 +2396,8 @@ export class CustomDomainComponent implements OnInit {
             detail: { customDomain: cleanDomain }
           }));
 
+          this.loadDomainEmailConfig(cleanDomain);
+
           this.toast.success(`Domain '${cleanDomain}' verified and saved successfully! Automated routing is active.`, 'Domain Verified');
         },
         error: (err) => {
@@ -1346,6 +2444,7 @@ export class CustomDomainComponent implements OnInit {
         this.customDomain = '';
         this.customDomainInput = '';
         this.probeResults = null;
+        this.emailConfig = null;
         localStorage.removeItem('tenant_custom_domain');
 
         // Notify layout
@@ -1535,6 +2634,247 @@ export class CustomDomainComponent implements OnInit {
     } finally {
       this.probing = false;
     }
+  }
+
+  /**
+   * Loads domain email configuration and active mailboxes from backend/Mailcow.
+   */
+  loadDomainEmailConfig(domain?: string): void {
+    const targetDomain = domain || this.customDomain;
+    if (!targetDomain) return;
+
+    const cleanDomain = targetDomain.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
+    this.loadingEmailConfig = true;
+
+    this.api.get<any>(`DashboardApi/domain-email-config?domain=${encodeURIComponent(cleanDomain)}`).subscribe({
+      next: (res) => {
+        this.loadingEmailConfig = false;
+        const data = res?.data || res?.Data;
+        if (data) {
+          this.emailConfig = data;
+          if (!this.testEmailSender && data.mailboxes?.length > 0) {
+            this.testEmailSender = data.mailboxes[0].email;
+          }
+        }
+      },
+      error: (err) => {
+        this.loadingEmailConfig = false;
+        console.warn('[Custom Domain] Note loading email config:', err);
+      }
+    });
+  }
+
+  /**
+   * Verifies live DNS propagation for a single record type (MX, SPF, DKIM, DMARC).
+   */
+  verifyEmailDnsRecord(recordType: string): void {
+    const targetDomain = this.customDomain;
+    if (!targetDomain) {
+      this.toast.error('No custom domain configured.', 'Error');
+      return;
+    }
+
+    const cleanDomain = targetDomain.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
+    this.verifyingDns[recordType] = true;
+
+    this.api.get<any>(`DashboardApi/verify-domain-email-dns?domain=${encodeURIComponent(cleanDomain)}&recordType=${encodeURIComponent(recordType)}`).subscribe({
+      next: (res) => {
+        this.verifyingDns[recordType] = false;
+        const result = res?.data || res?.Data;
+        if (result) {
+          // Update local record status
+          if (this.emailConfig?.dnsRecords) {
+            const rec = this.emailConfig.dnsRecords.find((r: any) => r.recordType?.toUpperCase() === recordType.toUpperCase());
+            if (rec) {
+              rec.isVerified = result.isVerified;
+              rec.detectedValue = result.detectedValue;
+            }
+          }
+
+          if (result.isVerified) {
+            this.toast.success(`${recordType} record verified successfully on live DNS!`, 'DNS Record Active');
+          } else {
+            this.toast.warning(
+              result.notes || `${recordType} record not detected yet. DNS changes can take up to 10 minutes to propagate globally.`,
+              'Propagation Pending'
+            );
+          }
+        }
+      },
+      error: (err) => {
+        this.verifyingDns[recordType] = false;
+        console.error(`[Custom Domain] Error verifying ${recordType} record:`, err);
+        this.toast.error(`Failed to verify ${recordType} record. Please try again.`, 'Verification Error');
+      }
+    });
+  }
+
+  /**
+   * Probes and verifies all email DNS records (MX, SPF, DKIM, DMARC) in sequence.
+   */
+  async verifyAllEmailDnsRecords(): Promise<void> {
+    const records = ['MX', 'SPF', 'DKIM', 'DMARC'];
+    this.verifyingAllEmailDns = true;
+
+    try {
+      for (const rec of records) {
+        this.verifyingDns[rec] = true;
+      }
+      this.toast.info('Checking live propagation for MX, SPF, DKIM, and DMARC across root resolvers...', 'Probing DNS');
+
+      // Reload config from backend which triggers comprehensive live verification
+      await this.api.get<any>(`DashboardApi/domain-email-config?domain=${encodeURIComponent(this.customDomain)}`).toPromise().then(res => {
+        const data = res?.data || res?.Data;
+        if (data) {
+          this.emailConfig = data;
+        }
+      });
+
+      const allPassed = this.emailConfig?.dnsRecords?.every((r: any) => r.isVerified);
+      if (allPassed) {
+        this.toast.success('All email DNS records are verified and active! Your domain is fully authenticated for inbox deliverability.', 'All Records Active');
+      } else {
+        this.toast.warning('Some email DNS records have not propagated yet. Check the table for details.', 'Propagation in Progress');
+      }
+    } catch (err) {
+      console.error('[Custom Domain] Error verifying all DNS records:', err);
+      this.toast.error('Could not complete DNS verification. Please check individual records.', 'Verification Error');
+    } finally {
+      this.verifyingAllEmailDns = false;
+      for (const rec of records) {
+        this.verifyingDns[rec] = false;
+      }
+    }
+  }
+
+  /**
+   * Creates the 1 free custom business mailbox for the tenant domain.
+   */
+  createCustomMailbox(): void {
+    if (!this.customDomain) return;
+    const prefix = (this.newMailboxPrefix || '').trim().toLowerCase();
+    const displayName = (this.newMailboxDisplayName || '').trim();
+    const password = (this.newMailboxPassword || '').trim();
+
+    if (!prefix) {
+      this.toast.error('Please enter an email prefix (e.g. support or info).', 'Validation Error');
+      return;
+    }
+
+    if (!displayName) {
+      this.toast.error('Please enter a display name for this mailbox.', 'Validation Error');
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      this.toast.error('Mailbox password must be at least 8 characters long.', 'Password Too Short');
+      return;
+    }
+
+    this.creatingMailbox = true;
+    const payload = {
+      domain: this.customDomain,
+      username: prefix,
+      displayName: displayName,
+      password: password
+    };
+
+    this.api.post<any>('DashboardApi/create-custom-mailbox', payload).subscribe({
+      next: (res) => {
+        this.creatingMailbox = false;
+        this.toast.success(`Mailbox '${prefix}@${this.customDomain}' created successfully!`, 'Mailbox Created');
+        this.newMailboxPrefix = '';
+        this.newMailboxDisplayName = '';
+        this.newMailboxPassword = '';
+        this.showMailboxPassword = false;
+        this.loadDomainEmailConfig(this.customDomain);
+      },
+      error: (err) => {
+        this.creatingMailbox = false;
+        console.error('[Custom Domain] Failed to create mailbox:', err);
+        const msg = err?.error?.message || err?.error?.Message || 'Failed to create mailbox.';
+        this.toast.error(msg, 'Creation Failed');
+      }
+    });
+  }
+
+  /**
+   * Deletes a custom mailbox to release the 1-free mailbox quota.
+   */
+  deleteCustomMailbox(mailbox: any): void {
+    if (!mailbox || !this.customDomain) return;
+
+    if (!confirm(`Are you sure you want to delete '${mailbox.email}'? This will permanently delete stored messages and free up your 1 custom mailbox slot.`)) {
+      return;
+    }
+
+    this.deletingMailbox = true;
+    const payload = {
+      domain: this.customDomain,
+      email: mailbox.email
+    };
+
+    this.api.post<any>('DashboardApi/delete-custom-mailbox', payload).subscribe({
+      next: () => {
+        this.deletingMailbox = false;
+        this.toast.success(`Mailbox '${mailbox.email}' deleted. 1 custom mailbox slot is now available.`, 'Mailbox Removed');
+        this.loadDomainEmailConfig(this.customDomain);
+      },
+      error: (err) => {
+        this.deletingMailbox = false;
+        console.error('[Custom Domain] Failed to delete mailbox:', err);
+        const msg = err?.error?.message || err?.error?.Message || 'Failed to delete mailbox.';
+        this.toast.error(msg, 'Delete Failed');
+      }
+    });
+  }
+
+  /**
+   * Generates a strong, random password for the new mailbox.
+   */
+  generateSecurePassword(): void {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+    let pwd = '';
+    for (let i = 0; i < 14; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    this.newMailboxPassword = pwd;
+    this.showMailboxPassword = true;
+    this.toast.info('Secure password generated and displayed. Copy it before saving!', 'Password Generated');
+  }
+
+  /**
+   * Sends a live test email from the domain to a designated recipient address.
+   */
+  sendDomainTestEmail(): void {
+    if (!this.customDomain) return;
+    const recipient = (this.testEmailRecipient || '').trim();
+    if (!recipient || !recipient.includes('@') || !recipient.includes('.')) {
+      this.toast.error('Please enter a valid recipient email address (e.g. user@domain.com).', 'Invalid Email');
+      return;
+    }
+
+    const sender = this.testEmailSender || `noreply@${this.customDomain}`;
+    this.sendingTestEmail = true;
+
+    const payload = {
+      domain: this.customDomain,
+      senderEmail: sender,
+      recipientEmail: recipient
+    };
+
+    this.api.post<any>('DashboardApi/send-domain-test-email', payload).subscribe({
+      next: (res) => {
+        this.sendingTestEmail = false;
+        this.toast.success(`Test email dispatched successfully from '${sender}' to '${recipient}'! Check your inbox.`, 'Test Email Sent');
+      },
+      error: (err) => {
+        this.sendingTestEmail = false;
+        console.error('[Custom Domain] Test email error:', err);
+        const msg = err?.error?.message || err?.error?.Message || 'Failed to send test email.';
+        this.toast.error(msg, 'Dispatch Failed');
+      }
+    });
   }
 
   copyValue(text: string, key: string): void {

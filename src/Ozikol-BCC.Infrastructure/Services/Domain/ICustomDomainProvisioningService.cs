@@ -45,3 +45,4 @@ public interface ICustomDomainProvisioningService
     /// <returns>Deprovisioning result.</returns>
     Task<DomainDeprovisionResult> DeprovisionDomainAsync(string tenantKey, string domain, CancellationToken cancellationToken = default);
 }
+

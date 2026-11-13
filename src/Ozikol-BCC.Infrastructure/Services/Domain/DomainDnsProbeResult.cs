@@ -58,3 +58,4 @@ public sealed class DomainDnsProbeResult
     /// </summary>
     public string GuidanceMessage { get; set; } = string.Empty;
 }
+

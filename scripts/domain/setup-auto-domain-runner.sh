@@ -55,3 +55,4 @@ echo "==================================================================="
 echo " [SUCCESS] Auto Domain Provisioner Runner installed and ready!"
 echo " Test command: sudo /usr/local/bin/ozikol-provision-domain <domain> <tenant>"
 echo "==================================================================="
+
