@@ -1206,11 +1206,21 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/settings/console/general/email" [class.active]="isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')" class="sub-nav-item">
+                  <a routerLink="/settings/console/general/email" [class.active]="(isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')) && !isCurrentRoute('/settings/console/general/currency')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Email Configuration</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Email Configuration', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/settings/console/general/currency" [class.active]="isCurrentRoute('/settings/console/general/currency')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">payments</span>Default Currency</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/currency')" (click)="togglePin('Default Currency', '/settings/console/general/currency', 'payments')" [title]="isPinned('/settings/console/general/currency') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/currency') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>

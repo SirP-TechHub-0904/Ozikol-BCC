@@ -354,6 +354,7 @@ export const routes: Routes = [
       { path: 'settings/console', component: SettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'CmsStudioManager'] } },
       { path: 'settings/console/general', component: GeneralSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'settings/console/general/email', component: GeneralSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'settings/console/general/currency', component: GeneralSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'settings/console/custom-domain', component: CustomDomainComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'CmsStudioManager'] } },
       { path: 'settings/custom-domain', redirectTo: 'settings/console/custom-domain', pathMatch: 'full' },
       { path: 'admin/custom-domain', redirectTo: 'settings/console/custom-domain', pathMatch: 'full' },

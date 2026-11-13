@@ -15,6 +15,7 @@ using Ozikol_BCC.Persistence.EF.SQL;
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol.MasterDomain.Security;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -29,6 +30,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly IMediator _mediator;
         private readonly DashboardDbContext _db;
+        private readonly MasterCatalogDbContext? _master;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? _activityLogger;
         private readonly IHubContext<NotificationHub>? _notificationHub;
@@ -50,10 +52,12 @@ namespace Ozikol_BCC.Api.Controllers
             Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? notificationDispatcher = null,
             Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
             Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null,
-            Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null)
+            Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null,
+            MasterCatalogDbContext? master = null)
         {
             _mediator = mediator;
             _db = db;
+            _master = master;
             _cloudinaryService = cloudinaryService;
             _activityLogger = activityLogger;
             _notificationHub = notificationHub;
@@ -889,6 +893,137 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Retrieves the active workspace operational running currency settings alongside platform billing context.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The workspace currency configuration.</returns>
+        [HttpGet("currency")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<WorkspaceCurrencySettingsDto>), 200)]
+        public async Task<IActionResult> GetWorkspaceCurrencySettings(CancellationToken cancellationToken = default)
+        {
+            var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+            string tenantCode = !string.IsNullOrWhiteSpace(config?.CurrencyCode) ? config.CurrencyCode.Trim().ToUpperInvariant() : "USD";
+            string tenantSymbol = !string.IsNullOrWhiteSpace(config?.CurrencySymbol) ? config.CurrencySymbol.Trim() : (tenantCode == "NGN" ? "₦" : "$");
+
+            string billingCode = "USD";
+            string billingSymbol = "$";
+
+            if (_master != null)
+            {
+                try
+                {
+                    var tenantKey = ResolveCurrentTenantKey();
+                    if (!string.IsNullOrWhiteSpace(tenantKey))
+                    {
+                        var tenant = await _master.MasterTenantCatalogs.AsNoTracking()
+                            .FirstOrDefaultAsync(t => t.TenantKey.ToLower() == tenantKey.ToLower(), cancellationToken);
+
+                        if (tenant != null && !string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode))
+                        {
+                            billingCode = tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                            var rate = await _master.MasterCurrencyRates.AsNoTracking()
+                                .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToUpper() == billingCode, cancellationToken);
+                            if (rate != null && !string.IsNullOrWhiteSpace(rate.CurrencySymbol))
+                            {
+                                billingSymbol = rate.CurrencySymbol.Trim();
+                            }
+                            else if (billingCode == "NGN")
+                            {
+                                billingSymbol = "₦";
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fall back to USD / $ if master resolution encounters a transient error
+                }
+            }
+
+            var dto = new WorkspaceCurrencySettingsDto
+            {
+                CurrencyCode = tenantCode,
+                CurrencySymbol = tenantSymbol,
+                PlatformBillingCurrencyCode = billingCode,
+                PlatformBillingCurrencySymbol = billingSymbol
+            };
+
+            return Ok(ApiResponse<WorkspaceCurrencySettingsDto>.SuccessResponse(dto, "Workspace running currency resolved successfully."));
+        }
+
+        /// <summary>
+        /// Updates the active workspace operational running currency.
+        /// Affects store products, customer transactions, client invoices, and workforce compensation.
+        /// </summary>
+        /// <param name="dto">The updated currency payload.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The updated workspace currency configuration.</returns>
+        [HttpPut("currency")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<WorkspaceCurrencySettingsDto>), 200)]
+        public async Task<IActionResult> UpdateWorkspaceCurrencySettings([FromBody] WorkspaceCurrencySettingsDto dto, CancellationToken cancellationToken = default)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.CurrencyCode))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Currency code is required."));
+            }
+
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync(cancellationToken);
+            if (config == null)
+            {
+                config = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _db.MisConfigurationSettings.Add(config);
+            }
+
+            var code = dto.CurrencyCode.Trim().ToUpperInvariant();
+            var symbol = !string.IsNullOrWhiteSpace(dto.CurrencySymbol) ? dto.CurrencySymbol.Trim() : (code == "NGN" ? "₦" : "$");
+
+            config.CurrencyCode = code;
+            config.CurrencySymbol = symbol;
+
+            await _db.SaveChangesAsync(cancellationToken);
+
+            string billingCode = "USD";
+            string billingSymbol = "$";
+            if (_master != null)
+            {
+                try
+                {
+                    var tenantKey = ResolveCurrentTenantKey();
+                    if (!string.IsNullOrWhiteSpace(tenantKey))
+                    {
+                        var tenant = await _master.MasterTenantCatalogs.AsNoTracking()
+                            .FirstOrDefaultAsync(t => t.TenantKey.ToLower() == tenantKey.ToLower(), cancellationToken);
+
+                        if (tenant != null && !string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode))
+                        {
+                            billingCode = tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                            var rate = await _master.MasterCurrencyRates.AsNoTracking()
+                                .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToUpper() == billingCode, cancellationToken);
+                            if (rate != null && !string.IsNullOrWhiteSpace(rate.CurrencySymbol))
+                            {
+                                billingSymbol = rate.CurrencySymbol.Trim();
+                            }
+                            else if (billingCode == "NGN")
+                            {
+                                billingSymbol = "₦";
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            dto.CurrencyCode = code;
+            dto.CurrencySymbol = symbol;
+            dto.PlatformBillingCurrencyCode = billingCode;
+            dto.PlatformBillingCurrencySymbol = billingSymbol;
+
+            return Ok(ApiResponse<WorkspaceCurrencySettingsDto>.SuccessResponse(dto, "Default workspace currency updated successfully."));
+        }
+
+        /// <summary>
         /// Retrieves Store &amp; Website E-Commerce mode configuration.
         /// </summary>
         [HttpGet("ecommerce")]
@@ -1481,5 +1616,31 @@ namespace Ozikol_BCC.Api.Controllers
         public string? CustomCloudName { get; set; }
         public string? MaskedApiKey { get; set; }
         public bool UsingPlatformDefault { get; set; } = true;
+    }
+
+    /// <summary>
+    /// DTO for retrieving and updating the workspace tenant's default operational running currency.
+    /// </summary>
+    public class WorkspaceCurrencySettingsDto
+    {
+        /// <summary>
+        /// Standard 3-letter ISO 4217 currency code (e.g. USD, NGN, GBP, EUR, CAD, KES, ZAR, GHS).
+        /// </summary>
+        public string CurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Visual currency symbol (e.g. $, ₦, £, €, CA$, KSh, R, GH₵).
+        /// </summary>
+        public string CurrencySymbol { get; set; } = "$";
+
+        /// <summary>
+        /// Indicates the platform billing currency used by Ozikol Central for subscription licensing.
+        /// </summary>
+        public string PlatformBillingCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Indicates the platform billing currency symbol.
+        /// </summary>
+        public string PlatformBillingCurrencySymbol { get; set; } = "$";
     }
 }

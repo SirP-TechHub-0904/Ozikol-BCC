@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -24,13 +24,13 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         subtitle="Configure core workspace-wide system services and notification infrastructure."
       ></app-page-header>
 
-      <!-- Modular General Settings Navigation Bar (Extensible for future general settings) -->
+      <!-- Modular General Settings Navigation Bar -->
       <div class="gen-tabs-bar">
         <button
           type="button"
           class="gen-tab-btn"
           [class.active]="activeTab === 'email'"
-          (click)="activeTab = 'email'"
+          (click)="selectTab('email')"
         >
           <span class="material-symbols-outlined tab-icon">mark_email_read</span>
           <div class="tab-meta">
@@ -41,6 +41,24 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               </span>
             </div>
             <span class="tab-sub">Workspace Notification Email Service</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          class="gen-tab-btn"
+          [class.active]="activeTab === 'currency'"
+          (click)="selectTab('currency')"
+        >
+          <span class="material-symbols-outlined tab-icon">payments</span>
+          <div class="tab-meta">
+            <div class="tab-title-row">
+              <span class="tab-title">Default Currency</span>
+              <span class="status-pill pill-active">
+                {{ currencySettings.currencyCode }} ({{ currencySettings.currencySymbol }})
+              </span>
+            </div>
+            <span class="tab-sub">Operational Running Currency</span>
           </div>
         </button>
       </div>
@@ -191,6 +209,146 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                   <span class="material-symbols-outlined">{{ sendingTestEmail ? 'progress_activity' : 'send' }}</span>
                   <span>{{ sendingTestEmail ? 'Sending Verification Email...' : 'Send Test Email' }}</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: DEFAULT CURRENCY -->
+      <div *ngIf="activeTab === 'currency'" class="gen-tab-content">
+        <!-- Status / Informational Banner -->
+        <div class="status-banner banner-active">
+          <div class="banner-icon-wrap">
+            <span class="material-symbols-outlined">payments</span>
+          </div>
+          <div class="banner-body">
+            <h4>Workspace Running Currency: {{ currencySettings.currencyCode }} ({{ currencySettings.currencySymbol }})</h4>
+            <p>
+              Configure the primary currency your workspace uses for day-to-day operations across products, sales orders, customer checkout, invoices, and employee compensation. Subscriptions and capability licenses from Ozikol Central are billed separately.
+            </p>
+          </div>
+        </div>
+
+        <div class="gen-cards-grid">
+          <!-- Card 1: Operational Currency Selector -->
+          <div class="gen-card">
+            <div class="gen-card-head">
+              <div class="head-icon">
+                <span class="material-symbols-outlined">currency_exchange</span>
+              </div>
+              <div>
+                <h3>Workspace Operational Currency</h3>
+                <p>Choose the default currency applied to all internal transactions across your workspace.</p>
+              </div>
+            </div>
+
+            <div class="gen-card-body">
+              <div class="form-group">
+                <label class="form-label">Default Currency</label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="currencySettings.currencyCode"
+                  (ngModelChange)="onCurrencyCodeChange()"
+                >
+                  <option value="USD">USD - United States Dollar ($)</option>
+                  <option value="NGN">NGN - Nigerian Naira (₦)</option>
+                  <option value="GBP">GBP - British Pound Sterling (£)</option>
+                  <option value="EUR">EUR - Euro (€)</option>
+                  <option value="CAD">CAD - Canadian Dollar (CA$)</option>
+                  <option value="KES">KES - Kenyan Shilling (KSh)</option>
+                  <option value="ZAR">ZAR - South African Rand (R)</option>
+                  <option value="GHS">GHS - Ghanaian Cedi (GH₵)</option>
+                  <option value="AUD">AUD - Australian Dollar (A$)</option>
+                  <option value="INR">INR - Indian Rupee (₹)</option>
+                  <option value="JPY">JPY - Japanese Yen (¥)</option>
+                  <option value="AED">AED - United Arab Emirates Dirham (AED)</option>
+                  <option value="ZMW">ZMW - Zambian Kwacha (ZK)</option>
+                  <option value="UGX">UGX - Ugandan Shilling (USh)</option>
+                  <option value="RWF">RWF - Rwandan Franc (FRw)</option>
+                  <option value="EGP">EGP - Egyptian Pound (E£)</option>
+                </select>
+                <span class="form-hint">Used for all product prices, checkout carts, invoices, and employee payments.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Currency Symbol</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="currencySettings.currencySymbol"
+                  placeholder="e.g. $, ₦, £, €, CA$, KSh"
+                />
+                <span class="form-hint">Visual symbol or prefix displayed alongside monetary values.</span>
+              </div>
+
+              <!-- Live Preview Block -->
+              <div class="currency-live-box">
+                <div class="currency-live-label">LIVE DISPLAY PREVIEW</div>
+                <div class="currency-live-price">
+                  <span class="sym">{{ currencySettings.currencySymbol }}</span>
+                  <span class="amt">149.99</span>
+                  <span class="iso">{{ currencySettings.currencyCode }}</span>
+                </div>
+                <span class="currency-live-sub">Rendered across product cards, POS receipts, customer invoices, and payroll slips.</span>
+              </div>
+
+              <div class="card-footer-actions">
+                <button
+                  type="button"
+                  class="btn-primary-action full-width"
+                  [disabled]="savingCurrency"
+                  (click)="saveCurrencySettings()"
+                >
+                  <span class="material-symbols-outlined">{{ savingCurrency ? 'progress_activity' : 'check' }}</span>
+                  <span>{{ savingCurrency ? 'Saving...' : 'Save' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Central Platform Billing Context -->
+          <div class="gen-card">
+            <div class="gen-card-head">
+              <div class="head-icon head-icon-emerald">
+                <span class="material-symbols-outlined">receipt_long</span>
+              </div>
+              <div>
+                <h3>Platform Billing Currency (Central)</h3>
+                <p>Currency used by Ozikol Central for workspace capability licenses &amp; subscriptions.</p>
+              </div>
+            </div>
+
+            <div class="gen-card-body">
+              <div class="billing-context-card">
+                <div class="billing-chip-row">
+                  <span class="billing-badge">Central Billing</span>
+                  <span class="billing-curr">{{ currencySettings.platformBillingCurrencyCode }} ({{ currencySettings.platformBillingCurrencySymbol }})</span>
+                </div>
+                <p class="billing-desc">
+                  Ozikol Central invoices and charges your organization in <strong>{{ currencySettings.platformBillingCurrencyCode }}</strong> for platform feature add-ons, monthly plans, and cloud capabilities.
+                </p>
+                <div class="billing-rules-list">
+                  <div class="rule-item">
+                    <span class="material-symbols-outlined rule-check">check_circle</span>
+                    <span><strong>Tenant Running Currency:</strong> Dictates internal commerce, invoices, POS, and payroll.</span>
+                  </div>
+                  <div class="rule-item">
+                    <span class="material-symbols-outlined rule-check">check_circle</span>
+                    <span><strong>Platform Billing Currency:</strong> Dictates workspace capability licenses billed by Central.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-footer-actions">
+                <a
+                  routerLink="/billing/features"
+                  class="btn-outline-action full-width"
+                  style="text-decoration:none;"
+                >
+                  <span class="material-symbols-outlined">auto_awesome</span>
+                  <span>View Features &amp; Capabilities</span>
+                </a>
               </div>
             </div>
           </div>
@@ -570,13 +728,139 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     .full-width {
       width: 100%;
     }
+
+    .currency-live-box {
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      margin: 4px 0 8px;
+    }
+    .currency-live-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #64748b;
+    }
+    .currency-live-price {
+      font-size: 28px;
+      font-weight: 900;
+      color: #0f172a;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      margin: 6px 0 2px;
+    }
+    .currency-live-price .sym {
+      color: #0050E5;
+      font-weight: 900;
+    }
+    .currency-live-price .amt {
+      color: #0f172a;
+    }
+    .currency-live-price .iso {
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
+      margin-left: 4px;
+    }
+    .currency-live-sub {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .billing-context-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .billing-chip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .billing-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    .billing-curr {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .billing-desc {
+      margin: 0;
+      font-size: 12.5px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .billing-rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 4px;
+    }
+    .rule-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.4;
+    }
+    .rule-check {
+      font-size: 16px;
+      color: #10b981;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
   `]
 })
 export class GeneralSettingsComponent implements OnInit {
-  activeTab: 'email' = 'email';
+  activeTab: 'email' | 'currency' = 'email';
   activatingEmail = false;
   sendingTestEmail = false;
   testRecipientEmail = '';
+
+  savingCurrency = false;
+  currencySettings = {
+    currencyCode: 'USD',
+    currencySymbol: '$',
+    platformBillingCurrencyCode: 'USD',
+    platformBillingCurrencySymbol: '$'
+  };
+
+  private readonly currencySymbols: { [code: string]: string } = {
+    'USD': '$',
+    'NGN': '₦',
+    'GBP': '£',
+    'EUR': '€',
+    'CAD': 'CA$',
+    'KES': 'KSh',
+    'ZAR': 'R',
+    'GHS': 'GH₵',
+    'AUD': 'A$',
+    'INR': '₹',
+    'JPY': '¥',
+    'AED': 'AED',
+    'ZMW': 'ZK',
+    'UGX': 'USh',
+    'RWF': 'FRw',
+    'EGP': 'E£'
+  };
 
   emailStatus = {
     isConfigured: false,
@@ -592,11 +876,91 @@ export class GeneralSettingsComponent implements OnInit {
   constructor(
     private readonly api: ApiService,
     private readonly toast: ToastService,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
+    if (this.router.url.includes('currency')) {
+      this.activeTab = 'currency';
+    } else {
+      this.activeTab = 'email';
+    }
     this.loadEmailSetupStatus();
+    this.loadCurrencySettings();
+  }
+
+  /**
+   * Switches the active settings tab and updates the route URL accordingly.
+   */
+  selectTab(tab: 'email' | 'currency'): void {
+    this.activeTab = tab;
+    if (tab === 'currency') {
+      this.router.navigate(['/settings/console/general/currency']);
+    } else {
+      this.router.navigate(['/settings/console/general/email']);
+    }
+  }
+
+  /**
+   * Auto-populates visual currency symbol when the user selects a standard currency code.
+   */
+  onCurrencyCodeChange(): void {
+    const code = this.currencySettings.currencyCode?.toUpperCase();
+    if (code && this.currencySymbols[code]) {
+      this.currencySettings.currencySymbol = this.currencySymbols[code];
+    }
+  }
+
+  /**
+   * Loads the current operational running currency configuration for this workspace.
+   */
+  loadCurrencySettings(): void {
+    this.api.get<any>('SettingsApi/currency').subscribe({
+      next: (res: any) => {
+        const data = res?.data;
+        if (data) {
+          this.currencySettings = {
+            currencyCode: data.currencyCode || 'USD',
+            currencySymbol: data.currencySymbol || '$',
+            platformBillingCurrencyCode: data.platformBillingCurrencyCode || 'USD',
+            platformBillingCurrencySymbol: data.platformBillingCurrencySymbol || '$'
+          };
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Saves the updated default operational running currency.
+   */
+  saveCurrencySettings(): void {
+    if (!this.currencySettings.currencyCode?.trim()) {
+      this.toast.warning('Please select a currency code.');
+      return;
+    }
+
+    this.savingCurrency = true;
+    this.api.put<any>('SettingsApi/currency', {
+      currencyCode: this.currencySettings.currencyCode.trim(),
+      currencySymbol: this.currencySettings.currencySymbol?.trim() || '$'
+    }).subscribe({
+      next: (res: any) => {
+        this.savingCurrency = false;
+        if (res?.data) {
+          this.currencySettings = {
+            ...this.currencySettings,
+            ...res.data
+          };
+        }
+        this.toast.success('Default workspace running currency updated successfully.');
+      },
+      error: (err: any) => {
+        this.savingCurrency = false;
+        this.toast.error(err?.error?.message || 'Unable to update currency settings.');
+      }
+    });
   }
 
   /**

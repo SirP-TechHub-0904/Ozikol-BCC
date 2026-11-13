@@ -83,12 +83,33 @@ namespace Ozikol_BCC.Api.Controllers
         private string CurrentUserName => User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst("name")?.Value ?? "Staff Member";
 
         /// <summary>
-        /// Resolves the active running currency code and symbol for the current tenant from the Central Master Catalog database.
-        /// Defaults to NGN / ₦ if unconfigured or unreachable.
+        /// Resolves the active running currency code and symbol for the current tenant.
+        /// Prioritizes the tenant's own operational configuration (<see cref="MisConfigurationSetting"/>).
+        /// Falls back to Central Master Catalog (<see cref="MasterTenantCatalog.DefaultCurrencyCode"/>) or USD.
         /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A tuple of the 3-letter currency code and visual currency symbol.</returns>
         private async Task<(string Code, string Symbol)> ResolveTenantCurrencyAsync(CancellationToken ct = default)
         {
-            if (_master == null) return ("NGN", "₦");
+            try
+            {
+                // 1. Prioritize tenant's own operational running currency configured in Workspace Settings
+                var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                if (config != null && !string.IsNullOrWhiteSpace(config.CurrencyCode))
+                {
+                    var configuredCode = config.CurrencyCode.Trim().ToUpperInvariant();
+                    var configuredSymbol = !string.IsNullOrWhiteSpace(config.CurrencySymbol)
+                        ? config.CurrencySymbol.Trim()
+                        : (configuredCode == "NGN" ? "₦" : "$");
+                    return (configuredCode, configuredSymbol);
+                }
+            }
+            catch
+            {
+                // Fall through to Central Master Catalog resolution if tenant configuration query fails
+            }
+
+            if (_master == null) return ("USD", "$");
             try
             {
                 var tenantKey = CurrentTenantKey;
@@ -97,7 +118,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                 var currCode = !string.IsNullOrWhiteSpace(tenant?.DefaultCurrencyCode)
                     ? tenant.DefaultCurrencyCode.Trim().ToUpperInvariant()
-                    : "NGN";
+                    : "USD";
 
                 var rateObj = await _master.MasterCurrencyRates.AsNoTracking()
                     .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToUpper() == currCode, ct);
@@ -107,7 +128,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
             catch
             {
-                return ("NGN", "₦");
+                return ("USD", "$");
             }
         }
 
