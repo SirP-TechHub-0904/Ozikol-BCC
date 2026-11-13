@@ -259,7 +259,7 @@ export class TranslationService {
       'suite.compliance_governance': 'Compliance & Governance',
       'suite.demographics_census': 'Demographics & Census',
       'suite.billing_subscriptions': 'Billing & Subscriptions',
-      'suite.security_audit': 'Security & Audit',
+      'suite.security_audit': 'Settings & Audit',
       'suite.member_workspace': 'Personal Workspace Hub',
 
       // Additional Suite Navigation Items
@@ -1323,7 +1323,7 @@ export class TranslationService {
       'suite.compliance_governance': 'Conformité & Gouvernance',
       'suite.demographics_census': 'Démographie & Recensement',
       'suite.billing_subscriptions': 'Facturation & Abonnements',
-      'suite.security_audit': 'Sécurité & Audit',
+      'suite.security_audit': 'Paramètres & Audit',
       'suite.member_workspace': 'Espace Personnel',
 
       // Additional Suite Navigation Items
@@ -2381,7 +2381,7 @@ export class TranslationService {
       'suite.compliance_governance': 'Cumplimiento y Gobernanza',
       'suite.demographics_census': 'Demografía y Censo',
       'suite.billing_subscriptions': 'Facturación y Suscripciones',
-      'suite.security_audit': 'Seguridad y Auditoría',
+      'suite.security_audit': 'Ajustes y Auditoría',
       'suite.member_workspace': 'Espacio Personal',
 
       // Additional Suite Navigation Items
@@ -3439,7 +3439,7 @@ export class TranslationService {
       'suite.compliance_governance': 'Compliance & Governance',
       'suite.demographics_census': 'Demografie & Zensus',
       'suite.billing_subscriptions': 'Abrechnung & Abonnements',
-      'suite.security_audit': 'Sicherheit & Audit',
+      'suite.security_audit': 'Einstellungen & Audit',
       'suite.member_workspace': 'Persönlicher Arbeitsbereich',
 
       // Additional Suite Navigation Items

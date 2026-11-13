@@ -1164,14 +1164,50 @@ export interface SuiteInfoDetail {
           </div>
           </ng-container>
 
-          <!-- Suite 14: Security & Audit (Platform Protection) -->
+          <!-- Suite 14: Settings & Audit (Platform Protection & System Governance) -->
           <ng-container *ngIf="canAccessSuite('security_audit')">
           <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Security & Audit Overview'">
+            <span class="suite-header-text" style="display:inline-flex; align-items:center; gap:6px;">
+              <span class="material-symbols-outlined" style="font-size:15px; vertical-align:middle;">settings</span>
+              <span>{{ 'suite.security_audit' | translate:'SETTINGS & AUDIT' }}</span>
+            </span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Settings & Audit Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
+          <!-- 1. General Settings (Brought to the top) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/settings/console/general')" (click)="toggleMenu('general_settings')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">settings</span>
+                <span>{{ 'nav.general_settings' | translate:'General Settings' }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/settings/console/general/email" [class.active]="(isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')) && !isCurrentRoute('/settings/console/general/currency')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Email Configuration</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Email Configuration', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/settings/console/general/currency" [class.active]="isCurrentRoute('/settings/console/general/currency')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">payments</span>Default Currency</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/currency')" (click)="togglePin('Default Currency', '/settings/console/general/currency', 'payments')" [title]="isPinned('/settings/console/general/currency') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/currency') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <!-- 2. Security Audit -->
           <div class="nav-item">
             <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="nav-link">
               <div class="nav-link-content">
@@ -1184,6 +1220,7 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          <!-- 3. Error Codes -->
           <div class="nav-item">
             <a routerLink="/identity/console/error-codes" [class.active]="isCurrentRoute('/identity/console/error-codes')" class="nav-link">
               <div class="nav-link-content">
@@ -1194,27 +1231,6 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">{{ isPinned('/identity/console/error-codes') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/settings/console/general')" (click)="toggleMenu('general_settings')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">settings</span>
-                <span>{{ 'nav.general_settings' | translate:'General Settings' }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/settings/console/general/email" [class.active]="isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Email Configuration</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Email Configuration', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
           </div>
           </ng-container>
         </ng-container>
@@ -3848,10 +3864,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     },
     security_audit: {
       key: 'security_audit',
-      badge: 'Suite 14 • Platform Protection',
-      icon: 'security',
-      title: 'Security & Audit',
-      shortDesc: 'Comprehensive platform security and compliance logging. Inspect immutable audit logs, review authentication history, enforce security policies, and manage active sessions.',
+      badge: 'Suite 14 • Settings & Audit',
+      icon: 'settings',
+      title: 'Settings & Audit',
+      shortDesc: 'Comprehensive workspace settings, system governance, and compliance audit logging. Manage notification services, workspace default currency, review immutable security audit logs, and inspect error codes.',
       whoUsesIt: 'Security administrators, IT directors, Compliance auditors, System administrators.',
       capabilities: [
         'Live Security & Audit Logs with IP tracking and payload inspection',
