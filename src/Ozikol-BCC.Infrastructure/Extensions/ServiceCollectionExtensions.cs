@@ -47,4 +47,15 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher, Ozikol_BCC.Infrastructure.Services.Email.SmtpEmailDispatcher>();
         return services;
     }
+
+    /// <summary>
+    /// Registers automated custom domain routing, DNS probe, and SSL certificate provisioning services.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddCustomDomainSupport(this IServiceCollection services)
+    {
+        services.AddScoped<Ozikol_BCC.Infrastructure.Services.Domain.ICustomDomainProvisioningService, Ozikol_BCC.Infrastructure.Services.Domain.CustomDomainProvisioningService>();
+        return services;
+    }
 }

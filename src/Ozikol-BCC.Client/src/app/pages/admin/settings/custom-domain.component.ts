@@ -1235,7 +1235,31 @@ export class CustomDomainComponent implements OnInit {
           detail: { customDomain: cleanDomain }
         }));
 
-        this.toast.success(`Custom domain '${cleanDomain}' linked successfully!`, 'Domain Bound');
+        const prov = updated?.provisioningStatus || updated?.ProvisioningStatus;
+        if (prov) {
+          if (prov.dnsProbe) {
+            this.probeResults = {
+              domain: cleanDomain,
+              expectedTarget: prov.dnsProbe.expectedTarget || '2.24.162.42',
+              detectedTarget: prov.dnsProbe.detectedTarget || cleanDomain,
+              cnamePassed: prov.dnsProbe.isDnsPointed,
+              sslReady: prov.sslActive,
+              routingReady: prov.nginxConfigured,
+              isNxDomain: prov.dnsProbe.isNxDomain,
+              detectedIps: prov.dnsProbe.detectedIps || [],
+              isIpMatch: prov.dnsProbe.isIpMatch
+            };
+          }
+          if (prov.succeeded) {
+            this.toast.success(`Custom domain '${cleanDomain}' bound! Automated server routing and SSL active.`, 'Domain Operational');
+          } else if (prov.dnsVerified) {
+            this.toast.success(`Custom domain '${cleanDomain}' bound! DNS verified at 2.24.162.42.`, 'Domain Bound');
+          } else {
+            this.toast.info(`Domain saved to workspace. Update DNS A record to 2.24.162.42 to activate.`, 'DNS Setup Pending');
+          }
+        } else {
+          this.toast.success(`Custom domain '${cleanDomain}' linked successfully!`, 'Domain Bound');
+        }
       },
       error: (err) => {
         this.saving = false;
@@ -1394,6 +1418,26 @@ export class CustomDomainComponent implements OnInit {
       if (dnsPassed) {
         const resolutionNote = ipMatch ? 'A Record IP (2.24.162.42)' : `'${expectedHost}'`;
         this.toast.success(`DNS verified! '${cleanDomain}' correctly points to ${resolutionNote}.`, 'DNS Verified');
+
+        // Automatically trigger server routing and SSL provisioning in background
+        this.api.post<any>('DashboardApi/provision-custom-domain', {
+          tenantKey: this.tenantKey,
+          customDomain: cleanDomain
+        }).subscribe({
+          next: (pRes) => {
+            const pData = pRes?.data || pRes?.Data;
+            if (pData?.succeeded || pData?.nginxConfigured) {
+              if (this.probeResults) {
+                this.probeResults.sslReady = pData.sslActive;
+                this.probeResults.routingReady = pData.nginxConfigured;
+              }
+              this.toast.success(`Automated routing and SSL configured for '${cleanDomain}'!`, 'Server Active');
+            }
+          },
+          error: (pErr) => {
+            console.warn('[Custom Domain] Automated background provisioning note:', pErr);
+          }
+        });
       } else {
         this.toast.warning(
           `Domain not yet pointed. DNS records do not match '${expectedHost}' or Platform IP '2.24.162.42'. Live custom domain will remain inactive until pointed.`,
