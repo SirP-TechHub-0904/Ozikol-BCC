@@ -401,6 +401,29 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Normalize culture-prefixed root metadata, SEO, and AI crawler files (e.g., /en/sitemap.xml -> /sitemap.xml)
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? string.Empty;
+    if (path.StartsWith("/en/", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/fr/", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/es/", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/de/", StringComparison.OrdinalIgnoreCase))
+    {
+        var subPath = path.Substring(3);
+        if (subPath.Equals("/sitemap.xml", StringComparison.OrdinalIgnoreCase) ||
+            subPath.Equals("/robots.txt", StringComparison.OrdinalIgnoreCase) ||
+            subPath.Equals("/llms.txt", StringComparison.OrdinalIgnoreCase) ||
+            subPath.Equals("/llms-full.txt", StringComparison.OrdinalIgnoreCase) ||
+            subPath.Equals("/favicon.ico", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Request.Path = subPath;
+        }
+    }
+    await next();
+});
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
