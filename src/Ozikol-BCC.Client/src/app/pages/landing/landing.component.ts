@@ -921,6 +921,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
       this.currentSlug = slugParam;
 
+      // Immediate redirect for auth and system registration routes
+      if (slugParam === 'auth-login' || slugParam === 'login' || slugParam === 'auth/login' || slugParam === 'signin' || slugParam === 'sign-in') {
+        this.router.navigate(['/auth/login']);
+        return;
+      }
+      if (slugParam === 'auth-register' || slugParam === 'register' || slugParam === 'auth/register' || slugParam === 'signup' || slugParam === 'sign-up') {
+        this.router.navigate(['/register']);
+        return;
+      }
+
       // Check if viewing blog by ID or slug
       const blogIdParam = params.get('id') || (urlSegments[0] === 'blog' && urlSegments[1] ? urlSegments[1] : null);
       this.activeBlogId = blogIdParam;
@@ -1065,7 +1075,13 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       // Route dispatch based on active slug
-      if (!this.currentSlug || this.currentSlug === 'home') {
+      if (this.currentSlug === 'auth-login' || this.currentSlug === 'login' || this.currentSlug === 'auth/login' || this.currentSlug === 'signin' || this.currentSlug === 'sign-in') {
+        this.router.navigate(['/auth/login']);
+        return;
+      } else if (this.currentSlug === 'auth-register' || this.currentSlug === 'register' || this.currentSlug === 'auth/register' || this.currentSlug === 'signup' || this.currentSlug === 'sign-up') {
+        this.router.navigate(['/register']);
+        return;
+      } else if (!this.currentSlug || this.currentSlug === 'home') {
         // 1. Homepage Rendering
         await Promise.all([
           this.fetchHomeSections(),
@@ -3889,11 +3905,18 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         if (!childPages || childPages.length === 0) return;
 
         const pagesList = childPages.map((p: any) => {
+          const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').trim();
           const isHome = p.isHomePage === true || p.IsHomePage === true;
-          const pUrl = isHome ? '/' : `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          const isAuthDirect = (rawUrl.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
+          const pTitle = isAuthDirect && authed
+            ? (isAdmin ? 'Admin Console' : 'Member Portal')
+            : (p.title || p.Title || p.pageTitle || p.PageTitle || '');
+          const pUrl = isAuthDirect
+            ? (authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login')
+            : (isHome ? '/' : (rawUrl.trimStart('/').toLowerCase() === 'auth-login' || rawUrl.trimStart('/').toLowerCase() === 'login' ? '/auth/login' : `/${rawUrl.replace(/^\/+/, '')}`));
           usedUrls.add(pUrl.toLowerCase());
           return {
-            title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
+            title: pTitle,
             url: pUrl,
             customClass: p.customClass || p.CustomClass || '',
             sortOrder: p.dropdownSortOrder || p.DropdownSortOrder || p.sortOrder || p.SortOrder || 0
@@ -3931,11 +3954,14 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       .forEach(p => {
         const isHome = p.isHomePage === true || p.IsHomePage === true;
         const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').trim();
-        const pUrl = isHome
-          ? '/'
-          : (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-            ? rawUrl
-            : ((rawUrl === '' || rawUrl.toLowerCase() === 'home' || rawUrl === '/') ? '/' : `/${rawUrl.replace(/^\/+/, '')}`));
+        const isAuthDirect = (rawUrl.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
+        const pUrl = isAuthDirect
+          ? (authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login')
+          : (isHome
+            ? '/'
+            : (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+              ? rawUrl
+              : ((rawUrl === '' || rawUrl.toLowerCase() === 'home' || rawUrl === '/') ? '/' : (rawUrl.trimStart('/').toLowerCase() === 'auth-login' || rawUrl.trimStart('/').toLowerCase() === 'login' ? '/auth/login' : `/${rawUrl.replace(/^\/+/, '')}`))));
         const pLower = pUrl.toLowerCase();
 
         // Avoid duplicating if URL is already in a dropdown or already added
@@ -3943,7 +3969,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         if (usedUrls.has(pLower)) return;
         usedUrls.add(pLower);
 
-        const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+        const pTitle = isAuthDirect && authed
+          ? (isAdmin ? 'Admin Console' : 'Member Portal')
+          : (p.title || p.Title || p.pageTitle || p.PageTitle || '');
         const pSort = (p.sortOrder !== undefined && p.sortOrder !== null) ? p.sortOrder : (p.SortOrder ?? 0);
         standaloneItems.push({
           title: pTitle,
@@ -3954,7 +3982,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           pages: [],
           zone: normalizeZone(p.menuPosition ?? p.MenuPosition ?? 1),
           sortOrder: pSort,
-          customClass: p.customClass || p.CustomClass || ''
+          customClass: p.customClass || p.CustomClass || (isAuthDirect ? 'oz-login-nav' : '')
         });
       });
 
@@ -3974,9 +4002,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const displayTitle = isAuthDirect && authed
           ? (isAdmin ? 'Admin Console' : 'Member Portal')
           : (p.title || p.Title || '');
-        const targetUrl = isAuthDirect && authed
-          ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace')
-          : finalUrl;
+        const targetUrl = isAuthDirect
+          ? (authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login')
+          : (finalUrl === '/auth-login' || finalUrl === '/login' ? '/auth/login' : finalUrl);
         return {
           title: displayTitle,
           url: targetUrl,
@@ -3989,9 +4017,13 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       .filter(p => (p.isMenuCTA || p.IsMenuCTA) && p.publish !== false && p.Publish !== false)
       .sort((a, b) => (a.sortOrder || a.SortOrder || 0) - (b.sortOrder || b.SortOrder || 0))
       .map(p => {
-        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const raw = (p.directUrl || p.slug || '').trim();
+        const isAuthDirect = (raw.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
         const ctaTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.menuCtaText || p.MenuCtaText || p.title || p.Title || '');
-        const ctaUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : (p.menuCtaUrl || p.MenuCtaUrl || `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`);
+        const rawCtaUrl = p.menuCtaUrl || p.MenuCtaUrl || `/${raw.replace(/^\/+/, '')}`;
+        const ctaUrl = isAuthDirect
+          ? (authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login')
+          : (rawCtaUrl === '/auth-login' || rawCtaUrl === '/login' ? '/auth/login' : rawCtaUrl);
         const ctaStyle = p.menuCtaStyle || p.MenuCtaStyle || p.buttonClass || (isAuthDirect ? 'oz-btn-ghost' : 'oz-btn-primary');
         return {
           title: ctaTitle,
@@ -4147,10 +4179,20 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           name: catTitle,
           title: catTitle,
           displayTitle: displayTitle,
-          pages: childPages.map((p: any) => ({
-            title: p.title || p.Title || '',
-            url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
-          }))
+          pages: childPages.map((p: any) => {
+            const rawUrl = (p.directUrl || p.slug || '').trim();
+            const isAuthDirect = (rawUrl.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
+            const targetUrl = isAuthDirect
+              ? (authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login')
+              : (rawUrl.trimStart('/').toLowerCase() === 'auth-login' || rawUrl.trimStart('/').toLowerCase() === 'login' ? '/auth/login' : `/${rawUrl.replace(/^\/+/, '')}`);
+            const targetTitle = isAuthDirect && authed
+              ? (isAdmin ? 'Admin Console' : 'Member Portal')
+              : (p.title || p.Title || '');
+            return {
+              title: targetTitle,
+              url: targetUrl
+            };
+          })
         };
       });
 
@@ -4158,9 +4200,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       .filter(p => (p.showInFooterBottom || p.ShowInFooterBottom || p.isLegal || p.IsLegal) && p.publish !== false && p.Publish !== false)
       .sort((a, b) => (a.footerBottomSortOrder || a.FooterBottomSortOrder || a.sortOrder || a.SortOrder || 0) - (b.footerBottomSortOrder || b.FooterBottomSortOrder || b.sortOrder || b.SortOrder || 0))
       .map(p => {
-        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const rawUrl = (p.directUrl || p.slug || '').trim();
+        const isAuthDirect = (rawUrl.toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in'));
         const itemTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.title || p.Title || '');
-        const itemUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`;
+        const itemUrl = isAuthDirect
+          ? (authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login')
+          : (rawUrl.trimStart('/').toLowerCase() === 'auth-login' || rawUrl.trimStart('/').toLowerCase() === 'login' ? '/auth/login' : `/${rawUrl.replace(/^\/+/, '')}`);
         return {
           title: itemTitle,
           url: itemUrl,

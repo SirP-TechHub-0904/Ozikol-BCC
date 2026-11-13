@@ -1333,6 +1333,11 @@ Reply ONLY with the valid JSON object.";
         {
             if (string.IsNullOrWhiteSpace(directUrl)) return $"/page/{id}";
             var trimmed = directUrl.Trim();
+            var clean = trimmed.Trim('/').ToLowerInvariant();
+            if (clean == "auth-login" || clean == "login" || clean == "auth/login")
+                return "/auth/login";
+            if (clean == "auth-register" || clean == "register" || clean == "auth/register")
+                return "/register";
             if (trimmed == "/" || trimmed == "home") return "/";
             if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 return trimmed;
@@ -6318,9 +6323,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                                    ? p.DirectUrl
-                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
+                                url = FormatPageUrl(p.DirectUrl, p.Id),
                                 showInFooter = p.ShowInFooter,
                                 showInMenu = true
                             })
@@ -6344,9 +6347,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                                    ? p.DirectUrl
-                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
+                                url = FormatPageUrl(p.DirectUrl, p.Id),
                                 showInFooter = true,
                                 showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
                             })
@@ -6355,52 +6356,50 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     .ToList();
 
                 // 4. Footer Bottom Compliance / Legal Pages (ShowInFooterBottom == true or IsLegal == true)
-                var legalPages = await _context.WebPages
+                var rawLegalPages = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => (p.ShowInFooterBottom || p.IsLegal) && p.Publish)
                     .OrderBy(p => p.FooterBottomSortOrder)
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        title = p.Title,
-                        slug = p.DirectUrl,
-                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                            ? p.DirectUrl
-                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
-                    })
                     .ToListAsync();
+                var legalPages = rawLegalPages.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.Title,
+                    slug = p.DirectUrl,
+                    url = FormatPageUrl(p.DirectUrl, p.Id)
+                }).ToList();
 
                 // 4a. Top Utility Bar Pages (ShowInTopBar == true && Publish == true)
-                var topBarPages = await _context.WebPages
+                var rawTopBarPages = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.ShowInTopBar && p.Publish)
                     .OrderBy(p => p.TopBarSortOrder)
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        title = p.Title,
-                        slug = p.DirectUrl,
-                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                            ? p.DirectUrl
-                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
-                    })
                     .ToListAsync();
+                var topBarPages = rawTopBarPages.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.Title,
+                    slug = p.DirectUrl,
+                    url = FormatPageUrl(p.DirectUrl, p.Id)
+                }).ToList();
 
                 // 4b. Menu CTA Action Buttons (IsMenuCTA == true or fallback to platform defaults)
-                var dbCtaButtons = await _context.WebPages
+                var rawDbCtaButtons = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.IsMenuCTA && p.Publish)
                     .OrderBy(p => p.SortOrder)
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        title = p.MenuCtaText ?? p.Title,
-                        slug = p.DirectUrl,
-                        url = !string.IsNullOrWhiteSpace(p.MenuCtaUrl) ? p.MenuCtaUrl : ("/" + (p.DirectUrl ?? p.Id.ToString())),
-                        customClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary",
-                        buttonClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary"
-                    })
                     .ToListAsync();
+                var dbCtaButtons = rawDbCtaButtons.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.MenuCtaText ?? p.Title,
+                    slug = p.DirectUrl,
+                    url = !string.IsNullOrWhiteSpace(p.MenuCtaUrl)
+                        ? (p.MenuCtaUrl.Trim().Trim('/').ToLowerInvariant() == "auth-login" || p.MenuCtaUrl.Trim().Trim('/').ToLowerInvariant() == "login" ? "/auth/login" : p.MenuCtaUrl)
+                        : FormatPageUrl(p.DirectUrl, p.Id),
+                    customClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary",
+                    buttonClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary"
+                }).ToList();
 
                 // Resolve tenant dynamic registration vanity slug
                 string regSlug = "register";
