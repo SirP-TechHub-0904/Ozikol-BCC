@@ -299,6 +299,7 @@ builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>(
 builder.Services.AddScoped<ILegalService, LegalService>();
 builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
+builder.Services.AddSingleton<Ozikol.Central.Services.Seo.IFeatureKnowledgeRegistry, Ozikol.Central.Services.Seo.FeatureKnowledgeRegistry>();
 builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidationService, Ozikol.Central.Services.Validation.EmailValidationService>();
 builder.Services.AddScoped<IAiKeyPoolManagerService, AiKeyPoolManagerService>();
 builder.Services.AddScoped<IVpsSystemTelemetryService, VpsSystemTelemetryService>();

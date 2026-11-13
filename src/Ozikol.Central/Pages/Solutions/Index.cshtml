@@ -1,0 +1,220 @@
+@page "/solutions/{slug?}"
+@model Ozikol.Central.Pages.Solutions.IndexModel
+@{
+    var isDetail = Model.ActiveSolution != null;
+    ViewData["Title"] = isDetail 
+        ? $"{Model.ActiveSolution!.Title} - Ozikol BCC Solutions" 
+        : "Industry Solutions & Operational Use Cases - Ozikol Business Command Center";
+    
+    var request = ViewContext.HttpContext.Request;
+    var currentUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+}
+
+<!-- Schema.org JSON-LD for Solutions -->
+@if (isDetail)
+{
+    var sol = Model.ActiveSolution!;
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "Service",
+      "name": "Ozikol BCC for @sol.Title",
+      "serviceType": "@sol.Badge",
+      "description": "@sol.Description",
+      "provider": {
+        "@@type": "Organization",
+        "name": "Ozikol Business Command Center",
+        "url": "https://ozikol.cloud"
+      },
+      "url": "@currentUrl",
+      "areaServed": "Worldwide"
+    }
+    </script>
+}
+
+<div class="feature-detail-page oz-solutions-page">
+
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/@Model.CurrentCulture/">Home</a>
+                <span>&rsaquo;</span>
+                <a href="/@Model.CurrentCulture/solutions">Solutions</a>
+                @if (isDetail)
+                {
+                    <span>&rsaquo;</span>
+                    <span class="oz-breadcrumb-current">@Model.ActiveSolution!.Title</span>
+                }
+            </div>
+            @if (isDetail)
+            {
+                <a href="/@Model.CurrentCulture/solutions" class="oz-back-features-link" style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#0050e5; text-decoration:none;">
+                    <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>
+                    <span>All Industry Solutions</span>
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (!isDetail)
+    {
+        <!-- ===================================================================== -->
+        <!-- SOLUTIONS DIRECTORY OVERVIEW (/solutions)                             -->
+        <!-- ===================================================================== -->
+        <section class="oz-feat-hero">
+            <div class="oz-feat-hero-container">
+                <div class="oz-feat-hero-content">
+                    <div class="oz-feat-suite-pill">Industry Solutions</div>
+                    <h1 class="oz-feat-title">Engineered for Your Operational Reality</h1>
+                    <p class="oz-feat-lead">
+                        Discover how Ozikol Business Command Center unifies workstation supervision, workforce scheduling, commerce, and governance for high-demand sectors.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <main class="oz-feat-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; margin: 40px auto 60px auto; max-width: 1200px;">
+                @foreach (var item in Model.AllSolutions)
+                {
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                <span class="material-symbols-outlined" style="font-size: 32px; color: #0050e5; background: #eff6ff; padding: 10px; border-radius: 12px;">@item.Icon</span>
+                                <div>
+                                    <span style="font-size: 11px; font-weight: 700; color: #0050e5; text-transform: uppercase; letter-spacing: 0.05em;">@item.Badge</span>
+                                    <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 2px 0 0 0;">@item.Title</h2>
+                                </div>
+                            </div>
+                            <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 20px;">@item.Description</p>
+                            
+                            <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; display: flex; flex-direction: column; gap: 8px;">
+                                @foreach (var pillar in item.KeyPillars)
+                                {
+                                    <li style="font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                                        <span class="material-symbols-outlined" style="font-size: 18px; color: #10b981;">check_circle</span>
+                                        <span>@pillar</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        <a href="/@Model.CurrentCulture/solutions/@item.Slug" class="oz-btn-primary-hero" style="justify-content: center; width: 100%; box-sizing: border-box;">
+                            <span>Explore @item.Title</span>
+                            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                        </a>
+                    </div>
+                }
+            </div>
+        </main>
+    }
+    else
+    {
+        <!-- ===================================================================== -->
+        <!-- INDIVIDUAL VERTICAL SOLUTION PAGE (/solutions/{slug})                 -->
+        <!-- ===================================================================== -->
+        var sol = Model.ActiveSolution!;
+
+        <section class="oz-feat-hero">
+            <div class="oz-feat-hero-container">
+                <div class="oz-feat-hero-content">
+                    <div class="oz-feat-suite-pill">@sol.Badge</div>
+                    <h1 class="oz-feat-title">@sol.HeroHeadline</h1>
+                    <p class="oz-feat-lead">@sol.HeroSubheadline</p>
+                    <div class="oz-feat-actions">
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                            <span>Start 14-Day Free Trial</span>
+                            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                        </a>
+                        <a href="#integrated-features" class="oz-btn-outline-hero">
+                            <span>View Included Suites</span>
+                            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <main class="oz-feat-body">
+            
+            <!-- Key Operational Pillars -->
+            <section class="oz-feat-overview-card" style="margin-top: 40px;">
+                <h2>Operational Imperatives for @sol.Title</h2>
+                <p style="font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 24px;">@sol.Description</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                    @foreach (var pillar in sol.KeyPillars)
+                    {
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; display: flex; align-items: flex-start; gap: 10px;">
+                            <span class="material-symbols-outlined" style="font-size: 20px; color: #0050e5; margin-top: 2px;">verified</span>
+                            <span style="font-size: 14px; font-weight: 600; color: #1e293b;">@pillar</span>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <!-- Dynamically Linked Features -->
+            @if (Model.RelevantFeatures.Any())
+            {
+                <section id="integrated-features" style="margin-top: 50px;">
+                    <div class="oz-feat-section-header">
+                        <div class="oz-feat-tagline">Integrated Operational Suites</div>
+                        <h2>Modular Capabilities Included for @sol.Title</h2>
+                        <p class="oz-feat-card-desc">Every capability works cohesively under your sovereign tenant workspace without requiring 3rd-party bolt-ons.</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px;">
+                        @foreach (var feat in Model.RelevantFeatures)
+                        {
+                            var matchingUseCase = feat.IndustryUseCases.FirstOrDefault(u => u.IndustryKey.Equals(sol.Slug, StringComparison.OrdinalIgnoreCase));
+                            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <span style="font-size: 11px; font-weight: 700; color: #0050e5; text-transform: uppercase;">@feat.SuiteName</span>
+                                        <span class="material-symbols-outlined" style="color: #64748b; font-size: 22px;">@(matchingUseCase?.Icon ?? "layers")</span>
+                                    </div>
+                                    <h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0;">@feat.Title</h3>
+                                    <p style="font-size: 13px; color: #475569; line-height: 1.5; margin: 0 0 16px 0;">@feat.Summary</p>
+
+                                    @if (matchingUseCase != null)
+                                    {
+                                        <div style="background: #f8fafc; border-left: 3px solid #0050e5; padding: 10px 12px; border-radius: 0 8px 8px 0; margin-bottom: 16px;">
+                                            <span style="font-size: 11px; font-weight: 700; color: #0050e5; text-transform: uppercase;">Industry Impact:</span>
+                                            <p style="font-size: 12px; color: #334155; margin: 2px 0 0 0;">@matchingUseCase.SolutionSummary</p>
+                                        </div>
+                                    }
+                                </div>
+                                <a href="/@Model.CurrentCulture@feat.RouteSlug" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #0050e5; text-decoration: none;">
+                                    <span>Explore Suite Details</span>
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            <!-- Bottom CTA -->
+            <section class="oz-feat-cta-banner" style="margin-top: 60px;">
+                <div class="oz-feat-cta-inner">
+                    <div class="oz-feat-cta-badge">
+                        <span class="oz-feat-cta-badge-dot"></span>
+                        <span>Enterprise Solution</span>
+                    </div>
+                    <h2 class="oz-feat-cta-title">Ready to Transform Operations for @sol.Title?</h2>
+                    <p class="oz-feat-cta-desc">
+                        Deploy your sovereign workspace in under 60 seconds with our guided onboarding wizard. 14 days full access, zero risk.
+                    </p>
+                    <div class="oz-feat-cta-actions">
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                            <span>Start 14-Day Free Trial</span>
+                            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                        </a>
+                        <a href="/@Model.CurrentCulture/solutions" class="oz-btn-outline-hero">
+                            <span>Explore Other Industries</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+    }
+</div>

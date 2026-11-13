@@ -1,7 +1,9 @@
 ﻿@page "/features/workspace"
 @model Ozikol.Central.Pages.Features.WorkspaceModel
+@inject Ozikol.Central.Services.Seo.IFeatureKnowledgeRegistry FeatureRegistry
 @{
-    ViewData["Title"] = "Workspace (Desktop only) - Ozikol BCC Feature";
+    ViewData["Title"] = "Workspace & Workstation Supervisor - Ozikol BCC Feature";
+    var geoKnowledge = FeatureRegistry.GetFeature("bcp-workspace");
 }
 
 <div class="feature-detail-page">
@@ -179,6 +181,9 @@
                 </div>
             </div>
         </section>
+
+        <!-- SEO, Cross-Platform Architecture, Industry Use Cases & FAQ Schema -->
+        <partial name="_FeatureGeoBlock" model="geoKnowledge" />
 
         <!-- Bottom CTA -->
         <section class="oz-feat-cta-banner">

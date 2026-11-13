@@ -1,7 +1,9 @@
 ﻿@page "/features/staff-rota"
 @model Ozikol.Central.Pages.Features.StaffRotaModel
+@inject Ozikol.Central.Services.Seo.IFeatureKnowledgeRegistry FeatureRegistry
 @{
     ViewData["Title"] = "Staff Rota & Shift Scheduling - Ozikol BCP Feature";
+    var geoKnowledge = FeatureRegistry.GetFeature("bcp-staff-rota");
 }
 
 <div class="feature-detail-page">
@@ -185,6 +187,9 @@
                     </div>
             </div>
         </section>
+
+        <!-- SEO, Cross-Platform Architecture, Industry Use Cases & FAQ Schema -->
+        <partial name="_FeatureGeoBlock" model="geoKnowledge" />
 
         <!-- Bottom CTA -->
         <section class="oz-feat-cta-banner">

@@ -1,7 +1,9 @@
 ﻿@page "/features/committees"
 @model Ozikol.Central.Pages.Features.CommitteesModel
+@inject Ozikol.Central.Services.Seo.IFeatureKnowledgeRegistry FeatureRegistry
 @{
-    ViewData["Title"] = "Committees & Sub-Groups - Ozikol BCP Feature";
+    ViewData["Title"] = "Committees & Governance - Ozikol BCP Feature";
+    var geoKnowledge = FeatureRegistry.GetFeature("bcp-committees");
 }
 
 <div class="feature-detail-page">
@@ -186,7 +188,10 @@
             </div>
         </section>
 
-                <!-- Bottom CTA -->
+        <!-- SEO, Cross-Platform Architecture, Industry Use Cases & FAQ Schema -->
+        <partial name="_FeatureGeoBlock" model="geoKnowledge" />
+
+        <!-- Bottom CTA -->
         <section class="oz-feat-cta-banner">
             <div class="oz-feat-cta-inner">
                 <div class="oz-feat-cta-badge">

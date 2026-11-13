@@ -86,6 +86,12 @@ const EDGE_LLMS_TXT = `# Ozikol Business Command Center (Ozikol BCC)
 - Contextual drafting for news articles, page content, SEO metadata, and summaries.
 - Completely seamless, non-overlapping responsive layout in both desktop and web consoles.
 
+## Industry Operational Solutions
+- [Healthcare & Medical Clinics](https://ozikol.cloud/solutions/healthcare): 24/7 Clinical Shift Coverage, Multi-Station Check-Ins & Immutable Audit Compliance.
+- [Retail & Multi-Outlet Chains](https://ozikol.cloud/solutions/retail-pos): Desktop POS Registers, Real-Time Inventory Sync & Cashier Shift Governance.
+- [Educational Institutions & Academies](https://ozikol.cloud/solutions/education): Faculty Shift Rotas, Computer Lab Station Supervisor & Academic Senate Governance.
+- [Enterprise Boards & Corporate Governance](https://ozikol.cloud/solutions/corporate-governance): Executive Board Workspaces, Minuted Agendas, Voting Records & Document Vaults.
+
 ## Getting Started & Access Channels
 - **Register a Workspace**: Start a 14-day free trial at [Ozikol Registration](https://ozikol.cloud/register).
 - **Desktop Client Downloads**: Access Windows, macOS, and Linux workstation binaries from the Workspace Stations console.
