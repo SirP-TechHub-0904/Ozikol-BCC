@@ -1,0 +1,113 @@
+# Ozikol Business Command Center (Ozikol BCC) — Full Architecture & Service Guide
+
+## Overview
+Ozikol Business Command Center (Ozikol BCC) is an enterprise operating platform engineered to centralize operations for diverse organizations—including corporate enterprises, educational institutions, healthcare networks, non-profit agencies, and professional services firms.
+
+Ozikol BCC unifies four core operational pillars:
+1. **Workforce & Workstation Governance**: Managing staff schedules, shifts, physical hardware workstations, and attendance.
+2. **Digital Presence & Brand Publishing**: Building high-impact websites, landing pages, blogs, and public forms.
+3. **Commerce & Monetization**: Managing product catalogs, digital/physical inventory, cart checkout, and in-person POS sales.
+4. **Community & Board Governance**: Organizing independent committees, agendas, minuted reports, and cloud documents.
+
+The platform is designed around strict operational autonomy: every organization runs on its own dedicated workspace with independent branding, operational running currency, and custom domain routing.
+
+---
+
+## Cross-Platform Ecosystem
+
+### 1. Web Administrative Console
+- **Primary URL**: `https://{workspace}.ozikol.cloud` or custom domain (e.g. `https://portal.yourorganization.org`).
+- **Target Users**: Executive leadership, Operations Managers, HR Administrators, Content Editors, and Finance Officers.
+- **Capabilities**:
+  - Full configuration of organizational branding, logos, custom domains, and visual appearance.
+  - CMS Studio with multi-section layout builder, media library, and form builders.
+  - Store management, POS transactions, order fulfillment, and client invoicing.
+  - Real-time rota designer, attendance rosters, and shift assignment boards.
+  - Committee creation, agenda planning, meeting notes, and compliance records.
+  - Embedded split-screen Ozi AI Studio Assistant for contextual drafting and productivity.
+
+### 2. Native Desktop Application (Workspace & Workstation Supervisor — `bcp-workspace`)
+- **Supported Platforms**: Windows (.exe), macOS (.app), Linux.
+- **Target Environment**: Physical office workstations, campus labs, reception desks, and operational control rooms.
+- **Key Capabilities**:
+  - **Hardware Binding**: Pairs physical hardware stations with unique machine fingerprints.
+  - **Workstation Gatekeeper**: Enforces authorized application access and sandboxed document handling.
+  - **Hardware-Verified Attendance**: Ensures on-site staff can only clock in from physical, authenticated workstations, preventing location spoofing or remote punch-in fraud.
+  - **Supervisor Telemetry**: Real-time heartbeat, active application tracking, and station status monitoring.
+  - **Offline Capability**: Caches local schedules, shifts, and member records for reliable operation during internet drops.
+
+### 3. Mobile Companion Application
+- **Supported Platforms**: Apple iOS (App Store) and Google Android (Google Play).
+- **Target Users**: Frontline staff, field workers, committee members, and general workforce.
+- **Key Capabilities**:
+  - Real-time push notifications for shift releases, rota changes, and announcements.
+  - Mobile clock-in and clock-out with geolocation stamps and shift notes.
+  - Shift swap marketplace and availability submission.
+  - Access to committee reports, meeting agendas, and direct team discussions.
+
+---
+
+## Detailed Service Capabilities
+
+### Service 1: Workspace & Workstations (`bcp-workspace`)
+* **What it does**: Provides deep hardware-level station governance for office and campus environments.
+* **Core Features**:
+  - Register and monitor workstations with machine identifiers, operating systems, and assigned desks.
+  - Supervise running processes, enforce workstation policies, and track station utilization.
+  - Integrated biometric/hardware handshake with workforce attendance.
+* **Access Route**: In the web administrative console under `/workspace/stations`.
+
+### Service 2: Workforce Scheduling & Attendance (`bcp-staff-rota`)
+* **What it does**: End-to-end management of hourly and salaried employee scheduling.
+* **Core Features**:
+  - Visual weekly and monthly rota builder with recurring shift patterns.
+  - Automated overtime, night shift premium differentials, and holiday calculation.
+  - Operational penalty calculation for non-compliance, unexcused tardiness, or missed shifts.
+  - Comprehensive attendance verification with timesheets, leave balances, and exportable payroll reports.
+* **Access Route**: In the web administrative console under `/workforce/rota` and mobile app.
+
+### Service 3: CMS Studio & Digital Presence (`bcp-cms-studio`)
+* **What it does**: Full-featured content management system for public websites and client portals.
+* **Core Features**:
+  - Multi-section page layout engine supporting heroes, split showcases, feature grids, and FAQ accordions.
+  - Dynamic drag-and-drop form builder with automatic lead capture and submission pipelines.
+  - Multi-author blog article publishing with tag hierarchies and SEO metadata.
+  - Automated SSL issuance, edge caching, and custom apex/subdomain routing.
+* **Access Route**: In the web administrative console under `/content/console`.
+
+### Service 4: Commerce & POS (`bcp-commerce-studio`)
+* **What it does**: Dual-channel commerce for digital storefronts and physical point-of-sale.
+* **Core Features**:
+  - Multi-variant product catalog with real-time inventory tracking and low-stock alerts.
+  - Web shopping cart with secure payment integration (Paystack, Stripe, Direct Bank Transfer).
+  - Fast-action Point of Sale (POS) checkout interface with digital receipt generation.
+  - Order tracking, customer history, and refund workflows.
+* **Access Route**: In the web administrative console under `/commerce/console` and public storefront.
+
+### Service 5: Committees & Board Governance (`bcp-committees`)
+* **What it does**: Structured governance infrastructure for boards, councils, and specialized committees.
+* **Core Features**:
+  - Independent committee portals with member directories and designated chairs/secretaries.
+  - Formal meeting scheduler with structured agendas, attendee tracking, and quorum validation.
+  - Minuted report composer with attached cloud documents, action items, and audit trails.
+* **Access Route**: In the web administrative console under `/committees/console`.
+
+### Service 6: Identity, Security & System Administration
+* **What it does**: Enterprise security, user access, and system-level configuration.
+* **Core Features**:
+  - Fine-grained Role-Based Access Control (RBAC) with granular functional permissions.
+  - Two-Factor Authentication (2FA) via time-based OTP.
+  - Real-time security audit logging tracking all administrative changes and logins.
+  - Independent Workspace Running Currency configuration (e.g. NGN ₦, USD $, GBP £, EUR €) powering local products, payroll, and invoices.
+* **Access Route**: In the web administrative console under `/identity/console` and `/settings/console`.
+
+---
+
+## How to Get Started
+
+1. **Sign Up**: Register your organization at `https://ozikol.cloud/register` to launch a new workspace with a 14-day free trial.
+2. **Configure General Settings**: Navigate to `/settings/console/general` to set your organization's default running currency and notification sender.
+3. **Install Modular Capabilities**: Browse the Feature Directory at `/billing/features` to activate the specific modules your team needs (CMS Studio, Staff Rota, Workstations, Store, Committees).
+4. **Deploy Desktop & Mobile**:
+   - Download the Native Desktop client to set up physical office workstations (`bcp-workspace`).
+   - Have staff install the Mobile app for shifts, clock-in, and committee updates.

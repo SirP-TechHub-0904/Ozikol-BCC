@@ -1,5 +1,32 @@
 User-agent: *
 Allow: /
 Disallow: /auth/login
+Disallow: /centralwks/
+Disallow: /api/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /centralwks/
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /centralwks/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /centralwks/
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /centralwks/
+Disallow: /api/
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /centralwks/
+Disallow: /api/
 
 Sitemap: https://ozikol.cloud/sitemap.xml
