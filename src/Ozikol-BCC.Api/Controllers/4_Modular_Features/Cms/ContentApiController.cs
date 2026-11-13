@@ -808,14 +808,35 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                // Unique slug generation with proper whitespace handling
-                var rawSlug = !string.IsNullOrWhiteSpace(request.Slug)
-                    ? request.Slug
-                    : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
+                var incomingUrl = request.DirectUrl?.Trim();
+                var isSystemOrExternal = request.EnableDirectUrl ||
+                    (!string.IsNullOrWhiteSpace(incomingUrl) &&
+                     (incomingUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.StartsWith("/auth/", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/register", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/blog", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/store", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.StartsWith("/store/", StringComparison.OrdinalIgnoreCase)));
 
-                var uniqueSlug = request.IsHomePage
-                    ? "/"
-                    : await GenerateUniqueSlugAsync(rawSlug, null, request.IsHomePage);
+                string uniqueSlug;
+                if (request.IsHomePage)
+                {
+                    uniqueSlug = "/";
+                }
+                else if (isSystemOrExternal && !string.IsNullOrWhiteSpace(incomingUrl))
+                {
+                    // Preserve system pages and direct external URLs exactly as specified without slugification
+                    uniqueSlug = incomingUrl;
+                }
+                else
+                {
+                    var rawSlug = !string.IsNullOrWhiteSpace(request.Slug)
+                        ? request.Slug
+                        : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
+                    uniqueSlug = await GenerateUniqueSlugAsync(rawSlug, null, request.IsHomePage);
+                }
 
                 Guid? categoryId = request.PageCategoryId;
                 if (categoryId == Guid.Empty) categoryId = null;
@@ -837,7 +858,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Id = Guid.NewGuid(),
                     Title = request.Title.Trim(),
                     DirectUrl = uniqueSlug,
-                    EnableDirectUrl = true,
+                    EnableDirectUrl = request.EnableDirectUrl || isSystemOrExternal,
                     IsHomePage = request.IsHomePage,
                     PageCategoryId = categoryId,
                     ShowInTopBar = request.ShowInTopBar,
@@ -898,25 +919,41 @@ namespace Ozikol_BCC.Api.Controllers
             }
             else
             {
-                var titleChanged = !string.Equals(existing.Title?.Trim(), updated.Title?.Trim(), StringComparison.Ordinal);
                 var incomingUrl = updated.DirectUrl?.Trim();
                 var isExternalUrl = !string.IsNullOrWhiteSpace(incomingUrl) &&
                     (incomingUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                      incomingUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
-                var slugWasNotManuallyChanged = string.IsNullOrWhiteSpace(incomingUrl) ||
-                    incomingUrl == "/" ||
-                    string.Equals(incomingUrl, existing.DirectUrl?.Trim(), StringComparison.OrdinalIgnoreCase);
+                var isSystemPage = updated.EnableDirectUrl && !string.IsNullOrWhiteSpace(incomingUrl) &&
+                    (incomingUrl.StartsWith("/auth/", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/register", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/blog", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/store", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.StartsWith("/store/", StringComparison.OrdinalIgnoreCase));
 
-                if (titleChanged && !isExternalUrl && slugWasNotManuallyChanged && !string.IsNullOrWhiteSpace(updated.Title))
+                if (isExternalUrl || isSystemPage)
                 {
-                    existing.DirectUrl = await GenerateUniqueSlugAsync(updated.Title, id, false);
+                    // Preserve direct external URLs and built-in system routes exactly as specified without slugification
+                    existing.DirectUrl = incomingUrl;
                 }
                 else
                 {
-                    var targetSlug = !string.IsNullOrWhiteSpace(incomingUrl) && incomingUrl != "/" ? incomingUrl : updated.Title;
-                    if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                    var titleChanged = !string.Equals(existing.Title?.Trim(), updated.Title?.Trim(), StringComparison.Ordinal);
+                    var slugWasNotManuallyChanged = string.IsNullOrWhiteSpace(incomingUrl) ||
+                        incomingUrl == "/" ||
+                        string.Equals(incomingUrl, existing.DirectUrl?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                    if (titleChanged && slugWasNotManuallyChanged && !string.IsNullOrWhiteSpace(updated.Title))
                     {
-                        existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                        existing.DirectUrl = await GenerateUniqueSlugAsync(updated.Title, id, false);
+                    }
+                    else
+                    {
+                        var targetSlug = !string.IsNullOrWhiteSpace(incomingUrl) && incomingUrl != "/" ? incomingUrl : updated.Title;
+                        if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                        {
+                            existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                        }
                     }
                 }
             }
@@ -7939,6 +7976,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string Title { get; set; } = string.Empty;
         public string? Slug { get; set; }
         public string? DirectUrl { get; set; }
+        public bool EnableDirectUrl { get; set; } = false;
         public Guid? PageCategoryId { get; set; }
         public bool ShowInMainTop { get; set; } = false;
         public bool ShowInMenu { get; set; } = true;
