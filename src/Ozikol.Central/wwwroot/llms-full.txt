@@ -111,3 +111,4 @@ The platform is designed around strict operational autonomy: every organization 
 4. **Deploy Desktop & Mobile**:
    - Download the Native Desktop client to set up physical office workstations (`bcp-workspace`).
    - Have staff install the Mobile app for shifts, clock-in, and committee updates.
+
