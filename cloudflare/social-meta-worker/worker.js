@@ -96,8 +96,9 @@ const EDGE_LLMS_TXT = `# Ozikol Business Command Center (Ozikol BCC)
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const pathname = url.pathname.toLowerCase();
+    try {
+      const url = new URL(request.url);
+      const pathname = url.pathname.toLowerCase();
 
     // 0. Handle CORS preflight
     if (request.method === "OPTIONS") {
@@ -291,7 +292,11 @@ export default {
     });
 
     return rewriter.transform(response);
+  } catch (unhandledWorkerErr) {
+    // Fail-open protection: If any edge exception occurs, transparently pass straight through to origin
+    return fetch(request);
   }
+}
 };
 
 function escapeHtml(str) {
