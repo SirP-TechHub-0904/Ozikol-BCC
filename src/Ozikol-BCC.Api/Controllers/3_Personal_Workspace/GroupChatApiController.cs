@@ -535,6 +535,24 @@ namespace Ozikol_BCC.Api.Controllers
 
             var txtBytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
             var safeTitle = string.Concat(group.Title!.Split(Path.GetInvalidFileNameChars())).Replace(" ", "_");
+
+            // Audit Log: Record export of group chat transcript
+            var clientCtx = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(HttpContext);
+            _db.BcpActivityLogs.Add(new BcpActivityLog
+            {
+                Id = Guid.CreateVersion7(),
+                ActionType = "DATA_EXPORT_CHAT",
+                Description = $"Exported chat transcript for group '{group.Title}' ({posts.Count} message(s))",
+                Module = "Chat Messenger",
+                PerformedByProfileId = UserId,
+                PerformedByUserEmail = User.FindFirstValue(ClaimTypes.Email),
+                Date = DateTime.UtcNow,
+                IpAddress = clientCtx.IpAddress,
+                SystemId = clientCtx.SystemId,
+                UserAgent = clientCtx.UserAgent
+            });
+            await _db.SaveChangesAsync();
+
             return File(txtBytes, "text/plain", $"{safeTitle}_chat_history.txt");
         }
     }

@@ -1,14 +1,19 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { canAccessRoute, getStoredUserRoles, isMemberOnly } from '../utils/user-role.utils';
+import { ApiService } from '../services/api.service';
+
+// Debounce map to prevent flooding the server with repeated logs for the same route attempt
+const recentBlockedReports = new Map<string, number>();
 
 /**
  * Global authentication and role authorization guard for BCC client routes.
  * Validates authentication tokens, token expiration, and route-level authority scopes.
- * Redirects unauthorized users to the dedicated Access Denied page.
+ * Redirects unauthorized users to the dedicated Access Denied page and reports suspicious attempts.
  */
 export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
   const router = inject(Router);
+  const api = inject(ApiService);
   const token = localStorage.getItem('access_token');
 
   // Sanitize redirect target URL
@@ -71,6 +76,17 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
 
   if (!isAuthorized) {
     console.warn('[AuthGuard] Insufficient role permissions for route:', state.url, 'UserRoles:', userRoles);
+
+    // Send suspicious access report to backend (debounced 10s per URL)
+    const now = Date.now();
+    const lastReportTime = recentBlockedReports.get(state.url) || 0;
+    if (now - lastReportTime > 10000) {
+      recentBlockedReports.set(state.url, now);
+      api.post<any>('identity/security-audit/suspicious-access', { attemptedUrl: state.url }).subscribe({
+        error: (err) => console.warn('[AuthGuard] Failed to log suspicious access:', err)
+      });
+    }
+
     router.navigate(['/auth/access-denied'], {
       queryParams: { attemptedUrl: state.url }
     });

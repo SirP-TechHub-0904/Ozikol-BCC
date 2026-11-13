@@ -14,6 +14,8 @@ using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 
+using Ozikol_BCC.Api.Authorization;
+
 namespace Ozikol_BCC.Api.Controllers
 {
     /// <summary>
@@ -23,7 +25,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/workforce/attendance")]
-    [Authorize]
+    [RequireFeature("bcp-attendance-tracking")]
     [Tags("Workforce Attendance & Geofencing")]
     public class WorkforceAttendanceApiController : ControllerBase
     {

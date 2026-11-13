@@ -61,6 +61,7 @@ builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>(
 
 // Register Mailcow Automated Email Provisioning & Transactional SMTP Dispatcher
 builder.Services.AddMailcowSupport();
+builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Email.IMailInfrastructureCredentialProvider, Ozikol.Central.Services.MasterPlatformEmailInfrastructureCredentialProvider>();
 
 // Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
 builder.Services.AddPostmarkEmailServices(builder.Configuration);

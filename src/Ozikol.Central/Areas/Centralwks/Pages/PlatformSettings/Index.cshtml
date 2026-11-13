@@ -658,6 +658,103 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Section 3b: Tenant Email Provisioning (Mailcow + Cloudflare DNS Automation) -->
+            <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--admin-border); flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 80, 229, 0.1); color: #0050E5; display: flex; align-items: center; justify-content: center;">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">mark_email_read</span>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--admin-text);">Tenant Email &amp; Cloudflare DNS Automation</h3>
+                            <p style="margin: 2px 0 0 0; font-size: 12.5px; color: var(--admin-text-muted);">Encrypted Mailcow API &amp; Cloudflare DNS credentials for automated per-tenant mailboxes and MX/SPF/DKIM/DMARC records</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="testMailcowAndCloudflareDns(this)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">wifi_protected_setup</span>
+                        Test Mailcow &amp; DNS
+                    </button>
+                </div>
+                <div id="mailcowDnsTestStatus" style="font-size: 12.5px; font-weight: 500; margin-bottom: 16px; display: none;"></div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div>
+                        <label asp-for="Input.MailcowApiUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Mailcow API URL
+                        </label>
+                        <input asp-for="Input.MailcowApiUrl" id="mailcowApiUrlInput" class="form-control" placeholder="e.g. https://mail.ozikol.cloud"
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.MailcowApiUrl" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.MailcowSmtpHost" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Mailcow SMTP / MX Hostname
+                        </label>
+                        <input asp-for="Input.MailcowSmtpHost" class="form-control" placeholder="e.g. mail.ozikol.cloud"
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.MailcowSmtpHost" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label asp-for="Input.MailcowApiKey" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Mailcow Read/Write API Key
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.MailcowApiKey))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Encrypted
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.MailcowApiKey" value="@Model.Input.MailcowApiKey" id="mailcowApiKeyInput" type="password" class="form-control"
+                                   placeholder="e.g. XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('mailcowApiKeyInput', this)"
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.MailcowApiKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.CloudflareZoneId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Cloudflare Zone ID
+                        </label>
+                        <input asp-for="Input.CloudflareZoneId" id="cfZoneIdInput" class="form-control" placeholder="e.g. 023e105f4ecef8ad9ca31a8372d0c353"
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.CloudflareZoneId" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label asp-for="Input.CloudflareDnsApiToken" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Cloudflare DNS API Token (Zone:DNS:Edit)
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.CloudflareDnsApiToken))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Encrypted
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.CloudflareDnsApiToken" value="@Model.Input.CloudflareDnsApiToken" id="cfDnsTokenInput" type="password" class="form-control"
+                                   placeholder="e.g. Cloudflare API Token with Zone:DNS:Edit permission"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('cfDnsTokenInput', this)"
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.CloudflareDnsApiToken" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @* ── Section 7.5: Central Payment Gateway (Paystack — Platform Subscription & Capability Billing) ── *@
@@ -1258,6 +1355,52 @@
         } catch (err) {
             status.style.color = '#dc2626';
             status.textContent = '✗ Network error testing email dispatch.';
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function testMailcowAndCloudflareDns(btn) {
+        var status = document.getElementById('mailcowDnsTestStatus');
+        if (!status) return;
+
+        var mailcowApiUrl = document.getElementById('mailcowApiUrlInput')?.value?.trim() || '';
+        var mailcowApiKey = document.getElementById('mailcowApiKeyInput')?.value?.trim() || '';
+        var cloudflareZoneId = document.getElementById('cfZoneIdInput')?.value?.trim() || '';
+        var cloudflareDnsApiToken = document.getElementById('cfDnsTokenInput')?.value?.trim() || '';
+
+        status.style.display = 'block';
+        status.style.color = 'var(--admin-text-muted)';
+        status.textContent = 'Testing Mailcow API and Cloudflare Zone DNS token...';
+        if (btn) btn.disabled = true;
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        var formData = new FormData();
+        formData.append('mailcowApiUrl', mailcowApiUrl);
+        formData.append('mailcowApiKey', mailcowApiKey);
+        formData.append('cloudflareZoneId', cloudflareZoneId);
+        formData.append('cloudflareDnsApiToken', cloudflareDnsApiToken);
+
+        try {
+            var response = await fetch('/centralwks/platform-settings?handler=TestMailcowAndCloudflareDns', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            var result = await response.json();
+            if (result.success) {
+                status.style.color = '#059669';
+                status.textContent = '✓ ' + result.message;
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = '✗ ' + result.message;
+            }
+        } catch (err) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Network error testing Mailcow & Cloudflare DNS.';
         } finally {
             if (btn) btn.disabled = false;
         }

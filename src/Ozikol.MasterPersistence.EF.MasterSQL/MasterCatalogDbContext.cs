@@ -720,6 +720,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.PostmarkServerToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.PostmarkDefaultFrom).HasMaxLength(150);
             entity.Property(e => e.EmailFromName).HasMaxLength(150).HasDefaultValue("Ozikol Cloud Security");
+            entity.Property(e => e.MailcowApiUrl).HasMaxLength(500);
+            entity.Property(e => e.MailcowApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.MailcowSmtpHost).HasMaxLength(255);
+            entity.Property(e => e.CloudflareZoneId).HasMaxLength(255);
+            entity.Property(e => e.CloudflareDnsApiToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.OneSignalRestApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.AiGatewayUrl).HasMaxLength(500);
             entity.Property(e => e.HtmlExtractorApiUrl).HasMaxLength(500);

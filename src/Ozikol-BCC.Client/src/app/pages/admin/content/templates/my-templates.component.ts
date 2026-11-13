@@ -2025,6 +2025,23 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Computes 1-based line numbers for the in-browser CDN asset code editor gutter.
+   */
+  get assetEditorLineNumbers(): number[] {
+    const lineCount = Math.max(1, (this.editingAssetContent || '').split('\n').length);
+    return Array.from({ length: lineCount }, (_, idx) => idx + 1);
+  }
+
+  /**
+   * Synchronizes the vertical scroll position of the line-number gutter with the code textarea.
+   */
+  syncAssetEditorScroll(textarea: HTMLTextAreaElement, gutter: HTMLElement): void {
+    if (textarea && gutter) {
+      gutter.scrollTop = textarea.scrollTop;
+    }
+  }
+
+  /**
    * Closes the Asset Content Editor modal.
    */
   closeAssetEditorModal(): void {

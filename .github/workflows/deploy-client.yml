@@ -80,6 +80,7 @@ jobs:
           PORT="${PORT:-22}"
           ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             mkdir -p /var/www/ozikol-client
+            rm -rf /var/www/ozikol-client/*
             tar -xzf /tmp/publish-client.tar.gz -C /var/www/ozikol-client/
             rm -f /tmp/publish-client.tar.gz
             chown -R www-data:www-data /var/www/ozikol-client

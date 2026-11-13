@@ -36,6 +36,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ITenantProvider? _tenantProvider;
         private readonly Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
+        private readonly Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? _cloudflareDns;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? _smtpEmailDispatcher;
 
         public SettingsApiController(
@@ -48,7 +49,8 @@ namespace Ozikol_BCC.Api.Controllers
             ITenantProvider? tenantProvider = null,
             Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? notificationDispatcher = null,
             Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
-            Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null)
+            Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null,
+            Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null)
         {
             _mediator = mediator;
             _db = db;
@@ -60,6 +62,7 @@ namespace Ozikol_BCC.Api.Controllers
             _notificationDispatcher = notificationDispatcher;
             _mailcowProvisioning = mailcowProvisioning;
             _smtpEmailDispatcher = smtpEmailDispatcher;
+            _cloudflareDns = cloudflareDns;
         }
 
         private string? ResolveCurrentTenantKey()
@@ -236,6 +239,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves custom terminology aliases (e.g. Department vs Category, Committee vs Group).
         /// </summary>
         [HttpGet("aliases")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<TerminologyAliasesDto>), 200)]
         public async Task<IActionResult> GetTerminologyAliases()
         {
@@ -450,6 +454,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves UI appearance theme preferences.
         /// </summary>
         [HttpGet("appearance")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public IActionResult GetAppearanceSettings()
         {
@@ -507,6 +512,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves custom CSS/JS tracking code injection scripts.
         /// </summary>
         [HttpGet("code-injection")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetCodeInjectionSettings()
         {
@@ -571,6 +577,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves status of platform feature flags dynamically evaluated against Central Master Catalog subscriptions.
         /// </summary>
         [HttpGet("features")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetFeatureFlags(CancellationToken cancellationToken)
         {
@@ -885,6 +892,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves Store &amp; Website E-Commerce mode configuration.
         /// </summary>
         [HttpGet("ecommerce")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<StoreSettingsDto>), 200)]
         public async Task<IActionResult> GetStoreSettings()
         {
@@ -1168,20 +1176,45 @@ namespace Ozikol_BCC.Api.Controllers
                 ? request!.Password!.Trim()
                 : $"OziMail!{Guid.NewGuid():N}"[..20];
 
-            var mailcowProvisioned = false;
-            string? dkimTxt = null;
-            if (_mailcowProvisioning != null)
+            if (_mailcowProvisioning == null)
             {
-                try
+                return BadRequest(ApiResponse<object>.FailureResponse("Mailcow provisioning service is unavailable."));
+            }
+
+            // 1. Ensure domain and mailbox exist in Mailcow (no silent fallback)
+            var domainEnsured = await _mailcowProvisioning.EnsureDomainExistsAsync(domain, $"{brandName} Transactional Mail Domain");
+            if (!domainEnsured)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Failed to register mail domain '{domain}' on Mailcow. Verify Mailcow API URL & API Key in Central Works Platform Settings."));
+            }
+
+            var mailcowProvisioned = await _mailcowProvisioning.EnsureMailboxExistsAsync(domain, localPart, mailboxPassword, brandName);
+            if (!mailcowProvisioned)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Failed to provision mailbox '{senderEmail}' on Mailcow. Verify Mailcow API permissions and server connectivity."));
+            }
+
+            var dkimTxt = await _mailcowProvisioning.GetDkimRecordAsync(domain);
+
+            // 2. Automate Cloudflare MX, SPF, DKIM, and DMARC records for <tenant>.ozikol.cloud
+            var dnsProvisioned = false;
+            if (domain.EndsWith(".ozikol.cloud", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_cloudflareDns == null)
                 {
-                    await _mailcowProvisioning.EnsureDomainExistsAsync(domain, $"{brandName} Transactional Mail Domain");
-                    mailcowProvisioned = await _mailcowProvisioning.EnsureMailboxExistsAsync(domain, localPart, mailboxPassword, brandName);
-                    dkimTxt = await _mailcowProvisioning.GetDkimRecordAsync(domain);
+                    return BadRequest(ApiResponse<object>.FailureResponse("Cloudflare DNS automation service is unavailable."));
                 }
-                catch
+
+                var dnsResult = await _cloudflareDns.EnsureTenantEmailDnsAsync(domain, dkimTxt);
+                if (!dnsResult.Success)
                 {
-                    // Continue and save tenant configuration so central/platform SMTP relay can still deliver
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        dnsResult.ErrorMessage ?? $"Failed to provision MX/SPF/DKIM/DMARC DNS records for '{domain}'."));
                 }
+
+                dnsProvisioned = true;
             }
 
             var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -1197,15 +1230,7 @@ namespace Ozikol_BCC.Api.Controllers
             config.SmtpHost = !string.IsNullOrWhiteSpace(request?.SmtpHost) ? request!.SmtpHost!.Trim() : "mail.ozikol.cloud";
             config.SmtpPort = request?.SmtpPort > 0 ? request.SmtpPort : 587;
             config.SmtpUsername = senderEmail;
-            // Only set password if Mailcow was successfully provisioned or an explicit password was provided
-            if (mailcowProvisioned || !string.IsNullOrWhiteSpace(request?.Password))
-            {
-                config.SmtpPassword = OzikolDataCipher.EncryptIfNeeded(mailboxPassword);
-            }
-            else
-            {
-                config.SmtpPassword = null;
-            }
+            config.SmtpPassword = OzikolDataCipher.EncryptIfNeeded(mailboxPassword);
             config.SmtpEnableSsl = true;
 
             await _db.SaveChangesAsync();
@@ -1214,12 +1239,13 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 isConfigured = true,
                 mailcowProvisioned,
+                dnsProvisioned,
                 senderEmail,
                 senderName = brandName,
                 smtpHost = config.SmtpHost,
                 smtpPort = config.SmtpPort,
                 dkimTxt
-            }, "Your email service for notifications has been activated."));
+            }, "Your email service and DNS authentication (MX, SPF, DKIM, DMARC) have been activated."));
         }
 
         /// <summary>
@@ -1241,6 +1267,12 @@ namespace Ozikol_BCC.Api.Controllers
 
             var tenantKey = (ResolveCurrentTenantKey() ?? "workspace").Trim().ToLowerInvariant();
             var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+            if (string.IsNullOrWhiteSpace(config?.SmtpPassword))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "Workspace mailbox credentials are not provisioned yet. Please click 'Update Email Service' first."));
+            }
+
             var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
             var brandName = config?.SenderName ?? site?.BrandName ?? site?.CompanyName ?? "Workspace";
             var fromAddress = !string.IsNullOrWhiteSpace(config?.SenderEmail)
@@ -1264,7 +1296,8 @@ namespace Ozikol_BCC.Api.Controllers
                 isCentralPlatformEmail: false,
                 tenantName: brandName,
                 smtpUsernameOverride: config?.SmtpUsername,
-                smtpPasswordOverride: config?.SmtpPassword);
+                smtpPasswordOverride: config?.SmtpPassword,
+                strictDeliveryCheck: true);
 
             if (!sent)
             {

@@ -36,6 +36,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpEmailQueue> BcpEmailQueue { get; set; } = null!;
     public DbSet<BcpSmsQueue> BcpSmsQueue { get; set; } = null!;
     public DbSet<BcpScheduledJobQueue> BcpScheduledJobQueues { get; set; } = null!;
+    public DbSet<BcpMessagePool> BcpMessagePools { get; set; } = null!;
 
     // BCP communication, messaging, wallet, SMS, and contact feature tables.
     public DbSet<BcpLeaveRequest> BcpLeaveRequests { get; set; } = null!;
@@ -248,6 +249,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         typeof(BcpEmailQueue),
         typeof(BcpSmsQueue),
         typeof(BcpScheduledJobQueue),
+        typeof(BcpMessagePool),
         typeof(UserDeviceSession),
         typeof(BcpUserDevice),
         typeof(BcpUserRecentVisit),
@@ -269,10 +271,30 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         "NormalizedUserName",
         "LastLogin",
         "UpdatedAt",
+        "UpdatedAtUtc",
+        "LastUpdatedUtc",
+        "ModifiedAt",
+        "ModifiedAtUtc",
+        "CreatedAt",
+        "CreatedAtUtc",
+        "LastAccessedUtc",
+        "RowVersion",
         "AccessFailedCount",
         "ViewCount",
         "Views",
         "LastViewedAt"
+    };
+
+    private static readonly HashSet<string> CodeOrBlobProperties = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "HtmlTemplate",
+        "Content",
+        "HtmlBody",
+        "CssCode",
+        "RawHtml",
+        "GeneratedCodeJson",
+        "CompiledCss",
+        "MetadataJson"
     };
 
     /// <summary>
@@ -394,11 +416,19 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
                             if (!string.Equals(originalVal, currentVal, StringComparison.Ordinal))
                             {
-                                var origDisplay = originalVal.Length > 40 ? originalVal.Substring(0, 37) + "..." : originalVal;
-                                var currDisplay = currentVal.Length > 40 ? currentVal.Substring(0, 37) + "..." : currentVal;
+                                if (CodeOrBlobProperties.Contains(propName))
+                                {
+                                    diffList.Add($"{propName} updated");
+                                    changeRecords.Add(new { property = propName, previous = "[Content]", @new = "[Updated Content]" });
+                                }
+                                else
+                                {
+                                    var origDisplay = originalVal.Length > 40 ? originalVal.Substring(0, 37) + "..." : originalVal;
+                                    var currDisplay = currentVal.Length > 40 ? currentVal.Substring(0, 37) + "..." : currentVal;
 
-                                diffList.Add($"{propName}: '{origDisplay}' ➔ '{currDisplay}'");
-                                changeRecords.Add(new { property = propName, previous = origDisplay, @new = currDisplay });
+                                    diffList.Add($"{propName}: '{origDisplay}' ➔ '{currDisplay}'");
+                                    changeRecords.Add(new { property = propName, previous = origDisplay, @new = currDisplay });
+                                }
                             }
                         }
 
@@ -510,6 +540,11 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     {
         "Profile" or "ApplicationUser" => "User Profile",
         "MisWebsiteSetting" => "Brand & Website Settings",
+        "MisConfigurationSetting" => "Platform Settings",
+        "SiteCodeInjectionTag" => "Custom Code & Styles",
+        "TenantInstalledTemplate" => "Section Template",
+        "TemplateCategory" => "Template Category",
+        "TemplateType" => "Template Type",
         "WebPage" => "Web Page",
         "PageSection" => "Page Section",
         "Blog" or "BlogPost" => "Blog Article",
@@ -521,6 +556,16 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         "BcpKpiUserScore" => "KPI Evaluation",
         "BcpRegistrationFormField" => "Registration Field",
         "AppRole" or "IdentityRole" => "Security Role",
+        "BcpGroup" => "Committee / Group",
+        "BcpGroupMember" => "Group Membership",
+        "BcpGroupPost" => "Group Post",
+        "BcpDirectMessage" => "Direct Message",
+        "BcpMessagePool" => "Outbound Message",
+        "BcpNotification" => "System Notification",
+        "BcpProduct" => "Product Catalog Item",
+        "BcpProductOrder" => "Store Order",
+        "BcpShift" => "Workforce Shift",
+        "BcpClientSite" => "Client Site",
         _ => entityTypeName
     };
 
@@ -570,7 +615,10 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         if (entity is BcpKpiIndicator ki) return ki.Title ?? ki.Id.ToString();
         if (entity is MisWebsiteSetting ws) return ws.BrandName ?? ws.CompanyName ?? "Website Settings";
         if (entity is MisConfigurationSetting) return "System Configuration";
+        if (entity is SiteCodeInjectionTag tag) return tag.Name ?? tag.Id.ToString();
+        if (entity is TenantInstalledTemplate tit) return tit.Name ?? tit.TemplateKey ?? tit.Id.ToString();
         if (entity is WebPage wp) return wp.Title ?? wp.Id.ToString();
+        if (entity is PageSection ps) return ps.Title ?? ps.Id.ToString();
         if (entity is BcpGroup bg) return bg.Title ?? bg.Id.ToString();
 
         var type = entity.GetType();
@@ -638,6 +686,20 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.SystemId);
             entity.HasIndex(e => e.IpAddress);
+        });
+
+        modelBuilder.Entity<BcpMessagePool>(entity =>
+        {
+            entity.HasIndex(e => e.Channel);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.ScheduledAt);
+            entity.HasIndex(e => e.RecipientAddress);
+            entity.HasIndex(e => new { e.Channel, e.Status });
+            entity.HasOne(e => e.RelatedUser)
+                .WithMany()
+                .HasForeignKey(e => e.RelatedUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Identity-related feature records should not cascade-delete user-owned communication records.

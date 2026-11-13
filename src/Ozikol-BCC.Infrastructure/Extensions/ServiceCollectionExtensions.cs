@@ -42,6 +42,8 @@ public static class ServiceCollectionExtensions
                 ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             });
 
+        services.AddHttpClient<Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService, Ozikol_BCC.Infrastructure.Services.Email.CloudflareDnsService>();
+
         services.AddTransient<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher, Ozikol_BCC.Infrastructure.Services.Email.SmtpEmailDispatcher>();
         return services;
     }

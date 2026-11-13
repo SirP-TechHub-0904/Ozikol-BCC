@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,CmsManager,ContentManager,CommerceManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+    [Authorize(Policy = AuthPolicies.ConsoleDashboard)]
     [Tags("Admin Dashboard & Analytics")]
     public class DashboardApiController : ControllerBase
     {
@@ -203,17 +204,25 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
-            var recentAudits = await _context.BcpActivityLogs
+            var rawAudits = await _context.BcpActivityLogs
                 .OrderByDescending(l => l.Date)
                 .Take(5)
-                .Select(l => new RecentActivityDto
+                .Select(l => new
                 {
-                    Action = l.ActionType ?? "Action",
+                    l.ActionType,
                     User = l.PerformedByFullName ?? l.PerformedByProfileId ?? "System",
-                    Details = l.Description ?? string.Empty,
-                    Timestamp = l.Date
+                    Description = l.Description ?? string.Empty,
+                    l.Date
                 })
                 .ToListAsync();
+
+            var recentAudits = rawAudits.Select(l => new RecentActivityDto
+            {
+                Action = FormatFriendlyAction(l.ActionType),
+                User = l.User,
+                Details = FormatFriendlyDescription(l.ActionType, l.Description),
+                Timestamp = l.Date
+            }).ToList();
 
             var metrics = new DashboardMetricsDto
             {
@@ -255,7 +264,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="request">Payload containing tenant key and desired custom domain.</param>
         /// <returns>Updated master tenant info response.</returns>
         [HttpPut("update-custom-domain")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
         public async Task<IActionResult> UpdateCustomDomain([FromBody] UpdateCustomDomainRequest request)
         {
             var host = HttpContext.Request.Host.ToString();
@@ -314,6 +323,67 @@ namespace Ozikol_BCC.Api.Controllers
             };
 
             return Ok(ApiResponse<MasterTenantDetailsDto>.SuccessResponse(tenantDetails, "Custom domain updated successfully."));
+        }
+
+        /// <summary>
+        /// Formats internal action type codes and class names into clean, human-readable labels.
+        /// </summary>
+        private static string FormatFriendlyAction(string? action)
+        {
+            if (string.IsNullOrWhiteSpace(action)) return "Activity";
+            var clean = action.Trim();
+            return clean switch
+            {
+                "LOGIN_SUCCESS" => "User Sign-In",
+                "LOGIN_FAILED" => "Failed Sign-In",
+                "PASSWORD_RESET" or "SECURITY_PASSWORD_RESET" => "Password Reset",
+                "CRITICAL_ROLE_ESCALATION" => "Role Escalated",
+                "CRITICAL_ROLE_REVOCATION" => "Role Revoked",
+                "CRITICAL_DELETE_USER" => "User Removed",
+                "CRITICAL_STATUS_SUSPEND" => "Account Suspended",
+                "DATA_EXPORT_CHAT" => "Chat Data Exported",
+                "SiteCodeInjectionTag Updated" => "Custom Code & Styles",
+                "SiteCodeInjectionTag Created" => "Custom Code Created",
+                "TenantInstalledTemplate Updated" => "Section Template Layout",
+                "TenantInstalledTemplate Created" => "Section Template Installed",
+                "WebPage Updated" => "Web Page Updated",
+                "WebPage Created" => "Web Page Created",
+                "PageSection Updated" => "Page Section Updated",
+                "PageSection Created" => "Page Section Created",
+                "MisWebsiteSetting Updated" => "Brand Settings Updated",
+                _ => clean.Replace("SiteCodeInjectionTag", "Custom Code").Replace("TenantInstalledTemplate", "Section Template")
+            };
+        }
+
+        /// <summary>
+        /// Cleans up raw EF change diffs and code dumps into concise, human-friendly descriptions.
+        /// </summary>
+        private static string FormatFriendlyDescription(string? action, string description)
+        {
+            if (string.IsNullOrWhiteSpace(description)) return string.Empty;
+            var desc = description.Trim();
+
+            // 1. Strip internal timestamp change noise: UpdatedAtUtc / LastUpdatedUtc / ModifiedAt / CreatedAt
+            desc = System.Text.RegularExpressions.Regex.Replace(
+                desc,
+                @"(?:,\s*)?(?:UpdatedAtUtc|LastUpdatedUtc|ModifiedAt|CreatedAt|RowVersion):\s*'[^']*'\s*(?:➔|->)\s*'[^']*'",
+                string.Empty);
+
+            // 2. Clean up ugly HTML code dumps: [HtmlTemplate: '<div...' ➔ '<div...']
+            desc = System.Text.RegularExpressions.Regex.Replace(
+                desc,
+                @"HtmlTemplate:\s*'[^']*'\s*(?:➔|->)\s*'[^']*'",
+                "Template layout updated");
+
+            // 3. Clean up trailing commas, empty brackets from stripped items
+            desc = desc.Replace("[, ", "[").Replace("[]", string.Empty).Replace("[: ]", string.Empty).Trim();
+            if (desc.EndsWith(":")) desc = desc.Substring(0, desc.Length - 1).Trim();
+
+            // 4. Clean up raw entity names in text
+            desc = desc.Replace("SiteCodeInjectionTag", "Custom Code & Styles")
+                       .Replace("TenantInstalledTemplate", "Section Template");
+
+            return desc;
         }
     }
 }

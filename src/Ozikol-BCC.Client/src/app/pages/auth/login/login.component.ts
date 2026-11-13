@@ -22,8 +22,36 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
         <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">{{ 'auth.workspace_not_found' | translate:'Workspace not found.' }}</h2>
       </div>
 
+      <!-- Dedicated Account Locked Out State (15-min countdown) -->
+      <div class="login-card" *ngIf="isAccountLockedOut && !workspaceNotFound" style="text-align: center; padding: 48px 32px;">
+        <div class="brand-avatar" style="margin: 0 auto 18px; width: 68px; height: 68px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+          <span class="material-symbols-outlined" style="font-size: 34px; color: #dc2626;">lock_clock</span>
+        </div>
+        <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Account Temporarily Locked</h2>
+        <p class="subtitle" style="color: #64748b; font-size: 13.5px; line-height: 1.6; margin: 0 auto 24px; max-width: 380px;">
+          Your account has been temporarily locked due to 3 consecutive failed login attempts to protect against unauthorized access.
+        </p>
+
+        <!-- Live Countdown Widget -->
+        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+          <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+            Unlocks in
+          </div>
+          <div style="font-size: 38px; font-weight: 800; color: #dc2626; font-family: monospace; letter-spacing: 0.05em;">
+            {{ formatLockoutTime() }}
+          </div>
+          <div style="font-size: 12px; color: #94a3b8; margin-top: 6px;">
+            Please wait until the timer finishes before trying again.
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" (click)="resetLockoutScreen()" [disabled]="lockoutSecondsRemaining > 0" style="width: 100%;">
+          <span>{{ lockoutSecondsRemaining > 0 ? 'Locked' : 'Return to Login' }}</span>
+        </button>
+      </div>
+
       <!-- Standard Login Card -->
-      <div class="login-card" *ngIf="!workspaceNotFound">
+      <div class="login-card" *ngIf="!workspaceNotFound && !isAccountLockedOut">
         <!-- Logo & Header -->
         <div class="card-header">
           <!-- Official Brand Logo if uploaded, or Brand Name if logo is null -->
@@ -933,6 +961,38 @@ export class LoginComponent implements OnInit {
   mfaError = '';
   mfaSuccessMessage = '';
 
+  // Account Lockout State (3 Failed Attempts -> 15 min Countdown)
+  isAccountLockedOut = false;
+  lockoutSecondsRemaining = 900;
+  lockoutInterval: any = null;
+
+  startLockoutCountdown(seconds: number): void {
+    this.isAccountLockedOut = true;
+    this.lockoutSecondsRemaining = Math.max(1, seconds || 900);
+    if (this.lockoutInterval) {
+      clearInterval(this.lockoutInterval);
+    }
+    this.lockoutInterval = setInterval(() => {
+      this.lockoutSecondsRemaining--;
+      if (this.lockoutSecondsRemaining <= 0) {
+        clearInterval(this.lockoutInterval);
+        this.lockoutInterval = null;
+      }
+    }, 1000);
+  }
+
+  formatLockoutTime(): string {
+    const mins = Math.floor(this.lockoutSecondsRemaining / 60);
+    const secs = this.lockoutSecondsRemaining % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  resetLockoutScreen(): void {
+    if (this.lockoutSecondsRemaining > 0) return;
+    this.isAccountLockedOut = false;
+    this.errorMessage = '';
+  }
+
   constructor(
     private api: ApiService, 
     private router: Router,
@@ -1073,6 +1133,13 @@ export class LoginComponent implements OnInit {
           return;
         }
 
+        // If account locked out (423), engage 15-minute countdown screen
+        if (err.status === 423 || err?.error?.data?.isLockedOut === true) {
+          const remainingSecs = Number(err?.error?.data?.lockoutSecondsRemaining || 900);
+          this.startLockoutCountdown(remainingSecs);
+          return;
+        }
+
         // If unconfirmed email required by policy (403), open OTP verification dialog
         if (err.status === 403 && (err?.error?.data?.requiresEmailVerification === true || (err?.error?.message || '').toLowerCase().includes('email confirmation'))) {
           this.showOtpVerifyModal = true;
@@ -1207,6 +1274,11 @@ export class LoginComponent implements OnInit {
     if (data.email) localStorage.setItem('user_email', data.email);
     if (data.roles && Array.isArray(data.roles)) {
       localStorage.setItem('user_roles', JSON.stringify(data.roles));
+    }
+    if (data.assignedFeatureKeys && Array.isArray(data.assignedFeatureKeys)) {
+      localStorage.setItem('bcp_user_feature_keys', JSON.stringify(data.assignedFeatureKeys));
+    } else {
+      localStorage.removeItem('bcp_user_feature_keys');
     }
     this.multiWorkspace.saveSession({
       tenantKey: data.tenantKey || localStorage.getItem('tenant_key') || '',

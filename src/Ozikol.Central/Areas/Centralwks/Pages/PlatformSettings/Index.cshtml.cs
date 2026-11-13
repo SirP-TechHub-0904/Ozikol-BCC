@@ -208,6 +208,26 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [MaxLength(500)]
             public string? CloudflareR2PublicCdnUrl { get; set; }
 
+            /// <summary>Gets or sets Mailcow REST API Base URL (e.g. https://mail.ozikol.cloud).</summary>
+            [MaxLength(500)]
+            public string? MailcowApiUrl { get; set; } = "https://mail.ozikol.cloud";
+
+            /// <summary>Gets or sets Mailcow REST API Key (stored encrypted in Central DB).</summary>
+            [MaxLength(500)]
+            public string? MailcowApiKey { get; set; }
+
+            /// <summary>Gets or sets Mailcow SMTP Hostname used for MX and SPF DNS automation (e.g. mail.ozikol.cloud).</summary>
+            [MaxLength(255)]
+            public string? MailcowSmtpHost { get; set; } = "mail.ozikol.cloud";
+
+            /// <summary>Gets or sets Cloudflare Zone ID for ozikol.cloud used to automate tenant MX/SPF/DKIM/DMARC records.</summary>
+            [MaxLength(255)]
+            public string? CloudflareZoneId { get; set; }
+
+            /// <summary>Gets or sets Cloudflare DNS API Token with Zone:DNS:Edit permissions (stored encrypted in Central DB).</summary>
+            [MaxLength(500)]
+            public string? CloudflareDnsApiToken { get; set; }
+
             /// <summary>Gets or sets whether Central Paystack checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
             public bool EnablePaystack { get; set; } = true;
 
@@ -363,6 +383,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 CloudflareR2SecretAccessKey = settings.CloudflareR2SecretAccessKey,
                 CloudflareR2BucketName = !string.IsNullOrWhiteSpace(settings.CloudflareR2BucketName) ? settings.CloudflareR2BucketName : "ozikol-assets",
                 CloudflareR2PublicCdnUrl = settings.CloudflareR2PublicCdnUrl,
+                MailcowApiUrl = !string.IsNullOrWhiteSpace(settings.MailcowApiUrl) ? settings.MailcowApiUrl : "https://mail.ozikol.cloud",
+                MailcowApiKey = settings.MailcowApiKey,
+                MailcowSmtpHost = !string.IsNullOrWhiteSpace(settings.MailcowSmtpHost) ? settings.MailcowSmtpHost : "mail.ozikol.cloud",
+                CloudflareZoneId = settings.CloudflareZoneId,
+                CloudflareDnsApiToken = settings.CloudflareDnsApiToken,
                 EnablePaystack = settings.EnablePaystack,
                 PaystackPublicKey = settings.PaystackPublicKey,
                 PaystackSecretKey = settings.PaystackSecretKey,
@@ -467,6 +492,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             }
             settings.CloudflareR2BucketName = string.IsNullOrWhiteSpace(Input.CloudflareR2BucketName) ? "ozikol-assets" : Input.CloudflareR2BucketName.Trim();
             settings.CloudflareR2PublicCdnUrl = Input.CloudflareR2PublicCdnUrl?.Trim();
+
+            settings.MailcowApiUrl = string.IsNullOrWhiteSpace(Input.MailcowApiUrl) ? "https://mail.ozikol.cloud" : Input.MailcowApiUrl.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.MailcowApiKey))
+            {
+                settings.MailcowApiKey = Input.MailcowApiKey.Trim();
+            }
+            settings.MailcowSmtpHost = string.IsNullOrWhiteSpace(Input.MailcowSmtpHost) ? "mail.ozikol.cloud" : Input.MailcowSmtpHost.Trim();
+            settings.CloudflareZoneId = Input.CloudflareZoneId?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.CloudflareDnsApiToken))
+            {
+                settings.CloudflareDnsApiToken = Input.CloudflareDnsApiToken.Trim();
+            }
 
             settings.EnablePaystack = Input.EnablePaystack;
             settings.PaystackPublicKey = Input.PaystackPublicKey?.Trim();
@@ -677,6 +714,64 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             catch (Exception ex)
             {
                 return new JsonResult(new { success = false, message = $"Cloudflare R2 connection test failed: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Handles AJAX POST request to verify Mailcow REST API and Cloudflare DNS API Token connectivity.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestMailcowAndCloudflareDnsAsync(
+            [FromForm] string? mailcowApiUrl,
+            [FromForm] string? mailcowApiKey,
+            [FromForm] string? cloudflareZoneId,
+            [FromForm] string? cloudflareDnsApiToken)
+        {
+            var existing = await _context.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+            var targetMailcowUrl = !string.IsNullOrWhiteSpace(mailcowApiUrl) ? mailcowApiUrl.Trim() : (existing?.MailcowApiUrl?.Trim() ?? "https://mail.ozikol.cloud");
+            var targetMailcowKey = !string.IsNullOrWhiteSpace(mailcowApiKey) ? mailcowApiKey.Trim() : existing?.MailcowApiKey?.Trim();
+            var targetZoneId = !string.IsNullOrWhiteSpace(cloudflareZoneId) ? cloudflareZoneId.Trim() : existing?.CloudflareZoneId?.Trim();
+            var targetCfToken = !string.IsNullOrWhiteSpace(cloudflareDnsApiToken) ? cloudflareDnsApiToken.Trim() : existing?.CloudflareDnsApiToken?.Trim();
+
+            if (string.IsNullOrWhiteSpace(targetMailcowKey) || string.IsNullOrWhiteSpace(targetZoneId) || string.IsNullOrWhiteSpace(targetCfToken))
+            {
+                return new JsonResult(new { success = false, message = "Please provide Mailcow API Key, Cloudflare Zone ID, and Cloudflare DNS API Token." });
+            }
+
+            try
+            {
+                using var handler = new System.Net.Http.HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+                using var http = new System.Net.Http.HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+
+                // 1. Test Mailcow API
+                using var mcReq = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, $"{targetMailcowUrl.TrimEnd('/')}/api/v1/get/domain/all");
+                mcReq.Headers.Add("X-API-Key", targetMailcowKey);
+                using var mcResp = await http.SendAsync(mcReq);
+                var mcBody = await mcResp.Content.ReadAsStringAsync();
+                if (!mcResp.IsSuccessStatusCode || mcBody.Contains("\"type\":\"danger\"", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new JsonResult(new { success = false, message = $"Mailcow API check failed ({mcResp.StatusCode}): {mcBody}" });
+                }
+
+                // 2. Test Cloudflare DNS API Token + Zone ID
+                using var cfReq = new System.Net.Http.HttpRequestMessage(
+                    System.Net.Http.HttpMethod.Get,
+                    $"https://api.cloudflare.com/client/v4/zones/{Uri.EscapeDataString(targetZoneId)}/dns_records?per_page=1");
+                cfReq.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", targetCfToken);
+                using var cfResp = await http.SendAsync(cfReq);
+                var cfBody = await cfResp.Content.ReadAsStringAsync();
+                if (!cfResp.IsSuccessStatusCode)
+                {
+                    return new JsonResult(new { success = false, message = $"Cloudflare DNS API check failed ({cfResp.StatusCode}): {cfBody}" });
+                }
+
+                return new JsonResult(new { success = true, message = "Mailcow Read/Write API and Cloudflare Zone DNS API Token are both verified and active!" });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Connection test failed: {ex.Message}" });
             }
         }
 

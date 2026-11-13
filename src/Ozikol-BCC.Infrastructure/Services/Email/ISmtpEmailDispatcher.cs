@@ -35,6 +35,7 @@ public interface ISmtpEmailDispatcher
         string? tenantAdminEmail = null,
         CancellationToken cancellationToken = default,
         string? smtpUsernameOverride = null,
-        string? smtpPasswordOverride = null);
+        string? smtpPasswordOverride = null,
+        bool strictDeliveryCheck = false);
 }
 

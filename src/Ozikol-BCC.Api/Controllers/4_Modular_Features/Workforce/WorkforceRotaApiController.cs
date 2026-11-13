@@ -17,6 +17,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 
@@ -29,7 +30,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/workforce")]
-    [Authorize]
+    [RequireFeature("bcp-staff-rota")]
     [Tags("Workforce Rota & Shift Operations")]
     public class WorkforceRotaApiController : ControllerBase
     {

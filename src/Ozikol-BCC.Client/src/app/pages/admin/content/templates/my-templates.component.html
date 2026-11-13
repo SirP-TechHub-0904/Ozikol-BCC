@@ -1652,8 +1652,8 @@
 <!-- ============================================================== -->
 <!-- MODAL 11: IN-BROWSER ASSET FILE CONTENT EDITOR & LIVE CDN SAVE -->
 <!-- ============================================================== -->
-<div class="modal-backdrop" *ngIf="showAssetEditorModal && editingAssetTag" (click)="closeAssetEditorModal()">
-  <div class="modal-card asset-editor-modal-card" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" *ngIf="showAssetEditorModal && editingAssetTag">
+  <div class="modal-card asset-editor-modal-card">
     <!-- Header -->
     <div class="preview-modal-header" style="background: #0b1120; border-bottom: 1.5px solid #1e293b; color: #ffffff;">
       <div class="preview-title-info">
@@ -1747,9 +1747,18 @@
         <span>Fetching asset content from CDN...</span>
       </div>
 
-      <textarea *ngIf="!loadingAssetContent" [(ngModel)]="editingAssetContent" class="modal-code-textarea"
-        style="flex: 1; width: 100%; min-height: 480px; background: #090d16; color: #e2e8f0; font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 18px 20px; border: none; outline: none; resize: none; box-sizing: border-box;"
-        placeholder="/* Enter or edit your stylesheet/script code here... */" spellcheck="false"></textarea>
+      <div *ngIf="!loadingAssetContent"
+        style="display: flex; flex: 1; height: 480px; min-height: 480px; background: #090d16; overflow: hidden;">
+        <div #assetLineGutter aria-hidden="true"
+          style="width: 52px; flex-shrink: 0; background: #0b1120; border-right: 1px solid #1e293b; color: #475569; font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 18px 8px; text-align: right; user-select: none; overflow: hidden; box-sizing: border-box;">
+          <div *ngFor="let ln of assetEditorLineNumbers">{{ ln }}</div>
+        </div>
+        <textarea #assetCodeArea [(ngModel)]="editingAssetContent"
+          (scroll)="syncAssetEditorScroll(assetCodeArea, assetLineGutter)"
+          class="modal-code-textarea"
+          style="flex: 1; width: 100%; height: 100%; min-height: 480px; background: #090d16; color: #e2e8f0; font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 18px 16px; border: none; outline: none; resize: none; box-sizing: border-box; overflow: auto;"
+          placeholder="/* Enter or edit your stylesheet/script code here... */" spellcheck="false"></textarea>
+      </div>
     </div>
 
     <!-- Footer -->

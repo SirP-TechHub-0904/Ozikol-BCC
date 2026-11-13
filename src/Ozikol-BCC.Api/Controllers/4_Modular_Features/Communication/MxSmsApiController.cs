@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Domain.Constants;
+using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -19,7 +21,8 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.CommunicationStudio)]
+    [RequireFeature("bcp-mass-communication")]
     public class MxSmsApiController : ControllerBase
     {
         private readonly DashboardDbContext _dbContext;

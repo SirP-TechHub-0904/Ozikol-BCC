@@ -547,7 +547,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", result.Errors.Select(e => e.Description))));
             }
 
-            await LogActivityAsync("Delete User", $"Permanently deleted member account for '{userName}' ({user.Email})", id, userName);
+            await LogActivityAsync("CRITICAL_DELETE_USER", $"[CRITICAL] Permanently deleted member account for '{userName}' ({user.Email})", id, userName);
             await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was permanently deleted by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Member account for '{userName}' has been deleted."));
         }
@@ -758,7 +758,7 @@ namespace Ozikol_BCC.Api.Controllers
             // Dispatch in-app notification & SignalR real-time broadcast
             await NotifyUserAsync(user.Id, "Temporary Password Assigned", "An administrator assigned a temporary password to your account. You will be prompted to update it upon sign in.", "/users/workspace/overview", NotificationSeverity.Update, "lock_reset");
 
-            await LogActivityAsync("Reset Password", $"Admin reset password for '{user.FullName}' (MustChangePassword={user.MustChangePassword}, EmailNotified={request.SendEmailNotification ?? true})", user.Id, user.FullName);
+            await LogActivityAsync("SECURITY_PASSWORD_RESET", $"[SUSPICIOUS] Administrator applied temporary password reset for '{user.FullName}' ({user.Email})", user.Id, user.FullName);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Temporary password applied. Email notification dispatched to member."));
         }
 
@@ -919,7 +919,12 @@ namespace Ozikol_BCC.Api.Controllers
             user.UserStatus = request.IsActive ? UserStatus.Active : UserStatus.Suspended;
             await _dbContext.SaveChangesAsync();
 
-            await LogActivityAsync("Status Change", $"Changed account status of '{user.FullName}' from {oldStatus} to {user.UserStatus}", user.Id, user.FullName);
+            bool isSuspension = !request.IsActive;
+            var actionType = isSuspension ? "CRITICAL_STATUS_SUSPEND" : "STATUS_REACTIVATE";
+            var desc = isSuspension
+                ? $"[CRITICAL] Account suspended for '{user.FullName}' ({user.Email}) by administration"
+                : $"Account reactivated for '{user.FullName}' ({user.Email}) by administration";
+            await LogActivityAsync(actionType, desc, user.Id, user.FullName);
             await NotifyUserAsync(user.Id, "Account Status Updated",
                 request.IsActive
                     ? "Your account has been reactivated by administration."

@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Services;
+using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -18,7 +20,8 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Route("api/MessageTemplates")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.CommunicationStudio)]
+    [RequireFeature("bcp-mass-communication")]
     public class MessageTemplatesApiController : ControllerBase
     {
         private readonly IMessageTemplateService _templateService;
@@ -32,7 +35,6 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves all communication templates for the tenant.
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,SystemAdministrator")]
         public async Task<IActionResult> GetAllTemplates()
         {
             var templates = await _templateService.GetAllTemplatesAsync();
@@ -43,7 +45,6 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves single template by event type and delivery channel.
         /// </summary>
         [HttpGet("{eventType}/{channel}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,SystemAdministrator")]
         public async Task<IActionResult> GetTemplate(BcpEventType eventType, BcpMessageChannel channel)
         {
             var template = await _templateService.GetTemplateAsync(eventType, channel);
@@ -55,7 +56,6 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates or customizes a message template.
         /// </summary>
         [HttpPut("{eventType}/{channel}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,SystemAdministrator")]
         public async Task<IActionResult> SaveTemplate(
             BcpEventType eventType,
             BcpMessageChannel channel,
@@ -81,7 +81,6 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resets a template back to factory system defaults.
         /// </summary>
         [HttpPost("{eventType}/{channel}/reset")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,SystemAdministrator")]
         public async Task<IActionResult> ResetToDefault(BcpEventType eventType, BcpMessageChannel channel)
         {
             var reset = await _templateService.ResetToDefaultAsync(eventType, channel);
@@ -92,7 +91,6 @@ namespace Ozikol_BCC.Api.Controllers
         /// Previews a template with mock placeholder interpolation data.
         /// </summary>
         [HttpPost("preview")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,SystemAdministrator")]
         public async Task<IActionResult> PreviewTemplate([FromBody] PreviewTemplateRequest request)
         {
             var origin = Request.Headers.Origin.FirstOrDefault() 

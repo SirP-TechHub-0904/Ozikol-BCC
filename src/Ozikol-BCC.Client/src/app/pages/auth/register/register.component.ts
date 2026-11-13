@@ -74,9 +74,6 @@ interface WizardStep {
             
             <!-- Hero Header -->
             <div class="card-hero-header">
-              <div class="hero-avatar">
-                <span class="material-symbols-outlined">person_add</span>
-              </div>
               <h1 class="hero-title">{{ policy.formTitle || ('auth.create_your_account' | translate:'Create Your Account') }}</h1>
               <p class="hero-subtitle" *ngIf="!policy.welcomeMessage">{{ 'auth.join_member_directory' | translate:'Join our member directory and workspace portal.' }}</p>
               <div class="hero-welcome-badge" *ngIf="policy.welcomeMessage">
@@ -2506,8 +2503,24 @@ interface WizardStep {
 
     @media (max-width: 768px) {
       .register-card {
-        padding: 24px 18px;
-        border-radius: 16px;
+        padding: 18px 12px;
+        border-radius: 14px;
+      }
+      .card-hero-header {
+        margin-bottom: 18px;
+      }
+      .section-card-header {
+        padding: 12px 14px;
+      }
+      .section-card-body {
+        padding: 14px 12px;
+      }
+      .review-summary-card {
+        padding: 12px;
+      }
+      .g-recaptcha, .recaptcha-box {
+        max-width: 100%;
+        overflow-x: auto;
       }
       .form-grid-2, .dynamic-fields-grid, .summary-grid {
         grid-template-columns: 1fr;
@@ -2517,10 +2530,22 @@ interface WizardStep {
       }
       .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
       .topbar-inner {
-        padding: 12px 16px;
+        padding: 10px 12px;
       }
       .signin-hint { display: none; }
-      .hero-title { font-size: 22px; }
+      .hero-title { font-size: 20px; }
+    }
+    @media (max-width: 400px) {
+      .register-card {
+        padding: 14px 10px;
+      }
+      .section-card-body {
+        padding: 12px 10px;
+      }
+      .g-recaptcha > div {
+        transform: scale(0.88);
+        transform-origin: 0 0;
+      }
     }
   `]
 })

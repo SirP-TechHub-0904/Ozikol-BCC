@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System.Security.Claims;
@@ -15,6 +17,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [RequireFeature("bcp-store-ecommerce")]
     [Tags("Commerce Studio - Products, Categories, Orders & Marketing")]
     public class ProductsApiController : ControllerBase
     {
@@ -49,7 +52,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         [HttpPost("upload-media")]
         [Consumes("multipart/form-data")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> UploadMedia([FromForm] ProductMediaUploadRequest request)
         {
             var file = request.File;
@@ -80,7 +83,7 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
 
         [HttpGet]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetProducts(
             [FromQuery] string? search,
             [FromQuery] Guid? categoryId,
@@ -152,7 +155,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetProductById(Guid id)
         {
             var product = await _context.BcpProducts.Include(p => p.Category).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
@@ -292,7 +295,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> CreateProduct([FromBody] BcpProduct dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Title))
@@ -377,7 +380,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] BcpProduct dto)
         {
             var product = await _context.BcpProducts.FirstOrDefaultAsync(p => p.Id == id);
@@ -441,7 +444,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var product = await _context.BcpProducts.FirstOrDefaultAsync(p => p.Id == id);
@@ -463,7 +466,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("{id:guid}/disable")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> DisableProduct(Guid id)
         {
             var product = await _context.BcpProducts.FirstOrDefaultAsync(p => p.Id == id);
@@ -509,7 +512,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetCategoryById(Guid id)
         {
             var category = await _context.BcpProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
@@ -521,7 +524,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPost("categories")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> CreateCategory([FromBody] BcpProductCategory dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Title))
@@ -557,7 +560,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] BcpProductCategory dto)
         {
             var category = await _context.BcpProductCategories.FirstOrDefaultAsync(c => c.Id == id);
@@ -591,7 +594,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpDelete("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> DeleteCategory(Guid id)
         {
             var category = await _context.BcpProductCategories.FirstOrDefaultAsync(c => c.Id == id);
@@ -627,7 +630,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPost("marketing/dispatch")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> DispatchMarketingCampaign([FromBody] ProductBroadcastRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.CampaignName) || string.IsNullOrWhiteSpace(req.EmailSubject))
@@ -712,7 +715,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("marketing/campaigns")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetMarketingCampaigns([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             var query = _context.BcpMarketingCampaigns.Include(c => c.Product).AsNoTracking().OrderByDescending(c => c.CreatedAtUtc);
@@ -927,7 +930,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("orders")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetOrders(
             [FromQuery] string? search,
             [FromQuery] ProductOrderStatus? status,
@@ -957,7 +960,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("orders/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetOrderById(Guid id)
         {
             var order = await _context.BcpProductOrders.Include(o => o.Items).ThenInclude(i => i.Product).AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
@@ -969,7 +972,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("orders/{id:guid}/status")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] BcpProductOrder dto)
         {
             var order = await _context.BcpProductOrders.FirstOrDefaultAsync(o => o.Id == id);
@@ -1027,7 +1030,7 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
 
         [HttpGet("transactions")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetProductTransactions(
             [FromQuery] string? search,
             [FromQuery] PaymentStatus? status,
@@ -1074,7 +1077,7 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
 
         [HttpGet("queues/summary")]
-        [Authorize(Roles = "SuperAdmin,Admin,CommerceManager,CmsManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
+        [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetQueuesSummary()
         {
             int pendingEmails = await _context.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Queued || q.Status == BcpQueueStatus.Processing);

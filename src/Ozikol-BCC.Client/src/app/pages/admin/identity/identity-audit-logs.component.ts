@@ -22,6 +22,7 @@ export interface WorkspaceAuditLogItem {
   status: string;
   description?: string;
   module?: string;
+  severity?: 'Normal' | 'Suspicious' | 'Critical' | string;
   ipAddress: string;
   userAgent: string;
   device?: string;
@@ -92,6 +93,46 @@ export interface WorkspaceAuditLogItem {
         </div>
 
         <div class="card-body">
+          <!-- Severity Quick Tiers & Clear Actions Bar -->
+          <div class="severity-tier-bar">
+            <div class="tier-buttons">
+              <button type="button" class="tier-pill" [class.active]="selectedSeverity === 'all'" (click)="setSeverityFilter('all')">
+                <span>{{ 'audit.all_events' | translate:'All Events' }}</span>
+                <span class="tier-count">{{ normalCount + suspiciousCount + criticalCount }}</span>
+              </button>
+              <button type="button" class="tier-pill tier-normal" [class.active]="selectedSeverity === 'Normal'" (click)="setSeverityFilter('Normal')">
+                <span class="tier-dot dot-normal"></span>
+                <span>{{ 'audit.normal' | translate:'Normal' }}</span>
+                <span class="tier-count">{{ normalCount }}</span>
+              </button>
+              <button type="button" class="tier-pill tier-suspicious" [class.active]="selectedSeverity === 'Suspicious'" (click)="setSeverityFilter('Suspicious')">
+                <span class="tier-dot dot-suspicious"></span>
+                <span>{{ 'audit.suspicious' | translate:'Suspicious' }}</span>
+                <span class="tier-count">{{ suspiciousCount }}</span>
+              </button>
+              <button type="button" class="tier-pill tier-critical" [class.active]="selectedSeverity === 'Critical'" (click)="setSeverityFilter('Critical')">
+                <span class="tier-dot dot-critical"></span>
+                <span>{{ 'audit.critical' | translate:'Critical' }}</span>
+                <span class="tier-count">{{ criticalCount }}</span>
+              </button>
+            </div>
+
+            <div class="clear-actions-group">
+              <button type="button" class="btn-clear-cat btn-clear-normal" (click)="clearLogsByCategory('normal')" [disabled]="isClearing">
+                <span class="material-symbols-outlined">cleaning_services</span>
+                <span>Clear Normal Logs</span>
+              </button>
+              <button type="button" class="btn-clear-cat btn-clear-suspicious" (click)="clearLogsByCategory('suspicious')" [disabled]="isClearing">
+                <span class="material-symbols-outlined">delete_sweep</span>
+                <span>Clear Suspicious</span>
+              </button>
+              <button type="button" class="btn-clear-cat btn-clear-all" (click)="clearLogsByCategory('all')" [disabled]="isClearing">
+                <span class="material-symbols-outlined">auto_delete</span>
+                <span>Purge All</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Search & Filter Toolbar -->
           <div class="filter-toolbar">
             <div class="search-box-wrap">
@@ -142,6 +183,7 @@ export interface WorkspaceAuditLogItem {
                   </th>
                   <th>{{ 'audit.th_user' | translate:'User / Account' }}</th>
                   <th>{{ 'audit.th_action_status' | translate:'Action & Status' }}</th>
+                  <th style="width: 100px;">Severity</th>
                   <th>{{ 'audit.th_desc_module' | translate:'Description / Module' }}</th>
                   <th>{{ 'audit.th_ip' | translate:'IP Address' }}</th>
                   <th>{{ 'audit.th_browser_device' | translate:'Browser / Device' }}</th>
@@ -174,6 +216,12 @@ export interface WorkspaceAuditLogItem {
                         <span>{{ 'audit.trusted' | translate:'Trusted' }}</span>
                       </span>
                     </div>
+                  </td>
+                  <td>
+                    <span class="severity-badge" [ngClass]="getSeverityClass(log.severity)">
+                      <span class="tier-dot" [ngClass]="getSeverityDotClass(log.severity)"></span>
+                      {{ log.severity || 'Normal' }}
+                    </span>
                   </td>
                   <td>
                     <div class="log-desc-col">
@@ -585,6 +633,143 @@ export interface WorkspaceAuditLogItem {
       font-size: 17px;
     }
 
+    /* Severity Quick Tiers Bar */
+    .severity-tier-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+    .tier-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tier-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tier-pill:hover {
+      border-color: #94a3b8;
+    }
+    .tier-pill.active {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+    }
+    .tier-pill.tier-normal.active {
+      background: #059669;
+      border-color: #059669;
+      color: #ffffff;
+    }
+    .tier-pill.tier-suspicious.active {
+      background: #d97706;
+      border-color: #d97706;
+      color: #ffffff;
+    }
+    .tier-pill.tier-critical.active {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: #ffffff;
+    }
+    .tier-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .dot-normal { background: #10b981; }
+    .dot-suspicious { background: #f59e0b; }
+    .dot-critical { background: #ef4444; }
+    .tier-count {
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.08);
+      font-size: 11px;
+    }
+    .tier-pill.active .tier-count {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .clear-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-clear-cat {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-clear-normal {
+      color: #059669;
+      border-color: #a7f3d0;
+    }
+    .btn-clear-normal:hover:not(:disabled) {
+      background: #ecfdf5;
+    }
+    .btn-clear-suspicious {
+      color: #b45309;
+      border-color: #fde68a;
+    }
+    .btn-clear-suspicious:hover:not(:disabled) {
+      background: #fffbeb;
+    }
+    .btn-clear-all {
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+    .btn-clear-all:hover:not(:disabled) {
+      background: #fef2f2;
+    }
+    .severity-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .sev-normal {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .sev-suspicious {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .sev-critical {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+    }
+
     .empty-state {
       padding: 48px 20px;
       text-align: center;
@@ -687,6 +872,7 @@ export interface WorkspaceAuditLogItem {
 export class IdentityAuditLogsComponent implements OnInit {
   isLoading = false;
   isDeleting = false;
+  isClearing = false;
   deletingId: string | null = null;
 
   logs: WorkspaceAuditLogItem[] = [];
@@ -697,8 +883,13 @@ export class IdentityAuditLogsComponent implements OnInit {
   totalCount = 0;
   totalPages = 1;
 
+  normalCount = 0;
+  suspiciousCount = 0;
+  criticalCount = 0;
+
   searchTerm = '';
   selectedModule = 'all';
+  selectedSeverity = 'all';
 
   selectedIds = new Set<string>();
 
@@ -721,6 +912,9 @@ export class IdentityAuditLogsComponent implements OnInit {
     const params = new URLSearchParams();
     params.set('page', String(this.page));
     params.set('pageSize', String(this.pageSize));
+    if (this.selectedSeverity && this.selectedSeverity !== 'all') {
+      params.set('severity', this.selectedSeverity);
+    }
     if (this.searchTerm.trim()) {
       params.set('search', this.searchTerm.trim());
     }
@@ -733,14 +927,37 @@ export class IdentityAuditLogsComponent implements OnInit {
         this.isLoading = false;
         const data = res?.data;
         if (data && Array.isArray(data.items)) {
-          this.logs = data.items.filter((item: WorkspaceAuditLogItem) => {
-            const desc = (item?.description || '').trim();
-            if (desc.toLowerCase().includes('[viewcount:') && !desc.includes(', ')) {
-              return false;
-            }
-            return true;
-          });
+          this.logs = data.items
+            .filter((item: WorkspaceAuditLogItem) => {
+              const desc = (item?.description || '').trim();
+              if (desc.toLowerCase().includes('[viewcount:') && !desc.includes(', ')) {
+                return false;
+              }
+              return true;
+            })
+            .map((item: WorkspaceAuditLogItem) => {
+              let desc = (item.description || '').trim();
+              desc = desc.replace(/(?:,\s*)?(?:UpdatedAtUtc|LastUpdatedUtc|ModifiedAt|CreatedAt|RowVersion):\s*'[^']*'\s*(?:➔|->)\s*'[^']*'/gi, '');
+              desc = desc.replace(/HtmlTemplate:\s*'[^']*'\s*(?:➔|->)\s*'[^']*'/gi, 'Template layout updated');
+              desc = desc.replace(/\[,\s*/g, '[').replace(/\[\]/g, '').replace(/\[:\s*\]/g, '').trim();
+              if (desc.endsWith(':')) desc = desc.slice(0, -1).trim();
+              desc = desc.replace(/SiteCodeInjectionTag/g, 'Custom Code & Styles').replace(/TenantInstalledTemplate/g, 'Section Template');
+
+              let action = item.actionType || item.status || '';
+              if (action === 'LOGIN_SUCCESS') action = 'User Sign-In';
+              else if (action.includes('SiteCodeInjectionTag')) action = 'Custom Code & Styles';
+              else if (action.includes('TenantInstalledTemplate')) action = 'Section Template';
+
+              return {
+                ...item,
+                actionType: action,
+                description: desc
+              };
+            });
           this.totalCount = Math.max(0, Number(data.totalCount || data.items.length) - (data.items.length - this.logs.length));
+          this.normalCount = Number(data.normalCount || 0);
+          this.suspiciousCount = Number(data.suspiciousCount || 0);
+          this.criticalCount = Number(data.criticalCount || 0);
           this.page = Number(data.page || 1);
           this.pageSize = Number(data.pageSize || 25);
           this.totalPages = Number(data.totalPages || 1);
@@ -779,6 +996,48 @@ export class IdentityAuditLogsComponent implements OnInit {
 
   onModuleChange(): void {
     this.loadLogs(1);
+  }
+
+  setSeverityFilter(sev: string): void {
+    this.selectedSeverity = sev;
+    this.loadLogs(1);
+  }
+
+  /**
+   * Clears audit logs selectively by category (normal, suspicious, all).
+   */
+  clearLogsByCategory(category: string): void {
+    const label = category === 'all' ? 'ALL' : category.toUpperCase();
+    if (!confirm(`Are you sure you want to clear ${label} security audit logs? This action cannot be undone.`)) {
+      return;
+    }
+    this.isClearing = true;
+    this.api.post<any>('IdentityApi/security-audit/clear-by-category', { category }).subscribe({
+      next: (res) => {
+        this.isClearing = false;
+        const count = res?.data?.clearedCount ?? 0;
+        this.toast.success(`Cleared ${count} ${category} audit log(s).`, 'Logs Cleared');
+        this.loadLogs(1);
+      },
+      error: (err) => {
+        this.isClearing = false;
+        this.toast.error(err?.error?.message || 'Failed to clear logs by category.', 'Error');
+      }
+    });
+  }
+
+  getSeverityClass(severity: string | undefined): string {
+    const s = (severity || 'Normal').toLowerCase();
+    if (s === 'critical') return 'sev-critical';
+    if (s === 'suspicious') return 'sev-suspicious';
+    return 'sev-normal';
+  }
+
+  getSeverityDotClass(severity: string | undefined): string {
+    const s = (severity || 'Normal').toLowerCase();
+    if (s === 'critical') return 'dot-critical';
+    if (s === 'suspicious') return 'dot-suspicious';
+    return 'dot-normal';
   }
 
   /**

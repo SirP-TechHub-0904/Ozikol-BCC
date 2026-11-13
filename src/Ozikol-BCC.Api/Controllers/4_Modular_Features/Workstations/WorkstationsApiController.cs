@@ -12,6 +12,7 @@ using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Api.Authorization;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -22,6 +23,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/Workstations")]
+    [RequireFeature("bcp-workspace")]
     [Tags("Workstations & Application Gatekeeper")]
     public class WorkstationsApiController : ControllerBase
     {

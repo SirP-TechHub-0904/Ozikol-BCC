@@ -34,6 +34,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         private readonly ICentralMigrationService _migrationService;
         private readonly ILogger<DetailsModel> _logger;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
+        private readonly Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? _cloudflareDns;
         private readonly Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? _tenantProvider;
 
         /// <summary>
@@ -44,13 +45,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             ICentralMigrationService migrationService,
             ILogger<DetailsModel> logger,
             Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
-            Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? tenantProvider = null)
+            Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? tenantProvider = null,
+            Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null)
         {
             _dbContext = dbContext;
             _migrationService = migrationService;
             _logger = logger;
             _mailcowProvisioning = mailcowProvisioning;
             _tenantProvider = tenantProvider;
+            _cloudflareDns = cloudflareDns;
         }
 
         /// <summary>
@@ -581,17 +584,35 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             var senderEmail = $"{localPart}@{domain}";
             var mailboxPassword = $"OziMail!{Guid.NewGuid():N}"[..20];
 
-            try
+            if (_mailcowProvisioning == null)
             {
-                if (_mailcowProvisioning != null)
-                {
-                    await _mailcowProvisioning.EnsureDomainExistsAsync(domain, $"{tenant.OrganizationName} Transactional Mail Domain");
-                    await _mailcowProvisioning.EnsureMailboxExistsAsync(domain, localPart, mailboxPassword, tenant.OrganizationName);
-                }
+                TempData["Error"] = "Mailcow provisioning service is not registered.";
+                return RedirectToPage(new { id });
             }
-            catch (Exception ex)
+
+            var domainOk = await _mailcowProvisioning.EnsureDomainExistsAsync(domain, $"{tenant.OrganizationName} Transactional Mail Domain");
+            if (!domainOk)
             {
-                _logger.LogWarning(ex, "Non-blocking Mailcow API notice while provisioning {SenderEmail}", senderEmail);
+                TempData["Error"] = $"Failed to register mail domain '{domain}' on Mailcow. Check Mailcow API URL and Key in Platform Settings.";
+                return RedirectToPage(new { id });
+            }
+
+            var mailboxOk = await _mailcowProvisioning.EnsureMailboxExistsAsync(domain, localPart, mailboxPassword, tenant.OrganizationName);
+            if (!mailboxOk)
+            {
+                TempData["Error"] = $"Failed to provision mailbox '{senderEmail}' on Mailcow.";
+                return RedirectToPage(new { id });
+            }
+
+            if (_cloudflareDns != null)
+            {
+                var dkimTxt = await _mailcowProvisioning.GetDkimRecordAsync(domain);
+                var dnsResult = await _cloudflareDns.EnsureTenantEmailDnsAsync(domain, dkimTxt);
+                if (!dnsResult.Success)
+                {
+                    TempData["Error"] = dnsResult.ErrorMessage ?? $"Failed to provision Cloudflare DNS records for '{domain}'.";
+                    return RedirectToPage(new { id });
+                }
             }
 
             try
