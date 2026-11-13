@@ -808,14 +808,35 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                // Unique slug generation with proper whitespace handling
-                var rawSlug = !string.IsNullOrWhiteSpace(request.Slug)
-                    ? request.Slug
-                    : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
+                var incomingUrl = request.DirectUrl?.Trim();
+                var isSystemOrExternal = request.EnableDirectUrl ||
+                    (!string.IsNullOrWhiteSpace(incomingUrl) &&
+                     (incomingUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.StartsWith("/auth/", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/register", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/blog", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.Equals("/store", StringComparison.OrdinalIgnoreCase) ||
+                      incomingUrl.StartsWith("/store/", StringComparison.OrdinalIgnoreCase)));
 
-                var uniqueSlug = request.IsHomePage
-                    ? "/"
-                    : await GenerateUniqueSlugAsync(rawSlug, null, request.IsHomePage);
+                string uniqueSlug;
+                if (request.IsHomePage)
+                {
+                    uniqueSlug = "/";
+                }
+                else if (isSystemOrExternal && !string.IsNullOrWhiteSpace(incomingUrl))
+                {
+                    // Preserve system pages and direct external URLs exactly as specified without slugification
+                    uniqueSlug = incomingUrl;
+                }
+                else
+                {
+                    var rawSlug = !string.IsNullOrWhiteSpace(request.Slug)
+                        ? request.Slug
+                        : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
+                    uniqueSlug = await GenerateUniqueSlugAsync(rawSlug, null, request.IsHomePage);
+                }
 
                 Guid? categoryId = request.PageCategoryId;
                 if (categoryId == Guid.Empty) categoryId = null;
@@ -837,7 +858,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Id = Guid.NewGuid(),
                     Title = request.Title.Trim(),
                     DirectUrl = uniqueSlug,
-                    EnableDirectUrl = true,
+                    EnableDirectUrl = request.EnableDirectUrl || isSystemOrExternal,
                     IsHomePage = request.IsHomePage,
                     PageCategoryId = categoryId,
                     ShowInTopBar = request.ShowInTopBar,
@@ -898,25 +919,41 @@ namespace Ozikol_BCC.Api.Controllers
             }
             else
             {
-                var titleChanged = !string.Equals(existing.Title?.Trim(), updated.Title?.Trim(), StringComparison.Ordinal);
                 var incomingUrl = updated.DirectUrl?.Trim();
                 var isExternalUrl = !string.IsNullOrWhiteSpace(incomingUrl) &&
                     (incomingUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                      incomingUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
-                var slugWasNotManuallyChanged = string.IsNullOrWhiteSpace(incomingUrl) ||
-                    incomingUrl == "/" ||
-                    string.Equals(incomingUrl, existing.DirectUrl?.Trim(), StringComparison.OrdinalIgnoreCase);
+                var isSystemPage = updated.EnableDirectUrl && !string.IsNullOrWhiteSpace(incomingUrl) &&
+                    (incomingUrl.StartsWith("/auth/", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/register", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/blog", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.Equals("/store", StringComparison.OrdinalIgnoreCase) ||
+                     incomingUrl.StartsWith("/store/", StringComparison.OrdinalIgnoreCase));
 
-                if (titleChanged && !isExternalUrl && slugWasNotManuallyChanged && !string.IsNullOrWhiteSpace(updated.Title))
+                if (isExternalUrl || isSystemPage)
                 {
-                    existing.DirectUrl = await GenerateUniqueSlugAsync(updated.Title, id, false);
+                    // Preserve direct external URLs and built-in system routes exactly as specified without slugification
+                    existing.DirectUrl = incomingUrl;
                 }
                 else
                 {
-                    var targetSlug = !string.IsNullOrWhiteSpace(incomingUrl) && incomingUrl != "/" ? incomingUrl : updated.Title;
-                    if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                    var titleChanged = !string.Equals(existing.Title?.Trim(), updated.Title?.Trim(), StringComparison.Ordinal);
+                    var slugWasNotManuallyChanged = string.IsNullOrWhiteSpace(incomingUrl) ||
+                        incomingUrl == "/" ||
+                        string.Equals(incomingUrl, existing.DirectUrl?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                    if (titleChanged && slugWasNotManuallyChanged && !string.IsNullOrWhiteSpace(updated.Title))
                     {
-                        existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                        existing.DirectUrl = await GenerateUniqueSlugAsync(updated.Title, id, false);
+                    }
+                    else
+                    {
+                        var targetSlug = !string.IsNullOrWhiteSpace(incomingUrl) && incomingUrl != "/" ? incomingUrl : updated.Title;
+                        if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
+                        {
+                            existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id, false);
+                        }
                     }
                 }
             }
@@ -1333,6 +1370,11 @@ Reply ONLY with the valid JSON object.";
         {
             if (string.IsNullOrWhiteSpace(directUrl)) return $"/page/{id}";
             var trimmed = directUrl.Trim();
+            var clean = trimmed.Trim('/').ToLowerInvariant();
+            if (clean == "auth-login" || clean == "login" || clean == "auth/login")
+                return "/auth/login";
+            if (clean == "auth-register" || clean == "register" || clean == "auth/register")
+                return "/register";
             if (trimmed == "/" || trimmed == "home") return "/";
             if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 return trimmed;
@@ -6318,9 +6360,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                                    ? p.DirectUrl
-                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
+                                url = FormatPageUrl(p.DirectUrl, p.Id),
                                 showInFooter = p.ShowInFooter,
                                 showInMenu = true
                             })
@@ -6344,9 +6384,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                                 id = p.Id,
                                 title = p.Title,
                                 slug = p.DirectUrl,
-                                url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                                    ? p.DirectUrl
-                                    : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString())),
+                                url = FormatPageUrl(p.DirectUrl, p.Id),
                                 showInFooter = true,
                                 showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
                             })
@@ -6355,52 +6393,50 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     .ToList();
 
                 // 4. Footer Bottom Compliance / Legal Pages (ShowInFooterBottom == true or IsLegal == true)
-                var legalPages = await _context.WebPages
+                var rawLegalPages = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => (p.ShowInFooterBottom || p.IsLegal) && p.Publish)
                     .OrderBy(p => p.FooterBottomSortOrder)
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        title = p.Title,
-                        slug = p.DirectUrl,
-                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                            ? p.DirectUrl
-                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
-                    })
                     .ToListAsync();
+                var legalPages = rawLegalPages.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.Title,
+                    slug = p.DirectUrl,
+                    url = FormatPageUrl(p.DirectUrl, p.Id)
+                }).ToList();
 
                 // 4a. Top Utility Bar Pages (ShowInTopBar == true && Publish == true)
-                var topBarPages = await _context.WebPages
+                var rawTopBarPages = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.ShowInTopBar && p.Publish)
                     .OrderBy(p => p.TopBarSortOrder)
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        title = p.Title,
-                        slug = p.DirectUrl,
-                        url = (p.DirectUrl != null && (p.DirectUrl.StartsWith("http://") || p.DirectUrl.StartsWith("https://")))
-                            ? p.DirectUrl
-                            : (p.DirectUrl != null && p.DirectUrl.StartsWith("/") ? p.DirectUrl : "/" + (p.DirectUrl ?? p.Id.ToString()))
-                    })
                     .ToListAsync();
+                var topBarPages = rawTopBarPages.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.Title,
+                    slug = p.DirectUrl,
+                    url = FormatPageUrl(p.DirectUrl, p.Id)
+                }).ToList();
 
                 // 4b. Menu CTA Action Buttons (IsMenuCTA == true or fallback to platform defaults)
-                var dbCtaButtons = await _context.WebPages
+                var rawDbCtaButtons = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.IsMenuCTA && p.Publish)
                     .OrderBy(p => p.SortOrder)
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        title = p.MenuCtaText ?? p.Title,
-                        slug = p.DirectUrl,
-                        url = !string.IsNullOrWhiteSpace(p.MenuCtaUrl) ? p.MenuCtaUrl : ("/" + (p.DirectUrl ?? p.Id.ToString())),
-                        customClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary",
-                        buttonClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary"
-                    })
                     .ToListAsync();
+                var dbCtaButtons = rawDbCtaButtons.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.MenuCtaText ?? p.Title,
+                    slug = p.DirectUrl,
+                    url = !string.IsNullOrWhiteSpace(p.MenuCtaUrl)
+                        ? (p.MenuCtaUrl.Trim().Trim('/').ToLowerInvariant() == "auth-login" || p.MenuCtaUrl.Trim().Trim('/').ToLowerInvariant() == "login" ? "/auth/login" : p.MenuCtaUrl)
+                        : FormatPageUrl(p.DirectUrl, p.Id),
+                    customClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary",
+                    buttonClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary"
+                }).ToList();
 
                 // Resolve tenant dynamic registration vanity slug
                 string regSlug = "register";
@@ -7940,6 +7976,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string Title { get; set; } = string.Empty;
         public string? Slug { get; set; }
         public string? DirectUrl { get; set; }
+        public bool EnableDirectUrl { get; set; } = false;
         public Guid? PageCategoryId { get; set; }
         public bool ShowInMainTop { get; set; } = false;
         public bool ShowInMenu { get; set; } = true;

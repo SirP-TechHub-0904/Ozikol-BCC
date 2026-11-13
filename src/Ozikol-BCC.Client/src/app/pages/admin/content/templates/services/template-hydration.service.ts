@@ -153,7 +153,8 @@ export class TemplateHydrationService {
             cpRendered = cpRendered.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => cFirst ? c : '');
             cpRendered = cpRendered.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => cLast ? c : '');
             cpRendered = cpRendered.replace(/\{\{\s*(?:PageTitle|Title|Name)\s*\}\}/gi, cp.title || cp.pageTitle || cp.name || '');
-            const targetUrl = cp.url || cp.pageUrl || (cp.directUrl ? `/${cp.directUrl.replace(/^\/+/, '')}` : '') || (cp.slug ? `/${cp.slug.replace(/^\/+/, '')}` : '#');
+            let targetUrl = cp.url || cp.pageUrl || (cp.directUrl ? `/${cp.directUrl.replace(/^\/+/, '')}` : '') || (cp.slug ? `/${cp.slug.replace(/^\/+/, '')}` : '#');
+            if (targetUrl === '/auth-login' || targetUrl === '/login') targetUrl = '/auth/login';
             cpRendered = cpRendered.replace(/\{\{\s*(?:PageUrl|Url|DirectUrl|Link)\s*\}\}/gi, targetUrl);
             cpRendered = cpRendered.replace(/\{\{\s*(?:PageImage|ImageUrl|Image)\s*\}\}/gi, cp.pageImage || cp.imageUrl || '');
             cpRendered = cpRendered.replace(/\{\{\s*(?:PageDescription|Description)\s*\}\}/gi, cp.pageDescription || cp.description || '');
@@ -358,7 +359,8 @@ export class TemplateHydrationService {
         rendered = rendered.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isFirst ? c : '');
         rendered = rendered.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, c: string) => isLast ? c : '');
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
-        const targetUrl = item.url || (item.directUrl ? `/${item.directUrl.replace(/^\/+/, '')}` : '') || (item.slug ? `/${item.slug.replace(/^\/+/, '')}` : '#');
+        let targetUrl = item.url || (item.directUrl ? `/${item.directUrl.replace(/^\/+/, '')}` : '') || (item.slug ? `/${item.slug.replace(/^\/+/, '')}` : '#');
+        if (targetUrl === '/auth-login' || targetUrl === '/login') targetUrl = '/auth/login';
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, targetUrl);
         rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, item.customClass || '');
         return rendered;

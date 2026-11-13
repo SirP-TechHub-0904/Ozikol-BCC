@@ -54,6 +54,20 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderBy(p => p.SortOrder)
                 .ToListAsync();
 
+            // Normalize system auth and registration page URLs so published menus never point to raw CMS slugs
+            foreach (var p in pages)
+            {
+                var clean = (p.DirectUrl ?? string.Empty).Trim().Trim('/').ToLowerInvariant();
+                if (clean == "auth-login" || clean == "login" || clean == "auth/login")
+                {
+                    p.DirectUrl = "/auth/login";
+                }
+                else if (clean == "auth-register" || clean == "register" || clean == "auth/register")
+                {
+                    p.DirectUrl = "/register";
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(pages, "Published web pages retrieved successfully."));
         }
 
@@ -66,6 +80,14 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> GetPublishedPageBySlug(string slug)
         {
             var cleanSlug = (slug ?? string.Empty).Trim().ToLowerInvariant().Trim('/');
+            if (cleanSlug == "auth-login" || cleanSlug == "login" || cleanSlug == "auth/login")
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Authentication routes are system pages and must be accessed via /auth/login."));
+            }
+            if (cleanSlug == "auth-register" || cleanSlug == "register" || cleanSlug == "auth/register")
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Registration routes are system pages and must be accessed via /register."));
+            }
             var slashSlug = "/" + cleanSlug;
 
             var page = await _context.WebPages

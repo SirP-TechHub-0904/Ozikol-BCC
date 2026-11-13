@@ -2726,8 +2726,16 @@ export class WebPageEditComponent implements OnInit {
       this.generateUniqueSlug(this.page.title);
     }
 
-    // Set enableDirectUrl accordingly
-    if (this.destinationType === 'system' || this.destinationType === 'direct') {
+    // Set enableDirectUrl accordingly and normalize system routes
+    if (this.destinationType === 'system') {
+      this.page.enableDirectUrl = true;
+      const clean = (this.page.directUrl || '').trim().toLowerCase().replace(/^\/+/, '');
+      if (clean === 'login' || clean === 'auth-login' || clean === 'auth/login') {
+        this.page.directUrl = '/auth/login';
+      } else if (clean === 'register' || clean === 'auth-register' || clean === 'auth/register') {
+        this.page.directUrl = this.registrationSlug || '/register';
+      }
+    } else if (this.destinationType === 'direct') {
       this.page.enableDirectUrl = true;
     } else {
       this.page.enableDirectUrl = false;
