@@ -30,8 +30,136 @@ const DEFAULT_BRAND = {
   image: "https://ozikol.cloud/assets/images/ozikol.png"
 };
 
+const EDGE_LLMS_TXT = `# Ozikol Business Command Center (Ozikol BCC)
+
+> Ozikol Business Command Center (Ozikol BCC) is an all-in-one unified enterprise operations and workspace operating platform designed for modern organizations, enterprises, educational institutions, healthcare centers, non-profits, and service teams. It delivers complete operational control across Web, Native Desktop, and Mobile.
+
+## Core Cross-Platform Clients
+- **Web Administrative Console**: Instant browser-based governance for leadership, human resources, and site administrators (\`https://{workspace}.ozikol.cloud\` or custom domain).
+- **Native Desktop Application (Workspace & Workstation Supervisor)**: High-performance desktop application for Windows (.exe), macOS (.app), and Linux. Features the hardware-verified workstation supervisor, desktop process gatekeeper, document sandboxing, and station telemetry (\`bcp-workspace\`).
+- **Mobile Companion**: Native iOS and Android mobile apps for workforce clock-in/out, shift rota notifications, committee reports, and team collaboration.
+
+## Modular Capabilities & Suites
+
+### 1. Workspace & Workstation Supervisor (\`bcp-workspace\`)
+- Physical workstation hardware binding and supervisor controls.
+- Desktop application gatekeeper and secure document sandboxing.
+- Hardware-verified physical attendance handshake, preventing remote clock-in fraud.
+- Multi-station activity logging and real-time operational status monitoring.
+- Read more: [Workstation Supervisor Guide](https://ozikol.cloud/features/workspace)
+
+### 2. Workforce Management & Real-Time Rota (\`bcp-staff-rota\`)
+- Dynamic shift scheduling with drag-and-drop rota planner.
+- Employee availability windows, leave management, and shift swap workflows.
+- Night shift premiums, operational non-compliance penalties, and attendance telemetry.
+- Mobile clock-in/out with location verification and shift handover notes.
+- Read more: [Workforce Scheduling Overview](https://ozikol.cloud/features/staff-rota)
+
+### 3. Digital Presence & CMS Studio (\`bcp-cms-studio\`)
+- Modular enterprise website builder with dynamic page sections and visual themes.
+- Drag-and-drop category builder, blog publications, media storage, and custom forms.
+- White-label custom domain mapping with automated SSL issuance and edge CDN caching.
+- Dynamic lead capture and customizable public registration forms.
+- Read more: [CMS Studio Capabilities](https://ozikol.cloud/features/cms-studio)
+
+### 4. Commerce & Point of Sale (POS) (\`bcp-commerce-studio\`)
+- Multi-category product catalog with variants, SKU management, and stock alerts.
+- Integrated public storefront with shopping cart and streamlined checkout.
+- Multi-gateway payment processing supporting Paystack, Stripe, and Direct Bank Transfer.
+- In-person Point of Sale (POS) checkout terminal with digital receipts.
+- Read more: [Commerce & POS System](https://ozikol.cloud/features/store-ecommerce)
+
+### 5. Independent Committees & Governance (\`bcp-committees\`)
+- Autonomous committee and board workspace management.
+- Structured meeting agendas, attendee rosters, and voting procedures.
+- Formal minuted report composer with attached cloud documents and action items.
+- Read more: [Committees & Board Management](https://ozikol.cloud/features/committees)
+
+### 6. Identity, RBAC & Security Infrastructure
+- Granular Role-Based Access Control (RBAC) with customizable permission policies.
+- Multi-Factor Authentication (2FA), one-time passwords (OTP), and device tracking.
+- Immutable security audit logs and custom system error code registry.
+- Provisioned transactional email routing with domain authentication.
+
+### 7. Ozi AI Studio Assistant
+- Embedded in-app companion providing split-screen side-by-side workspace assistance.
+- Contextual drafting for news articles, page content, SEO metadata, and summaries.
+- Completely seamless, non-overlapping responsive layout in both desktop and web consoles.
+
+## Getting Started & Access Channels
+- **Register a Workspace**: Start a 14-day free trial at [Ozikol Registration](https://ozikol.cloud/register).
+- **Desktop Client Downloads**: Access Windows, macOS, and Linux workstation binaries from the Workspace Stations console.
+- **Mobile Apps**: Available on iOS App Store and Google Play Store for authenticated staff and members.
+- **Developer Integration API**: Explore REST API documentation at [Ozikol Developer API](https://ozikol.cloud/DeveloperApi).
+- **Public Website & Pricing**: Explore modular plans and features at [Ozikol Pricing](https://ozikol.cloud/Pricing).
+`;
+
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const pathname = url.pathname.toLowerCase();
+
+    // 0. Handle CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          "Access-Control-Allow-Headers": "*"
+        }
+      });
+    }
+
+    // 1. High-performance Edge intercept for AI discovery & SEO metadata endpoints
+    // Normalizes culture prefixes (e.g. /en/sitemap.xml -> /sitemap.xml) and attaches universal CORS
+    const isAiOrSeoFile =
+      pathname === "/llms.txt" || pathname === "/en/llms.txt" || pathname === "/fr/llms.txt" || pathname === "/es/llms.txt" || pathname === "/de/llms.txt" ||
+      pathname === "/llms-full.txt" || pathname === "/en/llms-full.txt" || pathname === "/fr/llms-full.txt" || pathname === "/es/llms-full.txt" || pathname === "/de/llms-full.txt" ||
+      pathname === "/robots.txt" || pathname === "/en/robots.txt" || pathname === "/fr/robots.txt" || pathname === "/es/robots.txt" || pathname === "/de/robots.txt" ||
+      pathname === "/sitemap.xml" || pathname === "/en/sitemap.xml" || pathname === "/fr/sitemap.xml" || pathname === "/es/sitemap.xml" || pathname === "/de/sitemap.xml";
+
+    if (isAiOrSeoFile) {
+      let canonicalPath = pathname;
+      if (canonicalPath.startsWith("/en/") || canonicalPath.startsWith("/fr/") || canonicalPath.startsWith("/es/") || canonicalPath.startsWith("/de/")) {
+        canonicalPath = canonicalPath.substring(3);
+      }
+
+      const targetUrl = new URL(url.origin + canonicalPath);
+      try {
+        const originRes = await fetch(targetUrl.toString(), {
+          headers: request.headers,
+          cf: { cacheTtl: 1800, cacheEverything: true }
+        });
+
+        if (originRes.ok) {
+          const respHeaders = new Headers(originRes.headers);
+          respHeaders.set("Access-Control-Allow-Origin", "*");
+          respHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+          return new Response(originRes.body, {
+            status: originRes.status,
+            statusText: originRes.statusText,
+            headers: respHeaders
+          });
+        }
+      } catch (err) {
+        // Fall through to edge fallback if origin fetch fails
+      }
+
+      // Edge fallback for llms.txt to guarantee 100% availability for AI agents
+      if (canonicalPath === "/llms.txt") {
+        return new Response(EDGE_LLMS_TXT, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Cache-Control": "public, max-age=3600"
+          }
+        });
+      }
+    }
+
     const userAgent = request.headers.get("User-Agent") || "";
     const isBot = BOT_USER_AGENTS.some(regex => regex.test(userAgent));
 
@@ -40,12 +168,10 @@ export default {
       return fetch(request);
     }
 
-    const url = new URL(request.url);
     const host = url.hostname.toLowerCase();
     const parts = host.split(".");
 
     // Only process HTML pages (ignore images, JS, CSS, JSON)
-    const pathname = url.pathname;
     if (pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|map)$/i)) {
       return fetch(request);
     }
