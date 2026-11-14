@@ -241,20 +241,29 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
         result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] DNS verified successfully ({probe.DetectedTarget}).");
 
-        // 2. Generate and apply Nginx reverse proxy configuration
+        // 2. Generate and apply initial Nginx reverse proxy configuration (enables /.well-known/acme-challenge/ on port 80)
         try
         {
             var configPath = GenerateNginxConfiguration(cleanDomain, tenantKey, result.ExecutionLogs);
             result.ConfigFilePath = configPath;
             result.NginxConfigured = !string.IsNullOrWhiteSpace(configPath);
 
+            // Reload Nginx before Certbot runs so the port 80 ACME webroot challenge block is active immediately
+            var initialReload = ReloadNginx(result.ExecutionLogs);
+
             // 3. Automated SSL Certificate Issuance (Let's Encrypt / Certbot)
             var sslIssued = await IssueSslCertificateAsync(cleanDomain, result.ExecutionLogs, cancellationToken);
             result.SslActive = sslIssued;
 
-            // 4. Reload Nginx to activate routing and isolate domain from Mailcow
+            // 4. Regenerate Nginx config with port 443 SSL block once certificate is issued, then reload Nginx
+            if (sslIssued)
+            {
+                configPath = GenerateNginxConfiguration(cleanDomain, tenantKey, result.ExecutionLogs);
+                result.ConfigFilePath = configPath;
+            }
+
             var reloaded = ReloadNginx(result.ExecutionLogs);
-            result.NginxReloaded = reloaded;
+            result.NginxReloaded = reloaded || initialReload;
 
             result.Succeeded = result.NginxConfigured;
             result.Message = sslIssued
@@ -369,10 +378,13 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
         if (hasSslCert)
         {
-            sb.AppendLine("    # Redirect all HTTP traffic to HTTPS");
-            sb.AppendLine("    location / {");
+            // Redirect direct plain-HTTP visitors to HTTPS while allowing Cloudflare Flexible SSL
+            // (which connects to port 80 with X-Forwarded-Proto: https) to proxy without redirect loops
+            sb.AppendLine("    if ($http_x_forwarded_proto != \"https\") {");
             sb.AppendLine("        return 301 https://$host$request_uri;");
             sb.AppendLine("    }");
+            sb.AppendLine();
+            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort);
         }
         else
         {
@@ -687,15 +699,34 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         var ipBytes = ip.GetAddressBytes();
         if (ip.AddressFamily == AddressFamily.InterNetwork)
         {
-            // Cloudflare IPv4 ranges include 104.16.0.0/13, 104.24.0.0/14, 172.64.0.0/13, 162.158.0.0/15
+            // Official Cloudflare IPv4 edge ranges
+            if (ipBytes[0] == 103 && (ipBytes[1] == 21 || ipBytes[1] == 22 || ipBytes[1] == 31)) return true;
             if (ipBytes[0] == 104 && (ipBytes[1] >= 16 && ipBytes[1] <= 31)) return true;
-            if (ipBytes[0] == 172 && (ipBytes[1] >= 64 && ipBytes[1] <= 71)) return true;
-            if (ipBytes[0] == 162 && (ipBytes[1] == 158 || ipBytes[1] == 159)) return true;
             if (ipBytes[0] == 108 && ipBytes[1] == 162) return true;
-            if (ipBytes[0] == 190 && ipBytes[1] == 93) return true;
+            if (ipBytes[0] == 131 && ipBytes[1] == 0 && (ipBytes[2] >= 72 && ipBytes[2] <= 75)) return true;
+            if (ipBytes[0] == 141 && ipBytes[1] == 101) return true;
+            if (ipBytes[0] == 162 && (ipBytes[1] == 158 || ipBytes[1] == 159)) return true;
+            if (ipBytes[0] == 172 && (ipBytes[1] >= 64 && ipBytes[1] <= 71)) return true;
+            if (ipBytes[0] == 173 && ipBytes[1] == 245) return true;
             if (ipBytes[0] == 188 && ipBytes[1] == 114) return true;
+            if (ipBytes[0] == 190 && ipBytes[1] == 93) return true;
             if (ipBytes[0] == 197 && ipBytes[1] == 234) return true;
             if (ipBytes[0] == 198 && ipBytes[1] == 41) return true;
+        }
+        else if (ip.AddressFamily == AddressFamily.InterNetworkV6)
+        {
+            // Official Cloudflare IPv6 edge prefixes (2400:cb00::/32, 2606:4700::/32, 2803:f800::/32, 2405:b500::/32, 2405:8100::/32, 2a06:98c0::/29, 2c0f:f248::/32)
+            var ipStr = ip.ToString().ToLowerInvariant();
+            if (ipStr.StartsWith("2400:cb00:") ||
+                ipStr.StartsWith("2606:4700:") ||
+                ipStr.StartsWith("2803:f800:") ||
+                ipStr.StartsWith("2405:b500:") ||
+                ipStr.StartsWith("2405:8100:") ||
+                ipStr.StartsWith("2a06:98c") ||
+                ipStr.StartsWith("2c0f:f248:"))
+            {
+                return true;
+            }
         }
         return false;
     }
