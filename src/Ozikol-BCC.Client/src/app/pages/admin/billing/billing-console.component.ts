@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
-import { environment } from '../../../../environments/environment';
+import { ApiService } from '../../../core/services/api.service';
 import {
   BillingService,
   BillingFeaturesSnapshot,
@@ -225,11 +225,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    * so any capability or policy toggled in Central (/centralwks/tenants/features) updates the UI and menu automatically.
    */
   private startRealtimeSocket(): void {
-    const apiOrigin = environment.apiUrl.startsWith('http')
-      ? environment.apiUrl.replace(/\/api\/?$/, '')
-      : typeof window !== 'undefined'
-        ? `${window.location.origin}${environment.apiUrl.replace(/\/api\/?$/, '')}`
-        : '';
+    const apiOrigin = ApiService.resolveDynamicApiOrigin();
 
     const tenantKey =
       localStorage.getItem('tenant_key') ||

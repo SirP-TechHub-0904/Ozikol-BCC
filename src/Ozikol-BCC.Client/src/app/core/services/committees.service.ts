@@ -317,7 +317,7 @@ export class CommitteesService {
   }
 
   private getApiRoot(): string {
-    return (environment.apiUrl || '/api').replace(/\/+$/, '');
+    return (this.api.baseUrl || '/api').replace(/\/+$/, '');
   }
 
   getPublicDirectory(tenantSlug?: string): Observable<any> {

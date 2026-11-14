@@ -3652,7 +3652,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
    * Displays clear call-to-action to sign in and begin configuring the site.
    */
   private composeBlankCanvasWelcome(): void {
-    const brand = this.brandName || this.brandInfo?.brandName || 'Digital Workspace';
+    const subdomainSlug = this.extractSubdomainTenant();
+    const formattedSubdomain = subdomainSlug
+      ? subdomainSlug.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : '';
+    const brand = this.brandName || this.brandInfo?.brandName || formattedSubdomain || 'Digital Workspace';
     const logoUrl = this.brandLogoUrl || this.brandInfo?.logoUrl || '';
     const currentYear = new Date().getFullYear().toString();
     const authed = this.isUserAuthenticated();
