@@ -370,7 +370,7 @@ interface WallpaperPreset {
                     <p class="sim-hero-desc" *ngIf="brand.loginNote">{{ brand.loginNote }}</p>
                   </div>
                   <div class="sim-footer-meta">
-                    <span>&copy; {{ currentYear }} {{ brand.companyName || 'Business Command Center' }}</span>
+                    <span>Powered by <strong>Ozikol</strong></span>
                   </div>
                 </div>
 
@@ -428,7 +428,7 @@ interface WallpaperPreset {
                 </div>
                 <div class="sim-centered-footer">
                   <span *ngIf="brand.loginNoteFooter" class="sim-footer-note">{{ brand.loginNoteFooter }}</span>
-                  <span>&copy; {{ currentYear }} {{ brand.companyName || 'Business Command Center' }}</span>
+                  <span>Powered by <strong>Ozikol</strong></span>
                 </div>
               </div>
             </div>

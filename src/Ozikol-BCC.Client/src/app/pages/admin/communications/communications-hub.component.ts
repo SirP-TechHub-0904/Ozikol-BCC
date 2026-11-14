@@ -567,7 +567,7 @@ export interface MessagePoolStats {
                 <div class="wa-header">
                   <span class="material-symbols-outlined wa-logo">chat</span>
                   <div class="wa-title-wrap">
-                    <div class="wa-name">Workspace Notification <span class="wa-verified">✓</span></div>
+                    <div class="wa-name">{{ brandName }} Notification <span class="wa-verified">✓</span></div>
                     <div class="wa-sub">Official Workspace Channel</div>
                   </div>
                 </div>
@@ -1663,6 +1663,10 @@ export class CommunicationsHubComponent implements OnInit, OnDestroy {
   selectedMessageDetails: any = null;
   safeHtmlBody: SafeHtml = '';
   inspectorTab: 'preview' | 'source' | 'plain' = 'preview';
+
+  get brandName(): string {
+    return localStorage.getItem('tenant_brand_name') || localStorage.getItem('company_name') || 'Workspace';
+  }
 
   showTourGuide = false;
   showPurgeModal = false;

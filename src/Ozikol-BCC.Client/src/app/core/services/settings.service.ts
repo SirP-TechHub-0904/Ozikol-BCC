@@ -76,7 +76,7 @@ export class SettingsService {
   public expirations$ = this.expirationsSubject.asObservable();
 
   private clientConfigSubject = new BehaviorSubject<ClientAppConfig>({
-    platformName: 'Ozikol BCC',
+    platformName: 'Business Command Center',
     isMaintenanceMode: false,
     minimumAppVersion: '1.0.0'
   });

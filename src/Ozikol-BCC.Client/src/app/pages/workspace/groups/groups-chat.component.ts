@@ -1329,7 +1329,7 @@ export class GroupsChatComponent implements OnInit, OnDestroy, AfterViewChecked 
     if (!this.activeChatId) return;
 
     let transcript = `=========================================================================\n`;
-    transcript += `TEAM CHAT TRANSCRIPT: ${this.activeTitle.toUpperCase()}\n`;
+    transcript += `CHAT TRANSCRIPT: ${this.activeTitle.toUpperCase()}\n`;
     transcript += `EXPORT DATE: ${new Date().toUTCString()}\n`;
     transcript += `TOTAL MESSAGES: ${this.messages.length}\n`;
     transcript += `=========================================================================\n\n`;

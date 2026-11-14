@@ -783,7 +783,7 @@ interface StaffMember {
           <div class="modal-body info-guide-content">
             <h4>1. Work Schedule Patterns</h4>
             <p>
-              The system supports all operational structures across diverse sectors (corporate offices, healthcare, security, hospitality, logistics):
+              Business Command Center supports all operational structures across diverse sectors (corporate offices, healthcare, security, hospitality, logistics):
             </p>
             <ul>
               <li><strong>Regular Daily Routine:</strong> For standard 8:00 AM – 5:00 PM staff working Monday through Friday with weekend and overtime options.</li>
