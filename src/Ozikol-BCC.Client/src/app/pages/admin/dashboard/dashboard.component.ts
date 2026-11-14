@@ -777,7 +777,6 @@ export class DashboardComponent implements OnInit {
       {
         text: 'System Health: Operational',
         icon: 'verified',
-        isSuccess: true,
         action: () => this.openHealthModal()
       },
       {
