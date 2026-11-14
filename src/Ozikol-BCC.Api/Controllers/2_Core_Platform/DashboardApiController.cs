@@ -792,10 +792,27 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Custom domain is required."));
             }
 
-            var (sent, msg) = await _domainEmailService.SendTestEmailAsync(
-                targetDomain,
+            // Probe live DNS for all records to accurately report exactly which ones are failing in the alert email
+            var cleanDomain = targetDomain.Trim().ToLowerInvariant();
+            var mxTask = _domainEmailService.VerifyDnsRecordAsync(cleanDomain, "MX", HttpContext.RequestAborted);
+            var spfTask = _domainEmailService.VerifyDnsRecordAsync(cleanDomain, "SPF", HttpContext.RequestAborted);
+            var dkimTask = _domainEmailService.VerifyDnsRecordAsync(cleanDomain, "DKIM", HttpContext.RequestAborted);
+            var dmarcTask = _domainEmailService.VerifyDnsRecordAsync(cleanDomain, "DMARC", HttpContext.RequestAborted);
+
+            await Task.WhenAll(mxTask, spfTask, dkimTask, dmarcTask);
+
+            var failures = new System.Collections.Generic.List<EmailDnsVerificationResult>();
+            if (!mxTask.Result.IsVerified) failures.Add(mxTask.Result);
+            if (!spfTask.Result.IsVerified) failures.Add(spfTask.Result);
+            if (!dkimTask.Result.IsVerified) failures.Add(dkimTask.Result);
+            if (!dmarcTask.Result.IsVerified) failures.Add(dmarcTask.Result);
+
+            var (sent, msg) = await _domainEmailService.SendDnsAlertEmailAsync(
+                cleanDomain,
                 rootEmail,
                 masterTenant?.OrganizationName,
+                failures,
+                isResolved: false,
                 HttpContext.RequestAborted);
 
             return Ok(ApiResponse<bool>.SuccessResponse(sent, sent ? $"Urgent DNS alert sent to root email '{rootEmail}'." : msg));
