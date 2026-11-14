@@ -132,10 +132,11 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
             // If valid SMTP credentials exist, attempt real STARTTLS transmission over port 587
             if (!string.IsNullOrWhiteSpace(smtpPassword))
             {
+                // Set From and Sender to the resolved domain email address to ensure strict SPF/DKIM/DMARC domain alignment
                 using var mailMessage = new MailMessage
                 {
                     From = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
-                    Sender = new MailAddress(smtpUser, resolvedFromName, Encoding.UTF8),
+                    Sender = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
                     Subject = subject,
                     Body = bodyWithFooter,
                     IsBodyHtml = true,
