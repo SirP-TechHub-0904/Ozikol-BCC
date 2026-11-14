@@ -765,12 +765,12 @@ interface DnsProbeResult {
               </div>
 
               <div class="form-group-compact">
-                <label class="form-label-compact">Recipient Email Address <span class="required">*</span></label>
+                <label class="form-label-compact">Recipient Email Address (Defaults to Root Account Email):</label>
                 <input
                   type="email"
                   class="form-control-compact"
                   [(ngModel)]="testEmailRecipient"
-                  placeholder="e.g. user@domain.com"
+                  [placeholder]="adminEmail || 'user@domain.com'"
                 />
               </div>
 
@@ -778,7 +778,7 @@ interface DnsProbeResult {
                 type="button"
                 class="btn-send-test"
                 (click)="sendDomainTestEmail()"
-                [disabled]="sendingTestEmail || !testEmailRecipient"
+                [disabled]="sendingTestEmail || (!testEmailRecipient && !adminEmail)"
               >
                 <span class="material-symbols-outlined" [class.spin]="sendingTestEmail">
                   {{ sendingTestEmail ? 'sync' : 'mark_email_read' }}
@@ -2179,6 +2179,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
   customDomain: string = '';
   customDomainInput: string = '';
   websiteUrl: string = '';
+  adminEmail: string = '';
 
   probeResults: DnsProbeResult | null = null;
   copySuccess: { [key: string]: boolean } = {};
@@ -2415,6 +2416,10 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
           this.customDomain = tenantInfo.customDomain || '';
           this.customDomainInput = this.customDomain;
           this.websiteUrl = tenantInfo.websiteUrl || '';
+          this.adminEmail = tenantInfo.adminEmail || tenantInfo.AdminEmail || '';
+          if (this.adminEmail && !this.testEmailRecipient) {
+            this.testEmailRecipient = this.adminEmail;
+          }
 
           if (this.customDomain) {
             localStorage.setItem('tenant_custom_domain', this.customDomain);
@@ -2797,6 +2802,14 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
 
           if (silent && wasAllVerified && !isNowAllVerified) {
             this.toast.warning('One or more email DNS records are no longer verified or were removed. Action required.', 'DNS Unverified');
+            // Proactively notify the root administrator email of the account
+            this.api.post<any>('DashboardApi/notify-dns-failure', {
+              domain: this.customDomain,
+              tenantKey: this.tenantKey
+            }).subscribe({
+              next: (res) => console.log('[Custom Domain] DNS failure alert dispatched to root email:', res),
+              error: (err) => console.warn('[Custom Domain] Could not dispatch root DNS failure email:', err)
+            });
           }
 
           this.emailConfig = data;
@@ -3013,9 +3026,9 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
    */
   sendDomainTestEmail(): void {
     if (!this.customDomain) return;
-    const recipient = (this.testEmailRecipient || '').trim();
+    const recipient = (this.testEmailRecipient || this.adminEmail || '').trim();
     if (!recipient || !recipient.includes('@') || !recipient.includes('.')) {
-      this.toast.error('Please enter a valid recipient email address (e.g. user@domain.com).', 'Invalid Email');
+      this.toast.error('Please enter a recipient email address or ensure account root email is set.', 'Invalid Email');
       return;
     }
 
@@ -3025,13 +3038,15 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
     const payload = {
       domain: this.customDomain,
       senderEmail: sender,
-      recipientEmail: recipient
+      recipientEmail: recipient,
+      tenantKey: this.tenantKey
     };
 
     this.api.post<any>('DashboardApi/send-domain-test-email', payload).subscribe({
       next: (res) => {
         this.sendingTestEmail = false;
-        this.toast.success(`Test email dispatched successfully from '${sender}' to '${recipient}'! Check your inbox.`, 'Test Email Sent');
+        const msg = res?.message || res?.Message || `Test email dispatched successfully from '${sender}' to '${recipient}'! Check your inbox.`;
+        this.toast.success(msg, 'Test Email Sent');
       },
       error: (err) => {
         this.sendingTestEmail = false;

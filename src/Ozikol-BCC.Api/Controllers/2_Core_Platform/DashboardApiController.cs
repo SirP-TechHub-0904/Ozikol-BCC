@@ -732,25 +732,30 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Sends an authenticated deliverability test email from "noreply@{domain}" to verify DKIM, SPF, and delivery.
+        /// Defaults to the registered root account administrator email if no recipient is explicitly provided.
         /// </summary>
         [HttpPost("send-domain-test-email")]
         [Authorize(Policy = AuthPolicies.CmsStudio)]
         public async Task<IActionResult> SendDomainTestEmail([FromBody] SendDomainTestEmailRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Domain) || string.IsNullOrWhiteSpace(request.RecipientEmail))
-            {
-                return BadRequest(ApiResponse<object>.FailureResponse("Domain and recipient email are required."));
-            }
-
             var host = HttpContext.Request.Host.ToString();
             var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
                 .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(request.TenantKey) && t.TenantKey == request.TenantKey)
                                        || t.PrimaryDomain == host
                                        || t.CustomDomain == host);
 
+            var recipient = !string.IsNullOrWhiteSpace(request.RecipientEmail)
+                ? request.RecipientEmail.Trim()
+                : masterTenant?.AdminEmail;
+
+            if (string.IsNullOrWhiteSpace(request.Domain) || string.IsNullOrWhiteSpace(recipient))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain and recipient email (or registered root account admin email) are required."));
+            }
+
             var (success, message) = await _domainEmailService.SendTestEmailAsync(
                 request.Domain,
-                request.RecipientEmail,
+                recipient,
                 masterTenant?.OrganizationName,
                 HttpContext.RequestAborted);
 
@@ -759,7 +764,41 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse(message));
             }
 
-            return Ok(ApiResponse<bool>.SuccessResponse(true, message));
+            return Ok(ApiResponse<bool>.SuccessResponse(true, $"Test email dispatched to root account email '{recipient}'."));
+        }
+
+        /// <summary>
+        /// Automatically dispatches an urgent DNS alert email to the root account administrator when records fail or are removed.
+        /// </summary>
+        [HttpPost("notify-dns-failure")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> NotifyDnsFailure([FromBody] SendDomainTestEmailRequest request)
+        {
+            var host = HttpContext.Request.Host.ToString();
+            var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(request.TenantKey) && t.TenantKey == request.TenantKey)
+                                       || t.PrimaryDomain == host
+                                       || t.CustomDomain == host);
+
+            var rootEmail = masterTenant?.AdminEmail;
+            if (string.IsNullOrWhiteSpace(rootEmail))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No root admin email registered for this account."));
+            }
+
+            var targetDomain = !string.IsNullOrWhiteSpace(request.Domain) ? request.Domain : masterTenant?.CustomDomain;
+            if (string.IsNullOrWhiteSpace(targetDomain))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Custom domain is required."));
+            }
+
+            var (sent, msg) = await _domainEmailService.SendTestEmailAsync(
+                targetDomain,
+                rootEmail,
+                masterTenant?.OrganizationName,
+                HttpContext.RequestAborted);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(sent, sent ? $"Urgent DNS alert sent to root email '{rootEmail}'." : msg));
         }
 
         /// <summary>
