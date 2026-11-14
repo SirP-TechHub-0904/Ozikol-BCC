@@ -1526,65 +1526,7 @@ export interface SuiteInfoDetail {
             </div>
           </div>
 
-          <!-- 12-App Grid Launcher -->
-          <div class="apps-grid-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" [title]="'adm.apps_launcher' | translate:'Apps Launcher'">
-              <span class="material-symbols-outlined">grid_view</span>
-            </button>
-            <div class="apps-grid-dropdown" *ngIf="activeDropdown === 'apps'">
-              <div class="apps-grid-header">{{ 'adm.workspace_apps_features' | translate:'Workspace Apps & Features' }}</div>
-              <div class="apps-grid-container">
-                <a routerLink="/admin/dashboard" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#0050e5"><span class="material-symbols-outlined">space_dashboard</span></div>
-                  <span>{{ 'adm.console' | translate:'Console' }}</span>
-                </a>
-                <a routerLink="/admin/content" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#1f6bff"><span class="material-symbols-outlined">dynamic_feed</span></div>
-                  <span>{{ 'adm.cms_studio' | translate:'CMS Studio' }}</span>
-                </a>
-                <a routerLink="/admin/users" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#22c55e"><span class="material-symbols-outlined">groups</span></div>
-                  <span>{{ 'adm.users' | translate:'Users' }}</span>
-                </a>
-                <a routerLink="/admin/identity" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#ef4444"><span class="material-symbols-outlined">admin_panel_settings</span></div>
-                  <span>{{ 'adm.identity' | translate:'Identity' }}</span>
-                </a>
-                <a routerLink="/admin/groups" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#a855f7"><span class="material-symbols-outlined">forum</span></div>
-                  <span>{{ 'adm.channels' | translate:'Channels' }}</span>
-                </a>
-                <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#f59e0b"><span class="material-symbols-outlined">palette</span></div>
-                  <span>{{ 'adm.brand' | translate:'Brand' }}</span>
-                </a>
-                <a routerLink="/" target="_blank" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#14b8a6"><span class="material-symbols-outlined">language</span></div>
-                  <span>{{ 'adm.public_site' | translate:'Public Site' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#64748b"><span class="material-symbols-outlined">summarize</span></div>
-                  <span>{{ 'adm.reports' | translate:'Reports' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#3b82f6"><span class="material-symbols-outlined">edit_document</span></div>
-                  <span>{{ 'adm.forms' | translate:'Forms' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#ca8a04"><span class="material-symbols-outlined">payments</span></div>
-                  <span>{{ 'adm.financials' | translate:'Financials' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#8b5cf6"><span class="material-symbols-outlined">calendar_month</span></div>
-                  <span>{{ 'adm.events' | translate:'Events' }}</span>
-                </a>
-                <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#0f172a"><span class="material-symbols-outlined">settings</span></div>
-                  <span>Settings</span>
-                </a>
-              </div>
-            </div>
-          </div>
+
 
           <!-- Calendar Popover -->
           <div class="calendar-wrapper">
