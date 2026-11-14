@@ -477,12 +477,15 @@ interface DnsProbeResult {
             <button
               type="button"
               class="btn-primary-action"
+              [class.btn-all-verified]="isAllEmailDnsVerified"
               (click)="verifyAllEmailDnsRecords()"
-              [disabled]="verifyingAllEmailDns"
-              title="Verify live propagation of MX, SPF, DKIM, and DMARC records"
+              [disabled]="verifyingAllEmailDns || isAllEmailDnsVerified"
+              [title]="isAllEmailDnsVerified ? 'All email DNS records are verified and active on live root resolvers' : 'Verify live propagation of MX, SPF, DKIM, and DMARC records'"
             >
-              <span class="material-symbols-outlined" [class.spin]="verifyingAllEmailDns">task_alt</span>
-              <span>Verify All Email DNS</span>
+              <span class="material-symbols-outlined" [class.spin]="verifyingAllEmailDns">
+                {{ isAllEmailDnsVerified ? 'check_circle' : 'task_alt' }}
+              </span>
+              <span>{{ isAllEmailDnsVerified ? 'All Email DNS Verified' : 'Verify All Email DNS' }}</span>
             </button>
           </div>
         </div>
@@ -564,14 +567,15 @@ interface DnsProbeResult {
                     <button
                       type="button"
                       class="btn-verify-row"
+                      [class.btn-row-verified]="rec.isVerified"
                       (click)="verifyEmailDnsRecord(rec.subType || rec.recordType)"
-                      [disabled]="verifyingDns[rec.subType || rec.recordType]"
-                      title="Verify this DNS record on live root resolvers"
+                      [disabled]="rec.isVerified || verifyingDns[rec.subType || rec.recordType]"
+                      [title]="rec.isVerified ? 'Record is verified and active on live root DNS' : 'Verify this DNS record on live root resolvers'"
                     >
                       <span class="material-symbols-outlined" [class.spin]="verifyingDns[rec.subType || rec.recordType]">
-                        {{ verifyingDns[rec.subType || rec.recordType] ? 'sync' : 'done_all' }}
+                        {{ verifyingDns[rec.subType || rec.recordType] ? 'sync' : (rec.isVerified ? 'check_circle' : 'done_all') }}
                       </span>
-                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : 'Verify' }}</span>
+                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : (rec.isVerified ? 'Verified' : 'Verify') }}</span>
                     </button>
                   </td>
                 </tr>
@@ -748,8 +752,8 @@ interface DnsProbeResult {
               <div class="form-group-compact">
                 <label class="form-label-compact">Send From</label>
                 <select class="form-control-compact" [(ngModel)]="testEmailSender">
-                  <option *ngFor="let m of emailConfig?.mailboxes" [value]="m.email">
-                    {{ m.email }} ({{ m.name }})
+                  <option *ngFor="let m of emailConfig?.mailboxes" [value]="m.emailAddress || m.email">
+                    {{ m.emailAddress || m.email }} ({{ m.displayName || m.name || (m.isSystemMailbox ? 'System Automated Sender' : 'Custom Mailbox') }})
                   </option>
                   <option *ngIf="!emailConfig?.mailboxes?.length" [value]="'noreply@' + customDomain">
                     noreply&#64;{{ customDomain }} (System Automated Sender)
@@ -1574,6 +1578,13 @@ interface DnsProbeResult {
     .btn-primary-action:hover:not(:disabled) {
       background: #003ebd;
     }
+    .btn-primary-action.btn-all-verified {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #ffffff;
+      opacity: 0.95;
+      cursor: default;
+    }
     .btn-secondary-action:disabled, .btn-primary-action:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -1705,6 +1716,16 @@ interface DnsProbeResult {
     .btn-verify-row:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+    .btn-verify-row.btn-row-verified {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #15803d;
+      opacity: 0.95;
+      cursor: default;
+    }
+    .btn-verify-row.btn-row-verified .material-symbols-outlined {
+      color: #16a34a;
     }
     .btn-verify-row .material-symbols-outlined {
       font-size: 15px;
@@ -1879,6 +1900,8 @@ interface DnsProbeResult {
     }
     .form-control-compact {
       width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
       padding: 8px 12px;
       font-size: 12px;
       border: 1px solid #cbd5e1;
@@ -1986,16 +2009,25 @@ interface DnsProbeResult {
       display: flex;
       flex-direction: column;
       gap: 14px;
+      box-sizing: border-box;
+      min-width: 0;
+      overflow: hidden;
     }
     .test-email-form {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .form-group-compact {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .btn-send-test {
       display: inline-flex;
@@ -2172,6 +2204,15 @@ export class CustomDomainComponent implements OnInit {
   get customMailbox(): any | null {
     if (!this.emailConfig?.mailboxes?.length) return null;
     return this.emailConfig.mailboxes.find((m: any) => !m.isSystemMailbox) || null;
+  }
+
+  /**
+   * Returns true if all 4 required email authentication DNS records (MX, SPF, DKIM, DMARC)
+   * are actively verified on live root resolvers.
+   */
+  get isAllEmailDnsVerified(): boolean {
+    const list = this.emailDnsRecords;
+    return list.length > 0 && list.every(r => !!r.isVerified);
   }
 
   get emailDnsRecords(): any[] {
@@ -2702,9 +2743,20 @@ export class CustomDomainComponent implements OnInit {
         this.loadingEmailConfig = false;
         const data = res?.data || res?.Data;
         if (data) {
+          if (Array.isArray(data.mailboxes)) {
+            data.mailboxes = data.mailboxes.map((m: any) => ({
+              ...m,
+              email: m.email || m.emailAddress || m.EmailAddress,
+              emailAddress: m.emailAddress || m.EmailAddress || m.email,
+              name: m.name || m.displayName || m.DisplayName || m.localPart || m.LocalPart,
+              displayName: m.displayName || m.DisplayName || m.name
+            }));
+          }
           this.emailConfig = data;
           if (!this.testEmailSender && data.mailboxes?.length > 0) {
-            this.testEmailSender = data.mailboxes[0].email;
+            this.testEmailSender = data.mailboxes[0].emailAddress || data.mailboxes[0].email;
+          } else if (!this.testEmailSender && this.customDomain) {
+            this.testEmailSender = `noreply@${this.customDomain}`;
           }
         }
       },
@@ -2725,17 +2777,28 @@ export class CustomDomainComponent implements OnInit {
       return;
     }
 
+    const targetType = (recordType || '').toUpperCase();
+    const existingRec = this.emailConfig?.dnsRecords?.find((r: any) =>
+      (r.subType && r.subType.toUpperCase() === targetType) ||
+      (r.recordType && r.recordType.toUpperCase() === targetType) ||
+      (r.SubType && r.SubType.toUpperCase() === targetType) ||
+      (r.RecordType && r.RecordType.toUpperCase() === targetType)
+    );
+    if (existingRec && (existingRec.isVerified ?? existingRec.IsVerified)) {
+      this.toast.info(`${recordType} record is already verified and active on live DNS.`, 'Already Verified');
+      return;
+    }
+
     const cleanDomain = targetDomain.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
     this.verifyingDns[recordType] = true;
 
-    this.api.get<any>(`DashboardApi/verify-domain-email-dns?domain=${encodeURIComponent(cleanDomain)}&recordType=${encodeURIComponent(recordType)}`).subscribe({
+    this.api.get<any>(`DashboardApi/verify-domain-email-dns?domain=${encodeURIComponent(cleanDomain)}&subType=${encodeURIComponent(recordType)}&recordType=${encodeURIComponent(recordType)}`).subscribe({
       next: (res) => {
         this.verifyingDns[recordType] = false;
         const result = res?.data || res?.Data;
         if (result) {
           // Update local record status
           if (this.emailConfig?.dnsRecords) {
-            const targetType = recordType.toUpperCase();
             const rec = this.emailConfig.dnsRecords.find((r: any) =>
               (r.subType && r.subType.toUpperCase() === targetType) ||
               (r.recordType && r.recordType.toUpperCase() === targetType) ||
@@ -2745,6 +2808,9 @@ export class CustomDomainComponent implements OnInit {
             if (rec) {
               rec.isVerified = !!(result.isVerified ?? result.IsVerified);
               rec.detectedValue = result.detectedValue ?? result.DetectedValue ?? null;
+              if (this.emailConfig?.dnsRecords) {
+                this.emailConfig.isFullyProvisioned = this.emailConfig.dnsRecords.every((r: any) => !!(r.isVerified ?? r.IsVerified));
+              }
             }
           }
 
@@ -2770,6 +2836,11 @@ export class CustomDomainComponent implements OnInit {
    * Probes and verifies all email DNS records (MX, SPF, DKIM, DMARC) in sequence.
    */
   async verifyAllEmailDnsRecords(): Promise<void> {
+    if (this.isAllEmailDnsVerified) {
+      this.toast.info('All email DNS records are already verified and active.', 'Already Verified');
+      return;
+    }
+
     const records = ['MX', 'SPF', 'DKIM', 'DMARC'];
     this.verifyingAllEmailDns = true;
 
@@ -2831,7 +2902,9 @@ export class CustomDomainComponent implements OnInit {
     this.creatingMailbox = true;
     const payload = {
       domain: this.customDomain,
+      localPart: prefix,
       username: prefix,
+      prefix: prefix,
       displayName: displayName,
       password: password
     };
@@ -2865,9 +2938,12 @@ export class CustomDomainComponent implements OnInit {
       return;
     }
 
+    const local = mailbox.localPart || (mailbox.email && mailbox.email.includes('@') ? mailbox.email.split('@')[0] : '');
     this.deletingMailbox = true;
     const payload = {
       domain: this.customDomain,
+      localPart: local,
+      username: local,
       email: mailbox.email
     };
 
