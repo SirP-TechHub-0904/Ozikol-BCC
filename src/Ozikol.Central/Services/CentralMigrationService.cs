@@ -499,6 +499,7 @@ public class CentralMigrationService : ICentralMigrationService
         {
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
             optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
+                .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>()
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
             using var scope = _serviceProvider.CreateScope();
@@ -618,6 +619,7 @@ public class CentralMigrationService : ICentralMigrationService
         {
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
             optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
+                .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>()
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
             using var scope = _serviceProvider.CreateScope();

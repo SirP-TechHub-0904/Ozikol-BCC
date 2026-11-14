@@ -643,6 +643,9 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
         optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
+        // Guard all tenant DDL migrations with idempotent existence checks (COL_LENGTH, OBJECT_ID, sys.indexes)
+        optionsBuilder.ReplaceService<IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>();
+
         if (!optionsBuilder.IsConfigured)
         {
             // Each request/worker scope resolves the active tenant connection string from ITenantProvider.
