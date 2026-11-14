@@ -21,6 +21,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
         private readonly ICurrencyService _currencyService;
         private readonly ILogger<IndexModel> _logger;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? _smtpEmailDispatcher;
+        private readonly IConfiguration? _configuration;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
@@ -29,16 +30,19 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
         /// <param name="currencyService">Currency and pricing service.</param>
         /// <param name="logger">Structured logging service.</param>
         /// <param name="smtpEmailDispatcher">Optional Mailcow SMTP email dispatcher for live diagnostic testing.</param>
+        /// <param name="configuration">Optional application configuration.</param>
         public IndexModel(
             MasterCatalogDbContext context,
             ICurrencyService currencyService,
             ILogger<IndexModel> logger,
-            Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null)
+            Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher? smtpEmailDispatcher = null,
+            IConfiguration? configuration = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _smtpEmailDispatcher = smtpEmailDispatcher;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -727,52 +731,140 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [FromForm] string? cloudflareDnsApiToken)
         {
             var existing = await _context.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
-            var targetMailcowUrl = !string.IsNullOrWhiteSpace(mailcowApiUrl) ? mailcowApiUrl.Trim() : (existing?.MailcowApiUrl?.Trim() ?? "https://mail.ozikol.cloud");
-            var targetMailcowKey = !string.IsNullOrWhiteSpace(mailcowApiKey) ? mailcowApiKey.Trim() : existing?.MailcowApiKey?.Trim();
-            var targetZoneId = !string.IsNullOrWhiteSpace(cloudflareZoneId) ? cloudflareZoneId.Trim() : existing?.CloudflareZoneId?.Trim();
-            var targetCfToken = !string.IsNullOrWhiteSpace(cloudflareDnsApiToken) ? cloudflareDnsApiToken.Trim() : existing?.CloudflareDnsApiToken?.Trim();
 
-            if (string.IsNullOrWhiteSpace(targetMailcowKey) || string.IsNullOrWhiteSpace(targetZoneId) || string.IsNullOrWhiteSpace(targetCfToken))
+            // Clean & resolve target Mailcow URL
+            var targetMailcowUrl = !string.IsNullOrWhiteSpace(mailcowApiUrl)
+                ? mailcowApiUrl.Trim()
+                : (!string.IsNullOrWhiteSpace(existing?.MailcowApiUrl)
+                    ? existing.MailcowApiUrl.Trim()
+                    : (_configuration?["Mailcow:ApiUrl"] ?? _configuration?["Mailcow__ApiUrl"] ?? "https://mail.ozikol.cloud"));
+
+            // Clean & resolve target Mailcow Key (strip dots/masking and decrypt if needed)
+            var rawMailcowKey = !string.IsNullOrWhiteSpace(mailcowApiKey) && !mailcowApiKey.Contains('●') && !mailcowApiKey.Contains('*')
+                ? mailcowApiKey.Trim()
+                : (!string.IsNullOrWhiteSpace(existing?.MailcowApiKey)
+                    ? existing.MailcowApiKey.Trim()
+                    : (_configuration?["Mailcow:ApiKey"] ?? _configuration?["Mailcow__ApiKey"] ?? Environment.GetEnvironmentVariable("Mailcow__ApiKey")));
+
+            var targetMailcowKey = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(rawMailcowKey)?.Trim();
+
+            // Clean & resolve Cloudflare credentials
+            var targetZoneId = !string.IsNullOrWhiteSpace(cloudflareZoneId)
+                ? cloudflareZoneId.Trim()
+                : (!string.IsNullOrWhiteSpace(existing?.CloudflareZoneId)
+                    ? existing.CloudflareZoneId.Trim()
+                    : (_configuration?["Cloudflare:ZoneId"] ?? _configuration?["Cloudflare__ZoneId"]));
+
+            var rawCfToken = !string.IsNullOrWhiteSpace(cloudflareDnsApiToken) && !cloudflareDnsApiToken.Contains('●') && !cloudflareDnsApiToken.Contains('*')
+                ? cloudflareDnsApiToken.Trim()
+                : (!string.IsNullOrWhiteSpace(existing?.CloudflareDnsApiToken)
+                    ? existing.CloudflareDnsApiToken.Trim()
+                    : (_configuration?["Cloudflare:DnsApiToken"] ?? _configuration?["Cloudflare__DnsApiToken"]));
+
+            var targetCfToken = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(rawCfToken)?.Trim();
+
+            var results = new List<string>();
+            var errors = new List<string>();
+
+            using var handler = new System.Net.Http.HttpClientHandler
             {
-                return new JsonResult(new { success = false, message = "Please provide Mailcow API Key, Cloudflare Zone ID, and Cloudflare DNS API Token." });
+                ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+            using var http = new System.Net.Http.HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+
+            // 1. Test Mailcow API
+            if (string.IsNullOrWhiteSpace(targetMailcowKey))
+            {
+                errors.Add("Mailcow Read/Write API Key is not configured (empty or unpopulated).");
             }
-
-            try
+            else
             {
-                using var handler = new System.Net.Http.HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                };
-                using var http = new System.Net.Http.HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+                bool mailcowSuccess = false;
+                string? mailcowError = null;
 
-                // 1. Test Mailcow API
-                using var mcReq = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, $"{targetMailcowUrl.TrimEnd('/')}/api/v1/get/domain/all");
-                mcReq.Headers.Add("X-API-Key", targetMailcowKey);
-                using var mcResp = await http.SendAsync(mcReq);
-                var mcBody = await mcResp.Content.ReadAsStringAsync();
-                if (!mcResp.IsSuccessStatusCode || mcBody.Contains("\"type\":\"danger\"", StringComparison.OrdinalIgnoreCase))
+                var urlsToTry = new List<string> { targetMailcowUrl };
+                if (!targetMailcowUrl.Contains("127.0.0.1") && !targetMailcowUrl.Contains("localhost"))
                 {
-                    return new JsonResult(new { success = false, message = $"Mailcow API check failed ({mcResp.StatusCode}): {mcBody}" });
+                    urlsToTry.Add("https://127.0.0.1:8443");
                 }
 
-                // 2. Test Cloudflare DNS API Token + Zone ID
-                using var cfReq = new System.Net.Http.HttpRequestMessage(
-                    System.Net.Http.HttpMethod.Get,
-                    $"https://api.cloudflare.com/client/v4/zones/{Uri.EscapeDataString(targetZoneId)}/dns_records?per_page=1");
-                cfReq.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", targetCfToken);
-                using var cfResp = await http.SendAsync(cfReq);
-                var cfBody = await cfResp.Content.ReadAsStringAsync();
-                if (!cfResp.IsSuccessStatusCode)
+                foreach (var tryUrl in urlsToTry)
                 {
-                    return new JsonResult(new { success = false, message = $"Cloudflare DNS API check failed ({cfResp.StatusCode}): {cfBody}" });
+                    try
+                    {
+                        using var mcReq = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, $"{tryUrl.TrimEnd('/')}/api/v1/get/domain/all");
+                        mcReq.Headers.Add("X-API-Key", targetMailcowKey);
+                        using var mcResp = await http.SendAsync(mcReq);
+                        var mcBody = await mcResp.Content.ReadAsStringAsync();
+
+                        if (mcResp.IsSuccessStatusCode && !mcBody.Contains("\"type\":\"danger\"", StringComparison.OrdinalIgnoreCase) && !mcBody.Contains("authentication failed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            mailcowSuccess = true;
+                            results.Add($"Mailcow API verified successfully ({tryUrl})");
+                            break;
+                        }
+                        else
+                        {
+                            mailcowError = $"Status: {mcResp.StatusCode}, Response: {mcBody}";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        mailcowError = $"{tryUrl}: {ex.Message}";
+                    }
                 }
 
-                return new JsonResult(new { success = true, message = "Mailcow Read/Write API and Cloudflare Zone DNS API Token are both verified and active!" });
+                if (!mailcowSuccess)
+                {
+                    errors.Add($"Mailcow API check failed ({mailcowError})");
+                }
             }
-            catch (Exception ex)
+
+            // 2. Test Cloudflare DNS API Token + Zone ID
+            if (string.IsNullOrWhiteSpace(targetZoneId) || string.IsNullOrWhiteSpace(targetCfToken))
             {
-                return new JsonResult(new { success = false, message = $"Connection test failed: {ex.Message}" });
+                results.Add("Cloudflare Zone ID / DNS Token not provided (Skipped)");
             }
+            else
+            {
+                try
+                {
+                    using var cfReq = new System.Net.Http.HttpRequestMessage(
+                        System.Net.Http.HttpMethod.Get,
+                        $"https://api.cloudflare.com/client/v4/zones/{Uri.EscapeDataString(targetZoneId)}/dns_records?per_page=1");
+                    cfReq.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", targetCfToken);
+                    using var cfResp = await http.SendAsync(cfReq);
+                    var cfBody = await cfResp.Content.ReadAsStringAsync();
+
+                    if (cfResp.IsSuccessStatusCode && cfBody.Contains("\"success\":true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        results.Add("Cloudflare Zone DNS Token verified successfully");
+                    }
+                    else
+                    {
+                        errors.Add($"Cloudflare DNS API check failed ({cfResp.StatusCode}): {cfBody}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Cloudflare API connection failed: {ex.Message}");
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = string.Join(" | ", errors) + (results.Count > 0 ? $" (Passed: {string.Join(", ", results)})" : "")
+                });
+            }
+
+            return new JsonResult(new
+            {
+                success = true,
+                message = string.Join(" | ", results)
+            });
         }
 
         /// <summary>

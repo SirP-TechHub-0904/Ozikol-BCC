@@ -1376,6 +1376,7 @@
 
         var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         var formData = new FormData();
+        formData.append('__RequestVerificationToken', token);
         formData.append('mailcowApiUrl', mailcowApiUrl);
         formData.append('mailcowApiKey', mailcowApiKey);
         formData.append('cloudflareZoneId', cloudflareZoneId);
@@ -1400,7 +1401,7 @@
             }
         } catch (err) {
             status.style.color = '#dc2626';
-            status.textContent = '✗ Network error testing Mailcow & Cloudflare DNS.';
+            status.textContent = '✗ Network error testing Mailcow & Cloudflare DNS: ' + (err.message || err);
         } finally {
             if (btn) btn.disabled = false;
         }
