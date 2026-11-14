@@ -550,17 +550,26 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Performs live public DNS verification for a specific email DNS record type (MX, SPF, DKIM, or DMARC).
+        /// Supports either subType or recordType query parameter for robust cross-client compatibility.
         /// </summary>
+        /// <param name="domain">The custom domain to inspect on public DNS resolvers.</param>
+        /// <param name="subType">Optional DNS record subtype identifier (e.g., MX, SPF, DKIM, DMARC).</param>
+        /// <param name="recordType">Optional fallback DNS record type alias.</param>
+        /// <returns>Public DNS verification outcome containing detection status and message.</returns>
         [HttpGet("verify-domain-email-dns")]
         [Authorize(Policy = AuthPolicies.CmsStudio)]
-        public async Task<IActionResult> VerifyDomainEmailDns([FromQuery] string domain, [FromQuery] string subType)
+        public async Task<IActionResult> VerifyDomainEmailDns(
+            [FromQuery] string domain,
+            [FromQuery] string? subType = null,
+            [FromQuery] string? recordType = null)
         {
-            if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(subType))
+            var targetType = !string.IsNullOrWhiteSpace(subType) ? subType : recordType;
+            if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(targetType))
             {
-                return BadRequest(ApiResponse<object>.FailureResponse("Domain and subType parameters are required."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain and subType/recordType parameters are required."));
             }
 
-            var result = await _domainEmailService.VerifyDnsRecordAsync(domain, subType, HttpContext.RequestAborted);
+            var result = await _domainEmailService.VerifyDnsRecordAsync(domain, targetType, HttpContext.RequestAborted);
             return Ok(ApiResponse<EmailDnsVerificationResult>.SuccessResponse(result, result.Message));
         }
 
