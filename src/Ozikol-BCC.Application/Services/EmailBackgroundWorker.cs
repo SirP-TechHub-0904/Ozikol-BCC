@@ -41,7 +41,7 @@ namespace Ozikol_BCC.Application.Services
                 {
                     // Each loop is independent. Failures are logged and the worker retries on the next tick
                     // instead of stopping the hosted service.
-                    await ProcessEmailsAsync();
+                    await ProcessEmailsAsync(stoppingToken);
                     await PruneOldLogsAsync();
                 }
                 catch (Exception ex)
@@ -54,7 +54,7 @@ namespace Ozikol_BCC.Application.Services
             }
         }
 
-        private async Task ProcessEmailsAsync()
+        private async Task ProcessEmailsAsync(CancellationToken stoppingToken = default)
         {
             using var rootScope = _serviceProvider.CreateScope();
             var tenantOptions = rootScope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Ozikol_BCC.Infrastructure.TenantSupport.TenantConfigurationOptions>>().Value;
