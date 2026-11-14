@@ -640,8 +640,15 @@ public class TenantOnboardingService : ITenantOnboardingService
 
     private async Task ApplyTenantMigrationsAsync(string tenantConnStr, CancellationToken cancellationToken)
     {
+        var chainWarnings = MigrationChainIntegrityValidator.AuditTenantMigrationChain();
+        foreach (var warning in chainWarnings)
+        {
+            _logger.LogWarning("[MigrationChainIntegrityValidator] {Warning} (Idempotent DDL guard active)", warning);
+        }
+
         var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
         optionsBuilder.UseSqlServer(tenantConnStr)
+            .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>()
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
         using var scope = _serviceProvider.CreateScope();
