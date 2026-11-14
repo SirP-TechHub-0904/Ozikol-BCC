@@ -474,18 +474,22 @@ interface DnsProbeResult {
               <span class="material-symbols-outlined" [class.spin]="loadingEmailConfig">refresh</span>
               <span>Refresh Mail Suite</span>
             </button>
+            <div *ngIf="isAllEmailDnsVerified" class="all-verified-pill">
+              <span class="material-symbols-outlined text-green">verified</span>
+              <span>All Records Verified</span>
+            </div>
             <button
+              *ngIf="!isAllEmailDnsVerified"
               type="button"
               class="btn-primary-action"
-              [class.btn-all-verified]="isAllEmailDnsVerified"
               (click)="verifyAllEmailDnsRecords()"
               [disabled]="verifyingAllEmailDns"
-              [title]="isAllEmailDnsVerified ? 'All email DNS records are verified. Click to re-check across root resolvers.' : 'Verify live propagation of MX, SPF, DKIM, and DMARC records'"
+              title="Verify live propagation of MX, SPF, DKIM, and DMARC records"
             >
               <span class="material-symbols-outlined" [class.spin]="verifyingAllEmailDns">
-                {{ isAllEmailDnsVerified ? 'check_circle' : 'task_alt' }}
+                {{ verifyingAllEmailDns ? 'sync' : 'task_alt' }}
               </span>
-              <span>{{ isAllEmailDnsVerified ? 'Re-verify All DNS' : 'Verify All Email DNS' }}</span>
+              <span>{{ verifyingAllEmailDns ? 'Verifying...' : 'Verify All DNS' }}</span>
             </button>
           </div>
         </div>
@@ -547,9 +551,6 @@ interface DnsProbeResult {
                         <span>{{ copySuccess['val_' + (rec.key || rec.subType || rec.recordType)] ? 'Copied' : 'Copy' }}</span>
                       </button>
                     </div>
-                    <span *ngIf="rec.detectedValue" class="detected-dns-note">
-                      Detected on DNS: <code>{{ rec.detectedValue }}</code>
-                    </span>
                   </td>
                   <td>
                     <span class="priority-badge" *ngIf="rec.recordType === 'MX' && rec.priority">Priority: {{ rec.priority }}</span>
@@ -568,18 +569,21 @@ interface DnsProbeResult {
                   </td>
                   <td style="text-align: right;">
                     <button
+                      *ngIf="!rec.isVerified"
                       type="button"
                       class="btn-verify-row"
-                      [class.btn-row-verified]="rec.isVerified"
                       (click)="verifyEmailDnsRecord(rec.subType || rec.recordType)"
                       [disabled]="verifyingDns[rec.subType || rec.recordType]"
-                      [title]="rec.isVerified ? 'Record is currently verified. Click to re-check live DNS.' : 'Verify this DNS record on live root resolvers'"
+                      title="Verify this DNS record on live resolvers"
                     >
                       <span class="material-symbols-outlined" [class.spin]="verifyingDns[rec.subType || rec.recordType]">
-                        {{ verifyingDns[rec.subType || rec.recordType] ? 'sync' : (rec.isVerified ? 'check_circle' : 'done_all') }}
+                        {{ verifyingDns[rec.subType || rec.recordType] ? 'sync' : 'done' }}
                       </span>
-                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : (rec.isVerified ? 'Re-check' : 'Verify') }}</span>
+                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : 'Verify' }}</span>
                     </button>
+                    <span *ngIf="rec.isVerified" class="verified-check-indicator" title="Record verified and active">
+                      <span class="material-symbols-outlined text-green" style="font-size: 20px; vertical-align: middle;">check_circle</span>
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -1666,23 +1670,31 @@ interface DnsProbeResult {
       margin-top: 3px;
     }
     .code-long {
-      max-width: 320px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      max-width: 480px;
+      white-space: pre-wrap !important;
+      word-break: break-all !important;
+      overflow-wrap: anywhere !important;
+      line-height: 1.45;
       display: inline-block;
       vertical-align: middle;
     }
-    .detected-dns-note {
-      display: block;
-      font-size: 10px;
-      color: #059669;
-      margin-top: 4px;
+    .all-verified-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #16a34a;
     }
-    .detected-dns-note code {
-      font-size: 10px;
-      background: #ecfdf5;
-      padding: 1px 4px;
+    .verified-check-indicator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
     }
     .priority-badge {
       display: inline-block;
