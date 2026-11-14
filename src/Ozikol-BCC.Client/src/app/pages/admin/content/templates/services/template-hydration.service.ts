@@ -1333,27 +1333,7 @@ export class TemplateHydrationService {
 
   enforceOzikolCredit(html: string): string {
     if (!html) return '';
-    const standardCredit = `Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" class="text-primary fw-bold text-decoration-none" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>.`;
-
-    // 1. If an existing "Powered by..." line exists in any form, replace the credit container
-    if (/powered\s+by/i.test(html)) {
-      return html.replace(/powered\s+by\s+(?:<a[^>]*>)?(?:[^<]+(?:<\/a>)?)?(\.|\s*)?/gi, `${standardCredit} `);
-    }
-
-    // 2. If the footer has a bottom row with justify-content-between, inject credit inside it on the right
-    if (/justify-content-between/i.test(html)) {
-      const match = html.match(/(<div[^>]*class=["'][^"']*justify-content-between[^"']*["'][^>]*>[\s\S]*?<div>[^<]*&copy;[\s\S]*?<\/div>)([\s\S]*?<\/div>)/i);
-      if (match) {
-        return html.replace(/(<div[^>]*class=["'][^"']*justify-content-between[^"']*["'][^>]*>[\s\S]*?<div>[^<]*&copy;[\s\S]*?<\/div>)([\s\S]*?<\/div>)/i, `$1\n      <div>${standardCredit}</div>$2`);
-      }
-    }
-
-    // 3. If no powered-by line exists at all, inject an adaptive bottom strip right before </footer> or at the end
-    const strip = `\n<div class="ozikol-enforced-credit-bar" style="border-top: 1px solid rgba(150,150,150,0.15); padding: 14px 20px; text-align: center; font-size: 11.5px; opacity: 0.85; letter-spacing: 0.02em;">${standardCredit}</div>\n`;
-
-    if (/<\/footer>/i.test(html)) {
-      return html.replace(/<\/footer>/i, `${strip}</footer>`);
-    }
-    return html + strip;
+    // Strict multi-tenant white-labeling: never inject or leak platform branding into tenant website footers.
+    return html;
   }
 }

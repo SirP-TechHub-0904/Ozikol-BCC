@@ -3691,7 +3691,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           </div>
 
           <div class="oz-blank-footer">
-            <span>© ${currentYear} ${brand}. Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; font-weight: 600;">Ozikol</a>.</span>
+            <span>© ${currentYear} ${brand}. All rights reserved.</span>
           </div>
         </div>
       </div>

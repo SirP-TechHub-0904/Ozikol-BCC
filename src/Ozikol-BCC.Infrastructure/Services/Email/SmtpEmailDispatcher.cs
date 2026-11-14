@@ -121,10 +121,10 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
 
             var defaultFromName = _configuration["EmailSettings:FromName"]
                 ?? Environment.GetEnvironmentVariable("EmailSettings__FromName")
-                ?? "Ozikol Business Command Center";
+                ?? (isCentralPlatformEmail ? "Central Platform" : (tenantName ?? "Support Team"));
 
             var resolvedFromEmail = !string.IsNullOrWhiteSpace(fromEmail) ? fromEmail : defaultFromEmail;
-            var resolvedFromName = !string.IsNullOrWhiteSpace(fromName) ? fromName : defaultFromName;
+            var resolvedFromName = !string.IsNullOrWhiteSpace(fromName) ? fromName : (!string.IsNullOrWhiteSpace(tenantName) ? tenantName : defaultFromName);
 
             // Append compliance & security footer
             var bodyWithFooter = AppendComplianceFooter(htmlBody, isCentralPlatformEmail, tenantName, tenantAdminEmail);
@@ -218,18 +218,18 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
         }
         else
         {
-            var brandName = !string.IsNullOrWhiteSpace(tenantName) ? tenantName : "Your Workspace Organization";
-            var contactEmail = !string.IsNullOrWhiteSpace(tenantAdminEmail) ? tenantAdminEmail : "your workspace administrator";
+            var brandName = !string.IsNullOrWhiteSpace(tenantName) ? tenantName : "Your Organization";
+            var contactInfo = !string.IsNullOrWhiteSpace(tenantAdminEmail)
+                ? $@" at <a href=""mailto:{WebUtility.HtmlEncode(tenantAdminEmail)}"" style=""color: #0050E5; text-decoration: underline;"">{WebUtility.HtmlEncode(tenantAdminEmail)}</a>"
+                : string.Empty;
 
             sb.Append($@"
 <div style=""margin-top: 36px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"">
   <p style=""margin: 0 0 6px 0;"">
-    You received this notification from <strong>{WebUtility.HtmlEncode(brandName)}</strong> via Ozikol Business Command Center.
+    You received this notification from <strong>{WebUtility.HtmlEncode(brandName)}</strong>.
   </p>
   <p style=""margin: 0;"">
-    If you did not expect or request this notification, please contact your workspace team at 
-    <a href=""mailto:{WebUtility.HtmlEncode(contactEmail)}"" style=""color: #0050E5; text-decoration: underline;"">{WebUtility.HtmlEncode(contactEmail)}</a> 
-    or report unauthorized usage to <a href=""mailto:abuse@ozikol.cloud"" style=""color: #0050E5; text-decoration: underline;"">abuse@ozikol.cloud</a>.
+    If you did not expect or request this notification, please contact your organization team{contactInfo}.
   </p>
 </div>");
         }
