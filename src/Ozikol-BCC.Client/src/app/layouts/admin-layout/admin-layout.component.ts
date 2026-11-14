@@ -1811,7 +1811,7 @@ export interface SuiteInfoDetail {
           <button (click)="showHelpModal = false" class="btn-close">&times;</button>
         </div>
         <div class="modal-body">
-          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to Ozikol BCP Multi-Tenant Workspace' }}</h4>
+          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to your Business Command Center' }}</h4>
           <p>{{ 'adm.this_system_allows_you_to_manage_members_col' | translate:'This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.' }}</p>
           <ul>
             <li><strong>{{ 'adm.taskbar_tabs' | translate:'Taskbar Tabs:' }}</strong> {{ 'adm.as_you_navigate_pages_stay_open_as_browser_l' | translate:'As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.' }}</li>
@@ -3630,7 +3630,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
         'Category & Sub-Category Segmentation (e.g. VIP, Staff, Volunteers)',
         'Interactive Working Groups, Working Committees & Community Hubs',
         'Alumni Network Tracking & Graduation Cohorts',
-        'Real-time Ozikol Chat Messenger for staff and member collaboration',
+        'Real-time Team Messenger for staff and member collaboration',
         'Confidential Whistleblowing & Feedback Oversight'
       ],
       impact: 'Transforms passive contact lists into structured, searchable communities with custom taxonomy and lifecycle history.'
@@ -3722,7 +3722,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
         'Mass Notification Studio with Email, SMS, WhatsApp & In-App delivery',
         'Real-time Anti-Spam Scanner & Mailbox Blacklist Guard',
         'Delivery Telemetry, Open-rate and Click-through Analytics',
-        'Internal Ozikol Chat Messenger for staff & team collaboration',
+        'Internal Team Messenger for staff & team collaboration',
         'Embeddable Live Chat Widget for public websites',
         'Multi-agent Helpdesk Ticketing System with SLA routing',
         'Social Bio Link-Tree Landing Page Builder'

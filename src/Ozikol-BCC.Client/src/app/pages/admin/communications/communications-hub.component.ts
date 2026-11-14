@@ -567,7 +567,7 @@ export interface MessagePoolStats {
                 <div class="wa-header">
                   <span class="material-symbols-outlined wa-logo">chat</span>
                   <div class="wa-title-wrap">
-                    <div class="wa-name">Ozikol BCC Notification <span class="wa-verified">✓</span></div>
+                    <div class="wa-name">Workspace Notification <span class="wa-verified">✓</span></div>
                     <div class="wa-sub">Official Workspace Channel</div>
                   </div>
                 </div>

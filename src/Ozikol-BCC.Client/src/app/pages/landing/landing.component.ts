@@ -2245,7 +2245,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       imageUrl: resolvedCover,
       CoverImageUrl: resolvedCover,
       ImageUrl: resolvedCover,
-      authorName: this.currentArticle.author || 'Ozikol Editorial Team',
+      authorName: this.currentArticle.author || (this.brandName ? `${this.brandName} Team` : 'Editorial Team'),
       authorRole: 'Product Architecture',
       authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       authorBio: 'Technology writer and systems architect contributing to sovereign multi-tenant cloud infrastructure and high-performance digital workspaces.',

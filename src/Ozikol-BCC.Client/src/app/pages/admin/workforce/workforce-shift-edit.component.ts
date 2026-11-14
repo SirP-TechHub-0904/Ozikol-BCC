@@ -774,7 +774,7 @@ interface StaffMember {
               <span class="material-symbols-outlined text-blue">help</span>
               <div>
                 <h3>Work Schedule &amp; Shift System Guide</h3>
-                <p class="modal-subtitle">Universal multi-industry scheduling standards across Ozikol BCC.</p>
+                <p class="modal-subtitle">Universal multi-industry scheduling standards across Business Command Center.</p>
               </div>
             </div>
             <button type="button" class="btn-close" (click)="showInfoModal = false">&times;</button>
@@ -783,7 +783,7 @@ interface StaffMember {
           <div class="modal-body info-guide-content">
             <h4>1. Work Schedule Patterns</h4>
             <p>
-              Ozikol BCC supports all operational structures across diverse sectors (corporate offices, healthcare, security, hospitality, logistics):
+              The system supports all operational structures across diverse sectors (corporate offices, healthcare, security, hospitality, logistics):
             </p>
             <ul>
               <li><strong>Regular Daily Routine:</strong> For standard 8:00 AM – 5:00 PM staff working Monday through Friday with weekend and overtime options.</li>
