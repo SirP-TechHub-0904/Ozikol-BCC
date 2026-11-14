@@ -108,18 +108,6 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
-          <div class="nav-item">
-            <a routerLink="/dashboard/console/analytics" [class.active]="isCurrentRoute('/dashboard/console/analytics')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">analytics</span>
-                <span>{{ 'adm.analytics_telemetry' | translate:'Analytics & Telemetry' }}</span>
-                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/console/analytics')" (click)="togglePin('Analytics', '/dashboard/console/analytics', 'analytics'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/console/analytics') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/dashboard/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
 
           <!-- 2. Website & CMS (Web Exclusive) -->
           <ng-container *ngIf="canAccessSuite('cms')">
