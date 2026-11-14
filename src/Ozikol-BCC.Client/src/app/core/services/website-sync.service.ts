@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Observable, Subject } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { ApiService } from './api.service';
 
 /**
  * Payload received when website content, templates, pages, forms, or brand settings
@@ -182,12 +182,7 @@ export class WebsiteSyncService {
   }
 
   private resolveApiOrigin(): string {
-    if (environment.apiUrl.startsWith('http')) {
-      return environment.apiUrl.replace(/\/api\/?$/, '');
-    }
-
-    const relativePrefix = environment.apiUrl.replace(/\/api\/?$/, '');
-    return `${window.location.origin}${relativePrefix}`;
+    return ApiService.resolveDynamicApiOrigin();
   }
 
   private resolveTenantKey(): string {

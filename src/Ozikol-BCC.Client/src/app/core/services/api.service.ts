@@ -9,43 +9,71 @@ import { environment } from '../../../environments/environment';
 export class ApiService {
   /**
    * Resolves the API base endpoint dynamically:
-   * When running in the browser on a deployed hostname (e.g. sovereign custom domains like nightpresssecurity.co.uk
-   * or platform subdomains like tenant.ozikol.cloud), strictly uses the same-origin relative '/api' endpoint.
-   * This routes through Nginx edge proxies with zero CORS latency, no cross-origin preflight errors, and full tenant header injection.
-   * On localhost development servers (including *.localhost and *.127.0.0.1.nip.io tenant subdomains),
-   * gracefully falls back to the configured environment.apiUrl.
+   * - Local development hosts (`localhost`, `127.0.0.1`, `*.localhost`, `*.127.0.0.1.nip.io`) and
+   *   platform domains (`ozikol.cloud`, `*.ozikol.cloud`, `ozikol.com`, `*.ozikol.com`) use `environment.apiUrl`
+   *   (`http://localhost:51025/api` locally, `https://api-ozikol.ozikol.cloud/api` in production).
+   * - Sovereign custom domains (e.g. `nightpresssecurity.co.uk`) use the same-origin relative `'/api'` endpoint,
+   *   routing through the custom domain's Nginx `location /api/` reverse proxy with zero CORS latency.
+   * @returns Resolved API base URL string.
    */
-  public get baseUrl(): string {
+  public static resolveDynamicApiBaseUrl(): string {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname.toLowerCase();
-      if (!this.isLocalDevelopmentHost(hostname)) {
+      if (!ApiService.isLocalOrPlatformHost(hostname)) {
         return '/api';
       }
     }
     return environment.apiUrl;
   }
 
-  constructor(private http: HttpClient) {}
+  /**
+   * Resolves the root API origin (without trailing `/api`) for SignalR WebSocket hubs:
+   * - Local and platform hosts resolve the origin of `environment.apiUrl`.
+   * - Sovereign custom domains resolve `window.location.origin` so `/hubs/*` routes through the custom domain's Nginx proxy.
+   * @returns Resolved API origin URL string.
+   */
+  public static resolveDynamicApiOrigin(): string {
+    const base = ApiService.resolveDynamicApiBaseUrl();
+    if (base.startsWith('http')) {
+      return base.replace(/\/api\/?$/, '');
+    }
+    const relativePrefix = base.replace(/\/api\/?$/, '');
+    return typeof window !== 'undefined' ? `${window.location.origin}${relativePrefix}` : '';
+  }
 
   /**
    * Determines whether the current browser hostname is a local development address
-   * (including root localhost, loopback IP, or local wildcard tenant subdomains).
+   * or an official Ozikol platform domain/subdomain.
    * @param hostname Lowercase browser hostname.
-   * @returns True when running against a local development host.
+   * @returns True when running on localhost or an official platform domain (`*.ozikol.cloud`, `*.ozikol.com`).
    */
-  private isLocalDevelopmentHost(hostname: string): boolean {
+  public static isLocalOrPlatformHost(hostname: string): boolean {
     if (!hostname) return true;
     const lower = hostname.toLowerCase();
     return lower === 'localhost' ||
            lower === '127.0.0.1' ||
            lower.endsWith('.localhost') ||
-           lower.endsWith('.127.0.0.1.nip.io');
+           lower.endsWith('.127.0.0.1.nip.io') ||
+           lower === 'ozikol.cloud' ||
+           lower.endsWith('.ozikol.cloud') ||
+           lower === 'ozikol.com' ||
+           lower.endsWith('.ozikol.com');
   }
+
+  /**
+   * Instance getter delegating to `ApiService.resolveDynamicApiBaseUrl()`.
+   */
+  public get baseUrl(): string {
+    return ApiService.resolveDynamicApiBaseUrl();
+  }
+
+  constructor(private http: HttpClient) {}
 
   private isPlatformSubdomain(hostname: string): boolean {
     if (!hostname) return false;
     const lower = hostname.toLowerCase();
     return lower.endsWith('.ozikol.cloud') ||
+           lower.endsWith('.ozikol.com') ||
            lower.endsWith('.localhost') ||
            lower.endsWith('.127.0.0.1.nip.io');
   }

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Subject, Observable } from 'rxjs';
 import { ChatSoundService } from './chat-sound.service';
-import { environment } from '../../../environments/environment';
+import { ApiService } from './api.service';
 
 export interface ChatMessagePayload {
   id: string;
@@ -86,10 +86,8 @@ export class SignalRService {
       return;
     }
 
-    // Resolve API origin correctly from environment configuration
-    const apiOrigin = environment.apiUrl.startsWith('http')
-      ? environment.apiUrl.replace(/\/api\/?$/, '')
-      : (typeof window !== 'undefined' ? `${window.location.origin}${environment.apiUrl.replace(/\/api\/?$/, '')}` : '');
+    // Resolve API origin dynamically across localhost, platform subdomains, and sovereign custom domains
+    const apiOrigin = ApiService.resolveDynamicApiOrigin();
     const tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain') || '';
     const hubUrl = `${apiOrigin}/hubs/group-chat?tenant=${encodeURIComponent(tenantKey)}`;
 

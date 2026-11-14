@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+import { ApiService } from './api.service';
 
 /**
  * Global service managing tenant and subdomain resolution status across the entire application lifecycle.
@@ -79,7 +79,7 @@ export class TenantStateService {
       headers = headers.set('X-Tenant-Key', resolvedTenantKey);
     }
 
-    const url = `${(environment.apiUrl || '').replace(/\/+$/, '')}/SettingsApi/brand`;
+    const url = `${(ApiService.resolveDynamicApiBaseUrl() || '').replace(/\/+$/, '')}/SettingsApi/brand`;
 
     try {
       const res: any = await firstValueFrom(this.http.get(url, { headers }));
