@@ -248,3 +248,4 @@ public sealed class DomainDnsHealthMonitorWorker : BackgroundService
         public DateTime? LastAlertUtc { get; set; }
     }
 }
+

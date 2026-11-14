@@ -21,17 +21,20 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly MasterCatalogDbContext _masterCatalogDbContext;
         private readonly ICustomDomainProvisioningService _domainProvisioningService;
         private readonly IDomainEmailProvisioningService _domainEmailService;
+        private readonly ILogger<DashboardApiController> _logger;
 
         public DashboardApiController(
             DashboardDbContext context,
             MasterCatalogDbContext masterCatalogDbContext,
             ICustomDomainProvisioningService domainProvisioningService,
-            IDomainEmailProvisioningService domainEmailService)
+            IDomainEmailProvisioningService domainEmailService,
+            ILogger<DashboardApiController> logger)
         {
             _context = context;
             _masterCatalogDbContext = masterCatalogDbContext;
             _domainProvisioningService = domainProvisioningService;
             _domainEmailService = domainEmailService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -462,6 +465,26 @@ namespace Ozikol_BCC.Api.Controllers
                 dnsResult = provResult.DnsProbe;
                 masterTenant.CustomDomain = cleanDomain;
                 masterTenant.WebsiteUrl = $"https://{cleanDomain}";
+
+                // Automatically switch tenant email configuration to dedicated custom domain noreply sender
+                try
+                {
+                    // Ensure the automated noreply system mailbox and DKIM keys exist on Mailcow
+                    await _domainEmailService.GetDomainEmailConfigAsync(cleanDomain, HttpContext.RequestAborted);
+
+                    var tenantSettings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
+                    if (tenantSettings != null)
+                    {
+                        tenantSettings.SenderEmail = $"noreply@{cleanDomain}";
+                        tenantSettings.SmtpUsername = $"noreply@{cleanDomain}";
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("📧 [DashboardApi] Automatically switched tenant {TenantKey} sender to noreply@{Domain}.", masterTenant.TenantKey, cleanDomain);
+                    }
+                }
+                catch (Exception mailEx)
+                {
+                    _logger.LogWarning(mailEx, "⚠️ [DashboardApi] Non-blocking warning while switching tenant sender to custom domain '{Domain}'.", cleanDomain);
+                }
             }
             else
             {
@@ -478,6 +501,24 @@ namespace Ozikol_BCC.Api.Controllers
                 masterTenant.WebsiteUrl = !string.IsNullOrWhiteSpace(masterTenant.PrimaryDomain)
                     ? $"https://{masterTenant.PrimaryDomain}"
                     : null;
+
+                // Automatically revert tenant email configuration back to platform default noreply address
+                try
+                {
+                    var fallbackSender = $"noreply@{masterTenant.TenantKey}.ozikol.cloud";
+                    var tenantSettings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
+                    if (tenantSettings != null)
+                    {
+                        tenantSettings.SenderEmail = fallbackSender;
+                        tenantSettings.SmtpUsername = fallbackSender;
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("📧 [DashboardApi] Reverted tenant {TenantKey} sender back to {Sender}.", masterTenant.TenantKey, fallbackSender);
+                    }
+                }
+                catch (Exception mailEx)
+                {
+                    _logger.LogWarning(mailEx, "⚠️ [DashboardApi] Non-blocking warning while reverting tenant sender on domain unbind.");
+                }
             }
 
             masterTenant.UpdatedUtc = DateTime.UtcNow;
@@ -646,7 +687,26 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Domain parameter is required."));
             }
 
-            var config = await _domainEmailService.GetDomainEmailConfigAsync(domain, HttpContext.RequestAborted);
+            var clean = domain.Trim().ToLowerInvariant();
+            var config = await _domainEmailService.GetDomainEmailConfigAsync(clean, HttpContext.RequestAborted);
+
+            // Automatically sync tenant's active SenderEmail if it differs from noreply@{clean}
+            try
+            {
+                var tenantSettings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
+                var expectedSender = $"noreply@{clean}";
+                if (tenantSettings != null && !string.Equals(tenantSettings.SenderEmail, expectedSender, StringComparison.OrdinalIgnoreCase))
+                {
+                    tenantSettings.SenderEmail = expectedSender;
+                    tenantSettings.SmtpUsername = expectedSender;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ [DashboardApi] Non-blocking sync warning for tenant SenderEmail.");
+            }
+
             return Ok(ApiResponse<DomainEmailConfigDto>.SuccessResponse(config, "Email configuration retrieved successfully."));
         }
 
