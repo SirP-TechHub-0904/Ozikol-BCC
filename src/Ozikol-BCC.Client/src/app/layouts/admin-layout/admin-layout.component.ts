@@ -1625,23 +1625,7 @@ export interface SuiteInfoDetail {
             </div>
           </div>
 
-          <!-- Topbar Security Audit Mini Counter Dashboard (Normal, Suspicious, Critical) -->
-          <div class="security-mini-dashboard" *ngIf="canAccessSecurityMiniDashboard" title="Workspace Security Health">
-            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Normal' }" class="sec-stat-pill sec-normal" title="Normal security events">
-              <span class="sec-stat-dot dot-normal"></span>
-              <span class="sec-stat-val">{{ securityStats.normal }}</span>
-            </a>
-            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Suspicious' }" class="sec-stat-pill sec-suspicious" [class.has-alerts]="securityStats.suspicious > 0" title="Suspicious access & login alerts">
-              <span class="sec-stat-dot dot-suspicious"></span>
-              <span class="sec-stat-label">SUSP</span>
-              <span class="sec-stat-val">{{ securityStats.suspicious }}</span>
-            </a>
-            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Critical' }" class="sec-stat-pill sec-critical" [class.has-critical]="securityStats.critical > 0" title="Critical security & lockout alerts">
-              <span class="sec-stat-dot dot-critical"></span>
-              <span class="sec-stat-label">CRIT</span>
-              <span class="sec-stat-val">{{ securityStats.critical }}</span>
-            </a>
-          </div>
+
 
           <!-- Help Trigger -->
           <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" [title]="'adm.contextual_help' | translate:'Contextual Help'">
