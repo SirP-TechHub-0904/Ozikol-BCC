@@ -96,7 +96,7 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
         var dkimTxt = await _mailcowService.GetDkimRecordAsync(cleanDomain, cancellationToken);
         result.DkimPublicKey = !string.IsNullOrWhiteSpace(dkimTxt)
             ? dkimTxt.Trim()
-            : "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA (Generating 2048-bit key...)";
+            : null;
 
         // 4. Retrieve Active Mailboxes
         var mailboxes = await _mailcowService.GetDomainMailboxesAsync(cleanDomain, cancellationToken);
@@ -465,11 +465,16 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
                     var dkimHost = $"dkim._domainkey.{cleanDomain}";
                     result.RecordType = "TXT";
                     result.QueryHost = dkimHost;
-                    result.ExpectedValue = "v=DKIM1; k=rsa; p=...";
+
+                    // Fetch the canonical expected DKIM record from Mailcow
+                    var expectedDkim = await _mailcowService.GetDkimRecordAsync(cleanDomain, cancellationToken);
+                    result.ExpectedValue = !string.IsNullOrWhiteSpace(expectedDkim)
+                        ? expectedDkim.Trim()
+                        : "v=DKIM1; k=rsa; p=...";
 
                     var dkimUrl = $"https://dns.google/resolve?name={Uri.EscapeDataString(dkimHost)}&type=TXT";
                     var dkimRes = await _httpClient.GetAsync(dkimUrl, cancellationToken);
-                    if (dkimRes.ok())
+                    if (dkimRes.IsSuccessStatusCode)
                     {
                         var json = await dkimRes.Content.ReadAsStringAsync(cancellationToken);
                         using var doc = JsonDocument.Parse(json);
@@ -481,15 +486,78 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
                                 {
                                     var val = d.GetString() ?? string.Empty;
                                     result.DetectedValue = val;
-                                    result.IsVerified = val.Contains("v=DKIM1", StringComparison.OrdinalIgnoreCase) || val.Contains("p=");
-                                    if (result.IsVerified) break;
+
+                                    // 1. Strict rejection of dummy or placeholder strings
+                                    if (val.Contains("Generating", StringComparison.OrdinalIgnoreCase) ||
+                                        val.Contains("dummy", StringComparison.OrdinalIgnoreCase) ||
+                                        val.Contains("...", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        result.IsVerified = false;
+                                        result.Message = "DKIM TXT record contains placeholder text. Replace with your actual 2048-bit public key.";
+                                        break;
+                                    }
+
+                                    // 2. Must contain v=DKIM1 and p=
+                                    if (!val.Contains("v=DKIM1", StringComparison.OrdinalIgnoreCase) || !val.Contains("p="))
+                                    {
+                                        result.IsVerified = false;
+                                        result.Message = "DKIM TXT record is missing required 'v=DKIM1' or 'p=' public key tag.";
+                                        break;
+                                    }
+
+                                    // 3. Extract and validate base64 public key in p=
+                                    var pIdx = val.IndexOf("p=", StringComparison.OrdinalIgnoreCase);
+                                    var pVal = val.Substring(pIdx + 2).Trim().Trim('"', ';');
+                                    pVal = pVal.Replace(" ", "").Replace("\t", "").Replace("\r", "").Replace("\n", "");
+                                    if (pVal.Contains(";"))
+                                    {
+                                        pVal = pVal.Substring(0, pVal.IndexOf(';'));
+                                    }
+
+                                    try
+                                    {
+                                        var keyBytes = Convert.FromBase64String(pVal);
+                                        if (keyBytes.Length < 100)
+                                        {
+                                            result.IsVerified = false;
+                                            result.Message = "DKIM public key is corrupted or incomplete.";
+                                            break;
+                                        }
+
+                                        // 4. Verify match against expected mailserver DKIM key if available
+                                        if (!string.IsNullOrWhiteSpace(expectedDkim) && expectedDkim.Contains("p="))
+                                        {
+                                            var expPIdx = expectedDkim.IndexOf("p=", StringComparison.OrdinalIgnoreCase);
+                                            var expPVal = expectedDkim.Substring(expPIdx + 2).Trim().Trim('"', ';');
+                                            expPVal = expPVal.Replace(" ", "").Replace("\t", "").Replace("\r", "").Replace("\n", "");
+                                            if (expPVal.Contains(";")) expPVal = expPVal.Substring(0, expPVal.IndexOf(';'));
+
+                                            if (!string.Equals(pVal, expPVal, StringComparison.Ordinal))
+                                            {
+                                                result.IsVerified = false;
+                                                result.Message = "Detected DKIM public key on DNS does not match the platform mailserver private key.";
+                                                break;
+                                            }
+                                        }
+
+                                        result.IsVerified = true;
+                                        result.Message = "DKIM 2048-bit cryptographic key is verified and matches mailserver.";
+                                        break;
+                                    }
+                                    catch
+                                    {
+                                        result.IsVerified = false;
+                                        result.Message = "DKIM public key contains invalid base64 characters.";
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                    result.Message = result.IsVerified
-                        ? "DKIM public key TXT record is active."
-                        : "DKIM TXT record not found at dkim._domainkey.";
+                    if (!result.IsVerified && string.IsNullOrWhiteSpace(result.Message))
+                    {
+                        result.Message = "DKIM TXT record not found at dkim._domainkey. Please add the TXT record to your DNS.";
+                    }
                     break;
 
                 case "DMARC":
