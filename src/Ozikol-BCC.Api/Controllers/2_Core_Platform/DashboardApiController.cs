@@ -432,20 +432,70 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<DomainProvisioningResult>.SuccessResponse(provResult, provResult.Message));
         }
 
+        /// <summary>
+        /// Request model for creating 1 free custom business mailbox.
+        /// </summary>
         public class CreateCustomMailboxRequest
         {
+            /// <summary>Tenant key identifier.</summary>
             public string? TenantKey { get; set; }
+
+            /// <summary>Custom domain name.</summary>
             public string Domain { get; set; } = string.Empty;
+
+            /// <summary>Domain name alias.</summary>
+            public string? DomainName { get; set; }
+
+            /// <summary>Local part / username of the mailbox (e.g. support, info).</summary>
             public string LocalPart { get; set; } = string.Empty;
+
+            /// <summary>Client alias for LocalPart.</summary>
+            public string? Username { get; set; }
+
+            /// <summary>Client alias for LocalPart.</summary>
+            public string? Prefix { get; set; }
+
+            /// <summary>Secure password for the mailbox.</summary>
             public string Password { get; set; } = string.Empty;
+
+            /// <summary>Friendly display name for sender reputation.</summary>
             public string? DisplayName { get; set; }
         }
 
+        /// <summary>
+        /// Request model for deleting a custom business mailbox.
+        /// </summary>
+        public class DeleteCustomMailboxRequest
+        {
+            /// <summary>Domain name.</summary>
+            public string? Domain { get; set; }
+
+            /// <summary>Local part of mailbox.</summary>
+            public string? LocalPart { get; set; }
+
+            /// <summary>Client alias for LocalPart.</summary>
+            public string? Username { get; set; }
+
+            /// <summary>Full mailbox email address (e.g. support@domain.com).</summary>
+            public string? Email { get; set; }
+        }
+
+        /// <summary>
+        /// Request model for sending a domain deliverability test email.
+        /// </summary>
         public class SendDomainTestEmailRequest
         {
+            /// <summary>Tenant key identifier.</summary>
             public string? TenantKey { get; set; }
+
+            /// <summary>Domain name.</summary>
             public string Domain { get; set; } = string.Empty;
+
+            /// <summary>Recipient email address.</summary>
             public string RecipientEmail { get; set; } = string.Empty;
+
+            /// <summary>Sender email address.</summary>
+            public string? SenderEmail { get; set; }
         }
 
         /// <summary>
@@ -473,15 +523,23 @@ namespace Ozikol_BCC.Api.Controllers
         [Authorize(Policy = AuthPolicies.CmsStudio)]
         public async Task<IActionResult> CreateCustomMailbox([FromBody] CreateCustomMailboxRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Domain) || string.IsNullOrWhiteSpace(request.LocalPart))
+            var localPart = !string.IsNullOrWhiteSpace(request.LocalPart)
+                ? request.LocalPart
+                : (!string.IsNullOrWhiteSpace(request.Username) ? request.Username : request.Prefix ?? string.Empty);
+
+            var domain = !string.IsNullOrWhiteSpace(request.Domain)
+                ? request.Domain
+                : (request.DomainName ?? string.Empty);
+
+            if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(localPart))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Domain and mailbox username are required."));
             }
 
             var (success, message, mailbox) = await _domainEmailService.CreateCustomMailboxAsync(
                 request.TenantKey ?? string.Empty,
-                request.Domain,
-                request.LocalPart,
+                domain,
+                localPart,
                 request.Password,
                 request.DisplayName ?? string.Empty,
                 HttpContext.RequestAborted);
@@ -498,16 +556,37 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes a custom mailbox so the tenant can create a different free mailbox address.
         /// The platform "noreply" system mailbox cannot be deleted.
         /// </summary>
+        [HttpPost("delete-custom-mailbox")]
         [HttpDelete("delete-custom-mailbox")]
         [Authorize(Policy = AuthPolicies.CmsStudio)]
-        public async Task<IActionResult> DeleteCustomMailbox([FromQuery] string domain, [FromQuery] string localPart)
+        public async Task<IActionResult> DeleteCustomMailbox(
+            [FromBody] DeleteCustomMailboxRequest? request = null,
+            [FromQuery] string? domain = null,
+            [FromQuery] string? localPart = null)
         {
-            if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(localPart))
+            var targetDomain = !string.IsNullOrWhiteSpace(request?.Domain)
+                ? request.Domain
+                : domain;
+
+            var targetLocal = !string.IsNullOrWhiteSpace(request?.LocalPart)
+                ? request.LocalPart
+                : (!string.IsNullOrWhiteSpace(request?.Username)
+                    ? request.Username
+                    : (!string.IsNullOrWhiteSpace(request?.Email) && request.Email.Contains('@')
+                        ? request.Email.Split('@')[0]
+                        : localPart));
+
+            if (string.IsNullOrWhiteSpace(targetDomain) && !string.IsNullOrWhiteSpace(request?.Email) && request.Email.Contains('@'))
+            {
+                targetDomain = request.Email.Split('@')[1];
+            }
+
+            if (string.IsNullOrWhiteSpace(targetDomain) || string.IsNullOrWhiteSpace(targetLocal))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Domain and mailbox name are required."));
             }
 
-            var (success, message) = await _domainEmailService.DeleteCustomMailboxAsync(domain, localPart, HttpContext.RequestAborted);
+            var (success, message) = await _domainEmailService.DeleteCustomMailboxAsync(targetDomain, targetLocal, HttpContext.RequestAborted);
             if (!success)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(message));

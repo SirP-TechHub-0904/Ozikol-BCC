@@ -2880,7 +2880,9 @@ export class CustomDomainComponent implements OnInit {
     this.creatingMailbox = true;
     const payload = {
       domain: this.customDomain,
+      localPart: prefix,
       username: prefix,
+      prefix: prefix,
       displayName: displayName,
       password: password
     };
@@ -2914,9 +2916,12 @@ export class CustomDomainComponent implements OnInit {
       return;
     }
 
+    const local = mailbox.localPart || (mailbox.email && mailbox.email.includes('@') ? mailbox.email.split('@')[0] : '');
     this.deletingMailbox = true;
     const payload = {
       domain: this.customDomain,
+      localPart: local,
+      username: local,
       email: mailbox.email
     };
 
