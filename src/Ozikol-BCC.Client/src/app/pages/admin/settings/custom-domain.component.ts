@@ -752,8 +752,8 @@ interface DnsProbeResult {
               <div class="form-group-compact">
                 <label class="form-label-compact">Send From</label>
                 <select class="form-control-compact" [(ngModel)]="testEmailSender">
-                  <option *ngFor="let m of emailConfig?.mailboxes" [value]="m.email">
-                    {{ m.email }} ({{ m.name }})
+                  <option *ngFor="let m of emailConfig?.mailboxes" [value]="m.emailAddress || m.email">
+                    {{ m.emailAddress || m.email }} ({{ m.displayName || m.name || (m.isSystemMailbox ? 'System Automated Sender' : 'Custom Mailbox') }})
                   </option>
                   <option *ngIf="!emailConfig?.mailboxes?.length" [value]="'noreply@' + customDomain">
                     noreply&#64;{{ customDomain }} (System Automated Sender)
@@ -1900,6 +1900,8 @@ interface DnsProbeResult {
     }
     .form-control-compact {
       width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
       padding: 8px 12px;
       font-size: 12px;
       border: 1px solid #cbd5e1;
@@ -2007,16 +2009,25 @@ interface DnsProbeResult {
       display: flex;
       flex-direction: column;
       gap: 14px;
+      box-sizing: border-box;
+      min-width: 0;
+      overflow: hidden;
     }
     .test-email-form {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .form-group-compact {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .btn-send-test {
       display: inline-flex;
@@ -2732,9 +2743,20 @@ export class CustomDomainComponent implements OnInit {
         this.loadingEmailConfig = false;
         const data = res?.data || res?.Data;
         if (data) {
+          if (Array.isArray(data.mailboxes)) {
+            data.mailboxes = data.mailboxes.map((m: any) => ({
+              ...m,
+              email: m.email || m.emailAddress || m.EmailAddress,
+              emailAddress: m.emailAddress || m.EmailAddress || m.email,
+              name: m.name || m.displayName || m.DisplayName || m.localPart || m.LocalPart,
+              displayName: m.displayName || m.DisplayName || m.name
+            }));
+          }
           this.emailConfig = data;
           if (!this.testEmailSender && data.mailboxes?.length > 0) {
-            this.testEmailSender = data.mailboxes[0].email;
+            this.testEmailSender = data.mailboxes[0].emailAddress || data.mailboxes[0].email;
+          } else if (!this.testEmailSender && this.customDomain) {
+            this.testEmailSender = `noreply@${this.customDomain}`;
           }
         }
       },
