@@ -7,7 +7,22 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class ApiService {
-  public baseUrl = environment.apiUrl;
+  /**
+   * Resolves the API base endpoint dynamically:
+   * When running in the browser on a deployed hostname (e.g. sovereign custom domains like nightpresssecurity.co.uk
+   * or platform subdomains like tenant.ozikol.cloud), strictly uses the same-origin relative '/api' endpoint.
+   * This routes through Nginx edge proxies with zero CORS latency, no cross-origin preflight errors, and full tenant header injection.
+   * On localhost development servers, gracefully falls back to the configured environment.apiUrl.
+   */
+  public get baseUrl(): string {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname.toLowerCase();
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+        return '/api';
+      }
+    }
+    return environment.apiUrl;
+  }
 
   constructor(private http: HttpClient) {}
 
