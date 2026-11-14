@@ -76,5 +76,24 @@ public interface IDomainEmailProvisioningService
         string domain,
         string subType,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dispatches an urgent automated DNS health alert or resolution confirmation email directly
+    /// to the tenant account root administrator.
+    /// </summary>
+    /// <param name="domain">The custom domain name (e.g. "nightpresssecurity.co.uk").</param>
+    /// <param name="recipientEmail">The root account administrator email address.</param>
+    /// <param name="tenantName">Friendly tenant/organization name.</param>
+    /// <param name="failedRecords">Collection of failing DNS records and their diagnostic details.</param>
+    /// <param name="isResolved">True if this is a resolution confirmation; false if an urgent action alert.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Result indicating dispatch success and human-readable status message.</returns>
+    Task<(bool Success, string Message)> SendDnsAlertEmailAsync(
+        string domain,
+        string recipientEmail,
+        string? tenantName,
+        System.Collections.Generic.IEnumerable<EmailDnsVerificationResult> failedRecords,
+        bool isResolved = false,
+        CancellationToken cancellationToken = default);
 }
 

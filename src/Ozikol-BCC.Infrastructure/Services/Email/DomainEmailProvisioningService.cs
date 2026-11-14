@@ -96,7 +96,7 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
         var dkimTxt = await _mailcowService.GetDkimRecordAsync(cleanDomain, cancellationToken);
         result.DkimPublicKey = !string.IsNullOrWhiteSpace(dkimTxt)
             ? dkimTxt.Trim()
-            : "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA (Generating 2048-bit key...)";
+            : null;
 
         // 4. Retrieve Active Mailboxes
         var mailboxes = await _mailcowService.GetDomainMailboxesAsync(cleanDomain, cancellationToken);
@@ -375,6 +375,137 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
     }
 
     /// <inheritdoc />
+    public async Task<(bool Success, string Message)> SendDnsAlertEmailAsync(
+        string domain,
+        string recipientEmail,
+        string? tenantName,
+        IEnumerable<EmailDnsVerificationResult> failedRecords,
+        bool isResolved = false,
+        CancellationToken cancellationToken = default)
+    {
+        var cleanDomain = (domain ?? string.Empty).Trim().ToLowerInvariant();
+        var cleanRecipient = (recipientEmail ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(cleanRecipient) || !cleanRecipient.Contains('@'))
+        {
+            return (false, "Please provide a valid destination email address for the root administrator.");
+        }
+
+        var friendlyName = !string.IsNullOrWhiteSpace(tenantName) ? tenantName : cleanDomain;
+        var subject = isResolved
+            ? $"[RESOLVED] Email DNS Authentication Restored for {cleanDomain}"
+            : $"[URGENT ACTION REQUIRED] Email DNS Authentication Failed for {cleanDomain}";
+
+        var recordsList = (failedRecords ?? Enumerable.Empty<EmailDnsVerificationResult>()).ToList();
+
+        // Build HTML table for failing records
+        var failureRowsHtml = new System.Text.StringBuilder();
+        if (!isResolved && recordsList.Count > 0)
+        {
+            failureRowsHtml.Append(@"
+                <div style='margin: 20px 0;'>
+                    <table style='width: 100%; border-collapse: collapse; font-size: 13px;'>
+                        <thead>
+                            <tr style='background: #f1f5f9; text-align: left; color: #475569;'>
+                                <th style='padding: 10px; border-bottom: 2px solid #cbd5e1;'>Record</th>
+                                <th style='padding: 10px; border-bottom: 2px solid #cbd5e1;'>Host / Name</th>
+                                <th style='padding: 10px; border-bottom: 2px solid #cbd5e1;'>Status / Action Needed</th>
+                            </tr>
+                        </thead>
+                        <tbody>");
+
+            foreach (var rec in recordsList)
+            {
+                var badgeColor = "#ef4444"; // red
+                var subType = System.Net.WebUtility.HtmlEncode(rec.SubType ?? rec.RecordType ?? "DNS");
+                var host = System.Net.WebUtility.HtmlEncode(rec.QueryHost ?? cleanDomain);
+                var diagnosis = System.Net.WebUtility.HtmlEncode(!string.IsNullOrWhiteSpace(rec.Message) ? rec.Message : "Verification failed on public DNS resolvers.");
+
+                failureRowsHtml.Append($@"
+                            <tr style='border-bottom: 1px solid #e2e8f0;'>
+                                <td style='padding: 10px; vertical-align: top;'>
+                                    <span style='background: {badgeColor}; color: #ffffff; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px;'>{subType}</span>
+                                </td>
+                                <td style='padding: 10px; vertical-align: top; font-family: monospace; color: #0f172a;'>{host}</td>
+                                <td style='padding: 10px; vertical-align: top; color: #b91c1c;'>{diagnosis}</td>
+                            </tr>");
+            }
+
+            failureRowsHtml.Append(@"
+                        </tbody>
+                    </table>
+                </div>");
+        }
+
+        var headerColor = isResolved ? "#16a34a" : "#dc2626";
+        var headerIcon = isResolved ? "✅" : "⚠️";
+        var headerTitle = isResolved
+            ? "Email DNS Authentication Restored"
+            : "Urgent DNS Action Required";
+
+        var bodyLead = isResolved
+            ? $"Great news! Our 24/7 DNS Guardian verified that all email authentication records (MX, SPF, DKIM, DMARC) for <strong>{System.Net.WebUtility.HtmlEncode(cleanDomain)}</strong> are fully operational and verified."
+            : $"Our 24/7 DNS Guardian detected that one or more email authentication records for <strong>{System.Net.WebUtility.HtmlEncode(cleanDomain)}</strong> are failing live DNS verification or were modified at your registrar. While unverified, outbound emails may be flagged as spam or rejected by Gmail and Outlook.";
+
+        var domainPortalUrl = $"https://{cleanDomain}/settings/domain";
+
+        var htmlBody = $@"
+<div style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:620px; margin:0 auto; padding:32px 20px; background:#f8fafc; border-radius:16px;'>
+    <div style='background:#ffffff; border-radius:12px; padding:28px 32px; border:1px solid #e2e8f0; box-shadow:0 4px 12px rgba(0,0,0,0.03);'>
+        <div style='display:flex; align-items:center; margin-bottom:20px; border-bottom:1px solid #f1f5f9; padding-bottom:16px;'>
+            <div style='background:{headerColor}; color:#ffffff; width:44px; height:44px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; font-size:22px;'>{headerIcon}</div>
+            <div style='margin-left:14px;'>
+                <h2 style='margin:0; font-size:18px; color:#0f172a;'>{headerTitle}</h2>
+                <p style='margin:2px 0 0; font-size:13px; color:#64748b;'>{System.Net.WebUtility.HtmlEncode(friendlyName)} &bull; Business Command Center</p>
+            </div>
+        </div>
+
+        <p style='color:#334155; font-size:14px; line-height:1.6;'>
+            {bodyLead}
+        </p>
+
+        {failureRowsHtml}
+
+        <div style='margin-top:28px; text-align:center;'>
+            <a href='{domainPortalUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-weight:600; font-size:14px; padding:12px 28px; border-radius:8px; text-decoration:none; box-shadow:0 2px 6px rgba(0,80,229,0.25);'>
+                Open Domain Management in Command Center &rarr;
+            </a>
+        </div>
+
+        <div style='background:#f8fafc; border-radius:8px; padding:14px 16px; margin-top:28px; border:1px solid #e2e8f0;'>
+            <p style='margin:0; font-size:12px; color:#64748b; line-height:1.5;'>
+                <strong>Why did I receive this email?</strong><br/>
+                Our automated 24/7 DNS Guardian periodically inspects your domain's public DNS records to safeguard your domain's sender reputation and deliverability across global email providers.
+            </p>
+        </div>
+    </div>
+</div>";
+
+        try
+        {
+            var sent = await _smtpDispatcher.SendEmailAsync(
+                cleanRecipient,
+                subject,
+                htmlBody,
+                fromEmail: $"noreply@{cleanDomain}",
+                fromName: $"{friendlyName} Security Alert",
+                replyTo: $"support@{cleanDomain}",
+                isCentralPlatformEmail: true,
+                tenantName: friendlyName,
+                cancellationToken: cancellationToken);
+
+            return sent
+                ? (true, $"Alert email dispatched to root account '{cleanRecipient}'.")
+                : (false, "Could not deliver DNS alert message over SMTP.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send DNS alert email for domain {Domain} to {Recipient}", cleanDomain, cleanRecipient);
+            return (false, $"DNS alert email dispatch failed: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<EmailDnsVerificationResult> VerifyDnsRecordAsync(
         string domain,
         string subType,
@@ -465,11 +596,16 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
                     var dkimHost = $"dkim._domainkey.{cleanDomain}";
                     result.RecordType = "TXT";
                     result.QueryHost = dkimHost;
-                    result.ExpectedValue = "v=DKIM1; k=rsa; p=...";
+
+                    // Fetch the canonical expected DKIM record from Mailcow
+                    var expectedDkim = await _mailcowService.GetDkimRecordAsync(cleanDomain, cancellationToken);
+                    result.ExpectedValue = !string.IsNullOrWhiteSpace(expectedDkim)
+                        ? expectedDkim.Trim()
+                        : "v=DKIM1; k=rsa; p=...";
 
                     var dkimUrl = $"https://dns.google/resolve?name={Uri.EscapeDataString(dkimHost)}&type=TXT";
                     var dkimRes = await _httpClient.GetAsync(dkimUrl, cancellationToken);
-                    if (dkimRes.ok())
+                    if (dkimRes.IsSuccessStatusCode)
                     {
                         var json = await dkimRes.Content.ReadAsStringAsync(cancellationToken);
                         using var doc = JsonDocument.Parse(json);
@@ -481,15 +617,78 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
                                 {
                                     var val = d.GetString() ?? string.Empty;
                                     result.DetectedValue = val;
-                                    result.IsVerified = val.Contains("v=DKIM1", StringComparison.OrdinalIgnoreCase) || val.Contains("p=");
-                                    if (result.IsVerified) break;
+
+                                    // 1. Strict rejection of dummy or placeholder strings
+                                    if (val.Contains("Generating", StringComparison.OrdinalIgnoreCase) ||
+                                        val.Contains("dummy", StringComparison.OrdinalIgnoreCase) ||
+                                        val.Contains("...", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        result.IsVerified = false;
+                                        result.Message = "DKIM TXT record contains placeholder text. Replace with your actual 2048-bit public key.";
+                                        break;
+                                    }
+
+                                    // 2. Must contain v=DKIM1 and p=
+                                    if (!val.Contains("v=DKIM1", StringComparison.OrdinalIgnoreCase) || !val.Contains("p="))
+                                    {
+                                        result.IsVerified = false;
+                                        result.Message = "DKIM TXT record is missing required 'v=DKIM1' or 'p=' public key tag.";
+                                        break;
+                                    }
+
+                                    // 3. Extract and validate base64 public key in p=
+                                    var pIdx = val.IndexOf("p=", StringComparison.OrdinalIgnoreCase);
+                                    var pVal = val.Substring(pIdx + 2).Trim().Trim('"', ';');
+                                    pVal = pVal.Replace(" ", "").Replace("\t", "").Replace("\r", "").Replace("\n", "");
+                                    if (pVal.Contains(";"))
+                                    {
+                                        pVal = pVal.Substring(0, pVal.IndexOf(';'));
+                                    }
+
+                                    try
+                                    {
+                                        var keyBytes = Convert.FromBase64String(pVal);
+                                        if (keyBytes.Length < 100)
+                                        {
+                                            result.IsVerified = false;
+                                            result.Message = "DKIM public key is corrupted or incomplete.";
+                                            break;
+                                        }
+
+                                        // 4. Verify match against expected mailserver DKIM key if available
+                                        if (!string.IsNullOrWhiteSpace(expectedDkim) && expectedDkim.Contains("p="))
+                                        {
+                                            var expPIdx = expectedDkim.IndexOf("p=", StringComparison.OrdinalIgnoreCase);
+                                            var expPVal = expectedDkim.Substring(expPIdx + 2).Trim().Trim('"', ';');
+                                            expPVal = expPVal.Replace(" ", "").Replace("\t", "").Replace("\r", "").Replace("\n", "");
+                                            if (expPVal.Contains(";")) expPVal = expPVal.Substring(0, expPVal.IndexOf(';'));
+
+                                            if (!string.Equals(pVal, expPVal, StringComparison.Ordinal))
+                                            {
+                                                result.IsVerified = false;
+                                                result.Message = "Detected DKIM public key on DNS does not match the platform mailserver private key.";
+                                                break;
+                                            }
+                                        }
+
+                                        result.IsVerified = true;
+                                        result.Message = "DKIM 2048-bit cryptographic key is verified and matches mailserver.";
+                                        break;
+                                    }
+                                    catch
+                                    {
+                                        result.IsVerified = false;
+                                        result.Message = "DKIM public key contains invalid base64 characters.";
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                    result.Message = result.IsVerified
-                        ? "DKIM public key TXT record is active."
-                        : "DKIM TXT record not found at dkim._domainkey.";
+                    if (!result.IsVerified && string.IsNullOrWhiteSpace(result.Message))
+                    {
+                        result.Message = "DKIM TXT record not found at dkim._domainkey. Please add the TXT record to your DNS.";
+                    }
                     break;
 
                 case "DMARC":

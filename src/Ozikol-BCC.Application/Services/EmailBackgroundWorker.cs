@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Ozikol_BCC.Application.Repository.NotifyRegister;
 using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 using Ozikol_BCC.EmailServices.Postmark.Models;
+using Ozikol_BCC.Infrastructure.Services.Email;
 using PostmarkDotNet;
 
 namespace Ozikol_BCC.Application.Services
@@ -77,13 +78,15 @@ namespace Ozikol_BCC.Application.Services
                             var context = scope.ServiceProvider.GetRequiredService<DashboardDbContext>();
                             var zeptoMailService = scope.ServiceProvider.GetRequiredService<IZeptoMailService>();
                             var postmarkService = scope.ServiceProvider.GetService<IPostmarkEmailService>();
+                            var smtpDispatcher = scope.ServiceProvider.GetService<ISmtpEmailDispatcher>();
                             var emailShellService = scope.ServiceProvider.GetService<Ozikol_BCC.Application.Interfaces.Services.ITenantEmailShellService>();
 
                             var settings = await context.MisConfigurationSettings.FirstOrDefaultAsync();
                             bool hasZepto = settings != null && !string.IsNullOrWhiteSpace(settings.ZeptoMailApiKey);
                             bool hasPostmark = postmarkService != null;
+                            bool hasMailcow = smtpDispatcher != null;
 
-                            if (!hasZepto && !hasPostmark)
+                            if (!hasZepto && !hasPostmark && !hasMailcow)
                                 continue; // No email provider configured for this tenant
 
                             int maxRetries = settings?.EmailMaxRetries > 0 ? settings.EmailMaxRetries : 5;
@@ -141,6 +144,33 @@ namespace Ozikol_BCC.Application.Services
 
                                     isSuccess = result.Status == PostmarkStatus.Success;
                                     errorMessage = result.Message;
+                                }
+                                else if (hasMailcow && smtpDispatcher != null)
+                                {
+                                    var fromEmail = !string.IsNullOrWhiteSpace(settings?.SenderEmail)
+                                        ? settings.SenderEmail
+                                        : $"noreply@{safeTenantName}.ozikol.cloud";
+
+                                    var fromName = !string.IsNullOrWhiteSpace(settings?.SenderName)
+                                        ? settings.SenderName
+                                        : safeTenantName;
+
+                                    var sent = await smtpDispatcher.SendEmailAsync(
+                                        toEmail: email.RecipientEmail,
+                                        subject: email.Subject,
+                                        htmlBody: outgoingHtml,
+                                        fromEmail: fromEmail,
+                                        fromName: fromName,
+                                        replyTo: fromEmail,
+                                        isCentralPlatformEmail: false,
+                                        tenantName: fromName,
+                                        cancellationToken: stoppingToken);
+
+                                    isSuccess = sent;
+                                    if (!sent)
+                                    {
+                                        errorMessage = "Failed to dispatch email over Mailcow SMTP.";
+                                    }
                                 }
 
                                 if (isSuccess)
@@ -200,6 +230,33 @@ namespace Ozikol_BCC.Application.Services
 
                                     isSuccess = result.Status == PostmarkStatus.Success;
                                     errorMessage = result.Message;
+                                }
+                                else if (hasMailcow && smtpDispatcher != null)
+                                {
+                                    var fromEmail = !string.IsNullOrWhiteSpace(settings?.SenderEmail)
+                                        ? settings.SenderEmail
+                                        : $"noreply@{safeTenantName}.ozikol.cloud";
+
+                                    var fromName = !string.IsNullOrWhiteSpace(settings?.SenderName)
+                                        ? settings.SenderName
+                                        : safeTenantName;
+
+                                    var sent = await smtpDispatcher.SendEmailAsync(
+                                        toEmail: email.EmailAddress,
+                                        subject: email.Subject,
+                                        htmlBody: email.MailBody,
+                                        fromEmail: fromEmail,
+                                        fromName: fromName,
+                                        replyTo: fromEmail,
+                                        isCentralPlatformEmail: false,
+                                        tenantName: fromName,
+                                        cancellationToken: stoppingToken);
+
+                                    isSuccess = sent;
+                                    if (!sent)
+                                    {
+                                        errorMessage = "Failed to dispatch newsletter email over Mailcow SMTP.";
+                                    }
                                 }
 
                                 if (isSuccess)

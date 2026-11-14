@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -85,7 +85,7 @@ interface DnsProbeResult {
 
               <!-- Case 2: DNS checked and does NOT tally with ours -->
               <span *ngIf="hasCustomDomain && probeResults && !probeResults.cnamePassed" class="badge badge-danger">
-                <span class="dot bg-red"></span> Domain Not Yet Pointed
+                <span class="dot bg-red"></span> Unverified (DNS Action Required)
               </span>
 
               <!-- Case 3: Linked in DB but not yet tested -->
@@ -174,13 +174,13 @@ interface DnsProbeResult {
                 <span>{{ saving ? 'Verifying &amp; Saving Domain...' : (isDomainVerified ? 'Domain Verified &amp; Active' : 'Verify &amp; Save Domain') }}</span>
               </button>
 
-              <!-- 2. Unbind Domain (Active when verified; Inactive when unverified) -->
+              <!-- 2. Unbind Domain (Active when custom domain exists; Inactive when no domain linked) -->
               <button
                 type="button"
                 class="btn btn-danger-outline"
                 (click)="unbindDomain()"
-                [disabled]="saving || !isDomainVerified"
-                [title]="isDomainVerified ? 'Unbind and remove this custom domain' : 'Unbind is only active when domain is verified'"
+                [disabled]="saving || !hasCustomDomain"
+                [title]="hasCustomDomain ? 'Unbind and remove this custom domain' : 'No custom domain is currently linked'"
               >
                 <span class="material-symbols-outlined">link_off</span>
                 <span>Unbind Domain</span>
@@ -479,13 +479,13 @@ interface DnsProbeResult {
               class="btn-primary-action"
               [class.btn-all-verified]="isAllEmailDnsVerified"
               (click)="verifyAllEmailDnsRecords()"
-              [disabled]="verifyingAllEmailDns || isAllEmailDnsVerified"
-              [title]="isAllEmailDnsVerified ? 'All email DNS records are verified and active on live root resolvers' : 'Verify live propagation of MX, SPF, DKIM, and DMARC records'"
+              [disabled]="verifyingAllEmailDns"
+              [title]="isAllEmailDnsVerified ? 'All email DNS records are verified. Click to re-check across root resolvers.' : 'Verify live propagation of MX, SPF, DKIM, and DMARC records'"
             >
               <span class="material-symbols-outlined" [class.spin]="verifyingAllEmailDns">
                 {{ isAllEmailDnsVerified ? 'check_circle' : 'task_alt' }}
               </span>
-              <span>{{ isAllEmailDnsVerified ? 'All Email DNS Verified' : 'Verify All Email DNS' }}</span>
+              <span>{{ isAllEmailDnsVerified ? 'Re-verify All DNS' : 'Verify All Email DNS' }}</span>
             </button>
           </div>
         </div>
@@ -559,7 +559,10 @@ interface DnsProbeResult {
                     <span *ngIf="rec.isVerified" class="badge badge-success">
                       <span class="dot bg-green"></span> Verified
                     </span>
-                    <span *ngIf="!rec.isVerified" class="badge badge-warning">
+                    <span *ngIf="!rec.isVerified && rec.detectedValue" class="badge badge-danger">
+                      <span class="dot bg-red"></span> Unverified
+                    </span>
+                    <span *ngIf="!rec.isVerified && !rec.detectedValue" class="badge badge-warning">
                       <span class="dot bg-amber"></span> Pending
                     </span>
                   </td>
@@ -569,13 +572,13 @@ interface DnsProbeResult {
                       class="btn-verify-row"
                       [class.btn-row-verified]="rec.isVerified"
                       (click)="verifyEmailDnsRecord(rec.subType || rec.recordType)"
-                      [disabled]="rec.isVerified || verifyingDns[rec.subType || rec.recordType]"
-                      [title]="rec.isVerified ? 'Record is verified and active on live root DNS' : 'Verify this DNS record on live root resolvers'"
+                      [disabled]="verifyingDns[rec.subType || rec.recordType]"
+                      [title]="rec.isVerified ? 'Record is currently verified. Click to re-check live DNS.' : 'Verify this DNS record on live root resolvers'"
                     >
                       <span class="material-symbols-outlined" [class.spin]="verifyingDns[rec.subType || rec.recordType]">
                         {{ verifyingDns[rec.subType || rec.recordType] ? 'sync' : (rec.isVerified ? 'check_circle' : 'done_all') }}
                       </span>
-                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : (rec.isVerified ? 'Verified' : 'Verify') }}</span>
+                      <span>{{ verifyingDns[rec.subType || rec.recordType] ? 'Checking...' : (rec.isVerified ? 'Re-check' : 'Verify') }}</span>
                     </button>
                   </td>
                 </tr>
@@ -762,12 +765,12 @@ interface DnsProbeResult {
               </div>
 
               <div class="form-group-compact">
-                <label class="form-label-compact">Recipient Email Address <span class="required">*</span></label>
+                <label class="form-label-compact">Recipient Email Address (Defaults to Root Account Email):</label>
                 <input
                   type="email"
                   class="form-control-compact"
                   [(ngModel)]="testEmailRecipient"
-                  placeholder="e.g. user@domain.com"
+                  [placeholder]="adminEmail || 'user@domain.com'"
                 />
               </div>
 
@@ -775,7 +778,7 @@ interface DnsProbeResult {
                 type="button"
                 class="btn-send-test"
                 (click)="sendDomainTestEmail()"
-                [disabled]="sendingTestEmail || !testEmailRecipient"
+                [disabled]="sendingTestEmail || (!testEmailRecipient && !adminEmail)"
               >
                 <span class="material-symbols-outlined" [class.spin]="sendingTestEmail">
                   {{ sendingTestEmail ? 'sync' : 'mark_email_read' }}
@@ -2165,16 +2168,18 @@ interface DnsProbeResult {
     }
   `]
 })
-export class CustomDomainComponent implements OnInit {
+export class CustomDomainComponent implements OnInit, OnDestroy {
   loading = false;
   saving = false;
   probing = false;
+  private autoCheckTimer: any = null;
 
   tenantKey: string = '';
   primaryDomain: string = '';
   customDomain: string = '';
   customDomainInput: string = '';
   websiteUrl: string = '';
+  adminEmail: string = '';
 
   probeResults: DnsProbeResult | null = null;
   copySuccess: { [key: string]: boolean } = {};
@@ -2357,6 +2362,31 @@ export class CustomDomainComponent implements OnInit {
   ngOnInit(): void {
     this.initHeaderButtons();
     this.loadTenantInfo();
+    this.startAutoDnsCheck();
+  }
+
+  ngOnDestroy(): void {
+    if (this.autoCheckTimer) {
+      clearInterval(this.autoCheckTimer);
+      this.autoCheckTimer = null;
+    }
+  }
+
+  /**
+   * Automatically auto-probes DNS records for the custom domain and email suite periodically
+   * (every 45 seconds while viewing this page) to immediately detect if any DNS record was removed,
+   * broken, or modified at the registrar, dynamically reverting status to Unverified.
+   */
+  startAutoDnsCheck(): void {
+    if (this.autoCheckTimer) {
+      clearInterval(this.autoCheckTimer);
+    }
+    this.autoCheckTimer = setInterval(() => {
+      if (this.customDomain && !this.loading && !this.probing && !this.loadingEmailConfig && !this.verifyingAllEmailDns) {
+        this.probeDnsSilently(this.customDomain);
+        this.loadDomainEmailConfig(this.customDomain, true);
+      }
+    }, 45000);
   }
 
   private initHeaderButtons(): void {
@@ -2386,6 +2416,10 @@ export class CustomDomainComponent implements OnInit {
           this.customDomain = tenantInfo.customDomain || '';
           this.customDomainInput = this.customDomain;
           this.websiteUrl = tenantInfo.websiteUrl || '';
+          this.adminEmail = tenantInfo.adminEmail || tenantInfo.AdminEmail || '';
+          if (this.adminEmail && !this.testEmailRecipient) {
+            this.testEmailRecipient = this.adminEmail;
+          }
 
           if (this.customDomain) {
             localStorage.setItem('tenant_custom_domain', this.customDomain);
@@ -2730,13 +2764,14 @@ export class CustomDomainComponent implements OnInit {
 
   /**
    * Loads domain email configuration and active mailboxes from backend/Mailcow.
+   * Auto-probes live DNS records and immediately reverses status to Unverified if records are broken or removed.
    */
-  loadDomainEmailConfig(domain?: string): void {
+  loadDomainEmailConfig(domain?: string, silent: boolean = false): void {
     const targetDomain = domain || this.customDomain;
     if (!targetDomain) return;
 
     const cleanDomain = targetDomain.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
-    this.loadingEmailConfig = true;
+    if (!silent) this.loadingEmailConfig = true;
 
     this.api.get<any>(`DashboardApi/domain-email-config?domain=${encodeURIComponent(cleanDomain)}`).subscribe({
       next: (res) => {
@@ -2759,6 +2794,24 @@ export class CustomDomainComponent implements OnInit {
 
           data.customMailboxesUsed = customCount;
           data.customMailboxesAllowed = data.maxFreeMailboxes ?? data.MaxFreeMailboxes ?? 1;
+
+          // Detect if any record changed from verified to unverified during auto-check
+          const hadRecords = this.emailConfig?.dnsRecords && this.emailConfig.dnsRecords.length > 0;
+          const wasAllVerified = hadRecords && this.emailConfig.dnsRecords.every((r: any) => r.isVerified);
+          const isNowAllVerified = data.dnsRecords && data.dnsRecords.every((r: any) => r.isVerified);
+
+          if (silent && wasAllVerified && !isNowAllVerified) {
+            this.toast.warning('One or more email DNS records are no longer verified or were removed. Action required.', 'DNS Unverified');
+            // Proactively notify the root administrator email of the account
+            this.api.post<any>('DashboardApi/notify-dns-failure', {
+              domain: this.customDomain,
+              tenantKey: this.tenantKey
+            }).subscribe({
+              next: (res) => console.log('[Custom Domain] DNS failure alert dispatched to root email:', res),
+              error: (err) => console.warn('[Custom Domain] Could not dispatch root DNS failure email:', err)
+            });
+          }
+
           this.emailConfig = data;
           if (!this.testEmailSender && data.mailboxes?.length > 0) {
             this.testEmailSender = data.mailboxes[0].emailAddress || data.mailboxes[0].email;
@@ -2776,6 +2829,7 @@ export class CustomDomainComponent implements OnInit {
 
   /**
    * Verifies live DNS propagation for a single record type (MX, SPF, DKIM, DMARC).
+   * Probes public root resolvers and updates status dynamically.
    */
   verifyEmailDnsRecord(recordType: string): void {
     const targetDomain = this.customDomain;
@@ -2785,17 +2839,6 @@ export class CustomDomainComponent implements OnInit {
     }
 
     const targetType = (recordType || '').toUpperCase();
-    const existingRec = this.emailConfig?.dnsRecords?.find((r: any) =>
-      (r.subType && r.subType.toUpperCase() === targetType) ||
-      (r.recordType && r.recordType.toUpperCase() === targetType) ||
-      (r.SubType && r.SubType.toUpperCase() === targetType) ||
-      (r.RecordType && r.RecordType.toUpperCase() === targetType)
-    );
-    if (existingRec && (existingRec.isVerified ?? existingRec.IsVerified)) {
-      this.toast.info(`${recordType} record is already verified and active on live DNS.`, 'Already Verified');
-      return;
-    }
-
     const cleanDomain = targetDomain.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
     this.verifyingDns[recordType] = true;
 
@@ -2825,8 +2868,8 @@ export class CustomDomainComponent implements OnInit {
             this.toast.success(`${recordType} record verified successfully on live DNS!`, 'DNS Record Active');
           } else {
             this.toast.warning(
-              result.notes || `${recordType} record not detected yet. DNS changes can take up to 10 minutes to propagate globally.`,
-              'Propagation Pending'
+              result.message || result.notes || `${recordType} record failed verification or not detected on root DNS.`,
+              'Verification Failed'
             );
           }
         }
@@ -2843,11 +2886,6 @@ export class CustomDomainComponent implements OnInit {
    * Probes and verifies all email DNS records (MX, SPF, DKIM, DMARC) in sequence.
    */
   async verifyAllEmailDnsRecords(): Promise<void> {
-    if (this.isAllEmailDnsVerified) {
-      this.toast.info('All email DNS records are already verified and active.', 'Already Verified');
-      return;
-    }
-
     const records = ['MX', 'SPF', 'DKIM', 'DMARC'];
     this.verifyingAllEmailDns = true;
 
@@ -2988,9 +3026,9 @@ export class CustomDomainComponent implements OnInit {
    */
   sendDomainTestEmail(): void {
     if (!this.customDomain) return;
-    const recipient = (this.testEmailRecipient || '').trim();
+    const recipient = (this.testEmailRecipient || this.adminEmail || '').trim();
     if (!recipient || !recipient.includes('@') || !recipient.includes('.')) {
-      this.toast.error('Please enter a valid recipient email address (e.g. user@domain.com).', 'Invalid Email');
+      this.toast.error('Please enter a recipient email address or ensure account root email is set.', 'Invalid Email');
       return;
     }
 
@@ -3000,13 +3038,15 @@ export class CustomDomainComponent implements OnInit {
     const payload = {
       domain: this.customDomain,
       senderEmail: sender,
-      recipientEmail: recipient
+      recipientEmail: recipient,
+      tenantKey: this.tenantKey
     };
 
     this.api.post<any>('DashboardApi/send-domain-test-email', payload).subscribe({
       next: (res) => {
         this.sendingTestEmail = false;
-        this.toast.success(`Test email dispatched successfully from '${sender}' to '${recipient}'! Check your inbox.`, 'Test Email Sent');
+        const msg = res?.message || res?.Message || `Test email dispatched successfully from '${sender}' to '${recipient}'! Check your inbox.`;
+        this.toast.success(msg, 'Test Email Sent');
       },
       error: (err) => {
         this.sendingTestEmail = false;

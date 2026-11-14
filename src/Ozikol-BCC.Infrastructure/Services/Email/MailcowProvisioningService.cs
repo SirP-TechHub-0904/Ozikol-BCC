@@ -222,23 +222,55 @@ public sealed class MailcowProvisioningService : IMailcowProvisioningService
             var cleanDomain = domain.Trim().ToLowerInvariant();
             var response = await _httpClient.GetAsync($"api/v1/get/dkim/{cleanDomain}", cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                return null;
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("dkim_txt", out var dkimTxt))
+                {
+                    var recordStr = dkimTxt.GetString();
+                    if (!string.IsNullOrWhiteSpace(recordStr))
+                    {
+                        return recordStr.Trim();
+                    }
+                }
             }
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("dkim_txt", out var dkimTxt))
+            // Proactively generate a 2048-bit DKIM keypair via Mailcow REST API if not yet generated
+            _logger.LogInformation("ℹ️ [Mailcow] Generating 2048-bit DKIM keypair for '{Domain}'...", cleanDomain);
+            var dkimPayload = new
             {
-                return dkimTxt.GetString();
+                domains = cleanDomain,
+                dkim_selector = "dkim",
+                key_size = 2048
+            };
+            var genContent = new StringContent(JsonSerializer.Serialize(dkimPayload), Encoding.UTF8, "application/json");
+            var genRes = await _httpClient.PostAsync("api/v1/add/dkim", genContent, cancellationToken);
+
+            if (genRes.IsSuccessStatusCode)
+            {
+                var retryResponse = await _httpClient.GetAsync($"api/v1/get/dkim/{cleanDomain}", cancellationToken);
+                if (retryResponse.IsSuccessStatusCode)
+                {
+                    var retryJson = await retryResponse.Content.ReadAsStringAsync(cancellationToken);
+                    using var retryDoc = JsonDocument.Parse(retryJson);
+                    if (retryDoc.RootElement.TryGetProperty("dkim_txt", out var newDkimTxt))
+                    {
+                        var newRecordStr = newDkimTxt.GetString();
+                        if (!string.IsNullOrWhiteSpace(newRecordStr))
+                        {
+                            _logger.LogInformation("✅ [Mailcow] 2048-bit DKIM key successfully generated for '{Domain}'.", cleanDomain);
+                            return newRecordStr.Trim();
+                        }
+                    }
+                }
             }
 
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ [Mailcow] Exception while fetching DKIM record for '{Domain}'.", domain);
+            _logger.LogError(ex, "❌ [Mailcow] Exception while fetching or generating DKIM record for '{Domain}'.", domain);
             return null;
         }
     }
