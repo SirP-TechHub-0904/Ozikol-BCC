@@ -2245,7 +2245,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       imageUrl: resolvedCover,
       CoverImageUrl: resolvedCover,
       ImageUrl: resolvedCover,
-      authorName: this.currentArticle.author || 'Ozikol Editorial Team',
+      authorName: this.currentArticle.author || (this.brandName ? `${this.brandName} Team` : 'Editorial Team'),
       authorRole: 'Product Architecture',
       authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       authorBio: 'Technology writer and systems architect contributing to sovereign multi-tenant cloud infrastructure and high-performance digital workspaces.',
@@ -3691,7 +3691,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           </div>
 
           <div class="oz-blank-footer">
-            <span>© ${currentYear} ${brand}. Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; font-weight: 600;">Ozikol</a>.</span>
+            <span>© ${currentYear} ${brand}. All rights reserved.</span>
           </div>
         </div>
       </div>

@@ -445,7 +445,6 @@ export function resolveFeatureScopeFromUrl(cleanUrl: string): string | null {
   if (cleanUrl.startsWith('/users/console') || cleanUrl.startsWith('/admin/users')) return 'usermanager';
   if (cleanUrl.startsWith('/products/console') || cleanUrl.startsWith('/admin/products')) return 'storemanager';
   if (cleanUrl.startsWith('/groups/console') || cleanUrl.startsWith('/admin/groups') || cleanUrl.startsWith('/admin/alumni') || cleanUrl.startsWith('/admin/messenger')) return 'crmmanager';
-  if (cleanUrl.startsWith('/dashboard/console/analytics')) return 'telemetrymanager';
   return null;
 }
 

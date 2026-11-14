@@ -21,6 +21,7 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
     private readonly IConfiguration _configuration;
     private readonly ILogger<SmtpEmailDispatcher> _logger;
     private readonly IHostEnvironment? _environment;
+    private readonly IMailInfrastructureCredentialProvider? _credentialProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SmtpEmailDispatcher"/> class.
@@ -28,14 +29,17 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
     /// <param name="configuration">Application configuration provider.</param>
     /// <param name="logger">Structured logger instance.</param>
     /// <param name="environment">Optional host environment provider for local developer bypass.</param>
+    /// <param name="credentialProvider">Optional credential provider resolving credentials from Central Master DB.</param>
     public SmtpEmailDispatcher(
         IConfiguration configuration,
         ILogger<SmtpEmailDispatcher> logger,
-        IHostEnvironment? environment = null)
+        IHostEnvironment? environment = null,
+        IMailInfrastructureCredentialProvider? credentialProvider = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _environment = environment;
+        _credentialProvider = credentialProvider;
     }
 
     /// <inheritdoc />
@@ -65,18 +69,22 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
 
         try
         {
-            // Resolve SMTP connection parameters from configuration or environment
-            var smtpHost = _configuration["EmailSettings:SmtpHost"]
-                ?? _configuration["SMTP_HOST"]
-                ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpHost")
-                ?? Environment.GetEnvironmentVariable("SMTP_HOST")
-                ?? "mail.ozikol.cloud";
+            // Resolve credentials dynamically from Central Master DB (or fall back to configuration / .env)
+            var centralCreds = _credentialProvider?.GetCredentials();
+
+            var smtpHost = !string.IsNullOrWhiteSpace(centralCreds?.MailcowSmtpHost)
+                ? centralCreds.MailcowSmtpHost.Trim()
+                : (_configuration["EmailSettings:SmtpHost"]
+                    ?? _configuration["SMTP_HOST"]
+                    ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpHost")
+                    ?? Environment.GetEnvironmentVariable("SMTP_HOST")
+                    ?? "mail.ozikol.cloud");
 
             var rawPort = _configuration["EmailSettings:SmtpPort"]
                 ?? _configuration["SMTP_PORT"]
                 ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPort")
                 ?? Environment.GetEnvironmentVariable("SMTP_PORT")
-                ?? "587";
+                ?? (centralCreds?.MailcowSmtpPort > 0 ? centralCreds.MailcowSmtpPort.ToString() : "587");
 
             int.TryParse(rawPort, out var smtpPort);
             if (smtpPort <= 0)
@@ -86,19 +94,23 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
 
             var smtpUser = !string.IsNullOrWhiteSpace(smtpUsernameOverride)
                 ? smtpUsernameOverride.Trim()
-                : (_configuration["EmailSettings:SmtpUser"]
-                    ?? _configuration["SMTP_USER"]
-                    ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpUser")
-                    ?? Environment.GetEnvironmentVariable("SMTP_USER")
-                    ?? "noreply@ozikol.cloud");
+                : (!string.IsNullOrWhiteSpace(centralCreds?.MailcowSmtpUser)
+                    ? centralCreds.MailcowSmtpUser.Trim()
+                    : (_configuration["EmailSettings:SmtpUser"]
+                        ?? _configuration["SMTP_USER"]
+                        ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpUser")
+                        ?? Environment.GetEnvironmentVariable("SMTP_USER")
+                        ?? "noreply@ozikol.cloud"));
 
             var rawPassword = !string.IsNullOrWhiteSpace(smtpPasswordOverride)
                 ? smtpPasswordOverride.Trim()
-                : (_configuration["EmailSettings:SmtpPassword"]
-                    ?? _configuration["SMTP_PASSWORD"]
-                    ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPassword")
-                    ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD")
-                    ?? string.Empty);
+                : (!string.IsNullOrWhiteSpace(centralCreds?.MailcowSmtpPassword)
+                    ? centralCreds.MailcowSmtpPassword.Trim()
+                    : (_configuration["EmailSettings:SmtpPassword"]
+                        ?? _configuration["SMTP_PASSWORD"]
+                        ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPassword")
+                        ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD")
+                        ?? string.Empty));
 
             // Decrypt password at rest using OzikolDataCipher (AES-256-GCM) if stored encrypted
             var smtpPassword = OzikolDataCipher.DecryptIfNeeded(rawPassword) ?? rawPassword;
@@ -109,10 +121,10 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
 
             var defaultFromName = _configuration["EmailSettings:FromName"]
                 ?? Environment.GetEnvironmentVariable("EmailSettings__FromName")
-                ?? "Ozikol Business Command Center";
+                ?? (isCentralPlatformEmail ? "Central Platform" : (tenantName ?? "Support Team"));
 
             var resolvedFromEmail = !string.IsNullOrWhiteSpace(fromEmail) ? fromEmail : defaultFromEmail;
-            var resolvedFromName = !string.IsNullOrWhiteSpace(fromName) ? fromName : defaultFromName;
+            var resolvedFromName = !string.IsNullOrWhiteSpace(fromName) ? fromName : (!string.IsNullOrWhiteSpace(tenantName) ? tenantName : defaultFromName);
 
             // Append compliance & security footer
             var bodyWithFooter = AppendComplianceFooter(htmlBody, isCentralPlatformEmail, tenantName, tenantAdminEmail);
@@ -120,10 +132,11 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
             // If valid SMTP credentials exist, attempt real STARTTLS transmission over port 587
             if (!string.IsNullOrWhiteSpace(smtpPassword))
             {
+                // Set From and Sender to the resolved domain email address to ensure strict SPF/DKIM/DMARC domain alignment
                 using var mailMessage = new MailMessage
                 {
                     From = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
-                    Sender = new MailAddress(smtpUser, resolvedFromName, Encoding.UTF8),
+                    Sender = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
                     Subject = subject,
                     Body = bodyWithFooter,
                     IsBodyHtml = true,
@@ -205,18 +218,18 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
         }
         else
         {
-            var brandName = !string.IsNullOrWhiteSpace(tenantName) ? tenantName : "Your Workspace Organization";
-            var contactEmail = !string.IsNullOrWhiteSpace(tenantAdminEmail) ? tenantAdminEmail : "your workspace administrator";
+            var brandName = !string.IsNullOrWhiteSpace(tenantName) ? tenantName : "Your Organization";
+            var contactInfo = !string.IsNullOrWhiteSpace(tenantAdminEmail)
+                ? $@" at <a href=""mailto:{WebUtility.HtmlEncode(tenantAdminEmail)}"" style=""color: #0050E5; text-decoration: underline;"">{WebUtility.HtmlEncode(tenantAdminEmail)}</a>"
+                : string.Empty;
 
             sb.Append($@"
 <div style=""margin-top: 36px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"">
   <p style=""margin: 0 0 6px 0;"">
-    You received this notification from <strong>{WebUtility.HtmlEncode(brandName)}</strong> via Ozikol Business Command Center.
+    You received this notification from <strong>{WebUtility.HtmlEncode(brandName)}</strong>.
   </p>
   <p style=""margin: 0;"">
-    If you did not expect or request this notification, please contact your workspace team at 
-    <a href=""mailto:{WebUtility.HtmlEncode(contactEmail)}"" style=""color: #0050E5; text-decoration: underline;"">{WebUtility.HtmlEncode(contactEmail)}</a> 
-    or report unauthorized usage to <a href=""mailto:abuse@ozikol.cloud"" style=""color: #0050E5; text-decoration: underline;"">abuse@ozikol.cloud</a>.
+    If you did not expect or request this notification, please contact your organization team{contactInfo}.
   </p>
 </div>");
         }

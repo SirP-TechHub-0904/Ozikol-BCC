@@ -224,6 +224,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [MaxLength(255)]
             public string? MailcowSmtpHost { get; set; } = "mail.ozikol.cloud";
 
+            /// <summary>Gets or sets primary platform SMTP username (e.g. noreply@ozikol.cloud).</summary>
+            [MaxLength(150)]
+            public string? MailcowSmtpUser { get; set; } = "noreply@ozikol.cloud";
+
+            /// <summary>Gets or sets primary platform SMTP password (stored encrypted in Central DB).</summary>
+            [MaxLength(500)]
+            public string? MailcowSmtpPassword { get; set; }
+
+            /// <summary>Gets or sets primary platform SMTP port (default: 587 for STARTTLS).</summary>
+            public int MailcowSmtpPort { get; set; } = 587;
+
             /// <summary>Gets or sets Cloudflare Zone ID for ozikol.cloud used to automate tenant MX/SPF/DKIM/DMARC records.</summary>
             [MaxLength(255)]
             public string? CloudflareZoneId { get; set; }
@@ -390,6 +401,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 MailcowApiUrl = !string.IsNullOrWhiteSpace(settings.MailcowApiUrl) ? settings.MailcowApiUrl : "https://mail.ozikol.cloud",
                 MailcowApiKey = settings.MailcowApiKey,
                 MailcowSmtpHost = !string.IsNullOrWhiteSpace(settings.MailcowSmtpHost) ? settings.MailcowSmtpHost : "mail.ozikol.cloud",
+                MailcowSmtpUser = !string.IsNullOrWhiteSpace(settings.MailcowSmtpUser) ? settings.MailcowSmtpUser : "noreply@ozikol.cloud",
+                MailcowSmtpPassword = settings.MailcowSmtpPassword,
+                MailcowSmtpPort = settings.MailcowSmtpPort > 0 ? settings.MailcowSmtpPort : 587,
                 CloudflareZoneId = settings.CloudflareZoneId,
                 CloudflareDnsApiToken = settings.CloudflareDnsApiToken,
                 EnablePaystack = settings.EnablePaystack,
@@ -503,6 +517,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 settings.MailcowApiKey = Input.MailcowApiKey.Trim();
             }
             settings.MailcowSmtpHost = string.IsNullOrWhiteSpace(Input.MailcowSmtpHost) ? "mail.ozikol.cloud" : Input.MailcowSmtpHost.Trim();
+            settings.MailcowSmtpUser = string.IsNullOrWhiteSpace(Input.MailcowSmtpUser) ? "noreply@ozikol.cloud" : Input.MailcowSmtpUser.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.MailcowSmtpPassword) && !IsMasked(Input.MailcowSmtpPassword))
+            {
+                settings.MailcowSmtpPassword = Ozikol.MasterDomain.Security.OzikolDataCipher.EncryptIfNeeded(Input.MailcowSmtpPassword.Trim());
+            }
+            settings.MailcowSmtpPort = Input.MailcowSmtpPort > 0 ? Input.MailcowSmtpPort : 587;
             settings.CloudflareZoneId = Input.CloudflareZoneId?.Trim();
             if (!string.IsNullOrWhiteSpace(Input.CloudflareDnsApiToken))
             {
@@ -740,8 +760,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                     : (_configuration?["Mailcow:ApiUrl"] ?? _configuration?["Mailcow__ApiUrl"] ?? "https://mail.ozikol.cloud"));
 
             // Clean & resolve target Mailcow Key (strip dots/masking and decrypt if needed)
-            var rawMailcowKey = !string.IsNullOrWhiteSpace(mailcowApiKey) && !mailcowApiKey.Contains('●') && !mailcowApiKey.Contains('*')
-                ? mailcowApiKey.Trim()
+            var rawMailcowKey = !IsMasked(mailcowApiKey)
+                ? mailcowApiKey!.Trim()
                 : (!string.IsNullOrWhiteSpace(existing?.MailcowApiKey)
                     ? existing.MailcowApiKey.Trim()
                     : (_configuration?["Mailcow:ApiKey"] ?? _configuration?["Mailcow__ApiKey"] ?? Environment.GetEnvironmentVariable("Mailcow__ApiKey")));
@@ -755,8 +775,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                     ? existing.CloudflareZoneId.Trim()
                     : (_configuration?["Cloudflare:ZoneId"] ?? _configuration?["Cloudflare__ZoneId"]));
 
-            var rawCfToken = !string.IsNullOrWhiteSpace(cloudflareDnsApiToken) && !cloudflareDnsApiToken.Contains('●') && !cloudflareDnsApiToken.Contains('*')
-                ? cloudflareDnsApiToken.Trim()
+            var rawCfToken = !IsMasked(cloudflareDnsApiToken)
+                ? cloudflareDnsApiToken!.Trim()
                 : (!string.IsNullOrWhiteSpace(existing?.CloudflareDnsApiToken)
                     ? existing.CloudflareDnsApiToken.Trim()
                     : (_configuration?["Cloudflare:DnsApiToken"] ?? _configuration?["Cloudflare__DnsApiToken"]));
@@ -924,6 +944,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             {
                 return new JsonResult(new { success = false, message = $"Email test error: {ex.Message}" });
             }
+        }
+        /// <summary>
+        /// Determines whether a string is empty or contains masked display characters.
+        /// </summary>
+        /// <param name="val">The input string to inspect.</param>
+        /// <returns>True if the string appears masked or empty; otherwise false.</returns>
+        private static bool IsMasked(string? val)
+        {
+            if (string.IsNullOrWhiteSpace(val)) return true;
+            return val.Any(c => c == '●' || c == '•' || c == '*' || c == '·' || c == '▪');
         }
     }
 }

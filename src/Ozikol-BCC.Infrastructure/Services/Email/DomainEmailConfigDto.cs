@@ -38,6 +38,16 @@ public sealed class DomainEmailConfigDto
     public int CurrentCustomMailboxCount { get; set; }
 
     /// <summary>
+    /// Gets the count of active custom mailboxes used. Alias for <see cref="CurrentCustomMailboxCount"/>.
+    /// </summary>
+    public int CustomMailboxesUsed => CurrentCustomMailboxCount;
+
+    /// <summary>
+    /// Gets the maximum allowed free custom mailboxes. Alias for <see cref="MaxFreeMailboxes"/>.
+    /// </summary>
+    public int CustomMailboxesAllowed => MaxFreeMailboxes;
+
+    /// <summary>
     /// Gets a value indicating whether the tenant can create another free mailbox.
     /// </summary>
     public bool CanCreateMoreMailboxes => CurrentCustomMailboxCount < MaxFreeMailboxes;

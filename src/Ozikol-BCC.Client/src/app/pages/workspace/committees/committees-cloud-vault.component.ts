@@ -341,7 +341,7 @@ export class CommitteesCloudVaultComponent implements OnInit, OnDestroy {
       {
         icon: 'add_to_drive',
         title: 'Sign in with Google Picker',
-        description: 'Authorize only the specific Google Doc, Sheet, or Notebook you select — Ozikol BCC never scans unrelated Drive folders.'
+        description: 'Authorize only the specific Google Doc, Sheet, or Notebook you select — the system never scans unrelated Drive folders.'
       },
       {
         icon: 'visibility',

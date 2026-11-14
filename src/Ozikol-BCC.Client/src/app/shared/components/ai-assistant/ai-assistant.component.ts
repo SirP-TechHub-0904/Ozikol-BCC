@@ -18,7 +18,8 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <!-- 1. Floating Launch Pill / Bubble (Visible when not docked or when opened) -->
+    <!-- 1. Floating Launch Pill / Bubble (Hidden for now as requested) -->
+    <!--
     <button
       type="button"
       class="ai-launch-pill"
@@ -33,6 +34,7 @@ import { ToastService } from '../../../core/services/toast.service';
       <span class="pill-label">Ozi AI</span>
       <span class="pill-badge" *ngIf="activeContext">{{ activeContext.pageCategory || 'Studio' }}</span>
     </button>
+    -->
 
     <!-- 2. AI Assistant Panel (Floated or Docked) -->
     <div

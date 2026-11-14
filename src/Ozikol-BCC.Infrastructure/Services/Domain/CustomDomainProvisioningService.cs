@@ -436,10 +436,27 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
     }
 
     /// <summary>
-    /// Appends reverse proxy location directives for both API and Angular web client.
+    /// Appends reverse proxy location directives for API, SignalR, social media crawlers, and Angular web client.
     /// </summary>
     private static void AppendProxyLocations(StringBuilder sb, string domain, string tenantKey, string webPort, string apiPort)
     {
+        sb.AppendLine("    # Social Media Crawler Detection (WhatsApp, Facebook, Twitter/X, Telegram, LinkedIn, Discord, Slack)");
+        sb.AppendLine("    set $social_crawler 0;");
+        sb.AppendLine("    if ($http_user_agent ~* \"WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|SkypeUriPreview\") {");
+        sb.AppendLine("        set $social_crawler 1;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    # Internal Dynamic Social Preview Proxy for Crawlers");
+        sb.AppendLine("    location = /_social_preview_internal {");
+        sb.AppendLine("        internal;");
+        sb.AppendLine($"        proxy_pass http://127.0.0.1:{apiPort}/api/WebsiteContentApi/social-preview;");
+        sb.AppendLine("        proxy_set_header Host $host;");
+        sb.AppendLine($"        proxy_set_header X-Tenant-Key \"{tenantKey}\";");
+        sb.AppendLine($"        proxy_set_header X-Tenant-Slug \"{tenantKey}\";");
+        sb.AppendLine($"        proxy_set_header X-Tenant-Custom-Domain \"{domain}\";");
+        sb.AppendLine("        proxy_set_header X-Forwarded-Proto $scheme;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
         sb.AppendLine("    # Dedicated Ozikol Tenant API Proxy");
         sb.AppendLine("    location /api/ {");
         sb.AppendLine($"        proxy_pass http://127.0.0.1:{apiPort}/api/;");
@@ -448,6 +465,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         sb.AppendLine("        proxy_set_header Connection \"upgrade\";");
         sb.AppendLine("        proxy_set_header Host $host;");
         sb.AppendLine($"        proxy_set_header X-Tenant-Key \"{tenantKey}\";");
+        sb.AppendLine($"        proxy_set_header X-Tenant-Slug \"{tenantKey}\";");
         sb.AppendLine($"        proxy_set_header X-Tenant-Custom-Domain \"{domain}\";");
         sb.AppendLine("        proxy_set_header X-Real-IP $remote_addr;");
         sb.AppendLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
@@ -459,12 +477,16 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         sb.AppendLine();
         sb.AppendLine("    # Dedicated Ozikol Workspace Web App Proxy");
         sb.AppendLine("    location / {");
+        sb.AppendLine("        if ($social_crawler = 1) {");
+        sb.AppendLine("            rewrite ^ /_social_preview_internal last;");
+        sb.AppendLine("        }");
         sb.AppendLine($"        proxy_pass http://127.0.0.1:{webPort}/;");
         sb.AppendLine("        proxy_http_version 1.1;");
         sb.AppendLine("        proxy_set_header Upgrade $http_upgrade;");
         sb.AppendLine("        proxy_set_header Connection \"upgrade\";");
         sb.AppendLine("        proxy_set_header Host $host;");
         sb.AppendLine($"        proxy_set_header X-Tenant-Key \"{tenantKey}\";");
+        sb.AppendLine($"        proxy_set_header X-Tenant-Slug \"{tenantKey}\";");
         sb.AppendLine($"        proxy_set_header X-Tenant-Custom-Domain \"{domain}\";");
         sb.AppendLine("        proxy_set_header X-Real-IP $remote_addr;");
         sb.AppendLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");

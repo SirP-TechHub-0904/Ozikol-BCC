@@ -113,7 +113,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
               <div class="form-footer-meta">
                 <p class="auth-terms-note" *ngIf="displayFooterNote">{{ displayFooterNote }}</p>
                 <div class="powered-by-row" [class.desktop-hidden-in-split]="!isCentered">
-                  <span>{{ 'adm.powered_by' | translate:'Powered by' }} <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
+                  <span>&copy; {{ currentYear }} {{ brandName }}. All rights reserved.</span>
                 </div>
               </div>
             </div>

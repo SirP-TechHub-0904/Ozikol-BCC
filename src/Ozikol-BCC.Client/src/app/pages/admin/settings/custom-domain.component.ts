@@ -593,9 +593,9 @@ interface DnsProbeResult {
                 <h4>Business Mailboxes</h4>
                 <p>Manage inboxes for your domain. Includes 1 free custom mailbox plus automated system sender.</p>
               </div>
-              <div class="quota-pill" [class.quota-full]="(emailConfig?.customMailboxesUsed || 0) >= (emailConfig?.customMailboxesAllowed || 1)">
+              <div class="quota-pill" [class.quota-full]="(customMailbox ? 1 : (emailConfig?.customMailboxesUsed || 0)) >= (emailConfig?.customMailboxesAllowed || 1)">
                 <span class="material-symbols-outlined">account_balance_wallet</span>
-                <span>Free Mailboxes: <strong>{{ emailConfig?.customMailboxesUsed || 0 }} / {{ emailConfig?.customMailboxesAllowed || 1 }}</strong> Used</span>
+                <span>Free Mailboxes: <strong>{{ (customMailbox ? 1 : (emailConfig?.customMailboxesUsed || 0)) }} / {{ emailConfig?.customMailboxesAllowed || 1 }}</strong> Used</span>
               </div>
             </div>
           </div>
@@ -2752,6 +2752,13 @@ export class CustomDomainComponent implements OnInit {
               displayName: m.displayName || m.DisplayName || m.name
             }));
           }
+
+          const customCount = Array.isArray(data.mailboxes)
+            ? data.mailboxes.filter((m: any) => !m.isSystemMailbox).length
+            : (data.currentCustomMailboxCount ?? data.CurrentCustomMailboxCount ?? 0);
+
+          data.customMailboxesUsed = customCount;
+          data.customMailboxesAllowed = data.maxFreeMailboxes ?? data.MaxFreeMailboxes ?? 1;
           this.emailConfig = data;
           if (!this.testEmailSender && data.mailboxes?.length > 0) {
             this.testEmailSender = data.mailboxes[0].emailAddress || data.mailboxes[0].email;

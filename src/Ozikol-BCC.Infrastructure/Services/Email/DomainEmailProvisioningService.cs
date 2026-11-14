@@ -322,7 +322,7 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
 
         var senderEmail = $"noreply@{cleanDomain}";
         var friendlyName = !string.IsNullOrWhiteSpace(tenantName) ? tenantName : cleanDomain;
-        var subject = $"[Ozikol BCC] Deliverability Test for {cleanDomain}";
+        var subject = $"Email Deliverability Test for {cleanDomain}";
 
         var htmlBody = $@"
 <div style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:600px; margin:0 auto; padding:32px 24px; background:#f8fafc; border-radius:16px;'>
@@ -331,21 +331,21 @@ public sealed class DomainEmailProvisioningService : IDomainEmailProvisioningSer
             <div style='background:#0050e5; color:#ffffff; width:40px; height:40px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold;'>✉️</div>
             <div style='margin-left:14px;'>
                 <h2 style='margin:0; font-size:18px; color:#0f172a;'>Email Deliverability Verification</h2>
-                <p style='margin:2px 0 0; font-size:13px; color:#64748b;'>Ozikol Business Command Center (BCC)</p>
+                <p style='margin:2px 0 0; font-size:13px; color:#64748b;'>{System.Net.WebUtility.HtmlEncode(friendlyName)}</p>
             </div>
         </div>
         <p style='color:#334155; font-size:14px; line-height:1.6;'>
-            Congratulations! This test email confirms that your custom domain <strong>{cleanDomain}</strong> is successfully connected to the Ozikol BCC mail infrastructure.
+            Congratulations! This test email confirms that your custom domain <strong>{cleanDomain}</strong> is successfully connected and operational.
         </p>
         <div style='background:#f1f5f9; border-left:4px solid #0050e5; padding:12px 16px; border-radius:6px; margin:20px 0;'>
             <div style='font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;'>Delivery Diagnostics</div>
             <div style='font-size:13px; color:#0f172a; margin-top:4px;'><strong>Sender:</strong> {senderEmail}</div>
             <div style='font-size:13px; color:#0f172a;'><strong>Destination:</strong> {cleanRecipient}</div>
-            <div style='font-size:13px; color:#0f172a;'><strong>Mail Relay:</strong> {DefaultMailHost} (Port 587 STARTTLS)</div>
+            <div style='font-size:13px; color:#0f172a;'><strong>Status:</strong> Active (Port 587 STARTTLS)</div>
             <div style='font-size:13px; color:#16a34a; margin-top:4px;'><strong>Authentication:</strong> SPF &amp; DKIM Signed</div>
         </div>
         <p style='color:#64748b; font-size:12px; margin-top:24px; border-top:1px solid #f1f5f9; padding-top:16px;'>
-            Sent by Ozikol BCC Mail System. If you received this email in your inbox, your email DNS configuration is healthy.
+            If you received this email in your inbox, your email DNS configuration (MX, SPF, DKIM) is authenticated and healthy.
         </p>
     </div>
 </div>";

@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -1029,6 +1030,112 @@ namespace Ozikol_BCC.Api.Controllers
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(defaultSetting, "Default public UI settings retrieved."));
+        }
+
+        /// <summary>
+        /// Serves dynamic HTML pre-populated with OpenGraph (og:title, og:description, og:image)
+        /// and Twitter Card meta tags for social media scrapers (WhatsApp, Facebook, Twitter/X, Telegram, LinkedIn, Discord).
+        /// Ensures rich link cards display the tenant's brand name, logo thumbnail, and description when shared.
+        /// </summary>
+        /// <returns>The complete HTML shell with injected OpenGraph and Twitter Card metadata.</returns>
+        [HttpGet("social-preview")]
+        [Produces("text/html")]
+        public async Task<IActionResult> GetSocialPreview()
+        {
+            var setting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brandName = !string.IsNullOrWhiteSpace(setting?.BrandName)
+                ? setting.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(setting?.CompanyName) ? setting.CompanyName.Trim() : "Workspace");
+
+            var title = !string.IsNullOrWhiteSpace(setting?.WebsiteTitle)
+                ? setting.WebsiteTitle.Trim()
+                : (!string.IsNullOrWhiteSpace(setting?.SiteTitle) ? setting.SiteTitle.Trim() : brandName);
+
+            var description = !string.IsNullOrWhiteSpace(setting?.CompanyDescription)
+                ? setting.CompanyDescription.Trim()
+                : (!string.IsNullOrWhiteSpace(setting?.FooterDescription)
+                    ? setting.FooterDescription.Trim()
+                    : (!string.IsNullOrWhiteSpace(setting?.Tagline) ? setting.Tagline.Trim() : $"{brandName} Official Workspace"));
+
+            // Prioritize square icon (CompanyIconUrl) for social preview cards so it doesn't get cropped
+            var imageUrl = !string.IsNullOrWhiteSpace(setting?.CompanyIconUrl)
+                ? setting.CompanyIconUrl.Trim()
+                : (!string.IsNullOrWhiteSpace(setting?.CompanyLogoUrl)
+                    ? setting.CompanyLogoUrl.Trim()
+                    : (!string.IsNullOrWhiteSpace(setting?.LogoUrl) ? setting.LogoUrl.Trim() : "https://ozikol.cloud/assets/images/ozikol.png"));
+
+            var faviconUrl = !string.IsNullOrWhiteSpace(setting?.FaviconUrl) ? setting.FaviconUrl.Trim() : imageUrl;
+
+            var host = Request.Headers["X-Forwarded-Host"].FirstOrDefault()
+                ?? Request.Headers["X-Tenant-Custom-Domain"].FirstOrDefault()
+                ?? Request.Host.Value;
+
+            var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+            var canonicalUrl = $"{scheme}://{host}/";
+
+            // Locate client index.html to inject into
+            var clientIndexPath = "/var/www/ozikol-client/index.html";
+            if (!System.IO.File.Exists(clientIndexPath))
+            {
+                clientIndexPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "index.html");
+            }
+
+            string baseHtml;
+            if (System.IO.File.Exists(clientIndexPath))
+            {
+                baseHtml = await System.IO.File.ReadAllTextAsync(clientIndexPath);
+            }
+            else
+            {
+                baseHtml = "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title></title></head><body><app-root></app-root></body></html>";
+            }
+
+            var safeTitle = System.Net.WebUtility.HtmlEncode(title);
+            var safeDesc = System.Net.WebUtility.HtmlEncode(description);
+            var safeBrand = System.Net.WebUtility.HtmlEncode(brandName);
+
+            var metaTags = new StringBuilder();
+            metaTags.AppendLine($"  <title>{safeTitle}</title>");
+            metaTags.AppendLine($"  <meta name=\"description\" content=\"{safeDesc}\" />");
+            metaTags.AppendLine($"  <link rel=\"icon\" href=\"{faviconUrl}\" />");
+            metaTags.AppendLine($"  <link rel=\"shortcut icon\" href=\"{faviconUrl}\" />");
+            metaTags.AppendLine($"  <link rel=\"apple-touch-icon\" href=\"{imageUrl}\" />");
+            metaTags.AppendLine($"  <link rel=\"canonical\" href=\"{canonicalUrl}\" />");
+            metaTags.AppendLine();
+            metaTags.AppendLine("  <!-- Open Graph Protocol (WhatsApp, Facebook, LinkedIn, Telegram, Discord, Slack) -->");
+            metaTags.AppendLine("  <meta property=\"og:type\" content=\"website\" />");
+            metaTags.AppendLine($"  <meta property=\"og:site_name\" content=\"{safeBrand}\" />");
+            metaTags.AppendLine($"  <meta property=\"og:title\" content=\"{safeTitle}\" />");
+            metaTags.AppendLine($"  <meta property=\"og:description\" content=\"{safeDesc}\" />");
+            metaTags.AppendLine($"  <meta property=\"og:image\" content=\"{imageUrl}\" />");
+            metaTags.AppendLine($"  <meta property=\"og:image:secure_url\" content=\"{imageUrl}\" />");
+            metaTags.AppendLine("  <meta property=\"og:image:width\" content=\"1200\" />");
+            metaTags.AppendLine("  <meta property=\"og:image:height\" content=\"630\" />");
+            metaTags.AppendLine($"  <meta property=\"og:url\" content=\"{canonicalUrl}\" />");
+            metaTags.AppendLine();
+            metaTags.AppendLine("  <!-- Twitter / X Cards -->");
+            metaTags.AppendLine("  <meta name=\"twitter:card\" content=\"summary_large_image\" />");
+            metaTags.AppendLine($"  <meta name=\"twitter:title\" content=\"{safeTitle}\" />");
+            metaTags.AppendLine($"  <meta name=\"twitter:description\" content=\"{safeDesc}\" />");
+            metaTags.AppendLine($"  <meta name=\"twitter:image\" content=\"{imageUrl}\" />");
+
+            // Strip existing empty <title> tag
+            var injectedHtml = System.Text.RegularExpressions.Regex.Replace(
+                baseHtml,
+                @"<title>.*?</title>",
+                string.Empty,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+            if (injectedHtml.Contains("<head>", StringComparison.OrdinalIgnoreCase))
+            {
+                injectedHtml = injectedHtml.Replace("<head>", "<head>\n" + metaTags.ToString(), StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                injectedHtml = metaTags.ToString() + injectedHtml;
+            }
+
+            return Content(injectedHtml, "text/html; charset=utf-8");
         }
 
         /// <summary>

@@ -1320,7 +1320,7 @@ export class MxSmsComponent implements OnInit, OnDestroy {
     this.showTestModal = true;
     this.testFeedback = null;
     this.testPhone = '';
-    this.testMessage = 'Test SMS dispatch from Ozikol Business Command Center.';
+    this.testMessage = 'Test SMS dispatch from Business Command Center.';
   }
 
   sendTestSms(): void {

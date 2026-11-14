@@ -82,7 +82,7 @@ export class ExportService {
             ${tableRowsHtml}
           </tbody>
         </table>
-        <div class="footer">Official Member Register Report - Generated automatically by Ozikol BCC Platform</div>
+        <div class="footer">Official Member Register Report</div>
       </body>
       </html>
     `;
@@ -159,7 +159,7 @@ export class ExportService {
           </tbody>
         </table>
         <div class="footer">
-          <span>Ozikol Business Command Center (BCC) Platform</span>
+          <span>Official Member Register Report</span>
           <span>Confidential Institutional Document</span>
         </div>
       </body>

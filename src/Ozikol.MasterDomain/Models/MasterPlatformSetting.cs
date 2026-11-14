@@ -259,6 +259,24 @@ namespace Ozikol.MasterDomain.Models
         public string? MailcowSmtpHost { get; set; } = "mail.ozikol.cloud";
 
         /// <summary>
+        /// Gets or sets the primary platform SMTP username (e.g. "noreply@ozikol.cloud") used for system email dispatch.
+        /// </summary>
+        [MaxLength(150)]
+        public string? MailcowSmtpUser { get; set; } = "noreply@ozikol.cloud";
+
+        /// <summary>
+        /// Gets or sets the encrypted primary platform SMTP password used for system email dispatch.
+        /// Stored encrypted transparently at rest via AES-256-GCM.
+        /// </summary>
+        [MaxLength(500)]
+        public string? MailcowSmtpPassword { get; set; }
+
+        /// <summary>
+        /// Gets or sets the primary platform SMTP port (default: 587 for STARTTLS).
+        /// </summary>
+        public int MailcowSmtpPort { get; set; } = 587;
+
+        /// <summary>
         /// Gets or sets the Cloudflare Zone ID for the primary platform domain (e.g. ozikol.cloud) used to automate tenant MX, SPF, DKIM, and DMARC records.
         /// </summary>
         [MaxLength(255)]

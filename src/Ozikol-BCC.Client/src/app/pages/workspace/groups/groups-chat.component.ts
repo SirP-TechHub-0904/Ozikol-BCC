@@ -480,7 +480,7 @@ interface LocalMessage {
             <div class="zero-logo-circle">
               <span class="material-symbols-outlined">chat_bubble</span>
             </div>
-            <h2>Ozikol Chat Messenger</h2>
+            <h2>Team Messenger</h2>
             <p>Select a group channel or direct conversation from the sidebar to begin chatting.</p>
           </div>
         </div>
@@ -1329,7 +1329,7 @@ export class GroupsChatComponent implements OnInit, OnDestroy, AfterViewChecked 
     if (!this.activeChatId) return;
 
     let transcript = `=========================================================================\n`;
-    transcript += `OZIKOL CHAT TRANSCRIPT: ${this.activeTitle.toUpperCase()}\n`;
+    transcript += `CHAT TRANSCRIPT: ${this.activeTitle.toUpperCase()}\n`;
     transcript += `EXPORT DATE: ${new Date().toUTCString()}\n`;
     transcript += `TOTAL MESSAGES: ${this.messages.length}\n`;
     transcript += `=========================================================================\n\n`;

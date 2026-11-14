@@ -108,18 +108,6 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
-          <div class="nav-item">
-            <a routerLink="/dashboard/console/analytics" [class.active]="isCurrentRoute('/dashboard/console/analytics')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">analytics</span>
-                <span>{{ 'adm.analytics_telemetry' | translate:'Analytics & Telemetry' }}</span>
-                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/console/analytics')" (click)="togglePin('Analytics', '/dashboard/console/analytics', 'analytics'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/console/analytics') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/dashboard/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
 
           <!-- 2. Website & CMS (Web Exclusive) -->
           <ng-container *ngIf="canAccessSuite('cms')">
@@ -1538,65 +1526,7 @@ export interface SuiteInfoDetail {
             </div>
           </div>
 
-          <!-- 12-App Grid Launcher -->
-          <div class="apps-grid-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" [title]="'adm.apps_launcher' | translate:'Apps Launcher'">
-              <span class="material-symbols-outlined">grid_view</span>
-            </button>
-            <div class="apps-grid-dropdown" *ngIf="activeDropdown === 'apps'">
-              <div class="apps-grid-header">{{ 'adm.workspace_apps_features' | translate:'Workspace Apps & Features' }}</div>
-              <div class="apps-grid-container">
-                <a routerLink="/admin/dashboard" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#0050e5"><span class="material-symbols-outlined">space_dashboard</span></div>
-                  <span>{{ 'adm.console' | translate:'Console' }}</span>
-                </a>
-                <a routerLink="/admin/content" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#1f6bff"><span class="material-symbols-outlined">dynamic_feed</span></div>
-                  <span>{{ 'adm.cms_studio' | translate:'CMS Studio' }}</span>
-                </a>
-                <a routerLink="/admin/users" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#22c55e"><span class="material-symbols-outlined">groups</span></div>
-                  <span>{{ 'adm.users' | translate:'Users' }}</span>
-                </a>
-                <a routerLink="/admin/identity" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#ef4444"><span class="material-symbols-outlined">admin_panel_settings</span></div>
-                  <span>{{ 'adm.identity' | translate:'Identity' }}</span>
-                </a>
-                <a routerLink="/admin/groups" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#a855f7"><span class="material-symbols-outlined">forum</span></div>
-                  <span>{{ 'adm.channels' | translate:'Channels' }}</span>
-                </a>
-                <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#f59e0b"><span class="material-symbols-outlined">palette</span></div>
-                  <span>{{ 'adm.brand' | translate:'Brand' }}</span>
-                </a>
-                <a routerLink="/" target="_blank" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#14b8a6"><span class="material-symbols-outlined">language</span></div>
-                  <span>{{ 'adm.public_site' | translate:'Public Site' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#64748b"><span class="material-symbols-outlined">summarize</span></div>
-                  <span>{{ 'adm.reports' | translate:'Reports' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#3b82f6"><span class="material-symbols-outlined">edit_document</span></div>
-                  <span>{{ 'adm.forms' | translate:'Forms' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#ca8a04"><span class="material-symbols-outlined">payments</span></div>
-                  <span>{{ 'adm.financials' | translate:'Financials' }}</span>
-                </a>
-                <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#8b5cf6"><span class="material-symbols-outlined">calendar_month</span></div>
-                  <span>{{ 'adm.events' | translate:'Events' }}</span>
-                </a>
-                <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
-                  <div class="app-icon-bg" style="background:#0f172a"><span class="material-symbols-outlined">settings</span></div>
-                  <span>Settings</span>
-                </a>
-              </div>
-            </div>
-          </div>
+
 
           <!-- Calendar Popover -->
           <div class="calendar-wrapper">
@@ -1625,23 +1555,7 @@ export interface SuiteInfoDetail {
             </div>
           </div>
 
-          <!-- Topbar Security Audit Mini Counter Dashboard (Normal, Suspicious, Critical) -->
-          <div class="security-mini-dashboard" *ngIf="canAccessSecurityMiniDashboard" title="Workspace Security Health">
-            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Normal' }" class="sec-stat-pill sec-normal" title="Normal security events">
-              <span class="sec-stat-dot dot-normal"></span>
-              <span class="sec-stat-val">{{ securityStats.normal }}</span>
-            </a>
-            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Suspicious' }" class="sec-stat-pill sec-suspicious" [class.has-alerts]="securityStats.suspicious > 0" title="Suspicious access & login alerts">
-              <span class="sec-stat-dot dot-suspicious"></span>
-              <span class="sec-stat-label">SUSP</span>
-              <span class="sec-stat-val">{{ securityStats.suspicious }}</span>
-            </a>
-            <a routerLink="/identity/console/audit-logs" [queryParams]="{ severity: 'Critical' }" class="sec-stat-pill sec-critical" [class.has-critical]="securityStats.critical > 0" title="Critical security & lockout alerts">
-              <span class="sec-stat-dot dot-critical"></span>
-              <span class="sec-stat-label">CRIT</span>
-              <span class="sec-stat-val">{{ securityStats.critical }}</span>
-            </a>
-          </div>
+
 
           <!-- Help Trigger -->
           <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" [title]="'adm.contextual_help' | translate:'Contextual Help'">
@@ -1839,7 +1753,7 @@ export interface SuiteInfoDetail {
           <button (click)="showHelpModal = false" class="btn-close">&times;</button>
         </div>
         <div class="modal-body">
-          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to Ozikol BCP Multi-Tenant Workspace' }}</h4>
+          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to your Business Command Center' }}</h4>
           <p>{{ 'adm.this_system_allows_you_to_manage_members_col' | translate:'This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.' }}</p>
           <ul>
             <li><strong>{{ 'adm.taskbar_tabs' | translate:'Taskbar Tabs:' }}</strong> {{ 'adm.as_you_navigate_pages_stay_open_as_browser_l' | translate:'As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.' }}</li>
@@ -3658,7 +3572,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
         'Category & Sub-Category Segmentation (e.g. VIP, Staff, Volunteers)',
         'Interactive Working Groups, Working Committees & Community Hubs',
         'Alumni Network Tracking & Graduation Cohorts',
-        'Real-time Ozikol Chat Messenger for staff and member collaboration',
+        'Real-time Team Messenger for staff and member collaboration',
         'Confidential Whistleblowing & Feedback Oversight'
       ],
       impact: 'Transforms passive contact lists into structured, searchable communities with custom taxonomy and lifecycle history.'
@@ -3750,7 +3664,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
         'Mass Notification Studio with Email, SMS, WhatsApp & In-App delivery',
         'Real-time Anti-Spam Scanner & Mailbox Blacklist Guard',
         'Delivery Telemetry, Open-rate and Click-through Analytics',
-        'Internal Ozikol Chat Messenger for staff & team collaboration',
+        'Internal Team Messenger for staff & team collaboration',
         'Embeddable Live Chat Widget for public websites',
         'Multi-agent Helpdesk Ticketing System with SLA routing',
         'Social Bio Link-Tree Landing Page Builder'
