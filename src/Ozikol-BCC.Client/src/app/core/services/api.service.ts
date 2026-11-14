@@ -12,12 +12,13 @@ export class ApiService {
    * When running in the browser on a deployed hostname (e.g. sovereign custom domains like nightpresssecurity.co.uk
    * or platform subdomains like tenant.ozikol.cloud), strictly uses the same-origin relative '/api' endpoint.
    * This routes through Nginx edge proxies with zero CORS latency, no cross-origin preflight errors, and full tenant header injection.
-   * On localhost development servers, gracefully falls back to the configured environment.apiUrl.
+   * On localhost development servers (including *.localhost and *.127.0.0.1.nip.io tenant subdomains),
+   * gracefully falls back to the configured environment.apiUrl.
    */
   public get baseUrl(): string {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname.toLowerCase();
-      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      if (!this.isLocalDevelopmentHost(hostname)) {
         return '/api';
       }
     }
@@ -25,6 +26,21 @@ export class ApiService {
   }
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * Determines whether the current browser hostname is a local development address
+   * (including root localhost, loopback IP, or local wildcard tenant subdomains).
+   * @param hostname Lowercase browser hostname.
+   * @returns True when running against a local development host.
+   */
+  private isLocalDevelopmentHost(hostname: string): boolean {
+    if (!hostname) return true;
+    const lower = hostname.toLowerCase();
+    return lower === 'localhost' ||
+           lower === '127.0.0.1' ||
+           lower.endsWith('.localhost') ||
+           lower.endsWith('.127.0.0.1.nip.io');
+  }
 
   private isPlatformSubdomain(hostname: string): boolean {
     if (!hostname) return false;
