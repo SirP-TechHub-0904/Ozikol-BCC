@@ -3343,6 +3343,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("MailcowSmtpPassword")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MailcowSmtpPort")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MailcowSmtpUser")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("MaintenanceMessage")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");

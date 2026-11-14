@@ -298,7 +298,10 @@ namespace Ozikol_BCC.Api.Services
                     DecryptSafe(settings.MailcowApiKey),
                     settings.MailcowSmtpHost?.Trim(),
                     settings.CloudflareZoneId?.Trim(),
-                    DecryptSafe(settings.CloudflareDnsApiToken));
+                    DecryptSafe(settings.CloudflareDnsApiToken),
+                    settings.MailcowSmtpUser?.Trim(),
+                    DecryptSafe(settings.MailcowSmtpPassword),
+                    settings.MailcowSmtpPort > 0 ? settings.MailcowSmtpPort : 587);
             }
             catch
             {

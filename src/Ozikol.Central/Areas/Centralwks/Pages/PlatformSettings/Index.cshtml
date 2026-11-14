@@ -698,6 +698,48 @@
                     </div>
 
                     <div>
+                        <label asp-for="Input.MailcowSmtpUser" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Mailcow SMTP Default User
+                        </label>
+                        <input asp-for="Input.MailcowSmtpUser" class="form-control" placeholder="e.g. noreply@@ozikol.cloud"
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.MailcowSmtpUser" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label asp-for="Input.MailcowSmtpPassword" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Mailcow SMTP Password
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.MailcowSmtpPassword))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Encrypted
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.MailcowSmtpPassword" value="@Model.Input.MailcowSmtpPassword" id="mailcowSmtpPasswordInput" type="password" class="form-control"
+                                   placeholder="e.g. Master SMTP Password"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('mailcowSmtpPasswordInput', this)"
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.MailcowSmtpPassword" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.MailcowSmtpPort" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Mailcow SMTP Port
+                        </label>
+                        <input asp-for="Input.MailcowSmtpPort" type="number" class="form-control" placeholder="587"
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span asp-validation-for="Input.MailcowSmtpPort" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                             <label asp-for="Input.MailcowApiKey" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
                                 Mailcow Read/Write API Key
