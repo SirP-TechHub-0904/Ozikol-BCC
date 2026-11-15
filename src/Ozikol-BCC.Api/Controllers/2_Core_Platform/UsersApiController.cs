@@ -448,54 +448,33 @@ namespace Ozikol_BCC.Api.Controllers
                 ? tenantSite.BrandName.Trim()
                 : (!string.IsNullOrWhiteSpace(tenantSite?.CompanyName) ? tenantSite.CompanyName.Trim() : "Workspace");
 
-            // Queue in BcpEmailQueue
-            if (!string.IsNullOrWhiteSpace(user.Email))
+            // Dispatch OTP + In-App notification via unified CentralNotificationDispatcher
+            if (_notificationDispatcher != null)
             {
-                _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                var channels = NotificationChannels.InApp;
+                if (!string.IsNullOrWhiteSpace(user.Email)) channels |= NotificationChannels.Email;
+                if (!string.IsNullOrWhiteSpace(user.PhoneNumber)) channels |= NotificationChannels.Sms;
+
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                 {
-                    RelatedUserId = user.Id,
-                    RecipientEmail = user.Email.Trim(),
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = user.Id,
+                    RecipientEmail = user.Email,
                     RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                    Subject = "Your Account Activation & Password Reset OTP",
-                    HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your 6-digit one-time passcode (OTP) for account activation and password setup is:</p><div style='font-size:32px; font-weight:800; letter-spacing:6px; color:#0050e5; padding:16px 0; text-align:center;'>{otp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 15 minutes. Enter this code at the reset password screen to activate your account.</p>",
+                    Title = "Password Reset OTP Generated",
+                    Message = "A 6-digit password reset OTP was generated for your account.",
+                    EmailSubject = "Your Account Activation & Password Reset OTP",
+                    EmailHtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your 6-digit one-time passcode (OTP) for account activation and password setup is:</p><div style='font-size:32px; font-weight:800; letter-spacing:6px; color:#0050e5; padding:16px 0; text-align:center;'>{otp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 15 minutes. Enter this code at the reset password screen to activate your account.</p>",
+                    SmsMessage = $"Your {tenantBrand} activation OTP code is {otp}. Valid for 15 minutes.",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
+                    Severity = NotificationSeverity.Update,
                     EventType = BcpEventType.PasswordReset,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
+                    Icon = "pin",
+                    Channels = channels,
+                    SendEmailCopy = !string.IsNullOrWhiteSpace(user.Email)
                 });
             }
-
-            // Queue in BcpSmsQueue
-            if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
-            {
-                _dbContext.BcpSmsQueue.Add(new BcpSmsQueue
-                {
-                    RelatedUserId = user.Id,
-                    RecipientPhone = user.PhoneNumber,
-                    Message = $"Your {tenantBrand} activation OTP code is {otp}. Valid for 15 minutes.",
-                    Category = BcpMessageCategory.Security,
-                    Priority = BcpMessagePriority.Urgent,
-                    EventType = BcpEventType.PasswordReset,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
-            // In-app notification
-            _dbContext.BcpNotifications.Add(new BcpNotification
-            {
-                UserId = user.Id,
-                Title = "Password Reset OTP Generated",
-                Message = $"A 6-digit password reset OTP was generated for your account.",
-                Category = BcpMessageCategory.Security,
-                Priority = BcpMessagePriority.High,
-                EventType = BcpEventType.PasswordReset,
-                Icon = "pin",
-                CreatedAt = DateTime.UtcNow
-            });
-
-            await _dbContext.SaveChangesAsync();
 
             await LogActivityAsync("Generate OTP", $"Generated 6-digit reset OTP for '{user.FullName}'", user.Id, user.FullName);
 
@@ -626,47 +605,53 @@ namespace Ozikol_BCC.Api.Controllers
                 await _userManager.AddToRoleAsync(newUser, roleToAssign);
             }
 
-            // Queue Welcome & Credentials Email
+            // Dispatch Welcome & Credentials Email via unified CentralNotificationDispatcher
             try
             {
-                var origin = Request.Headers["Origin"].FirstOrDefault() ?? $"{Request.Scheme}://{Request.Host}";
-                var loginUrl = $"{origin}/login";
-
-                _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(newUser.Email))
                 {
-                    Id = Guid.NewGuid(),
-                    RelatedUserId = newUser.Id,
-                    RecipientEmail = newUser.Email,
-                    RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
-                    Subject = "Welcome to Your Portal - Account Credentials",
-                    HtmlBody = $@"
-                        <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal. Below are your login credentials:</p>
-                        
-                        <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
-                            <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
-                            <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
-                            <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
-                        </div>
+                    var origin = Request.Headers["Origin"].FirstOrDefault() ?? $"{Request.Scheme}://{Request.Host}";
+                    var loginUrl = $"{origin}/login";
 
-                        {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
-                            <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
-                            <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
-                        </div>" : "")}
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = newUser.Id,
+                        RecipientEmail = newUser.Email,
+                        RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
+                        Title = "Welcome to Your Portal - Account Credentials",
+                        Message = "Your member account has been registered. Check your email for login credentials.",
+                        EmailSubject = "Welcome to Your Portal - Account Credentials",
+                        EmailHtmlBody = $@"
+                            <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal. Below are your login credentials:</p>
+                            
+                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
+                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
+                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
+                                <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
+                            </div>
 
-                        <div style='text-align:center; margin:24px 0 8px;'>
-                            <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
-                        </div>",
-                    Category = BcpMessageCategory.Security,
-                    Priority = BcpMessagePriority.Urgent,
-                    EventType = BcpEventType.PasswordReset,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
-                });
-                await _dbContext.SaveChangesAsync();
+                            {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
+                                <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
+                                <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
+                            </div>" : "")}
+
+                            <div style='text-align:center; margin:24px 0 8px;'>
+                                <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
+                            </div>",
+                        ActionUrl = loginUrl,
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Urgent,
+                        Severity = NotificationSeverity.Success,
+                        EventType = BcpEventType.PasswordReset,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true
+                    });
+                }
             }
             catch
             {
-                // Non-fatal email queueing
+                // Non-fatal email dispatch
             }
 
             // Log activity
@@ -710,22 +695,24 @@ namespace Ozikol_BCC.Api.Controllers
             await _userManager.UpdateAsync(user);
             await _dbContext.SaveChangesAsync();
 
-            // Queue Instruction Email with Temporary Password
-            if ((request.SendEmailNotification ?? true) && !string.IsNullOrWhiteSpace(user.Email))
+            // Dispatch Instruction Email with Temporary Password via CentralNotificationDispatcher
+            if ((request.SendEmailNotification ?? true) && !string.IsNullOrWhiteSpace(user.Email) && _notificationDispatcher != null)
             {
                 try
                 {
                     var origin = Request.Headers["Origin"].FirstOrDefault() ?? $"{Request.Scheme}://{Request.Host}";
                     var loginUrl = $"{origin}/login";
 
-                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
-                        Id = Guid.NewGuid(),
-                        RelatedUserId = user.Id,
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
                         RecipientEmail = user.Email.Trim(),
                         RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                        Subject = "Your Temporary Login Credentials & Password Setup",
-                        HtmlBody = $@"
+                        Title = "Your Temporary Login Credentials & Password Setup",
+                        Message = "An administrator assigned a temporary password to your account.",
+                        EmailSubject = "Your Temporary Login Credentials & Password Setup",
+                        EmailHtmlBody = $@"
                             <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>An administrator has assigned a new temporary password for your account:</p>
                             
                             <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0; text-align:center;'>
@@ -741,17 +728,18 @@ namespace Ozikol_BCC.Api.Controllers
                             <div style='text-align:center; margin:24px 0 8px;'>
                                 <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
                             </div>",
+                        ActionUrl = loginUrl,
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
+                        Severity = NotificationSeverity.Update,
                         EventType = BcpEventType.PasswordReset,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true
                     });
-                    await _dbContext.SaveChangesAsync();
                 }
                 catch
                 {
-                    // Non-fatal email queueing
+                    // Non-fatal email dispatch
                 }
             }
 
@@ -2260,14 +2248,14 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 if (string.IsNullOrWhiteSpace(recipientEmail)) return;
 
-                if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(relatedUserId))
+                if (_notificationDispatcher != null)
                 {
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
                         TargetUserId = relatedUserId,
-                        RecipientEmail = recipientEmail,
-                        RecipientName = recipientName,
+                        RecipientEmail = recipientEmail.Trim(),
+                        RecipientName = recipientName?.Trim() ?? string.Empty,
                         Title = subject,
                         Message = subject,
                         EmailSubject = subject,
@@ -2277,24 +2265,6 @@ namespace Ozikol_BCC.Api.Controllers
                         Channels = NotificationChannels.Email,
                         SendEmailCopy = true
                     });
-                }
-                else
-                {
-                    var emailItem = new BcpEmailQueue
-                    {
-                        Id = Guid.NewGuid(),
-                        RelatedUserId = relatedUserId,
-                        RecipientEmail = recipientEmail.Trim(),
-                        RecipientName = recipientName?.Trim() ?? string.Empty,
-                        Subject = subject,
-                        HtmlBody = htmlBody,
-                        Category = category,
-                        Priority = priority,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    _dbContext.BcpEmailQueue.Add(emailItem);
-                    await _dbContext.SaveChangesAsync();
                 }
             }
             catch

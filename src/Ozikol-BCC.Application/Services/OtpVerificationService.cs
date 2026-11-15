@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System;
@@ -21,6 +22,7 @@ namespace Ozikol_BCC.Application.Services
         private readonly DashboardDbContext _db;
         private readonly IMemoryCache _cache;
         private readonly IMessageTemplateService _templateService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ILogger<OtpVerificationService> _logger;
 
         private const int OTP_EXPIRATION_MINUTES = 10;
@@ -32,13 +34,15 @@ namespace Ozikol_BCC.Application.Services
             DashboardDbContext db,
             IMemoryCache cache,
             IMessageTemplateService templateService,
-            ILogger<OtpVerificationService> logger)
+            ILogger<OtpVerificationService> logger,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _userManager = userManager;
             _db = db;
             _cache = cache;
             _templateService = templateService;
             _logger = logger;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         public async Task<(bool Success, string Message, int RetryAfterSeconds)> SendEmailOtpAsync(string userId, string email)
@@ -101,23 +105,28 @@ namespace Ozikol_BCC.Application.Services
                 BcpMessageChannel.Email,
                 placeholders);
 
-            // Queue Email Notification in BcpEmailQueue
-            _db.BcpEmailQueue.Add(new BcpEmailQueue
+            // Dispatch Email OTP through the unified CentralNotificationDispatcher + BcpMessagePools
+            if (_notificationDispatcher != null)
             {
-                Id = Guid.NewGuid(),
-                RelatedUserId = userId,
-                RecipientEmail = email.Trim(),
-                RecipientName = user.FullName,
-                Subject = subject,
-                HtmlBody = body,
-                Category = BcpMessageCategory.Security,
-                Priority = BcpMessagePriority.Urgent,
-                EventType = BcpEventType.LoginOtp,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            });
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = userId,
+                    RecipientEmail = email.Trim(),
+                    RecipientName = user.FullName,
+                    Title = subject,
+                    Message = $"Your 6-digit verification code is {otp}.",
+                    EmailSubject = subject,
+                    EmailHtmlBody = body,
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.Urgent,
+                    Severity = NotificationSeverity.Update,
+                    EventType = BcpEventType.LoginOtp,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
 
-            await _db.SaveChangesAsync();
             _logger.LogInformation("Generated Email OTP for user {UserId} ({Email})", userId, email);
             return (true, "A 6-digit verification code has been dispatched to your email.", RESEND_COOLDOWN_SECONDS);
         }
@@ -227,18 +236,25 @@ namespace Ozikol_BCC.Application.Services
                 BcpMessageChannel.Sms,
                 placeholders);
 
-            // Queue SMS Message in BcpSmsQueue
-            _db.BcpSmsQueue.Add(new BcpSmsQueue
+            // Dispatch SMS OTP through the unified CentralNotificationDispatcher + BcpMessagePools
+            if (_notificationDispatcher != null)
             {
-                Id = Guid.NewGuid(),
-                RelatedUserId = userId,
-                RecipientPhone = phoneNumber.Trim(),
-                Message = smsBody,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            });
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = userId,
+                    RecipientName = user.FullName,
+                    Title = "Phone Verification Code",
+                    Message = smsBody,
+                    SmsMessage = smsBody,
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.Urgent,
+                    Severity = NotificationSeverity.Update,
+                    EventType = BcpEventType.LoginOtp,
+                    Channels = NotificationChannels.Sms
+                });
+            }
 
-            await _db.SaveChangesAsync();
             _logger.LogInformation("Generated Phone OTP for user {UserId} ({Phone})", userId, phoneNumber);
             return (true, "A 6-digit verification code has been dispatched to your phone via SMS.", RESEND_COOLDOWN_SECONDS);
         }

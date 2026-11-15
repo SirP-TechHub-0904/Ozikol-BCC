@@ -631,18 +631,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         throw new InvalidOperationException($"Mailcow SMTP delivery to '{email}' from '{fromAddress}' returned failure. Please verify Mailcow server connectivity and sender ACL permissions.");
                     }
 
-                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
-                    {
-                        RecipientEmail = email,
-                        Subject = safeSubject,
-                        HtmlBody = htmlBody,
-                        Category = BcpMessageCategory.Communication,
-                        Priority = BcpMessagePriority.Normal,
-                        Status = BcpQueueStatus.Sent,
-                        SentAt = DateTime.UtcNow,
-                        CreatedAt = DateTime.UtcNow
-                    });
-
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Email,
@@ -666,18 +654,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 {
                     _logger.LogWarning(ex, "[CentralNotificationDispatcher] Email dispatch failed for {Email}: {Msg}", email, ex.Message);
                     result.Errors.Add($"Email delivery to '{email}' failed: {ex.Message}");
-
-                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
-                    {
-                        RecipientEmail = email,
-                        Subject = safeSubject,
-                        HtmlBody = !string.IsNullOrWhiteSpace(htmlBody) ? htmlBody : payload.Message,
-                        Category = BcpMessageCategory.Communication,
-                        Priority = BcpMessagePriority.Normal,
-                        Status = BcpQueueStatus.Failed,
-                        LastError = ex.Message,
-                        CreatedAt = DateTime.UtcNow
-                    });
 
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
@@ -704,7 +680,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save BcpEmailQueue audit records: {Msg}", ex.Message);
+                _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save BcpMessagePool email audit records: {Msg}", ex.Message);
             }
         }
 

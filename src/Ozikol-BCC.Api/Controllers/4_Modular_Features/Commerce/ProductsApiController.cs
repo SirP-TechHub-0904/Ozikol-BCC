@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
@@ -23,11 +24,19 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _context;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
-        public ProductsApiController(DashboardDbContext context, ICloudinaryService cloudinaryService)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProductsApiController"/> class.
+        /// </summary>
+        public ProductsApiController(
+            DashboardDbContext context,
+            ICloudinaryService cloudinaryService,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _context = context;
             _cloudinaryService = cloudinaryService;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         private async Task<(string Code, string Symbol)> GetActiveCurrencyAsync()
@@ -687,31 +696,47 @@ namespace Ozikol_BCC.Api.Controllers
             };
 
             _context.BcpMarketingCampaigns.Add(campaign);
-
-            // Enqueue into BcpEmailQueue
-            foreach (var email in recipients)
-            {
-                _context.BcpEmailQueue.Add(new BcpEmailQueue
-                {
-                    Id = Guid.CreateVersion7(),
-                    RecipientEmail = email,
-                    Subject = req.EmailSubject.Trim(),
-                    HtmlBody = req.HtmlContent,
-                    Category = BcpMessageCategory.Marketing,
-                    Priority = BcpMessagePriority.Normal,
-                    Status = BcpQueueStatus.Queued,
-                    ScheduledAt = DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
             await _context.SaveChangesAsync();
+
+            // Dispatch campaign emails via unified CentralNotificationDispatcher + BcpMessagePools
+            int sentCount = 0;
+            int failedCount = 0;
+            if (_notificationDispatcher != null)
+            {
+                foreach (var email in recipients)
+                {
+                    var dispatchRes = await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        RecipientEmail = email,
+                        Title = req.EmailSubject.Trim(),
+                        Message = req.EmailSubject.Trim(),
+                        EmailSubject = req.EmailSubject.Trim(),
+                        EmailHtmlBody = req.HtmlContent,
+                        Category = BcpMessageCategory.Marketing,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true
+                    });
+
+                    if (dispatchRes.DispatchedEmailCount > 0) sentCount++;
+                    else failedCount++;
+                }
+
+                campaign.SentCount = sentCount;
+                campaign.FailedCount = failedCount;
+                campaign.Status = failedCount == recipients.Count ? "Failed" : "Sent";
+                await _context.SaveChangesAsync();
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 campaignId = campaign.Id,
-                totalRecipients = recipients.Count
-            }, $"Campaign '{campaign.CampaignName}' successfully enqueued with {recipients.Count} recipient(s) in EmailQueue."));
+                totalRecipients = recipients.Count,
+                sentCount,
+                failedCount
+            }, $"Campaign '{campaign.CampaignName}' dispatched to {sentCount}/{recipients.Count} recipient(s)."));
         }
 
         [HttpGet("marketing/campaigns")]
@@ -855,41 +880,74 @@ namespace Ozikol_BCC.Api.Controllers
                 Notes = $"Commerce Order #{orderNumber} for {orderItems.Count} item(s)."
             });
 
-            // Enqueue Order Confirmation Email in BcpEmailQueue
-            _context.BcpEmailQueue.Add(new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = order.CustomerEmail,
-                RecipientName = order.CustomerName,
-                Subject = $"Order Confirmation #{orderNumber}",
-                HtmlBody = $@"
-                    <div style='font-family:Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #e2e8f0; border-radius:8px;'>
-                        <h2 style='color:#0050e5;'>Thank You for Your Order!</h2>
-                        <p>Hi <strong>{order.CustomerName}</strong>, your order <strong>#{orderNumber}</strong> has been received.</p>
-                        <hr style='border:0; border-top:1px solid #eee; margin:16px 0;'/>
-                        <table style='width:100%; border-collapse:collapse;'>
-                            <thead>
-                                <tr style='background:#f8fafc; text-align:left;'>
-                                    <th style='padding:8px;'>Item</th>
-                                    <th style='padding:8px; text-align:center;'>Qty</th>
-                                    <th style='padding:8px; text-align:right;'>Price</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {string.Join("", orderItems.Select(i => $"<tr><td style='padding:8px; border-bottom:1px solid #eee;'>{i.ProductTitle}</td><td style='padding:8px; border-bottom:1px solid #eee; text-align:center;'>{i.Quantity}</td><td style='padding:8px; border-bottom:1px solid #eee; text-align:right;'>{currSymbol}{i.TotalPrice:N2}</td></tr>"))}
-                            </tbody>
-                        </table>
-                        <h3 style='text-align:right; margin-top:16px;'>Total: {currSymbol}{subtotal:N2} {currCode}</h3>
-                        <p style='color:#64748b; font-size:13px; margin-top:20px;'>If you have any questions, simply reply to this email.</p>
-                    </div>",
-                Category = BcpMessageCategory.Account,
-                Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Queued,
-                ScheduledAt = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow
-            });
-
             await _context.SaveChangesAsync();
+
+            // Dispatch Order Confirmation Email to Customer & New Order Alert to Store Admins
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var confirmationHtml = $@"
+                        <div style='font-family:Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #e2e8f0; border-radius:8px;'>
+                            <h2 style='color:#0050e5;'>Thank You for Your Order!</h2>
+                            <p>Hi <strong>{System.Net.WebUtility.HtmlEncode(order.CustomerName)}</strong>, your order <strong>#{orderNumber}</strong> has been received.</p>
+                            <hr style='border:0; border-top:1px solid #eee; margin:16px 0;'/>
+                            <table style='width:100%; border-collapse:collapse;'>
+                                <thead>
+                                    <tr style='background:#f8fafc; text-align:left;'>
+                                        <th style='padding:8px;'>Item</th>
+                                        <th style='padding:8px; text-align:center;'>Qty</th>
+                                        <th style='padding:8px; text-align:right;'>Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {string.Join("", orderItems.Select(i => $"<tr><td style='padding:8px; border-bottom:1px solid #eee;'>{System.Net.WebUtility.HtmlEncode(i.ProductTitle)}</td><td style='padding:8px; border-bottom:1px solid #eee; text-align:center;'>{i.Quantity}</td><td style='padding:8px; border-bottom:1px solid #eee; text-align:right;'>{currSymbol}{i.TotalPrice:N2}</td></tr>"))}
+                                </tbody>
+                            </table>
+                            <h3 style='text-align:right; margin-top:16px;'>Total: {currSymbol}{subtotal:N2} {currCode}</h3>
+                            <p style='color:#64748b; font-size:13px; margin-top:20px;'>If you have any questions, simply reply to this email.</p>
+                        </div>";
+
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = customerUserId,
+                        RecipientEmail = order.CustomerEmail,
+                        RecipientName = order.CustomerName,
+                        Title = $"Order Confirmation #{orderNumber}",
+                        Message = $"Your order #{orderNumber} ({currSymbol}{subtotal:N2} {currCode}) has been received.",
+                        EmailSubject = $"Order Confirmation #{orderNumber}",
+                        EmailHtmlBody = confirmationHtml,
+                        Category = BcpMessageCategory.Account,
+                        Priority = BcpMessagePriority.High,
+                        Severity = NotificationSeverity.Success,
+                        Channels = string.IsNullOrWhiteSpace(customerUserId)
+                            ? NotificationChannels.Email
+                            : (NotificationChannels.InApp | NotificationChannels.Email),
+                        SendEmailCopy = true,
+                        Module = "Commerce"
+                    });
+
+                    // Notify Store Admins of New Order
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        Title = $"New Storefront Order #{orderNumber}",
+                        Message = $"{order.CustomerName} placed an order for {orderItems.Count} item(s) totaling {currSymbol}{subtotal:N2} {currCode}.",
+                        ActionUrl = "/dashboard/commerce/orders",
+                        Module = "Commerce",
+                        Icon = "shopping_bag",
+                        Category = BcpMessageCategory.General,
+                        Priority = BcpMessagePriority.High,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.InApp
+                    });
+                }
+                catch
+                {
+                    // Non-fatal notification dispatch
+                }
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -1022,6 +1080,47 @@ namespace Ozikol_BCC.Api.Controllers
                 order.PaidAtUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Notify customer of Order Status Update
+            if (_notificationDispatcher != null && (!string.IsNullOrWhiteSpace(order.CustomerEmail) || !string.IsNullOrWhiteSpace(order.CustomerUserId)))
+            {
+                try
+                {
+                    var trackingSnippet = !string.IsNullOrWhiteSpace(order.TrackingNumber)
+                        ? $"<p><strong>Courier:</strong> {System.Net.WebUtility.HtmlEncode(order.CourierName ?? "Standard")}<br/><strong>Tracking Number:</strong> {System.Net.WebUtility.HtmlEncode(order.TrackingNumber)}</p>"
+                        : string.Empty;
+
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = order.CustomerUserId,
+                        RecipientEmail = order.CustomerEmail,
+                        RecipientName = order.CustomerName,
+                        Title = $"Order #{order.OrderNumber} Updated: {order.OrderStatus}",
+                        Message = $"Your order #{order.OrderNumber} is now {order.OrderStatus}." + (!string.IsNullOrWhiteSpace(order.TrackingNumber) ? $" Tracking: {order.TrackingNumber}" : string.Empty),
+                        EmailSubject = $"Order #{order.OrderNumber} Status Update: {order.OrderStatus}",
+                        EmailHtmlBody = $@"
+                            <p>Hi <strong>{System.Net.WebUtility.HtmlEncode(order.CustomerName)}</strong>,</p>
+                            <p>Your order <strong>#{order.OrderNumber}</strong> status has been updated to <strong>{order.OrderStatus}</strong> (Payment: {order.PaymentStatus}).</p>
+                            {trackingSnippet}",
+                        Category = BcpMessageCategory.Account,
+                        Priority = BcpMessagePriority.High,
+                        Severity = order.OrderStatus == ProductOrderStatus.Cancelled || order.OrderStatus == ProductOrderStatus.Refunded
+                            ? NotificationSeverity.Warning
+                            : NotificationSeverity.Success,
+                        Channels = string.IsNullOrWhiteSpace(order.CustomerUserId)
+                            ? NotificationChannels.Email
+                            : (NotificationChannels.InApp | NotificationChannels.Email),
+                        SendEmailCopy = !string.IsNullOrWhiteSpace(order.CustomerEmail),
+                        Module = "Commerce"
+                    });
+                }
+                catch
+                {
+                    // Non-fatal notification dispatch
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(order, "Order status updated successfully."));
         }
 
@@ -1080,22 +1179,24 @@ namespace Ozikol_BCC.Api.Controllers
         [Authorize(Policy = AuthPolicies.CommerceStudio)]
         public async Task<IActionResult> GetQueuesSummary()
         {
-            int pendingEmails = await _context.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Queued || q.Status == BcpQueueStatus.Processing);
-            int failedEmails = await _context.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Failed);
-            int sentEmails = await _context.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Sent);
+            var emailPool = _context.BcpMessagePools.AsNoTracking().Where(q => q.Channel == BcpMessageChannel.Email);
+            int pendingEmails = await emailPool.CountAsync(q => q.Status == BcpQueueStatus.Queued || q.Status == BcpQueueStatus.Processing);
+            int failedEmails = await emailPool.CountAsync(q => q.Status == BcpQueueStatus.Failed);
+            int sentEmails = await emailPool.CountAsync(q => q.Status == BcpQueueStatus.Sent);
 
-            int pendingSms = await _context.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Queued || q.Status == BcpQueueStatus.Processing);
-            int failedSms = await _context.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Failed);
-            int sentSms = await _context.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Sent);
+            var smsPool = _context.BcpMessagePools.AsNoTracking().Where(q => q.Channel == BcpMessageChannel.Sms);
+            int pendingSms = await smsPool.CountAsync(q => q.Status == BcpQueueStatus.Queued || q.Status == BcpQueueStatus.Processing);
+            int failedSms = await smsPool.CountAsync(q => q.Status == BcpQueueStatus.Failed);
+            int sentSms = await smsPool.CountAsync(q => q.Status == BcpQueueStatus.Sent);
 
             int pendingJobs = await _context.BcpScheduledJobQueues.CountAsync(q => q.Status == BcpQueueStatus.Queued || q.Status == BcpQueueStatus.Processing);
             int failedJobs = await _context.BcpScheduledJobQueues.CountAsync(q => q.Status == BcpQueueStatus.Failed);
             int completedJobs = await _context.BcpScheduledJobQueues.CountAsync(q => q.Status == BcpQueueStatus.Sent);
 
-            var recentEmailQueue = await _context.BcpEmailQueue.AsNoTracking().OrderByDescending(q => q.CreatedAt).Take(15).Select(q => new
+            var recentEmailQueue = await emailPool.OrderByDescending(q => q.CreatedAt).Take(15).Select(q => new
             {
                 q.Id,
-                q.RecipientEmail,
+                RecipientEmail = q.RecipientAddress,
                 q.RecipientName,
                 q.Subject,
                 q.Status,

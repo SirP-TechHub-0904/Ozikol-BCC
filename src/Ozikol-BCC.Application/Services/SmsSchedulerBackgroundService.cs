@@ -75,48 +75,7 @@ namespace Ozikol_BCC.Application.Services
                                     var context = scope.ServiceProvider.GetRequiredService<DashboardDbContext>();
                                     var smsService = scope.ServiceProvider.GetRequiredService<ISmsSendService>();
 
-                                    // 1) Process transactional SMS queue
-                                    var pendingSms = await context.BcpSmsQueue
-                                        .Where(x => (x.Status == DomainEnum.BcpQueueStatus.Queued ||
-                                                     x.Status == DomainEnum.BcpQueueStatus.Failed) &&
-                                                     x.Retries < x.MaxRetries)
-                                        .OrderBy(x => x.CreatedAt)
-                                        .Take(50)
-                                        .ToListAsync();
-
-                                    foreach (var sms in pendingSms)
-                                    {
-                                        sms.Retries++;
-                                        sms.Status = DomainEnum.BcpQueueStatus.Processing;
-                                        await context.SaveChangesAsync();
-
-                                        try
-                                        {
-                                            var isSent = await smsService.SendSmsWithResult(sms.RecipientPhone, sms.Message);
-                                            if (isSent)
-                                            {
-                                                sms.Status = DomainEnum.BcpQueueStatus.Sent;
-                                                sms.SentAt = DateTime.UtcNow;
-                                                sms.LastError = null;
-                                            }
-                                            else
-                                            {
-                                                sms.Status = DomainEnum.BcpQueueStatus.Failed;
-                                                sms.LastError = "Failed to send SMS through SMS provider.";
-                                                _logger.LogWarning($"Failed to send SMS {sms.Id} for tenant {tenantName}: {sms.LastError}");
-                                            }
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            sms.Status = DomainEnum.BcpQueueStatus.Failed;
-                                            sms.LastError = ex.Message;
-                                            _logger.LogError(ex, $"Error sending SMS {sms.Id} for tenant {tenantName}");
-                                        }
-
-                                        await context.SaveChangesAsync();
-                                    }
-
-                                    // 2) Pick due scheduled campaigns and pending retries for this tenant.
+                                    // Pick due scheduled campaigns and pending retries for this tenant.
                                     var pendingCampaigns = await context.BcpSmsCampaigns
                                         .Include(c => c.Recipients)
                                         .Where(c => (c.Status == DomainEnum.BcpSmsCampaignStatus.Scheduled && c.ScheduledDate.HasValue && c.ScheduledDate.Value <= DateTime.UtcNow) ||

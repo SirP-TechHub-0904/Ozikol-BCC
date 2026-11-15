@@ -904,21 +904,27 @@ namespace Ozikol_BCC.Api.Controllers
                     This invitation is secure and will expire in {expiresDays} days. If you did not request this invitation, you can safely ignore this message.
                 </p>";
 
-            var emailQueueItem = new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = emailClean,
-                RecipientName = emailClean.Split('@')[0],
-                Subject = $"You are invited to join {tenantBrand} Workspace",
-                HtmlBody = emailBody,
-                Category = BcpMessageCategory.General,
-                Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
             await _dbContext.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    RecipientEmail = emailClean,
+                    RecipientName = emailClean.Split('@')[0],
+                    Title = $"You are invited to join {tenantBrand} Workspace",
+                    Message = $"You have been invited to join {tenantBrand} as {baseRole}.",
+                    EmailSubject = $"You are invited to join {tenantBrand} Workspace",
+                    EmailHtmlBody = emailBody,
+                    ActionUrl = registrationUrl,
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.High,
+                    Severity = NotificationSeverity.NewFeature,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -990,21 +996,27 @@ namespace Ozikol_BCC.Api.Controllers
                     This invitation is secure and will expire in 7 days. If you did not request this invitation, you can safely ignore this message.
                 </p>";
 
-            var emailQueueItem = new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = invitation.Email,
-                RecipientName = invitation.Email.Split('@')[0],
-                Subject = $"Reminder: You are invited to join {tenantBrand} Workspace",
-                HtmlBody = emailBody,
-                Category = BcpMessageCategory.General,
-                Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
             await _dbContext.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    RecipientEmail = invitation.Email,
+                    RecipientName = invitation.Email.Split('@')[0],
+                    Title = $"Reminder: You are invited to join {tenantBrand} Workspace",
+                    Message = $"Reminder: You have been invited to join {tenantBrand} as {baseRole}.",
+                    EmailSubject = $"Reminder: You are invited to join {tenantBrand} Workspace",
+                    EmailHtmlBody = emailBody,
+                    ActionUrl = registrationUrl,
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.High,
+                    Severity = NotificationSeverity.Update,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -1976,21 +1988,7 @@ namespace Ozikol_BCC.Api.Controllers
                         If you did not authorize this session termination or suspect unauthorized access, please update your login credentials immediately to secure your account.
                     </p>";
 
-                var emailQueueItem = new BcpEmailQueue
-                {
-                    Id = Guid.CreateVersion7(),
-                    RecipientEmail = user.Email ?? string.Empty,
-                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : "Member",
-                    Subject = "Security Alert: Active Session Terminated",
-                    HtmlBody = emailBody,
-                    Category = BcpMessageCategory.General,
-                    Priority = BcpMessagePriority.Normal,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
-                // Dispatch real-time In-App security notification
+                // Dispatch real-time In-App + Email security notification
                 if (_notificationDispatcher != null)
                 {
                     var terminatedParsed = UserAgentParser.Parse(session.DeviceName);
@@ -1998,15 +1996,20 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
                         TargetUserId = user.Id,
+                        RecipientEmail = user.Email,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : "Member",
                         Title = "Security Alert: Session Terminated",
                         Message = $"Your active session on '{terminatedParsed.FriendlyDeviceTitle}' was terminated.",
                         Severity = NotificationSeverity.Warning,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        SendEmailCopy = true,
+                        EmailSubject = "Security Alert: Active Session Terminated",
+                        EmailHtmlBody = emailBody,
                         ActionUrl = "/identity/console/account?tab=devices",
                         Module = "Security",
                         Icon = "phonelink_erase",
                         Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Normal
+                        Priority = BcpMessagePriority.High
                     });
                 }
 
@@ -2825,21 +2828,7 @@ namespace Ozikol_BCC.Api.Controllers
   </a>
 </div>";
 
-            var emailQueueItem = new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = user.Email ?? string.Empty,
-                RecipientName = recipientFirstName,
-                Subject = "Security Alert: Workspace Role & Permissions Matrix Updated",
-                HtmlBody = emailBody,
-                Category = BcpMessageCategory.Security,
-                Priority = BcpMessagePriority.Urgent,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
-            // 3. CentralNotificationDispatcher Multi-Channel Delivery (Rule 16)
+            // CentralNotificationDispatcher Multi-Channel Delivery (Rule 16)
             if (_notificationDispatcher != null)
             {
                 try
