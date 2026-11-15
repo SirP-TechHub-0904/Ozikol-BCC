@@ -357,6 +357,21 @@
     </div>
 </div>
 
+@* ── Full-Page Blocking Loading Overlay ── *@
+<div id="tenantsListLoadingOverlay" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(15, 23, 42, 0.68); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column; cursor: wait; user-select: none;">
+    <div style="background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 16px; padding: 28px 36px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 420px; width: 90%; text-align: center;">
+        <div style="width: 44px; height: 44px; border: 4px solid rgba(0, 80, 229, 0.16); border-top-color: #0050E5; border-radius: 50%; animation: ozikolSpin 0.8s linear infinite;"></div>
+        <div id="tenantsListOverlayTitle" style="font-size: 16px; font-weight: 700; color: var(--admin-text, #0f172a);">Processing Tenant Action...</div>
+        <div id="tenantsListOverlaySubtitle" style="font-size: 13px; color: var(--admin-text-muted, #64748b); line-height: 1.55;">Please wait while the request completes. Do not refresh or close this window.</div>
+    </div>
+</div>
+
+<style>
+    @@keyframes ozikolSpin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+
 @section Scripts {
     <script>
         function openSuspendModal(id, name) {
@@ -375,6 +390,25 @@
             if (e.target === this) {
                 closeSuspendModal();
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const forms = document.querySelectorAll('form[method="post"]');
+            forms.forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.65';
+                    }
+                    const overlay = document.getElementById('tenantsListLoadingOverlay');
+                    if (overlay) {
+                        overlay.style.display = 'flex';
+                    }
+                    document.body.style.pointerEvents = 'none';
+                    document.body.style.overflow = 'hidden';
+                });
+            });
         });
     </script>
 }

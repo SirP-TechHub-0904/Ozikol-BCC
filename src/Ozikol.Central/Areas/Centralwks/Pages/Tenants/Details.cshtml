@@ -1070,6 +1070,12 @@
                 statusBox.textContent = '';
             }
 
+            showGovernanceLoadingOverlay(
+                'Dispatching Security Verification Code...',
+                'Generating 6-digit authorization OTP and delivering via Mailcow SMTP to @(string.IsNullOrWhiteSpace(Model.DeletionVerificationEmail) ? "configured security email" : Model.DeletionVerificationEmail). Please wait...',
+                false
+            );
+
             try {
                 const formData = new FormData();
                 formData.append('id', tenantId);
@@ -1108,9 +1114,38 @@
                     statusBox.textContent = 'Network error while requesting verification code.';
                 }
             } finally {
+                hideGovernanceLoadingOverlay();
                 if (btn) btn.disabled = false;
                 if (btnText) btnText.textContent = 'Resend Verification Code';
             }
+        }
+
+        function showGovernanceLoadingOverlay(title, subtitle, isDestructive) {
+            const overlay = document.getElementById('tenantGovernanceLoadingOverlay');
+            const titleEl = document.getElementById('governanceOverlayTitle');
+            const subEl = document.getElementById('governanceOverlaySubtitle');
+            const spinnerEl = document.getElementById('governanceOverlaySpinner');
+
+            if (titleEl) titleEl.textContent = title || 'Processing Governance Action...';
+            if (subEl) subEl.textContent = subtitle || 'Communicating with Master Catalog and SQL Server. Do not close or refresh this window.';
+            if (spinnerEl) {
+                spinnerEl.style.borderTopColor = isDestructive ? '#dc2626' : '#0050E5';
+            }
+            if (overlay) {
+                overlay.style.display = 'flex';
+                document.body.style.pointerEvents = 'none';
+                document.body.style.userSelect = 'none';
+                overlay.style.pointerEvents = 'all';
+            }
+        }
+
+        function hideGovernanceLoadingOverlay() {
+            const overlay = document.getElementById('tenantGovernanceLoadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+            document.body.style.pointerEvents = '';
+            document.body.style.userSelect = '';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1124,6 +1159,51 @@
                     if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
                 }
             }
+
+            // Attach full-page loading lock to all POST forms on Tenant Governance Details
+            document.querySelectorAll('form[method="post"]').forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    if (e.defaultPrevented) return;
+                    const actionAttr = (form.getAttribute('action') || '').toLowerCase();
+                    if (form.id === 'permanentDeleteForm' || actionAttr.includes('permanentdelete')) {
+                        showGovernanceLoadingOverlay(
+                            'Permanently Scrubbing Workspace & Dropping Database...',
+                            'Dropping physical SQL database [@Model.Tenant.DatabaseName], purging SQL login, scrubbing Master Catalog records, and evicting cluster caches. Please wait...',
+                            true
+                        );
+                    } else if (actionAttr.includes('resetwebsite')) {
+                        showGovernanceLoadingOverlay(
+                            'Resetting Public Website to Blank Canvas...',
+                            'Wiping public web pages, sections, and templates while preserving workspace business data. Please wait...',
+                            true
+                        );
+                    } else if (actionAttr.includes('reseedwebsite')) {
+                        showGovernanceLoadingOverlay(
+                            'Seeding Turnkey Default Website Suite...',
+                            'Provisioning default navigation, hero, pages, sections, and footer into tenant database. Please wait...',
+                            false
+                        );
+                    } else if (actionAttr.includes('softdelete')) {
+                        showGovernanceLoadingOverlay(
+                            'Deactivating Tenant Organization...',
+                            'Applying temporal soft deletion and evicting active routing caches. Please wait...',
+                            true
+                        );
+                    } else if (actionAttr.includes('provisionmailcow')) {
+                        showGovernanceLoadingOverlay(
+                            'Provisioning Mailcow Domain, Mailbox & Cloudflare DNS...',
+                            'Configuring noreply@@@(Model.Tenant.TenantKey).ozikol.cloud and MX/SPF/DKIM/DMARC records. Please wait...',
+                            false
+                        );
+                    } else {
+                        showGovernanceLoadingOverlay(
+                            'Applying Tenant Governance Update...',
+                            'Synchronizing changes with the Master Catalog Database. Please wait...',
+                            false
+                        );
+                    }
+                });
+            });
         });
 
         async function toggleTenantFeature(featureId, isEnabled, tenantId) {
@@ -1159,3 +1239,21 @@
         }
     </script>
 }
+
+@* Full-Page Blocking Loading Overlay for Tenant Governance Operations *@
+<div id="tenantGovernanceLoadingOverlay" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(15, 23, 42, 0.68); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 24px; cursor: wait;">
+    <div style="background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 32px 28px; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);">
+        <div id="governanceOverlaySpinner" style="width: 48px; height: 48px; border: 4px solid rgba(0, 80, 229, 0.16); border-top-color: #0050E5; border-radius: 50%; margin: 0 auto 18px auto; animation: oziGovSpin 0.8s linear infinite;"></div>
+        <div id="governanceOverlayTitle" style="font-size: 16.5px; font-weight: 800; color: var(--admin-text, #0f172a); margin-bottom: 8px;">
+            Processing Governance Action...
+        </div>
+        <div id="governanceOverlaySubtitle" style="font-size: 13px; color: var(--admin-text-muted, #64748b); line-height: 1.55;">
+            Communicating with Master Catalog and SQL Server. Do not close or refresh this window.
+        </div>
+    </div>
+</div>
+<style>
+    @@keyframes oziGovSpin {
+        to { transform: rotate(360deg); }
+    }
+</style>
