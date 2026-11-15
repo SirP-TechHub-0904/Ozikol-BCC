@@ -198,6 +198,18 @@ public class CentralEmailService : ICentralEmailService
             return false;
         }
 
+        // Normalize any legacy or relative logo paths so external email clients (Gmail, Outlook, Yahoo) always load the official Royal Blue logo
+        if (!string.IsNullOrWhiteSpace(htmlBody))
+        {
+            htmlBody = htmlBody
+                .Replace("https://ozikol.cloud/assets/images/ozikol.png", "https://ozikol.cloud/images/ozikol.png", StringComparison.OrdinalIgnoreCase)
+                .Replace("https://ozikol.cloud/assets/images/oz-logo.png", "https://ozikol.cloud/images/oz-logo.png", StringComparison.OrdinalIgnoreCase)
+                .Replace("src=\"/images/ozikol.png\"", "src=\"https://ozikol.cloud/images/ozikol.png\"", StringComparison.OrdinalIgnoreCase)
+                .Replace("src='/images/ozikol.png'", "src='https://ozikol.cloud/images/ozikol.png'", StringComparison.OrdinalIgnoreCase)
+                .Replace("src=\"/assets/images/ozikol.png\"", "src=\"https://ozikol.cloud/images/ozikol.png\"", StringComparison.OrdinalIgnoreCase)
+                .Replace("src='/assets/images/ozikol.png'", "src='https://ozikol.cloud/images/ozikol.png'", StringComparison.OrdinalIgnoreCase);
+        }
+
         var effectiveProvider = provider;
         MasterPlatformSetting? platformSetting = null;
         try
@@ -382,6 +394,7 @@ public class CentralEmailService : ICentralEmailService
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
+                    <img src='https://ozikol.cloud/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 36px; margin-bottom: 14px;' />
                     <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Security</h2>
                     <p style='color: #64748b; font-size: 13.5px; margin: 4px 0 0;'>Platform Operator 2-Factor Authentication</p>
                 </div>
@@ -412,6 +425,7 @@ public class CentralEmailService : ICentralEmailService
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
+                    <img src='https://ozikol.cloud/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 36px; margin-bottom: 14px;' />
                     <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Security</h2>
                     <p style='color: #64748b; font-size: 13.5px; margin: 4px 0 0;'>Operator Password Recovery</p>
                 </div>
@@ -449,6 +463,7 @@ public class CentralEmailService : ICentralEmailService
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #fecaca; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 20px;'>
+                    <img src='https://ozikol.cloud/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 36px; margin-bottom: 14px;' />
                     <h2 style='color: #dc2626; margin: 0; font-size: 21px; font-weight: 800;'>Permanent Tenant Deletion Authorization</h2>
                     <p style='color: #64748b; font-size: 13px; margin: 6px 0 0;'>Ozikol Business Command Center — Central Security Gate</p>
                 </div>
@@ -498,14 +513,16 @@ public class CentralEmailService : ICentralEmailService
 
                 body = template.BodyHtml
                     .Replace("{{businessname}}", organizationName, StringComparison.OrdinalIgnoreCase)
-                    .Replace("{{organizationname}}", organizationName, StringComparison.OrdinalIgnoreCase);
+                    .Replace("{{organizationname}}", organizationName, StringComparison.OrdinalIgnoreCase)
+                    .Replace("https://ozikol.cloud/assets/images/ozikol.png", "https://ozikol.cloud/images/ozikol.png", StringComparison.OrdinalIgnoreCase)
+                    .Replace("https://ozikol.cloud/assets/images/oz-logo.png", "https://ozikol.cloud/images/oz-logo.png", StringComparison.OrdinalIgnoreCase);
             }
             else
             {
                 subject = $"Welcome to Ozikol Business Command Center — {organizationName}";
                 body = $@"<div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 36px; border: 1px solid #e2e8f0; border-radius: 12px;"">
     <div style=""text-align: center; margin-bottom: 28px;"">
-        <img src=""https://ozikol.cloud/assets/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
+        <img src=""https://ozikol.cloud/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
         <h1 style=""color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 8px;"">Welcome to Ozikol, {organizationName}!</h1>
         <p style=""color: #64748b; font-size: 14.5px; margin: 0;"">We are thrilled to welcome you to the Ozikol Business Command Center.</p>
     </div>
@@ -531,7 +548,7 @@ public class CentralEmailService : ICentralEmailService
             subject = $"Welcome to Ozikol Business Command Center — {organizationName}";
             body = $@"<div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 36px; border: 1px solid #e2e8f0; border-radius: 12px;"">
     <div style=""text-align: center; margin-bottom: 28px;"">
-        <img src=""https://ozikol.cloud/assets/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
+        <img src=""https://ozikol.cloud/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
         <h1 style=""color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 8px;"">Welcome to Ozikol, {organizationName}!</h1>
     </div>
     <div style=""background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin-bottom: 24px; line-height: 1.6; font-size: 14.5px; color: #334155;"">
@@ -560,7 +577,7 @@ public class CentralEmailService : ICentralEmailService
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
-                    <img src='https://ozikol.cloud/assets/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 38px; margin-bottom: 16px;' />
+                    <img src='https://ozikol.cloud/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 38px; margin-bottom: 16px;' />
                     <h2 style='color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;'>Your Workspace is Ready!</h2>
                     <p style='color: #64748b; font-size: 14px; margin-top: 6px;'>Enterprise Cloud Environment Setup Confirmation</p>
                 </div>
@@ -1132,6 +1149,7 @@ public class CentralEmailService : ICentralEmailService
         var htmlBody = $@"
             <div style='font-family: Arial, -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
+                    <img src='https://ozikol.cloud/images/ozikol.png' alt='Ozikol Business Command Center' style='height: 36px; margin-bottom: 14px;' />
                     <h1 style='color: #4f46e5; font-size: 24px; margin: 0;'>Ozikol Central Command</h1>
                     <p style='color: #64748b; font-size: 14px; margin: 4px 0 0 0;'>Administrative Operator Onboarding</p>
                 </div>

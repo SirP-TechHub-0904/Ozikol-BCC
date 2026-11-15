@@ -209,7 +209,7 @@ public class IndexModel : PageModel
             Subject = "Welcome to Ozikol Business Command Center — {{businessname}}",
             BodyHtml = @"<div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 36px; border: 1px solid #e2e8f0; border-radius: 12px;"">
     <div style=""text-align: center; margin-bottom: 28px;"">
-        <img src=""https://ozikol.cloud/assets/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
+        <img src=""https://ozikol.cloud/images/ozikol.png"" alt=""Ozikol Business Command Center"" style=""height: 40px; margin-bottom: 16px;"" />
         <h1 style=""color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 8px;"">Welcome to Ozikol, {{businessname}}!</h1>
         <p style=""color: #64748b; font-size: 14.5px; margin: 0;"">We are thrilled to welcome you to the Ozikol Business Command Center.</p>
     </div>

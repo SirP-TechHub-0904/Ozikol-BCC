@@ -27,7 +27,7 @@ const BOT_USER_AGENTS = [
 const DEFAULT_BRAND = {
   title: "Ozikol Business Command Center",
   description: "Enterprise Operations, Sovereign Multi-Tenant Infrastructure & Business Command Center.",
-  image: "https://ozikol.cloud/assets/images/ozikol.png"
+  image: "https://ozikol.cloud/images/ozikol.png"
 };
 
 const EDGE_LLMS_TXT = `# Ozikol Business Command Center (Ozikol BCC)
