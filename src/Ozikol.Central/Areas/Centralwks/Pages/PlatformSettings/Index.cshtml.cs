@@ -920,18 +920,31 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
 
             try
             {
-                if (_smtpEmailDispatcher == null)
+                var centralEmailService = HttpContext.RequestServices.GetService(typeof(ICentralEmailService)) as ICentralEmailService;
+                bool sent;
+                if (centralEmailService != null)
+                {
+                    sent = await centralEmailService.SendEmailAsync(
+                        toEmail: recipient,
+                        subject: "Ozikol Central — Live SMTP Email Test",
+                        htmlBody: testHtml,
+                        provider: selectedProvider);
+                }
+                else if (_smtpEmailDispatcher != null)
+                {
+                    sent = await _smtpEmailDispatcher.SendEmailAsync(
+                        toEmail: recipient,
+                        subject: "Ozikol Central — Live SMTP Email Test",
+                        htmlBody: testHtml,
+                        fromEmail: resolvedFrom,
+                        fromName: resolvedName,
+                        isCentralPlatformEmail: true,
+                        strictDeliveryCheck: true);
+                }
+                else
                 {
                     return new JsonResult(new { success = false, message = "Mailcow SMTP dispatcher is not registered." });
                 }
-
-                var sent = await _smtpEmailDispatcher.SendEmailAsync(
-                    toEmail: recipient,
-                    subject: "Ozikol Central — Live SMTP Email Test",
-                    htmlBody: testHtml,
-                    fromEmail: resolvedFrom,
-                    fromName: resolvedName,
-                    isCentralPlatformEmail: true);
 
                 if (sent)
                 {

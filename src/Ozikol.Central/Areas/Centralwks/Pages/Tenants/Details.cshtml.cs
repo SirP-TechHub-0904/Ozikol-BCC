@@ -449,9 +449,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 var optBuilder = new DbContextOptionsBuilder<Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext>();
                 optBuilder.UseSqlServer(harmonizedConnStr, sqlOpts => sqlOpts.CommandTimeout(120));
 
-                var tenantProvider = _tenantProvider ?? new Ozikol_BCC.Infrastructure.TenantSupport.TenantProvider(
-                    Microsoft.Extensions.Options.Options.Create(new Ozikol_BCC.Infrastructure.TenantSupport.TenantConfigurationOptions()),
-                    HttpContext.RequestServices);
+                var tenantProvider = _tenantProvider ?? new Ozikol_BCC.Infrastructure.TenantSupport.TenantProvider();
                 using (tenantProvider.BeginScope(harmonizedConnStr))
                 await using (var tenantDb = new Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext(optBuilder.Options, tenantProvider, null))
                 {
@@ -598,10 +596,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             if (!sent)
             {
+                var latestLogError = await _dbContext.MasterEmailLogs
+                    .AsNoTracking()
+                    .Where(l => l.RecipientEmail == targetEmail)
+                    .OrderByDescending(l => l.SentAtUtc)
+                    .Select(l => l.ErrorMessage)
+                    .FirstOrDefaultAsync();
+
+                var detail = !string.IsNullOrWhiteSpace(latestLogError)
+                    ? $" ({latestLogError})"
+                    : string.Empty;
+
                 return new JsonResult(new
                 {
                     success = false,
-                    message = $"Failed to send verification code to {targetEmail}. Check Central Email Logs or SMTP configuration."
+                    message = $"Failed to send verification code to {targetEmail}{detail}. Check Mailcow API Key / SMTP Password in Platform Settings."
                 });
             }
 
