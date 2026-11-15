@@ -1,4 +1,4 @@
-﻿using Ozikol_BCC.Infrastructure.TenantSupport;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
@@ -9,7 +9,7 @@ namespace Ozikol_BCC.Persistence.EF.SQL.Infrastructure;
 /// Hook point for tenant/schema-aware SQL migration generation.
 /// The current BCP approach uses separate tenant databases, so schema rewriting is disabled.
 /// </summary>
-internal class DbSchemaAwareSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
+internal class DbSchemaAwareSqlServerMigrationsSqlGenerator : IdempotentSqlServerMigrationsSqlGenerator
 {
     private readonly ITenantProvider _tenantProvider;
 
