@@ -105,8 +105,14 @@ export class AuthInterceptor implements HttpInterceptor {
         const isPublic = this.isPublicUrl(request.url);
 
         // 404 Not Found — Workspace does not exist in Master Catalog
-        if (error.status === 404 && (error.error?.error === 'TenantNotFound' || error.error?.message === 'Workspace not found.')) {
-          console.warn(`[AuthInterceptor] TenantNotFound 404 for:`, request.url);
+        if (
+          error.status === 404 &&
+          (error.error?.error === 'TenantNotFound' ||
+            error.error?.error === 'WorkspaceNotFound' ||
+            error.error?.message === 'Workspace not found.' ||
+            error.error?.message === 'Workspace could not be found.')
+        ) {
+          console.warn(`[AuthInterceptor] WorkspaceNotFound 404 for:`, request.url);
           this.tenantState.setTenantNotFound(true);
         }
 

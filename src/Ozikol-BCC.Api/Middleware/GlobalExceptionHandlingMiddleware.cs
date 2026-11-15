@@ -47,6 +47,44 @@ public class GlobalExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
+            // If a tenant database was permanently dropped (SQL Error 4060 / 18456) while an API node still held
+            // the tenant entry in its L1 in-memory cache, immediately evict and refresh the tenant cache and return 404 WorkspaceNotFound.
+            if (IsTenantDatabaseMissingException(ex))
+            {
+                var effectiveTenantKeyForCache = context.Request.Headers["X-Tenant-Key"].ToString();
+                try
+                {
+                    var cacheInvalidator = context.RequestServices.GetService<Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator>();
+                    if (cacheInvalidator != null)
+                    {
+                        await cacheInvalidator.InvalidateTenantCatalogAsync(effectiveTenantKeyForCache);
+                    }
+                    var tp = context.RequestServices.GetService<Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider>();
+                    if (tp is Ozikol_BCC.Infrastructure.TenantSupport.TenantProvider concreteTp)
+                    {
+                        concreteTp.RefreshCachedTenants();
+                    }
+                }
+                catch
+                {
+                    // Ignore cache refresh errors
+                }
+
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(new
+                    {
+                        statusCode = 404,
+                        error = "WorkspaceNotFound",
+                        message = "Workspace could not be found.",
+                        timestamp = DateTime.UtcNow
+                    }));
+                    return;
+                }
+            }
+
             var tenantKey = context.Request.Headers["X-Tenant-Key"].ToString();
             var path = context.Request.Path.Value ?? string.Empty;
             var method = context.Request.Method;
@@ -106,6 +144,26 @@ public class GlobalExceptionHandlingMiddleware
 
             await HandleExceptionAsync(context, def.Code, customError);
         }
+    }
+
+    /// <summary>
+    /// Determines whether an exception was caused by a dropped or non-existent physical SQL database (SQL Error 4060)
+    /// or dropped tenant SQL login (SQL Error 18456 for `oz_usr_` / `oz_db_`).
+    /// </summary>
+    private static bool IsTenantDatabaseMissingException(Exception? ex)
+    {
+        var current = ex;
+        while (current != null)
+        {
+            var msg = current.Message ?? string.Empty;
+            if (msg.Contains("Cannot open database", StringComparison.OrdinalIgnoreCase) ||
+                (msg.Contains("Login failed for user 'oz_usr_", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+            current = current.InnerException;
+        }
+        return false;
     }
 
     /// <summary>

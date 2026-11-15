@@ -6,6 +6,7 @@ import { DomSanitizer, SafeHtml, Title, Meta } from '@angular/platform-browser';
 import { Subscription, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
+import { TenantStateService } from '../../core/services/tenant-state.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommitteesService } from '../../core/services/committees.service';
@@ -836,6 +837,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     private route: ActivatedRoute,
     private router: Router,
     private apiService: ApiService,
+    private tenantState: TenantStateService,
     private committeesService: CommitteesService,
     public cartService: CartService,
     private toastService: ToastService,
@@ -1067,6 +1069,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       this.fetchCodeInjections()
     ])
     .then(async () => {
+      if (this.tenantState.isTenantNotFound()) {
+        this.loading = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
       // Concurrently fetch active ticker items if breaking news ribbon is enabled
       await this.fetchTickerItems();
 
@@ -1225,7 +1233,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
             error: () => resolve()
           });
         },
-        error: () => {
+        error: (uiErr: any) => {
+          if (
+            uiErr?.status === 404 ||
+            uiErr?.error?.error === 'TenantNotFound' ||
+            uiErr?.error?.error === 'WorkspaceNotFound'
+          ) {
+            this.tenantState.setTenantNotFound(true);
+            resolve();
+            return;
+          }
           this.apiService.get('SettingsApi/brand').subscribe({
             next: (brandRes: any) => {
               if (brandRes?.data) {
@@ -1264,7 +1281,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
               }
               resolve();
             },
-            error: () => resolve()
+            error: (brandErr: any) => {
+              if (
+                brandErr?.status === 404 ||
+                brandErr?.error?.error === 'TenantNotFound' ||
+                brandErr?.error?.error === 'WorkspaceNotFound'
+              ) {
+                this.tenantState.setTenantNotFound(true);
+              }
+              resolve();
+            }
           });
         }
       });
