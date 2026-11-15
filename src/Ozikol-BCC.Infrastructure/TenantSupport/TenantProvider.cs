@@ -104,20 +104,23 @@ public class TenantProvider : ITenantProvider
     /// <param name="tenantConfigurationOptions">Static tenant options from configuration.</param>
     /// <param name="serviceProvider">Dependency injection service provider.</param>
     public TenantProvider(
-        IOptions<TenantConfigurationOptions> tenantConfigurationOptions,
-        IServiceProvider serviceProvider)
+        IOptions<TenantConfigurationOptions>? tenantConfigurationOptions = null,
+        IServiceProvider? serviceProvider = null)
     {
-        _defaultConnectionString = tenantConfigurationOptions.Value.ConnectionString ?? string.Empty;
-        _staticTenantConnections = tenantConfigurationOptions.Value.Tenants
-            .Where(t => !string.IsNullOrWhiteSpace(t.ConnectionString))
-            .ToDictionary(ks => ks.Name, vs => vs.ConnectionString!, StringComparer.OrdinalIgnoreCase);
+        var opts = tenantConfigurationOptions?.Value;
+        _defaultConnectionString = opts?.ConnectionString ?? string.Empty;
+        _staticTenantConnections = opts?.Tenants != null
+            ? opts.Tenants
+                .Where(t => !string.IsNullOrWhiteSpace(t.ConnectionString))
+                .ToDictionary(ks => ks.Name, vs => vs.ConnectionString!, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        _memoryCache = serviceProvider.GetService<IMemoryCache>();
-        _distributedCache = serviceProvider.GetService<IDistributedCache>();
-        _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
+        _memoryCache = serviceProvider?.GetService<IMemoryCache>();
+        _distributedCache = serviceProvider?.GetService<IDistributedCache>();
+        _scopeFactory = serviceProvider?.GetService<IServiceScopeFactory>();
 
         // Ensure cross-server Redis Pub/Sub invalidation listener is initialized
-        _ = serviceProvider.GetService<ITenantCacheInvalidator>();
+        _ = serviceProvider?.GetService<ITenantCacheInvalidator>();
     }
 
     /// <summary>

@@ -17,7 +17,7 @@ namespace Ozikol_BCC.Persistence.EF.SQL;
 /// Prevents tenant onboarding and batch database upgrades from failing if a table, column, index,
 /// or constraint already exists in the target database.
 /// </summary>
-public sealed class IdempotentSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
+public class IdempotentSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="IdempotentSqlServerMigrationsSqlGenerator"/> class.

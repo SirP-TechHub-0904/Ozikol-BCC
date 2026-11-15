@@ -33,6 +33,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         private readonly MasterCatalogDbContext _dbContext;
         private readonly ICentralMigrationService _migrationService;
         private readonly ILogger<DetailsModel> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly ICentralEmailService _centralEmailService;
+        private readonly ICentralTwoFactorService _twoFactorService;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? _cloudflareDns;
         private readonly Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? _tenantProvider;
@@ -44,6 +47,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             MasterCatalogDbContext dbContext,
             ICentralMigrationService migrationService,
             ILogger<DetailsModel> logger,
+            IConfiguration configuration,
+            ICentralEmailService centralEmailService,
+            ICentralTwoFactorService twoFactorService,
             Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
             Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? tenantProvider = null,
             Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null)
@@ -51,10 +57,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             _dbContext = dbContext;
             _migrationService = migrationService;
             _logger = logger;
+            _configuration = configuration;
+            _centralEmailService = centralEmailService;
+            _twoFactorService = twoFactorService;
             _mailcowProvisioning = mailcowProvisioning;
             _tenantProvider = tenantProvider;
             _cloudflareDns = cloudflareDns;
         }
+
+        /// <summary>
+        /// Dedicated security email address resolved strictly from <c>appsettings.json</c> (<c>TenantDeletionSecurity:VerificationEmail</c>)
+        /// that receives the mandatory 6-digit OTP authorization code for permanent tenant deletion.
+        /// </summary>
+        public string DeletionVerificationEmail =>
+            _configuration["TenantDeletionSecurity:VerificationEmail"]?.Trim() ?? string.Empty;
 
         /// <summary>
         /// Indicates whether the tenant's Mailcow transactional sender mailbox is configured in its database.
@@ -354,12 +370,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
 
             await _dbContext.SaveChangesAsync();
+            await InvalidateTenantCacheSafeAsync(tenant.TenantKey);
             return RedirectToPage(new { id = Id });
         }
 
         /// <summary>
         /// Handles HTTP POST requests to soft-delete (deactivate) the tenant.
         /// </summary>
+        /// <param name="reason">The reason for soft-deleting the tenant.</param>
+        /// <returns>Redirect to the tenant index page.</returns>
         public async Task<IActionResult> OnPostSoftDeleteAsync(string? reason)
         {
             var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(Id);
@@ -394,16 +413,229 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
+            await InvalidateTenantCacheSafeAsync(tenant.TenantKey);
 
             TempData["Warning"] = $"Tenant '{tenant.OrganizationName}' has been deactivated (soft-deleted).";
             return RedirectToPage("/Tenants/Index");
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to permanently scrub and delete the tenant, including dropping the physical database.
-        /// Requires typing the tenant key to confirm.
+        /// Handles HTTP POST requests to reset a tenant's public website to a clean Blank Canvas from Central Admin.
+        /// Preserves tenant users, business records, and workspace settings while removing website pages, sections, blogs, and templates.
         /// </summary>
-        public async Task<IActionResult> OnPostPermanentDeleteAsync(string confirmKey)
+        /// <param name="confirmResetKey">Tenant key confirmation for resetting the website.</param>
+        /// <returns>Redirect back to the tenant details page.</returns>
+        public async Task<IActionResult> OnPostResetWebsiteAsync(string confirmResetKey)
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.Id == Id);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Tenants/Index");
+            }
+
+            if (!string.Equals(confirmResetKey?.Trim(), tenant.TenantKey, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = $"Website reset aborted: confirmation key did not match '{tenant.TenantKey}'.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            try
+            {
+                var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
+                var decryptedConnStr = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(tenant.ConnectionString) ?? tenant.ConnectionString;
+                var harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, decryptedConnStr, tenant.DatabaseName);
+
+                var optBuilder = new DbContextOptionsBuilder<Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext>();
+                optBuilder.UseSqlServer(harmonizedConnStr, sqlOpts => sqlOpts.CommandTimeout(120));
+
+                var tenantProvider = _tenantProvider ?? new Ozikol_BCC.Infrastructure.TenantSupport.TenantProvider();
+                using (tenantProvider.BeginScope(harmonizedConnStr))
+                await using (var tenantDb = new Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext(optBuilder.Options, tenantProvider, null))
+                {
+                    await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.ResetToBlankCanvasAsync(tenantDb);
+                }
+
+                var adminUser = User.Identity?.Name ?? "SuperAdmin";
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Tenant.WebsiteResetToBlank",
+                    EntityType = "Tenant",
+                    EntityId = tenant.Id.ToString(),
+                    Summary = $"Central Admin {adminUser} reset the public website of tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) to Blank Canvas.",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = $"Public website for '{tenant.OrganizationName}' ({tenant.TenantKey}) has been wiped and reset to Blank Canvas.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reset website to Blank Canvas for tenant '{TenantKey}'", tenant.TenantKey);
+                TempData["Error"] = $"Failed to reset tenant website: {ex.Message}";
+            }
+
+            return RedirectToPage(new { id = Id, tab = "governance" });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to re-seed the turnkey default website suite for a tenant from Central Admin.
+        /// </summary>
+        /// <returns>Redirect back to the tenant details page.</returns>
+        public async Task<IActionResult> OnPostReseedWebsiteAsync()
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.Id == Id);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Tenants/Index");
+            }
+
+            try
+            {
+                var onboardingService = HttpContext.RequestServices.GetService(typeof(ITenantOnboardingService)) as ITenantOnboardingService;
+                if (onboardingService == null)
+                {
+                    TempData["Error"] = "Tenant onboarding service is unavailable.";
+                    return RedirectToPage(new { id = Id, tab = "governance" });
+                }
+
+                var ok = await onboardingService.SeedTenantDefaultWebsiteAsync(tenant.TenantKey, tenant.OrganizationName);
+                if (!ok)
+                {
+                    TempData["Error"] = $"Failed to seed default website suite for '{tenant.OrganizationName}'. Check database connectivity.";
+                    return RedirectToPage(new { id = Id, tab = "governance" });
+                }
+
+                var adminUser = User.Identity?.Name ?? "SuperAdmin";
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Tenant.WebsiteReseeded",
+                    EntityType = "Tenant",
+                    EntityId = tenant.Id.ToString(),
+                    Summary = $"Central Admin {adminUser} seeded the turnkey default website suite for tenant '{tenant.OrganizationName}' ({tenant.TenantKey}).",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = $"Turnkey default website suite seeded for '{tenant.OrganizationName}' ({tenant.TenantKey}).";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to re-seed website for tenant '{TenantKey}'", tenant.TenantKey);
+                TempData["Error"] = $"Failed to seed tenant website: {ex.Message}";
+            }
+
+            return RedirectToPage(new { id = Id, tab = "governance" });
+        }
+
+        /// <summary>
+        /// Generates and dispatches a 6-digit security verification OTP code strictly to the email address
+        /// configured in <c>appsettings.json</c> (<c>TenantDeletionSecurity:VerificationEmail</c>) before permanent tenant deletion.
+        /// </summary>
+        /// <returns>JSON result indicating whether the verification email was delivered.</returns>
+        public async Task<IActionResult> OnPostSendDeleteOtpAsync()
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (tenant == null)
+            {
+                return new JsonResult(new { success = false, message = "Tenant organization not found." });
+            }
+
+            var targetEmail = DeletionVerificationEmail;
+            if (string.IsNullOrWhiteSpace(targetEmail))
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "TenantDeletionSecurity:VerificationEmail is not configured in appsettings.json."
+                });
+            }
+
+            int expiryMinutes = 10;
+            if (int.TryParse(_configuration["TenantDeletionSecurity:OtpExpiryMinutes"], out var parsedMinutes) && parsedMinutes > 0)
+            {
+                expiryMinutes = parsedMinutes;
+            }
+
+            var otpCode = _twoFactorService.GenerateTenantDeleteOtp(tenant.Id, tenant.TenantKey, targetEmail, expiryMinutes);
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+
+            var sent = await _centralEmailService.SendTenantDeletionOtpEmailAsync(
+                toEmail: targetEmail,
+                code: otpCode,
+                organizationName: tenant.OrganizationName,
+                tenantKey: tenant.TenantKey,
+                databaseName: tenant.DatabaseName ?? string.Empty,
+                requestedByAdmin: adminUser);
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                UserName = adminUser,
+                Action = "Tenant.PermanentDeleteOtpRequested",
+                EntityType = "Tenant",
+                EntityId = tenant.Id.ToString(),
+                Summary = $"Admin {adminUser} requested a permanent deletion 6-digit OTP code for tenant '{tenant.OrganizationName}' ({tenant.TenantKey}). Dispatched to {targetEmail} (Status: {(sent ? "Sent" : "Failed")}).",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+            await _dbContext.SaveChangesAsync();
+
+            if (!sent)
+            {
+                var latestLogError = await _dbContext.MasterEmailLogs
+                    .AsNoTracking()
+                    .Where(l => l.RecipientEmail == targetEmail)
+                    .OrderByDescending(l => l.SentAtUtc)
+                    .Select(l => l.ErrorMessage)
+                    .FirstOrDefaultAsync();
+
+                var detail = !string.IsNullOrWhiteSpace(latestLogError)
+                    ? $" ({latestLogError})"
+                    : string.Empty;
+
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = $"Failed to send verification code to {targetEmail}{detail}. Check Mailcow API Key / SMTP Password in Platform Settings."
+                });
+            }
+
+            return new JsonResult(new
+            {
+                success = true,
+                message = $"6-digit security verification code sent to {targetEmail}. Valid for {expiryMinutes} minutes."
+            });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to permanently scrub and delete the tenant, including dropping the physical database,
+        /// dropping the dedicated SQL Server login, removing all dependent master catalog records, and evicting routing caches.
+        /// Enforces strict 4-factor confirmation (Tenant Key + "DELETE PERMANENTLY" phrase + explicit acknowledgment checkbox + 6-digit email OTP sent to appsettings VerificationEmail).
+        /// </summary>
+        /// <param name="confirmKey">Must match the exact tenant key.</param>
+        /// <param name="confirmPhrase">Must match "DELETE PERMANENTLY".</param>
+        /// <param name="acknowledgeIrreversible">Must be checked (true) to confirm irreversible destruction.</param>
+        /// <param name="confirmOtpCode">Must match the 6-digit OTP sent to <c>TenantDeletionSecurity:VerificationEmail</c>.</param>
+        /// <returns>Redirect to the tenant index page upon completion.</returns>
+        public async Task<IActionResult> OnPostPermanentDeleteAsync(
+            string confirmKey,
+            string? confirmPhrase = null,
+            bool acknowledgeIrreversible = false,
+            string? confirmOtpCode = null)
         {
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)
@@ -417,14 +649,197 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             if (!string.Equals(confirmKey?.Trim(), tenant.TenantKey, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["Error"] = "Permanent deletion confirmation failed. Tenant key did not match.";
-                return RedirectToPage(new { id = Id });
+                TempData["Error"] = $"Permanent deletion aborted: Tenant key confirmation did not match '{tenant.TenantKey}'.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            if (!string.Equals(confirmPhrase?.Trim(), "DELETE PERMANENTLY", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Permanent deletion aborted: You must type 'DELETE PERMANENTLY' in the verification phrase field.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            if (!acknowledgeIrreversible)
+            {
+                TempData["Error"] = "Permanent deletion aborted: You must tick the mandatory irreversible destruction acknowledgment checkbox.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            var targetVerificationEmail = DeletionVerificationEmail;
+            if (string.IsNullOrWhiteSpace(targetVerificationEmail))
+            {
+                TempData["Error"] = "Permanent deletion aborted: 'TenantDeletionSecurity:VerificationEmail' is not configured in appsettings.json.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            if (!_twoFactorService.VerifyTenantDeleteOtp(tenant.Id, tenant.TenantKey, targetVerificationEmail, confirmOtpCode ?? string.Empty))
+            {
+                TempData["Error"] = $"Permanent deletion aborted: Invalid or expired 6-digit security verification code. Please click 'Send Verification Code' to receive a fresh code at {targetVerificationEmail}.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
             }
 
             var adminUser = User.Identity?.Name ?? "SuperAdmin";
             var now = DateTime.UtcNow;
+            var cleanKey = tenant.TenantKey.Trim().ToLowerInvariant();
+            var dbName = tenant.DatabaseName?.Trim() ?? string.Empty;
 
-            // 1. Write final immutable audit log
+            // Extract dedicated SQL login username and fallback database name from tenant connection string before removal
+            string? dedicatedSqlUser = null;
+            try
+            {
+                var decryptedTenantConn = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(tenant.ConnectionString) ?? tenant.ConnectionString;
+                if (!string.IsNullOrWhiteSpace(decryptedTenantConn))
+                {
+                    var tBuilder = new SqlConnectionStringBuilder(decryptedTenantConn);
+                    if (!string.IsNullOrWhiteSpace(tBuilder.UserID) &&
+                        tBuilder.UserID.StartsWith("oz_usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        dedicatedSqlUser = tBuilder.UserID.Trim();
+                    }
+
+                    if (string.IsNullOrWhiteSpace(dbName) && !string.IsNullOrWhiteSpace(tBuilder.InitialCatalog))
+                    {
+                        dbName = tBuilder.InitialCatalog.Trim();
+                    }
+                }
+            }
+            catch
+            {
+                // Non-blocking parse
+            }
+
+            // 1. Drop Physical Database & Dedicated SQL Login using Master Admin SQL Credentials
+            bool dbDropped = false;
+            string dbDropNote = "Database dropped";
+            try
+            {
+                var masterAdminConnStr = _dbContext.Database.GetConnectionString();
+                if (!string.IsNullOrWhiteSpace(masterAdminConnStr) && !string.IsNullOrWhiteSpace(dbName))
+                {
+                    var adminBuilder = new SqlConnectionStringBuilder(masterAdminConnStr)
+                    {
+                        InitialCatalog = "master",
+                        ConnectTimeout = 30
+                    };
+
+                    await using var masterConn = new SqlConnection(adminBuilder.ConnectionString);
+                    await masterConn.OpenAsync();
+
+                    var safeDbBracket = dbName.Replace("]", "]]");
+                    var safeDbLiteral = dbName.Replace("'", "''");
+
+                    await using (var dropDbCmd = masterConn.CreateCommand())
+                    {
+                        dropDbCmd.CommandTimeout = 60;
+                        dropDbCmd.CommandText = $@"
+                            IF EXISTS (SELECT name FROM sys.databases WHERE name = N'{safeDbLiteral}')
+                            BEGIN
+                                ALTER DATABASE [{safeDbBracket}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                                DROP DATABASE [{safeDbBracket}];
+                            END";
+                        await dropDbCmd.ExecuteNonQueryAsync();
+                    }
+
+                    // Verify that the physical database no longer exists on the SQL Server instance
+                    await using (var verifyCmd = masterConn.CreateCommand())
+                    {
+                        verifyCmd.CommandText = $"SELECT COUNT(1) FROM sys.databases WHERE name = N'{safeDbLiteral}';";
+                        var remainingCount = Convert.ToInt32(await verifyCmd.ExecuteScalarAsync());
+                        if (remainingCount > 0)
+                        {
+                            TempData["Error"] = $"Permanent deletion aborted: SQL Server reported that physical database '{dbName}' still exists after DROP DATABASE.";
+                            return RedirectToPage(new { id = Id, tab = "governance" });
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(dedicatedSqlUser))
+                    {
+                        var safeLoginBracket = dedicatedSqlUser.Replace("]", "]]");
+                        var safeLoginLiteral = dedicatedSqlUser.Replace("'", "''");
+                        await using var dropLoginCmd = masterConn.CreateCommand();
+                        dropLoginCmd.CommandText = $@"
+                            IF EXISTS (SELECT name FROM sys.server_principals WHERE name = N'{safeLoginLiteral}')
+                            BEGIN
+                                DROP LOGIN [{safeLoginBracket}];
+                            END";
+                        await dropLoginCmd.ExecuteNonQueryAsync();
+                    }
+
+                    dbDropped = true;
+                    _logger.LogInformation("Successfully dropped physical database '{DatabaseName}' and SQL login '{SqlUser}' for purged tenant '{TenantKey}'",
+                        dbName, dedicatedSqlUser ?? "(none)", cleanKey);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to drop physical database '{DatabaseName}' during hard delete of tenant '{TenantKey}'", dbName, cleanKey);
+                TempData["Error"] = $"Permanent deletion aborted: Failed to drop physical SQL database '{dbName}': {ex.Message}";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            // 2. Remove all dependent Master Catalog foreign-key records so SaveChangesAsync never fails on FK Restrict constraints
+            var billingTxs = await _dbContext.MasterBillingTransactions
+                .Where(b => b.MasterTenantCatalogId == tenant.Id)
+                .ToListAsync();
+            if (billingTxs.Count > 0)
+            {
+                _dbContext.MasterBillingTransactions.RemoveRange(billingTxs);
+            }
+
+            var couponRedemptions = await _dbContext.MasterCouponRedemptions
+                .Where(c => c.MasterTenantCatalogId == tenant.Id)
+                .ToListAsync();
+            if (couponRedemptions.Count > 0)
+            {
+                _dbContext.MasterCouponRedemptions.RemoveRange(couponRedemptions);
+            }
+
+            var apiErrorLogs = await _dbContext.MasterApiErrorLogs
+                .Where(e => e.MasterTenantCatalogId == tenant.Id || e.TenantKey == tenant.TenantKey)
+                .ToListAsync();
+            if (apiErrorLogs.Count > 0)
+            {
+                _dbContext.MasterApiErrorLogs.RemoveRange(apiErrorLogs);
+            }
+
+            var appBuilds = await _dbContext.MasterTenantAppBuilds
+                .Where(b => b.TenantId == tenant.Id || b.TenantKey == tenant.TenantKey)
+                .ToListAsync();
+            if (appBuilds.Count > 0)
+            {
+                _dbContext.MasterTenantAppBuilds.RemoveRange(appBuilds);
+            }
+
+            var jobLogs = await _dbContext.MasterBackgroundJobLogs
+                .Where(l => l.TargetTenantCatalogId == tenant.Id || l.TenantKey == tenant.TenantKey)
+                .ToListAsync();
+            if (jobLogs.Count > 0)
+            {
+                _dbContext.MasterBackgroundJobLogs.RemoveRange(jobLogs);
+            }
+
+            var tenantJobs = await _dbContext.MasterBackgroundJobs
+                .Where(j => j.TargetTenantCatalogId == tenant.Id)
+                .ToListAsync();
+            if (tenantJobs.Count > 0)
+            {
+                _dbContext.MasterBackgroundJobs.RemoveRange(tenantJobs);
+            }
+
+            var affiliateReferrals = await _dbContext.MasterAffiliateReferrals
+                .Where(r => r.ReferredTenantKey == tenant.TenantKey)
+                .ToListAsync();
+            if (affiliateReferrals.Count > 0)
+            {
+                _dbContext.MasterAffiliateReferrals.RemoveRange(affiliateReferrals);
+            }
+
+            if (tenant.FeatureSubscriptions.Any())
+            {
+                _dbContext.MasterTenantFeatureSubscriptions.RemoveRange(tenant.FeatureSubscriptions);
+            }
+
+            // 3. Write final immutable audit log
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
                 UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
@@ -432,14 +847,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 Action = "Tenant.HardPurged",
                 EntityType = "Tenant",
                 EntityId = tenant.Id.ToString(),
-                Summary = $"Admin {adminUser} permanently deleted tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) and requested physical database drop of '{tenant.DatabaseName}'.",
+                Summary = $"Admin {adminUser} permanently purged tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) and physical database '{dbName}' ({dbDropNote}).",
                 OldValues = JsonSerializer.Serialize(new
                 {
                     tenant.Id,
                     tenant.TenantKey,
                     tenant.OrganizationName,
                     tenant.PrimaryDomain,
+                    tenant.CustomDomain,
                     tenant.DatabaseName,
+                    dedicatedSqlUser,
+                    dbDropped,
                     tenant.AdminEmail,
                     tenant.CreatedUtc
                 }),
@@ -448,39 +866,41 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 CreatedUtc = now
             });
 
-            // 2. Drop Physical Database on SQL instance if possible
-            try
-            {
-                using var conn = new SqlConnection(tenant.ConnectionString);
-                var masterConnStr = new SqlConnectionStringBuilder(tenant.ConnectionString)
-                {
-                    InitialCatalog = "master"
-                }.ConnectionString;
-
-                using var masterConn = new SqlConnection(masterConnStr);
-                await masterConn.OpenAsync();
-                var dropCmd = masterConn.CreateCommand();
-                dropCmd.CommandText = $@"
-                    IF EXISTS (SELECT name FROM sys.databases WHERE name = N'{tenant.DatabaseName}')
-                    BEGIN
-                        ALTER DATABASE [{tenant.DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                        DROP DATABASE [{tenant.DatabaseName}];
-                    END";
-                await dropCmd.ExecuteNonQueryAsync();
-                _logger.LogInformation("Successfully dropped physical database '{DatabaseName}' for purged tenant '{TenantKey}'", tenant.DatabaseName, tenant.TenantKey);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to drop physical database '{DatabaseName}' during hard delete of tenant '{TenantKey}'", tenant.DatabaseName, tenant.TenantKey);
-            }
-
-            // 3. Remove master records
-            _dbContext.MasterTenantFeatureSubscriptions.RemoveRange(tenant.FeatureSubscriptions);
+            // 4. Remove MasterTenantCatalog record and commit
             _dbContext.MasterTenantCatalogs.Remove(tenant);
             await _dbContext.SaveChangesAsync();
 
-            TempData["Success"] = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) and its database have been permanently removed.";
+            // 5. Evict Redis L2 & In-Memory L1 Tenant Routing Cache immediately across cluster
+            await InvalidateTenantCacheSafeAsync(cleanKey);
+
+            TempData["Success"] = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}), its Master Catalog records, and physical database '{dbName}' have been permanently scrubbed.";
             return RedirectToPage("/Tenants/Index");
+        }
+
+        /// <summary>
+        /// Safely invalidates the distributed Redis L2 and local in-memory L1 tenant catalog caches.
+        /// </summary>
+        /// <param name="tenantKey">The tenant key that was modified or deleted.</param>
+        private async Task InvalidateTenantCacheSafeAsync(string? tenantKey)
+        {
+            try
+            {
+                var invalidator = HttpContext.RequestServices.GetService(typeof(Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator))
+                    as Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator;
+                if (invalidator != null)
+                {
+                    await invalidator.InvalidateTenantCatalogAsync(tenantKey);
+                }
+
+                if (_tenantProvider is Ozikol_BCC.Infrastructure.TenantSupport.TenantProvider tp)
+                {
+                    tp.RefreshCachedTenants();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Non-blocking notice: Failed to evict tenant cache for '{TenantKey}'", tenantKey);
+            }
         }
 
         /// <summary>

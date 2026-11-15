@@ -53,6 +53,15 @@ public sealed class MailcowProvisioningService : IMailcowProvisioningService
                 ?? Environment.GetEnvironmentVariable("MAILCOW_API_URL")
                 ?? "https://mail.ozikol.cloud";
 
+        // When running locally on Windows connected to the online Master DB, a VPS-local loopback URL
+        // (e.g. https://127.0.0.1:8443) stored in MasterPlatformSettings must resolve to https://mail.ozikol.cloud
+        if (OperatingSystem.IsWindows() &&
+            (rawUrl.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+             rawUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase)))
+        {
+            rawUrl = "https://mail.ozikol.cloud";
+        }
+
         var apiKey = !string.IsNullOrWhiteSpace(dbCreds?.MailcowApiKey)
             ? dbCreds.MailcowApiKey.Trim()
             : _configuration["Mailcow:ApiKey"]
@@ -172,28 +181,33 @@ public sealed class MailcowProvisioningService : IMailcowProvisioningService
                 return true;
             }
 
-            // If already exists, update password
-            if (responseBody.Contains("mailbox_exists", StringComparison.OrdinalIgnoreCase) ||
-                responseBody.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            // If already exists (Mailcow returns "object_is_not_empty", "mailbox_exists", or "already exists"),
+            // or if add/mailbox did not add a new row, update the existing mailbox password via api/v1/edit/mailbox
+            var editPayload = new
             {
-                var editPayload = new
+                items = new[] { $"{cleanLocal}@{cleanDomain}" },
+                attr = new
                 {
-                    items = new[] { $"{cleanLocal}@{cleanDomain}" },
-                    attr = new
-                    {
-                        password = password,
-                        password2 = password,
-                        active = 1
-                    }
-                };
+                    name = displayName,
+                    password = password,
+                    password2 = password,
+                    active = 1
+                }
+            };
 
-                var editContent = new StringContent(JsonSerializer.Serialize(editPayload), Encoding.UTF8, "application/json");
-                var editResponse = await _httpClient.PostAsync("api/v1/edit/mailbox", editContent, cancellationToken);
-                var editResponseBody = await editResponse.Content.ReadAsStringAsync(cancellationToken);
-                return editResponse.IsSuccessStatusCode && !editResponseBody.Contains("\"type\":\"danger\"", StringComparison.OrdinalIgnoreCase);
+            var editContent = new StringContent(JsonSerializer.Serialize(editPayload), Encoding.UTF8, "application/json");
+            var editResponse = await _httpClient.PostAsync("api/v1/edit/mailbox", editContent, cancellationToken);
+            var editResponseBody = await editResponse.Content.ReadAsStringAsync(cancellationToken);
+            if (editResponse.IsSuccessStatusCode &&
+                !editResponseBody.Contains("\"type\":\"danger\"", StringComparison.OrdinalIgnoreCase) &&
+                !editResponseBody.Contains("\"type\":\"error\"", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("✅ [Mailcow] Mailbox '{LocalPart}@{Domain}' password synced via edit/mailbox.", cleanLocal, cleanDomain);
+                return true;
             }
 
-            _logger.LogWarning("⚠️ [Mailcow] Add mailbox returned non-success for '{LocalPart}@{Domain}': {Body}", cleanLocal, cleanDomain, responseBody);
+            _logger.LogWarning("⚠️ [Mailcow] Add/Edit mailbox returned non-success for '{LocalPart}@{Domain}'. Add: {AddBody} | Edit: {EditBody}",
+                cleanLocal, cleanDomain, responseBody, editResponseBody);
             return false;
         }
         catch (Exception ex)
