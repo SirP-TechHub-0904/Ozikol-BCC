@@ -1062,7 +1062,7 @@ namespace Ozikol_BCC.Api.Controllers
                 ? setting.CompanyIconUrl.Trim()
                 : (!string.IsNullOrWhiteSpace(setting?.CompanyLogoUrl)
                     ? setting.CompanyLogoUrl.Trim()
-                    : (!string.IsNullOrWhiteSpace(setting?.LogoUrl) ? setting.LogoUrl.Trim() : "https://ozikol.cloud/assets/images/ozikol.png"));
+                    : (!string.IsNullOrWhiteSpace(setting?.LogoUrl) ? setting.LogoUrl.Trim() : "https://ozikol.cloud/images/ozikol.png"));
 
             var faviconUrl = !string.IsNullOrWhiteSpace(setting?.FaviconUrl) ? setting.FaviconUrl.Trim() : imageUrl;
 
