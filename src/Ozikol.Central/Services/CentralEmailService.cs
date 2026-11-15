@@ -48,6 +48,26 @@ public interface ICentralEmailService
     /// Dispatches an official platform operator invitation email containing account details, assigned roles, and secure password activation link.
     /// </summary>
     Task<bool> SendOperatorInvitationEmailAsync(string toEmail, string fullName, string userName, string department, IList<string> roles, string setupUrl, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dispatches a 6-digit security verification code for irreversible tenant workspace and database deletion.
+    /// </summary>
+    /// <param name="toEmail">The configured security verification recipient email.</param>
+    /// <param name="code">The 6-digit numeric OTP authorization code.</param>
+    /// <param name="organizationName">The target tenant organization name.</param>
+    /// <param name="tenantKey">The target tenant key/slug.</param>
+    /// <param name="databaseName">The target physical SQL database name.</param>
+    /// <param name="requestedByAdmin">The Central operator initiating the request.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if delivered successfully; false otherwise.</returns>
+    Task<bool> SendTenantDeletionOtpEmailAsync(
+        string toEmail,
+        string code,
+        string organizationName,
+        string tenantKey,
+        string databaseName,
+        string requestedByAdmin,
+        CancellationToken cancellationToken = default);
 }
 
 public class CentralEmailService : ICentralEmailService
@@ -258,6 +278,49 @@ public class CentralEmailService : ICentralEmailService
                 </div>
                 <div style='margin-top: 24px; text-align: center; font-size: 11.5px; color: #94a3b8;'>
                     If you did not request a password reset, you can safely disregard this email. Your password will remain unchanged.
+                </div>
+            </div>
+        ";
+
+        return await SendEmailAsync(toEmail, subject, body, null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendTenantDeletionOtpEmailAsync(
+        string toEmail,
+        string code,
+        string organizationName,
+        string tenantKey,
+        string databaseName,
+        string requestedByAdmin,
+        CancellationToken cancellationToken = default)
+    {
+        var safeOrg = System.Net.WebUtility.HtmlEncode(organizationName ?? string.Empty);
+        var safeKey = System.Net.WebUtility.HtmlEncode(tenantKey ?? string.Empty);
+        var safeDb = System.Net.WebUtility.HtmlEncode(databaseName ?? string.Empty);
+        var safeAdmin = System.Net.WebUtility.HtmlEncode(requestedByAdmin ?? "SuperAdmin");
+        var timestampUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
+
+        var subject = $"[Ozikol Security] Permanent Tenant Deletion Code: {code} ({organizationName})";
+        var body = $@"
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #fecaca; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='color: #dc2626; margin: 0; font-size: 21px; font-weight: 800;'>Permanent Tenant Deletion Authorization</h2>
+                    <p style='color: #64748b; font-size: 13px; margin: 6px 0 0;'>Ozikol Business Command Center — Central Security Gate</p>
+                </div>
+                <div style='background: #fef2f2; border: 1px solid #fecaca; padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #7f1d1d; line-height: 1.6;'>
+                    <div><strong>Target Organization:</strong> {safeOrg}</div>
+                    <div><strong>Workspace Key:</strong> <code style='font-family: monospace;'>{safeKey}</code> ({safeKey}.ozikol.cloud)</div>
+                    <div><strong>Physical SQL Database:</strong> <code style='font-family: monospace;'>{safeDb}</code></div>
+                    <div><strong>Requested By:</strong> {safeAdmin} at {timestampUtc}</div>
+                </div>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; text-align: center;'>
+                    <p style='margin: 0 0 12px; color: #334155; font-size: 14px;'>Enter this 6-digit security verification code in Central Works to authorize permanent workspace and database deletion:</p>
+                    <div style='font-size: 34px; font-weight: 800; color: #dc2626; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
+                    <p style='color: #94a3b8; font-size: 12px; margin: 12px 0 0;'>This single-use code expires in 10 minutes.</p>
+                </div>
+                <div style='margin-top: 20px; text-align: center; font-size: 11.5px; color: #94a3b8;'>
+                    If you did not initiate this permanent deletion request, do not share this code and review Central Audit Logs immediately.
                 </div>
             </div>
         ";

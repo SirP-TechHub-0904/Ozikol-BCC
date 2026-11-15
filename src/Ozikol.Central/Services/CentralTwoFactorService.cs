@@ -57,6 +57,26 @@ public interface ICentralTwoFactorService
     /// <param name="code">Submitted TOTP code.</param>
     /// <returns>True if valid; false otherwise.</returns>
     bool VerifyTotpCode(string secretKey, string code);
+
+    /// <summary>
+    /// Generates and caches a 6-digit numeric OTP scoped to a specific tenant permanent deletion request and security recipient email.
+    /// </summary>
+    /// <param name="tenantId">The unique identifier of the target tenant.</param>
+    /// <param name="tenantKey">The unique slug/key of the target tenant.</param>
+    /// <param name="verificationEmail">The dedicated security recipient email address from configuration.</param>
+    /// <param name="expiryMinutes">Number of minutes before the OTP expires.</param>
+    /// <returns>The 6-digit numeric authorization code.</returns>
+    string GenerateTenantDeleteOtp(Guid tenantId, string tenantKey, string verificationEmail, int expiryMinutes = 10);
+
+    /// <summary>
+    /// Verifies and consumes the submitted 6-digit OTP for a tenant permanent deletion request.
+    /// </summary>
+    /// <param name="tenantId">The unique identifier of the target tenant.</param>
+    /// <param name="tenantKey">The unique slug/key of the target tenant.</param>
+    /// <param name="verificationEmail">The dedicated security recipient email address from configuration.</param>
+    /// <param name="code">The submitted 6-digit numeric authorization code.</param>
+    /// <returns>True if valid and not expired; false otherwise.</returns>
+    bool VerifyTenantDeleteOtp(Guid tenantId, string tenantKey, string verificationEmail, string code);
 }
 
 public class CentralTwoFactorService : ICentralTwoFactorService
@@ -137,6 +157,50 @@ public class CentralTwoFactorService : ICentralTwoFactorService
         }
 
         _logger.LogWarning("✗ [CentralTwoFactorService] Invalid or expired Password Reset OTP for {Email}", cleanEmail);
+        return false;
+    }
+
+    /// <inheritdoc />
+    public string GenerateTenantDeleteOtp(Guid tenantId, string tenantKey, string verificationEmail, int expiryMinutes = 10)
+    {
+        var cleanKey = (tenantKey ?? string.Empty).Trim().ToLowerInvariant();
+        var cleanEmail = (verificationEmail ?? string.Empty).Trim().ToLowerInvariant();
+        using var rng = RandomNumberGenerator.Create();
+        var bytes = new byte[4];
+        rng.GetBytes(bytes);
+        var number = BitConverter.ToUInt32(bytes, 0) % 1000000;
+        var code = number.ToString("D6");
+
+        var cacheKey = $"TENANT_DELETE_OTP_{tenantId:N}_{cleanKey}_{cleanEmail}";
+        var ttlMinutes = expiryMinutes > 0 ? expiryMinutes : 10;
+        _cache.Set(cacheKey, code, TimeSpan.FromMinutes(ttlMinutes));
+        _logger.LogInformation("🔑 [CentralTwoFactorService] Generated Tenant Permanent Delete OTP for tenant '{TenantKey}' ({TenantId}) dispatched to {Email} (expires in {Minutes}m)",
+            cleanKey, tenantId, cleanEmail, ttlMinutes);
+        return code;
+    }
+
+    /// <inheritdoc />
+    public bool VerifyTenantDeleteOtp(Guid tenantId, string tenantKey, string verificationEmail, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return false;
+        var cleanKey = (tenantKey ?? string.Empty).Trim().ToLowerInvariant();
+        var cleanEmail = (verificationEmail ?? string.Empty).Trim().ToLowerInvariant();
+        var cacheKey = $"TENANT_DELETE_OTP_{tenantId:N}_{cleanKey}_{cleanEmail}";
+
+        if (_cache.TryGetValue<string>(cacheKey, out var cachedCode) && !string.IsNullOrWhiteSpace(cachedCode))
+        {
+            var submittedBytes = Encoding.UTF8.GetBytes(code.Trim());
+            var expectedBytes = Encoding.UTF8.GetBytes(cachedCode.Trim());
+            if (CryptographicOperations.FixedTimeEquals(submittedBytes, expectedBytes))
+            {
+                // Single-use token: remove immediately upon verification
+                _cache.Remove(cacheKey);
+                _logger.LogInformation("✓ [CentralTwoFactorService] Verified Tenant Permanent Delete OTP for tenant '{TenantKey}' ({TenantId})", cleanKey, tenantId);
+                return true;
+            }
+        }
+
+        _logger.LogWarning("✗ [CentralTwoFactorService] Invalid or expired Tenant Permanent Delete OTP for tenant '{TenantKey}' ({TenantId})", cleanKey, tenantId);
         return false;
     }
 

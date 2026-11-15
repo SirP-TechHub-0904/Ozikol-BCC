@@ -33,6 +33,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         private readonly MasterCatalogDbContext _dbContext;
         private readonly ICentralMigrationService _migrationService;
         private readonly ILogger<DetailsModel> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly ICentralEmailService _centralEmailService;
+        private readonly ICentralTwoFactorService _twoFactorService;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? _cloudflareDns;
         private readonly Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? _tenantProvider;
@@ -44,6 +47,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             MasterCatalogDbContext dbContext,
             ICentralMigrationService migrationService,
             ILogger<DetailsModel> logger,
+            IConfiguration configuration,
+            ICentralEmailService centralEmailService,
+            ICentralTwoFactorService twoFactorService,
             Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
             Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? tenantProvider = null,
             Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null)
@@ -51,10 +57,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             _dbContext = dbContext;
             _migrationService = migrationService;
             _logger = logger;
+            _configuration = configuration;
+            _centralEmailService = centralEmailService;
+            _twoFactorService = twoFactorService;
             _mailcowProvisioning = mailcowProvisioning;
             _tenantProvider = tenantProvider;
             _cloudflareDns = cloudflareDns;
         }
+
+        /// <summary>
+        /// Dedicated security email address resolved strictly from <c>appsettings.json</c> (<c>TenantDeletionSecurity:VerificationEmail</c>)
+        /// that receives the mandatory 6-digit OTP authorization code for permanent tenant deletion.
+        /// </summary>
+        public string DeletionVerificationEmail =>
+            _configuration["TenantDeletionSecurity:VerificationEmail"]?.Trim() ?? string.Empty;
 
         /// <summary>
         /// Indicates whether the tenant's Mailcow transactional sender mailbox is configured in its database.
@@ -524,18 +540,93 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         }
 
         /// <summary>
+        /// Generates and dispatches a 6-digit security verification OTP code strictly to the email address
+        /// configured in <c>appsettings.json</c> (<c>TenantDeletionSecurity:VerificationEmail</c>) before permanent tenant deletion.
+        /// </summary>
+        /// <returns>JSON result indicating whether the verification email was delivered.</returns>
+        public async Task<IActionResult> OnPostSendDeleteOtpAsync()
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (tenant == null)
+            {
+                return new JsonResult(new { success = false, message = "Tenant organization not found." });
+            }
+
+            var targetEmail = DeletionVerificationEmail;
+            if (string.IsNullOrWhiteSpace(targetEmail))
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "TenantDeletionSecurity:VerificationEmail is not configured in appsettings.json."
+                });
+            }
+
+            int expiryMinutes = 10;
+            if (int.TryParse(_configuration["TenantDeletionSecurity:OtpExpiryMinutes"], out var parsedMinutes) && parsedMinutes > 0)
+            {
+                expiryMinutes = parsedMinutes;
+            }
+
+            var otpCode = _twoFactorService.GenerateTenantDeleteOtp(tenant.Id, tenant.TenantKey, targetEmail, expiryMinutes);
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+
+            var sent = await _centralEmailService.SendTenantDeletionOtpEmailAsync(
+                toEmail: targetEmail,
+                code: otpCode,
+                organizationName: tenant.OrganizationName,
+                tenantKey: tenant.TenantKey,
+                databaseName: tenant.DatabaseName ?? string.Empty,
+                requestedByAdmin: adminUser);
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                UserName = adminUser,
+                Action = "Tenant.PermanentDeleteOtpRequested",
+                EntityType = "Tenant",
+                EntityId = tenant.Id.ToString(),
+                Summary = $"Admin {adminUser} requested a permanent deletion 6-digit OTP code for tenant '{tenant.OrganizationName}' ({tenant.TenantKey}). Dispatched to {targetEmail} (Status: {(sent ? "Sent" : "Failed")}).",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+            await _dbContext.SaveChangesAsync();
+
+            if (!sent)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = $"Failed to send verification code to {targetEmail}. Check Central Email Logs or SMTP configuration."
+                });
+            }
+
+            return new JsonResult(new
+            {
+                success = true,
+                message = $"6-digit security verification code sent to {targetEmail}. Valid for {expiryMinutes} minutes."
+            });
+        }
+
+        /// <summary>
         /// Handles HTTP POST requests to permanently scrub and delete the tenant, including dropping the physical database,
         /// dropping the dedicated SQL Server login, removing all dependent master catalog records, and evicting routing caches.
-        /// Enforces strict 3-factor confirmation (Tenant Key + "DELETE PERMANENTLY" phrase + explicit acknowledgment checkbox).
+        /// Enforces strict 4-factor confirmation (Tenant Key + "DELETE PERMANENTLY" phrase + explicit acknowledgment checkbox + 6-digit email OTP sent to appsettings VerificationEmail).
         /// </summary>
         /// <param name="confirmKey">Must match the exact tenant key.</param>
         /// <param name="confirmPhrase">Must match "DELETE PERMANENTLY".</param>
         /// <param name="acknowledgeIrreversible">Must be checked (true) to confirm irreversible destruction.</param>
+        /// <param name="confirmOtpCode">Must match the 6-digit OTP sent to <c>TenantDeletionSecurity:VerificationEmail</c>.</param>
         /// <returns>Redirect to the tenant index page upon completion.</returns>
         public async Task<IActionResult> OnPostPermanentDeleteAsync(
             string confirmKey,
             string? confirmPhrase = null,
-            bool acknowledgeIrreversible = false)
+            bool acknowledgeIrreversible = false,
+            string? confirmOtpCode = null)
         {
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)
@@ -565,12 +656,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 return RedirectToPage(new { id = Id, tab = "governance" });
             }
 
+            var targetVerificationEmail = DeletionVerificationEmail;
+            if (string.IsNullOrWhiteSpace(targetVerificationEmail))
+            {
+                TempData["Error"] = "Permanent deletion aborted: 'TenantDeletionSecurity:VerificationEmail' is not configured in appsettings.json.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
+            if (!_twoFactorService.VerifyTenantDeleteOtp(tenant.Id, tenant.TenantKey, targetVerificationEmail, confirmOtpCode ?? string.Empty))
+            {
+                TempData["Error"] = $"Permanent deletion aborted: Invalid or expired 6-digit security verification code. Please click 'Send Verification Code' to receive a fresh code at {targetVerificationEmail}.";
+                return RedirectToPage(new { id = Id, tab = "governance" });
+            }
+
             var adminUser = User.Identity?.Name ?? "SuperAdmin";
             var now = DateTime.UtcNow;
             var cleanKey = tenant.TenantKey.Trim().ToLowerInvariant();
             var dbName = tenant.DatabaseName?.Trim() ?? string.Empty;
 
-            // Extract dedicated SQL login username from tenant connection string before removal
+            // Extract dedicated SQL login username and fallback database name from tenant connection string before removal
             string? dedicatedSqlUser = null;
             try
             {
@@ -582,6 +686,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         tBuilder.UserID.StartsWith("oz_usr_", StringComparison.OrdinalIgnoreCase))
                     {
                         dedicatedSqlUser = tBuilder.UserID.Trim();
+                    }
+
+                    if (string.IsNullOrWhiteSpace(dbName) && !string.IsNullOrWhiteSpace(tBuilder.InitialCatalog))
+                    {
+                        dbName = tBuilder.InitialCatalog.Trim();
                     }
                 }
             }
@@ -622,6 +731,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         await dropDbCmd.ExecuteNonQueryAsync();
                     }
 
+                    // Verify that the physical database no longer exists on the SQL Server instance
+                    await using (var verifyCmd = masterConn.CreateCommand())
+                    {
+                        verifyCmd.CommandText = $"SELECT COUNT(1) FROM sys.databases WHERE name = N'{safeDbLiteral}';";
+                        var remainingCount = Convert.ToInt32(await verifyCmd.ExecuteScalarAsync());
+                        if (remainingCount > 0)
+                        {
+                            TempData["Error"] = $"Permanent deletion aborted: SQL Server reported that physical database '{dbName}' still exists after DROP DATABASE.";
+                            return RedirectToPage(new { id = Id, tab = "governance" });
+                        }
+                    }
+
                     if (!string.IsNullOrWhiteSpace(dedicatedSqlUser))
                     {
                         var safeLoginBracket = dedicatedSqlUser.Replace("]", "]]");
@@ -642,8 +763,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
             catch (Exception ex)
             {
-                dbDropNote = $"Database drop warning: {ex.Message}";
                 _logger.LogError(ex, "Failed to drop physical database '{DatabaseName}' during hard delete of tenant '{TenantKey}'", dbName, cleanKey);
+                TempData["Error"] = $"Permanent deletion aborted: Failed to drop physical SQL database '{dbName}': {ex.Message}";
+                return RedirectToPage(new { id = Id, tab = "governance" });
             }
 
             // 2. Remove all dependent Master Catalog foreign-key records so SaveChangesAsync never fails on FK Restrict constraints

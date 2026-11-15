@@ -417,6 +417,20 @@
                             </span>
                         </label>
 
+                        <div class="form-group" style="margin: 0; padding: 12px; border: 1px solid rgba(239, 68, 68, 0.32); border-radius: 8px; background: var(--admin-bg-surface);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+                                <label class="form-label" style="font-size: 12.5px; font-weight: 700; margin: 0;">
+                                    Step 4 — Enter 6-Digit Security Code sent to <code style="color: var(--admin-danger); font-weight: 800;">@(string.IsNullOrWhiteSpace(Model.DeletionVerificationEmail) ? "(Not Configured)" : Model.DeletionVerificationEmail)</code>:
+                                </label>
+                                <button type="button" id="sendDeleteOtpBtn" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-color: rgba(239, 68, 68, 0.45); color: var(--admin-danger); font-weight: 600;" onclick="sendPermanentDeleteOtp('@Model.Id');">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">mail_lock</span>
+                                    <span id="sendDeleteOtpBtnText">Send Verification Code</span>
+                                </button>
+                            </div>
+                            <input type="text" name="confirmOtpCode" id="permDeleteOtpInput" class="form-control" placeholder="e.g. 000000" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required autocomplete="one-time-code" oninput="validatePermanentDeleteForm();" style="letter-spacing: 4px; font-family: monospace; font-weight: 700;" />
+                            <div id="deleteOtpStatusMessage" style="display: none; font-size: 12px; margin-top: 6px; padding: 6px 10px; border-radius: 6px;"></div>
+                        </div>
+
                         <div style="display: flex; justify-content: flex-end; pt: 4px;">
                             <button type="submit" id="permDeleteSubmitBtn" class="btn-admin btn-admin-danger" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirm('FINAL CONFIRMATION: Permanently drop database @Model.Tenant.DatabaseName and erase tenant @Model.Tenant.TenantKey forever?');">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
@@ -1032,13 +1046,70 @@
             const keyVal = (document.getElementById('permDeleteKeyInput')?.value || '').trim().toLowerCase();
             const phraseVal = (document.getElementById('permDeletePhraseInput')?.value || '').trim().toUpperCase();
             const ackChecked = document.getElementById('permDeleteAckCheckbox')?.checked === true;
+            const otpVal = (document.getElementById('permDeleteOtpInput')?.value || '').trim();
             const btn = document.getElementById('permDeleteSubmitBtn');
 
-            const isValid = keyVal === expectedKey && phraseVal === 'DELETE PERMANENTLY' && ackChecked;
+            const isValid = keyVal === expectedKey && phraseVal === 'DELETE PERMANENTLY' && ackChecked && /^\d{6}$/.test(otpVal);
             if (btn) {
                 btn.disabled = !isValid;
                 btn.style.opacity = isValid ? '1' : '0.5';
                 btn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+            }
+        }
+
+        async function sendPermanentDeleteOtp(tenantId) {
+            const btn = document.getElementById('sendDeleteOtpBtn');
+            const btnText = document.getElementById('sendDeleteOtpBtnText');
+            const statusBox = document.getElementById('deleteOtpStatusMessage');
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.textContent = 'Sending Code...';
+            if (statusBox) {
+                statusBox.style.display = 'none';
+                statusBox.textContent = '';
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('id', tenantId);
+
+                const response = await fetch(`?handler=SendDeleteOtp&id=${tenantId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    if (data.success) {
+                        statusBox.style.background = 'rgba(16, 185, 129, 0.12)';
+                        statusBox.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+                        statusBox.style.color = '#059669';
+                        statusBox.textContent = data.message || 'Verification code sent.';
+                        const otpInput = document.getElementById('permDeleteOtpInput');
+                        if (otpInput) otpInput.focus();
+                    } else {
+                        statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                        statusBox.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+                        statusBox.style.color = '#dc2626';
+                        statusBox.textContent = data.message || 'Failed to send verification code.';
+                    }
+                }
+            } catch (err) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                    statusBox.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+                    statusBox.style.color = '#dc2626';
+                    statusBox.textContent = 'Network error while requesting verification code.';
+                }
+            } finally {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = 'Resend Verification Code';
             }
         }
 
