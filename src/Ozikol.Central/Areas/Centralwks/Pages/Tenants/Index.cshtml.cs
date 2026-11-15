@@ -256,6 +256,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
+            await InvalidateTenantCacheSafeAsync(tenant.TenantKey);
 
             TempData["Warning"] = $"Tenant '{tenant.OrganizationName}' has been suspended.";
             return RedirectToPage(new { Search, Status, PageNumber, PageSize });
@@ -318,6 +319,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
+            await InvalidateTenantCacheSafeAsync(tenant.TenantKey);
 
             TempData["Success"] = $"Tenant '{tenant.OrganizationName}' has been successfully reactivated.";
             return RedirectToPage(new { Search, Status, PageNumber, PageSize });
@@ -382,9 +384,27 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
+            await InvalidateTenantCacheSafeAsync(tenant.TenantKey);
 
             TempData["Warning"] = $"Tenant '{tenant.OrganizationName}' has been soft-deleted (deactivated).";
             return RedirectToPage(new { Search, Status, PageNumber, PageSize });
+        }
+
+        private async Task InvalidateTenantCacheSafeAsync(string? tenantKey)
+        {
+            try
+            {
+                var invalidator = HttpContext.RequestServices.GetService(typeof(Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator))
+                    as Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator;
+                if (invalidator != null)
+                {
+                    await invalidator.InvalidateTenantCatalogAsync(tenantKey);
+                }
+            }
+            catch
+            {
+                // Non-blocking cache invalidation
+            }
         }
     }
 }

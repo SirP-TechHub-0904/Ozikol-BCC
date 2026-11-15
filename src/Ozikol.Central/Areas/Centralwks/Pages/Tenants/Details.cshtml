@@ -56,6 +56,10 @@
                 </button>
             </form>
         }
+        <button type="button" class="btn-admin btn-admin-danger" onclick="openPermanentDeleteSection();">
+            <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
+            Permanent Delete
+        </button>
     </div>
 </div>
 
@@ -313,7 +317,39 @@
                 </div>
             </div>
 
-            @* Action 2: Temporal Soft Delete *@
+            @* Action 2: Public Website Content Governance (Reset to Blank Canvas / Re-seed Default Website) *@
+            <div class="admin-card" style="margin: 0; border-left: 4px solid var(--admin-primary);">
+                <div class="admin-card-body" style="padding: 20px;">
+                    <div style="font-weight: 700; font-size: 15px; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: var(--admin-primary);">web</span>
+                        Public Website Content Governance (Reset or Re-Seed)
+                    </div>
+                    <p style="font-size: 13px; color: var(--admin-text-muted); margin: 8px 0 14px 0;">
+                        Manage only the public website content for this tenant while keeping all organization users, staff profiles, and business records intact.
+                    </p>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--admin-border);">
+                        <form method="post" asp-page-handler="ReseedWebsite" asp-route-id="@Model.Id" style="margin: 0;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" onclick="return confirm('Seed or restore the turnkey default website suite for @Model.Tenant.OrganizationName?');">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">auto_Fix_high</span>
+                                Seed Default Website Suite
+                            </button>
+                        </form>
+
+                        <form method="post" asp-page-handler="ResetWebsite" asp-route-id="@Model.Id" style="margin: 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            @Html.AntiForgeryToken()
+                            <input type="text" name="confirmResetKey" class="form-control" style="width: 190px; font-size: 12.5px;" placeholder="Type '@Model.Tenant.TenantKey' to wipe site" required autocomplete="off" />
+                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="return confirm('Wipe all public website pages, sections, blogs, and templates for @Model.Tenant.OrganizationName and reset to Blank Canvas?');">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">cleaning_services</span>
+                                Reset Website to Blank
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            @* Action 3: Temporal Soft Delete *@
             <div class="admin-card" style="margin: 0; border-left: 4px solid var(--admin-danger);">
                 <div class="admin-card-body" style="padding: 20px;">
                     <div style="font-weight: 700; font-size: 15px; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
@@ -321,7 +357,7 @@
                         Temporal Deactivation (Soft Delete)
                     </div>
                     <p style="font-size: 13px; color: var(--admin-text-muted); margin: 8px 0 16px 0;">
-                        Marks this tenant as deleted across the platform. The dedicated database and historical records are safely preserved in cold storage.
+                        Marks this tenant as deleted across the platform and immediately blocks public/API routing. The dedicated database and historical records remain preserved in cold storage.
                     </p>
 
                     <form method="post" asp-page-handler="SoftDelete" asp-route-id="@Model.Id" style="margin: 0;">
@@ -337,27 +373,56 @@
                 </div>
             </div>
 
-            @* Action 3: Dangerous Permanent Hard Scrub *@
-            <div class="admin-card" style="margin: 0; border: 1px solid var(--admin-danger); background: rgba(239, 68, 68, 0.03);">
-                <div class="admin-card-body" style="padding: 20px;">
-                    <div style="font-weight: 700; font-size: 15px; color: var(--admin-danger); display: flex; align-items: center; gap: 8px;">
+            @* Action 4: Dangerous Permanent Hard Scrub *@
+            <div class="admin-card" id="permanent-delete-card" style="margin: 0; border: 2px solid var(--admin-danger); background: rgba(239, 68, 68, 0.04);">
+                <div class="admin-card-body" style="padding: 22px;">
+                    <div style="font-weight: 800; font-size: 15.5px; color: var(--admin-danger); display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined">delete_forever</span>
-                        Permanent Hard Delete &amp; Database Drop
+                        Permanent Hard Delete &amp; Physical Database Drop (Irreversible)
                     </div>
-                    <p style="font-size: 13px; color: var(--admin-text); margin: 8px 0 14px 0;">
-                        <strong>Warning:</strong> This permanently deletes all master catalog records and attempts to <strong>DROP</strong> the dedicated SQL database <code>@Model.Tenant.DatabaseName</code>. This action cannot be undone.
-                    </p>
 
-                    <form method="post" asp-page-handler="PermanentDelete" asp-route-id="@Model.Id" style="margin: 0;">
-                        @Html.AntiForgeryToken()
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label class="form-label" style="font-size: 12px; font-weight: 600;">Type tenant key <code style="color: var(--admin-danger); font-weight: 700;">@Model.Tenant.TenantKey</code> to confirm:</label>
-                            <input type="text" name="confirmKey" class="form-control" placeholder="Enter '@Model.Tenant.TenantKey'" required autocomplete="off" />
+                    <div style="margin: 12px 0 16px 0; padding: 12px 14px; background: rgba(239, 68, 68, 0.08); border-left: 4px solid var(--admin-danger); border-radius: 6px; font-size: 12.5px; color: var(--admin-text); line-height: 1.55;">
+                        <div style="font-weight: 700; color: var(--admin-danger); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">
+                            Strict Destruction Notice — Please Read Carefully Before Proceeding:
                         </div>
-                        <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" onclick="return confirm('CRITICAL WARNING: This will drop the database @Model.Tenant.DatabaseName forever. Are you 100% sure?');">
-                            <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
-                            Permanently Scrub &amp; Drop Database
-                        </button>
+                        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+                            <li><strong>Physical SQL Database Drop:</strong> Terminates active connections and executes <code>DROP DATABASE [@Model.Tenant.DatabaseName]</code> on the SQL Server host.</li>
+                            <li><strong>SQL Security Principal Purge:</strong> Drops the dedicated tenant SQL Server login (<code>oz_usr_@(Model.Tenant.TenantKey)_*</code>).</li>
+                            <li><strong>Master Catalog Scrub:</strong> Permanently removes <code>@Model.Tenant.OrganizationName</code>, its feature subscriptions, billing ledger entries, coupon redemptions, app builds, and error logs from <code>Ozikol_MasterCatalogDb</code>.</li>
+                            <li><strong>Immediate Cluster Eviction:</strong> Purges <code>@Model.Tenant.PrimaryDomain</code> @(string.IsNullOrWhiteSpace(Model.Tenant.CustomDomain) ? "" : $"and {Model.Tenant.CustomDomain}") from Redis L2 and In-Memory L1 routing caches immediately.</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" asp-page-handler="PermanentDelete" asp-route-id="@Model.Id" id="permanentDeleteForm" style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
+                        @Html.AntiForgeryToken()
+
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 12.5px; font-weight: 700;">
+                                Step 1 — Type exact tenant key <code style="color: var(--admin-danger); font-weight: 800; user-select: all;">@Model.Tenant.TenantKey</code>:
+                            </label>
+                            <input type="text" name="confirmKey" id="permDeleteKeyInput" class="form-control" placeholder="e.g. @Model.Tenant.TenantKey" required autocomplete="off" oninput="validatePermanentDeleteForm();" />
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 12.5px; font-weight: 700;">
+                                Step 2 — Type verification phrase <code style="color: var(--admin-danger); font-weight: 800; user-select: all;">DELETE PERMANENTLY</code>:
+                            </label>
+                            <input type="text" name="confirmPhrase" id="permDeletePhraseInput" class="form-control" placeholder="Type DELETE PERMANENTLY" required autocomplete="off" oninput="validatePermanentDeleteForm();" />
+                        </div>
+
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--admin-text); cursor: pointer; padding: 10px 12px; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; background: var(--admin-bg-surface);">
+                            <input type="checkbox" name="acknowledgeIrreversible" id="permDeleteAckCheckbox" value="true" required onchange="validatePermanentDeleteForm();" style="margin-top: 3px; accent-color: #dc2626; width: 16px; height: 16px; flex-shrink: 0;" />
+                            <span>
+                                <strong>Step 3 — Mandatory Acknowledgment:</strong> I confirm that I am authorized to permanently destroy <strong>@Model.Tenant.OrganizationName</strong> (<code>@Model.Tenant.TenantKey</code>) and drop database <code>@Model.Tenant.DatabaseName</code> with zero possibility of recovery.
+                            </span>
+                        </label>
+
+                        <div style="display: flex; justify-content: flex-end; pt: 4px;">
+                            <button type="submit" id="permDeleteSubmitBtn" class="btn-admin btn-admin-danger" disabled style="opacity: 0.5; cursor: not-allowed;" onclick="return confirm('FINAL CONFIRMATION: Permanently drop database @Model.Tenant.DatabaseName and erase tenant @Model.Tenant.TenantKey forever?');">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
+                                Permanently Scrub &amp; Drop Database
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -943,9 +1008,52 @@
             const target = document.getElementById(tabId);
             if (target) {
                 target.classList.add('active');
-                button.classList.add('active');
+                if (button) {
+                    button.classList.add('active');
+                } else {
+                    const matchingBtn = document.querySelector(`.material-tabs-container .tab-btn[data-tab="${tabId}"]`);
+                    if (matchingBtn) matchingBtn.classList.add('active');
+                }
             }
         }
+
+        function openPermanentDeleteSection() {
+            switchTenantTab('tab-governance', null);
+            const card = document.getElementById('permanent-delete-card');
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const input = document.getElementById('permDeleteKeyInput');
+                if (input) setTimeout(() => input.focus(), 300);
+            }
+        }
+
+        function validatePermanentDeleteForm() {
+            const expectedKey = '@Model.Tenant.TenantKey'.trim().toLowerCase();
+            const keyVal = (document.getElementById('permDeleteKeyInput')?.value || '').trim().toLowerCase();
+            const phraseVal = (document.getElementById('permDeletePhraseInput')?.value || '').trim().toUpperCase();
+            const ackChecked = document.getElementById('permDeleteAckCheckbox')?.checked === true;
+            const btn = document.getElementById('permDeleteSubmitBtn');
+
+            const isValid = keyVal === expectedKey && phraseVal === 'DELETE PERMANENTLY' && ackChecked;
+            if (btn) {
+                btn.disabled = !isValid;
+                btn.style.opacity = isValid ? '1' : '0.5';
+                btn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = (params.get('tab') || '').toLowerCase();
+            const hash = (window.location.hash || '').toLowerCase();
+            if (tabParam === 'governance' || hash === '#tab-governance' || hash === '#permanent-delete-card') {
+                switchTenantTab('tab-governance', null);
+                if (hash === '#permanent-delete-card') {
+                    const card = document.getElementById('permanent-delete-card');
+                    if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+                }
+            }
+        });
 
         async function toggleTenantFeature(featureId, isEnabled, tenantId) {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;

@@ -392,6 +392,19 @@ public static class TenantDefaultWebsiteSeeder
         DashboardDbContext context,
         CancellationToken cancellationToken = default)
     {
+        // 0. Remove dependent WebPageSectionLinks and WebPageViewLogs first to prevent FK constraint violations
+        var allSectionLinks = await context.WebPageSectionLinks.ToListAsync(cancellationToken);
+        if (allSectionLinks.Count > 0)
+        {
+            context.WebPageSectionLinks.RemoveRange(allSectionLinks);
+        }
+
+        var allViewLogs = await context.WebPageViewLogs.ToListAsync(cancellationToken);
+        if (allViewLogs.Count > 0)
+        {
+            context.WebPageViewLogs.RemoveRange(allViewLogs);
+        }
+
         // 1. Remove PageSections and their SectionLists
         var allSections = await context.PageSections.Include(s => s.PageSectionLists).ToListAsync(cancellationToken);
         if (allSections.Count > 0)
