@@ -723,6 +723,8 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.MailcowApiUrl).HasMaxLength(500);
             entity.Property(e => e.MailcowApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.MailcowSmtpHost).HasMaxLength(255);
+            entity.Property(e => e.MailcowSmtpUser).HasMaxLength(150);
+            entity.Property(e => e.MailcowSmtpPassword).HasMaxLength(500).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.CloudflareZoneId).HasMaxLength(255);
             entity.Property(e => e.CloudflareDnsApiToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
             entity.Property(e => e.OneSignalRestApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);

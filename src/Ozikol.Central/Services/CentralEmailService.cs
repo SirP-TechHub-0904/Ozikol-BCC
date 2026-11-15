@@ -78,6 +78,7 @@ public class CentralEmailService : ICentralEmailService
     private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
     private readonly ISmtpEmailDispatcher _smtpEmailDispatcher;
     private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? _postmarkEmailService;
+    private readonly IMailcowProvisioningService? _mailcowProvisioning;
 
     public CentralEmailService(
         MasterCatalogDbContext masterCatalogDbContext,
@@ -85,7 +86,8 @@ public class CentralEmailService : ICentralEmailService
         IConfiguration configuration,
         Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
         ISmtpEmailDispatcher smtpEmailDispatcher,
-        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? postmarkEmailService = null)
+        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? postmarkEmailService = null,
+        IMailcowProvisioningService? mailcowProvisioning = null)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
         _logger = logger;
@@ -93,6 +95,98 @@ public class CentralEmailService : ICentralEmailService
         _emailValidationService = emailValidationService;
         _smtpEmailDispatcher = smtpEmailDispatcher;
         _postmarkEmailService = postmarkEmailService;
+        _mailcowProvisioning = mailcowProvisioning;
+    }
+
+    /// <summary>
+    /// Ensures that the primary Central platform Mailcow mailbox (<c>noreply@ozikol.cloud</c>) has valid, decrypted
+    /// SMTP credentials in <see cref="MasterPlatformSetting"/>. If <c>MailcowSmtpPassword</c> is missing or cannot be
+    /// decrypted locally while <c>MailcowApiKey</c> is available, automatically provisions/syncs the mailbox via Mailcow REST API.
+    /// </summary>
+    private async Task<(string? SmtpUser, string? SmtpPassword)> EnsureCentralMailcowSmtpCredentialsAsync(
+        MasterPlatformSetting? platformSetting,
+        bool forceResync = false,
+        CancellationToken cancellationToken = default)
+    {
+        var resolvedUser = !string.IsNullOrWhiteSpace(platformSetting?.MailcowSmtpUser)
+            ? platformSetting.MailcowSmtpUser.Trim()
+            : (_configuration["EmailSettings:SmtpUser"]
+                ?? _configuration["SMTP_USER"]
+                ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpUser")
+                ?? Environment.GetEnvironmentVariable("SMTP_USER")
+                ?? "noreply@ozikol.cloud");
+
+        string? resolvedPassword = null;
+        if (!forceResync)
+        {
+            var rawPass = !string.IsNullOrWhiteSpace(platformSetting?.MailcowSmtpPassword)
+                ? platformSetting.MailcowSmtpPassword.Trim()
+                : (_configuration["EmailSettings:SmtpPassword"]
+                    ?? _configuration["SMTP_PASSWORD"]
+                    ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPassword")
+                    ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD"));
+
+            if (!string.IsNullOrWhiteSpace(rawPass))
+            {
+                var decrypted = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(rawPass)?.Trim();
+                if (!string.IsNullOrWhiteSpace(decrypted) &&
+                    !decrypted.StartsWith(Ozikol.MasterDomain.Security.OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
+                {
+                    resolvedPassword = decrypted;
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(resolvedPassword))
+        {
+            return (resolvedUser, resolvedPassword);
+        }
+
+        // Self-heal via Mailcow REST API if MailcowProvisioningService is registered and Mailcow API key is configured
+        if (_mailcowProvisioning != null)
+        {
+            try
+            {
+                var parts = resolvedUser.Split('@');
+                var localPart = parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]) ? parts[0].Trim() : "noreply";
+                var domain = parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1].Trim() : "ozikol.cloud";
+                var generatedPassword = $"OziCentral!{Guid.NewGuid():N}"[..22];
+
+                _logger.LogInformation("🔧 [CentralEmailService] Provisioning/syncing Central SMTP mailbox '{Mailbox}' via Mailcow API...", $"{localPart}@{domain}");
+
+                await _mailcowProvisioning.EnsureDomainExistsAsync(domain, "Ozikol Central Platform Domain", cancellationToken);
+                var mailboxOk = await _mailcowProvisioning.EnsureMailboxExistsAsync(
+                    domain: domain,
+                    localPart: localPart,
+                    password: generatedPassword,
+                    displayName: "Ozikol Business Command Center",
+                    quotaMb: 2048,
+                    cancellationToken: cancellationToken);
+
+                if (mailboxOk)
+                {
+                    resolvedUser = $"{localPart}@{domain}";
+                    resolvedPassword = generatedPassword;
+
+                    var trackedSetting = await _masterCatalogDbContext.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+                    if (trackedSetting != null)
+                    {
+                        trackedSetting.MailcowSmtpUser = resolvedUser;
+                        trackedSetting.MailcowSmtpPassword = Ozikol.MasterDomain.Security.OzikolDataCipher.EncryptIfNeeded(generatedPassword);
+                        trackedSetting.UpdatedUtc = DateTime.UtcNow;
+                        await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
+                    }
+
+                    _logger.LogInformation("✅ [CentralEmailService] Central SMTP mailbox '{Mailbox}' provisioned and credentials persisted to MasterPlatformSettings.", resolvedUser);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ [CentralEmailService] Auto-provisioning of Central SMTP mailbox did not complete.");
+            }
+        }
+
+        return (resolvedUser, resolvedPassword);
     }
 
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? provider = null, CancellationToken cancellationToken = default)
@@ -105,9 +199,10 @@ public class CentralEmailService : ICentralEmailService
         }
 
         var effectiveProvider = provider;
+        MasterPlatformSetting? platformSetting = null;
         try
         {
-            var platformSetting = await _masterCatalogDbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+            platformSetting = await _masterCatalogDbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
             if (effectiveProvider == null && platformSetting != null && !string.IsNullOrWhiteSpace(platformSetting.EmailProvider))
             {
                 effectiveProvider = platformSetting.EmailProvider;
@@ -157,15 +252,39 @@ public class CentralEmailService : ICentralEmailService
                 {
                     _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}. Engaging automated Mailcow SMTP failover...", toEmail, response.Message);
 
+                    var (smtpUser, smtpPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: false, cancellationToken);
+
                     // Automated Failover: Fall back to Mailcow SMTP when Postmark returns non-success
                     var failoverDelivered = await _smtpEmailDispatcher.SendEmailAsync(
                         toEmail: toEmail,
                         subject: subject,
                         htmlBody: htmlBody,
-                        fromEmail: "noreply@ozikol.cloud",
+                        fromEmail: smtpUser ?? "noreply@ozikol.cloud",
                         fromName: "Ozikol Business Command Center",
                         isCentralPlatformEmail: true,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken,
+                        smtpUsernameOverride: smtpUser,
+                        smtpPasswordOverride: smtpPass,
+                        strictDeliveryCheck: true);
+
+                    if (!failoverDelivered && _mailcowProvisioning != null)
+                    {
+                        var (resyncedUser, resyncedPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: true, cancellationToken);
+                        if (!string.IsNullOrWhiteSpace(resyncedPass))
+                        {
+                            failoverDelivered = await _smtpEmailDispatcher.SendEmailAsync(
+                                toEmail: toEmail,
+                                subject: subject,
+                                htmlBody: htmlBody,
+                                fromEmail: resyncedUser ?? "noreply@ozikol.cloud",
+                                fromName: "Ozikol Business Command Center",
+                                isCentralPlatformEmail: true,
+                                cancellationToken: cancellationToken,
+                                smtpUsernameOverride: resyncedUser,
+                                smtpPasswordOverride: resyncedPass,
+                                strictDeliveryCheck: true);
+                        }
+                    }
 
                     if (failoverDelivered)
                     {
@@ -186,14 +305,39 @@ public class CentralEmailService : ICentralEmailService
             {
                 _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Mailcow SMTP...", subject, toEmail);
 
+                var (smtpUser, smtpPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: false, cancellationToken);
+
                 var delivered = await _smtpEmailDispatcher.SendEmailAsync(
                     toEmail: toEmail,
                     subject: subject,
                     htmlBody: htmlBody,
-                    fromEmail: "noreply@ozikol.cloud",
+                    fromEmail: smtpUser ?? "noreply@ozikol.cloud",
                     fromName: "Ozikol Business Command Center",
                     isCentralPlatformEmail: true,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken,
+                    smtpUsernameOverride: smtpUser,
+                    smtpPasswordOverride: smtpPass,
+                    strictDeliveryCheck: true);
+
+                if (!delivered && _mailcowProvisioning != null)
+                {
+                    _logger.LogInformation("🔄 [CentralEmailService] Retrying Central Mailcow SMTP delivery after mailbox credential sync for [{Recipient}]...", toEmail);
+                    var (resyncedUser, resyncedPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: true, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(resyncedPass))
+                    {
+                        delivered = await _smtpEmailDispatcher.SendEmailAsync(
+                            toEmail: toEmail,
+                            subject: subject,
+                            htmlBody: htmlBody,
+                            fromEmail: resyncedUser ?? "noreply@ozikol.cloud",
+                            fromName: "Ozikol Business Command Center",
+                            isCentralPlatformEmail: true,
+                            cancellationToken: cancellationToken,
+                            smtpUsernameOverride: resyncedUser,
+                            smtpPasswordOverride: resyncedPass,
+                            strictDeliveryCheck: true);
+                    }
+                }
 
                 if (delivered)
                 {
