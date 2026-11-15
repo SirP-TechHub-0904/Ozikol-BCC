@@ -93,7 +93,13 @@ export class TenantStateService {
       }
       this.tenantNotFoundSubject.next(false);
     } catch (err: any) {
-      if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
+      if (
+        err?.status === 404 ||
+        err?.error?.error === 'TenantNotFound' ||
+        err?.error?.error === 'WorkspaceNotFound' ||
+        err?.error?.message === 'Workspace could not be found.' ||
+        err?.error?.message === 'Workspace not found.'
+      ) {
         this.tenantNotFoundSubject.next(true);
       }
     } finally {
