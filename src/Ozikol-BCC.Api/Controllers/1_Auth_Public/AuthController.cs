@@ -457,36 +457,49 @@ namespace Ozikol_BCC.Api.Controllers
                 var expiryTicks = DateTime.UtcNow.AddMinutes(5).Ticks;
                 await activeUserManager.SetAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode", $"{mfaOtp}:{expiryTicks}");
 
-                // Dispatch code based on provider
-                if (provider == BcpTwoFactorProvider.Email)
+                // Dispatch code based on provider via unified CentralNotificationDispatcher
+                var activeDispatcher = execScope?.ServiceProvider.GetService<ICentralNotificationDispatcher>() ?? _notificationDispatcher;
+                if (activeDispatcher != null)
                 {
-                    activeDbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    if (provider == BcpTwoFactorProvider.Email && !string.IsNullOrWhiteSpace(user.Email))
                     {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientEmail = user.Email!,
-                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                        Subject = "Your Login Verification Code",
-                        HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Enter the following 6-digit one-time verification passcode to complete your sign-in:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 5 minutes. If you did not initiate this login request, please update your password immediately.</p>",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
-                else if (provider == BcpTwoFactorProvider.SMS && !string.IsNullOrEmpty(user.PhoneNumber))
-                {
-                    activeDbContext.BcpSmsQueue.Add(new BcpSmsQueue
+                        await activeDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = user.Id,
+                            RecipientEmail = user.Email,
+                            RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                            TenantKey = resolvedTenantKey,
+                            Title = "Your Login Verification Code",
+                            Message = $"Your 6-digit login verification code is {mfaOtp}. Valid for 5 minutes.",
+                            EmailSubject = "Your Login Verification Code",
+                            EmailHtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Enter the following 6-digit one-time verification passcode to complete your sign-in:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 5 minutes. If you did not initiate this login request, please update your password immediately.</p>",
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.Urgent,
+                            Severity = NotificationSeverity.Update,
+                            EventType = BcpEventType.LoginOtp,
+                            Channels = NotificationChannels.Email,
+                            SendEmailCopy = true
+                        });
+                    }
+                    else if (provider == BcpTwoFactorProvider.SMS && !string.IsNullOrEmpty(user.PhoneNumber))
                     {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientPhone = user.PhoneNumber,
-                        Message = $"Your verification code is {mfaOtp}. Valid for 5 minutes.",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
-                    });
+                        await activeDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = user.Id,
+                            RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                            TenantKey = resolvedTenantKey,
+                            Title = "Login Verification Code",
+                            Message = $"Your verification code is {mfaOtp}. Valid for 5 minutes.",
+                            SmsMessage = $"Your verification code is {mfaOtp}. Valid for 5 minutes.",
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.Urgent,
+                            Severity = NotificationSeverity.Update,
+                            EventType = BcpEventType.LoginOtp,
+                            Channels = NotificationChannels.Sms
+                        });
+                    }
                 }
 
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
@@ -1104,40 +1117,48 @@ namespace Ozikol_BCC.Api.Controllers
             var expiryTicks = DateTime.UtcNow.AddMinutes(5).Ticks;
             await activeUserManager.SetAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode", $"{mfaOtp}:{expiryTicks}");
 
-            if (activeDbContext != null)
+            var activeDispatcher = execScope?.ServiceProvider.GetService<ICentralNotificationDispatcher>() ?? _notificationDispatcher;
+            if (activeDispatcher != null)
             {
-                if (provider == BcpTwoFactorProvider.Email)
+                if (provider == BcpTwoFactorProvider.Email && !string.IsNullOrWhiteSpace(user.Email))
                 {
-                    activeDbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    await activeDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientEmail = user.Email!,
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        RecipientEmail = user.Email,
                         RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                        Subject = "Your New Login Verification Code",
-                        HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Enter the following 6-digit one-time verification passcode to complete your sign-in:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 5 minutes. If you did not initiate this login request, please update your password immediately.</p>",
+                        TenantKey = resolvedTenantKey,
+                        Title = "Your New Login Verification Code",
+                        Message = $"Your new 6-digit login verification code is {mfaOtp}. Valid for 5 minutes.",
+                        EmailSubject = "Your New Login Verification Code",
+                        EmailHtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Enter the following 6-digit one-time verification passcode to complete your sign-in:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 5 minutes. If you did not initiate this login request, please update your password immediately.</p>",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
+                        Severity = NotificationSeverity.Update,
+                        EventType = BcpEventType.LoginOtp,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true
                     });
                 }
                 else if (provider == BcpTwoFactorProvider.SMS && !string.IsNullOrEmpty(user.PhoneNumber))
                 {
-                    activeDbContext.BcpSmsQueue.Add(new BcpSmsQueue
+                    await activeDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientPhone = user.PhoneNumber,
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                        TenantKey = resolvedTenantKey,
+                        Title = "Login Verification Code",
                         Message = $"Your verification code is {mfaOtp}. Valid for 5 minutes.",
+                        SmsMessage = $"Your verification code is {mfaOtp}. Valid for 5 minutes.",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
+                        Severity = NotificationSeverity.Update,
+                        EventType = BcpEventType.LoginOtp,
+                        Channels = NotificationChannels.Sms
                     });
                 }
-
-                await activeDbContext.SaveChangesAsync();
             }
 
             var friendlyProvider = provider == BcpTwoFactorProvider.SMS ? "SMS" : "Email";
@@ -1203,44 +1224,39 @@ namespace Ozikol_BCC.Api.Controllers
             var expiryTicks = DateTime.UtcNow.AddMinutes(15).Ticks;
             await activeUserManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", $"{otpCode}:{expiryTicks}");
 
-            if (activeDbContext != null)
+            var activeDispatcher = execScope?.ServiceProvider.GetService<ICentralNotificationDispatcher>() ?? _notificationDispatcher;
+            if (activeDispatcher != null)
             {
-                activeDbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                var channels = NotificationChannels.Email;
+                if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
                 {
-                    Id = Guid.CreateVersion7(),
-                    RelatedUserId = user.Id,
-                    RecipientEmail = user.Email!,
+                    channels |= NotificationChannels.Sms;
+                }
+
+                await activeDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = user.Id,
+                    RecipientEmail = user.Email,
                     RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                    Subject = "Your 6-Digit Password Reset Code",
-                    HtmlBody = $@"
+                    TenantKey = resolvedTenantKey,
+                    Title = "Your 6-Digit Password Reset Code",
+                    Message = $"Your password reset code is {otpCode}. Valid for 15 minutes.",
+                    EmailSubject = "Your 6-Digit Password Reset Code",
+                    EmailHtmlBody = $@"
                         <p style='color:#475569; font-size:14px; line-height:1.5; margin-top:0;'>You requested a security code to reset your account password. Enter this code on the verification screen to establish a new password:</p>
                         <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:18px; margin:20px 0; text-align:center;'>
                             <span style='font-size:32px; font-weight:800; color:#0050e5; letter-spacing:6px; font-family:monospace;'>{otpCode}</span>
                         </div>
                         <p style='color:#64748b; font-size:12.5px; margin-bottom:0;'>This code is valid for 15 minutes. If you did not request this, you can safely ignore this email.</p>",
+                    SmsMessage = $"Your password reset code is {otpCode}. Valid for 15 minutes.",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
+                    Severity = NotificationSeverity.Update,
                     EventType = BcpEventType.PasswordReset,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
+                    Channels = channels,
+                    SendEmailCopy = true
                 });
-
-                if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
-                {
-                    activeDbContext.BcpSmsQueue.Add(new BcpSmsQueue
-                    {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientPhone = user.PhoneNumber,
-                        Message = $"Your password reset code is {otpCode}. Valid for 15 minutes.",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
-
-                await activeDbContext.SaveChangesAsync();
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(null, "A 6-digit verification code has been dispatched to your email & SMS."));
@@ -1495,16 +1511,18 @@ namespace Ozikol_BCC.Api.Controllers
             await _userManager.SetAuthenticationTokenAsync(user, "OzikolEmailVerify", "EmailVerificationOtp", tokenValue);
             await _userManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", tokenValue);
 
-            if (_dbContext != null && !string.IsNullOrWhiteSpace(user.Email))
+            if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(user.Email))
             {
-                _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                 {
-                    Id = Guid.CreateVersion7(),
-                    RelatedUserId = user.Id,
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = user.Id,
                     RecipientEmail = user.Email,
                     RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                    Subject = "Verify Your Email Address — 6-Digit Code",
-                    HtmlBody = $@"
+                    Title = "Verify Your Email Address — 6-Digit Code",
+                    Message = $"Your 6-digit email verification code is {otpCode}. Valid for 15 minutes.",
+                    EmailSubject = "Verify Your Email Address — 6-Digit Code",
+                    EmailHtmlBody = $@"
                         <p style='color:#475569; font-size:14px; line-height:1.5; margin-top:0;'>Welcome! Please verify your email address by entering this 6-digit code on the verification page:</p>
                         <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:18px; margin:20px 0; text-align:center;'>
                             <span style='font-size:32px; font-weight:800; color:#0050e5; letter-spacing:6px; font-family:monospace;'>{otpCode}</span>
@@ -1512,11 +1530,11 @@ namespace Ozikol_BCC.Api.Controllers
                         <p style='color:#64748b; font-size:12.5px; margin-bottom:0;'>This code is valid for 15 minutes. Your account remains inactive until your email is verified.</p>",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
+                    Severity = NotificationSeverity.Update,
                     EventType = BcpEventType.LoginOtp,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
                 });
-                await _dbContext.SaveChangesAsync();
             }
         }
 
@@ -2421,37 +2439,43 @@ namespace Ozikol_BCC.Api.Controllers
                 var expiryTicks = DateTime.UtcNow.AddMinutes(5).Ticks;
                 await _userManager.SetAuthenticationTokenAsync(user, "OzikolMfa", "SetupMfaCode", $"{mfaOtp}:{expiryTicks}");
 
-                if (provider == BcpTwoFactorProvider.Email && _dbContext != null)
+                if (_notificationDispatcher != null)
                 {
-                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    if (provider == BcpTwoFactorProvider.Email && !string.IsNullOrWhiteSpace(user.Email))
                     {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientEmail = user.Email!,
-                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
-                        Subject = "MFA Configuration Verification Code",
-                        HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Use the following verification code to complete your two-factor authentication setup:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>Valid for 5 minutes.</p>",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await _dbContext.SaveChangesAsync();
-                }
-                else if (provider == BcpTwoFactorProvider.SMS && _dbContext != null)
-                {
-                    _dbContext.BcpSmsQueue.Add(new BcpSmsQueue
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = user.Id,
+                            RecipientEmail = user.Email,
+                            RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                            Title = "MFA Configuration Verification Code",
+                            Message = $"Your MFA setup verification code is {mfaOtp}. Valid for 5 minutes.",
+                            EmailSubject = "MFA Configuration Verification Code",
+                            EmailHtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Use the following verification code to complete your two-factor authentication setup:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>Valid for 5 minutes.</p>",
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.Urgent,
+                            Severity = NotificationSeverity.Update,
+                            Channels = NotificationChannels.Email,
+                            SendEmailCopy = true
+                        });
+                    }
+                    else if (provider == BcpTwoFactorProvider.SMS && !string.IsNullOrWhiteSpace(user.PhoneNumber))
                     {
-                        Id = Guid.CreateVersion7(),
-                        RelatedUserId = user.Id,
-                        RecipientPhone = user.PhoneNumber!,
-                        Message = $"Your MFA verification code is {mfaOtp}.",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Urgent,
-                        Status = BcpQueueStatus.Queued,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await _dbContext.SaveChangesAsync();
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = user.Id,
+                            RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                            Title = "MFA Verification Code",
+                            Message = $"Your MFA verification code is {mfaOtp}.",
+                            SmsMessage = $"Your MFA verification code is {mfaOtp}.",
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.Urgent,
+                            Severity = NotificationSeverity.Update,
+                            Channels = NotificationChannels.Sms
+                        });
+                    }
                 }
 
                 return Ok(ApiResponse<object>.SuccessResponse(new { Provider = provider.ToString() }, "Verification OTP sent."));

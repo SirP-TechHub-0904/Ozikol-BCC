@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Repository.NotifyRegister;
 using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
@@ -17,7 +18,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     /// <summary>
     /// Administrator controller for inspecting, filtering, previewing, and managing
-    /// outbound transactional SMS dispatch logs from the BcpSmsQueue pool.
+    /// outbound transactional SMS dispatch logs from the unified BcpMessagePools outbox.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -26,6 +27,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class MxSmsApiController : ControllerBase
     {
         private readonly DashboardDbContext _dbContext;
+        private readonly ISmsSendService? _smsService;
         private readonly ILogger<MxSmsApiController> _logger;
 
         /// <summary>
@@ -33,16 +35,19 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <param name="dbContext">The tenant dashboard database context.</param>
         /// <param name="logger">Logger service.</param>
+        /// <param name="smsService">Optional SMS carrier service for immediate retry and test dispatch.</param>
         public MxSmsApiController(
             DashboardDbContext dbContext,
-            ILogger<MxSmsApiController> logger)
+            ILogger<MxSmsApiController> logger,
+            ISmsSendService? smsService = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _smsService = smsService;
         }
 
         /// <summary>
-        /// Retrieves paginated SMS dispatch queue logs with live aggregate KPI counts.
+        /// Retrieves paginated SMS dispatch logs from BcpMessagePools with live aggregate KPI counts.
         /// </summary>
         /// <param name="search">Optional query string matching recipient phone, message text, or user name.</param>
         /// <param name="status">Optional status filter: 'All', 'Queued', 'Sent', 'Failed', 'Processing'.</param>
@@ -62,25 +67,29 @@ namespace Ozikol_BCC.Api.Controllers
                 if (pageSize < 5) pageSize = 5;
                 if (pageSize > 100) pageSize = 100;
 
+                var baseQuery = _dbContext.BcpMessagePools
+                    .AsNoTracking()
+                    .Where(q => q.Channel == BcpMessageChannel.Sms);
+
                 // 1. Calculate overall queue metrics for live KPI chips
-                var totalSms = await _dbContext.BcpSmsQueue.CountAsync();
-                var queuedCount = await _dbContext.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Queued);
-                var sentCount = await _dbContext.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Sent);
-                var failedCount = await _dbContext.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Failed);
-                var processingCount = await _dbContext.BcpSmsQueue.CountAsync(q => q.Status == BcpQueueStatus.Processing);
+                var totalSms = await baseQuery.CountAsync();
+                var queuedCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Queued);
+                var sentCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Sent);
+                var failedCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Failed);
+                var processingCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Processing);
 
                 // 2. Build filtered query
-                var query = _dbContext.BcpSmsQueue
+                var query = _dbContext.BcpMessagePools
                     .Include(q => q.RelatedUser)
                     .AsNoTracking()
-                    .AsQueryable();
+                    .Where(q => q.Channel == BcpMessageChannel.Sms);
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     var cleanSearch = search.Trim().ToLower();
                     query = query.Where(q =>
-                        q.RecipientPhone.ToLower().Contains(cleanSearch) ||
-                        q.Message.ToLower().Contains(cleanSearch) ||
+                        q.RecipientAddress.ToLower().Contains(cleanSearch) ||
+                        q.Content.ToLower().Contains(cleanSearch) ||
                         (q.RelatedUser != null && q.RelatedUser.FullName != null && q.RelatedUser.FullName.ToLower().Contains(cleanSearch)));
                 }
 
@@ -101,12 +110,12 @@ namespace Ozikol_BCC.Api.Controllers
                     .Select(q => new
                     {
                         q.Id,
-                        q.RecipientPhone,
-                        RecipientName = q.RelatedUser != null ? q.RelatedUser.FullName : null,
+                        RecipientPhone = q.RecipientAddress,
+                        RecipientName = q.RelatedUser != null ? q.RelatedUser.FullName : q.RecipientName,
                         RecipientEmail = q.RelatedUser != null ? q.RelatedUser.Email : null,
-                        q.Message,
-                        CharLength = q.Message.Length,
-                        Segments = Math.Max(1, (int)Math.Ceiling(q.Message.Length / 160.0)),
+                        Message = q.Content,
+                        CharLength = q.Content.Length,
+                        Segments = Math.Max(1, (int)Math.Ceiling(q.Content.Length / 160.0)),
                         Category = q.Category.ToString(),
                         Priority = q.Priority.ToString(),
                         EventType = q.EventType.HasValue ? q.EventType.Value.ToString() : null,
@@ -145,7 +154,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves the complete content and metadata of a single SMS queue record.
+        /// Retrieves the complete content and metadata of a single SMS pool record.
         /// </summary>
         /// <param name="id">The unique GUID identifier of the SMS record.</param>
         /// <returns>Detailed SMS log record.</returns>
@@ -154,10 +163,10 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var record = await _dbContext.BcpSmsQueue
+                var record = await _dbContext.BcpMessagePools
                     .Include(q => q.RelatedUser)
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(q => q.Id == id);
+                    .FirstOrDefaultAsync(q => q.Id == id && q.Channel == BcpMessageChannel.Sms);
 
                 if (record == null)
                 {
@@ -167,12 +176,12 @@ namespace Ozikol_BCC.Api.Controllers
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     record.Id,
-                    record.RecipientPhone,
-                    RecipientName = record.RelatedUser != null ? record.RelatedUser.FullName : null,
+                    RecipientPhone = record.RecipientAddress,
+                    RecipientName = record.RelatedUser != null ? record.RelatedUser.FullName : record.RecipientName,
                     RecipientEmail = record.RelatedUser != null ? record.RelatedUser.Email : null,
-                    record.Message,
-                    CharLength = record.Message.Length,
-                    Segments = Math.Max(1, (int)Math.Ceiling(record.Message.Length / 160.0)),
+                    Message = record.Content,
+                    CharLength = record.Content.Length,
+                    Segments = Math.Max(1, (int)Math.Ceiling(record.Content.Length / 160.0)),
                     Category = record.Category.ToString(),
                     Priority = record.Priority.ToString(),
                     EventType = record.EventType.HasValue ? record.EventType.Value.ToString() : null,
@@ -193,7 +202,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Re-queues a failed or pending SMS message for redelivery.
+        /// Immediately retries sending a failed or pending SMS message through the carrier gateway.
         /// </summary>
         /// <param name="id">The unique GUID identifier of the SMS record.</param>
         /// <returns>Result of the retry attempt.</returns>
@@ -202,19 +211,35 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var record = await _dbContext.BcpSmsQueue.FirstOrDefaultAsync(q => q.Id == id);
+                var record = await _dbContext.BcpMessagePools
+                    .FirstOrDefaultAsync(q => q.Id == id && q.Channel == BcpMessageChannel.Sms);
                 if (record == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("SMS log record not found."));
                 }
 
-                record.Status = BcpQueueStatus.Queued;
-                record.Retries = 0;
-                record.LastError = null;
-                await _dbContext.SaveChangesAsync();
+                if (_smsService == null)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("SMS carrier service is not configured."));
+                }
 
-                _logger.LogInformation("[MxSmsApiController] Re-queued SMS {Id} to {Phone}", id, record.RecipientPhone);
-                return Ok(ApiResponse<object>.SuccessResponse(new { record.Id, Status = "Queued" }, "SMS re-queued for delivery dispatcher."));
+                record.Retries++;
+                var sent = await _smsService.SendSmsWithResult(record.RecipientAddress, record.Content);
+                if (sent)
+                {
+                    record.Status = BcpQueueStatus.Sent;
+                    record.SentAt = DateTime.UtcNow;
+                    record.LastError = null;
+                    await _dbContext.SaveChangesAsync();
+
+                    _logger.LogInformation("[MxSmsApiController] Retried and sent SMS {Id} to {Phone}", id, record.RecipientAddress);
+                    return Ok(ApiResponse<object>.SuccessResponse(new { record.Id, Status = "Sent", record.SentAt }, "SMS dispatched successfully."));
+                }
+
+                record.Status = BcpQueueStatus.Failed;
+                record.LastError = "SMS gateway returned delivery failure.";
+                await _dbContext.SaveChangesAsync();
+                return BadRequest(ApiResponse<object>.FailureResponse("SMS gateway returned delivery failure."));
             }
             catch (Exception ex)
             {
@@ -224,7 +249,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Permanently deletes an SMS log record from the database.
+        /// Permanently deletes an SMS log record from the unified BcpMessagePools table.
         /// </summary>
         /// <param name="id">The unique GUID identifier of the record.</param>
         /// <returns>Confirmation of deletion.</returns>
@@ -233,13 +258,14 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var record = await _dbContext.BcpSmsQueue.FirstOrDefaultAsync(q => q.Id == id);
+                var record = await _dbContext.BcpMessagePools
+                    .FirstOrDefaultAsync(q => q.Id == id && q.Channel == BcpMessageChannel.Sms);
                 if (record == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("SMS record not found."));
                 }
 
-                _dbContext.BcpSmsQueue.Remove(record);
+                _dbContext.BcpMessagePools.Remove(record);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(ApiResponse<object>.SuccessResponse(new { id }, "SMS record deleted successfully."));
@@ -252,10 +278,10 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Queues a test SMS to verify outbound SMS dispatch pipeline.
+        /// Sends a live test SMS through the carrier gateway and logs it to BcpMessagePools.
         /// </summary>
         /// <param name="request">Recipient phone number and test message text.</param>
-        /// <returns>Confirmation of queued test SMS.</returns>
+        /// <returns>Confirmation of test SMS delivery.</returns>
         [HttpPost("send-test")]
         public async Task<IActionResult> SendTestSms([FromBody] TestSmsRequest request)
         {
@@ -264,30 +290,45 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Recipient phone number is required."));
             }
 
+            if (_smsService == null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("SMS carrier service is not configured."));
+            }
+
             var message = !string.IsNullOrWhiteSpace(request.Message)
                 ? request.Message.Trim()
                 : $"[Diagnostic Test] Outbound SMS dispatch test from Business Command Center at {DateTime.UtcNow:HH:mm:ss} UTC.";
 
-            var queueRecord = new BcpSmsQueue
+            var sent = await _smsService.SendSmsWithResult(request.RecipientPhone.Trim(), message);
+            var poolRecord = new BcpMessagePool
             {
-                RecipientPhone = request.RecipientPhone.Trim(),
-                Message = message,
+                Channel = BcpMessageChannel.Sms,
+                RecipientAddress = request.RecipientPhone.Trim(),
+                Subject = "Diagnostic Test SMS",
+                Content = message,
                 Category = BcpMessageCategory.Security,
                 Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Queued,
+                Status = sent ? BcpQueueStatus.Sent : BcpQueueStatus.Failed,
+                SentAt = sent ? DateTime.UtcNow : null,
+                LastError = sent ? null : "SMS gateway returned delivery failure.",
                 CreatedAt = DateTime.UtcNow
             };
 
-            _dbContext.BcpSmsQueue.Add(queueRecord);
+            _dbContext.BcpMessagePools.Add(poolRecord);
             await _dbContext.SaveChangesAsync();
+
+            if (!sent)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Failed to deliver diagnostic test SMS via carrier gateway."));
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
-                queueRecord.Id,
-                queueRecord.RecipientPhone,
-                Status = "Queued",
-                queueRecord.CreatedAt
-            }, "Diagnostic test SMS enqueued successfully."));
+                poolRecord.Id,
+                RecipientPhone = poolRecord.RecipientAddress,
+                Status = "Sent",
+                poolRecord.CreatedAt
+            }, "Diagnostic test SMS sent successfully."));
         }
     }
 

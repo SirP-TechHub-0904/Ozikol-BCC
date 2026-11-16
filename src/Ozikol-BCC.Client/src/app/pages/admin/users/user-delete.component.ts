@@ -47,7 +47,7 @@ import { ToastService } from '../../../core/services/toast.service';
         <span class="material-symbols-outlined">gpp_maybe</span>
         <div>
           <strong>User Deletion Disabled in System Settings:</strong>
-          <span> Administrator user deletion is currently locked by organization security policies. You must enable "Allow Administrator User Account Deletion" in <a routerLink="/settings/console" style="color:inherit; text-decoration:underline; font-weight:800;">Settings</a> to proceed.</span>
+          <span> Administrator user deletion is currently locked by organization security policies. You must enable "Allow Administrator User Account Deletion" in <a routerLink="/settings/console/general" style="color:inherit; text-decoration:underline; font-weight:800;">System Settings</a> to proceed.</span>
         </div>
       </div>
 

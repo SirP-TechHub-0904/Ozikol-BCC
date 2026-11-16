@@ -8,9 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Constants;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.EmailServices.Postmark.Interfaces;
+using Ozikol_BCC.Infrastructure.Services.Email;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -18,7 +20,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     /// <summary>
     /// Administrator controller for inspecting, filtering, previewing, and retrying
-    /// transactional email dispatch logs from the outbound BcpEmailQueue pool.
+    /// transactional email dispatch logs from the unified BcpMessagePools outbox.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -28,6 +30,8 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _dbContext;
         private readonly IPostmarkEmailService? _emailService;
+        private readonly ISmtpEmailDispatcher? _smtpEmailDispatcher;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ILogger<MxMailsApiController> _logger;
 
         /// <summary>
@@ -35,19 +39,25 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <param name="dbContext">The tenant dashboard database context.</param>
         /// <param name="logger">Logger service.</param>
-        /// <param name="emailService">Optional Postmark email suite for immediate retry/dispatch.</param>
+        /// <param name="emailService">Optional Postmark email suite for fallback retry/dispatch.</param>
+        /// <param name="smtpEmailDispatcher">Optional Mailcow SMTP dispatcher for live retry/dispatch.</param>
+        /// <param name="notificationDispatcher">Optional unified central notification dispatcher.</param>
         public MxMailsApiController(
             DashboardDbContext dbContext,
             ILogger<MxMailsApiController> logger,
-            IPostmarkEmailService? emailService = null)
+            IPostmarkEmailService? emailService = null,
+            ISmtpEmailDispatcher? smtpEmailDispatcher = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _emailService = emailService;
+            _smtpEmailDispatcher = smtpEmailDispatcher;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         /// <summary>
-        /// Retrieves paginated email dispatch queue logs with aggregate KPI counts.
+        /// Retrieves paginated email dispatch logs from the unified BcpMessagePools table with aggregate KPI counts.
         /// </summary>
         /// <param name="search">Optional query string matching recipient email, name, or subject.</param>
         /// <param name="status">Optional status filter: 'All', 'Queued', 'Sent', 'Failed', 'Processing'.</param>
@@ -67,23 +77,27 @@ namespace Ozikol_BCC.Api.Controllers
                 if (pageSize < 5) pageSize = 5;
                 if (pageSize > 100) pageSize = 100;
 
+                var baseQuery = _dbContext.BcpMessagePools
+                    .AsNoTracking()
+                    .Where(q => q.Channel == BcpMessageChannel.Email);
+
                 // 1. Calculate overall queue metrics for live KPI chips
-                var totalEmails = await _dbContext.BcpEmailQueue.CountAsync();
-                var queuedCount = await _dbContext.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Queued);
-                var sentCount = await _dbContext.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Sent);
-                var failedCount = await _dbContext.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Failed);
-                var processingCount = await _dbContext.BcpEmailQueue.CountAsync(q => q.Status == BcpQueueStatus.Processing);
+                var totalEmails = await baseQuery.CountAsync();
+                var queuedCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Queued);
+                var sentCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Sent);
+                var failedCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Failed);
+                var processingCount = await baseQuery.CountAsync(q => q.Status == BcpQueueStatus.Processing);
 
                 // 2. Build filtered query
-                var query = _dbContext.BcpEmailQueue.AsNoTracking().AsQueryable();
+                var query = baseQuery;
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     var cleanSearch = search.Trim().ToLower();
                     query = query.Where(q =>
-                        q.RecipientEmail.ToLower().Contains(cleanSearch) ||
+                        q.RecipientAddress.ToLower().Contains(cleanSearch) ||
                         (q.RecipientName != null && q.RecipientName.ToLower().Contains(cleanSearch)) ||
-                        q.Subject.ToLower().Contains(cleanSearch));
+                        (q.Subject != null && q.Subject.ToLower().Contains(cleanSearch)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
@@ -103,9 +117,9 @@ namespace Ozikol_BCC.Api.Controllers
                     .Select(q => new
                     {
                         q.Id,
-                        q.RecipientEmail,
+                        RecipientEmail = q.RecipientAddress,
                         q.RecipientName,
-                        q.Subject,
+                        Subject = q.Subject ?? string.Empty,
                         Category = q.Category.ToString(),
                         Priority = q.Priority.ToString(),
                         Status = q.Status.ToString(),
@@ -115,8 +129,8 @@ namespace Ozikol_BCC.Api.Controllers
                         q.ScheduledAt,
                         q.SentAt,
                         q.CreatedAt,
-                        HasHtmlBody = !string.IsNullOrWhiteSpace(q.HtmlBody),
-                        HasPlainBody = !string.IsNullOrWhiteSpace(q.PlainBody)
+                        HasHtmlBody = !string.IsNullOrWhiteSpace(q.Content),
+                        HasPlainBody = !string.IsNullOrWhiteSpace(q.PlainTextFallback)
                     })
                     .ToListAsync();
 
@@ -145,7 +159,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves the complete content and metadata of a single email queue record, including HTML and Plain text bodies.
+        /// Retrieves the complete content and metadata of a single email pool record, including HTML and Plain text bodies.
         /// </summary>
         /// <param name="id">The unique GUID identifier of the email record.</param>
         /// <returns>Detailed email content record.</returns>
@@ -154,7 +168,9 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var email = await _dbContext.BcpEmailQueue.AsNoTracking().FirstOrDefaultAsync(q => q.Id == id);
+                var email = await _dbContext.BcpMessagePools
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(q => q.Id == id && q.Channel == BcpMessageChannel.Email);
                 if (email == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("Email log record not found."));
@@ -163,11 +179,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     email.Id,
-                    email.RecipientEmail,
+                    RecipientEmail = email.RecipientAddress,
                     email.RecipientName,
-                    email.Subject,
-                    email.HtmlBody,
-                    email.PlainBody,
+                    Subject = email.Subject ?? string.Empty,
+                    HtmlBody = email.Content,
+                    PlainBody = email.PlainTextFallback,
                     Category = email.Category.ToString(),
                     Priority = email.Priority.ToString(),
                     Status = email.Status.ToString(),
@@ -187,7 +203,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Manually retries sending a queued or failed email. Dispatches immediately via Postmark if available, or resets status to Queued.
+        /// Manually retries sending a queued or failed email via Mailcow SMTP or Postmark.
         /// </summary>
         /// <param name="id">The unique GUID identifier of the email record.</param>
         /// <returns>Result of the retry attempt.</returns>
@@ -196,21 +212,72 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var email = await _dbContext.BcpEmailQueue.FirstOrDefaultAsync(q => q.Id == id);
+                var email = await _dbContext.BcpMessagePools
+                    .FirstOrDefaultAsync(q => q.Id == id && q.Channel == BcpMessageChannel.Email);
                 if (email == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("Email log record not found."));
                 }
 
-                // If Postmark service is registered, dispatch directly for instant delivery
-                if (_emailService != null)
+                var bodyToSend = !string.IsNullOrWhiteSpace(email.Content) ? email.Content : email.PlainTextFallback ?? string.Empty;
+                var subjectToSend = email.Subject ?? "Workspace Notification";
+
+                if (_smtpEmailDispatcher != null)
                 {
                     try
                     {
-                        var bodyToSend = !string.IsNullOrWhiteSpace(email.HtmlBody) ? email.HtmlBody : email.PlainBody ?? string.Empty;
+                        var siteConfig = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                        var site = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+                        var tenantBrand = !string.IsNullOrWhiteSpace(site?.BrandName)
+                            ? site.BrandName.Trim()
+                            : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName.Trim() : "Workspace");
+
+                        var fromAddress = !string.IsNullOrWhiteSpace(siteConfig?.SenderEmail)
+                            ? siteConfig.SenderEmail.Trim().ToLowerInvariant()
+                            : "noreply@ozikol.cloud";
+
+                        var sent = await _smtpEmailDispatcher.SendEmailAsync(
+                            toEmail: email.RecipientAddress,
+                            subject: subjectToSend,
+                            htmlBody: bodyToSend,
+                            fromEmail: fromAddress,
+                            fromName: !string.IsNullOrWhiteSpace(siteConfig?.SenderName) ? siteConfig.SenderName.Trim() : tenantBrand,
+                            replyTo: null,
+                            isCentralPlatformEmail: false,
+                            tenantName: tenantBrand,
+                            smtpUsernameOverride: siteConfig?.SmtpUsername,
+                            smtpPasswordOverride: siteConfig?.SmtpPassword);
+
+                        if (!sent)
+                        {
+                            throw new InvalidOperationException("SMTP relay returned failure.");
+                        }
+
+                        email.Status = BcpQueueStatus.Sent;
+                        email.SentAt = DateTime.UtcNow;
+                        email.LastError = null;
+                        await _dbContext.SaveChangesAsync();
+
+                        return Ok(ApiResponse<object>.SuccessResponse(new { email.Id, Status = "Sent", email.SentAt }, "Email dispatched successfully via SMTP."));
+                    }
+                    catch (Exception ex)
+                    {
+                        email.Retries++;
+                        email.Status = BcpQueueStatus.Failed;
+                        email.LastError = $"Manual retry failed: {ex.Message}";
+                        await _dbContext.SaveChangesAsync();
+
+                        _logger.LogWarning(ex, "[MxMailsApiController] Manual SMTP retry failed for {Id}: {Msg}", id, ex.Message);
+                        return BadRequest(ApiResponse<object>.FailureResponse($"Delivery failed: {ex.Message}"));
+                    }
+                }
+                else if (_emailService != null)
+                {
+                    try
+                    {
                         await _emailService.SendHtmlEmailAsync(
-                            to: email.RecipientEmail,
-                            subject: email.Subject,
+                            to: email.RecipientAddress,
+                            subject: subjectToSend,
                             htmlBody: bodyToSend,
                             tag: $"manual-retry-{email.Category.ToString().ToLowerInvariant()}");
 
@@ -219,7 +286,6 @@ namespace Ozikol_BCC.Api.Controllers
                         email.LastError = null;
                         await _dbContext.SaveChangesAsync();
 
-                        _logger.LogInformation("[MxMailsApiController] Manually retried and successfully delivered email {Id} to {Recipient}", id, email.RecipientEmail);
                         return Ok(ApiResponse<object>.SuccessResponse(new { email.Id, Status = "Sent", email.SentAt }, "Email dispatched successfully via Postmark."));
                     }
                     catch (Exception ex)
@@ -229,20 +295,11 @@ namespace Ozikol_BCC.Api.Controllers
                         email.LastError = $"Manual retry failed: {ex.Message}";
                         await _dbContext.SaveChangesAsync();
 
-                        _logger.LogWarning(ex, "[MxMailsApiController] Manual retry failed for {Id}: {Msg}", id, ex.Message);
                         return BadRequest(ApiResponse<object>.FailureResponse($"Delivery failed: {ex.Message}"));
                     }
                 }
-                else
-                {
-                    // Reset status to Queued for background worker pickup
-                    email.Status = BcpQueueStatus.Queued;
-                    email.Retries = 0;
-                    email.LastError = null;
-                    await _dbContext.SaveChangesAsync();
 
-                    return Ok(ApiResponse<object>.SuccessResponse(new { email.Id, Status = "Queued" }, "Email re-queued for background worker delivery."));
-                }
+                return BadRequest(ApiResponse<object>.FailureResponse("No outbound email dispatcher is configured."));
             }
             catch (Exception ex)
             {
@@ -252,7 +309,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Sends a live test email directly to verify outbound mail deliverability and records it in BcpEmailQueue.
+        /// Sends a live test email directly via the unified CentralNotificationDispatcher and records it in BcpMessagePools.
         /// </summary>
         /// <param name="request">Recipient email address and optional custom subject/body.</param>
         /// <returns>Delivery status report.</returns>
@@ -278,74 +335,49 @@ namespace Ozikol_BCC.Api.Controllers
                         <div style='background:#f1f5f9; border-radius:10px; padding:14px; font-size:13px; font-family:monospace; margin-bottom:20px;'>
                             <div><strong>Recipient:</strong> {request.RecipientEmail}</div>
                             <div><strong>Dispatched At:</strong> {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</div>
-                            <div><strong>Provider:</strong> Postmark Transactional Engine</div>
+                            <div><strong>Provider:</strong> Unified Communication Pool</div>
                         </div>
                         <div style='font-size:12px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:16px;'>Workspace Email Subsystem &bull; Diagnostic Telemetry</div>
                     </div>
                 </div>";
 
-            var queueRecord = new BcpEmailQueue
+            if (_notificationDispatcher != null)
             {
-                RecipientEmail = request.RecipientEmail.Trim(),
-                RecipientName = request.RecipientName?.Trim() ?? "Diagnostic Recipient",
-                Subject = subject,
-                HtmlBody = htmlBody,
-                Category = BcpMessageCategory.Security,
-                Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Processing,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _dbContext.BcpEmailQueue.Add(queueRecord);
-            await _dbContext.SaveChangesAsync();
-
-            if (_emailService != null)
-            {
-                try
+                var dispatchResult = await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                 {
-                    await _emailService.SendHtmlEmailAsync(
-                        to: queueRecord.RecipientEmail,
-                        subject: subject,
-                        htmlBody: htmlBody,
-                        tag: "diagnostic-test-email");
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    RecipientEmail = request.RecipientEmail.Trim(),
+                    RecipientName = request.RecipientName?.Trim() ?? "Diagnostic Recipient",
+                    Title = subject,
+                    Message = "Live diagnostic verification email dispatched from Business Command Center.",
+                    EmailSubject = subject,
+                    EmailHtmlBody = htmlBody,
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.High,
+                    Severity = NotificationSeverity.Success,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
 
-                    queueRecord.Status = BcpQueueStatus.Sent;
-                    queueRecord.SentAt = DateTime.UtcNow;
-                    await _dbContext.SaveChangesAsync();
-
+                if (dispatchResult.DispatchedEmailCount > 0)
+                {
                     return Ok(ApiResponse<object>.SuccessResponse(new
                     {
-                        queueRecord.Id,
-                        queueRecord.RecipientEmail,
+                        RecipientEmail = request.RecipientEmail.Trim(),
                         Status = "Sent",
-                        queueRecord.SentAt
-                    }, "Diagnostic email dispatched and delivered successfully via Postmark."));
+                        SentAt = DateTime.UtcNow
+                    }, "Diagnostic email dispatched and delivered successfully."));
                 }
-                catch (Exception ex)
-                {
-                    queueRecord.Status = BcpQueueStatus.Failed;
-                    queueRecord.LastError = ex.Message;
-                    await _dbContext.SaveChangesAsync();
 
-                    return BadRequest(ApiResponse<object>.FailureResponse($"Postmark dispatch error: {ex.Message}"));
-                }
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    dispatchResult.Errors.FirstOrDefault() ?? "Failed to dispatch diagnostic test email."));
             }
-            else
-            {
-                queueRecord.Status = BcpQueueStatus.Queued;
-                await _dbContext.SaveChangesAsync();
 
-                return Ok(ApiResponse<object>.SuccessResponse(new
-                {
-                    queueRecord.Id,
-                    queueRecord.RecipientEmail,
-                    Status = "Queued"
-                }, "Email queued. Background worker will process delivery."));
-            }
+            return BadRequest(ApiResponse<object>.FailureResponse("Unified notification dispatcher is not available."));
         }
 
         /// <summary>
-        /// Permanently deletes an email log record from the database.
+        /// Permanently deletes an email log record from the unified BcpMessagePools table.
         /// </summary>
         /// <param name="id">The unique GUID identifier of the record.</param>
         /// <returns>Confirmation of deletion.</returns>
@@ -354,13 +386,14 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var record = await _dbContext.BcpEmailQueue.FirstOrDefaultAsync(q => q.Id == id);
+                var record = await _dbContext.BcpMessagePools
+                    .FirstOrDefaultAsync(q => q.Id == id && q.Channel == BcpMessageChannel.Email);
                 if (record == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("Email record not found."));
                 }
 
-                _dbContext.BcpEmailQueue.Remove(record);
+                _dbContext.BcpMessagePools.Remove(record);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(ApiResponse<object>.SuccessResponse(new { id }, "Email record deleted successfully."));

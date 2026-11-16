@@ -563,6 +563,10 @@ interface RoleMemberItem {
               <span class="material-symbols-outlined">web</span>
               <span><strong>CMS Studio Manager Domain Role:</strong> Members assigned to this role govern the entire Website &amp; CMS suite — including CMS Studio, Brand &amp; Settings, Link Domain, Manage Forms, My Templates, and UI Marketplace.</span>
             </div>
+            <div class="role-scope-notice notice-usermanager" *ngIf="activeModalRole.name === 'Member'">
+              <span class="material-symbols-outlined">shield</span>
+              <span><strong>Baseline Role Protection:</strong> Every active user in the workspace automatically holds the <strong>Member</strong> role. You cannot remove a user from Member, but you can assign or remove elevated roles.</span>
+            </div>
 
             <!-- Assignment Form Section -->
             <div class="assign-section">
@@ -630,6 +634,7 @@ interface RoleMemberItem {
                   </div>
 
                   <button
+                    *ngIf="activeModalRole.name !== 'Member'"
                     type="button"
                     class="btn-remove-role"
                     title="Remove role from this user"
@@ -639,6 +644,9 @@ interface RoleMemberItem {
                     <span class="material-symbols-outlined">person_remove</span>
                     <span>{{ 'identity.roles.modal_btn_remove' | translate:'Remove' }}</span>
                   </button>
+                  <span *ngIf="activeModalRole.name === 'Member'" class="id-tag" title="Baseline role cannot be removed">
+                    <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">lock</span> Baseline
+                  </span>
                 </div>
 
                 <div class="empty-assigned" *ngIf="activeModalRole.members.length === 0">

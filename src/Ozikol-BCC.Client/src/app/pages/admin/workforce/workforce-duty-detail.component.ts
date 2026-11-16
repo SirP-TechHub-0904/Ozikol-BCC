@@ -218,7 +218,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   <span class="hour-lbl">Approved Billable Hours</span>
                 </div>
                 <div class="hour-stat">
-                  <span class="hour-val text-primary">₦{{ ((shift.hourlyPayRate || 0) * (shift.billableHours || shift.plannedDurationHours)) | number:'1.2-2' }}</span>
+                  <span class="hour-val text-primary">{{ currencySymbol }}{{ ((shift.hourlyPayRate || 0) * (shift.billableHours || shift.plannedDurationHours)) | number:'1.2-2' }}</span>
                   <span class="hour-lbl">Estimated Duty Wage</span>
                 </div>
               </div>
@@ -319,7 +319,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <div class="fine-inputs-container" *ngIf="fineAttached">
                 <div class="form-row-dual">
                   <div class="form-group">
-                    <label class="form-label">Fine Penalty Amount (₦) <span class="required">*</span></label>
+                    <label class="form-label">Fine Penalty Amount ({{ currencySymbol }}) <span class="required">*</span></label>
                     <input
                       type="number"
                       step="50"
@@ -1049,6 +1049,7 @@ export class WorkforceDutyDetailComponent implements OnInit {
   shift: any = null;
   isLoading = false;
   isSaving = false;
+  currencySymbol = '';
 
   // Form State
   dutyStatus = 'Completed';
@@ -1070,6 +1071,15 @@ export class WorkforceDutyDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.workforceService.getTenantCurrency().subscribe({
+      next: (res: any) => {
+        if (res?.data?.currencySymbol) {
+          this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
+
     this.route.params.subscribe((params) => {
       if (params['id']) {
         this.shiftId = params['id'];

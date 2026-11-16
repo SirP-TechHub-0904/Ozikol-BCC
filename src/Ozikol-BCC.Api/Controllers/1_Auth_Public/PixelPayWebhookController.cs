@@ -1,3 +1,4 @@
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,14 +23,19 @@ namespace Ozikol_BCC.Api.Controllers
     public class PixelPayWebhookController : ControllerBase
     {
         private readonly DashboardDbContext _context;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PixelPayWebhookController"/> class.
         /// </summary>
         /// <param name="context">The scoped tenant database context.</param>
-        public PixelPayWebhookController(DashboardDbContext context)
+        /// <param name="notificationDispatcher">Optional unified notification dispatcher.</param>
+        public PixelPayWebhookController(
+            DashboardDbContext context,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _context = context;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         /// <summary>
@@ -76,6 +82,29 @@ namespace Ozikol_BCC.Api.Controllers
                         tx.Status = PaymentStatus.Success;
                         tx.PaidAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
+
+                        if (_notificationDispatcher != null && (!string.IsNullOrWhiteSpace(tx.UserId) || !string.IsNullOrWhiteSpace(tx.DonorEmail)))
+                        {
+                            await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                            {
+                                TargetType = NotificationDispatchTarget.SingleUser,
+                                TargetUserId = tx.UserId,
+                                RecipientEmail = tx.DonorEmail,
+                                RecipientName = tx.DonorName,
+                                Title = $"Payment Confirmed: {tx.Currency} {tx.Amount:N2}",
+                                Message = $"Your payment of {tx.Currency} {tx.Amount:N2} (Ref: {tx.TransactionReference}) has been confirmed.",
+                                EmailSubject = $"Payment Confirmed — Ref {tx.TransactionReference}",
+                                EmailHtmlBody = $"<p>Hi <strong>{System.Net.WebUtility.HtmlEncode(tx.DonorName ?? "Customer")}</strong>,</p><p>Your payment of <strong>{tx.Currency} {tx.Amount:N2}</strong> (Reference: <code>{System.Net.WebUtility.HtmlEncode(tx.TransactionReference)}</code>) has been confirmed.</p>",
+                                Category = BcpMessageCategory.Account,
+                                Priority = BcpMessagePriority.High,
+                                Severity = NotificationSeverity.Success,
+                                Channels = string.IsNullOrWhiteSpace(tx.UserId)
+                                    ? NotificationChannels.Email
+                                    : (string.IsNullOrWhiteSpace(tx.DonorEmail) ? NotificationChannels.InApp : (NotificationChannels.InApp | NotificationChannels.Email)),
+                                SendEmailCopy = !string.IsNullOrWhiteSpace(tx.DonorEmail),
+                                Module = "Finance"
+                            });
+                        }
                     }
                 }
                 else if (status == "FAILED" || status == "DECLINED" || status == "05")
@@ -84,6 +113,29 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         tx.Status = PaymentStatus.Failed;
                         await _context.SaveChangesAsync();
+
+                        if (_notificationDispatcher != null && (!string.IsNullOrWhiteSpace(tx.UserId) || !string.IsNullOrWhiteSpace(tx.DonorEmail)))
+                        {
+                            await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                            {
+                                TargetType = NotificationDispatchTarget.SingleUser,
+                                TargetUserId = tx.UserId,
+                                RecipientEmail = tx.DonorEmail,
+                                RecipientName = tx.DonorName,
+                                Title = $"Payment Failed: {tx.Currency} {tx.Amount:N2}",
+                                Message = $"Your payment of {tx.Currency} {tx.Amount:N2} (Ref: {tx.TransactionReference}) failed.",
+                                EmailSubject = $"Payment Failed — Ref {tx.TransactionReference}",
+                                EmailHtmlBody = $"<p>Hi <strong>{System.Net.WebUtility.HtmlEncode(tx.DonorName ?? "Customer")}</strong>,</p><p>Your payment of <strong>{tx.Currency} {tx.Amount:N2}</strong> (Reference: <code>{System.Net.WebUtility.HtmlEncode(tx.TransactionReference)}</code>) did not succeed.</p>",
+                                Category = BcpMessageCategory.Account,
+                                Priority = BcpMessagePriority.High,
+                                Severity = NotificationSeverity.Failed,
+                                Channels = string.IsNullOrWhiteSpace(tx.UserId)
+                                    ? NotificationChannels.Email
+                                    : (string.IsNullOrWhiteSpace(tx.DonorEmail) ? NotificationChannels.InApp : (NotificationChannels.InApp | NotificationChannels.Email)),
+                                SendEmailCopy = !string.IsNullOrWhiteSpace(tx.DonorEmail),
+                                Module = "Finance"
+                            });
+                        }
                     }
                 }
 

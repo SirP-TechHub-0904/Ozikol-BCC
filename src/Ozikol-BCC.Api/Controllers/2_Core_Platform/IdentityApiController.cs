@@ -207,6 +207,20 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await EnsureSeededRolesAsync();
 
+                // Ensure every user holds the baseline 'Member' role (unless they already have 'SuperAdmin' or 'Member')
+                var memberRoleEntity = await _roleManager.FindByNameAsync("Member");
+                if (memberRoleEntity != null)
+                {
+                    var usersWithAnyRole = await _dbContext.UserRoles.AsNoTracking().Select(ur => ur.UserId).Distinct().ToListAsync();
+                    var usersWithoutRoles = await _dbContext.Users
+                        .Where(u => !usersWithAnyRole.Contains(u.Id))
+                        .ToListAsync();
+                    foreach (var orphanUser in usersWithoutRoles)
+                    {
+                        await _userManager.AddToRoleAsync(orphanUser, "Member");
+                    }
+                }
+
                 // Fetch all user roles mapped with profile info using non-blocking read
                 var allUserRoles = await _dbContext.UserRoles
                     .AsNoTracking()
@@ -530,17 +544,30 @@ namespace Ozikol_BCC.Api.Controllers
             if (!await _roleManager.RoleExistsAsync(effectiveRoleToAssign))
                 return BadRequest(ApiResponse<object>.FailureResponse($"Role '{request.RoleName}' does not exist."));
 
-            // Remove existing non-SuperAdmin roles to guarantee a single unambiguous active role
+            // Preserve SuperAdmin and baseline Member roles; replace any previous elevated role
             var existingRoles = await _userManager.GetRolesAsync(user);
-            var rolesToRemove = existingRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+            var rolesToRemove = existingRoles
+                .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase))
+                .ToList();
             if (rolesToRemove.Any())
             {
                 await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
             }
 
-            var addRes = await _userManager.AddToRoleAsync(user, effectiveRoleToAssign);
-            if (!addRes.Succeeded)
-                return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+            if (!existingRoles.Any(r => string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)) &&
+                !existingRoles.Any(r => string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)) &&
+                !string.Equals(effectiveRoleToAssign, "Member", StringComparison.OrdinalIgnoreCase))
+            {
+                await _userManager.AddToRoleAsync(user, "Member");
+            }
+
+            if (!await _userManager.IsInRoleAsync(user, effectiveRoleToAssign))
+            {
+                var addRes = await _userManager.AddToRoleAsync(user, effectiveRoleToAssign);
+                if (!addRes.Succeeded)
+                    return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+            }
 
             // If Feature Editor or Dynamic Feature Authority Role, assign scoped feature in BcpUserFeatureRoles
             if (isDynamicFeatureRole || string.Equals(effectiveRoleToAssign, "Feature Editor", StringComparison.OrdinalIgnoreCase))
@@ -641,6 +668,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be modified."));
             }
 
+            if (string.Equals(request.RoleName, "Member", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The 'Member' role is the baseline role for all active users and cannot be removed. You can assign or remove elevated roles instead."));
+            }
+
             var user = await _userManager.FindByIdAsync(request.UserId);
             if (user == null)
                 return NotFound(ApiResponse<object>.FailureResponse("User not found."));
@@ -648,6 +680,14 @@ namespace Ozikol_BCC.Api.Controllers
             if (await _userManager.IsInRoleAsync(user, request.RoleName))
             {
                 await _userManager.RemoveFromRoleAsync(user, request.RoleName);
+            }
+
+            // Ensure baseline Member role remains intact when an elevated role is removed
+            if (!await _userManager.IsInRoleAsync(user, "SuperAdmin") &&
+                !await _userManager.IsInRoleAsync(user, "Member") &&
+                await _roleManager.RoleExistsAsync("Member"))
+            {
+                await _userManager.AddToRoleAsync(user, "Member");
             }
 
             // Clear feature role if feature editor or dynamic feature authority role
@@ -904,21 +944,27 @@ namespace Ozikol_BCC.Api.Controllers
                     This invitation is secure and will expire in {expiresDays} days. If you did not request this invitation, you can safely ignore this message.
                 </p>";
 
-            var emailQueueItem = new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = emailClean,
-                RecipientName = emailClean.Split('@')[0],
-                Subject = $"You are invited to join {tenantBrand} Workspace",
-                HtmlBody = emailBody,
-                Category = BcpMessageCategory.General,
-                Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
             await _dbContext.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    RecipientEmail = emailClean,
+                    RecipientName = emailClean.Split('@')[0],
+                    Title = $"You are invited to join {tenantBrand} Workspace",
+                    Message = $"You have been invited to join {tenantBrand} as {baseRole}.",
+                    EmailSubject = $"You are invited to join {tenantBrand} Workspace",
+                    EmailHtmlBody = emailBody,
+                    ActionUrl = registrationUrl,
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.High,
+                    Severity = NotificationSeverity.NewFeature,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -990,21 +1036,27 @@ namespace Ozikol_BCC.Api.Controllers
                     This invitation is secure and will expire in 7 days. If you did not request this invitation, you can safely ignore this message.
                 </p>";
 
-            var emailQueueItem = new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = invitation.Email,
-                RecipientName = invitation.Email.Split('@')[0],
-                Subject = $"Reminder: You are invited to join {tenantBrand} Workspace",
-                HtmlBody = emailBody,
-                Category = BcpMessageCategory.General,
-                Priority = BcpMessagePriority.High,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
             await _dbContext.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    RecipientEmail = invitation.Email,
+                    RecipientName = invitation.Email.Split('@')[0],
+                    Title = $"Reminder: You are invited to join {tenantBrand} Workspace",
+                    Message = $"Reminder: You have been invited to join {tenantBrand} as {baseRole}.",
+                    EmailSubject = $"Reminder: You are invited to join {tenantBrand} Workspace",
+                    EmailHtmlBody = emailBody,
+                    ActionUrl = registrationUrl,
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.High,
+                    Severity = NotificationSeverity.Update,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -1976,21 +2028,7 @@ namespace Ozikol_BCC.Api.Controllers
                         If you did not authorize this session termination or suspect unauthorized access, please update your login credentials immediately to secure your account.
                     </p>";
 
-                var emailQueueItem = new BcpEmailQueue
-                {
-                    Id = Guid.CreateVersion7(),
-                    RecipientEmail = user.Email ?? string.Empty,
-                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : "Member",
-                    Subject = "Security Alert: Active Session Terminated",
-                    HtmlBody = emailBody,
-                    Category = BcpMessageCategory.General,
-                    Priority = BcpMessagePriority.Normal,
-                    Status = BcpQueueStatus.Queued,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
-                // Dispatch real-time In-App security notification
+                // Dispatch real-time In-App + Email security notification
                 if (_notificationDispatcher != null)
                 {
                     var terminatedParsed = UserAgentParser.Parse(session.DeviceName);
@@ -1998,15 +2036,20 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
                         TargetUserId = user.Id,
+                        RecipientEmail = user.Email,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : "Member",
                         Title = "Security Alert: Session Terminated",
                         Message = $"Your active session on '{terminatedParsed.FriendlyDeviceTitle}' was terminated.",
                         Severity = NotificationSeverity.Warning,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        SendEmailCopy = true,
+                        EmailSubject = "Security Alert: Active Session Terminated",
+                        EmailHtmlBody = emailBody,
                         ActionUrl = "/identity/console/account?tab=devices",
                         Module = "Security",
                         Icon = "phonelink_erase",
                         Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Normal
+                        Priority = BcpMessagePriority.High
                     });
                 }
 
@@ -2703,24 +2746,38 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be assigned. It is strictly reserved for the root workspace account."));
             }
 
-            // Sync Identity role if not root SuperAdmin
+            // Sync Identity role if not root SuperAdmin (always preserve baseline Member role)
             if (!isTargetSuperAdmin)
             {
                 await EnsureSeededRolesAsync();
                 var currentRoles = await _userManager.GetRolesAsync(user);
-                var rolesToRemove = currentRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+                var rolesToRemove = currentRoles
+                    .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
                 if (rolesToRemove.Any())
                 {
                     await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
                 }
 
-                if (await _roleManager.RoleExistsAsync(targetRole))
+                if (!await _userManager.IsInRoleAsync(user, "Member") && await _roleManager.RoleExistsAsync("Member"))
                 {
-                    await _userManager.AddToRoleAsync(user, targetRole);
+                    await _userManager.AddToRoleAsync(user, "Member");
                 }
-                else
+
+                if (!string.Equals(targetRole, "Member", StringComparison.OrdinalIgnoreCase))
                 {
-                    await _userManager.AddToRoleAsync(user, request.IsAdmin ? "Admin" : "Member");
+                    if (await _roleManager.RoleExistsAsync(targetRole))
+                    {
+                        if (!await _userManager.IsInRoleAsync(user, targetRole))
+                        {
+                            await _userManager.AddToRoleAsync(user, targetRole);
+                        }
+                    }
+                    else if (request.IsAdmin && !await _userManager.IsInRoleAsync(user, "Admin"))
+                    {
+                        await _userManager.AddToRoleAsync(user, "Admin");
+                    }
                 }
             }
 
@@ -2825,21 +2882,7 @@ namespace Ozikol_BCC.Api.Controllers
   </a>
 </div>";
 
-            var emailQueueItem = new BcpEmailQueue
-            {
-                Id = Guid.CreateVersion7(),
-                RecipientEmail = user.Email ?? string.Empty,
-                RecipientName = recipientFirstName,
-                Subject = "Security Alert: Workspace Role & Permissions Matrix Updated",
-                HtmlBody = emailBody,
-                Category = BcpMessageCategory.Security,
-                Priority = BcpMessagePriority.Urgent,
-                Status = BcpQueueStatus.Queued,
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.BcpEmailQueue.Add(emailQueueItem);
-
-            // 3. CentralNotificationDispatcher Multi-Channel Delivery (Rule 16)
+            // CentralNotificationDispatcher Multi-Channel Delivery (Rule 16)
             if (_notificationDispatcher != null)
             {
                 try

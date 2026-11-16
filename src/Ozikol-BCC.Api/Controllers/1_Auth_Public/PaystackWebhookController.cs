@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Services;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
@@ -36,6 +37,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly MasterCatalogDbContext? _masterDb;
         private readonly IBillingSnapshotService? _billingSnapshots;
         private readonly IConfiguration _configuration;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PaystackWebhookController"/> class.
@@ -44,16 +46,19 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="configuration">Application configuration for fallback secrets.</param>
         /// <param name="masterDb">Optional Master catalog database context for Central platform webhooks.</param>
         /// <param name="billingSnapshots">Optional snapshot publisher for real-time tenant UI updates.</param>
+        /// <param name="notificationDispatcher">Optional unified notification dispatcher.</param>
         public PaystackWebhookController(
             DashboardDbContext context,
             IConfiguration configuration,
             MasterCatalogDbContext? masterDb = null,
-            IBillingSnapshotService? billingSnapshots = null)
+            IBillingSnapshotService? billingSnapshots = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _context = context;
             _configuration = configuration;
             _masterDb = masterDb;
             _billingSnapshots = billingSnapshots;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         /// <summary>
@@ -171,6 +176,8 @@ namespace Ozikol_BCC.Api.Controllers
                         tx.Status = PaymentStatus.Success;
                         tx.PaidAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync(cancellationToken);
+
+                        await DispatchTransactionAlertAsync(tx, isSuccess: true, cancellationToken);
                     }
                 }
                 else if (status == "failed" || status == "abandoned")
@@ -179,6 +186,8 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         tx.Status = PaymentStatus.Failed;
                         await _context.SaveChangesAsync(cancellationToken);
+
+                        await DispatchTransactionAlertAsync(tx, isSuccess: false, cancellationToken);
                     }
                 }
 
@@ -191,6 +200,46 @@ namespace Ozikol_BCC.Api.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        private async Task DispatchTransactionAlertAsync(BcpFinanceTransaction tx, bool isSuccess, CancellationToken ct)
+        {
+            if (_notificationDispatcher == null) return;
+            if (string.IsNullOrWhiteSpace(tx.UserId) && string.IsNullOrWhiteSpace(tx.DonorEmail)) return;
+
+            try
+            {
+                var statusLabel = isSuccess ? "Confirmed" : "Failed";
+                var channels = string.IsNullOrWhiteSpace(tx.UserId)
+                    ? NotificationChannels.Email
+                    : (string.IsNullOrWhiteSpace(tx.DonorEmail)
+                        ? NotificationChannels.InApp
+                        : (NotificationChannels.InApp | NotificationChannels.Email));
+
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = tx.UserId,
+                    RecipientEmail = tx.DonorEmail,
+                    RecipientName = tx.DonorName,
+                    Title = $"Payment {statusLabel}: {tx.Currency} {tx.Amount:N2}",
+                    Message = isSuccess
+                        ? $"Your payment of {tx.Currency} {tx.Amount:N2} (Ref: {tx.TransactionReference}) has been confirmed."
+                        : $"Your payment of {tx.Currency} {tx.Amount:N2} (Ref: {tx.TransactionReference}) did not complete.",
+                    EmailSubject = $"Payment {statusLabel} — Ref {tx.TransactionReference}",
+                    EmailHtmlBody = $"<p>Hi <strong>{System.Net.WebUtility.HtmlEncode(tx.DonorName ?? "Customer")}</strong>,</p><p>Your payment of <strong>{tx.Currency} {tx.Amount:N2}</strong> (Reference: <code>{System.Net.WebUtility.HtmlEncode(tx.TransactionReference)}</code>) has status: <strong>{statusLabel}</strong>.</p>",
+                    Category = BcpMessageCategory.Account,
+                    Priority = BcpMessagePriority.High,
+                    Severity = isSuccess ? NotificationSeverity.Success : NotificationSeverity.Failed,
+                    Channels = channels,
+                    SendEmailCopy = !string.IsNullOrWhiteSpace(tx.DonorEmail),
+                    Module = "Finance"
+                }, ct);
+            }
+            catch
+            {
+                // Non-fatal webhook notification
             }
         }
 

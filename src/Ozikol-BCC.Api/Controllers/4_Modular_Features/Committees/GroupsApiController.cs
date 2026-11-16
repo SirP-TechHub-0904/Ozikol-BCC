@@ -12,6 +12,7 @@ using static Ozikol_BCC.Domain.Enum.Enum;
 using MediatR;
 using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Application.Commands.BcpGroupCommands;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Queries.BcpGroupQueries;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -29,15 +30,18 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _db;
         private readonly UserManager<Profile> _userManager;
         private readonly IMediator _mediator;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public GroupsApiController(
             DashboardDbContext db,
             UserManager<Profile> userManager,
-            IMediator mediator)
+            IMediator mediator,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _db = db;
             _userManager = userManager;
             _mediator = mediator;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         private string? UserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -249,6 +253,25 @@ namespace Ozikol_BCC.Api.Controllers
             });
             await _db.SaveChangesAsync();
 
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = request.UserId,
+                    Title = $"Added to Group: {group.Title}",
+                    Message = $"You have been added to '{group.Title}'.",
+                    ActionUrl = $"/dashboard/committees/{id}",
+                    Module = "Committees",
+                    Icon = "group_add",
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.Normal,
+                    Severity = NotificationSeverity.Success,
+                    Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
+
             return Ok(new { message = "Member added." });
         }
 
@@ -278,6 +301,27 @@ namespace Ozikol_BCC.Api.Controllers
                 member.RolePosition = request.RolePosition;
 
             await _db.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = uid,
+                    Title = "Group Membership Updated",
+                    Message = request.IsSuspended == true
+                        ? "Your group membership has been suspended by an administrator."
+                        : "Your group role or membership status has been updated.",
+                    ActionUrl = $"/dashboard/committees/{id}",
+                    Module = "Committees",
+                    Icon = "manage_accounts",
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.Normal,
+                    Severity = request.IsSuspended == true ? NotificationSeverity.Warning : NotificationSeverity.Update,
+                    Channels = NotificationChannels.InApp
+                });
+            }
+
             return Ok(new { message = "Member updated." });
         }
 
@@ -297,6 +341,23 @@ namespace Ozikol_BCC.Api.Controllers
             _db.BcpGroupMembers.Remove(member);
             await _db.SaveChangesAsync();
 
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = uid,
+                    Title = "Removed from Group",
+                    Message = "You have been removed from a workspace group.",
+                    Module = "Committees",
+                    Icon = "group_remove",
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.Normal,
+                    Severity = NotificationSeverity.Warning,
+                    Channels = NotificationChannels.InApp
+                });
+            }
+
             return Ok(new { message = "Member removed." });
         }
 
@@ -312,6 +373,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .AnyAsync(i => i.GroupId == id && i.InvitedUserId == request.UserId && i.Status == "Pending");
             if (existing) return BadRequest("Invitation already pending.");
 
+            var group = await _db.BcpGroups.FindAsync(id);
             _db.BcpGroupInvitations.Add(new BcpGroupInvitation
             {
                 GroupId = id,
@@ -319,6 +381,26 @@ namespace Ozikol_BCC.Api.Controllers
                 InvitedByUserId = UserId
             });
             await _db.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                var groupName = group?.Title ?? "a group";
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = request.UserId,
+                    Title = $"Group Invitation: {groupName}",
+                    Message = $"You have been invited to join '{groupName}'.",
+                    ActionUrl = "/dashboard/committees",
+                    Module = "Committees",
+                    Icon = "mail",
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.Normal,
+                    Severity = NotificationSeverity.NewFeature,
+                    Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                    SendEmailCopy = true
+                });
+            }
 
             return Ok(new { message = "Invitation sent." });
         }

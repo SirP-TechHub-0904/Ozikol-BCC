@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ozikol_BCC.Api.Models;
+using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -20,11 +22,19 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _db;
         private readonly ILogger<InvitationController> _logger;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
-        public InvitationController(DashboardDbContext db, ILogger<InvitationController> logger)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InvitationController"/> class.
+        /// </summary>
+        public InvitationController(
+            DashboardDbContext db,
+            ILogger<InvitationController> logger,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _db = db;
             _logger = logger;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         /// <summary>
@@ -54,11 +64,36 @@ namespace Ozikol_BCC.Api.Controllers
             await _db.Invitations.AddAsync(invitation, ct);
             await _db.SaveChangesAsync(ct);
 
-            // Stub email – log the link. In production replace with proper email service.
             var link = $"{Request.Scheme}://{Request.Host}/invite/{invitation.Token}";
             _logger.LogInformation("Invitation link generated for {Email}: {Link}", invitation.Email, link);
 
-            return Ok(ApiResponse<string>.SuccessResponse(link, "Invitation created successfully."));
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    RecipientEmail = invitation.Email,
+                    RecipientName = invitation.FullName,
+                    Title = "You Are Invited to Join Our Workforce",
+                    Message = $"Hi {invitation.FullName}, you have been invited to onboard. Open your invitation link: {link}",
+                    EmailSubject = "Workforce Onboarding Invitation",
+                    EmailHtmlBody = $@"
+                        <p>Hi <strong>{System.Net.WebUtility.HtmlEncode(invitation.FullName)}</strong>,</p>
+                        <p>You have been invited to complete your workforce onboarding. Click the button below to accept your one-time invitation (valid for 7 days):</p>
+                        <div style='margin:24px 0; text-align:center;'>
+                            <a href='{link}' style='background-color:#0050e5; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block;'>Accept Invitation</a>
+                        </div>",
+                    ActionUrl = link,
+                    Category = BcpMessageCategory.General,
+                    Priority = BcpMessagePriority.High,
+                    Severity = NotificationSeverity.NewFeature,
+                    Channels = NotificationChannels.Email,
+                    SendEmailCopy = true,
+                    Module = "Workforce"
+                }, ct);
+            }
+
+            return Ok(ApiResponse<string>.SuccessResponse(link, "Invitation created and dispatched successfully."));
         }
 
         /// <summary>

@@ -20,27 +20,27 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       <app-page-header
         eyebrow="SECURITY & AUDIT · SYSTEM GOVERNANCE"
         icon="settings"
-        title="General Settings"
-        subtitle="Configure core workspace-wide system services and notification infrastructure."
+        title="System Settings"
+        subtitle="Configure core workspace-wide governance policies, currency, and notification infrastructure."
       ></app-page-header>
 
-      <!-- Modular General Settings Navigation Bar -->
+      <!-- Modular System Settings Navigation Bar -->
       <div class="gen-tabs-bar">
         <button
           type="button"
           class="gen-tab-btn"
-          [class.active]="activeTab === 'email'"
-          (click)="selectTab('email')"
+          [class.active]="activeTab === 'general'"
+          (click)="selectTab('general')"
         >
-          <span class="material-symbols-outlined tab-icon">mark_email_read</span>
+          <span class="material-symbols-outlined tab-icon">tune</span>
           <div class="tab-meta">
             <div class="tab-title-row">
-              <span class="tab-title">Email Configuration</span>
-              <span class="status-pill" [class.pill-active]="emailStatus.isConfigured" [class.pill-pending]="!emailStatus.isConfigured">
-                {{ emailStatus.isConfigured ? 'Active' : 'Setup Required' }}
+              <span class="tab-title">General Settings</span>
+              <span class="status-pill" [class.pill-active]="enableUserDeletion" [class.pill-pending]="!enableUserDeletion">
+                {{ enableUserDeletion ? 'Deletion Permitted' : 'Deletion Locked' }}
               </span>
             </div>
-            <span class="tab-sub">Workspace Notification Email Service</span>
+            <span class="tab-sub">User Governance & Security Policies</span>
           </div>
         </button>
 
@@ -53,7 +53,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           <span class="material-symbols-outlined tab-icon">payments</span>
           <div class="tab-meta">
             <div class="tab-title-row">
-              <span class="tab-title">Default Currency</span>
+              <span class="tab-title">Currency</span>
               <span class="status-pill pill-active">
                 {{ currencySettings.currencyCode }} ({{ currencySettings.currencySymbol }})
               </span>
@@ -61,9 +61,83 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             <span class="tab-sub">Operational Running Currency</span>
           </div>
         </button>
+
+        <button
+          type="button"
+          class="gen-tab-btn"
+          [class.active]="activeTab === 'email'"
+          (click)="selectTab('email')"
+        >
+          <span class="material-symbols-outlined tab-icon">mark_email_read</span>
+          <div class="tab-meta">
+            <div class="tab-title-row">
+              <span class="tab-title">Emails</span>
+              <span class="status-pill" [class.pill-active]="emailStatus.isConfigured" [class.pill-pending]="!emailStatus.isConfigured">
+                {{ emailStatus.isConfigured ? 'Active' : 'Setup Required' }}
+              </span>
+            </div>
+            <span class="tab-sub">Workspace Notification Email Service</span>
+          </div>
+        </button>
       </div>
 
-      <!-- TAB 1: EMAIL CONFIGURATION -->
+      <!-- TAB 1: GENERAL SETTINGS (USER GOVERNANCE) -->
+      <div *ngIf="activeTab === 'general'" class="gen-tab-content">
+        <div class="status-banner" [class.banner-active]="enableUserDeletion" [class.banner-pending]="!enableUserDeletion">
+          <div class="banner-icon-wrap">
+            <span class="material-symbols-outlined">{{ enableUserDeletion ? 'admin_panel_settings' : 'shield_lock' }}</span>
+          </div>
+          <div class="banner-body">
+            <h4>
+              {{ enableUserDeletion
+                ? 'Administrator User Account Deletion is Enabled'
+                : 'Administrator User Account Deletion is Locked' }}
+            </h4>
+            <p>
+              {{ enableUserDeletion
+                ? 'Authorized administrators can permanently delete member accounts from the Member Directory.'
+                : 'Member accounts are protected from permanent deletion. Enable the policy below to permit administrator deletions.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="gen-card">
+          <div class="gen-card-head">
+            <div class="head-icon" style="background: #fef2f2; color: #dc2626;">
+              <span class="material-symbols-outlined">person_remove</span>
+            </div>
+            <div>
+              <h3>Allow Administrator User Account Deletion</h3>
+              <p>Control whether administrators are permitted to permanently destroy member accounts from the portal.</p>
+            </div>
+          </div>
+
+          <div class="gen-card-body">
+            <div style="padding: 16px 20px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px;">
+              <div>
+                <strong style="font-size: 14px; color: #9b2c2c; display: block;">Enable User Account Deletion</strong>
+                <span style="font-size: 12.5px; color: #742a2a;">When turned on, administrators can permanently delete user profiles after confirmation.</span>
+              </div>
+              <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; font-size: 13px; color: #0f172a;">
+                <input type="checkbox" [(ngModel)]="enableUserDeletion" style="width: 18px; height: 18px; accent-color: #0050e5; cursor: pointer;" />
+                <span>{{ enableUserDeletion ? 'Enabled' : 'Disabled' }}</span>
+              </label>
+            </div>
+
+            <button
+              type="button"
+              class="btn-primary-action"
+              [disabled]="savingGeneralSettings"
+              (click)="saveGeneralSettings()"
+            >
+              <span class="material-symbols-outlined">{{ savingGeneralSettings ? 'progress_activity' : 'check' }}</span>
+              <span>{{ savingGeneralSettings ? 'Saving...' : 'Save' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: EMAILS CONFIGURATION -->
       <div *ngIf="activeTab === 'email'" class="gen-tab-content">
         <!-- Status Banner -->
         <div class="status-banner" [class.banner-active]="emailStatus.isConfigured" [class.banner-pending]="!emailStatus.isConfigured">
@@ -830,7 +904,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `]
 })
 export class GeneralSettingsComponent implements OnInit {
-  activeTab: 'email' | 'currency' = 'email';
+  activeTab: 'general' | 'currency' | 'email' = 'general';
+  enableUserDeletion = false;
+  savingGeneralSettings = false;
   activatingEmail = false;
   sendingTestEmail = false;
   testRecipientEmail = '';
@@ -883,9 +959,12 @@ export class GeneralSettingsComponent implements OnInit {
   ngOnInit(): void {
     if (this.router.url.includes('currency')) {
       this.activeTab = 'currency';
-    } else {
+    } else if (this.router.url.includes('email')) {
       this.activeTab = 'email';
+    } else {
+      this.activeTab = 'general';
     }
+    this.loadGeneralGovernanceSettings();
     this.loadEmailSetupStatus();
     this.loadCurrencySettings();
   }
@@ -893,13 +972,47 @@ export class GeneralSettingsComponent implements OnInit {
   /**
    * Switches the active settings tab and updates the route URL accordingly.
    */
-  selectTab(tab: 'email' | 'currency'): void {
+  selectTab(tab: 'general' | 'currency' | 'email'): void {
     this.activeTab = tab;
     if (tab === 'currency') {
       this.router.navigate(['/settings/console/general/currency']);
-    } else {
+    } else if (tab === 'email') {
       this.router.navigate(['/settings/console/general/email']);
+    } else {
+      this.router.navigate(['/settings/console/general']);
     }
+  }
+
+  /**
+   * Loads workspace general governance policies (such as administrator user deletion).
+   */
+  loadGeneralGovernanceSettings(): void {
+    this.api.get<any>('UsersApi/settings').subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.enableUserDeletion = !!res.data.enableUserDeletion;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Persists the administrator user deletion policy toggle.
+   */
+  saveGeneralSettings(): void {
+    this.savingGeneralSettings = true;
+    this.api.put<any>('UsersApi/settings', { enableUserDeletion: this.enableUserDeletion }).subscribe({
+      next: (res: any) => {
+        this.savingGeneralSettings = false;
+        this.enableUserDeletion = !!res?.data?.enableUserDeletion;
+        this.toast.success('System general settings saved.');
+      },
+      error: (err: any) => {
+        this.savingGeneralSettings = false;
+        this.toast.error(err?.error?.message || 'Failed to save system general settings.');
+      }
+    });
   }
 
   /**

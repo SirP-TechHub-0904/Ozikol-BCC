@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
+using static Ozikol_BCC.Domain.Enum.Enum;
 using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -26,15 +28,18 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _context;
         private readonly IRecaptchaService _recaptchaService;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public WebsiteContentApiController(
             DashboardDbContext context,
             IRecaptchaService recaptchaService,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
             _tenantProvider = tenantProvider;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         // ==========================================
@@ -705,6 +710,56 @@ namespace Ozikol_BCC.Api.Controllers
 
             _context.PageFormSubmissions.Add(submission);
             await _context.SaveChangesAsync();
+
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var fieldRows = string.Join("", data.Select(kv =>
+                        $"<tr><td style='padding:6px 10px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#334155;'>{System.Net.WebUtility.HtmlEncode(kv.Key)}</td><td style='padding:6px 10px; border-bottom:1px solid #e2e8f0; color:#0f172a;'>{System.Net.WebUtility.HtmlEncode(kv.Value?.ToString() ?? string.Empty)}</td></tr>"));
+
+                    if (!string.IsNullOrWhiteSpace(form.NotificationEmail))
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            RecipientEmail = form.NotificationEmail.Trim(),
+                            RecipientName = "Form Administrator",
+                            Title = $"New Form Submission: {form.Title}",
+                            Message = $"A new submission was received on '{form.Title}'.",
+                            EmailSubject = $"New Form Submission: {form.Title}",
+                            EmailHtmlBody = $@"
+                                <p>A visitor submitted the <strong>{System.Net.WebUtility.HtmlEncode(form.Title)}</strong> form.</p>
+                                <table style='width:100%; border-collapse:collapse; margin-top:12px;'>{fieldRows}</table>
+                                <p style='color:#64748b; font-size:12px; margin-top:16px;'>Source Page: {System.Net.WebUtility.HtmlEncode(submission.SourcePageUrl ?? "N/A")} &bull; IP: {System.Net.WebUtility.HtmlEncode(clientIp)}</p>",
+                            Category = BcpMessageCategory.Communication,
+                            Priority = BcpMessagePriority.High,
+                            Severity = NotificationSeverity.NewFeature,
+                            Channels = NotificationChannels.Email,
+                            SendEmailCopy = true,
+                            Module = "WebsiteCMS"
+                        });
+                    }
+
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        Title = $"New Form Submission: {form.Title}",
+                        Message = $"A visitor submitted '{form.Title}' ({data.Count} field(s)).",
+                        ActionUrl = "/dashboard/cms/forms",
+                        Module = "WebsiteCMS",
+                        Icon = "dynamic_form",
+                        Category = BcpMessageCategory.Communication,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = NotificationSeverity.NewFeature,
+                        Channels = NotificationChannels.InApp
+                    });
+                }
+                catch
+                {
+                    // Non-fatal notification dispatch
+                }
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {

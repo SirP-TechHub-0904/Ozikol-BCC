@@ -32,9 +32,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpUserMfaBackupCode> BcpUserMfaBackupCodes { get; set; } = null!;
     public DbSet<BcpLoginAuditLog> BcpLoginAuditLogs { get; set; } = null!;
 
-    // Unified notification, email, and SMS queue pool tables.
-    public DbSet<BcpEmailQueue> BcpEmailQueue { get; set; } = null!;
-    public DbSet<BcpSmsQueue> BcpSmsQueue { get; set; } = null!;
+    // Unified notification and scheduled job pool tables.
     public DbSet<BcpScheduledJobQueue> BcpScheduledJobQueues { get; set; } = null!;
     public DbSet<BcpMessagePool> BcpMessagePools { get; set; } = null!;
 
@@ -246,8 +244,6 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         typeof(MisConfigurationSetting),
         typeof(TemplateCategory),
         typeof(WebPageViewLog),
-        typeof(BcpEmailQueue),
-        typeof(BcpSmsQueue),
         typeof(BcpScheduledJobQueue),
         typeof(BcpMessagePool),
         typeof(UserDeviceSession),
