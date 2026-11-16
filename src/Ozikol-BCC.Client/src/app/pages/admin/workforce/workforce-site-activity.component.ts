@@ -128,7 +128,7 @@ interface SiteStaffRosterItem {
               <span class="material-symbols-outlined">gavel</span>
             </div>
             <div class="kpi-info">
-              <span class="kpi-value">₦{{ totalFinesAmount | number:'1.2-2' }}</span>
+              <span class="kpi-value">{{ currencySymbol }}{{ totalFinesAmount | number:'1.2-2' }}</span>
               <span class="kpi-label">Attached Fines &amp; Penalties</span>
             </div>
             <div class="kpi-sub">{{ finesCount }} shifts with disciplinary deductions</div>
@@ -286,7 +286,7 @@ interface SiteStaffRosterItem {
                   </td>
                   <td>
                     <span class="fine-badge attached" *ngIf="s.fineAttached">
-                      <span class="material-symbols-outlined">gavel</span> ₦{{ (s.fineAmount || 0) | number:'1.0-0' }}
+                      <span class="material-symbols-outlined">gavel</span> {{ currencySymbol }}{{ (s.fineAmount || 0) | number:'1.0-0' }}
                     </span>
                     <span class="fine-badge none" *ngIf="!s.fineAttached">None</span>
                   </td>
@@ -342,7 +342,7 @@ interface SiteStaffRosterItem {
             <div class="fine-notice-banner" *ngIf="s.fineAttached">
               <span class="material-symbols-outlined text-danger">gavel</span>
               <div>
-                <strong>Fine Attached: ₦{{ (s.fineAmount || 0) | number:'1.2-2' }}</strong>
+                <strong>Fine Attached: {{ currencySymbol }}{{ (s.fineAmount || 0) | number:'1.2-2' }}</strong>
                 <span>{{ s.fineReason || 'Operational deduction' }}</span>
               </div>
             </div>
@@ -446,7 +446,7 @@ interface SiteStaffRosterItem {
                   </td>
                   <td>
                     <span class="fine-badge attached" *ngIf="m.totalFinesAmount > 0">
-                      ₦{{ m.totalFinesAmount | number:'1.0-0' }}
+                      {{ currencySymbol }}{{ m.totalFinesAmount | number:'1.0-0' }}
                     </span>
                     <span class="fine-badge none" *ngIf="m.totalFinesAmount === 0">None</span>
                   </td>
@@ -1340,6 +1340,7 @@ export class WorkforceSiteActivityComponent implements OnInit {
   siteId = '';
   site: ClientSite | null = null;
   isLoading = false;
+  currencySymbol = '';
 
   // View Mode: 'table' | 'cards' | 'calendar' | 'roster'
   viewMode: 'table' | 'cards' | 'calendar' | 'roster' = 'table';
@@ -1371,6 +1372,15 @@ export class WorkforceSiteActivityComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.workforceService.getTenantCurrency().subscribe({
+      next: (res: any) => {
+        if (res?.data?.currencySymbol) {
+          this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
+
     this.route.params.subscribe((params) => {
       if (params['id']) {
         this.siteId = params['id'];

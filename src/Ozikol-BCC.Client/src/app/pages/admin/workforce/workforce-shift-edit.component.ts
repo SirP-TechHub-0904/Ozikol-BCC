@@ -525,10 +525,10 @@ interface StaffMember {
                   <div>
                     <strong>{{ selectedRole.compensationBasis === 'Monthly' ? 'Monthly Salaried Position' : 'Hourly Wage Position' }}</strong>
                     <p *ngIf="selectedRole.compensationBasis === 'Monthly'">
-                      Staff member receives fixed base salary of <strong>₦{{ (selectedRole.monthlySalary || 0) | number:'1.0-0' }}/month</strong>. Scheduled hours track toward monthly contracted target ({{ selectedRole.contractedWeeklyHours || 40 }} hrs/wk).
+                      Staff member receives fixed base salary of <strong>{{ currencySymbol }}{{ (selectedRole.monthlySalary || 0) | number:'1.0-0' }}/month</strong>. Scheduled hours track toward monthly contracted target ({{ selectedRole.contractedWeeklyHours || 40 }} hrs/wk).
                     </p>
                     <p *ngIf="selectedRole.compensationBasis !== 'Monthly'">
-                      Staff member is compensated per billable hour worked. Default rate: <strong>₦{{ (selectedRole.defaultHourlyRate || 0) | number:'1.2-2' }}/hr</strong>.
+                      Staff member is compensated per billable hour worked. Default rate: <strong>{{ currencySymbol }}{{ (selectedRole.defaultHourlyRate || 0) | number:'1.2-2' }}/hr</strong>.
                     </p>
                   </div>
                 </div>
@@ -536,7 +536,7 @@ interface StaffMember {
 
               <!-- Hourly Pay Rate (Editable when hourly) -->
               <div class="form-group" *ngIf="!selectedRole || selectedRole.compensationBasis !== 'Monthly'">
-                <label class="form-label">Hourly Pay Rate (₦/hr)</label>
+                <label class="form-label">Hourly Pay Rate ({{ currencySymbol }}/hr)</label>
                 <input
                   type="number"
                   step="0.25"
@@ -735,14 +735,14 @@ interface StaffMember {
               <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly' && (hourlyPayRate || 0) > 0">
                 <span class="detail-label">Est. Scheduled Gross Wage:</span>
                 <span class="detail-value font-bold text-success">
-                  ₦{{ ((hourlyPayRate || 0) * calculatedTotalHours) | number:'1.2-2' }}
+                  {{ currencySymbol }}{{ ((hourlyPayRate || 0) * calculatedTotalHours) | number:'1.2-2' }}
                 </span>
               </div>
 
               <div class="detail-row" *ngIf="selectedRole?.compensationBasis === 'Monthly'">
                 <span class="detail-label">Monthly Fixed Salary:</span>
                 <span class="detail-value font-bold text-primary">
-                  ₦{{ (selectedRole?.monthlySalary || 0) | number:'1.0-0' }}/mo
+                  {{ currencySymbol }}{{ (selectedRole?.monthlySalary || 0) | number:'1.0-0' }}/mo
                 </span>
               </div>
 
@@ -1926,6 +1926,7 @@ export class WorkforceShiftEditComponent implements OnInit {
   calculatedDailyHours = 8.0;
   calculatedTotalHours = 8.0;
   isOvernightShift = false;
+  currencySymbol = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -1937,6 +1938,14 @@ export class WorkforceShiftEditComponent implements OnInit {
   ngOnInit(): void {
     this.initDefaultDates();
     this.loadReferenceData();
+    this.workforceService.getTenantCurrency().subscribe({
+      next: (res: any) => {
+        if (res?.data?.currencySymbol) {
+          this.currencySymbol = res.data.currencySymbol;
+        }
+      },
+      error: () => {}
+    });
 
     this.route.params.subscribe((params) => {
       if (params['id']) {
