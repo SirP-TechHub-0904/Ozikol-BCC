@@ -207,6 +207,20 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await EnsureSeededRolesAsync();
 
+                // Ensure every user holds the baseline 'Member' role (unless they already have 'SuperAdmin' or 'Member')
+                var memberRoleEntity = await _roleManager.FindByNameAsync("Member");
+                if (memberRoleEntity != null)
+                {
+                    var usersWithAnyRole = await _dbContext.UserRoles.AsNoTracking().Select(ur => ur.UserId).Distinct().ToListAsync();
+                    var usersWithoutRoles = await _dbContext.Users
+                        .Where(u => !usersWithAnyRole.Contains(u.Id))
+                        .ToListAsync();
+                    foreach (var orphanUser in usersWithoutRoles)
+                    {
+                        await _userManager.AddToRoleAsync(orphanUser, "Member");
+                    }
+                }
+
                 // Fetch all user roles mapped with profile info using non-blocking read
                 var allUserRoles = await _dbContext.UserRoles
                     .AsNoTracking()
@@ -530,17 +544,30 @@ namespace Ozikol_BCC.Api.Controllers
             if (!await _roleManager.RoleExistsAsync(effectiveRoleToAssign))
                 return BadRequest(ApiResponse<object>.FailureResponse($"Role '{request.RoleName}' does not exist."));
 
-            // Remove existing non-SuperAdmin roles to guarantee a single unambiguous active role
+            // Preserve SuperAdmin and baseline Member roles; replace any previous elevated role
             var existingRoles = await _userManager.GetRolesAsync(user);
-            var rolesToRemove = existingRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+            var rolesToRemove = existingRoles
+                .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase))
+                .ToList();
             if (rolesToRemove.Any())
             {
                 await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
             }
 
-            var addRes = await _userManager.AddToRoleAsync(user, effectiveRoleToAssign);
-            if (!addRes.Succeeded)
-                return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+            if (!existingRoles.Any(r => string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)) &&
+                !existingRoles.Any(r => string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)) &&
+                !string.Equals(effectiveRoleToAssign, "Member", StringComparison.OrdinalIgnoreCase))
+            {
+                await _userManager.AddToRoleAsync(user, "Member");
+            }
+
+            if (!await _userManager.IsInRoleAsync(user, effectiveRoleToAssign))
+            {
+                var addRes = await _userManager.AddToRoleAsync(user, effectiveRoleToAssign);
+                if (!addRes.Succeeded)
+                    return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+            }
 
             // If Feature Editor or Dynamic Feature Authority Role, assign scoped feature in BcpUserFeatureRoles
             if (isDynamicFeatureRole || string.Equals(effectiveRoleToAssign, "Feature Editor", StringComparison.OrdinalIgnoreCase))
@@ -641,6 +668,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be modified."));
             }
 
+            if (string.Equals(request.RoleName, "Member", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The 'Member' role is the baseline role for all active users and cannot be removed. You can assign or remove elevated roles instead."));
+            }
+
             var user = await _userManager.FindByIdAsync(request.UserId);
             if (user == null)
                 return NotFound(ApiResponse<object>.FailureResponse("User not found."));
@@ -648,6 +680,14 @@ namespace Ozikol_BCC.Api.Controllers
             if (await _userManager.IsInRoleAsync(user, request.RoleName))
             {
                 await _userManager.RemoveFromRoleAsync(user, request.RoleName);
+            }
+
+            // Ensure baseline Member role remains intact when an elevated role is removed
+            if (!await _userManager.IsInRoleAsync(user, "SuperAdmin") &&
+                !await _userManager.IsInRoleAsync(user, "Member") &&
+                await _roleManager.RoleExistsAsync("Member"))
+            {
+                await _userManager.AddToRoleAsync(user, "Member");
             }
 
             // Clear feature role if feature editor or dynamic feature authority role
@@ -2706,24 +2746,38 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be assigned. It is strictly reserved for the root workspace account."));
             }
 
-            // Sync Identity role if not root SuperAdmin
+            // Sync Identity role if not root SuperAdmin (always preserve baseline Member role)
             if (!isTargetSuperAdmin)
             {
                 await EnsureSeededRolesAsync();
                 var currentRoles = await _userManager.GetRolesAsync(user);
-                var rolesToRemove = currentRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+                var rolesToRemove = currentRoles
+                    .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
                 if (rolesToRemove.Any())
                 {
                     await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
                 }
 
-                if (await _roleManager.RoleExistsAsync(targetRole))
+                if (!await _userManager.IsInRoleAsync(user, "Member") && await _roleManager.RoleExistsAsync("Member"))
                 {
-                    await _userManager.AddToRoleAsync(user, targetRole);
+                    await _userManager.AddToRoleAsync(user, "Member");
                 }
-                else
+
+                if (!string.Equals(targetRole, "Member", StringComparison.OrdinalIgnoreCase))
                 {
-                    await _userManager.AddToRoleAsync(user, request.IsAdmin ? "Admin" : "Member");
+                    if (await _roleManager.RoleExistsAsync(targetRole))
+                    {
+                        if (!await _userManager.IsInRoleAsync(user, targetRole))
+                        {
+                            await _userManager.AddToRoleAsync(user, targetRole);
+                        }
+                    }
+                    else if (request.IsAdmin && !await _userManager.IsInRoleAsync(user, "Admin"))
+                    {
+                        await _userManager.AddToRoleAsync(user, "Admin");
+                    }
                 }
             }
 

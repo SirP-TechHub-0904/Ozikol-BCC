@@ -599,10 +599,16 @@ namespace Ozikol_BCC.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", result.Errors.Select(e => e.Description))));
 
-            // Assign role
+            // Assign role (and always ensure baseline Member role)
             if (await _roleManager.RoleExistsAsync(roleToAssign))
             {
                 await _userManager.AddToRoleAsync(newUser, roleToAssign);
+            }
+            if (!string.Equals(roleToAssign, "Member", StringComparison.OrdinalIgnoreCase) &&
+                await _roleManager.RoleExistsAsync("Member") &&
+                !await _userManager.IsInRoleAsync(newUser, "Member"))
+            {
+                await _userManager.AddToRoleAsync(newUser, "Member");
             }
 
             // Dispatch Welcome & Credentials Email via unified CentralNotificationDispatcher
@@ -877,11 +883,24 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 var currentRoles = await _userManager.GetRolesAsync(user);
-                if (!currentRoles.Contains(request.Role))
+                var rolesToRemove = currentRoles
+                    .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (!currentRoles.Contains(request.Role) || rolesToRemove.Any(r => !string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase)))
                 {
                     profileDiffs.Add($"Role: '{string.Join(",", currentRoles)}' ➔ '{request.Role}'");
-                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                    if (await _roleManager.RoleExistsAsync(request.Role))
+                    if (rolesToRemove.Any())
+                    {
+                        await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                    }
+                    if (!await _userManager.IsInRoleAsync(user, "Member") && await _roleManager.RoleExistsAsync("Member"))
+                    {
+                        await _userManager.AddToRoleAsync(user, "Member");
+                    }
+                    if (!string.Equals(request.Role, "Member", StringComparison.OrdinalIgnoreCase) &&
+                        await _roleManager.RoleExistsAsync(request.Role) &&
+                        !await _userManager.IsInRoleAsync(user, request.Role))
                     {
                         await _userManager.AddToRoleAsync(user, request.Role);
                     }
