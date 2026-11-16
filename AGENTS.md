@@ -3,7 +3,7 @@
 This document serves as the permanent memory bank and behavioral guidelines for all AI coding agents working in this repository. These rules apply to every prompt and session.
 
 > [!IMPORTANT]
-> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`, `06-error-codes-handling.md`, `07-sidebar-navigation-hierarchy.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
+> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`, `06-error-codes-handling.md`, `07-sidebar-navigation-hierarchy.md`, `08-currency-isolation-standards.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
 
 ---
 
@@ -430,3 +430,14 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Strict Prohibition on VPS SSH / Remote Access Without Permission**: The agent must NEVER communicate with, connect to, or execute commands against the VPS via SSH (`ssh`, `scp`, `rsync`, or remote shells) without the user's **explicit, written permission** in the current conversation.
 * **User-Led Compilation & Verification**: The user compiles, runs, and tests the project on their own machine at their own pace.
 * **Instant Error Resolution**: If the user encounters any compiler errors, warnings, runtime exceptions, or linter failures and provides the log or screenshot, the agent must immediately analyze the root cause and provide the exact fix without delay.
+
+---
+
+## 26. Multi-Tenant Currency Isolation & Zero Hardcoded Currency Standard (Mandatory)
+* **Strict Separation Between Central Billing Currency & Tenant Operational Currency**:
+  * **Central Platform Billing Currency (`MasterTenantCatalog.DefaultCurrencyCode`)**: Governs **only** Ozikol Central platform subscriptions, feature add-ons, monthly/annual plans, and Central billing invoices (`BillingApiController`, `BillingSnapshotService`, `TenantFeatureGateService`, `Ozikol.Central`).
+  * **Tenant Operational Running Currency (`MisConfigurationSettings.CurrencyCode` & `CurrencySymbol`)**: Governs **all** day-to-day tenant workspace operations across Web, Desktop, Mobile, and API — including Commerce products, storefront checkout, customer orders, invoices, finance/donations, and Workforce payroll, hourly rates, monthly salaries, and shift fines.
+* **Zero Hardcoded Currency Symbols or ISO Codes (CRITICAL)**:
+  * NEVER hardcode currency symbols (`₦`, `$`, `£`, `€`) or ISO codes (`NGN`, `USD`, `GBP`) in Angular templates, Flutter widgets, Razor views, or backend financial calculations/emails.
+  * Every component, service, and controller displaying or calculating monetary values MUST bind dynamically to the tenant's configured `currencySymbol` / `currencyCode` from the API (e.g., `WorkforceService.getTenantCurrency()`, `SettingsApi/currency`, or the endpoint's `currencyCode` / `currencySymbol` payload).
+  * Initialize UI `currencySymbol` fields to `''` (empty string) before API resolution so a wrong symbol never flashes or leaks into another tenant's workspace.
