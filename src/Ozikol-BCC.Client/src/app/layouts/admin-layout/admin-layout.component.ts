@@ -1163,33 +1163,43 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <!-- 1. General Settings (Brought to the top) -->
+          <!-- 1. System Settings (Brought to the top) -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/settings/console/general')" (click)="toggleMenu('general_settings')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">settings</span>
-                <span>{{ 'nav.general_settings' | translate:'General Settings' }}</span>
+                <span>{{ 'nav.system_settings' | translate:'System Settings' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
             <ul class="nav-submenu" *ngIf="isMenuOpen('general_settings') || isParentActive('/settings/console/general')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/settings/console/general/email" [class.active]="(isCurrentRoute('/settings/console/general') || isCurrentRoute('/settings/console/general/email')) && !isCurrentRoute('/settings/console/general/currency')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Email Configuration</span>
+                  <a routerLink="/settings/console/general" [class.active]="isCurrentRoute('/settings/console/general') && !isCurrentRoute('/settings/console/general/currency') && !isCurrentRoute('/settings/console/general/email')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>General Settings</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Email Configuration', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general')" (click)="togglePin('General Settings', '/settings/console/general', 'tune')" [title]="isPinned('/settings/console/general') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/settings/console/general/currency" [class.active]="isCurrentRoute('/settings/console/general/currency')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">payments</span>Default Currency</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">payments</span>Currency</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/currency')" (click)="togglePin('Default Currency', '/settings/console/general/currency', 'payments')" [title]="isPinned('/settings/console/general/currency') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/currency')" (click)="togglePin('Currency', '/settings/console/general/currency', 'payments')" [title]="isPinned('/settings/console/general/currency') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/currency') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/settings/console/general/email" [class.active]="isCurrentRoute('/settings/console/general/email')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mark_email_read</span>Emails</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/general/email')" (click)="togglePin('Emails', '/settings/console/general/email', 'mark_email_read')" [title]="isPinned('/settings/console/general/email') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/settings/console/general/email') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
