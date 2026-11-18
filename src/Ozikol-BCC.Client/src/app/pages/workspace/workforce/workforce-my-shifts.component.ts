@@ -118,7 +118,7 @@ Chart.register(...registerables);
       </div>
 
       <!-- TAB 1: SHIFT ANALYTICS (DEDICATED PERFORMANCE DASHBOARD) -->
-      <div *ngIf="activeTab === 'analytics' && !isLoading">
+      <div class="analytics-tab-container" *ngIf="activeTab === 'analytics' && !isLoading">
         <!-- Date Range Filter Bar -->
         <div class="analytics-filter-card mb-4">
           <div class="filter-card-header">
@@ -559,7 +559,7 @@ Chart.register(...registerables);
       </div>
 
       <!-- TAB 2: MY SCHEDULE & ROTA (CALENDAR & ASSIGNED DUTIES) -->
-      <div *ngIf="activeTab === 'shifts' && !isLoading">
+      <div class="shifts-tab-container" *ngIf="activeTab === 'shifts' && !isLoading">
         <!-- 3. Top Metrics Row (Matching Reference Template) -->
         <div class="metrics-grid mb-4">
           <!-- Metric 1: Real Take-Home Pay -->
@@ -1812,12 +1812,25 @@ Chart.register(...registerables);
     .bcp-page-container {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 24px;
       padding: 0 4px 32px 4px;
       width: 100%;
       max-width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
+    }
+    .analytics-tab-container,
+    .shifts-tab-container {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      width: 100%;
+    }
+    .mb-4 {
+      margin-bottom: 28px !important;
+    }
+    .mb-3 {
+      margin-bottom: 20px !important;
     }
 
     /* Page Header */
@@ -2039,7 +2052,7 @@ Chart.register(...registerables);
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 28px !important;
     }
     .metric-card {
       background: #ffffff;
@@ -2603,6 +2616,7 @@ Chart.register(...registerables);
       border-radius: 16px;
       padding: 20px 24px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      margin-bottom: 28px !important;
     }
     .filter-card-header {
       display: flex;
@@ -2718,7 +2732,8 @@ Chart.register(...registerables);
     .analytics-charts-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 24px;
+      margin-bottom: 28px !important;
     }
     @media (max-width: 900px) {
       .analytics-charts-grid { grid-template-columns: 1fr; }
@@ -2860,6 +2875,7 @@ Chart.register(...registerables);
       border-radius: 16px;
       border: 1px solid #e2e8f0;
       box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      margin-bottom: 28px !important;
     }
     .pulse-header {
       display: flex;
@@ -3367,6 +3383,7 @@ Chart.register(...registerables);
       border-radius: 16px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.02);
       overflow: hidden;
+      margin-bottom: 28px !important;
     }
     .table-toolbar {
       padding: 18px 24px;
