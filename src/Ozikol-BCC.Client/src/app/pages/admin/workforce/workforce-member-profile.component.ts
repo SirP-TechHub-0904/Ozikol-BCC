@@ -668,7 +668,7 @@ interface StaffMemberDetail {
                 <span class="material-symbols-outlined">gavel</span>
               </div>
               <div class="kpi-info">
-                <span class="kpi-value">{{ member?.currencySymbol || '' }}{{ (staffDutyHistory?.totalFinesAmount || 0) | number:'1.0-0' }}</span>
+                <span class="kpi-value">{{ member.currencySymbol || '' }}{{ (staffDutyHistory?.totalFinesAmount || 0) | number:'1.0-0' }}</span>
                 <span class="kpi-label">Attached Disciplinary Fines</span>
               </div>
               <div class="kpi-sub">{{ staffDutyHistory?.totalFinesCount || 0 }} penalty deductions recorded</div>
@@ -755,7 +755,7 @@ interface StaffMemberDetail {
                       <span class="report-tag none" *ngIf="!s.reportSubmissionUtc">None</span>
                     </td>
                     <td>
-                      <span class="fine-tag attached" *ngIf="s.fineAttached">{{ member?.currencySymbol || '' }}{{ (s.fineAmount || 0) | number:'1.0-0' }}</span>
+                      <span class="fine-tag attached" *ngIf="s.fineAttached">{{ member.currencySymbol || '' }}{{ (s.fineAmount || 0) | number:'1.0-0' }}</span>
                       <span class="fine-tag none" *ngIf="!s.fineAttached">None</span>
                     </td>
                     <td style="text-align: right;">
@@ -810,7 +810,7 @@ interface StaffMemberDetail {
                     <span class="material-symbols-outlined">warning</span> Out of bounds
                   </span>
                   <span class="fine-tag attached" *ngIf="s.fineAttached">
-                    <span class="material-symbols-outlined">gavel</span> {{ member?.currencySymbol || '' }}{{ (s.fineAmount || 0) | number:'1.0-0' }} Fine
+                    <span class="material-symbols-outlined">gavel</span> {{ member.currencySymbol || '' }}{{ (s.fineAmount || 0) | number:'1.0-0' }} Fine
                   </span>
                 </div>
 
