@@ -263,16 +263,57 @@ Chart.register(...registerables);
           </div>
         </div>
 
+        <!-- Punctuality Pulse Strip (Visual Arrival Compliance Micro-Widget) -->
+        <div class="cms-card punctuality-pulse-card mb-4">
+          <div class="pulse-header">
+            <div class="pulse-title-group">
+              <span class="material-symbols-outlined text-primary">speed</span>
+              <div>
+                <h4 class="pulse-heading">Recent Punctuality Pulse &amp; Clock-In Compliance</h4>
+                <p class="pulse-sub">Visual audit trail of your last {{ recentClockInBeads.length }} shift arrivals</p>
+              </div>
+            </div>
+            <div class="pulse-legend">
+              <span class="legend-item"><span class="bead-indicator bead-green"></span> On-Time (&le;0m)</span>
+              <span class="legend-item"><span class="bead-indicator bead-amber"></span> Grace (1-5m)</span>
+              <span class="legend-item"><span class="bead-indicator bead-red"></span> Late (&gt;5m)</span>
+            </div>
+          </div>
+          <div class="pulse-beads-row" *ngIf="recentClockInBeads.length > 0">
+            <div class="pulse-bead-item" *ngFor="let b of recentClockInBeads" [title]="b.tooltip">
+              <div class="bead-circle" [ngClass]="b.statusClass">
+                <span class="material-symbols-outlined bead-icon">{{ b.icon }}</span>
+              </div>
+              <div class="bead-date">{{ b.dateLabel }}</div>
+              <div class="bead-status">{{ b.timeDiffLabel }}</div>
+            </div>
+          </div>
+          <div class="empty-pulse" *ngIf="recentClockInBeads.length === 0">
+            <span class="material-symbols-outlined">schedule</span>
+            <span>No completed duty clock-ins recorded in the selected reporting window.</span>
+          </div>
+        </div>
+
         <!-- Charts Grid (2 columns on desktop) -->
         <div class="analytics-charts-grid mb-4">
-          <!-- Chart 1: Grouped Bar Chart (Given Hours vs Hours Worked) -->
+          <!-- Chart 1: Grouped Bar Chart (Scheduled vs. Delivered Hours) -->
           <div class="cms-card chart-panel-card">
             <div class="chart-panel-header">
               <div class="chart-header-left">
                 <span class="material-symbols-outlined text-primary">bar_chart</span>
                 <div>
-                  <h4 class="chart-panel-title">Scheduled Hours vs. Hours Worked</h4>
-                  <p class="chart-panel-sub">Weekly comparison of given work hours against actual duty clocked</p>
+                  <h4 class="chart-panel-title">Scheduled vs. Delivered Hours</h4>
+                  <p class="chart-panel-sub">Given work roster vs. actual verified duty clocked on site</p>
+                </div>
+              </div>
+              <div class="chart-header-actions">
+                <div class="btn-group-granularity">
+                  <button type="button" class="btn-granularity" [class.active]="chartGranularity === 'weekly'" (click)="setChartGranularity('weekly')">
+                    Weekly
+                  </button>
+                  <button type="button" class="btn-granularity" [class.active]="chartGranularity === 'daily'" (click)="setChartGranularity('daily')">
+                    Daily
+                  </button>
                 </div>
               </div>
             </div>
@@ -283,13 +324,13 @@ Chart.register(...registerables);
             </div>
           </div>
 
-          <!-- Chart 2: Donut / Pie Chart (Given Work Hours vs Work Hours Done) -->
+          <!-- Chart 2: Donut Chart (Roster Fulfillment & Duty Distribution) -->
           <div class="cms-card chart-panel-card">
             <div class="chart-panel-header">
               <div class="chart-header-left">
                 <span class="material-symbols-outlined text-primary">pie_chart</span>
                 <div>
-                  <h4 class="chart-panel-title">Hours Fulfillment Ratio</h4>
+                  <h4 class="chart-panel-title">Roster Fulfillment &amp; Duty Distribution</h4>
                   <p class="chart-panel-sub">Given work hours against work hours completed &amp; excused</p>
                 </div>
               </div>
@@ -303,6 +344,33 @@ Chart.register(...registerables);
                 <span class="center-label">Fulfilled</span>
               </div>
             </div>
+            <!-- Rich Metric Legend Chips -->
+            <div class="donut-chips-row">
+              <div class="donut-chip">
+                <span class="chip-dot bg-blue"></span>
+                <span class="chip-name">Delivered</span>
+                <strong class="chip-val">{{ analyticsClockedHours | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsHoursRatio }}%)</span>
+              </div>
+              <div class="donut-chip">
+                <span class="chip-dot bg-sky"></span>
+                <span class="chip-name">Upcoming</span>
+                <strong class="chip-val">{{ analyticsUpcomingHours | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsUpcomingRatio }}%)</span>
+              </div>
+              <div class="donut-chip">
+                <span class="chip-dot bg-amber"></span>
+                <span class="chip-name">Excused</span>
+                <strong class="chip-val">{{ calculateLeaveHoursInRange() | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsExcusedRatio }}%)</span>
+              </div>
+              <div class="donut-chip" *ngIf="analyticsShortfallHours > 0">
+                <span class="chip-dot bg-danger"></span>
+                <span class="chip-name">Shortfall</span>
+                <strong class="chip-val">{{ analyticsShortfallHours | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsShortfallRatio }}%)</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -312,12 +380,12 @@ Chart.register(...registerables);
             <div class="toolbar-left">
               <span class="material-symbols-outlined text-primary">location_city</span>
               <div>
-                <h3>Client Venue Deployment &amp; Spend Distribution</h3>
-                <p class="modal-subtitle">Hours delivered and gross revenue generated per operating customer site</p>
+                <h3>Venue Deployment &amp; Duty Earnings</h3>
+                <p class="modal-subtitle">Where you delivered your duty hours and gross earnings generated per operating site</p>
               </div>
             </div>
             <div class="toolbar-right">
-              <span class="count-badge">{{ venueDistribution.length }} Active Venue(s)</span>
+              <span class="count-badge">{{ venueDistribution.length }} Operating Venue(s)</span>
             </div>
           </div>
           <div class="venue-breakdown-body">
@@ -326,9 +394,12 @@ Chart.register(...registerables);
                 <div class="venue-item-name">
                   <span class="material-symbols-outlined">place</span>
                   <strong>{{ v.name }}</strong>
+                  <span class="badge-top-venue" *ngIf="v.isPrimary">⭐ Primary Venue ({{ v.percentage }}%)</span>
                 </div>
                 <div class="venue-item-stats">
+                  <span class="venue-shifts">{{ v.shiftCount }} shift(s)</span>
                   <span class="venue-hours">{{ v.hours }} hrs ({{ v.percentage }}%)</span>
+                  <span class="venue-rate" *ngIf="v.effectiveRate">{{ currencySymbol }}{{ v.effectiveRate | number:'1.2-2' }}/hr</span>
                   <span class="venue-gross">{{ currencySymbol }}{{ (v.gross | number:'1.2-2') }}</span>
                 </div>
               </div>
@@ -339,41 +410,71 @@ Chart.register(...registerables);
           </div>
         </div>
 
-        <!-- Filtered Shift Activity Table -->
+        <!-- Filtered Duty Activity & Pay Table -->
         <div class="cms-card">
           <div class="table-toolbar">
             <div class="toolbar-left">
               <span class="material-symbols-outlined text-primary">receipt_long</span>
               <div>
-                <h3>Duty Activity Log in Window</h3>
-                <p class="modal-subtitle">All scheduled, completed, and logged shifts for the selected date range</p>
+                <h3>Duty Timesheet &amp; Pay Statement</h3>
+                <p class="modal-subtitle">Itemized shift records, verified clock-in/out audit timestamps, punctuality compliance, and gross earnings</p>
               </div>
             </div>
-            <div class="toolbar-right">
-              <span class="count-badge">{{ filteredAnalyticsShifts.length }} Shift Record(s)</span>
+            <div class="toolbar-right d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline" (click)="exportDutyStatementCsv()" [disabled]="displayedStatementShifts.length === 0" title="Export this statement as CSV">
+                <span class="material-symbols-outlined">download</span>
+                <span>Export CSV</span>
+              </button>
+              <span class="count-badge">{{ displayedStatementShifts.length }} Shift Record(s)</span>
             </div>
           </div>
 
-          <div class="empty-state-card" *ngIf="filteredAnalyticsShifts.length === 0">
+          <!-- Statement Filter Bar -->
+          <div class="statement-filters-bar">
+            <div class="table-filter-pills">
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'all'" (click)="statementFilter = 'all'">
+                All ({{ filteredAnalyticsShifts.length }})
+              </button>
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'completed'" (click)="statementFilter = 'completed'">
+                Completed ({{ statementCompletedCount }})
+              </button>
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'upcoming'" (click)="statementFilter = 'upcoming'">
+                Upcoming ({{ statementUpcomingCount }})
+              </button>
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'late'" (click)="statementFilter = 'late'">
+                Late Arrivals ({{ analyticsLateCount }})
+              </button>
+            </div>
+            <div class="table-search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input type="text" class="table-search-input" [(ngModel)]="statementSearch" placeholder="Search venue, code, post..." />
+              <button type="button" class="search-clear-btn" *ngIf="statementSearch" (click)="statementSearch = ''">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="empty-state-card" *ngIf="displayedStatementShifts.length === 0">
             <div class="empty-icon-circle">
               <span class="material-symbols-outlined">event_busy</span>
             </div>
-            <h3>No Shifts Found in This Date Window</h3>
-            <p>You have no rostered or completed shifts between {{ analyticsStartDate | date:'d MMM yyyy' }} and {{ analyticsEndDate | date:'d MMM yyyy' }}.</p>
-            <button type="button" class="btn btn-primary" (click)="setAnalyticsPreset('this_month')">
-              <span class="material-symbols-outlined">restore</span>
-              <span>Reset to This Month</span>
+            <h3>No Shifts Found Matching Filters</h3>
+            <p>No duty records match your filter criteria in the current date window ({{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}).</p>
+            <button type="button" class="btn btn-primary" (click)="statementFilter = 'all'; statementSearch = ''">
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Clear Table Filters</span>
             </button>
           </div>
 
-          <div class="table-responsive" *ngIf="filteredAnalyticsShifts.length > 0">
+          <div class="table-responsive" *ngIf="displayedStatementShifts.length > 0">
             <table class="cms-table">
               <thead>
                 <tr>
                   <th>Shift / Post</th>
-                  <th>Venue</th>
+                  <th>Venue &amp; Location</th>
                   <th>Date</th>
                   <th>Scheduled Window</th>
+                  <th>Verified Clock-In / Out</th>
                   <th>Duration</th>
                   <th>Punctuality</th>
                   <th>Status</th>
@@ -381,7 +482,7 @@ Chart.register(...registerables);
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let s of filteredAnalyticsShifts">
+                <tr *ngFor="let s of displayedStatementShifts">
                   <td>
                     <span class="shift-code-tag">{{ s.shiftCode }}</span>
                     <div class="venue-cell-sub">{{ s.postName }}</div>
@@ -392,13 +493,22 @@ Chart.register(...registerables);
                   </td>
                   <td>{{ s.startsAtUtc | date:'dd MMM yyyy' }}</td>
                   <td>{{ s.startsAtUtc | date:'HH:mm' }} &mdash; {{ s.endsAtUtc | date:'HH:mm' }}</td>
+                  <td>
+                    <div class="clock-times-cell" *ngIf="getShiftClockTimes(s) as ct">
+                      <span class="clock-in-val" [class.text-amber]="isShiftLate(s)">In: {{ ct.inTime || 'Pending' }}</span>
+                      <span class="clock-out-val" *ngIf="ct.outTime">Out: {{ ct.outTime }}</span>
+                    </div>
+                  </td>
                   <td>{{ s.plannedDurationHours }} hrs</td>
                   <td>
-                    <span class="status-pill status-active" *ngIf="!isShiftLate(s)">
+                    <span class="status-pill status-active" *ngIf="!isShiftLate(s) && (s.status === 'Completed' || (s.endsAtUtc && isPastDate(s.endsAtUtc)))">
                       On-Time
                     </span>
                     <span class="status-pill status-danger" *ngIf="isShiftLate(s)">
                       Late Arrival
+                    </span>
+                    <span class="status-pill status-pending" *ngIf="!isShiftLate(s) && s.status !== 'Completed' && (!s.endsAtUtc || !isPastDate(s.endsAtUtc))">
+                      Scheduled
                     </span>
                   </td>
                   <td>
@@ -406,9 +516,24 @@ Chart.register(...registerables);
                   </td>
                   <td class="text-end fw-bold text-success">
                     {{ currencySymbol }}{{ ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10) | number:'1.2-2') }}
+                    <div class="venue-cell-sub" style="font-size: 10.5px; color: #64748b;">&#64; {{ currencySymbol }}{{ s.hourlyPayRate || 10 }}/h</div>
                   </td>
                 </tr>
               </tbody>
+              <!-- Pinned Summary Footer Row -->
+              <tfoot>
+                <tr class="statement-summary-footer-row">
+                  <td colspan="5" class="fw-bold">
+                    <span class="material-symbols-outlined summary-icon">verified</span>
+                    TOTALS IN WINDOW: {{ displayedStatementShifts.length }} Rostered Shift(s)
+                  </td>
+                  <td class="fw-bold text-primary">{{ statementTotalClockedHours | number:'1.1-1' }} hrs Logged</td>
+                  <td colspan="2"></td>
+                  <td class="text-end fw-bold text-success" style="font-size: 14px;">
+                    {{ currencySymbol }}{{ statementTotalGross | number:'1.2-2' }} Gross
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -483,6 +608,24 @@ Chart.register(...registerables);
               >
                 1-Tap Confirm
               </button>
+            </div>
+          </div>
+
+          <!-- Standby Card when no upcoming shift is scheduled -->
+          <div class="metric-card" *ngIf="!nextUpcomingShift">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">event_busy</span>
+              </div>
+              <span class="card-chip chip-teal">Duty Standby</span>
+            </div>
+            <div class="card-value" style="font-size: 20px;">No Duty Assigned</div>
+            <div class="card-label">Next Scheduled Shift</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-teal" style="width: 0%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Check Open Shifts &amp; Swaps to claim duties</span>
             </div>
           </div>
 
@@ -2670,6 +2813,296 @@ Chart.register(...registerables);
       border-radius: 4px;
       transition: width 0.4s ease-in-out;
     }
+    .badge-top-venue {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid #bfdbfe;
+      margin-left: 6px;
+    }
+    .venue-shifts {
+      font-size: 11.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .venue-rate {
+      font-size: 11.5px;
+      color: #0050e5;
+      font-weight: 700;
+    }
+
+    /* Punctuality Pulse Strip Micro-Widget */
+    .punctuality-pulse-card {
+      padding: 18px 24px;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .pulse-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .pulse-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pulse-heading {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .pulse-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .pulse-legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bead-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .bead-indicator.bead-green { background: #16a34a; }
+    .bead-indicator.bead-amber { background: #d97706; }
+    .bead-indicator.bead-red { background: #dc2626; }
+    .pulse-beads-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 6px 2px 8px 2px;
+      scrollbar-width: thin;
+    }
+    .pulse-bead-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 60px;
+      cursor: pointer;
+      transition: transform 0.15s ease-in-out;
+    }
+    .pulse-bead-item:hover {
+      transform: translateY(-2px);
+    }
+    .bead-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .bead-circle.bead-green {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1.5px solid #86efac;
+    }
+    .bead-circle.bead-amber {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1.5px solid #fde68a;
+    }
+    .bead-circle.bead-red {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1.5px solid #fca5a5;
+    }
+    .bead-icon { font-size: 18px; }
+    .bead-date {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .bead-status {
+      font-size: 9.5px;
+      color: #64748b;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .empty-pulse {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: #64748b;
+      padding: 12px 0;
+    }
+
+    /* Granularity Toggle */
+    .btn-group-granularity {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 2px;
+      border: 1px solid #e2e8f0;
+    }
+    .btn-granularity {
+      border: none;
+      background: transparent;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-granularity.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* Donut Metric Legend Chips */
+    .donut-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .donut-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+    }
+    .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .chip-dot.bg-blue { background: #0050e5; }
+    .chip-dot.bg-sky { background: #38bdf8; }
+    .chip-dot.bg-amber { background: #f59e0b; }
+    .chip-dot.bg-danger { background: #f87171; }
+    .chip-name { color: #64748b; font-weight: 600; }
+    .chip-val { color: #0f172a; font-weight: 800; }
+    .chip-pct { color: #64748b; font-size: 10.5px; }
+
+    /* Statement Filter Bar & Controls */
+    .statement-filters-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      background: #fafbfc;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .table-filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .filter-pill-btn {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .filter-pill-btn:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .filter-pill-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(0,80,229,0.2);
+    }
+    .table-search-box {
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 4px 10px;
+      gap: 6px;
+      width: 240px;
+    }
+    .table-search-box .search-icon {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+    .table-search-input {
+      border: none;
+      outline: none;
+      font-size: 12px;
+      width: 100%;
+      color: #0f172a;
+      background: transparent;
+    }
+    .search-clear-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #94a3b8;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+    }
+    .search-clear-btn .material-symbols-outlined { font-size: 14px; }
+    .clock-times-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11.5px;
+    }
+    .clock-in-val { font-weight: 700; color: #16a34a; }
+    .clock-in-val.text-amber { color: #d97706; }
+    .clock-out-val { color: #64748b; font-size: 11px; }
+    .statement-summary-footer-row {
+      background: #f8fafc;
+      border-top: 2px solid #e2e8f0;
+    }
+    .statement-summary-footer-row td {
+      padding: 12px 16px !important;
+      font-size: 12.5px;
+      color: #334155;
+    }
+    .summary-icon {
+      font-size: 16px;
+      color: #0050e5;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
 
     /* Calendar Footer Summary */
     .calendar-summary-footer {
@@ -3510,6 +3943,7 @@ Chart.register(...registerables);
     :host-context(.dark-mode) .modal-card-custom,
     :host-context(.dark-mode) .analytics-filter-card,
     :host-context(.dark-mode) .chart-panel-card,
+    :host-context(.dark-mode) .punctuality-pulse-card,
     :host-context(.dark-mode) .cms-card {
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
@@ -3520,16 +3954,42 @@ Chart.register(...registerables);
     :host-context(.dark-mode) .cal-month-title,
     :host-context(.dark-mode) .modal-title-group h3,
     :host-context(.dark-mode) .filter-heading,
+    :host-context(.dark-mode) .pulse-heading,
     :host-context(.dark-mode) .chart-panel-title,
     :host-context(.dark-mode) .center-percentage,
     :host-context(.dark-mode) .venue-item-name {
       color: #f8fafc;
     }
     :host-context(.dark-mode) .preset-pill,
-    :host-context(.dark-mode) .summary-chip {
+    :host-context(.dark-mode) .summary-chip,
+    :host-context(.dark-mode) .donut-chip,
+    :host-context(.dark-mode) .filter-pill-btn {
       background: #0f172a;
       border-color: #334155;
       color: #cbd5e1;
+    }
+    :host-context(.dark-mode) .btn-group-granularity {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .btn-granularity {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .btn-granularity.active {
+      background: #1e293b;
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .statement-filters-bar,
+    :host-context(.dark-mode) .statement-summary-footer-row {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .table-search-box {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .table-search-input {
+      color: #f8fafc;
     }
     :host-context(.dark-mode) .subnav-tab {
       background: #0f172a;
@@ -3593,6 +4053,9 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   analyticsPreset: 'this_month' | 'this_week' | 'last_30_days' | 'last_month' | 'quarter' | 'custom' = 'this_month';
   analyticsStartDate: string = '';
   analyticsEndDate: string = '';
+  chartGranularity: 'weekly' | 'daily' = 'weekly';
+  statementFilter: 'all' | 'completed' | 'upcoming' | 'late' = 'all';
+  statementSearch: string = '';
 
   @ViewChild('hoursBarChartCanvas') hoursBarChartCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('hoursDonutChartCanvas') hoursDonutChartCanvasRef!: ElementRef<HTMLCanvasElement>;
@@ -4097,29 +4560,265 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     return totalLeaveDays * 8;
   }
 
-  get venueDistribution(): { name: string; hours: number; gross: number; percentage: number }[] {
-    const map = new Map<string, { hours: number; gross: number }>();
+  setChartGranularity(g: 'weekly' | 'daily'): void {
+    this.chartGranularity = g;
+    this.renderHoursBarChart();
+  }
+
+  get analyticsUpcomingHours(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts
+      .filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now)
+      .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get analyticsUpcomingRatio(): number {
+    const total = this.analyticsPlannedHours || 1;
+    return Math.round((this.analyticsUpcomingHours / total) * 100);
+  }
+
+  get analyticsExcusedRatio(): number {
+    const total = this.analyticsPlannedHours || 1;
+    return Math.round((this.calculateLeaveHoursInRange() / total) * 100);
+  }
+
+  get analyticsPastPlannedHours(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts
+      .filter(s => !s.startsAtUtc || new Date(s.startsAtUtc) <= now)
+      .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get analyticsShortfallHours(): number {
+    const shortfall = Math.max(0, this.analyticsPastPlannedHours - this.analyticsClockedHours);
+    return Math.round(shortfall * 10) / 10;
+  }
+
+  get analyticsShortfallRatio(): number {
+    const total = this.analyticsPlannedHours || 1;
+    return Math.round((this.analyticsShortfallHours / total) * 100);
+  }
+
+  get recentClockInBeads(): any[] {
+    const now = new Date();
+    const pastShifts = this.filteredAnalyticsShifts
+      .filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < now))
+      .sort((a, b) => new Date(b.startsAtUtc).getTime() - new Date(a.startsAtUtc).getTime())
+      .slice(0, 10);
+
+    return pastShifts.map(s => {
+      const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+      const isLate = this.isShiftLate(s);
+      let diffMinutes = 0;
+
+      if (ts?.lateMinutes) {
+        diffMinutes = ts.lateMinutes;
+      } else if (ts?.clockInUtc && s.startsAtUtc) {
+        diffMinutes = Math.round((new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime()) / 60000);
+      }
+
+      let statusClass = 'bead-green';
+      let icon = 'check_circle';
+      let timeDiffLabel = 'On-Time';
+
+      if (diffMinutes > 5 || isLate) {
+        statusClass = 'bead-red';
+        icon = 'warning';
+        timeDiffLabel = diffMinutes > 0 ? `+${diffMinutes}m late` : 'Late Arrival';
+      } else if (diffMinutes > 0) {
+        statusClass = 'bead-amber';
+        icon = 'schedule';
+        timeDiffLabel = `+${diffMinutes}m grace`;
+      } else if (diffMinutes < 0) {
+        timeDiffLabel = `${Math.abs(diffMinutes)}m early`;
+      }
+
+      const d = new Date(s.startsAtUtc);
+      const dateLabel = `${d.getDate()} ${d.toLocaleString('en', { month: 'short' })}`;
+      const venueName = s.facilityName || s.siteName || 'Operating Site';
+      const tooltip = `${s.shiftCode} (${venueName}): ${timeDiffLabel} • Scheduled ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      return {
+        shiftCode: s.shiftCode,
+        dateLabel,
+        timeDiffLabel,
+        statusClass,
+        icon,
+        tooltip
+      };
+    });
+  }
+
+  get venueDistribution(): { name: string; hours: number; gross: number; percentage: number; shiftCount: number; effectiveRate: number; isPrimary: boolean }[] {
+    const map = new Map<string, { hours: number; gross: number; count: number }>();
     const totalHours = this.analyticsPlannedHours || 1;
 
     for (const s of this.filteredAnalyticsShifts) {
       const v = s.facilityName || s.siteName || 'General Operating Venue';
-      const prev = map.get(v) || { hours: 0, gross: 0 };
+      const prev = map.get(v) || { hours: 0, gross: 0, count: 0 };
       const h = s.plannedDurationHours || 0;
       const g = h * (s.hourlyPayRate || 10);
-      map.set(v, { hours: prev.hours + h, gross: prev.gross + g });
+      map.set(v, { hours: prev.hours + h, gross: prev.gross + g, count: prev.count + 1 });
     }
 
-    const list: { name: string; hours: number; gross: number; percentage: number }[] = [];
+    const list: { name: string; hours: number; gross: number; percentage: number; shiftCount: number; effectiveRate: number; isPrimary: boolean }[] = [];
     map.forEach((val, key) => {
+      const hours = Math.round(val.hours * 10) / 10;
+      const gross = Math.round(val.gross * 100) / 100;
+      const effectiveRate = hours > 0 ? Math.round((gross / hours) * 100) / 100 : 0;
       list.push({
         name: key,
-        hours: Math.round(val.hours * 10) / 10,
-        gross: Math.round(val.gross * 100) / 100,
-        percentage: Math.min(100, Math.round((val.hours / totalHours) * 100))
+        hours,
+        gross,
+        shiftCount: val.count,
+        effectiveRate,
+        percentage: Math.min(100, Math.round((val.hours / totalHours) * 100)),
+        isPrimary: false
       });
     });
 
-    return list.sort((a, b) => b.hours - a.hours);
+    list.sort((a, b) => b.hours - a.hours);
+    if (list.length > 0) {
+      list[0].isPrimary = true;
+    }
+    return list;
+  }
+
+  isPastDate(d: string | Date | undefined): boolean {
+    if (!d) return false;
+    return new Date(d).getTime() < Date.now();
+  }
+
+  getShiftClockTimes(s: Shift): { inTime: string; outTime: string } | null {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    if (ts?.clockInUtc) {
+      const inTime = new Date(ts.clockInUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const outTime = ts.clockOutUtc ? new Date(ts.clockOutUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return { inTime, outTime };
+    }
+    if (s.status === 'Completed' && s.startsAtUtc) {
+      const inTime = new Date(s.startsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const outTime = s.endsAtUtc ? new Date(s.endsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return { inTime, outTime };
+    }
+    return null;
+  }
+
+  get statementCompletedCount(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < now)).length;
+  }
+
+  get statementUpcomingCount(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts.filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now).length;
+  }
+
+  get displayedStatementShifts(): Shift[] {
+    const now = new Date();
+    let list = this.filteredAnalyticsShifts;
+
+    // Filter by status pill
+    if (this.statementFilter === 'completed') {
+      list = list.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < now));
+    } else if (this.statementFilter === 'upcoming') {
+      list = list.filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now);
+    } else if (this.statementFilter === 'late') {
+      list = list.filter(s => this.isShiftLate(s));
+    }
+
+    // Filter by search query
+    if (this.statementSearch && this.statementSearch.trim()) {
+      const q = this.statementSearch.trim().toLowerCase();
+      list = list.filter(s =>
+        (s.shiftCode && s.shiftCode.toLowerCase().includes(q)) ||
+        (s.facilityName && s.facilityName.toLowerCase().includes(q)) ||
+        (s.siteName && s.siteName.toLowerCase().includes(q)) ||
+        (s.postName && s.postName.toLowerCase().includes(q)) ||
+        (s.address && s.address.toLowerCase().includes(q)) ||
+        (s.siteAddress && s.siteAddress.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }
+
+  get statementTotalClockedHours(): number {
+    return this.displayedStatementShifts.reduce((acc, s) => {
+      const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+      const hrs = ts?.actualDurationHours || s.plannedDurationHours || 0;
+      return acc + (s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()) ? hrs : (s.plannedDurationHours || 0));
+    }, 0);
+  }
+
+  get statementTotalGross(): number {
+    return this.displayedStatementShifts.reduce((acc, s) => {
+      return acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10));
+    }, 0);
+  }
+
+  exportDutyStatementCsv(): void {
+    const shifts = this.displayedStatementShifts;
+    if (shifts.length === 0) {
+      this.toast.warning('Export Statement', 'No shift records available to export.');
+      return;
+    }
+
+    const headers = [
+      'Shift Code',
+      'Post Name',
+      'Venue Name',
+      'Address',
+      'Duty Date',
+      'Scheduled Start',
+      'Scheduled End',
+      'Duration (Hours)',
+      'Verified Clock In',
+      'Verified Clock Out',
+      'Punctuality Status',
+      'Shift Status',
+      'Hourly Rate',
+      'Gross Pay'
+    ];
+
+    const rows = shifts.map(s => {
+      const ct = this.getShiftClockTimes(s);
+      const isLate = this.isShiftLate(s);
+      const punctuality = isLate ? 'Late Arrival' : (s.status === 'Completed' || this.isPastDate(s.endsAtUtc) ? 'On-Time' : 'Scheduled');
+      const gross = ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10)).toFixed(2);
+      const venue = (s.facilityName || s.siteName || '').replace(/"/g, '""');
+      const addr = (s.address || s.siteAddress || '').replace(/"/g, '""');
+      const post = (s.postName || '').replace(/"/g, '""');
+
+      return [
+        `"${s.shiftCode}"`,
+        `"${post}"`,
+        `"${venue}"`,
+        `"${addr}"`,
+        `"${s.startsAtUtc ? s.startsAtUtc.slice(0, 10) : ''}"`,
+        `"${s.startsAtUtc ? new Date(s.startsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}"`,
+        `"${s.endsAtUtc ? new Date(s.endsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}"`,
+        `"${s.plannedDurationHours || 0}"`,
+        `"${ct?.inTime || ''}"`,
+        `"${ct?.outTime || ''}"`,
+        `"${punctuality}"`,
+        `"${s.status}"`,
+        `"${s.hourlyPayRate || 10}"`,
+        `"${gross}"`
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Duty_Statement_${this.analyticsStartDate}_to_${this.analyticsEndDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    this.toast.success('Export Statement', `Duty statement CSV exported successfully (${shifts.length} records).`);
   }
 
   calculateChartBuckets(): { labels: string[]; plannedHours: number[]; actualHours: number[] } {
@@ -4130,14 +4829,15 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
     const start = new Date(this.analyticsStartDate);
     const end = new Date(this.analyticsEndDate);
-    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
-    if (diffDays <= 14) {
+    if (this.chartGranularity === 'daily' || diffDays <= 10) {
       const labels: string[] = [];
       const plannedHours: number[] = [];
       const actualHours: number[] = [];
 
-      for (let i = 0; i <= diffDays; i++) {
+      const maxDays = Math.min(31, diffDays);
+      for (let i = 0; i < maxDays; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
         const dateStr = this.formatDateForInput(d);
@@ -4157,7 +4857,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       const plannedHours: number[] = [];
       const actualHours: number[] = [];
 
-      const totalWeeks = Math.min(6, Math.max(1, Math.ceil(diffDays / 7)));
+      const totalWeeks = Math.min(8, Math.max(1, Math.ceil(diffDays / 7)));
       for (let w = 0; w < totalWeeks; w++) {
         const wStart = new Date(start);
         wStart.setDate(start.getDate() + (w * 7));
@@ -4266,27 +4966,29 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     }
 
     const clocked = this.analyticsClockedHours;
-    const planned = this.analyticsPlannedHours;
-    const remaining = Math.max(0, planned - clocked);
+    const upcoming = this.analyticsUpcomingHours;
     const leaveHours = this.calculateLeaveHoursInRange();
+    const shortfall = this.analyticsShortfallHours;
 
-    const data = [
-      clocked || 0,
-      remaining || 0,
-      leaveHours || 0
-    ];
+    const labels: string[] = ['Delivered Hours', 'Upcoming Shifts', 'Approved Leave / Excused'];
+    const data: number[] = [clocked || 0, upcoming || 0, leaveHours || 0];
+    const bgColors: string[] = ['#0050e5', '#38bdf8', '#f59e0b'];
+
+    if (shortfall > 0) {
+      labels.push('Unfulfilled Shortfall');
+      data.push(shortfall);
+      bgColors.push('#f87171');
+    }
 
     const allZero = data.every(v => v === 0);
 
     this.hoursDonutChart = new Chart(this.hoursDonutChartCanvasRef.nativeElement, {
       type: 'doughnut',
       data: {
-        labels: allZero ? ['No Duty Hours Recorded'] : ['Hours Clocked / Done', 'Pending / Scheduled Hours', 'Approved Leave / Excused'],
+        labels: allZero ? ['No Duty Hours Recorded'] : labels,
         datasets: [{
           data: allZero ? [1] : data,
-          backgroundColor: allZero
-            ? ['#e2e8f0']
-            : ['#0050e5', '#38bdf8', '#f59e0b'],
+          backgroundColor: allZero ? ['#e2e8f0'] : bgColors,
           borderColor: '#ffffff',
           borderWidth: 2,
           hoverOffset: 6
@@ -4298,8 +5000,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         cutout: '72%',
         plugins: {
           legend: {
-            position: 'bottom',
-            labels: { boxWidth: 12, font: { size: 11 } }
+            display: false // Using rich interactive metric legend chips below canvas
           },
           tooltip: {
             enabled: !allZero,
