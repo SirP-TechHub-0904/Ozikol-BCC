@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -114,52 +114,55 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
               </div>
 
               <div class="form-group">
-                <label>Success Message / Note</label>
+                <label>Alert Message (Toast Notification)</label>
                 <input
                   type="text"
-                  [(ngModel)]="form.successMessage"
+                  [(ngModel)]="form.alertMessage"
                   (ngModelChange)="onDataChanged()"
-                  placeholder="Thank you! We have received your request and will follow up shortly."
+                  class="form-control">
+              </div>
+
+              <div class="form-group">
+                <label>Success Page Title</label>
+                <input
+                  type="text"
+                  [(ngModel)]="form.successPageTitle"
+                  (ngModelChange)="onDataChanged()"
                   class="form-control">
               </div>
 
               <div class="form-group col-span-2">
-                <label class="toggle-label">
-                  <input type="checkbox" [(ngModel)]="form.showSuccessPage" (ngModelChange)="onDataChanged()">
-                  <span>Show Dedicated Success Page after Submission (Title, Note &amp; Submit Again Button)</span>
-                </label>
-              </div>
-
-              <ng-container *ngIf="form.showSuccessPage !== false">
-                <div class="form-group">
-                  <label>Success Page Title</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="form.successPageTitle"
-                    (ngModelChange)="onDataChanged()"
-                    placeholder="Thank You! Submission Received"
-                    class="form-control">
-                </div>
-
-                <div class="form-group">
-                  <label>Submit Again Button Text</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="form.successPageButtonText"
-                    (ngModelChange)="onDataChanged()"
-                    placeholder="Submit Again"
-                    class="form-control">
-                </div>
-              </ng-container>
-
-              <div class="form-group col-span-2">
-                <label>Optional Custom Redirect URL (Overrides Success Page)</label>
-                <input
-                  type="text"
+                <label>After-Submit Route (Action Button on Success Page)</label>
+                <select
                   [(ngModel)]="form.successRedirectUrl"
                   (ngModelChange)="onDataChanged()"
-                  placeholder="e.g. /thank-you (leave blank to redirect to built-in success page)"
                   class="form-control">
+                  <option value="">Resubmit Again (Return to Form)</option>
+                  <optgroup label="System Pages">
+                    <option *ngFor="let sys of systemPages" [value]="sys.route">{{ sys.label }} ({{ sys.route }})</option>
+                  </optgroup>
+                  <optgroup label="Website Pages (From Database)" *ngIf="cmsPages.length > 0">
+                    <option *ngFor="let p of cmsPages" [value]="normalizePageRoute(p.directUrl)">{{ p.title }} ({{ normalizePageRoute(p.directUrl) }})</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="form-group col-span-2">
+                <label>Success Page Note (Rich Text)</label>
+                <div style="border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
+                  <div style="display: flex; gap: 4px; padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                    <button type="button" (click)="execNoteCommand('bold')" title="Bold" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 5px; background: #ffffff; font-weight: 700; cursor: pointer;">B</button>
+                    <button type="button" (click)="execNoteCommand('italic')" title="Italic" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 5px; background: #ffffff; font-style: italic; cursor: pointer;">I</button>
+                    <button type="button" (click)="execNoteCommand('underline')" title="Underline" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 5px; background: #ffffff; text-decoration: underline; cursor: pointer;">U</button>
+                    <button type="button" (click)="execNoteCommand('insertUnorderedList')" title="Bullet List" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 5px; background: #ffffff; cursor: pointer;">• List</button>
+                  </div>
+                  <div
+                    #noteEditor
+                    contenteditable="true"
+                    (input)="onNoteRichTextInput($event)"
+                    style="min-height: 96px; padding: 10px 12px; font-size: 13.5px; line-height: 1.5; outline: none; color: #0f172a;">
+                  </div>
+                </div>
               </div>
 
               <div class="form-group col-span-2">
@@ -739,7 +742,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
     @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
 })
-export class FormBuilderComponent implements OnInit {
+export class FormBuilderComponent implements OnInit, AfterViewInit {
   isEditMode = false;
   formId: string | null = null;
   saving = false;
@@ -782,7 +785,8 @@ export class FormBuilderComponent implements OnInit {
     formKey: '',
     description: '',
     submitButtonText: 'Submit Request',
-    successMessage: 'We have received your submission and will get back to you shortly.',
+    alertMessage: 'Thank you! Your submission has been received.',
+    successMessage: '<p>We have received your submission and will get back to you shortly.</p>',
     showSuccessPage: true,
     successPageTitle: 'Thank You! Submission Received',
     successPageButtonText: 'Submit Again',
@@ -798,6 +802,17 @@ export class FormBuilderComponent implements OnInit {
   }
 
   cmsPages: Array<{ id: string; title: string; directUrl: string; publish: boolean }> = [];
+
+  @ViewChild('noteEditor') noteEditorRef?: ElementRef<HTMLDivElement>;
+
+  /** Built-in system routes available in the After-Submit Route dropdown. */
+  readonly systemPages: Array<{ label: string; route: string }> = [
+    { label: 'Home Page', route: '/' },
+    { label: 'Blog', route: '/blog' },
+    { label: 'Login', route: '/login' },
+    { label: 'Register', route: '/register' },
+    { label: 'Join Committee', route: '/join-committee' }
+  ];
 
   constructor(
     private formsService: PageFormsService,
@@ -852,6 +867,50 @@ export class FormBuilderComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit(): void {
+    this.syncNoteEditorHtml();
+  }
+
+  /// <summary>
+  /// Normalizes a CMS page slug into a leading-slash route for the redirect dropdown.
+  /// </summary>
+  normalizePageRoute(directUrl?: string): string {
+    const clean = (directUrl || '').trim();
+    if (!clean || clean === '/') return '/';
+    return clean.startsWith('/') ? clean : `/${clean}`;
+  }
+
+  /// <summary>
+  /// Executes a rich-text formatting command on the Success Page Note editor.
+  /// </summary>
+  execNoteCommand(command: string): void {
+    if (typeof document === 'undefined') return;
+    this.noteEditorRef?.nativeElement?.focus();
+    document.execCommand(command, false);
+    if (this.noteEditorRef?.nativeElement) {
+      this.form.successMessage = this.noteEditorRef.nativeElement.innerHTML;
+      this.onDataChanged();
+    }
+  }
+
+  /// <summary>
+  /// Syncs rich-text edits from the contenteditable Note editor into form.successMessage.
+  /// </summary>
+  onNoteRichTextInput(event: Event): void {
+    const el = event.target as HTMLElement;
+    this.form.successMessage = el?.innerHTML || '';
+    this.onDataChanged();
+  }
+
+  private syncNoteEditorHtml(): void {
+    const el = this.noteEditorRef?.nativeElement;
+    if (!el) return;
+    const html = this.form.successMessage || '<p>We have received your submission and will get back to you shortly.</p>';
+    if (el.innerHTML !== html) {
+      el.innerHTML = html;
+    }
+  }
+
   /// <summary>
   /// Loads form entity and fields from the API. Falls back to local draft if server fails or draft is newer.
   /// </summary>
@@ -860,11 +919,18 @@ export class FormBuilderComponent implements OnInit {
     this.formsService.getFormById(id).subscribe({
       next: (res: any) => {
         if (res && res.isSuccess && res.data) {
-          this.form = res.data;
+          this.form = {
+            ...res.data,
+            alertMessage: res.data.alertMessage || 'Thank you! Your submission has been received.',
+            successPageTitle: res.data.successPageTitle || 'Thank You! Submission Received',
+            successMessage: res.data.successMessage || '<p>We have received your submission and will get back to you shortly.</p>',
+            successRedirectUrl: res.data.successRedirectUrl || ''
+          };
           this.fields = res.data.fields || [];
           this.lastSavedTime = res.data.updatedAtUtc ? new Date(this.parseUtcMillis(res.data.updatedAtUtc)) : null;
           this.autoSaveStatus = 'saved';
           this.checkAndRestoreDraft(res.data.updatedAtUtc);
+          this.syncNoteEditorHtml();
         } else {
           this.toast.error(res?.message || 'Load failed.');
           this.checkAndRestoreDraft();

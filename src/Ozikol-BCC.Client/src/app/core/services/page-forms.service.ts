@@ -21,6 +21,7 @@ export interface PageFormItem {
   formKey: string;
   description?: string;
   submitButtonText?: string;
+  alertMessage?: string;
   successMessage?: string;
   showSuccessPage?: boolean;
   successPageTitle?: string;

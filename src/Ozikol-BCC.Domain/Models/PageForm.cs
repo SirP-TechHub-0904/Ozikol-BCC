@@ -53,15 +53,21 @@ namespace Ozikol_BCC.Domain.Models
         public string SuccessMessage { get; set; } = "Thank you! Your request has been submitted successfully.";
 
         /// <summary>
+        /// Short toast alert message displayed immediately upon form submission.
+        /// </summary>
+        [MaxLength(500)]
+        public string AlertMessage { get; set; } = "Thank you! Your submission has been received.";
+
+        /// <summary>
         /// When true, displays a dedicated branded success screen (with title, note, and Submit Again button) after the toast alert.
         /// </summary>
         public bool ShowSuccessPage { get; set; } = true;
 
         /// <summary>
-        /// Optional headline shown on the dedicated post-submission success screen.
+        /// Headline shown on the dedicated post-submission success screen.
         /// </summary>
         [MaxLength(200)]
-        public string? SuccessPageTitle { get; set; } = "Submission Received!";
+        public string? SuccessPageTitle { get; set; } = "Thank You! Submission Received";
 
         /// <summary>
         /// Label for the button on the success screen that resets the form for another submission.

@@ -146,11 +146,14 @@ namespace Ozikol_BCC.Api.Controllers
                 FormKey = cleanKey,
                 Description = dto.Description?.Trim(),
                 SubmitButtonText = string.IsNullOrWhiteSpace(dto.SubmitButtonText) ? "Submit" : dto.SubmitButtonText.Trim(),
-                SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
+                AlertMessage = string.IsNullOrWhiteSpace(dto.AlertMessage)
                     ? "Thank you! Your submission has been received."
+                    : dto.AlertMessage.Trim(),
+                SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
+                    ? "<p>We have received your submission and will get back to you shortly.</p>"
                     : dto.SuccessMessage.Trim(),
-                ShowSuccessPage = dto.ShowSuccessPage,
-                SuccessPageTitle = string.IsNullOrWhiteSpace(dto.SuccessPageTitle) ? "Submission Received!" : dto.SuccessPageTitle.Trim(),
+                ShowSuccessPage = true,
+                SuccessPageTitle = string.IsNullOrWhiteSpace(dto.SuccessPageTitle) ? "Thank You! Submission Received" : dto.SuccessPageTitle.Trim(),
                 SuccessPageButtonText = string.IsNullOrWhiteSpace(dto.SuccessPageButtonText) ? "Submit Again" : dto.SuccessPageButtonText.Trim(),
                 SuccessRedirectUrl = string.IsNullOrWhiteSpace(dto.SuccessRedirectUrl) ? null : dto.SuccessRedirectUrl.Trim(),
                 NotificationEmail = dto.NotificationEmail?.Trim(),
@@ -456,11 +459,14 @@ namespace Ozikol_BCC.Api.Controllers
             form.Title = dto.Title.Trim();
             form.Description = dto.Description?.Trim();
             form.SubmitButtonText = string.IsNullOrWhiteSpace(dto.SubmitButtonText) ? "Submit" : dto.SubmitButtonText.Trim();
-            form.SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
+            form.AlertMessage = string.IsNullOrWhiteSpace(dto.AlertMessage)
                 ? "Thank you! Your submission has been received."
+                : dto.AlertMessage.Trim();
+            form.SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
+                ? "<p>We have received your submission and will get back to you shortly.</p>"
                 : dto.SuccessMessage.Trim();
-            form.ShowSuccessPage = dto.ShowSuccessPage;
-            form.SuccessPageTitle = string.IsNullOrWhiteSpace(dto.SuccessPageTitle) ? "Submission Received!" : dto.SuccessPageTitle.Trim();
+            form.ShowSuccessPage = true;
+            form.SuccessPageTitle = string.IsNullOrWhiteSpace(dto.SuccessPageTitle) ? "Thank You! Submission Received" : dto.SuccessPageTitle.Trim();
             form.SuccessPageButtonText = string.IsNullOrWhiteSpace(dto.SuccessPageButtonText) ? "Submit Again" : dto.SuccessPageButtonText.Trim();
             form.SuccessRedirectUrl = string.IsNullOrWhiteSpace(dto.SuccessRedirectUrl) ? null : dto.SuccessRedirectUrl.Trim();
             form.NotificationEmail = dto.NotificationEmail?.Trim();
@@ -504,6 +510,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FormKey { get; set; }
         public string? Description { get; set; }
         public string? SubmitButtonText { get; set; }
+        public string? AlertMessage { get; set; }
         public string? SuccessMessage { get; set; }
         public bool ShowSuccessPage { get; set; } = true;
         public string? SuccessPageTitle { get; set; }
