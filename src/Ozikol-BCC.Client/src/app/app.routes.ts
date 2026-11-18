@@ -208,17 +208,6 @@ export const routes: Routes = [
       // 1. Unified Dashboards
       { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager', 'CmsStudioManager', 'CmsManager'] } },
       { path: 'dashboard/workspace', component: WorkspaceDashboardComponent },
-      { path: 'dashboard/messages', loadComponent: () => import('./pages/admin/communications/communications-hub.component').then(m => m.CommunicationsHubComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'admin/messages', redirectTo: 'dashboard/messages', pathMatch: 'full' },
-      { path: 'messages', redirectTo: 'dashboard/messages', pathMatch: 'full' },
-      { path: 'dashboard/mxmails', loadComponent: () => import('./pages/admin/mxmails/mxmails.component').then(m => m.MxMailsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'admin/dashboard/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
-      { path: 'admin/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
-      { path: 'mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
-      { path: 'dashboard/mxsms', loadComponent: () => import('./pages/admin/mxsms/mxsms.component').then(m => m.MxSmsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'admin/dashboard/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
-      { path: 'admin/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
-      { path: 'mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
 
       // 2. User Management Suite: Console (Admin & User Manager)
