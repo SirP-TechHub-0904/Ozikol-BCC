@@ -77,8 +77,9 @@ Chart.register(...registerables);
             <span class="material-symbols-outlined">calendar_month</span> My Schedule &amp; Rota
           </button>
           <button class="subnav-tab position-relative" [class.active]="activeTab === 'open-shifts'" (click)="switchTab('open-shifts')">
-            <span class="material-symbols-outlined">work_outline</span> Open Shifts &amp; Swaps
-            <span class="tab-badge" *ngIf="openShifts.length > 0">{{ openShifts.length }}</span>
+            <span class="material-symbols-outlined">work_outline</span>
+            <span>Open Shifts &amp; Swaps</span>
+            <span class="tab-badge-sup" *ngIf="(openShiftsCount || openShifts.length) > 0">{{ openShiftsCount || openShifts.length }}</span>
           </button>
           <button class="subnav-tab" [class.active]="activeTab === 'timesheets'" (click)="switchTab('timesheets')">
             <span class="material-symbols-outlined">description</span> Timesheets &amp; Pay
@@ -140,23 +141,28 @@ Chart.register(...registerables);
           <div class="filter-controls-row">
             <!-- Left: Current Working Date Display (Default Current Month) -->
             <div class="current-working-range">
-              <span class="active-range-chip">
-                <span class="material-symbols-outlined range-chip-icon">calendar_month</span>
-                <span class="range-date-text">{{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}</span>
+              <div class="active-range-chip">
+                <span class="range-chip-label">
+                  <span class="material-symbols-outlined range-chip-icon">calendar_month</span>
+                  <span class="range-date-text">{{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}</span>
+                </span>
                 <span class="badge-default-month" *ngIf="isCurrentMonthSelected()">Current Month</span>
-              </span>
-              <span class="shifts-count-chip">
-                {{ analyticsTotalShifts }} Shift(s) in Window
-              </span>
-              <button
-                type="button"
-                class="btn-reset-month"
-                *ngIf="!isCurrentMonthSelected()"
-                (click)="resetDateRangeToCurrentMonth()"
-                title="Reset reporting window to Current Month (1st &mdash; End)">
-                <span class="material-symbols-outlined">restart_alt</span>
-                <span>Reset to This Month</span>
-              </button>
+              </div>
+              <div class="range-meta-actions">
+                <span class="shifts-count-chip">
+                  <span class="material-symbols-outlined chip-icon-sm">work_history</span>
+                  <span>{{ analyticsTotalShifts }} Shift(s) in Window</span>
+                </span>
+                <button
+                  type="button"
+                  class="btn-reset-month"
+                  *ngIf="!isCurrentMonthSelected()"
+                  (click)="resetDateRangeToCurrentMonth()"
+                  title="Reset reporting window to Current Month (1st &mdash; End)">
+                  <span class="material-symbols-outlined">restart_alt</span>
+                  <span>Reset to This Month</span>
+                </button>
+              </div>
             </div>
 
             <!-- Right: Custom Date Range Pickers -->
@@ -407,15 +413,17 @@ Chart.register(...registerables);
                 <p class="modal-subtitle">Itemized shift records, verified clock-in/out audit timestamps, punctuality compliance, and gross earnings</p>
               </div>
             </div>
-            <div class="toolbar-right d-flex align-items-center gap-2">
-              <button type="button" class="btn btn-sm btn-outline" (click)="printDutyStatement()" [disabled]="displayedStatementShifts.length === 0" title="Print this duty statement">
-                <span class="material-symbols-outlined">print</span>
-                <span>Print</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" (click)="exportDutyStatementCsv()" [disabled]="displayedStatementShifts.length === 0" title="Export this statement as CSV">
-                <span class="material-symbols-outlined">download</span>
-                <span>Export CSV</span>
-              </button>
+            <div class="toolbar-right">
+              <div class="toolbar-actions-grid">
+                <button type="button" class="btn btn-sm btn-outline toolbar-action-btn" (click)="printDutyStatement()" [disabled]="displayedStatementShifts.length === 0" title="Print this duty statement">
+                  <span class="material-symbols-outlined">print</span>
+                  <span>Print</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline toolbar-action-btn" (click)="exportDutyStatementCsv()" [disabled]="displayedStatementShifts.length === 0" title="Export this statement as CSV">
+                  <span class="material-symbols-outlined">download</span>
+                  <span>Export CSV</span>
+                </button>
+              </div>
               <span class="count-badge">{{ displayedStatementShifts.length }} Shift Record(s)</span>
             </div>
           </div>
@@ -1217,18 +1225,103 @@ Chart.register(...registerables);
                 <label class="form-label">Expiry Date</label>
                 <input type="date" class="form-control" [(ngModel)]="docForm.expiryDateUtc" />
               </div>
+              <!-- Document Source Selection: Cloudinary File Upload OR Direct URL -->
               <div class="form-group mb-3">
-                <label class="form-label">Document / File URL *</label>
-                <input type="url" class="form-control" [(ngModel)]="docForm.fileUrl" placeholder="https://..." />
+                <div class="source-toggle-header">
+                  <label class="form-label m-0">Document Attachment *</label>
+                  <div class="source-toggle-pills">
+                    <button
+                      type="button"
+                      class="source-pill"
+                      [class.active]="docUploadMode === 'file'"
+                      (click)="docUploadMode = 'file'">
+                      <span class="material-symbols-outlined">upload_file</span>
+                      <span>Upload File</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="source-pill"
+                      [class.active]="docUploadMode === 'url'"
+                      (click)="docUploadMode = 'url'">
+                      <span class="material-symbols-outlined">link</span>
+                      <span>Direct URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 1. Direct File Upload Dropzone (Cloudinary) -->
+                <div *ngIf="docUploadMode === 'file'" class="doc-dropzone" (click)="docFileInput.click()">
+                  <input
+                    #docFileInput
+                    type="file"
+                    (change)="onDocumentFileSelected($event)"
+                    accept="image/*,.pdf,.doc,.docx"
+                    style="display: none;" />
+
+                  <!-- Empty state / Click to upload -->
+                  <div *ngIf="!docForm.fileUrl && !isUploadingDoc" class="dropzone-empty">
+                    <div class="dropzone-icon">
+                      <span class="material-symbols-outlined">cloud_upload</span>
+                    </div>
+                    <div class="dropzone-instructions">
+                      <strong>Choose a file or click to browse</strong>
+                      <span>Supports PDF, PNG, JPG, or DOC up to 10MB (Cloudinary Secured)</span>
+                    </div>
+                  </div>
+
+                  <!-- Uploading spinner state -->
+                  <div *ngIf="isUploadingDoc" class="dropzone-uploading">
+                    <span class="material-symbols-outlined spin text-primary">sync</span>
+                    <span>Uploading securely to Cloudinary Vault...</span>
+                  </div>
+
+                  <!-- Uploaded file success card -->
+                  <div *ngIf="docForm.fileUrl && !isUploadingDoc" class="dropzone-file-card" (click)="$event.stopPropagation()">
+                    <div class="file-card-info">
+                      <span class="material-symbols-outlined text-green">verified</span>
+                      <div class="file-text">
+                        <div class="file-name">{{ uploadedDocFileName || 'Document Attached' }}</div>
+                        <a [href]="docForm.fileUrl" target="_blank" class="file-preview-link">
+                          <span class="material-symbols-outlined">visibility</span>
+                          <span>Preview File</span>
+                        </a>
+                      </div>
+                    </div>
+                    <div class="file-card-actions">
+                      <button type="button" class="icon-action-btn" (click)="docFileInput.click()" title="Replace File">
+                        <span class="material-symbols-outlined">sync</span>
+                      </button>
+                      <button type="button" class="icon-action-btn text-danger" (click)="removeUploadedDoc()" title="Remove File">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Direct URL Input -->
+                <div *ngIf="docUploadMode === 'url'" class="url-input-container">
+                  <div class="url-input-group">
+                    <input
+                      type="url"
+                      class="form-control"
+                      [(ngModel)]="docForm.fileUrl"
+                      placeholder="https://res.cloudinary.com/... or https://..." />
+                    <a *ngIf="docForm.fileUrl" [href]="docForm.fileUrl" target="_blank" class="btn-url-preview" title="Test URL">
+                      <span class="material-symbols-outlined">open_in_new</span>
+                    </a>
+                  </div>
+                  <span class="url-helper-text">Enter direct Cloudinary or hosted document URL</span>
+                </div>
               </div>
+
               <div class="form-actions mt-3">
                 <button
                   type="button"
                   class="btn btn-primary"
                   (click)="saveDocument()"
-                  [disabled]="isActionLoading || !docForm.documentName || !docForm.fileUrl">
-                  <span class="material-symbols-outlined">cloud_upload</span>
-                  <span>Upload to Vault</span>
+                  [disabled]="isActionLoading || isUploadingDoc || !docForm.documentName || !docForm.fileUrl">
+                  <span class="material-symbols-outlined">verified_user</span>
+                  <span>Save to Compliance Vault</span>
                 </button>
               </div>
             </div>
@@ -1510,7 +1603,7 @@ Chart.register(...registerables);
 
       <!-- DAY ACTIVITY & DETAILS MODAL -->
       <div class="modal-backdrop-custom" *ngIf="showDayDetailModal" (click)="showDayDetailModal = false">
-        <div class="modal-card-custom day-details-modal" (click)="$event.stopPropagation()">
+        <div class="modal-card-custom day-details-modal" [class.maximized]="isDayModalMaximized" (click)="$event.stopPropagation()">
           <div class="modal-header-custom">
             <div class="modal-title-group">
               <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
@@ -1524,12 +1617,21 @@ Chart.register(...registerables);
                 </p>
               </div>
             </div>
-            <button type="button" class="btn-close-custom" (click)="showDayDetailModal = false">&times;</button>
+            <div class="modal-header-actions d-flex align-items-center gap-2">
+              <button
+                type="button"
+                class="btn-icon-custom"
+                (click)="isDayModalMaximized = !isDayModalMaximized"
+                [title]="isDayModalMaximized ? 'Restore View' : 'Full Screen View'">
+                <span class="material-symbols-outlined">{{ isDayModalMaximized ? 'fullscreen_exit' : 'fullscreen' }}</span>
+              </button>
+              <button type="button" class="btn-close-custom" (click)="showDayDetailModal = false">&times;</button>
+            </div>
           </div>
 
           <div class="modal-body-custom modal-body-scrollable">
             <!-- Quick Action Bar -->
-            <div class="day-quick-actions mb-3">
+            <div class="day-quick-actions mb-4">
               <button type="button" class="btn btn-sm btn-outline-primary" (click)="openExcuseForSelectedDay('single')">
                 <span class="material-symbols-outlined">event_busy</span>
                 <span>Apply Excuse for This Day</span>
@@ -1593,9 +1695,9 @@ Chart.register(...registerables);
                 </div>
               </div>
 
-              <div class="d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+              <div class="form-actions mt-3 d-flex justify-content-end gap-3">
+                <button type="button" class="btn btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
+                <button type="button" class="btn btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
                   <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
                   <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
                   <span>Submit Excuse Request</span>
@@ -1603,92 +1705,100 @@ Chart.register(...registerables);
               </div>
             </div>
 
-            <!-- SECTION A: Assigned Shifts -->
-            <div class="day-section mb-4">
-              <div class="day-section-header">
-                <span class="material-symbols-outlined text-primary">work</span>
-                <h4>Assigned Rota Duties ({{ selectedDay?.shifts?.length || 0 }})</h4>
-              </div>
+            <!-- Two-Column Section Grid for Full Page View -->
+            <div class="day-modal-columns">
+              <!-- SECTION A: Assigned Shifts -->
+              <div class="day-section">
+                <div class="day-section-header">
+                  <span class="material-symbols-outlined text-primary">work</span>
+                  <h4>Assigned Rota Duties ({{ selectedDay?.shifts?.length || 0 }})</h4>
+                </div>
 
-              <div class="day-empty-box" *ngIf="!selectedDay?.shifts?.length">
-                <span class="material-symbols-outlined text-muted">event_busy</span>
-                <div>
-                  <p class="empty-title">Off Duty / No Shifts Rostered</p>
-                  <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
+                <div class="day-empty-box" *ngIf="!selectedDay?.shifts?.length">
+                  <span class="material-symbols-outlined text-muted">event_busy</span>
+                  <div class="empty-text-group">
+                    <p class="empty-title">Off Duty / No Shifts Rostered</p>
+                    <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline ms-auto" (click)="showDayDetailModal = false; switchTab('open-shifts')">
+                    <span class="material-symbols-outlined">work_outline</span>
+                    <span>Find Open Shifts</span>
+                  </button>
+                </div>
+
+                <div class="day-shifts-list" *ngIf="(selectedDay?.shifts?.length ?? 0) > 0">
+                  <div class="day-shift-card" *ngFor="let s of (selectedDay?.shifts || [])">
+                    <div class="day-shift-top">
+                      <div>
+                        <div class="shift-code-tag">{{ s.shiftCode }}</div>
+                        <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
+                        <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
+                      </div>
+                      <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                    </div>
+
+                    <div class="day-shift-meta-grid">
+                      <div class="meta-item">
+                        <span class="meta-icon material-symbols-outlined">schedule</span>
+                        <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                      </div>
+                      <div class="meta-item">
+                        <span class="meta-icon material-symbols-outlined">payments</span>
+                        <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                      </div>
+                    </div>
+
+                    <div class="day-shift-actions">
+                      <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <span>Confirm Shift</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
+                        <span class="material-symbols-outlined">swap_horiz</span>
+                        <span>Request Swap</span>
+                      </button>
+                      <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay?.isToday" (click)="showDayDetailModal = false">
+                        <span class="material-symbols-outlined">fingerprint</span>
+                        <span>Duty Clock-In</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div class="day-shifts-list" *ngIf="(selectedDay?.shifts?.length ?? 0) > 0">
-                <div class="day-shift-card" *ngFor="let s of (selectedDay?.shifts || [])">
-                  <div class="day-shift-top">
-                    <div>
-                      <div class="shift-code-tag">{{ s.shiftCode }}</div>
-                      <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
-                      <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
-                    </div>
-                    <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
-                  </div>
-
-                  <div class="day-shift-meta-grid">
-                    <div class="meta-item">
-                      <span class="meta-icon material-symbols-outlined">schedule</span>
-                      <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
-                    </div>
-                    <div class="meta-item">
-                      <span class="meta-icon material-symbols-outlined">payments</span>
-                      <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
-                    </div>
-                  </div>
-
-                  <div class="day-shift-actions">
-                    <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
-                      <span class="material-symbols-outlined">check_circle</span>
-                      <span>Confirm Shift</span>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
-                      <span class="material-symbols-outlined">swap_horiz</span>
-                      <span>Request Swap</span>
-                    </button>
-                    <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay?.isToday" (click)="showDayDetailModal = false">
-                      <span class="material-symbols-outlined">fingerprint</span>
-                      <span>Duty Clock-In</span>
-                    </a>
-                  </div>
+              <!-- SECTION B: Excuses & Leave -->
+              <div class="day-section">
+                <div class="day-section-header">
+                  <span class="material-symbols-outlined text-warning">flight_takeoff</span>
+                  <h4>Logged Excuses &amp; Time Off ({{ selectedDay?.leaves?.length || 0 }})</h4>
                 </div>
-              </div>
-            </div>
 
-            <!-- SECTION B: Excuses & Leave -->
-            <div class="day-section">
-              <div class="day-section-header">
-                <span class="material-symbols-outlined text-warning">flight_takeoff</span>
-                <h4>Logged Excuses &amp; Time Off ({{ selectedDay?.leaves?.length || 0 }})</h4>
-              </div>
-
-              <div class="day-empty-box" *ngIf="!selectedDay?.leaves?.length">
-                <span class="material-symbols-outlined text-muted">event_available</span>
-                <div>
-                  <p class="empty-title">No Excuses or Time-Off Logged</p>
-                  <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
+                <div class="day-empty-box" *ngIf="!selectedDay?.leaves?.length">
+                  <span class="material-symbols-outlined text-muted">event_available</span>
+                  <div class="empty-text-group">
+                    <p class="empty-title">No Excuses or Time-Off Logged</p>
+                    <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Log Excuse</span>
+                  </button>
                 </div>
-                <button type="button" class="btn btn-xs btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
-                  + Log Excuse
-                </button>
-              </div>
 
-              <div class="day-leaves-list" *ngIf="(selectedDay?.leaves?.length ?? 0) > 0">
-                <div class="day-leave-card" *ngFor="let l of (selectedDay?.leaves || [])">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge-station">{{ l.leaveType }}</span>
-                    <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
-                      {{ l.status }}
-                    </span>
+                <div class="day-leaves-list" *ngIf="(selectedDay?.leaves?.length ?? 0) > 0">
+                  <div class="day-leave-card" *ngFor="let l of (selectedDay?.leaves || [])">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="badge-station">{{ l.leaveType }}</span>
+                      <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                        {{ l.status }}
+                      </span>
+                    </div>
+                    <div class="leave-date-span">
+                      <span class="material-symbols-outlined">date_range</span>
+                      <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
+                    </div>
+                    <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
                   </div>
-                  <div class="leave-date-span">
-                    <span class="material-symbols-outlined">date_range</span>
-                    <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
-                  </div>
-                  <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
                 </div>
               </div>
             </div>
@@ -1966,13 +2076,33 @@ Chart.register(...registerables);
       box-shadow: 0 4px 12px rgba(0,80,229,0.3);
     }
     .subnav-tab .material-symbols-outlined { font-size: 18px; }
-    .tab-badge {
-      background: #ef4444;
-      color: #fff;
-      font-size: 10.5px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 10px;
+    .subnav-tab.position-relative {
+      position: relative;
+    }
+    .tab-badge,
+    .tab-badge-sup {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.35);
+      vertical-align: super;
+      transform: translateY(-2px);
+      margin-left: 6px;
+    }
+    .subnav-tab.active .tab-badge,
+    .subnav-tab.active .tab-badge-sup {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
     }
 
     /* Scroll Arrow Buttons & Edge Glow */
@@ -2352,10 +2482,46 @@ Chart.register(...registerables);
       display: block;
     }
 
-    /* Day Activity & Details Modal */
+    /* Day Activity & Details Modal (Spacious Full Page Modal) */
     .day-details-modal {
-      max-width: 640px !important;
-      width: 100%;
+      max-width: 1240px !important;
+      width: 95vw !important;
+      height: 88vh !important;
+      max-height: 92vh !important;
+      display: flex;
+      flex-direction: column;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+      transition: all 0.25s ease-in-out;
+    }
+    .day-details-modal.maximized {
+      max-width: 100vw !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+    .btn-icon-custom {
+      background: none;
+      border: none;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-icon-custom:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-icon-custom .material-symbols-outlined {
+      font-size: 20px;
     }
     .day-modal-icon {
       font-size: 28px;
@@ -2369,31 +2535,56 @@ Chart.register(...registerables);
       font-size: 11px;
       font-weight: 700;
     }
-    .modal-body-scrollable {
-      max-height: 72vh;
+    .day-details-modal .modal-header-custom {
+      padding: 20px 28px;
+      flex-shrink: 0;
+    }
+    .day-details-modal .modal-body-scrollable {
+      flex: 1 1 auto;
+      max-height: none !important;
       overflow-y: auto;
-      padding: 20px 24px;
+      padding: 24px 28px;
     }
     .day-quick-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      padding-bottom: 14px;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 24px !important;
       border-bottom: 1px solid #e2e8f0;
     }
+    .day-quick-actions .btn {
+      padding: 8px 16px !important;
+      font-size: 12.5px !important;
+      border-radius: 9px !important;
+      margin: 0 !important;
+    }
+    .day-modal-columns {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .day-modal-columns {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
     .btn-sm {
-      padding: 6px 12px !important;
-      font-size: 12px !important;
+      padding: 8px 16px !important;
+      font-size: 12.5px !important;
       border-radius: 8px !important;
       gap: 6px !important;
       display: inline-flex !important;
       align-items: center !important;
     }
-    .btn-sm .material-symbols-outlined { font-size: 16px !important; }
+    .btn-sm .material-symbols-outlined { font-size: 17px !important; }
     .btn-xs {
-      padding: 4px 8px !important;
-      font-size: 11px !important;
-      border-radius: 6px !important;
+      padding: 6px 12px !important;
+      font-size: 11.5px !important;
+      border-radius: 7px !important;
       gap: 4px !important;
       display: inline-flex !important;
       align-items: center !important;
@@ -2499,13 +2690,23 @@ Chart.register(...registerables);
     .day-empty-box {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       background: #f8fafc;
       border: 1px dashed #cbd5e1;
-      border-radius: 10px;
-      padding: 14px 16px;
+      border-radius: 12px;
+      padding: 16px 20px;
     }
     .day-empty-box .material-symbols-outlined { font-size: 26px; }
+    .day-empty-box .btn {
+      margin-left: auto !important;
+      flex-shrink: 0;
+      padding: 8px 16px !important;
+      font-size: 12.5px !important;
+      border-radius: 8px !important;
+    }
+    .empty-text-group {
+      min-width: 0;
+    }
     .empty-title {
       font-size: 13px;
       font-weight: 700;
@@ -2663,6 +2864,11 @@ Chart.register(...registerables);
       color: #1e3a8a;
       font-weight: 700;
     }
+    .range-chip-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
     .range-chip-icon {
       font-size: 18px;
       color: #0050e5;
@@ -2682,9 +2888,16 @@ Chart.register(...registerables);
       letter-spacing: 0.2px;
       margin-left: 4px;
     }
+    .range-meta-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .shifts-count-chip {
       display: inline-flex;
       align-items: center;
+      gap: 6px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -2692,6 +2905,10 @@ Chart.register(...registerables);
       font-size: 12px;
       font-weight: 700;
       color: #475569;
+    }
+    .chip-icon-sm {
+      font-size: 16px;
+      color: #64748b;
     }
     .btn-reset-month {
       display: inline-flex;
@@ -3429,6 +3646,17 @@ Chart.register(...registerables);
       align-items: center;
       gap: 10px;
     }
+    .toolbar-actions-grid {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
     .count-badge {
       font-size: 12px;
       font-weight: 700;
@@ -3749,6 +3977,202 @@ Chart.register(...registerables);
       margin-bottom: 16px;
     }
 
+    /* Document Source Toggle & Dropzone */
+    .source-toggle-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .source-toggle-pills {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      gap: 3px;
+    }
+    .source-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .source-pill .material-symbols-outlined {
+      font-size: 15px;
+    }
+    .source-pill.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .doc-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 22px 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      box-sizing: border-box;
+    }
+    .doc-dropzone:hover {
+      border-color: #0050e5;
+      background: #f0f7ff;
+    }
+    .dropzone-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .dropzone-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dropzone-icon .material-symbols-outlined {
+      font-size: 24px;
+    }
+    .dropzone-instructions strong {
+      display: block;
+      font-size: 13px;
+      color: #1e293b;
+      margin-bottom: 2px;
+    }
+    .dropzone-instructions span {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .dropzone-uploading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 0;
+      color: #0050e5;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dropzone-file-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+    }
+    .file-card-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .file-text {
+      min-width: 0;
+    }
+    .file-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    .file-preview-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #0050e5;
+      text-decoration: none;
+      margin-top: 2px;
+    }
+    .file-preview-link .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .file-preview-link:hover {
+      text-decoration: underline;
+    }
+    .file-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-action-btn {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.15s ease-in-out;
+    }
+    .icon-action-btn:hover {
+      background: #e2e8f0;
+    }
+    .icon-action-btn.text-danger:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .icon-action-btn .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .url-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-url-preview {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0050e5;
+      text-decoration: none;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .btn-url-preview:hover {
+      background: #eff6ff;
+      border-color: #0050e5;
+    }
+    .btn-url-preview .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .url-helper-text {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
     /* Tables (CMS Table) */
     .table-responsive {
       overflow-x: auto;
@@ -4007,27 +4431,96 @@ Chart.register(...registerables);
       .subnav-tab .material-symbols-outlined {
         font-size: 15px !important;
       }
-      .table-toolbar {
-        padding: 14px 16px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      .toolbar-right {
-        width: 100%;
-      }
-      .toolbar-right .btn {
-        width: 100%;
-        justify-content: center;
-      }
+      /* Compact Metrics Grid & Cards on Mobile */
       .metrics-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 16px !important;
+      }
+      .metric-card {
+        padding: 10px 12px !important;
+        border-radius: 12px !important;
+        gap: 4px !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.02) !important;
+      }
+      .metric-card .card-top {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-bottom: 2px !important;
+      }
+      .metric-card .card-icon {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        border-radius: 7px !important;
+      }
+      .metric-card .card-icon .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .metric-card .card-chip {
+        font-size: 8.5px !important;
+        font-weight: 700 !important;
+        padding: 2px 6px !important;
+        border-radius: 8px !important;
+        letter-spacing: 0.1px !important;
+        white-space: nowrap !important;
+      }
+      .metric-card .card-value {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        line-height: 1.25 !important;
+        letter-spacing: -0.3px !important;
+        word-break: break-word !important;
+      }
+      .metric-card .card-label {
+        font-size: 10.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        color: #64748b !important;
+      }
+      .metric-card .card-progress-track {
+        height: 3px !important;
+        margin-top: 2px !important;
+      }
+      .metric-card .card-sub-info {
+        font-size: 9.5px !important;
+        line-height: 1.25 !important;
+        color: #94a3b8 !important;
+        margin-top: 2px !important;
+      }
+      .metric-card .card-sub-info span {
+        font-size: 9.5px !important;
+      }
+      .metric-card .btn-confirm-inline {
+        padding: 2px 6px !important;
+        font-size: 9.5px !important;
+        border-radius: 4px !important;
       }
       .shifts-card-body {
-        padding: 16px;
+        padding: 14px 16px !important;
       }
       .shifts-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .shift-card {
+        padding: 14px 16px !important;
+        gap: 10px !important;
+        border-radius: 12px !important;
+      }
+      .shift-venue-title {
+        font-size: 14px !important;
+      }
+      .shift-meta-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
+        padding: 8px 10px !important;
+      }
+      .cms-card {
+        border-radius: 14px !important;
+        margin-bottom: 18px !important;
       }
       .card-body-form {
         padding: 16px;
@@ -4039,9 +4532,319 @@ Chart.register(...registerables);
       .toggles-grid {
         grid-template-columns: 1fr !important;
       }
+
+      /* Analytics Filter Card Mobile Layout */
+      .analytics-filter-card {
+        padding: 16px !important;
+        border-radius: 14px !important;
+        margin-bottom: 20px !important;
+      }
+      .filter-card-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .filter-title-group {
+        width: 100% !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .filter-actions-right {
+        width: 100% !important;
+      }
+      .filter-actions-right .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 8px 14px !important;
+      }
+      .filter-controls-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        margin-top: 14px !important;
+      }
+      .current-working-range {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .active-range-chip {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 9px 12px !important;
+        font-size: 12px !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .range-chip-label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+      }
+      .range-date-text {
+        font-size: 12px !important;
+      }
+      .range-meta-actions {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+      .shifts-count-chip {
+        flex: 1 !important;
+        box-sizing: border-box !important;
+        justify-content: center !important;
+        padding: 7px 10px !important;
+        font-size: 11.5px !important;
+        gap: 6px !important;
+      }
+      .btn-reset-month {
+        flex-shrink: 0 !important;
+        box-sizing: border-box !important;
+        justify-content: center !important;
+        padding: 7px 12px !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+      }
+      .custom-range-inputs {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+        box-sizing: border-box !important;
+      }
+      .range-sep {
+        display: none !important;
+      }
+      .range-field {
+        width: 100% !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+        box-sizing: border-box !important;
+      }
+      .range-label {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+      }
+      .range-field .form-control {
+        width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        padding: 7px 8px !important;
+        font-size: 12px !important;
+        height: 38px !important;
+      }
+
+      /* Pulse Card & Charts Mobile Optimization */
+      .punctuality-pulse-card {
+        padding: 16px !important;
+        border-radius: 14px !important;
+      }
+      .pulse-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .pulse-title-group {
+        align-items: flex-start !important;
+      }
+      .pulse-legend {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .pulse-beads-row {
+        gap: 6px !important;
+        padding-bottom: 6px !important;
+        overflow-x: auto !important;
+      }
+      .pulse-bead-item {
+        min-width: 58px !important;
+      }
+      .analytics-charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      .chart-panel-card {
+        padding: 16px !important;
+        border-radius: 14px !important;
+      }
+      .chart-panel-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .chart-header-actions {
+        width: 100% !important;
+      }
+      .btn-group-granularity {
+        width: 100% !important;
+        display: flex !important;
+      }
+      .btn-granularity {
+        flex: 1 !important;
+        text-align: center !important;
+      }
+      .donut-chips-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+      .donut-chip {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Statement Filter Bar & Toolbar Mobile Layout */
+      .table-toolbar {
+        padding: 16px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .toolbar-left {
+        width: 100% !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .toolbar-right {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .toolbar-actions-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .toolbar-action-btn {
+        width: 100% !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+      }
+      .toolbar-action-btn .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .count-badge {
+        width: 100% !important;
+        height: 34px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        border-radius: 8px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+      }
+      .statement-filters-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 14px 16px !important;
+      }
+      .table-filter-pills {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .filter-pill-btn {
+        width: 100% !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+      }
+      .table-search-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 42px !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        padding: 0 12px !important;
+      }
+      .table-search-input {
+        font-size: 12.5px !important;
+      }
     }
 
     @media (max-width: 400px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+      }
+      .metric-card {
+        padding: 8px 10px !important;
+        gap: 3px !important;
+      }
+      .metric-card .card-icon {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+      }
+      .metric-card .card-icon .material-symbols-outlined {
+        font-size: 14px !important;
+      }
+      .metric-card .card-chip {
+        font-size: 7.5px !important;
+        padding: 1px 4px !important;
+      }
+      .metric-card .card-value {
+        font-size: 13.5px !important;
+      }
+      .metric-card .card-label {
+        font-size: 10px !important;
+      }
+      .metric-card .card-sub-info {
+        font-size: 9px !important;
+      }
+      .range-meta-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .btn-reset-month {
+        width: 100% !important;
+      }
+      .custom-range-inputs {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
+      }
+      .range-field .form-control {
+        font-size: 11px !important;
+        padding: 6px 4px !important;
+      }
       .header-actions {
         gap: 4px !important;
       }
@@ -4136,6 +4939,11 @@ Chart.register(...registerables);
       background: #0f172a;
       border-color: #334155;
     }
+    :host-context(.dark-mode) .count-badge {
+      background: rgba(0, 80, 229, 0.2);
+      border-color: rgba(96, 165, 250, 0.3);
+      color: #93c5fd;
+    }
     :host-context(.dark-mode) .table-search-box {
       background: #1e293b;
       border-color: #334155;
@@ -4171,6 +4979,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   shifts: Shift[] = [];
   openShifts: Shift[] = [];
+  openShiftsCount = 0;
+  private openShiftsSub?: Subscription;
   timesheetList: any[] = [];
   leaveList: any[] = [];
   docList: any[] = [];
@@ -4198,6 +5008,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   calendarDays: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
   selectedDay: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] } | null = null;
   showDayDetailModal = false;
+  isDayModalMaximized = false;
   showDayExcuseForm = false;
   dayExcuseDurationPreset = 'single';
 
@@ -4231,6 +5042,9 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     expiryDateUtc: '',
     fileUrl: ''
   };
+  docUploadMode: 'file' | 'url' = 'file';
+  isUploadingDoc = false;
+  uploadedDocFileName = '';
 
   // Reminders state
   reminderPrefs: any = {
@@ -4253,6 +5067,12 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   ngOnInit(): void {
     this.resetDateRangeToCurrentMonth();
+
+    // Real-time listener for open shifts count across workspace
+    this.openShiftsSub = this.workforceService.openShiftsCount$.subscribe(count => {
+      this.openShiftsCount = count;
+    });
+    this.workforceService.refreshOpenShiftsCount();
 
     this.workforceService.getTenantCurrency().subscribe({
       next: (res: any) => {
@@ -4317,11 +5137,23 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const activeBtn = el.querySelector('.subnav-tab.active') as HTMLElement;
     if (activeBtn) {
       activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      const elRect = el.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      const offsetInEl = (btnRect.left - elRect.left) + el.scrollLeft;
+      const targetScroll = offsetInEl - (el.clientWidth / 2) + (btnRect.width / 2);
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      const boundedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+      el.scrollTo({ left: boundedScroll, behavior: 'smooth' });
+    }
+    // Prevent document or window horizontal overshoot
+    if (typeof window !== 'undefined' && (window.scrollX !== 0 || document.documentElement.scrollLeft !== 0)) {
+      window.scrollTo({ left: 0 });
     }
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.openShiftsSub?.unsubscribe();
     if (this.hoursBarChart) {
       this.hoursBarChart.destroy();
       this.hoursBarChart = null;
@@ -5085,7 +5917,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         const dayShifts = shifts.filter(s => s.startsAtUtc && s.startsAtUtc.slice(0, 10) === dateStr);
         const p = dayShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
         const a = dayShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()))
-                           .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+          .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
         plannedHours.push(Math.round(p * 10) / 10);
         actualHours.push(Math.round(a * 10) / 10);
       }
@@ -5117,7 +5949,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
         const p = wShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
         const a = wShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()))
-                         .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+          .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
 
         plannedHours.push(Math.round(p * 10) / 10);
         actualHours.push(Math.round(a * 10) / 10);
@@ -5368,6 +6200,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         this.isLoading = false;
         if (res.isSuccess && res.data) {
           this.openShifts = res.data;
+          this.openShiftsCount = res.data.length;
+          this.workforceService.setOpenShiftsCount(res.data.length);
         }
       },
       error: () => {
@@ -5521,20 +6355,62 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
   }
 
+  onDocumentFileSelected(event: any): void {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    if (!this.docForm.documentName) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      this.docForm.documentName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    }
+
+    this.isUploadingDoc = true;
+    this.uploadedDocFileName = file.name;
+
+    this.workforceService.uploadComplianceMedia(file).subscribe({
+      next: (res: any) => {
+        this.isUploadingDoc = false;
+        const url = res?.data?.url || res?.url;
+        if (url) {
+          this.docForm.fileUrl = url;
+          this.toast.success(`"${file.name}" uploaded to Cloudinary successfully!`);
+        } else {
+          this.toast.error('File uploaded, but no URL was returned.');
+        }
+      },
+      error: (err: any) => {
+        this.isUploadingDoc = false;
+        this.uploadedDocFileName = '';
+        this.toast.error(err?.error?.message || 'Failed to upload document to Cloudinary.');
+      }
+    });
+  }
+
+  removeUploadedDoc(): void {
+    this.docForm.fileUrl = '';
+    this.uploadedDocFileName = '';
+  }
+
   saveDocument(): void {
     if (!this.docForm.documentName || !this.docForm.fileUrl) return;
+    this.isActionLoading = true;
     this.workforceService.uploadDocument(this.docForm).subscribe({
       next: (res: any) => {
+        this.isActionLoading = false;
         if (res.isSuccess) {
           this.toast.success('Document uploaded to vault.');
           this.loadDocuments();
           this.docForm.documentName = '';
           this.docForm.fileUrl = '';
+          this.uploadedDocFileName = '';
         } else {
           this.toast.error(res.message || 'Failed to save document.');
         }
       },
-      error: () => this.toast.error('Error uploading document.')
+      error: () => {
+        this.isActionLoading = false;
+        this.toast.error('Error uploading document.');
+      }
     });
   }
 

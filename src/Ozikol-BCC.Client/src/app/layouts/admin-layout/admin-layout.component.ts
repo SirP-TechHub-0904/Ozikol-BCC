@@ -14,6 +14,7 @@ import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUA
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
 import { CommitteesService } from '../../core/services/committees.service';
+import { WorkforceService } from '../../core/services/workforce.service';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
@@ -1339,11 +1340,12 @@ export interface SuiteInfoDetail {
 
             <!-- 3. Open Shifts & Swaps -->
             <div class="nav-item">
-              <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link">
+              <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link position-relative">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">work_outline</span>
                   <span>Open Shifts &amp; Swaps</span>
                 </div>
+                <span class="sidebar-badge-sup" *ngIf="openShiftsCount > 0">{{ openShiftsCount }}</span>
               </a>
             </div>
 
@@ -2066,6 +2068,13 @@ export interface SuiteInfoDetail {
         z-index: 1040;
         cursor: pointer;
       }
+      .workspace-switcher-wrapper,
+      .oz-lang-switcher {
+        display: none !important;
+      }
+      .user-profile-info {
+        display: none !important;
+      }
     }
     .feature-locked {
       opacity: 0.78;
@@ -2670,6 +2679,23 @@ export interface SuiteInfoDetail {
     .sub-nav-divider { padding: 8px 16px 4px; list-style: none; }
     .sub-divider-text { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
     .badge-sub-new { background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+    .sidebar-badge-sup {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #0050e5;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      margin-left: auto;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.35);
+    }
 
     /* Sidebar Mode Switcher (Admin Console <-> Users Workspace) */
     .sidebar-mode-switcher {
@@ -3539,6 +3565,8 @@ export interface SuiteInfoDetail {
 })
 export class AdminLayoutComponent implements OnInit, OnDestroy {
   private committeeAliasesSub?: Subscription;
+  private openShiftsSub?: Subscription;
+  public openShiftsCount = 0;
   sidebarCollapsed = false;
   darkMode = false;
 
@@ -4294,6 +4322,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     public translation: TranslationService,
     private multiWorkspace: MultiWorkspaceService,
     private committeesService: CommitteesService,
+    private workforceService: WorkforceService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -4356,6 +4385,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // 0. Live workforce open shifts count listener for sidebar indicator
+    this.openShiftsSub = this.workforceService.openShiftsCount$.subscribe(count => {
+      this.openShiftsCount = count;
+      this.cdr.markForCheck();
+    });
+    this.workforceService.refreshOpenShiftsCount();
+
     // Subscribe to global AI assistant layout and open state
     this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);
     this.aiAssistantService.layoutMode$.subscribe(mode => this.aiLayoutMode = mode);
@@ -5886,5 +5922,6 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.committeeAliasesSub?.unsubscribe();
+    this.openShiftsSub?.unsubscribe();
   }
 }
