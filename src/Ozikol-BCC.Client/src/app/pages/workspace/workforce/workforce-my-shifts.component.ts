@@ -186,9 +186,9 @@ Chart.register(...registerables);
           </div>
         </div>
 
-        <!-- 4 Top KPI Cards (Total Shift, Total Work Hour, Total Late Appearance, Total Amount Made) -->
+        <!-- 4 Top KPI Cards (Executive BCC Standard Set A) -->
         <div class="metrics-grid mb-4">
-          <!-- Card 1: Total Shifts -->
+          <!-- Card 1: Shift Fulfillment -->
           <div class="metric-card">
             <div class="card-top">
               <div class="card-icon bg-blue">
@@ -197,7 +197,7 @@ Chart.register(...registerables);
               <span class="card-chip chip-blue">{{ analyticsFulfillmentRate }}% Fulfilled</span>
             </div>
             <div class="card-value">{{ analyticsTotalShifts }}</div>
-            <div class="card-label">Total Shifts</div>
+            <div class="card-label">Shift Fulfillment</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-blue" [style.width.%]="analyticsFulfillmentRate"></div>
             </div>
@@ -206,54 +206,54 @@ Chart.register(...registerables);
             </div>
           </div>
 
-          <!-- Card 2: Total Work Hours -->
+          <!-- Card 2: Logged Duty Hours -->
           <div class="metric-card">
             <div class="card-top">
               <div class="card-icon bg-teal">
                 <span class="material-symbols-outlined">timer</span>
               </div>
-              <span class="card-chip chip-teal">{{ analyticsHoursRatio }}% Ratio</span>
+              <span class="card-chip chip-teal">{{ analyticsHoursRatio }}% Delivered</span>
             </div>
             <div class="card-value">{{ analyticsClockedHours | number:'1.1-1' }} <span style="font-size: 15px; font-weight: 600; color: #64748b;">hrs</span></div>
-            <div class="card-label">Total Work Hours</div>
+            <div class="card-label">Logged Duty Hours</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-teal" [style.width.%]="analyticsHoursRatio"></div>
             </div>
             <div class="card-sub-info">
-              <span>of {{ analyticsPlannedHours | number:'1.1-1' }}h planned &bull; {{ calculateLeaveHoursInRange() }}h excused</span>
+              <span>of {{ analyticsPlannedHours | number:'1.1-1' }}h scheduled &bull; {{ calculateLeaveHoursInRange() }}h excused</span>
             </div>
           </div>
 
-          <!-- Card 3: Total Late Appearances -->
+          <!-- Card 3: Punctuality & Arrival -->
           <div class="metric-card">
             <div class="card-top">
               <div class="card-icon" [ngClass]="analyticsLateCount > 0 ? 'bg-amber' : 'bg-green'">
                 <span class="material-symbols-outlined">{{ analyticsLateCount > 0 ? 'running_with_errors' : 'verified_user' }}</span>
               </div>
               <span class="card-chip" [ngClass]="analyticsLateCount > 0 ? 'chip-amber' : 'chip-teal'">
-                {{ analyticsPunctualityScore }}% Punctual
+                {{ analyticsLateCount === 0 ? 'Flawless Arrival' : analyticsLateCount + ' Late Incident(s)' }}
               </span>
             </div>
-            <div class="card-value" [class.text-amber]="analyticsLateCount > 0">{{ analyticsLateCount }}</div>
-            <div class="card-label">Total Late Appearances</div>
+            <div class="card-value" [class.text-amber]="analyticsLateCount > 0">{{ analyticsPunctualityScore }}%</div>
+            <div class="card-label">Punctuality &amp; Arrival</div>
             <div class="card-progress-track">
               <div class="card-progress-bar" [ngClass]="analyticsLateCount > 0 ? 'bg-amber' : 'bg-green'" [style.width.%]="analyticsPunctualityScore"></div>
             </div>
             <div class="card-sub-info">
-              <span>Zero geofence boundary penalties</span>
+              <span>{{ analyticsLateCount === 0 ? 'Zero late arrivals recorded' : analyticsLateCount + ' late arrival(s) in window' }} &bull; Geofence compliant</span>
             </div>
           </div>
 
-          <!-- Card 4: Total Amount Made -->
+          <!-- Card 4: Gross Duty Earnings -->
           <div class="metric-card">
             <div class="card-top">
               <div class="card-icon bg-purple">
                 <span class="material-symbols-outlined">payments</span>
               </div>
-              <span class="card-chip chip-purple">Duty Earnings</span>
+              <span class="card-chip chip-purple">Duty Pay</span>
             </div>
             <div class="card-value">{{ currencySymbol }}{{ (analyticsGrossEarnings | number:'1.2-2') || '0.00' }}</div>
-            <div class="card-label">Total Amount Made</div>
+            <div class="card-label">Gross Duty Earnings</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-purple" style="width: 85%;"></div>
             </div>
