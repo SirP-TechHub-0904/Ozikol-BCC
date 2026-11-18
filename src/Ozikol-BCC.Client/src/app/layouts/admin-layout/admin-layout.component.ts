@@ -15,6 +15,8 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
 import { CommitteesService } from '../../core/services/committees.service';
 import { WorkforceService } from '../../core/services/workforce.service';
+import { MasterHelpService } from '../../core/services/master-help.service';
+import { HelpDrawerComponent } from '../../shared/components/help-drawer/help-drawer.component';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
@@ -53,7 +55,7 @@ export interface SuiteInfoDetail {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe, HelpDrawerComponent],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
@@ -1465,7 +1467,7 @@ export interface SuiteInfoDetail {
           </div>
         </div>
         <div class="sidebar-footer-actions">
-          <a href="javascript:void(0)" (click)="showHelpModal = true" [title]="'adm.help_support' | translate:'Help & Support'">
+          <a href="javascript:void(0)" (click)="toggleHelpDrawer()" [title]="'adm.help_support' | translate:'Help & Support'">
             <span class="material-symbols-outlined">help_outline</span>
             <span>{{ 'adm.help_support' | translate:'Help & Support' }}</span>
           </a>
@@ -1590,7 +1592,7 @@ export interface SuiteInfoDetail {
 
 
           <!-- Help Trigger -->
-          <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" [title]="'adm.contextual_help' | translate:'Contextual Help'">
+          <button type="button" class="topbar-action-btn" (click)="toggleHelpDrawer()" [title]="'adm.contextual_help' | translate:'Contextual Help'">
             <span class="material-symbols-outlined">help_outline</span>
           </button>
 
@@ -1774,27 +1776,8 @@ export interface SuiteInfoDetail {
       </div>
     </main>
 
-    <!-- Contextual Help Modal -->
-    <div class="modal-backdrop" *ngIf="showHelpModal" (click)="showHelpModal = false">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div class="modal-title-group">
-            <span class="material-symbols-outlined text-blue">help_outline</span>
-            <h3>{{ 'adm.bcp_contextual_help_guide' | translate:'BCP Contextual Help & Guide' }}</h3>
-          </div>
-          <button (click)="showHelpModal = false" class="btn-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to your Business Command Center' }}</h4>
-          <p>{{ 'adm.this_system_allows_you_to_manage_members_col' | translate:'This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.' }}</p>
-          <ul>
-            <li><strong>{{ 'adm.taskbar_tabs' | translate:'Taskbar Tabs:' }}</strong> {{ 'adm.as_you_navigate_pages_stay_open_as_browser_l' | translate:'As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.' }}</li>
-            <li><strong>{{ 'adm.pin_navigation' | translate:'Pin Navigation:' }}</strong> {{ 'adm.click_the_push_pin_icon_on_any_sidebar_item' | translate:'Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.' }}</li>
-            <li><strong>{{ 'adm.theme_engine' | translate:'Theme Engine:' }}</strong> {{ 'adm.toggle_between_the_crisp_light_theme_and_dar' | translate:'Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.' }}</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    <!-- Central Master Page Help Drawer (Slide-Out) -->
+    <app-help-drawer></app-help-drawer>
 
     <!-- User Privileges & Access Modal -->
     <div class="modal-backdrop" *ngIf="showPrivilegesModal" (click)="closePrivilegesModal()">
@@ -4323,8 +4306,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     private multiWorkspace: MultiWorkspaceService,
     private committeesService: CommitteesService,
     private workforceService: WorkforceService,
+    private masterHelpService: MasterHelpService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  public toggleHelpDrawer(): void {
+    this.masterHelpService.toggle();
+  }
 
   /// <summary>
   /// Gets all enrolled workspace sessions stored in the browser's persistent storage.

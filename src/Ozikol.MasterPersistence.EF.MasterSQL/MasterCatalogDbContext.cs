@@ -114,6 +114,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     /// </summary>
     public DbSet<MasterApiErrorLog> MasterApiErrorLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Central master page-based help instructions and interactive walkthrough guides.
+    /// </summary>
+    public DbSet<MasterPageHelp> MasterPageHelps { get; set; } = null!;
+
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
     }
@@ -896,6 +901,15 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                 .WithMany()
                 .HasForeignKey(e => e.MasterTenantCatalogId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<MasterPageHelp>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RouteKey).IsUnique();
+            entity.HasIndex(e => e.FeatureSuite);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsPublished);
         });
     }
 }
