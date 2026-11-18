@@ -392,15 +392,14 @@ Chart.register(...registerables);
             <div class="venue-breakdown-item" *ngFor="let v of venueDistribution">
               <div class="venue-item-top">
                 <div class="venue-item-name">
-                  <span class="material-symbols-outlined">place</span>
+                  <span class="material-symbols-outlined text-primary">place</span>
                   <strong>{{ v.name }}</strong>
                   <span class="badge-top-venue" *ngIf="v.isPrimary">⭐ Primary Venue ({{ v.percentage }}%)</span>
                 </div>
                 <div class="venue-item-stats">
-                  <span class="venue-shifts">{{ v.shiftCount }} shift(s)</span>
-                  <span class="venue-hours">{{ v.hours }} hrs ({{ v.percentage }}%)</span>
-                  <span class="venue-rate" *ngIf="v.effectiveRate">{{ currencySymbol }}{{ v.effectiveRate | number:'1.2-2' }}/hr</span>
-                  <span class="venue-gross">{{ currencySymbol }}{{ (v.gross | number:'1.2-2') }}</span>
+                  <span class="venue-shifts">{{ v.shiftCount }} Shifts</span>
+                  <span class="venue-hours">&bull; {{ v.hours }} hrs ({{ v.percentage }}%)</span>
+                  <span class="venue-gross">&bull; {{ currencySymbol }}{{ (v.gross | number:'1.2-2') }} ({{ currencySymbol }}{{ (v.effectiveRate | number:'1.2-2') }}/hr)</span>
                 </div>
               </div>
               <div class="venue-progress-track">
@@ -421,6 +420,10 @@ Chart.register(...registerables);
               </div>
             </div>
             <div class="toolbar-right d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline" (click)="printDutyStatement()" [disabled]="displayedStatementShifts.length === 0" title="Print this duty statement">
+                <span class="material-symbols-outlined">print</span>
+                <span>Print</span>
+              </button>
               <button type="button" class="btn btn-sm btn-outline" (click)="exportDutyStatementCsv()" [disabled]="displayedStatementShifts.length === 0" title="Export this statement as CSV">
                 <span class="material-symbols-outlined">download</span>
                 <span>Export CSV</span>
@@ -470,66 +473,82 @@ Chart.register(...registerables);
             <table class="cms-table">
               <thead>
                 <tr>
-                  <th>Shift / Post</th>
-                  <th>Venue &amp; Location</th>
-                  <th>Date</th>
+                  <th>Shift &amp; Role</th>
+                  <th>Client Venue</th>
                   <th>Scheduled Window</th>
-                  <th>Verified Clock-In / Out</th>
+                  <th>Actual Clock-In / Out</th>
                   <th>Duration</th>
-                  <th>Punctuality</th>
-                  <th>Status</th>
-                  <th class="text-end">Shift Pay</th>
+                  <th>Punctuality Status</th>
+                  <th>Duty Status</th>
+                  <th class="text-end">Shift Earnings</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let s of displayedStatementShifts">
+                <tr *ngFor="let s of displayedStatementShifts" (click)="openDayDetailForShift(s)" class="clickable-statement-row" title="Click to view full shift details, instructions, and apply excuse">
                   <td>
                     <span class="shift-code-tag">{{ s.shiftCode }}</span>
-                    <div class="venue-cell-sub">{{ s.postName }}</div>
+                    <div class="venue-cell-sub"><strong>{{ s.postName || 'Security Operative' }}</strong></div>
                   </td>
                   <td>
-                    <div class="venue-cell-title">{{ s.facilityName || s.siteName }}</div>
-                    <div class="venue-cell-sub">{{ s.address || s.siteAddress }}</div>
+                    <div class="venue-cell-title d-flex align-items-center gap-1">
+                      <span class="material-symbols-outlined text-primary" style="font-size: 15px;">location_on</span>
+                      <span>{{ s.facilityName || s.siteName }}</span>
+                    </div>
+                    <div class="venue-cell-sub" *ngIf="s.address || s.siteAddress">{{ s.address || s.siteAddress }}</div>
                   </td>
-                  <td>{{ s.startsAtUtc | date:'dd MMM yyyy' }}</td>
-                  <td>{{ s.startsAtUtc | date:'HH:mm' }} &mdash; {{ s.endsAtUtc | date:'HH:mm' }}</td>
+                  <td>
+                    <div class="fw-semibold">{{ s.startsAtUtc | date:'EEE, d MMM' }}</div>
+                    <div class="venue-cell-sub">{{ s.startsAtUtc | date:'HH:mm' }} &mdash; {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</div>
+                  </td>
                   <td>
                     <div class="clock-times-cell" *ngIf="getShiftClockTimes(s) as ct">
-                      <span class="clock-in-val" [class.text-amber]="isShiftLate(s)">In: {{ ct.inTime || 'Pending' }}</span>
-                      <span class="clock-out-val" *ngIf="ct.outTime">Out: {{ ct.outTime }}</span>
+                      <div class="d-flex align-items-center gap-1">
+                        <span class="punctuality-dot" [ngClass]="isShiftLate(s) ? 'dot-red' : (getGraceArrivalStatus(s) ? 'dot-amber' : (ct.inTime ? 'dot-green' : 'dot-gray'))"></span>
+                        <strong [class.text-amber]="isShiftLate(s)">{{ ct.inTime || 'Not Clocked' }}</strong>
+                        <span *ngIf="ct.outTime">&mdash; {{ ct.outTime }}</span>
+                      </div>
+                      <div class="venue-cell-sub" style="font-size: 10.5px;">{{ getActualClockSubtext(s) }}</div>
                     </div>
                   </td>
-                  <td>{{ s.plannedDurationHours }} hrs</td>
                   <td>
-                    <span class="status-pill status-active" *ngIf="!isShiftLate(s) && (s.status === 'Completed' || (s.endsAtUtc && isPastDate(s.endsAtUtc)))">
-                      On-Time
+                    <span class="badge-duration">{{ s.plannedDurationHours }} hrs</span>
+                  </td>
+                  <td>
+                    <span class="status-pill status-active" *ngIf="!isShiftLate(s) && !getGraceArrivalStatus(s) && (s.status === 'Completed' || (s.endsAtUtc && isPastDate(s.endsAtUtc)))">
+                      🟢 On-Time
+                    </span>
+                    <span class="status-pill status-amber" *ngIf="getGraceArrivalStatus(s)">
+                      🟡 Grace (&lt;5m)
                     </span>
                     <span class="status-pill status-danger" *ngIf="isShiftLate(s)">
-                      Late Arrival
+                      🔴 Late (+{{ getLateMinutes(s) }}m)
                     </span>
-                    <span class="status-pill status-pending" *ngIf="!isShiftLate(s) && s.status !== 'Completed' && (!s.endsAtUtc || !isPastDate(s.endsAtUtc))">
-                      Scheduled
+                    <span class="status-pill status-pending" *ngIf="!isShiftLate(s) && !getGraceArrivalStatus(s) && s.status !== 'Completed' && (!s.endsAtUtc || !isPastDate(s.endsAtUtc))">
+                      ⚪ Upcoming
                     </span>
                   </td>
                   <td>
                     <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
                   </td>
-                  <td class="text-end fw-bold text-success">
-                    {{ currencySymbol }}{{ ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10) | number:'1.2-2') }}
-                    <div class="venue-cell-sub" style="font-size: 10.5px; color: #64748b;">&#64; {{ currencySymbol }}{{ s.hourlyPayRate || 10 }}/h</div>
+                  <td class="text-end">
+                    <div class="fw-bold text-success" style="font-size: 13.5px;">
+                      {{ currencySymbol }}{{ ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10) | number:'1.2-2') }}
+                    </div>
+                    <div class="venue-cell-sub" style="font-size: 10.5px; color: #64748b;">({{ currencySymbol }}{{ s.hourlyPayRate || 10 | number:'1.2-2' }}/hr)</div>
                   </td>
                 </tr>
               </tbody>
               <!-- Pinned Summary Footer Row -->
               <tfoot>
                 <tr class="statement-summary-footer-row">
-                  <td colspan="5" class="fw-bold">
+                  <td colspan="4" class="fw-bold">
                     <span class="material-symbols-outlined summary-icon">verified</span>
-                    TOTALS IN WINDOW: {{ displayedStatementShifts.length }} Rostered Shift(s)
+                    TOTALS IN WINDOW: {{ displayedStatementShifts.length }} Shifts Rostered
                   </td>
-                  <td class="fw-bold text-primary">{{ statementTotalClockedHours | number:'1.1-1' }} hrs Logged</td>
-                  <td colspan="2"></td>
-                  <td class="text-end fw-bold text-success" style="font-size: 14px;">
+                  <td colspan="3" class="fw-bold text-primary">
+                    {{ statementTotalClockedHours | number:'1.1-1' }} hrs Logged
+                  </td>
+                  <td class="text-end fw-bold text-success" style="font-size: 14.5px;">
                     {{ currencySymbol }}{{ statementTotalGross | number:'1.2-2' }} Gross
                   </td>
                 </tr>
@@ -3103,6 +3122,66 @@ Chart.register(...registerables);
       vertical-align: middle;
       margin-right: 4px;
     }
+    .clickable-statement-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out;
+    }
+    .clickable-statement-row:hover {
+      background-color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .clickable-statement-row:hover {
+      background-color: #334155 !important;
+    }
+    .punctuality-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-green { background-color: #16a34a; }
+    .dot-amber { background-color: #d97706; }
+    .dot-red { background-color: #dc2626; }
+    .dot-gray { background-color: #94a3b8; }
+    .badge-duration {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    :host-context(.dark-mode) .badge-duration {
+      background: #0f172a;
+      color: #cbd5e1;
+      border-color: #334155;
+    }
+    .status-amber {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    @media print {
+      .page-header .header-actions,
+      .subnav-scroll-wrapper,
+      .analytics-filter-card .filter-controls-row,
+      .analytics-filter-card .filter-actions-right,
+      .statement-filters-bar,
+      .toolbar-right,
+      .btn {
+        display: none !important;
+      }
+      .bcp-page-container {
+        padding: 0 !important;
+      }
+      .cms-card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        break-inside: avoid;
+      }
+    }
 
     /* Calendar Footer Summary */
     .calendar-summary-footer {
@@ -4819,6 +4898,74 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     this.toast.success('Export Statement', `Duty statement CSV exported successfully (${shifts.length} records).`);
+  }
+
+  printDutyStatement(): void {
+    window.print();
+  }
+
+  openDayDetailForShift(s: Shift): void {
+    const shiftDate = s.startsAtUtc ? new Date(s.startsAtUtc) : new Date();
+    const today = new Date();
+    const isToday = shiftDate.toDateString() === today.toDateString();
+    const dayShifts = this.shifts.filter(item => {
+      if (!item.startsAtUtc) return false;
+      return new Date(item.startsAtUtc).toDateString() === shiftDate.toDateString();
+    });
+    const dayLeaves = this.leaveList.filter(l => {
+      if (!l.startDate) return false;
+      const sT = new Date(l.startDate).getTime();
+      const eT = l.endDate ? new Date(l.endDate).getTime() : sT;
+      const t = shiftDate.getTime();
+      return t >= sT && t <= eT;
+    });
+
+    this.selectedDay = {
+      date: shiftDate,
+      dayNumber: shiftDate.getDate(),
+      isCurrentMonth: true,
+      isToday,
+      shifts: dayShifts.length > 0 ? dayShifts : [s],
+      leaves: dayLeaves
+    };
+    this.showDayDetailModal = true;
+  }
+
+  getGraceArrivalStatus(s: Shift): boolean {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    let diff = 0;
+    if (ts?.lateMinutes) {
+      diff = ts.lateMinutes;
+    } else if (ts?.clockInUtc && s.startsAtUtc) {
+      diff = (new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime()) / 60000;
+    }
+    return diff > 0 && diff <= 5;
+  }
+
+  getLateMinutes(s: Shift): number {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    if (ts?.lateMinutes) return ts.lateMinutes;
+    if (ts?.clockInUtc && s.startsAtUtc) {
+      const diff = Math.round((new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime()) / 60000);
+      return Math.max(0, diff);
+    }
+    return 10;
+  }
+
+  getActualClockSubtext(s: Shift): string {
+    const isLate = this.isShiftLate(s);
+    if (isLate) {
+      const m = this.getLateMinutes(s);
+      return `(+${m}m late arrival)`;
+    }
+    if (this.getGraceArrivalStatus(s)) {
+      const m = this.getLateMinutes(s);
+      return `(+${m}m grace arrival)`;
+    }
+    if (s.status === 'Completed' || (s.endsAtUtc && this.isPastDate(s.endsAtUtc))) {
+      return `(On-Time • ${s.plannedDurationHours || 8}h)`;
+    }
+    return `(${s.plannedDurationHours || 8}h planned)`;
   }
 
   calculateChartBuckets(): { labels: string[]; plannedHours: number[]; actualHours: number[] } {
