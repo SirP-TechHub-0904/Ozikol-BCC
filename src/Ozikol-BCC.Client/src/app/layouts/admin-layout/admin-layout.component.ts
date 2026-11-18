@@ -2049,6 +2049,10 @@ export interface SuiteInfoDetail {
       display: none;
     }
     @media (max-width: 900px) {
+      .bcp-page-shell,
+      .bcp-page-shell.is-workspace-mode {
+        padding: 14px 12px !important;
+      }
       .sidebar-close-btn {
         display: flex !important;
       }

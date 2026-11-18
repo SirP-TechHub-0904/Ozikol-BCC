@@ -1120,11 +1120,22 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
     .bcp-page-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
       padding: 0 4px 32px 4px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     /* Page Header */
@@ -1137,6 +1148,9 @@ import { ToastService } from '../../../core/services/toast.service';
       border-radius: 16px;
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
       box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .breadcrumb {
       display: flex;
@@ -2241,37 +2255,71 @@ import { ToastService } from '../../../core/services/toast.service';
     /* Mobile Responsive Optimizations */
     @media (max-width: 768px) {
       .bcp-page-container {
-        padding: 0 0 24px 0;
-        gap: 16px;
+        padding: 0 0 24px 0 !important;
+        gap: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
       }
       .page-header {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 16px 18px;
-        gap: 14px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
       .header-left {
-        width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 6px !important;
+        flex-wrap: wrap !important;
       }
       .title-row h1 {
-        font-size: 20px;
+        font-size: 20px !important;
+        line-height: 1.25 !important;
       }
-      .breadcrumb {
-        font-size: 11.5px;
-        flex-wrap: wrap;
-        gap: 4px;
+      .badge-suite {
+        font-size: 10px !important;
+        padding: 2px 8px !important;
+      }
+      .subtitle {
+        font-size: 12.5px !important;
+        line-height: 1.4 !important;
       }
       .header-actions {
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
       }
       .header-actions .btn {
-        flex: 1 1 calc(50% - 8px);
-        justify-content: center;
-        padding: 8px 12px;
-        font-size: 12px;
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 9px 6px !important;
+        font-size: 11.5px !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+      }
+      .header-actions .btn .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .subnav-scroll-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .bcp-subnav-tabs {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
       .subnav-arrow-btn {
         display: none !important;
@@ -2308,6 +2356,9 @@ import { ToastService } from '../../../core/services/toast.service';
       .form-row-2,
       .form-row-3 {
         grid-template-columns: 1fr;
+      }
+      .toggles-grid {
+        grid-template-columns: 1fr !important;
       }
     }
 
