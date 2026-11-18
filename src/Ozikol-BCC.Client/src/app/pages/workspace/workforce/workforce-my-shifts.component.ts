@@ -244,13 +244,37 @@ import { ToastService } from '../../../core/services/toast.service';
                 [class.other-month]="!day.isCurrentMonth"
                 [class.today]="day.isToday"
                 [class.has-shift]="day.shifts.length > 0"
+                [class.has-leave]="day.leaves && day.leaves.length > 0"
+                [class.is-selected]="selectedDay && selectedDay.date.toDateString() === day.date.toDateString()"
+                (click)="onSelectDay(day)"
+                title="Click to view full day activity, shifts, and excuses"
               >
-                <div class="day-number">{{ day.dayNumber }}</div>
+                <div class="day-cell-top">
+                  <span class="day-number">{{ day.dayNumber }}</span>
+                  <div class="day-indicators">
+                    <span class="indicator-dot dot-shift" *ngIf="day.shifts.length > 0" title="{{ day.shifts.length }} shift(s)"></span>
+                    <span class="indicator-dot dot-leave" *ngIf="day.leaves && day.leaves.length > 0" title="{{ day.leaves.length }} leave/excuse(s)"></span>
+                  </div>
+                </div>
+
+                <!-- Shift badges in cell -->
                 <div class="day-shifts" *ngIf="day.shifts.length > 0">
                   <div *ngFor="let s of day.shifts" class="shift-pill-badge" [title]="s.postName + ' at ' + (s.facilityName || s.siteName)">
                     <span class="badge-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
                     <span class="badge-site">{{ s.facilityName || s.siteName }}</span>
                   </div>
+                </div>
+
+                <!-- Leave / Excuse badges in cell -->
+                <div class="day-leaves" *ngIf="day.leaves && day.leaves.length > 0">
+                  <div *ngFor="let l of day.leaves" class="leave-pill-badge" [class.leave-approved]="l.status === 'Approved'" [class.leave-pending]="l.status === 'Pending'" [title]="l.leaveType + ' (' + l.status + ')'">
+                    <span class="material-symbols-outlined badge-leave-icon">flight_takeoff</span>
+                    <span class="badge-leave-text">{{ l.leaveType }}</span>
+                  </div>
+                </div>
+
+                <div class="cell-hover-hint" *ngIf="day.shifts.length === 0 && (!day.leaves || day.leaves.length === 0)">
+                  <span>+ Excuse / Info</span>
                 </div>
               </div>
             </div>
@@ -1026,6 +1050,202 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
+      <!-- DAY ACTIVITY & DETAILS MODAL -->
+      <div class="modal-backdrop-custom" *ngIf="showDayDetailModal" (click)="showDayDetailModal = false">
+        <div class="modal-card-custom day-details-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <h3>{{ selectedDay?.date | date:'EEEE, d MMMM yyyy' }}</h3>
+                  <span class="badge-day-today" *ngIf="selectedDay?.isToday">Today</span>
+                </div>
+                <p class="modal-subtitle">
+                  {{ selectedDay?.shifts?.length || 0 }} Rostered Shift(s) &bull; {{ selectedDay?.leaves?.length || 0 }} Leave / Excuse Record(s)
+                </p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showDayDetailModal = false">&times;</button>
+          </div>
+
+          <div class="modal-body-custom modal-body-scrollable">
+            <!-- Quick Action Bar -->
+            <div class="day-quick-actions mb-3">
+              <button type="button" class="btn btn-sm btn-outline-primary" (click)="openExcuseForSelectedDay('single')">
+                <span class="material-symbols-outlined">event_busy</span>
+                <span>Apply Excuse for This Day</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" (click)="openExcuseForSelectedDay('3days')">
+                <span class="material-symbols-outlined">date_range</span>
+                <span>Request Multi-Day Leave</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" (click)="showDayDetailModal = false; switchTab('open-shifts')">
+                <span class="material-symbols-outlined">work_outline</span>
+                <span>Find Open Shifts</span>
+              </button>
+            </div>
+
+            <!-- In-Modal Quick Excuse Form (Toggled when requested) -->
+            <div class="quick-excuse-form-card mb-4" *ngIf="showDayExcuseForm">
+              <div class="form-header-row">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-warning">edit_calendar</span>
+                  <h4 class="form-title">Apply for Absence / Excuse</h4>
+                </div>
+                <button type="button" class="btn-close-sm" (click)="showDayExcuseForm = false">&times;</button>
+              </div>
+
+              <!-- Duration Quick Presets -->
+              <div class="duration-presets-group mb-3">
+                <span class="presets-label">Quick Duration:</span>
+                <div class="presets-buttons">
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'single'" (click)="onExcusePresetChange('single')">1 Day (This Day)</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '2days'" (click)="onExcusePresetChange('2days')">2 Days</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '3days'" (click)="onExcusePresetChange('3days')">3 Days</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'week'" (click)="onExcusePresetChange('week')">1 Week</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'custom'" (click)="onExcusePresetChange('custom')">Custom</button>
+                </div>
+              </div>
+
+              <div class="form-row-2 mb-3">
+                <div class="form-group">
+                  <label class="form-label">Excuse / Leave Type *</label>
+                  <select class="form-select" [(ngModel)]="leaveType">
+                    <option value="Sick">Sickness / Medical</option>
+                    <option value="Compassionate">Emergency / Compassionate</option>
+                    <option value="Annual">Annual Leave</option>
+                    <option value="Unpaid">Unpaid Leave</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Start Date *</label>
+                  <input type="date" class="form-control" [(ngModel)]="leaveStartDate" (change)="onExcusePresetChange('custom')" />
+                </div>
+              </div>
+
+              <div class="form-row-2 mb-3">
+                <div class="form-group">
+                  <label class="form-label">End Date *</label>
+                  <input type="date" class="form-control" [(ngModel)]="leaveEndDate" (change)="onExcusePresetChange('custom')" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Reason / Sickness Details *</label>
+                  <input type="text" class="form-control" [(ngModel)]="leaveReason" placeholder="e.g. Flu, medical appointment, family emergency" />
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                  <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
+                  <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
+                  <span>Submit Excuse Request</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- SECTION A: Assigned Shifts -->
+            <div class="day-section mb-4">
+              <div class="day-section-header">
+                <span class="material-symbols-outlined text-primary">work</span>
+                <h4>Assigned Rota Duties ({{ selectedDay?.shifts?.length || 0 }})</h4>
+              </div>
+
+              <div class="day-empty-box" *ngIf="!selectedDay?.shifts || selectedDay.shifts.length === 0">
+                <span class="material-symbols-outlined text-muted">event_busy</span>
+                <div>
+                  <p class="empty-title">Off Duty / No Shifts Rostered</p>
+                  <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
+                </div>
+              </div>
+
+              <div class="day-shifts-list" *ngIf="selectedDay?.shifts && selectedDay.shifts.length > 0">
+                <div class="day-shift-card" *ngFor="let s of selectedDay.shifts">
+                  <div class="day-shift-top">
+                    <div>
+                      <div class="shift-code-tag">{{ s.shiftCode }}</div>
+                      <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
+                      <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
+                    </div>
+                    <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                  </div>
+
+                  <div class="day-shift-meta-grid">
+                    <div class="meta-item">
+                      <span class="meta-icon material-symbols-outlined">schedule</span>
+                      <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-icon material-symbols-outlined">payments</span>
+                      <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                    </div>
+                  </div>
+
+                  <div class="day-shift-actions">
+                    <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>Confirm Shift</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
+                      <span class="material-symbols-outlined">swap_horiz</span>
+                      <span>Request Swap</span>
+                    </button>
+                    <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay?.isToday" (click)="showDayDetailModal = false">
+                      <span class="material-symbols-outlined">fingerprint</span>
+                      <span>Duty Clock-In</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION B: Excuses & Leave -->
+            <div class="day-section">
+              <div class="day-section-header">
+                <span class="material-symbols-outlined text-warning">flight_takeoff</span>
+                <h4>Logged Excuses &amp; Time Off ({{ selectedDay?.leaves?.length || 0 }})</h4>
+              </div>
+
+              <div class="day-empty-box" *ngIf="!selectedDay?.leaves || selectedDay.leaves.length === 0">
+                <span class="material-symbols-outlined text-muted">event_available</span>
+                <div>
+                  <p class="empty-title">No Excuses or Time-Off Logged</p>
+                  <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
+                </div>
+                <button type="button" class="btn btn-xs btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                  + Log Excuse
+                </button>
+              </div>
+
+              <div class="day-leaves-list" *ngIf="selectedDay?.leaves && selectedDay.leaves.length > 0">
+                <div class="day-leave-card" *ngFor="let l of selectedDay.leaves">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge-station">{{ l.leaveType }}</span>
+                    <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                      {{ l.status }}
+                    </span>
+                  </div>
+                  <div class="leave-date-span">
+                    <span class="material-symbols-outlined">date_range</span>
+                    <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
+                  </div>
+                  <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-outline" (click)="showDayDetailModal = false">Close</button>
+            <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+              <span class="material-symbols-outlined">add</span>
+              <span>Apply for Excuse / Time Off</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Leave Request Modal (Custom BCC Modal) -->
       <div class="modal-backdrop-custom" *ngIf="showLeaveModal" (click)="showLeaveModal = false">
         <div class="modal-card-custom" (click)="$event.stopPropagation()">
@@ -1357,6 +1577,7 @@ import { ToastService } from '../../../core/services/toast.service';
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
+      margin-bottom: 24px;
     }
     .metric-card {
       background: #ffffff;
@@ -1447,6 +1668,7 @@ import { ToastService } from '../../../core/services/toast.service';
       border: 1px solid #e2e8f0;
       box-shadow: 0 4px 20px rgba(0,0,0,0.03);
       padding: 24px;
+      margin-bottom: 28px;
     }
     .calendar-card-header {
       display: flex;
@@ -1534,19 +1756,37 @@ import { ToastService } from '../../../core/services/toast.service';
       background: #fff;
     }
     .cal-day-cell {
-      min-height: 84px;
+      min-height: 92px;
       padding: 8px;
       border-right: 1px solid #f1f5f9;
       border-bottom: 1px solid #f1f5f9;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      transition: background 0.15s;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s, box-shadow 0.15s;
     }
     .cal-day-cell:nth-child(7n) { border-right: none; }
+    .cal-day-cell:hover {
+      background: #f8fafc;
+      box-shadow: inset 0 0 0 1.5px #0050e5;
+      z-index: 2;
+    }
+    .cal-day-cell.is-selected {
+      background: #eff6ff !important;
+      box-shadow: inset 0 0 0 2px #0050e5 !important;
+      z-index: 3;
+    }
     .cal-day-cell.other-month { background: #fafafa; opacity: 0.45; }
     .cal-day-cell.today { background: #eff6ff; }
     .cal-day-cell.has-shift { background: #f0f7ff; }
+    .day-cell-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
     .day-number {
       font-size: 13px;
       font-weight: 700;
@@ -1562,7 +1802,20 @@ import { ToastService } from '../../../core/services/toast.service';
       text-align: center;
       line-height: 22px;
     }
-    .day-shifts {
+    .day-indicators {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .indicator-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .dot-shift { background: #0050e5; }
+    .dot-leave { background: #f59e0b; }
+    .day-shifts,
+    .day-leaves {
       display: flex;
       flex-direction: column;
       gap: 3px;
@@ -1583,6 +1836,303 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .badge-time { font-weight: 700; }
     .badge-site { font-size: 9.5px; opacity: 0.85; }
+    .leave-pill-badge {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .leave-pill-badge.leave-approved {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    .leave-pill-badge.leave-pending {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+    }
+    .badge-leave-icon { font-size: 11px; }
+    .badge-leave-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cell-hover-hint {
+      display: none;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #0050e5;
+      margin-top: auto;
+      text-align: center;
+      padding-top: 4px;
+    }
+    .cal-day-cell:hover .cell-hover-hint {
+      display: block;
+    }
+
+    /* Day Activity & Details Modal */
+    .day-details-modal {
+      max-width: 640px !important;
+      width: 100%;
+    }
+    .day-modal-icon {
+      font-size: 28px;
+    }
+    .badge-day-today {
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .modal-body-scrollable {
+      max-height: 72vh;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+    .day-quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .btn-sm {
+      padding: 6px 12px !important;
+      font-size: 12px !important;
+      border-radius: 8px !important;
+      gap: 6px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+    .btn-sm .material-symbols-outlined { font-size: 16px !important; }
+    .btn-xs {
+      padding: 4px 8px !important;
+      font-size: 11px !important;
+      border-radius: 6px !important;
+      gap: 4px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+    .btn-outline-primary {
+      background: #eff6ff !important;
+      color: #0050e5 !important;
+      border: 1px solid #bfdbfe !important;
+      font-weight: 600 !important;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-outline-primary:hover {
+      background: #0050e5 !important;
+      color: #ffffff !important;
+      border-color: #0050e5 !important;
+    }
+
+    /* Quick In-Modal Excuse Form */
+    .quick-excuse-form-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      animation: modalSlide 0.2s ease-out;
+    }
+    .form-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .form-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .btn-close-sm {
+      background: none;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .btn-close-sm:hover { color: #0f172a; }
+    .duration-presets-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .presets-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .presets-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .preset-btn {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .preset-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+    }
+
+    /* Sections inside Modal */
+    .day-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .day-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .day-section-header h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .day-empty-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .day-empty-box .material-symbols-outlined { font-size: 26px; }
+    .empty-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      margin: 0;
+    }
+    .empty-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .day-shifts-list,
+    .day-leaves-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .day-shift-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .day-shift-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .shift-code-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0050e5;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .day-shift-venue {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 2px 0 0 0;
+    }
+    .day-shift-post {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .day-shift-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #334155;
+      font-weight: 600;
+    }
+    .meta-icon { font-size: 16px; color: #64748b; }
+    .day-shift-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .day-leave-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .leave-date-span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 600;
+      margin: 4px 0;
+    }
+    .leave-date-span .material-symbols-outlined { font-size: 15px; color: #64748b; }
+    .leave-reason-text {
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+      background: #f8fafc;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
 
     /* Calendar Footer Summary */
     .calendar-summary-footer {
@@ -2483,7 +3033,11 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   // Calendar State
   currentMonth: Date = new Date();
-  calendarDays: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[] }[] = [];
+  calendarDays: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
+  selectedDay: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] } | null = null;
+  showDayDetailModal = false;
+  showDayExcuseForm = false;
+  dayExcuseDurationPreset = 'single';
 
   // Availability state
   availForm: any = {
@@ -2658,7 +3212,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
 
-    const days: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[] }[] = [];
+    const days: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
     const today = new Date();
 
     let startDayOfWeek = firstDay.getDay() - 1;
@@ -2672,7 +3226,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         dayNumber: d.getDate(),
         isCurrentMonth: false,
         isToday: false,
-        shifts: this.getShiftsForDate(d)
+        shifts: this.getShiftsForDate(d),
+        leaves: this.getLeavesForDate(d)
       });
     }
 
@@ -2684,7 +3239,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         dayNumber: day,
         isCurrentMonth: true,
         isToday,
-        shifts: this.getShiftsForDate(d)
+        shifts: this.getShiftsForDate(d),
+        leaves: this.getLeavesForDate(d)
       });
     }
 
@@ -2696,7 +3252,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         dayNumber: i,
         isCurrentMonth: false,
         isToday: false,
-        shifts: this.getShiftsForDate(d)
+        shifts: this.getShiftsForDate(d),
+        leaves: this.getLeavesForDate(d)
       });
     }
 
@@ -2704,8 +3261,112 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   getShiftsForDate(date: Date): Shift[] {
-    const dateStr = date.toISOString().slice(0, 10);
+    const dateStr = this.formatDateForInput(date);
     return this.shifts.filter(s => s.startsAtUtc && s.startsAtUtc.slice(0, 10) === dateStr);
+  }
+
+  getLeavesForDate(date: Date): any[] {
+    if (!this.leaveList || this.leaveList.length === 0) return [];
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    return this.leaveList.filter(l => {
+      if (!l.startDate) return false;
+      const s = new Date(l.startDate);
+      const sTime = new Date(s.getFullYear(), s.getMonth(), s.getDate()).getTime();
+      const e = l.endDate ? new Date(l.endDate) : s;
+      const eTime = new Date(e.getFullYear(), e.getMonth(), e.getDate()).getTime();
+      return target >= sTime && target <= eTime;
+    });
+  }
+
+  onSelectDay(day: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }): void {
+    this.selectedDay = {
+      ...day,
+      shifts: this.getShiftsForDate(day.date),
+      leaves: this.getLeavesForDate(day.date)
+    };
+    this.showDayDetailModal = true;
+    this.showDayExcuseForm = false;
+  }
+
+  openExcuseForSelectedDay(preset: string = 'single'): void {
+    if (!this.selectedDay) return;
+    this.dayExcuseDurationPreset = preset;
+    const start = new Date(this.selectedDay.date);
+    this.leaveStartDate = this.formatDateForInput(start);
+
+    let end = new Date(this.selectedDay.date);
+    if (preset === '2days') {
+      end.setDate(end.getDate() + 1);
+    } else if (preset === '3days') {
+      end.setDate(end.getDate() + 2);
+    } else if (preset === 'week') {
+      end.setDate(end.getDate() + 6);
+    }
+    this.leaveEndDate = this.formatDateForInput(end);
+    this.leaveType = 'Sick';
+    this.leaveReason = '';
+    this.showDayExcuseForm = true;
+  }
+
+  onExcusePresetChange(preset: string): void {
+    this.dayExcuseDurationPreset = preset;
+    if (!this.leaveStartDate) {
+      this.leaveStartDate = this.formatDateForInput(this.selectedDay?.date || new Date());
+    }
+    const start = new Date(this.leaveStartDate);
+    let end = new Date(start);
+    if (preset === 'single') {
+      // same day
+    } else if (preset === '2days') {
+      end.setDate(end.getDate() + 1);
+    } else if (preset === '3days') {
+      end.setDate(end.getDate() + 2);
+    } else if (preset === 'week') {
+      end.setDate(end.getDate() + 6);
+    }
+    if (preset !== 'custom') {
+      this.leaveEndDate = this.formatDateForInput(end);
+    }
+  }
+
+  submitDayExcuse(): void {
+    if (!this.leaveStartDate || !this.leaveEndDate) return;
+    const req = {
+      leaveType: this.leaveType,
+      startDate: new Date(this.leaveStartDate).toISOString(),
+      endDate: new Date(this.leaveEndDate).toISOString(),
+      reason: this.leaveReason
+    };
+    this.isActionLoading = true;
+    this.workforceService.requestLeave(req).subscribe({
+      next: (res: any) => {
+        this.isActionLoading = false;
+        if (res.isSuccess) {
+          this.toast.success('Excuse / Leave request submitted successfully.');
+          this.showDayExcuseForm = false;
+          this.loadLeaveRequests();
+          setTimeout(() => {
+            if (this.selectedDay) {
+              this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
+            }
+            this.generateCalendar();
+          }, 300);
+        } else {
+          this.toast.error(res.message || 'Leave submission failed.');
+        }
+      },
+      error: () => {
+        this.isActionLoading = false;
+        this.toast.error('Failed to submit excuse/leave request.');
+      }
+    });
+  }
+
+  formatDateForInput(d: Date): string {
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   prevMonth(): void {
@@ -2774,6 +3435,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         this.toast.error('Unable to load your assigned shifts.');
       }
     });
+    this.loadLeaveRequests();
   }
 
   getCountdown(s: Shift): string {
@@ -2902,6 +3564,12 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       next: (res: any) => {
         if (res.isSuccess && res.data) {
           this.leaveList = res.data;
+          if (this.calendarDays.length > 0) {
+            this.generateCalendar();
+          }
+          if (this.selectedDay) {
+            this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
+          }
         }
       }
     });
