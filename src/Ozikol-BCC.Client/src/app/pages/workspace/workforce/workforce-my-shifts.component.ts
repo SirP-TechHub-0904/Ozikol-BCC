@@ -138,29 +138,28 @@ Chart.register(...registerables);
           </div>
 
           <div class="filter-controls-row">
-            <!-- Preset Buttons -->
-            <div class="presets-row">
-              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'this_month'" (click)="setAnalyticsPreset('this_month')">
-                This Month (Default)
-              </button>
-              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'this_week'" (click)="setAnalyticsPreset('this_week')">
-                This Week
-              </button>
-              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'last_30_days'" (click)="setAnalyticsPreset('last_30_days')">
-                Last 30 Days
-              </button>
-              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'last_month'" (click)="setAnalyticsPreset('last_month')">
-                Last Month
-              </button>
-              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'quarter'" (click)="setAnalyticsPreset('quarter')">
-                Quarter to Date
-              </button>
-              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'custom'" (click)="analyticsPreset = 'custom'">
-                Custom Range
+            <!-- Left: Current Working Date Display (Default Current Month) -->
+            <div class="current-working-range">
+              <span class="active-range-chip">
+                <span class="material-symbols-outlined range-chip-icon">calendar_month</span>
+                <span class="range-date-text">{{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}</span>
+                <span class="badge-default-month" *ngIf="isCurrentMonthSelected()">Current Month</span>
+              </span>
+              <span class="shifts-count-chip">
+                {{ analyticsTotalShifts }} Shift(s) in Window
+              </span>
+              <button
+                type="button"
+                class="btn-reset-month"
+                *ngIf="!isCurrentMonthSelected()"
+                (click)="resetDateRangeToCurrentMonth()"
+                title="Reset reporting window to Current Month (1st &mdash; End)">
+                <span class="material-symbols-outlined">restart_alt</span>
+                <span>Reset to This Month</span>
               </button>
             </div>
 
-            <!-- Custom Date Pickers -->
+            <!-- Right: Custom Date Range Pickers -->
             <div class="custom-range-inputs">
               <div class="range-field">
                 <span class="range-label">From:</span>
@@ -172,17 +171,6 @@ Chart.register(...registerables);
                 <input type="date" class="form-control form-control-sm" [(ngModel)]="analyticsEndDate" (change)="onCustomDateChange()" />
               </div>
             </div>
-          </div>
-
-          <!-- Active Filter Badge Row -->
-          <div class="active-filter-summary">
-            <span class="summary-chip">
-              <span class="material-symbols-outlined chip-icon">calendar_today</span>
-              <span>{{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}</span>
-            </span>
-            <span class="summary-chip chip-count">
-              <span>{{ analyticsTotalShifts }} Shift(s) in Window</span>
-            </span>
           </div>
         </div>
 
@@ -2646,34 +2634,77 @@ Chart.register(...registerables);
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 14px;
-      margin-top: 16px;
+      gap: 16px;
+      margin-top: 14px;
     }
-    .presets-row {
+    .current-working-range {
       display: flex;
+      align-items: center;
+      gap: 10px;
       flex-wrap: wrap;
-      gap: 6px;
     }
-    .preset-pill {
+    .active-range-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    .range-chip-icon {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .range-date-text {
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+    }
+    .badge-default-month {
+      background: #0050e5;
+      color: #ffffff;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.2px;
+      margin-left: 4px;
+    }
+    .shifts-count-chip {
+      display: inline-flex;
+      align-items: center;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 20px;
-      padding: 6px 14px;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+    }
+    .btn-reset-month {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 12px;
       font-size: 12px;
       font-weight: 600;
-      color: #475569;
+      color: #0050e5;
       cursor: pointer;
       transition: all 0.15s ease-in-out;
     }
-    .preset-pill:hover {
+    .btn-reset-month:hover {
+      background: #eff6ff;
       border-color: #0050e5;
-      color: #0050e5;
     }
-    .preset-pill.active {
-      background: #0050e5;
-      border-color: #0050e5;
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(0,80,229,0.25);
+    .btn-reset-month .material-symbols-outlined {
+      font-size: 16px;
     }
     .custom-range-inputs {
       display: flex;
@@ -2699,33 +2730,6 @@ Chart.register(...registerables);
     .range-sep {
       color: #94a3b8;
       font-weight: 700;
-    }
-    .active-filter-summary {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid #f1f5f9;
-      flex-wrap: wrap;
-    }
-    .summary-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #475569;
-    }
-    .summary-chip .chip-icon { font-size: 14px; color: #0050e5; }
-    .summary-chip.chip-count {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-      color: #0050e5;
     }
 
     /* Analytics Charts Grid */
@@ -4056,8 +4060,28 @@ Chart.register(...registerables);
     :host-context(.dark-mode) .venue-item-name {
       color: #f8fafc;
     }
-    :host-context(.dark-mode) .preset-pill,
-    :host-context(.dark-mode) .summary-chip,
+    :host-context(.dark-mode) .active-range-chip {
+      background: rgba(0, 80, 229, 0.15);
+      border-color: rgba(96, 165, 250, 0.35);
+      color: #93c5fd;
+    }
+    :host-context(.dark-mode) .range-date-text {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .shifts-count-chip {
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
+    }
+    :host-context(.dark-mode) .btn-reset-month {
+      background: #1e293b;
+      border-color: #334155;
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .btn-reset-month:hover {
+      background: #0f172a;
+      border-color: #60a5fa;
+    }
     :host-context(.dark-mode) .donut-chip,
     :host-context(.dark-mode) .filter-pill-btn {
       background: #0f172a;
@@ -4196,7 +4220,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   ) { }
 
   ngOnInit(): void {
-    this.setAnalyticsPreset('this_month');
+    this.resetDateRangeToCurrentMonth();
 
     this.workforceService.getTenantCurrency().subscribe({
       next: (res: any) => {
@@ -4516,6 +4540,24 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   // --- DEDICATED SHIFT ANALYTICS ENGINE ---
+  resetDateRangeToCurrentMonth(): void {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    this.analyticsStartDate = this.formatDateForInput(first);
+    this.analyticsEndDate = this.formatDateForInput(last);
+    this.analyticsPreset = 'this_month';
+    this.recalculateAnalytics();
+  }
+
+  isCurrentMonthSelected(): boolean {
+    if (!this.analyticsStartDate || !this.analyticsEndDate) return false;
+    const now = new Date();
+    const first = this.formatDateForInput(new Date(now.getFullYear(), now.getMonth(), 1));
+    const last = this.formatDateForInput(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    return this.analyticsStartDate === first && this.analyticsEndDate === last;
+  }
+
   setAnalyticsPreset(preset: 'this_month' | 'this_week' | 'last_30_days' | 'last_month' | 'quarter' | 'custom'): void {
     this.analyticsPreset = preset;
     const now = new Date();
