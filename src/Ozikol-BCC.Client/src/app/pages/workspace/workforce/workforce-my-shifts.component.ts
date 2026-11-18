@@ -870,7 +870,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 7: SHIFT REMINDERS -->
       <div *ngIf="activeTab === 'reminders' && !isLoading">
-        <div class="cms-card reminders-container">
+        <div class="cms-card">
           <div class="card-header-simple">
             <span class="material-symbols-outlined text-primary">notifications_active</span>
             <div>
@@ -909,48 +909,50 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
             </div>
 
-            <div class="toggles-section mb-4">
+            <div class="mb-4">
               <label class="form-label mb-2">Delivery Channels</label>
-              <div class="toggle-card">
-                <div class="toggle-info">
-                  <span class="material-symbols-outlined text-primary">notifications</span>
-                  <div>
-                    <div class="toggle-title">In-App Notification Alerts</div>
-                    <div class="toggle-desc">Instant web &amp; mobile notifications when shifts are assigned or approaching</div>
+              <div class="toggles-grid">
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <span class="material-symbols-outlined text-primary">notifications</span>
+                    <div>
+                      <div class="toggle-title">In-App Notification Alerts</div>
+                      <div class="toggle-desc">Instant web &amp; mobile notifications when shifts are assigned</div>
+                    </div>
                   </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="reminderPrefs.allowInApp" />
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" [(ngModel)]="reminderPrefs.allowInApp" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
 
-              <div class="toggle-card">
-                <div class="toggle-info">
-                  <span class="material-symbols-outlined text-blue">mail</span>
-                  <div>
-                    <div class="toggle-title">Email Departure Alerts</div>
-                    <div class="toggle-desc">Receive departure reminder emails with venue address and site instructions</div>
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <span class="material-symbols-outlined text-blue">mail</span>
+                    <div>
+                      <div class="toggle-title">Email Departure Alerts</div>
+                      <div class="toggle-desc">Receive departure reminder emails with venue address</div>
+                    </div>
                   </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="reminderPrefs.allowEmail" />
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" [(ngModel)]="reminderPrefs.allowEmail" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
 
-              <div class="toggle-card">
-                <div class="toggle-info">
-                  <span class="material-symbols-outlined text-green">chat</span>
-                  <div>
-                    <div class="toggle-title">WhatsApp Dispatch Reminders</div>
-                    <div class="toggle-desc">Automated WhatsApp ping with 1-tap clock-in link before shift commencement</div>
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <span class="material-symbols-outlined text-green">chat</span>
+                    <div>
+                      <div class="toggle-title">WhatsApp Dispatch Reminders</div>
+                      <div class="toggle-desc">Automated WhatsApp ping with 1-tap clock-in link</div>
+                    </div>
                   </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="reminderPrefs.allowWhatsApp" />
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" [(ngModel)]="reminderPrefs.allowWhatsApp" />
-                  <span class="toggle-slider"></span>
-                </label>
               </div>
             </div>
 
@@ -2003,24 +2005,26 @@ import { ToastService } from '../../../core/services/toast.service';
       border-radius: 6px;
     }
 
-    /* Reminders Toggles */
-    .reminders-container {
-      max-width: 680px;
-      margin: 0 auto;
-    }
-    .toggles-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    /* Reminders Toggles (Full Width) */
+    .toggles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
     }
     .toggle-card {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 18px;
+      padding: 16px 20px;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
       background: #f8fafc;
+      transition: all 0.2s;
+    }
+    .toggle-card:hover {
+      background: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.05);
     }
     .toggle-info {
       display: flex;
