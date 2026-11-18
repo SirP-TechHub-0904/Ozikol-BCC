@@ -563,9 +563,9 @@ export class FormSubmissionsComponent implements OnInit {
           this.toast.error(res?.message || 'Form not found.');
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.loading = false;
-        this.toast.error('Network error loading form details.');
+        this.toast.error(err?.error?.message || 'Unable to load form details.');
       }
     });
   }

@@ -739,7 +739,7 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-form-builder') && isMenuOpen('forms')" *ngSwitchCase="'bcp-form-builder'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-form-builder') && isCurrentRoute('/content/console/forms')" [class.feature-locked]="!isFeatureActive('bcp-form-builder')" (click)="onFeatureMenuClick('bcp-form-builder', getFeatureFullTitle('bcp-form-builder', 'Custom Dynamic Form Builder'), $event, 'forms')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-form-builder') && isCurrentRoute('/surveys/console')" [class.feature-locked]="!isFeatureActive('bcp-form-builder')" (click)="onFeatureMenuClick('bcp-form-builder', getFeatureFullTitle('bcp-form-builder', 'Custom Dynamic Form Builder'), $event, 'forms')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_form</span>
                 <span>{{ getFeatureMenuTitle('bcp-form-builder', 'Forms & Surveys') }}</span>
@@ -751,17 +751,17 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-form-builder') && isMenuOpen('forms')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/forms" [class.active]="isCurrentRoute('/content/console/forms')" class="sub-nav-item">
+                  <a routerLink="/surveys/console" [class.active]="isCurrentRoute('/surveys/console')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.forms_dashboard' | translate:'Forms Dashboard' }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Forms Dashboard', '/content/console/forms', 'dynamic_form')" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/surveys/console')" (click)="togglePin('Forms & Surveys', '/surveys/console', 'dynamic_form')" [title]="isPinned('/surveys/console') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/surveys/console') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/forms" class="sub-nav-item">
+                  <a routerLink="/surveys/console" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_note</span>{{ 'adm.form_builder_responses' | translate:'Form Builder & Responses' }}</span>
                   </a>
                 </div>

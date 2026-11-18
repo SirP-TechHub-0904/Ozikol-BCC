@@ -764,7 +764,11 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 submissionId = submission.Id,
-                message = form.SuccessMessage
+                message = form.SuccessMessage,
+                showSuccessPage = form.ShowSuccessPage,
+                successPageTitle = form.SuccessPageTitle ?? "Submission Received!",
+                successPageButtonText = form.SuccessPageButtonText ?? "Submit Again",
+                successRedirectUrl = form.SuccessRedirectUrl
             }, form.SuccessMessage));
         }
 

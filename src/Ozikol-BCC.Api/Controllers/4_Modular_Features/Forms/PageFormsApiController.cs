@@ -17,7 +17,6 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Policy = AuthPolicies.FormStudio)]
-    [RequireFeature("bcp-form-builder")]
     [Tags("Content CMS - Manage Forms")]
     public class PageFormsApiController : ControllerBase
     {
@@ -90,15 +89,26 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("by-key/{formKey}")]
         public async Task<IActionResult> GetFormByKey(string formKey)
         {
-            var cleanKey = formKey.Trim().ToLowerInvariant();
-            var form = await _context.PageForms
+            var raw = (formKey ?? string.Empty).Trim();
+            var lower = raw.ToLowerInvariant();
+            var withUnderscore = lower.Replace("-", "_");
+            var withHyphen = lower.Replace("_", "-");
+            var alphanumericOnly = new string(lower.Where(char.IsLetterOrDigit).ToArray());
+
+            var forms = await _context.PageForms
                 .Include(f => f.Fields.OrderBy(fl => fl.SortOrder))
                 .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.FormKey == cleanKey);
+                .ToListAsync();
+
+            var form = forms.FirstOrDefault(f =>
+                f.FormKey.Equals(lower, StringComparison.OrdinalIgnoreCase) ||
+                f.FormKey.Equals(withUnderscore, StringComparison.OrdinalIgnoreCase) ||
+                f.FormKey.Equals(withHyphen, StringComparison.OrdinalIgnoreCase) ||
+                new string(f.FormKey.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray()) == alphanumericOnly);
 
             if (form == null)
             {
-                return NotFound(ApiResponse.FailureResponse($"Form with key '{cleanKey}' was not found."));
+                return NotFound(ApiResponse.FailureResponse($"Form with key '{lower}' was not found."));
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(form, "Form retrieved successfully."));
@@ -139,6 +149,10 @@ namespace Ozikol_BCC.Api.Controllers
                 SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
                     ? "Thank you! Your submission has been received."
                     : dto.SuccessMessage.Trim(),
+                ShowSuccessPage = dto.ShowSuccessPage,
+                SuccessPageTitle = string.IsNullOrWhiteSpace(dto.SuccessPageTitle) ? "Submission Received!" : dto.SuccessPageTitle.Trim(),
+                SuccessPageButtonText = string.IsNullOrWhiteSpace(dto.SuccessPageButtonText) ? "Submit Again" : dto.SuccessPageButtonText.Trim(),
+                SuccessRedirectUrl = string.IsNullOrWhiteSpace(dto.SuccessRedirectUrl) ? null : dto.SuccessRedirectUrl.Trim(),
                 NotificationEmail = dto.NotificationEmail?.Trim(),
                 IsActive = dto.IsActive,
                 CreatedAtUtc = DateTime.UtcNow
@@ -445,6 +459,10 @@ namespace Ozikol_BCC.Api.Controllers
             form.SuccessMessage = string.IsNullOrWhiteSpace(dto.SuccessMessage)
                 ? "Thank you! Your submission has been received."
                 : dto.SuccessMessage.Trim();
+            form.ShowSuccessPage = dto.ShowSuccessPage;
+            form.SuccessPageTitle = string.IsNullOrWhiteSpace(dto.SuccessPageTitle) ? "Submission Received!" : dto.SuccessPageTitle.Trim();
+            form.SuccessPageButtonText = string.IsNullOrWhiteSpace(dto.SuccessPageButtonText) ? "Submit Again" : dto.SuccessPageButtonText.Trim();
+            form.SuccessRedirectUrl = string.IsNullOrWhiteSpace(dto.SuccessRedirectUrl) ? null : dto.SuccessRedirectUrl.Trim();
             form.NotificationEmail = dto.NotificationEmail?.Trim();
             form.IsActive = dto.IsActive;
             form.UpdatedAtUtc = DateTime.UtcNow;
@@ -487,6 +505,10 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Description { get; set; }
         public string? SubmitButtonText { get; set; }
         public string? SuccessMessage { get; set; }
+        public bool ShowSuccessPage { get; set; } = true;
+        public string? SuccessPageTitle { get; set; }
+        public string? SuccessPageButtonText { get; set; }
+        public string? SuccessRedirectUrl { get; set; }
         public string? NotificationEmail { get; set; }
         public bool IsActive { get; set; } = true;
         public List<PageFormFieldDto>? Fields { get; set; }

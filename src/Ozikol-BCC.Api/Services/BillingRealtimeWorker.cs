@@ -31,7 +31,7 @@ namespace Ozikol_BCC.Api.Services
         /// <summary>Socket event raised when a feature crosses a renewal threshold.</summary>
         public const string FeatureExpiryAlertEvent = "FeatureExpiryAlert";
 
-        private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(30);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHubContext<NotificationHub> _hub;

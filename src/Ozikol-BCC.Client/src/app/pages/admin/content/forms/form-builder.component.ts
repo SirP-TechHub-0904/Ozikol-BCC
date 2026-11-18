@@ -114,12 +114,51 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
               </div>
 
               <div class="form-group">
-                <label>Success Message Confirmation</label>
+                <label>Success Message / Note</label>
                 <input
                   type="text"
                   [(ngModel)]="form.successMessage"
                   (ngModelChange)="onDataChanged()"
                   placeholder="Thank you! We have received your request and will follow up shortly."
+                  class="form-control">
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="toggle-label">
+                  <input type="checkbox" [(ngModel)]="form.showSuccessPage" (ngModelChange)="onDataChanged()">
+                  <span>Show Dedicated Success Page after Submission (Title, Note &amp; Submit Again Button)</span>
+                </label>
+              </div>
+
+              <ng-container *ngIf="form.showSuccessPage !== false">
+                <div class="form-group">
+                  <label>Success Page Title</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="form.successPageTitle"
+                    (ngModelChange)="onDataChanged()"
+                    placeholder="Submission Received!"
+                    class="form-control">
+                </div>
+
+                <div class="form-group">
+                  <label>Submit Again Button Text</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="form.successPageButtonText"
+                    (ngModelChange)="onDataChanged()"
+                    placeholder="Submit Again"
+                    class="form-control">
+                </div>
+              </ng-container>
+
+              <div class="form-group col-span-2">
+                <label>Optional Custom Redirect URL (Overrides Inline Success Page)</label>
+                <input
+                  type="text"
+                  [(ngModel)]="form.successRedirectUrl"
+                  (ngModelChange)="onDataChanged()"
+                  placeholder="e.g. /thank-you (leave blank to use built-in success screen)"
                   class="form-control">
               </div>
 
@@ -744,6 +783,10 @@ export class FormBuilderComponent implements OnInit {
     description: '',
     submitButtonText: 'Submit Request',
     successMessage: 'Thank you! Your submission has been received. Our team will follow up promptly.',
+    showSuccessPage: true,
+    successPageTitle: 'Submission Received!',
+    successPageButtonText: 'Submit Again',
+    successRedirectUrl: '',
     notificationEmail: '',
     isActive: true
   };
