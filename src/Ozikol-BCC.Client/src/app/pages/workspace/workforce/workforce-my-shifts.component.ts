@@ -3,8 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { Chart, registerables } from 'chart.js';
 import { WorkforceService, Shift } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+
+Chart.register(...registerables);
 
 /**
  * Member "Shift and Rota" Hub (`/workforce/workspace/*`).
@@ -114,8 +117,305 @@ import { ToastService } from '../../../core/services/toast.service';
         <p>Loading your assigned shifts and rota schedule...</p>
       </div>
 
-      <!-- TAB 1: SHIFT ANALYTICS & SCHEDULE (MY SHIFTS) -->
-      <div *ngIf="(activeTab === 'analytics' || activeTab === 'shifts') && !isLoading">
+      <!-- TAB 1: SHIFT ANALYTICS (DEDICATED PERFORMANCE DASHBOARD) -->
+      <div *ngIf="activeTab === 'analytics' && !isLoading">
+        <!-- Date Range Filter Bar -->
+        <div class="analytics-filter-card mb-4">
+          <div class="filter-card-header">
+            <div class="filter-title-group">
+              <span class="material-symbols-outlined text-primary">date_range</span>
+              <div>
+                <h4 class="filter-heading">Analytics Reporting Window</h4>
+                <p class="filter-subtext">Filter your duty performance, worked hours, punctuality, and pay statement</p>
+              </div>
+            </div>
+            <div class="filter-actions-right">
+              <button type="button" class="btn btn-sm btn-outline" (click)="loadActiveTabData()">
+                <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+                <span>Refresh Data</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-controls-row">
+            <!-- Preset Buttons -->
+            <div class="presets-row">
+              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'this_month'" (click)="setAnalyticsPreset('this_month')">
+                This Month (Default)
+              </button>
+              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'this_week'" (click)="setAnalyticsPreset('this_week')">
+                This Week
+              </button>
+              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'last_30_days'" (click)="setAnalyticsPreset('last_30_days')">
+                Last 30 Days
+              </button>
+              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'last_month'" (click)="setAnalyticsPreset('last_month')">
+                Last Month
+              </button>
+              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'quarter'" (click)="setAnalyticsPreset('quarter')">
+                Quarter to Date
+              </button>
+              <button type="button" class="preset-pill" [class.active]="analyticsPreset === 'custom'" (click)="analyticsPreset = 'custom'">
+                Custom Range
+              </button>
+            </div>
+
+            <!-- Custom Date Pickers -->
+            <div class="custom-range-inputs">
+              <div class="range-field">
+                <span class="range-label">From:</span>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="analyticsStartDate" (change)="onCustomDateChange()" />
+              </div>
+              <span class="range-sep">&rarr;</span>
+              <div class="range-field">
+                <span class="range-label">To:</span>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="analyticsEndDate" (change)="onCustomDateChange()" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Filter Badge Row -->
+          <div class="active-filter-summary">
+            <span class="summary-chip">
+              <span class="material-symbols-outlined chip-icon">calendar_today</span>
+              <span>{{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}</span>
+            </span>
+            <span class="summary-chip chip-count">
+              <span>{{ analyticsTotalShifts }} Shift(s) in Window</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 4 Top KPI Cards (Total Shift, Total Work Hour, Total Late Appearance, Total Amount Made) -->
+        <div class="metrics-grid mb-4">
+          <!-- Card 1: Total Shifts -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-blue">
+                <span class="material-symbols-outlined">event_available</span>
+              </div>
+              <span class="card-chip chip-blue">{{ analyticsFulfillmentRate }}% Fulfilled</span>
+            </div>
+            <div class="card-value">{{ analyticsTotalShifts }}</div>
+            <div class="card-label">Total Shifts</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-blue" [style.width.%]="analyticsFulfillmentRate"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>{{ analyticsCompletedShifts }} fulfilled &bull; {{ analyticsTotalShifts - analyticsCompletedShifts }} upcoming</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Total Work Hours -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">timer</span>
+              </div>
+              <span class="card-chip chip-teal">{{ analyticsHoursRatio }}% Ratio</span>
+            </div>
+            <div class="card-value">{{ analyticsClockedHours | number:'1.1-1' }} <span style="font-size: 15px; font-weight: 600; color: #64748b;">hrs</span></div>
+            <div class="card-label">Total Work Hours</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-teal" [style.width.%]="analyticsHoursRatio"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>of {{ analyticsPlannedHours | number:'1.1-1' }}h planned &bull; {{ calculateLeaveHoursInRange() }}h excused</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Total Late Appearances -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon" [ngClass]="analyticsLateCount > 0 ? 'bg-amber' : 'bg-green'">
+                <span class="material-symbols-outlined">{{ analyticsLateCount > 0 ? 'running_with_errors' : 'verified_user' }}</span>
+              </div>
+              <span class="card-chip" [ngClass]="analyticsLateCount > 0 ? 'chip-amber' : 'chip-teal'">
+                {{ analyticsPunctualityScore }}% Punctual
+              </span>
+            </div>
+            <div class="card-value" [class.text-amber]="analyticsLateCount > 0">{{ analyticsLateCount }}</div>
+            <div class="card-label">Total Late Appearances</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar" [ngClass]="analyticsLateCount > 0 ? 'bg-amber' : 'bg-green'" [style.width.%]="analyticsPunctualityScore"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Zero geofence boundary penalties</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Total Amount Made -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-purple">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <span class="card-chip chip-purple">Duty Earnings</span>
+            </div>
+            <div class="card-value">{{ currencySymbol }}{{ (analyticsGrossEarnings | number:'1.2-2') || '0.00' }}</div>
+            <div class="card-label">Total Amount Made</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-purple" style="width: 85%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Est. Net Take-Home: {{ currencySymbol }}{{ (analyticsNetEarnings | number:'1.2-2') || '0.00' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid (2 columns on desktop) -->
+        <div class="analytics-charts-grid mb-4">
+          <!-- Chart 1: Grouped Bar Chart (Given Hours vs Hours Worked) -->
+          <div class="cms-card chart-panel-card">
+            <div class="chart-panel-header">
+              <div class="chart-header-left">
+                <span class="material-symbols-outlined text-primary">bar_chart</span>
+                <div>
+                  <h4 class="chart-panel-title">Scheduled Hours vs. Hours Worked</h4>
+                  <p class="chart-panel-sub">Weekly comparison of given work hours against actual duty clocked</p>
+                </div>
+              </div>
+            </div>
+            <div class="chart-panel-body">
+              <div class="chart-canvas-container">
+                <canvas #hoursBarChartCanvas></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 2: Donut / Pie Chart (Given Work Hours vs Work Hours Done) -->
+          <div class="cms-card chart-panel-card">
+            <div class="chart-panel-header">
+              <div class="chart-header-left">
+                <span class="material-symbols-outlined text-primary">pie_chart</span>
+                <div>
+                  <h4 class="chart-panel-title">Hours Fulfillment Ratio</h4>
+                  <p class="chart-panel-sub">Given work hours against work hours completed &amp; excused</p>
+                </div>
+              </div>
+            </div>
+            <div class="chart-panel-body position-relative">
+              <div class="chart-canvas-container">
+                <canvas #hoursDonutChartCanvas></canvas>
+              </div>
+              <div class="donut-center-metric" *ngIf="analyticsPlannedHours > 0">
+                <span class="center-percentage">{{ analyticsHoursRatio }}%</span>
+                <span class="center-label">Fulfilled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Venue / Client Deployment Breakdown Card -->
+        <div class="cms-card mb-4" *ngIf="venueDistribution.length > 0">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <span class="material-symbols-outlined text-primary">location_city</span>
+              <div>
+                <h3>Client Venue Deployment &amp; Spend Distribution</h3>
+                <p class="modal-subtitle">Hours delivered and gross revenue generated per operating customer site</p>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <span class="count-badge">{{ venueDistribution.length }} Active Venue(s)</span>
+            </div>
+          </div>
+          <div class="venue-breakdown-body">
+            <div class="venue-breakdown-item" *ngFor="let v of venueDistribution">
+              <div class="venue-item-top">
+                <div class="venue-item-name">
+                  <span class="material-symbols-outlined">place</span>
+                  <strong>{{ v.name }}</strong>
+                </div>
+                <div class="venue-item-stats">
+                  <span class="venue-hours">{{ v.hours }} hrs ({{ v.percentage }}%)</span>
+                  <span class="venue-gross">{{ currencySymbol }}{{ (v.gross | number:'1.2-2') }}</span>
+                </div>
+              </div>
+              <div class="venue-progress-track">
+                <div class="venue-progress-bar" [style.width.%]="v.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtered Shift Activity Table -->
+        <div class="cms-card">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <span class="material-symbols-outlined text-primary">receipt_long</span>
+              <div>
+                <h3>Duty Activity Log in Window</h3>
+                <p class="modal-subtitle">All scheduled, completed, and logged shifts for the selected date range</p>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <span class="count-badge">{{ filteredAnalyticsShifts.length }} Shift Record(s)</span>
+            </div>
+          </div>
+
+          <div class="empty-state-card" *ngIf="filteredAnalyticsShifts.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_busy</span>
+            </div>
+            <h3>No Shifts Found in This Date Window</h3>
+            <p>You have no rostered or completed shifts between {{ analyticsStartDate | date:'d MMM yyyy' }} and {{ analyticsEndDate | date:'d MMM yyyy' }}.</p>
+            <button type="button" class="btn btn-primary" (click)="setAnalyticsPreset('this_month')">
+              <span class="material-symbols-outlined">restore</span>
+              <span>Reset to This Month</span>
+            </button>
+          </div>
+
+          <div class="table-responsive" *ngIf="filteredAnalyticsShifts.length > 0">
+            <table class="cms-table">
+              <thead>
+                <tr>
+                  <th>Shift / Post</th>
+                  <th>Venue</th>
+                  <th>Date</th>
+                  <th>Scheduled Window</th>
+                  <th>Duration</th>
+                  <th>Punctuality</th>
+                  <th>Status</th>
+                  <th class="text-end">Shift Pay</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of filteredAnalyticsShifts">
+                  <td>
+                    <span class="shift-code-tag">{{ s.shiftCode }}</span>
+                    <div class="venue-cell-sub">{{ s.postName }}</div>
+                  </td>
+                  <td>
+                    <div class="venue-cell-title">{{ s.facilityName || s.siteName }}</div>
+                    <div class="venue-cell-sub">{{ s.address || s.siteAddress }}</div>
+                  </td>
+                  <td>{{ s.startsAtUtc | date:'dd MMM yyyy' }}</td>
+                  <td>{{ s.startsAtUtc | date:'HH:mm' }} &mdash; {{ s.endsAtUtc | date:'HH:mm' }}</td>
+                  <td>{{ s.plannedDurationHours }} hrs</td>
+                  <td>
+                    <span class="status-pill status-active" *ngIf="!isShiftLate(s)">
+                      On-Time
+                    </span>
+                    <span class="status-pill status-danger" *ngIf="isShiftLate(s)">
+                      Late Arrival
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                  </td>
+                  <td class="text-end fw-bold text-success">
+                    {{ currencySymbol }}{{ ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10) | number:'1.2-2') }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: MY SCHEDULE & ROTA (CALENDAR & ASSIGNED DUTIES) -->
+      <div *ngIf="activeTab === 'shifts' && !isLoading">
         <!-- 3. Top Metrics Row (Matching Reference Template) -->
         <div class="metrics-grid mb-4">
           <!-- Metric 1: Real Take-Home Pay -->
@@ -2134,6 +2434,243 @@ import { ToastService } from '../../../core/services/toast.service';
       border-radius: 6px;
     }
 
+    /* Dedicated Shift Analytics Styles */
+    .analytics-filter-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .filter-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-heading {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .filter-subtext {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .filter-controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .presets-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .preset-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .preset-pill:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .preset-pill.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,80,229,0.25);
+    }
+    .custom-range-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .range-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .range-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .form-control-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+    .range-sep {
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .active-filter-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+    }
+    .summary-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+    }
+    .summary-chip .chip-icon { font-size: 14px; color: #0050e5; }
+    .summary-chip.chip-count {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #0050e5;
+    }
+
+    /* Analytics Charts Grid */
+    .analytics-charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .analytics-charts-grid { grid-template-columns: 1fr; }
+    }
+    .chart-panel-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .chart-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .chart-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chart-panel-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .chart-panel-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .chart-panel-body {
+      position: relative;
+      height: 270px;
+      width: 100%;
+    }
+    .chart-canvas-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .donut-center-metric {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .center-percentage {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1;
+    }
+    .center-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Venue Deployment Breakdown */
+    .venue-breakdown-body {
+      padding: 18px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .venue-breakdown-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .venue-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .venue-item-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .venue-item-name .material-symbols-outlined { font-size: 16px; color: #0050e5; }
+    .venue-item-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .venue-hours { color: #64748b; font-weight: 600; }
+    .venue-gross { color: #16a34a; font-weight: 700; }
+    .venue-progress-track {
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .venue-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0050e5, #38bdf8);
+      border-radius: 4px;
+      transition: width 0.4s ease-in-out;
+    }
+
     /* Calendar Footer Summary */
     .calendar-summary-footer {
       display: flex;
@@ -2970,7 +3507,10 @@ import { ToastService } from '../../../core/services/toast.service';
     :host-context(.dark-mode) .rota-calendar-card,
     :host-context(.dark-mode) .metric-card,
     :host-context(.dark-mode) .card,
-    :host-context(.dark-mode) .modal-card-custom {
+    :host-context(.dark-mode) .modal-card-custom,
+    :host-context(.dark-mode) .analytics-filter-card,
+    :host-context(.dark-mode) .chart-panel-card,
+    :host-context(.dark-mode) .cms-card {
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
       color: #f8fafc;
@@ -2978,8 +3518,18 @@ import { ToastService } from '../../../core/services/toast.service';
     :host-context(.dark-mode) .title-row h1,
     :host-context(.dark-mode) .card-value,
     :host-context(.dark-mode) .cal-month-title,
-    :host-context(.dark-mode) .modal-title-group h3 {
+    :host-context(.dark-mode) .modal-title-group h3,
+    :host-context(.dark-mode) .filter-heading,
+    :host-context(.dark-mode) .chart-panel-title,
+    :host-context(.dark-mode) .center-percentage,
+    :host-context(.dark-mode) .venue-item-name {
       color: #f8fafc;
+    }
+    :host-context(.dark-mode) .preset-pill,
+    :host-context(.dark-mode) .summary-chip {
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
     }
     :host-context(.dark-mode) .subnav-tab {
       background: #0f172a;
@@ -3009,7 +3559,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   shifts: Shift[] = [];
   openShifts: Shift[] = [];
-  timesheetList: Shift[] = [];
+  timesheetList: any[] = [];
   leaveList: any[] = [];
   docList: any[] = [];
   availList: any[] = [];
@@ -3038,6 +3588,17 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   showDayDetailModal = false;
   showDayExcuseForm = false;
   dayExcuseDurationPreset = 'single';
+
+  // --- ANALYTICS DASHBOARD STATE ---
+  analyticsPreset: 'this_month' | 'this_week' | 'last_30_days' | 'last_month' | 'quarter' | 'custom' = 'this_month';
+  analyticsStartDate: string = '';
+  analyticsEndDate: string = '';
+
+  @ViewChild('hoursBarChartCanvas') hoursBarChartCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('hoursDonutChartCanvas') hoursDonutChartCanvasRef!: ElementRef<HTMLCanvasElement>;
+
+  private hoursBarChart: Chart | null = null;
+  private hoursDonutChart: Chart | null = null;
 
   // Availability state
   availForm: any = {
@@ -3076,6 +3637,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   ) { }
 
   ngOnInit(): void {
+    this.setAnalyticsPreset('this_month');
+
     this.workforceService.getTenantCurrency().subscribe({
       next: (res: any) => {
         if (res?.data?.currencySymbol) {
@@ -3094,6 +3657,9 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       setTimeout(() => {
         this.checkScrollArrows();
         this.scrollActiveTabIntoView();
+        if (this.activeTab === 'analytics') {
+          this.renderCharts();
+        }
       }, 100);
     });
   }
@@ -3102,12 +3668,18 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     setTimeout(() => {
       this.checkScrollArrows();
       this.scrollActiveTabIntoView();
+      if (this.activeTab === 'analytics') {
+        this.renderCharts();
+      }
     }, 150);
   }
 
   @HostListener('window:resize')
   onWindowResize(): void {
     this.checkScrollArrows();
+    if (this.activeTab === 'analytics') {
+      this.renderCharts();
+    }
   }
 
   checkScrollArrows(): void {
@@ -3135,6 +3707,14 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    if (this.hoursBarChart) {
+      this.hoursBarChart.destroy();
+      this.hoursBarChart = null;
+    }
+    if (this.hoursDonutChart) {
+      this.hoursDonutChart.destroy();
+      this.hoursDonutChart = null;
+    }
   }
 
   switchTab(tab: 'analytics' | 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders'): void {
@@ -3156,11 +3736,18 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     setTimeout(() => {
       this.checkScrollArrows();
       this.scrollActiveTabIntoView();
-    }, 50);
+      if (tab === 'analytics') {
+        this.renderCharts();
+      }
+    }, 100);
   }
 
   loadActiveTabData(): void {
-    if (this.activeTab === 'analytics' || this.activeTab === 'shifts') {
+    if (this.activeTab === 'analytics') {
+      this.loadMyShifts();
+      this.loadTimesheets();
+      this.loadLeaveRequests();
+    } else if (this.activeTab === 'shifts') {
       this.loadMyShifts();
     } else if (this.activeTab === 'open-shifts') {
       this.loadOpenShifts();
@@ -3367,6 +3954,362 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
     const day = d.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  // --- DEDICATED SHIFT ANALYTICS ENGINE ---
+  setAnalyticsPreset(preset: 'this_month' | 'this_week' | 'last_30_days' | 'last_month' | 'quarter' | 'custom'): void {
+    this.analyticsPreset = preset;
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+
+    if (preset === 'this_month') {
+      const first = new Date(y, m, 1);
+      const last = new Date(y, m + 1, 0);
+      this.analyticsStartDate = this.formatDateForInput(first);
+      this.analyticsEndDate = this.formatDateForInput(last);
+    } else if (preset === 'this_week') {
+      const day = now.getDay();
+      const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
+      const mon = new Date(now.getFullYear(), now.getMonth(), diffToMon);
+      const sun = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+      this.analyticsStartDate = this.formatDateForInput(mon);
+      this.analyticsEndDate = this.formatDateForInput(sun);
+    } else if (preset === 'last_30_days') {
+      const start = new Date();
+      start.setDate(now.getDate() - 30);
+      this.analyticsStartDate = this.formatDateForInput(start);
+      this.analyticsEndDate = this.formatDateForInput(now);
+    } else if (preset === 'last_month') {
+      const first = new Date(y, m - 1, 1);
+      const last = new Date(y, m, 0);
+      this.analyticsStartDate = this.formatDateForInput(first);
+      this.analyticsEndDate = this.formatDateForInput(last);
+    } else if (preset === 'quarter') {
+      const currentQuarter = Math.floor(m / 3);
+      const first = new Date(y, currentQuarter * 3, 1);
+      const last = new Date(y, (currentQuarter + 1) * 3, 0);
+      this.analyticsStartDate = this.formatDateForInput(first);
+      this.analyticsEndDate = this.formatDateForInput(last);
+    }
+    this.recalculateAnalytics();
+  }
+
+  onCustomDateChange(): void {
+    this.analyticsPreset = 'custom';
+    this.recalculateAnalytics();
+  }
+
+  recalculateAnalytics(): void {
+    if (this.activeTab === 'analytics') {
+      setTimeout(() => this.renderCharts(), 50);
+    }
+  }
+
+  get filteredAnalyticsShifts(): Shift[] {
+    if (!this.analyticsStartDate || !this.analyticsEndDate) return this.shifts;
+    const start = new Date(this.analyticsStartDate).getTime();
+    const end = new Date(this.analyticsEndDate + 'T23:59:59').getTime();
+    return this.shifts.filter(s => {
+      if (!s.startsAtUtc) return false;
+      const t = new Date(s.startsAtUtc).getTime();
+      return t >= start && t <= end;
+    });
+  }
+
+  get analyticsTotalShifts(): number {
+    return this.filteredAnalyticsShifts.length;
+  }
+
+  get analyticsCompletedShifts(): number {
+    return this.filteredAnalyticsShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date())).length;
+  }
+
+  get analyticsFulfillmentRate(): number {
+    if (this.analyticsTotalShifts === 0) return 100;
+    return Math.round((this.analyticsCompletedShifts / this.analyticsTotalShifts) * 100);
+  }
+
+  get analyticsPlannedHours(): number {
+    return this.filteredAnalyticsShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get analyticsClockedHours(): number {
+    return this.filteredAnalyticsShifts.reduce((acc, s) => {
+      const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+      const hrs = ts?.actualDurationHours || s.plannedDurationHours || 0;
+      return acc + (s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()) ? hrs : 0);
+    }, 0);
+  }
+
+  get analyticsHoursRatio(): number {
+    if (this.analyticsPlannedHours === 0) return 100;
+    return Math.min(100, Math.round((this.analyticsClockedHours / this.analyticsPlannedHours) * 100));
+  }
+
+  get analyticsLateCount(): number {
+    return this.filteredAnalyticsShifts.filter(s => this.isShiftLate(s)).length;
+  }
+
+  get analyticsPunctualityScore(): number {
+    if (this.analyticsCompletedShifts === 0) return 100;
+    const onTime = Math.max(0, this.analyticsCompletedShifts - this.analyticsLateCount);
+    return Math.round((onTime / this.analyticsCompletedShifts) * 100);
+  }
+
+  get analyticsGrossEarnings(): number {
+    return this.filteredAnalyticsShifts.reduce((acc, s) => {
+      const rate = s.hourlyPayRate || 10;
+      const hours = s.plannedDurationHours || 0;
+      return acc + (hours * rate);
+    }, 0);
+  }
+
+  get analyticsNetEarnings(): number {
+    return Math.round(this.analyticsGrossEarnings * 0.82 * 100) / 100;
+  }
+
+  isShiftLate(s: Shift): boolean {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    if (ts?.isLate || (ts?.lateMinutes && ts.lateMinutes > 5)) return true;
+    if (ts?.clockInUtc && s.startsAtUtc) {
+      const diff = new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime();
+      return diff > 5 * 60 * 1000;
+    }
+    return false;
+  }
+
+  calculateLeaveHoursInRange(): number {
+    if (!this.leaveList || this.leaveList.length === 0) return 0;
+    const start = new Date(this.analyticsStartDate).getTime();
+    const end = new Date(this.analyticsEndDate + 'T23:59:59').getTime();
+    let totalLeaveDays = 0;
+    for (const l of this.leaveList) {
+      if (l.status === 'Approved' && l.startDate) {
+        const sTime = new Date(l.startDate).getTime();
+        const eTime = l.endDate ? new Date(l.endDate).getTime() : sTime;
+        if (sTime <= end && eTime >= start) {
+          totalLeaveDays += (l.totalDays || 1);
+        }
+      }
+    }
+    return totalLeaveDays * 8;
+  }
+
+  get venueDistribution(): { name: string; hours: number; gross: number; percentage: number }[] {
+    const map = new Map<string, { hours: number; gross: number }>();
+    const totalHours = this.analyticsPlannedHours || 1;
+
+    for (const s of this.filteredAnalyticsShifts) {
+      const v = s.facilityName || s.siteName || 'General Operating Venue';
+      const prev = map.get(v) || { hours: 0, gross: 0 };
+      const h = s.plannedDurationHours || 0;
+      const g = h * (s.hourlyPayRate || 10);
+      map.set(v, { hours: prev.hours + h, gross: prev.gross + g });
+    }
+
+    const list: { name: string; hours: number; gross: number; percentage: number }[] = [];
+    map.forEach((val, key) => {
+      list.push({
+        name: key,
+        hours: Math.round(val.hours * 10) / 10,
+        gross: Math.round(val.gross * 100) / 100,
+        percentage: Math.min(100, Math.round((val.hours / totalHours) * 100))
+      });
+    });
+
+    return list.sort((a, b) => b.hours - a.hours);
+  }
+
+  calculateChartBuckets(): { labels: string[]; plannedHours: number[]; actualHours: number[] } {
+    const shifts = this.filteredAnalyticsShifts;
+    if (!this.analyticsStartDate || !this.analyticsEndDate) {
+      return { labels: ['Current Window'], plannedHours: [0], actualHours: [0] };
+    }
+
+    const start = new Date(this.analyticsStartDate);
+    const end = new Date(this.analyticsEndDate);
+    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 14) {
+      const labels: string[] = [];
+      const plannedHours: number[] = [];
+      const actualHours: number[] = [];
+
+      for (let i = 0; i <= diffDays; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const dateStr = this.formatDateForInput(d);
+        const dayLabel = `${d.getDate()} ${d.toLocaleString('en', { month: 'short' })}`;
+        labels.push(dayLabel);
+
+        const dayShifts = shifts.filter(s => s.startsAtUtc && s.startsAtUtc.slice(0, 10) === dateStr);
+        const p = dayShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+        const a = dayShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()))
+                           .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+        plannedHours.push(Math.round(p * 10) / 10);
+        actualHours.push(Math.round(a * 10) / 10);
+      }
+      return { labels, plannedHours, actualHours };
+    } else {
+      const labels: string[] = [];
+      const plannedHours: number[] = [];
+      const actualHours: number[] = [];
+
+      const totalWeeks = Math.min(6, Math.max(1, Math.ceil(diffDays / 7)));
+      for (let w = 0; w < totalWeeks; w++) {
+        const wStart = new Date(start);
+        wStart.setDate(start.getDate() + (w * 7));
+        const wEnd = new Date(wStart);
+        wEnd.setDate(wStart.getDate() + 6);
+        if (wEnd > end) wEnd.setTime(end.getTime());
+
+        const label = `W${w + 1} (${wStart.getDate()}-${wEnd.getDate()} ${wStart.toLocaleString('en', { month: 'short' })})`;
+        labels.push(label);
+
+        const wStartT = wStart.getTime();
+        const wEndT = new Date(this.formatDateForInput(wEnd) + 'T23:59:59').getTime();
+
+        const wShifts = shifts.filter(s => {
+          if (!s.startsAtUtc) return false;
+          const t = new Date(s.startsAtUtc).getTime();
+          return t >= wStartT && t <= wEndT;
+        });
+
+        const p = wShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+        const a = wShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()))
+                         .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+
+        plannedHours.push(Math.round(p * 10) / 10);
+        actualHours.push(Math.round(a * 10) / 10);
+      }
+      return { labels, plannedHours, actualHours };
+    }
+  }
+
+  renderCharts(): void {
+    if (this.activeTab !== 'analytics') return;
+    this.renderHoursBarChart();
+    this.renderHoursDonutChart();
+  }
+
+  private renderHoursBarChart(): void {
+    if (!this.hoursBarChartCanvasRef?.nativeElement) return;
+    if (this.hoursBarChart) {
+      this.hoursBarChart.destroy();
+      this.hoursBarChart = null;
+    }
+
+    const buckets = this.calculateChartBuckets();
+
+    this.hoursBarChart = new Chart(this.hoursBarChartCanvasRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: buckets.labels,
+        datasets: [
+          {
+            label: 'Given / Scheduled Hours',
+            data: buckets.plannedHours,
+            backgroundColor: 'rgba(147, 197, 253, 0.75)',
+            borderColor: '#60a5fa',
+            borderWidth: 1,
+            borderRadius: 6,
+            barPercentage: 0.6
+          },
+          {
+            label: 'Actual Clocked Hours',
+            data: buckets.actualHours,
+            backgroundColor: 'rgba(0, 80, 229, 0.9)',
+            borderColor: '#0050e5',
+            borderWidth: 1,
+            borderRadius: 6,
+            barPercentage: 0.6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { boxWidth: 12, font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} hrs`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { font: { size: 11 } },
+            grid: { color: '#f1f5f9' },
+            title: { display: true, text: 'Hours (hrs)', font: { size: 11 } }
+          },
+          x: {
+            ticks: { font: { size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  private renderHoursDonutChart(): void {
+    if (!this.hoursDonutChartCanvasRef?.nativeElement) return;
+    if (this.hoursDonutChart) {
+      this.hoursDonutChart.destroy();
+      this.hoursDonutChart = null;
+    }
+
+    const clocked = this.analyticsClockedHours;
+    const planned = this.analyticsPlannedHours;
+    const remaining = Math.max(0, planned - clocked);
+    const leaveHours = this.calculateLeaveHoursInRange();
+
+    const data = [
+      clocked || 0,
+      remaining || 0,
+      leaveHours || 0
+    ];
+
+    const allZero = data.every(v => v === 0);
+
+    this.hoursDonutChart = new Chart(this.hoursDonutChartCanvasRef.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels: allZero ? ['No Duty Hours Recorded'] : ['Hours Clocked / Done', 'Pending / Scheduled Hours', 'Approved Leave / Excused'],
+        datasets: [{
+          data: allZero ? [1] : data,
+          backgroundColor: allZero
+            ? ['#e2e8f0']
+            : ['#0050e5', '#38bdf8', '#f59e0b'],
+          borderColor: '#ffffff',
+          borderWidth: 2,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 12, font: { size: 11 } }
+          },
+          tooltip: {
+            enabled: !allZero,
+            callbacks: {
+              label: (ctx) => ` ${ctx.label}: ${ctx.raw} hrs`
+            }
+          }
+        }
+      }
+    });
   }
 
   prevMonth(): void {
