@@ -242,108 +242,125 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
 
-        <!-- 5. Upcoming Assigned Shifts Cards -->
-        <div class="section-title-bar mb-3 d-flex justify-content-between align-items-center">
-          <div>
-            <h4 class="m-0 fw-bold">Upcoming Assigned Rota Duties</h4>
-            <p class="text-muted small m-0">Review venue post requirements, SIA sector authorizations, and confirm duty attendance.</p>
+        <!-- 5. Upcoming Assigned Shifts Section (Canonical CMS Card) -->
+        <div class="cms-card mt-4">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3>Upcoming Assigned Rota Duties</h3>
+              <span class="count-badge" *ngIf="shifts.length > 0">{{ shifts.length }} Rostered</span>
+            </div>
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-outline" (click)="switchTab('open-shifts')">
+                <span class="material-symbols-outlined">add_circle</span>
+                <span>Browse Extra Open Shifts</span>
+              </button>
+            </div>
           </div>
-          <button class="btn btn-sm btn-outline-primary" (click)="switchTab('open-shifts')">
-            <span class="material-symbols-outlined fs-6 align-middle">add_circle</span> Browse Extra Open Shifts
-          </button>
-        </div>
-        <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="shifts.length === 0">
-          <span class="material-symbols-outlined display-4 text-muted mb-3">event_available</span>
-          <h5>No shifts assigned</h5>
-          <p class="text-muted">You have no upcoming shifts assigned on your rota schedule.</p>
-          <button class="btn btn-primary mt-2" (click)="switchTab('open-shifts')">
-            Browse Open Shifts
-          </button>
-        </div>
 
-        <div class="row g-3" *ngIf="shifts.length > 0">
-          <div class="col-md-6 col-xl-4" *ngFor="let s of shifts">
-            <div class="card h-100 border-0 shadow-sm shift-card" [class.border-start-overnight]="s.isOvernight">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <span class="badge bg-light text-dark font-monospace">{{ s.shiftCode }}</span>
-                    <span class="badge bg-purple ms-1" *ngIf="s.isOvernight">24/7 Overnight</span>
+          <!-- Empty State (Inside CMS Card) -->
+          <div class="empty-state-card" *ngIf="shifts.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_available</span>
+            </div>
+            <h3>No Upcoming Duties Rostered</h3>
+            <p>Your personal rota schedule is currently clear. You have no pending shifts assigned. You can browse open shifts or log your availability.</p>
+            <button type="button" class="btn btn-primary" (click)="switchTab('open-shifts')">
+              <span class="material-symbols-outlined">work_outline</span>
+              <span>Browse Open Shifts</span>
+            </button>
+          </div>
+
+          <!-- Shifts Grid (Inside CMS Card) -->
+          <div class="shifts-card-body" *ngIf="shifts.length > 0">
+            <div class="shifts-grid">
+              <div class="shift-card" *ngFor="let s of shifts" [class.overnight-card]="s.isOvernight">
+                <div class="shift-card-header">
+                  <div class="shift-badges-group">
+                    <span class="shift-code-badge">{{ s.shiftCode }}</span>
+                    <span class="badge-overnight" *ngIf="s.isOvernight">24/7 Overnight</span>
                   </div>
-                  <span class="badge" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                  <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
                 </div>
 
-                <h5 class="card-title mb-1 text-primary">{{ s.facilityName || s.siteName }}</h5>
-                <p class="text-muted small mb-2">
-                  <span class="material-symbols-outlined align-middle fs-6">place</span> 
-                  {{ s.address || s.siteAddress }} <span *ngIf="s.postCode" class="fw-bold">({{ s.postCode }})</span>
-                </p>
+                <div class="shift-venue-info">
+                  <h4 class="shift-venue-title">{{ s.facilityName || s.siteName }}</h4>
+                  <p class="shift-venue-address">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>{{ s.address || s.siteAddress }} <strong *ngIf="s.postCode">({{ s.postCode }})</strong></span>
+                  </p>
+                </div>
 
-                <div class="border rounded p-2 bg-light mb-3">
-                  <div class="d-flex justify-content-between small">
-                    <span class="text-muted">Role / Post:</span>
-                    <span class="fw-semibold">{{ s.postName }}</span>
+                <div class="shift-meta-box">
+                  <div class="meta-row">
+                    <span class="meta-label">Role / Post:</span>
+                    <span class="meta-val">{{ s.postName }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Starts:</span>
-                    <span class="fw-semibold">{{ s.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Starts:</span>
+                    <span class="meta-val">{{ s.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Ends:</span>
-                    <span class="fw-semibold">{{ s.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Ends:</span>
+                    <span class="meta-val">{{ s.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Duration:</span>
-                    <span>{{ s.plannedDurationHours }} hrs (break: {{ s.breakMinutes }}m)</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Duration:</span>
+                    <span class="meta-val">{{ s.plannedDurationHours }} hrs (break: {{ s.breakMinutes }}m)</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Pay Rate:</span>
-                    <span class="fw-bold text-success">{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Pay Rate:</span>
+                    <span class="meta-val val-rate">{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1" *ngIf="s.requiredWorkspaceStationName">
-                    <span class="text-muted">Workstation:</span>
-                    <span class="badge bg-info text-dark">{{ s.requiredWorkspaceStationName }}</span>
+                  <div class="meta-row" *ngIf="s.requiredWorkspaceStationName">
+                    <span class="meta-label">Workstation:</span>
+                    <span class="meta-val badge-station">{{ s.requiredWorkspaceStationName }}</span>
                   </div>
                 </div>
 
                 <!-- Live Acceptance Countdown Alert -->
-                <div class="acceptance-countdown-box p-2 rounded mb-3" *ngIf="!s.isConfirmedByGuard">
-                  <div class="d-flex align-items-center justify-content-between small">
-                    <span class="fw-bold d-flex align-items-center gap-1" [ngClass]="isShiftExpired(s) ? 'text-danger' : 'text-primary'">
-                      <span class="material-symbols-outlined fs-6">{{ isShiftExpired(s) ? 'timer_off' : 'timer' }}</span>
+                <div class="acceptance-countdown-box" *ngIf="!s.isConfirmedByGuard">
+                  <div class="countdown-header">
+                    <span class="countdown-title" [class.text-danger]="isShiftExpired(s)">
+                      <span class="material-symbols-outlined">{{ isShiftExpired(s) ? 'timer_off' : 'timer' }}</span>
                       {{ isShiftExpired(s) ? 'Acceptance Expired' : 'Acceptance Deadline' }}
                     </span>
-                    <span class="font-monospace fw-bold" [ngClass]="isShiftExpired(s) ? 'text-danger' : 'text-dark'">
+                    <span class="countdown-timer" [class.text-danger]="isShiftExpired(s)">
                       {{ getCountdown(s) }}
                     </span>
                   </div>
-                  <div class="small text-muted mt-1" *ngIf="!isShiftExpired(s)">
+                  <div class="countdown-sub text-muted" *ngIf="!isShiftExpired(s)">
                     Please confirm before the timer lapses to secure this shift.
                   </div>
-                  <div class="small text-danger mt-1" *ngIf="isShiftExpired(s)">
+                  <div class="countdown-sub text-danger" *ngIf="isShiftExpired(s)">
                     This assignment has expired and may be reclaimed by other team members.
                   </div>
                 </div>
 
-                <div class="site-briefing-alert p-2 rounded mb-3 small" *ngIf="s.siteAssignmentInstructions">
-                  <div class="fw-semibold text-dark d-flex align-items-center gap-1 mb-1">
-                    <span class="material-symbols-outlined fs-6 text-warning">info</span> Site Assignment Instructions (SIs)
+                <!-- Site Assignment Instructions -->
+                <div class="site-briefing-alert" *ngIf="s.siteAssignmentInstructions">
+                  <div class="briefing-header">
+                    <span class="material-symbols-outlined text-amber">info</span>
+                    <span>Site Assignment Instructions (SIs)</span>
                   </div>
-                  <div class="text-secondary">{{ s.siteAssignmentInstructions }}</div>
+                  <div class="briefing-body">{{ s.siteAssignmentInstructions }}</div>
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="shift-actions-row">
                   <button
-                    class="btn btn-sm btn-outline-success flex-fill"
+                    type="button"
+                    class="btn btn-confirm"
                     *ngIf="!s.isConfirmedByGuard"
                     (click)="confirmShift(s)"
                     [disabled]="isActionLoading || isShiftExpired(s)">
-                    Confirm Shift
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>Confirm Shift</span>
                   </button>
                   <button
-                    class="btn btn-sm btn-outline-secondary flex-fill"
+                    type="button"
+                    class="btn btn-outline"
                     (click)="openSwapModal(s)">
-                    Request Swap
+                    <span class="material-symbols-outlined">swap_horiz</span>
+                    <span>Request Swap</span>
                   </button>
                 </div>
               </div>
@@ -354,70 +371,82 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 2: OPEN SHIFTS (CLAIM BOARD) -->
       <div *ngIf="activeTab === 'open-shifts' && !isLoading">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div>
-            <h5 class="fw-bold m-0 text-dark">Available Open Shifts</h5>
-            <p class="text-muted small m-0">Claim extra venue shifts directly. Shifts are confirmed upon claiming.</p>
+        <div class="cms-card">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3>Available Open Shifts</h3>
+              <span class="count-badge" *ngIf="openShifts.length > 0">{{ openShifts.length }} Available</span>
+            </div>
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-outline" (click)="loadOpenShifts()">
+                <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
-          <button class="btn btn-sm btn-outline-primary" (click)="loadOpenShifts()">
-            <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span> Refresh
-          </button>
-        </div>
 
-        <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="openShifts.length === 0">
-          <span class="material-symbols-outlined display-4 text-muted mb-3">event_busy</span>
-          <h5>No open shifts available</h5>
-          <p class="text-muted">All venue shifts are currently assigned. Check back later for open duty calls.</p>
-        </div>
+          <div class="empty-state-card" *ngIf="openShifts.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_busy</span>
+            </div>
+            <h3>No Open Shifts Available</h3>
+            <p>All venue shifts are currently assigned to team members. Check back later for newly published shifts or peer swap opportunities.</p>
+          </div>
 
-        <div class="row g-3" *ngIf="openShifts.length > 0">
-          <div class="col-md-6 col-xl-4" *ngFor="let os of openShifts">
-            <div class="card h-100 border-0 shadow-sm shift-card">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <span class="badge bg-light text-dark font-monospace">{{ os.shiftCode }}</span>
-                  <span class="badge bg-success">Open to Claim</span>
+          <div class="shifts-card-body" *ngIf="openShifts.length > 0">
+            <div class="shifts-grid">
+              <div class="shift-card" *ngFor="let os of openShifts">
+                <div class="shift-card-header">
+                  <span class="shift-code-badge">{{ os.shiftCode }}</span>
+                  <span class="status-pill status-active">Open to Claim</span>
                 </div>
 
-                <h5 class="card-title mb-1 text-primary">{{ os.facilityName || os.siteName }}</h5>
-                <p class="text-muted small mb-2">
-                  <span class="material-symbols-outlined align-middle fs-6">place</span>
-                  {{ os.address || os.siteAddress }} <span *ngIf="os.postCode" class="fw-bold">({{ os.postCode }})</span>
-                </p>
+                <div class="shift-venue-info">
+                  <h4 class="shift-venue-title">{{ os.facilityName || os.siteName }}</h4>
+                  <p class="shift-venue-address">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>{{ os.address || os.siteAddress }} <strong *ngIf="os.postCode">({{ os.postCode }})</strong></span>
+                  </p>
+                </div>
 
-                <div class="border rounded p-2 bg-light mb-3">
-                  <div class="d-flex justify-content-between small">
-                    <span class="text-muted">Post / Role:</span>
-                    <span class="fw-semibold">{{ os.postName }}</span>
+                <div class="shift-meta-box">
+                  <div class="meta-row">
+                    <span class="meta-label">Post / Role:</span>
+                    <span class="meta-val">{{ os.postName }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Starts:</span>
-                    <span class="fw-semibold">{{ os.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Starts:</span>
+                    <span class="meta-val">{{ os.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Ends:</span>
-                    <span class="fw-semibold">{{ os.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Ends:</span>
+                    <span class="meta-val">{{ os.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Duration:</span>
-                    <span>{{ os.plannedDurationHours }} hrs (break: {{ os.breakMinutes }}m)</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Duration:</span>
+                    <span class="meta-val">{{ os.plannedDurationHours }} hrs (break: {{ os.breakMinutes }}m)</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Pay Rate:</span>
-                    <span class="fw-bold text-success">{{ os.hourlyPayRate ? currencySymbol + os.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Pay Rate:</span>
+                    <span class="meta-val val-rate">{{ os.hourlyPayRate ? currencySymbol + os.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
                   </div>
                 </div>
 
-                <div class="site-briefing-alert p-2 rounded mb-3 small" *ngIf="os.siteAssignmentInstructions">
-                  <div class="fw-semibold text-dark d-flex align-items-center gap-1 mb-1">
-                    <span class="material-symbols-outlined fs-6 text-warning">info</span> Site Instructions
+                <div class="site-briefing-alert" *ngIf="os.siteAssignmentInstructions">
+                  <div class="briefing-header">
+                    <span class="material-symbols-outlined text-amber">info</span>
+                    <span>Site Instructions</span>
                   </div>
-                  <div class="text-secondary">{{ os.siteAssignmentInstructions }}</div>
+                  <div class="briefing-body">{{ os.siteAssignmentInstructions }}</div>
                 </div>
 
-                <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-1"
-                        (click)="claimOpenShiftDirect(os)" [disabled]="isActionLoading">
-                  <span class="material-symbols-outlined fs-6">how_to_reg</span> Apply &amp; Claim Shift
+                <button
+                  type="button"
+                  class="btn btn-primary w-100"
+                  (click)="claimOpenShiftDirect(os)"
+                  [disabled]="isActionLoading">
+                  <span class="material-symbols-outlined">how_to_reg</span>
+                  <span>Apply &amp; Claim Shift</span>
                 </button>
               </div>
             </div>
@@ -427,56 +456,91 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 3: TIMESHEETS (DUTY HOURS & PAY SUMMARY) -->
       <div *ngIf="activeTab === 'timesheets' && !isLoading">
-        <!-- 4 KPI Summary Cards -->
-        <div class="row g-3 mb-4">
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Completed Duties</span>
-              <div class="h3 fw-bold text-dark mt-2 mb-0">{{ timesheetList.length }}</div>
-              <small class="text-muted mt-1">Recorded shifts</small>
+        <!-- 4 KPI Summary Cards Matching Canonical Design -->
+        <div class="metrics-grid mb-4">
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-blue">
+                <span class="material-symbols-outlined">task_alt</span>
+              </div>
+              <span class="card-chip chip-blue">Completed</span>
+            </div>
+            <div class="card-value">{{ timesheetList.length }}</div>
+            <div class="card-label">Completed Duties</div>
+            <div class="card-sub-info">
+              <span>Recorded shifts</span>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Total Worked Hours</span>
-              <div class="h3 fw-bold text-primary mt-2 mb-0">{{ getTotalTimesheetHours() }} hrs</div>
-              <small class="text-muted mt-1">Logged duty time</small>
+
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <span class="card-chip chip-teal">Logged Time</span>
+            </div>
+            <div class="card-value">{{ getTotalTimesheetHours() }} hrs</div>
+            <div class="card-label">Total Worked Hours</div>
+            <div class="card-sub-info">
+              <span>Hours after break deduction</span>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Gross Earnings</span>
-              <div class="h3 fw-bold text-success mt-2 mb-0">{{ currencySymbol }}{{ getTotalGrossPay() | number:'1.2-2' }}</div>
-              <small class="text-muted mt-1">Pre-deductions</small>
+
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-amber">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <span class="card-chip chip-amber">Pre-Deductions</span>
+            </div>
+            <div class="card-value">{{ currencySymbol }}{{ getTotalGrossPay() | number:'1.2-2' }}</div>
+            <div class="card-label">Gross Earnings</div>
+            <div class="card-sub-info">
+              <span>Standard + overtime wages</span>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Net Remuneration</span>
-              <div class="h3 fw-bold text-dark mt-2 mb-0">{{ currencySymbol }}{{ getTotalNetPay() | number:'1.2-2' }}</div>
-              <small class="text-muted mt-1">After fine deductions</small>
+
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-green">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+              </div>
+              <span class="card-chip chip-teal">Net Pay</span>
+            </div>
+            <div class="card-value">{{ currencySymbol }}{{ getTotalNetPay() | number:'1.2-2' }}</div>
+            <div class="card-label">Net Remuneration</div>
+            <div class="card-sub-info">
+              <span>After fine deductions</span>
             </div>
           </div>
         </div>
 
         <!-- Timesheet History Table -->
-        <div class="card p-3 border-0 shadow-sm">
-          <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-            <h5 class="fw-bold m-0 text-dark">Duty History &amp; Attendance Logs</h5>
-            <button class="btn btn-sm btn-outline-primary" (click)="loadTimesheets()">
-              <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span> Refresh
-            </button>
+        <div class="cms-card">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3>Duty History &amp; Attendance Logs</h3>
+              <span class="count-badge" *ngIf="timesheetList.length > 0">{{ timesheetList.length }} Records</span>
+            </div>
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-outline" (click)="loadTimesheets()">
+                <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
-          <div class="empty-state text-center p-5 text-muted" *ngIf="timesheetList.length === 0">
-            <span class="material-symbols-outlined display-4 text-muted mb-2">receipt_long</span>
-            <h6>No timesheet records found</h6>
-            <p class="small text-muted">Completed shifts with attendance logs will appear here for payroll calculation.</p>
+          <div class="empty-state-card" *ngIf="timesheetList.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">receipt_long</span>
+            </div>
+            <h3>No Timesheet Records Found</h3>
+            <p>Completed shifts with attendance logs will appear here for payroll calculation.</p>
           </div>
 
           <div class="table-responsive" *ngIf="timesheetList.length > 0">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light small">
+            <table class="cms-table">
+              <thead>
                 <tr>
                   <th>Shift / Site</th>
                   <th>Date</th>
@@ -491,25 +555,25 @@ import { ToastService } from '../../../core/services/toast.service';
               <tbody>
                 <tr *ngFor="let t of timesheetList">
                   <td>
-                    <div class="fw-bold text-primary">{{ t.siteName }}</div>
-                    <div class="small text-muted font-monospace">{{ t.shiftCode }} &bull; {{ t.postName }}</div>
+                    <div class="venue-cell-title">{{ t.siteName }}</div>
+                    <div class="venue-cell-sub">{{ t.shiftCode }} &bull; {{ t.postName }}</div>
                   </td>
-                  <td class="small fw-semibold">{{ t.startsAtUtc | date:'dd MMM yyyy' }}</td>
-                  <td class="small">{{ t.startsAtUtc | date:'HH:mm' }} - {{ t.endsAtUtc | date:'HH:mm' }}</td>
-                  <td class="small">
-                    <span *ngIf="t.clockInUtc" class="text-success fw-semibold">{{ t.clockInUtc | date:'HH:mm' }}</span>
+                  <td>{{ t.startsAtUtc | date:'dd MMM yyyy' }}</td>
+                  <td>{{ t.startsAtUtc | date:'HH:mm' }} - {{ t.endsAtUtc | date:'HH:mm' }}</td>
+                  <td>
+                    <span *ngIf="t.clockInUtc" class="text-success fw-bold">{{ t.clockInUtc | date:'HH:mm' }}</span>
                     <span *ngIf="!t.clockInUtc" class="text-muted">—</span>
                     to
-                    <span *ngIf="t.clockOutUtc" class="text-success fw-semibold">{{ t.clockOutUtc | date:'HH:mm' }}</span>
+                    <span *ngIf="t.clockOutUtc" class="text-success fw-bold">{{ t.clockOutUtc | date:'HH:mm' }}</span>
                     <span *ngIf="!t.clockOutUtc" class="text-muted">—</span>
                   </td>
-                  <td class="small">{{ t.actualDurationHours || t.plannedDurationHours }} hrs</td>
-                  <td class="small text-muted">{{ currencySymbol }}{{ t.hourlyPayRate || 10 }}/hr</td>
+                  <td>{{ t.actualDurationHours || t.plannedDurationHours }} hrs</td>
+                  <td>{{ currencySymbol }}{{ t.hourlyPayRate || 10 }}/hr</td>
                   <td>
-                    <span *ngIf="t.fineAttached" class="badge bg-danger">
+                    <span *ngIf="t.fineAttached" class="badge-fine-negative">
                       -{{ currencySymbol }}{{ t.fineAmount || 0 }} ({{ t.fineReason || 'Fine' }})
                     </span>
-                    <span *ngIf="!t.fineAttached" class="badge bg-light text-muted">None</span>
+                    <span *ngIf="!t.fineAttached" class="badge-fine-zero">None</span>
                   </td>
                   <td class="text-end fw-bold text-success">
                     {{ currencySymbol }}{{ getShiftNetPay(t) | number:'1.2-2' }}
@@ -523,11 +587,15 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 4: TIME OFF & LEAVE -->
       <div *ngIf="activeTab === 'leave' && !isLoading">
-        <div class="row g-4">
-          <div class="col-md-5">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-primary">Request Time Off</h5>
-              <div class="mb-3">
+        <div class="workspace-grid-2col">
+          <!-- Request Form Card -->
+          <div class="cms-card">
+            <div class="card-header-simple">
+              <span class="material-symbols-outlined text-primary">flight_takeoff</span>
+              <h3>Request Time Off</h3>
+            </div>
+            <div class="card-body-form">
+              <div class="form-group mb-3">
                 <label class="form-label">Leave Type *</label>
                 <select class="form-select" [(ngModel)]="leaveType">
                   <option value="Annual">Annual Leave</option>
@@ -536,64 +604,78 @@ import { ToastService } from '../../../core/services/toast.service';
                   <option value="Unpaid">Unpaid Leave</option>
                 </select>
               </div>
-              <div class="row g-2 mb-3">
-                <div class="col-6">
+              <div class="form-row-2 mb-3">
+                <div class="form-group">
                   <label class="form-label">Start Date *</label>
                   <input type="date" class="form-control" [(ngModel)]="leaveStartDate" />
                 </div>
-                <div class="col-6">
+                <div class="form-group">
                   <label class="form-label">End Date *</label>
                   <input type="date" class="form-control" [(ngModel)]="leaveEndDate" />
                 </div>
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-4">
                 <label class="form-label">Reason / Notes</label>
-                <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Describe the reason for your leave request"></textarea>
+                <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Describe the reason for your leave request..."></textarea>
               </div>
-              <button class="btn btn-primary w-100" (click)="submitLeave()" [disabled]="!leaveStartDate || !leaveEndDate">
-                Submit Leave Request
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                (click)="submitLeave()"
+                [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                <span class="material-symbols-outlined">send</span>
+                <span>Submit Leave Request</span>
               </button>
             </div>
           </div>
 
-          <div class="col-md-7">
-            <div class="card p-3 shadow-sm border-0">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="fw-bold m-0 text-dark">My Leave Requests</h5>
-                <button class="btn btn-sm btn-outline-primary" (click)="loadLeaveRequests()">
-                  <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span> Refresh
+          <!-- My Leave Requests Card -->
+          <div class="cms-card">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <h3>My Leave Requests</h3>
+                <span class="count-badge" *ngIf="leaveList.length > 0">{{ leaveList.length }}</span>
+              </div>
+              <div class="toolbar-right">
+                <button type="button" class="btn btn-outline" (click)="loadLeaveRequests()">
+                  <span class="material-symbols-outlined">refresh</span>
                 </button>
               </div>
+            </div>
 
-              <div class="table-responsive" *ngIf="leaveList.length > 0">
-                <table class="table table-hover align-middle">
-                  <thead class="table-light small">
-                    <tr>
-                      <th>Type</th>
-                      <th>Dates</th>
-                      <th>Days</th>
-                      <th>Status</th>
-                      <th>Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let l of leaveList">
-                      <td class="fw-semibold">{{ l.leaveType }}</td>
-                      <td class="small">{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }}</td>
-                      <td class="small">{{ l.totalDays }} day(s)</td>
-                      <td>
-                        <span class="badge" [class.bg-warning]="l.status === 'Pending'" [class.bg-success]="l.status === 'Approved'" [class.bg-danger]="l.status === 'Rejected'" [class.text-dark]="l.status === 'Pending'">
-                          {{ l.status }}
-                        </span>
-                      </td>
-                      <td class="small text-muted">{{ l.reason || '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div class="empty-state-card" *ngIf="leaveList.length === 0">
+              <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">event_busy</span>
               </div>
-              <div class="empty-state text-center p-4 text-muted" *ngIf="leaveList.length === 0">
-                No leave requests logged yet.
-              </div>
+              <h3>No Leave Requests</h3>
+              <p>You have no submitted time off requests logged yet.</p>
+            </div>
+
+            <div class="table-responsive" *ngIf="leaveList.length > 0">
+              <table class="cms-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Dates</th>
+                    <th>Days</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let l of leaveList">
+                    <td><span class="badge-station">{{ l.leaveType }}</span></td>
+                    <td>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }}</td>
+                    <td>{{ l.totalDays }} day(s)</td>
+                    <td>
+                      <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                        {{ l.status }}
+                      </span>
+                    </td>
+                    <td class="text-muted">{{ l.reason || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -601,11 +683,15 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 5: COMPLIANCE VAULT -->
       <div *ngIf="activeTab === 'documents' && !isLoading">
-        <div class="row g-4">
-          <div class="col-md-5">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-primary">Upload Document</h5>
-              <div class="mb-3">
+        <div class="workspace-grid-2col">
+          <!-- Upload Form Card -->
+          <div class="cms-card">
+            <div class="card-header-simple">
+              <span class="material-symbols-outlined text-primary">upload_file</span>
+              <h3>Upload Compliance Document</h3>
+            </div>
+            <div class="card-body-form">
+              <div class="form-group mb-3">
                 <label class="form-label">Document Type *</label>
                 <select class="form-select" [(ngModel)]="docForm.documentType">
                   <option value="SiaLicense">SIA Security License</option>
@@ -616,49 +702,70 @@ import { ToastService } from '../../../core/services/toast.service';
                   <option value="Other">Other Compliance Document</option>
                 </select>
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Document Name *</label>
                 <input type="text" class="form-control" [(ngModel)]="docForm.documentName" placeholder="e.g. SIA Door Supervisor Badge #1002" />
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Expiry Date</label>
                 <input type="date" class="form-control" [(ngModel)]="docForm.expiryDateUtc" />
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-4">
                 <label class="form-label">Document / File URL *</label>
-                <input type="text" class="form-control" [(ngModel)]="docForm.fileUrl" placeholder="https://..." />
+                <input type="url" class="form-control" [(ngModel)]="docForm.fileUrl" placeholder="https://..." />
               </div>
-              <button class="btn btn-primary w-100" (click)="saveDocument()" [disabled]="!docForm.documentName || !docForm.fileUrl">
-                Upload to Vault
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                (click)="saveDocument()"
+                [disabled]="isActionLoading || !docForm.documentName || !docForm.fileUrl">
+                <span class="material-symbols-outlined">cloud_upload</span>
+                <span>Upload to Vault</span>
               </button>
             </div>
           </div>
-          <div class="col-md-7">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-dark">Verified Documents</h5>
-              <div class="table-responsive" *ngIf="docList.length > 0">
-                <table class="table table-hover align-middle">
-                  <thead class="table-light small">
-                    <tr>
-                      <th>Document</th>
-                      <th>Type</th>
-                      <th>Expiry</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let d of docList">
-                      <td class="fw-bold">{{ d.documentName }}</td>
-                      <td><span class="badge bg-light text-dark border">{{ d.documentType }}</span></td>
-                      <td class="small">{{ d.expiryDateUtc ? (d.expiryDateUtc | date:'shortDate') : 'No Expiry' }}</td>
-                      <td><span class="badge bg-success">Verified</span></td>
-                    </tr>
-                  </tbody>
-                </table>
+
+          <!-- Verified Vault Card -->
+          <div class="cms-card">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <h3>Verified Compliance Documents</h3>
+                <span class="count-badge" *ngIf="docList.length > 0">{{ docList.length }}</span>
               </div>
-              <div class="empty-state text-center p-4 text-muted" *ngIf="docList.length === 0">
-                No documents uploaded yet.
+              <div class="toolbar-right">
+                <button type="button" class="btn btn-outline" (click)="loadDocuments()">
+                  <span class="material-symbols-outlined">refresh</span>
+                </button>
               </div>
+            </div>
+
+            <div class="empty-state-card" *ngIf="docList.length === 0">
+              <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">folder_off</span>
+              </div>
+              <h3>No Documents Uploaded</h3>
+              <p>Upload your SIA badge and proof of right to work to stay compliant on all shifts.</p>
+            </div>
+
+            <div class="table-responsive" *ngIf="docList.length > 0">
+              <table class="cms-table">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of docList">
+                    <td><strong class="text-dark">{{ d.documentName }}</strong></td>
+                    <td><span class="badge-station">{{ d.documentType }}</span></td>
+                    <td>{{ d.expiryDateUtc ? (d.expiryDateUtc | date:'dd MMM yyyy') : 'No Expiry' }}</td>
+                    <td><span class="status-pill status-active">Verified</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -666,15 +773,19 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 6: MY AVAILABILITY -->
       <div *ngIf="activeTab === 'availability' && !isLoading">
-        <div class="row g-4">
-          <div class="col-md-5">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-primary">Log My Availability</h5>
-              <div class="mb-3">
+        <div class="workspace-grid-2col">
+          <!-- Availability Form Card -->
+          <div class="cms-card">
+            <div class="card-header-simple">
+              <span class="material-symbols-outlined text-primary">event_available</span>
+              <h3>Log My Availability</h3>
+            </div>
+            <div class="card-body-form">
+              <div class="form-group mb-3">
                 <label class="form-label">Target Date *</label>
                 <input type="date" class="form-control" [(ngModel)]="availForm.targetDate" />
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Availability State *</label>
                 <select class="form-select" [(ngModel)]="availForm.state">
                   <option value="Available">Available (Full Day)</option>
@@ -682,55 +793,76 @@ import { ToastService } from '../../../core/services/toast.service';
                   <option value="PartlyUnavailable">Partly Unavailable (Time Slots)</option>
                 </select>
               </div>
-              <div class="row g-2 mb-3" *ngIf="availForm.state === 'PartlyUnavailable'">
-                <div class="col-6">
+              <div class="form-row-2 mb-3" *ngIf="availForm.state === 'PartlyUnavailable'">
+                <div class="form-group">
                   <label class="form-label">From Time</label>
                   <input type="time" class="form-control" [(ngModel)]="availForm.unavailableFromTime" />
                 </div>
-                <div class="col-6">
+                <div class="form-group">
                   <label class="form-label">To Time</label>
                   <input type="time" class="form-control" [(ngModel)]="availForm.unavailableToTime" />
                 </div>
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-4">
                 <label class="form-label">Reason / Notes</label>
-                <textarea class="form-control" rows="2" [(ngModel)]="availForm.reason" placeholder="e.g. University lectures, family commitment"></textarea>
+                <textarea class="form-control" rows="2" [(ngModel)]="availForm.reason" placeholder="e.g. University lectures, family commitment..."></textarea>
               </div>
-              <button class="btn btn-primary w-100" (click)="saveAvailability()" [disabled]="!availForm.targetDate">
-                Save Availability
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                (click)="saveAvailability()"
+                [disabled]="isActionLoading || !availForm.targetDate">
+                <span class="material-symbols-outlined">save</span>
+                <span>Save Availability</span>
               </button>
             </div>
           </div>
-          <div class="col-md-7">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-dark">Upcoming Availability Logs</h5>
-              <div class="table-responsive" *ngIf="availList.length > 0">
-                <table class="table table-hover align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Date</th>
-                      <th>Status</th>
-                      <th>Window</th>
-                      <th>Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let a of availList">
-                      <td class="fw-bold">{{ a.targetDate | date:'dd MMM yyyy' }}</td>
-                      <td>
-                        <span class="badge" [class.bg-success]="a.state === 'Available'" [class.bg-danger]="a.state === 'Unavailable'" [class.bg-warning]="a.state === 'PartlyUnavailable'" [class.text-dark]="a.state === 'PartlyUnavailable'">
-                          {{ a.state }}
-                        </span>
-                      </td>
-                      <td class="small">{{ a.unavailableFromTime ? a.unavailableFromTime + ' - ' + a.unavailableToTime : 'Full Day' }}</td>
-                      <td class="small text-muted">{{ a.reason || '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+
+          <!-- Availability Logs Card -->
+          <div class="cms-card">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <h3>Upcoming Availability Logs</h3>
+                <span class="count-badge" *ngIf="availList.length > 0">{{ availList.length }}</span>
               </div>
-              <div class="empty-state text-center p-4 text-muted" *ngIf="availList.length === 0">
-                No availability logs recorded yet.
+              <div class="toolbar-right">
+                <button type="button" class="btn btn-outline" (click)="loadAvailability()">
+                  <span class="material-symbols-outlined">refresh</span>
+                </button>
               </div>
+            </div>
+
+            <div class="empty-state-card" *ngIf="availList.length === 0">
+              <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">calendar_today</span>
+              </div>
+              <h3>No Availability Logs</h3>
+              <p>Log your preferred working days or unavailable slots to assist rota planners.</p>
+            </div>
+
+            <div class="table-responsive" *ngIf="availList.length > 0">
+              <table class="cms-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Window</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let a of availList">
+                    <td><strong>{{ a.targetDate | date:'dd MMM yyyy' }}</strong></td>
+                    <td>
+                      <span class="status-pill" [ngClass]="a.state === 'Available' ? 'status-active' : (a.state === 'Unavailable' ? 'status-danger' : 'status-pending')">
+                        {{ a.state }}
+                      </span>
+                    </td>
+                    <td>{{ a.unavailableFromTime ? a.unavailableFromTime + ' - ' + a.unavailableToTime : 'Full Day' }}</td>
+                    <td class="text-muted">{{ a.reason || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -738,125 +870,172 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 7: SHIFT REMINDERS -->
       <div *ngIf="activeTab === 'reminders' && !isLoading">
-        <div class="card p-4 shadow-sm border-0" style="max-width: 700px; margin: 0 auto;">
-          <h5 class="fw-bold text-primary mb-2">Shift Readiness &amp; Departure Reminders</h5>
-          <p class="text-muted small mb-4">
-            Customize notification intervals before each shift. Choose the channels that ensure you never miss duty call.
-          </p>
-          <div class="row g-3 mb-4">
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Slot 1 Reminder</label>
-              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot1Minutes">
-                <option [ngValue]="1440">24 hours before</option>
-                <option [ngValue]="720">12 hours before</option>
-                <option [ngValue]="360">6 hours before</option>
-                <option [ngValue]="0">Disabled</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Slot 2 Reminder</label>
-              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot2Minutes">
-                <option [ngValue]="240">4 hours before</option>
-                <option [ngValue]="120">2 hours before</option>
-                <option [ngValue]="60">1 hour before</option>
-                <option [ngValue]="0">Disabled</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Slot 3 Reminder</label>
-              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot3Minutes">
-                <option [ngValue]="45">45 mins before</option>
-                <option [ngValue]="30">30 mins before</option>
-                <option [ngValue]="15">15 mins before</option>
-                <option [ngValue]="0">Disabled</option>
-              </select>
+        <div class="cms-card reminders-container">
+          <div class="card-header-simple">
+            <span class="material-symbols-outlined text-primary">notifications_active</span>
+            <div>
+              <h3>Shift Readiness &amp; Departure Reminders</h3>
+              <p class="card-sub-text">Customize notification intervals and channels before each shift so you never miss a duty call.</p>
             </div>
           </div>
-
-          <div class="mb-4">
-            <label class="form-label fw-bold mb-2">Delivery Channels</label>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="prefInApp" [(ngModel)]="reminderPrefs.allowInApp" />
-              <label class="form-check-label" for="prefInApp">In-App Notification Alerts</label>
-            </div>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="prefEmail" [(ngModel)]="reminderPrefs.allowEmail" />
-              <label class="form-check-label" for="prefEmail">Email Departure Alerts</label>
-            </div>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="prefWhatsApp" [(ngModel)]="reminderPrefs.allowWhatsApp" />
-              <label class="form-check-label" for="prefWhatsApp">WhatsApp Dispatch Reminders</label>
-            </div>
-          </div>
-
-          <button class="btn btn-primary" (click)="saveReminderPreferences()">
-            Save Preferences
-          </button>
-        </div>
-      </div>
-
-      <!-- Swap Modal -->
-      <div class="modal fade show d-block" *ngIf="showSwapModal" style="background: rgba(0,0,0,0.5)">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Request Shift Swap / Cover</h5>
-              <button type="button" class="btn-close" (click)="showSwapModal = false"></button>
-            </div>
-            <div class="modal-body">
-              <p class="small text-muted mb-3">
-                Request a swap for your shift at <strong>{{ selectedShift?.siteName }}</strong> on {{ selectedShift?.startsAtUtc | date:'mediumDate' }}.
-              </p>
-              <div class="mb-3">
-                <label class="form-label">Reason for Swap</label>
-                <textarea class="form-control" rows="3" [(ngModel)]="swapReason" placeholder="e.g. Family emergency, university exam"></textarea>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-outline-secondary" (click)="showSwapModal = false">Cancel</button>
-              <button class="btn btn-primary" (click)="submitSwap()" [disabled]="!swapReason">Submit Swap Request</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Leave Request Modal -->
-      <div class="modal fade show d-block" *ngIf="showLeaveModal" style="background: rgba(0,0,0,0.5)">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Submit Leave Request</h5>
-              <button type="button" class="btn-close" (click)="showLeaveModal = false"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Leave Type</label>
-                <select class="form-select" [(ngModel)]="leaveType">
-                  <option value="Annual">Annual Leave</option>
-                  <option value="Sick">Sick Leave</option>
-                  <option value="Compassionate">Compassionate Leave</option>
-                  <option value="Unpaid">Unpaid Leave</option>
+          <div class="card-body-form">
+            <div class="form-row-3 mb-4">
+              <div class="form-group">
+                <label class="form-label">Slot 1 Reminder</label>
+                <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot1Minutes">
+                  <option [ngValue]="1440">24 hours before</option>
+                  <option [ngValue]="720">12 hours before</option>
+                  <option [ngValue]="360">6 hours before</option>
+                  <option [ngValue]="0">Disabled</option>
                 </select>
               </div>
-              <div class="row">
-                <div class="col-6 mb-3">
-                  <label class="form-label">Start Date</label>
-                  <input type="date" class="form-control" [(ngModel)]="leaveStartDate">
-                </div>
-                <div class="col-6 mb-3">
-                  <label class="form-label">End Date</label>
-                  <input type="date" class="form-control" [(ngModel)]="leaveEndDate">
-                </div>
+              <div class="form-group">
+                <label class="form-label">Slot 2 Reminder</label>
+                <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot2Minutes">
+                  <option [ngValue]="240">4 hours before</option>
+                  <option [ngValue]="120">2 hours before</option>
+                  <option [ngValue]="60">1 hour before</option>
+                  <option [ngValue]="0">Disabled</option>
+                </select>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Reason</label>
-                <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Optional notes for supervisor"></textarea>
+              <div class="form-group">
+                <label class="form-label">Slot 3 Reminder</label>
+                <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot3Minutes">
+                  <option [ngValue]="45">45 mins before</option>
+                  <option [ngValue]="30">30 mins before</option>
+                  <option [ngValue]="15">15 mins before</option>
+                  <option [ngValue]="0">Disabled</option>
+                </select>
               </div>
             </div>
-            <div class="modal-footer">
-              <button class="btn btn-outline-secondary" (click)="showLeaveModal = false">Cancel</button>
-              <button class="btn btn-primary" (click)="submitLeave()" [disabled]="!leaveStartDate || !leaveEndDate">Submit Request</button>
+
+            <div class="toggles-section mb-4">
+              <label class="form-label mb-2">Delivery Channels</label>
+              <div class="toggle-card">
+                <div class="toggle-info">
+                  <span class="material-symbols-outlined text-primary">notifications</span>
+                  <div>
+                    <div class="toggle-title">In-App Notification Alerts</div>
+                    <div class="toggle-desc">Instant web &amp; mobile notifications when shifts are assigned or approaching</div>
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="reminderPrefs.allowInApp" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-card">
+                <div class="toggle-info">
+                  <span class="material-symbols-outlined text-blue">mail</span>
+                  <div>
+                    <div class="toggle-title">Email Departure Alerts</div>
+                    <div class="toggle-desc">Receive departure reminder emails with venue address and site instructions</div>
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="reminderPrefs.allowEmail" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-card">
+                <div class="toggle-info">
+                  <span class="material-symbols-outlined text-green">chat</span>
+                  <div>
+                    <div class="toggle-title">WhatsApp Dispatch Reminders</div>
+                    <div class="toggle-desc">Automated WhatsApp ping with 1-tap clock-in link before shift commencement</div>
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="reminderPrefs.allowWhatsApp" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
             </div>
+
+            <button type="button" class="btn btn-primary" (click)="saveReminderPreferences()">
+              <span class="material-symbols-outlined">save</span>
+              <span>Save Notification Preferences</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Swap Modal (Custom BCC Modal) -->
+      <div class="modal-backdrop-custom" *ngIf="showSwapModal" (click)="showSwapModal = false">
+        <div class="modal-card-custom" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">swap_horiz</span>
+              <div>
+                <h3>Request Shift Swap / Cover</h3>
+                <p class="modal-subtitle">Offer your shift to eligible colleagues on the team roster</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showSwapModal = false">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <p class="small text-muted m-0">
+              Request cover for your duty at <strong>{{ selectedShift?.facilityName || selectedShift?.siteName }}</strong> on {{ selectedShift?.startsAtUtc | date:'mediumDate' }}.
+            </p>
+            <div class="form-group">
+              <label class="form-label">Reason for Swap *</label>
+              <textarea class="form-control" rows="3" [(ngModel)]="swapReason" placeholder="e.g. Family emergency, university exam, illness..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-outline" (click)="showSwapModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="submitSwap()" [disabled]="!swapReason">
+              <span>Submit Swap Request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leave Request Modal (Custom BCC Modal) -->
+      <div class="modal-backdrop-custom" *ngIf="showLeaveModal" (click)="showLeaveModal = false">
+        <div class="modal-card-custom" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">flight_takeoff</span>
+              <div>
+                <h3>Submit Leave Request</h3>
+                <p class="modal-subtitle">Request annual leave, sickness, or time off approval</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showLeaveModal = false">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <div class="form-group mb-3">
+              <label class="form-label">Leave Type *</label>
+              <select class="form-select" [(ngModel)]="leaveType">
+                <option value="Annual">Annual Leave</option>
+                <option value="Sick">Sick Leave</option>
+                <option value="Compassionate">Compassionate Leave</option>
+                <option value="Unpaid">Unpaid Leave</option>
+              </select>
+            </div>
+            <div class="form-row-2 mb-3">
+              <div class="form-group">
+                <label class="form-label">Start Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="leaveStartDate" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">End Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="leaveEndDate" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason / Notes</label>
+              <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Optional notes for supervisor..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-outline" (click)="showLeaveModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="submitLeave()" [disabled]="!leaveStartDate || !leaveEndDate">
+              <span>Submit Request</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1434,107 +1613,468 @@ import { ToastService } from '../../../core/services/toast.service';
       font-size: 12px;
     }
 
-    /* Cards */
-    .card {
+    /* Canonical BCC CMS Card */
+    .cms-card {
       background: #ffffff;
-      border-radius: 12px;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      overflow: hidden;
+    }
+    .table-toolbar {
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toolbar-left h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .count-badge {
+      font-size: 12px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Card Simple Header */
+    .card-header-simple {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-header-simple h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .card-sub-text {
+      font-size: 13px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .card-body-form {
+      padding: 24px;
+    }
+
+    /* Canonical Empty State Card */
+    .empty-state-card {
+      padding: 56px 24px;
+      text-align: center;
+      max-width: 520px;
+      margin: 20px auto;
+    }
+    .empty-icon-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+    }
+    .empty-icon-circle .material-symbols-outlined {
+      font-size: 32px;
+    }
+    .empty-state-card h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+    }
+    .empty-state-card p {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0 0 20px 0;
+      line-height: 1.5;
+    }
+
+    /* Shifts Grid & Cards */
+    .shifts-card-body {
+      padding: 24px;
+    }
+    .shifts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
     }
     .shift-card {
-      transition: transform 0.15s ease-in-out;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
+      gap: 14px;
+      transition: all 0.2s ease-in-out;
+      position: relative;
     }
     .shift-card:hover {
+      border-color: #0050e5;
+      box-shadow: 0 8px 24px rgba(0, 80, 229, 0.08);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
-    .card-body {
+    .shift-card.overnight-card {
+      border-left: 4px solid #9333ea;
+    }
+    .shift-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .shift-badges-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .shift-code-badge {
+      font-family: monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #334155;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .badge-overnight {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #faf5ff;
+      color: #7e22ce;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #e9d5ff;
+    }
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.3px;
+    }
+    .status-active { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-pending { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .status-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .shift-venue-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0050e5;
+      margin: 0 0 4px 0;
+    }
+    .shift-venue-address {
+      font-size: 12.5px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+    }
+    .shift-venue-address .material-symbols-outlined {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .shift-meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      flex: 1;
-      padding: 18px;
+      gap: 8px;
     }
-    .border-start-overnight {
-      border-left: 4px solid #9333ea !important;
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
     }
+    .meta-label { color: #64748b; }
+    .meta-val { font-weight: 600; color: #1e293b; }
+    .meta-val.val-rate { color: #16a34a; font-weight: 700; }
+    .badge-station {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* Live Countdown */
+    .acceptance-countdown-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .countdown-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .countdown-title {
+      font-weight: 700;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .countdown-timer {
+      font-family: monospace;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .countdown-sub {
+      font-size: 11.5px;
+      margin-top: 4px;
+    }
+    .text-danger { color: #ef4444 !important; }
+    .text-muted { color: #64748b !important; }
+    .text-success { color: #16a34a !important; }
+
+    /* Site Briefing Alert */
     .site-briefing-alert {
       background: #fffbeb;
       border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .briefing-header {
+      font-weight: 700;
+      color: #92400e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .briefing-body {
+      color: #78350f;
     }
 
-    /* Badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
+    .shift-actions-row {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
     }
-    .bg-primary { background: #0050e5 !important; color: #ffffff !important; }
-    .bg-success { background: #16a34a !important; color: #ffffff !important; }
-    .bg-warning { background: #f59e0b !important; color: #ffffff !important; }
-    .bg-danger { background: #ef4444 !important; color: #ffffff !important; }
-    .bg-light { background: #f1f5f9 !important; color: #475569 !important; }
-    .bg-purple { background: #9333ea !important; color: #ffffff !important; }
-    .text-primary { color: #0050e5; }
-    .text-dark { color: #0f172a; }
-    .font-monospace { font-family: monospace; }
-    .fw-bold { font-weight: 700; }
-    .fw-semibold { font-weight: 600; }
-    .fs-6 { font-size: 16px; }
-    .small { font-size: 12px; }
-    .border { border: 1px solid #e2e8f0; }
-    .rounded { border-radius: 8px; }
-    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .btn-confirm {
+      background: #16a34a;
+      color: #ffffff;
+      border: 1px solid #16a34a;
+    }
+    .btn-confirm:hover:not(:disabled) {
+      background: #15803d;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+    }
+
+    /* 2-Column Workspace Grid */
+    .workspace-grid-2col {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 992px) {
+      .workspace-grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
 
     /* Forms */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
     .form-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #334155;
     }
     .form-control,
     .form-select {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 13px;
+      border-radius: 10px;
+      font-size: 13.5px;
       color: #0f172a;
       background: #ffffff;
-      transition: all 0.15s;
+      outline: none;
+      transition: all 0.2s;
+      box-sizing: border-box;
     }
     .form-control:focus,
     .form-select:focus {
-      outline: none;
       border-color: #0050e5;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
     }
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
 
-    /* Tables */
-    .table {
+    /* Tables (CMS Table) */
+    .table-responsive {
+      overflow-x: auto;
+    }
+    .cms-table {
       width: 100%;
       border-collapse: collapse;
+      text-align: left;
     }
-    .table th,
-    .table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .table-light {
+    .cms-table thead th {
       background: #f8fafc;
-      color: #475569;
-      font-weight: 600;
+      padding: 14px 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .cms-table tbody td {
+      padding: 14px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+      color: #334155;
+    }
+    .cms-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+    .venue-cell-title {
+      font-weight: 700;
+      color: #0050e5;
+    }
+    .venue-cell-sub {
       font-size: 12px;
+      color: #64748b;
+      font-family: monospace;
+    }
+    .badge-fine-negative {
+      font-size: 11px;
+      font-weight: 700;
+      background: #fef2f2;
+      color: #b91c1c;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #fecaca;
+    }
+    .badge-fine-zero {
+      font-size: 11px;
+      color: #94a3b8;
+      background: #f8fafc;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* Reminders Toggles */
+    .reminders-container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .toggles-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .toggle-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .toggle-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-info .material-symbols-outlined {
+      font-size: 24px;
+    }
+    .toggle-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .toggle-desc {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+      border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #0050e5;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
     }
 
     /* Loading state */
