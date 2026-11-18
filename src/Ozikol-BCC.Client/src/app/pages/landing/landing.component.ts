@@ -5352,10 +5352,34 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       next: (res: any) => {
         submitBtn.removeAttribute('disabled');
         submitBtn.innerHTML = originalText;
-        const successMsg = res?.message || 'Thank you! Your submission has been received.';
+        const payload = res?.data || {};
+        const successMsg = payload?.message || res?.message || 'Thank you! Your submission has been received.';
         this.toastService.success(successMsg);
         form.reset();
         this.resetFormRecaptcha(widgetId);
+
+        if (payload.successRedirectUrl) {
+          const targetUrl = String(payload.successRedirectUrl).trim();
+          if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+            window.location.href = targetUrl;
+          } else {
+            this.router.navigateByUrl(targetUrl.startsWith('/') ? targetUrl : `/${targetUrl}`);
+          }
+          return;
+        }
+
+        if (payload.showSuccessPage !== false) {
+          const successState = {
+            title: payload.successPageTitle || 'Thank You! Submission Received',
+            note: successMsg || 'We have received your submission and will get back to you shortly.',
+            buttonText: payload.successPageButtonText || 'Submit Again',
+            returnUrl: window.location.pathname || '/'
+          };
+          try {
+            sessionStorage.setItem('oz_cms_form_success', JSON.stringify(successState));
+          } catch {}
+          this.router.navigate(['/form-success'], { state: successState });
+        }
       },
       error: (err: any) => {
         submitBtn.removeAttribute('disabled');

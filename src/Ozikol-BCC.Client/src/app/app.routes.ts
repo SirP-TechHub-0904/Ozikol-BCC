@@ -174,6 +174,7 @@ export const routes: Routes = [
   { path: 'onboarding', component: RegisterComponent },
   { path: 'workforce/onboarding', component: WorkforceOnboardingComponent },
   { path: 'workforce/onboarding/:token', component: WorkforceOnboardingComponent },
+  { path: 'survey/:slug', loadComponent: () => import('./pages/public/public-survey.component').then(m => m.PublicSurveyComponent) },
   { path: 'signup', component: RegisterComponent },
   { path: 'auth/:customSlug', component: RegisterComponent },
   { path: 'join-committee', component: LandingComponent },
@@ -376,6 +377,7 @@ export const routes: Routes = [
       { path: 'content/console/forms/create', component: FormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsStudioManager', 'CmsManager'] } },
       { path: 'content/console/forms/edit/:id', component: FormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsStudioManager', 'CmsManager'] } },
       { path: 'content/console/forms/:formKey/submissions', component: FormSubmissionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsStudioManager', 'CmsManager'] } },
+      { path: 'surveys/console', loadComponent: () => import('./pages/admin/surveys/surveys-console.component').then(m => m.SurveysConsoleComponent), data: { roles: ['SuperAdmin', 'Admin', 'FormManager'] } },
       { path: 'admin/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
       { path: 'content/console/templates/import', component: ImportWebsiteTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsStudioManager', 'CmsManager'] } },
       { path: 'content/console/templates/create', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
@@ -489,6 +491,7 @@ export const routes: Routes = [
     ]
   },
   // Dynamic Public Website Content Routes
+  { path: 'form-success', loadComponent: () => import('./pages/public/form-success.component').then(m => m.FormSuccessComponent) },
   { path: 'page/:slug', component: LandingComponent },
   { path: 'blog', component: LandingComponent },
   { path: 'blog/:id', component: LandingComponent },

@@ -22,6 +22,10 @@ export interface PageFormItem {
   description?: string;
   submitButtonText?: string;
   successMessage?: string;
+  showSuccessPage?: boolean;
+  successPageTitle?: string;
+  successPageButtonText?: string;
+  successRedirectUrl?: string;
   notificationEmail?: string;
   isActive: boolean;
   createdAtUtc?: string;

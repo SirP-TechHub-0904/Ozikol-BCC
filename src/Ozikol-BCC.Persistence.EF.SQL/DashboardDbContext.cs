@@ -78,6 +78,11 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<PageFormField> PageFormFields { get; set; } = null!;
     public DbSet<PageFormSubmission> PageFormSubmissions { get; set; } = null!;
 
+    // --- Independent Modular Feature: Survey & Form Builder (bcp-form-builder) ---
+    public DbSet<BcpSurveyForm> BcpSurveyForms { get; set; } = null!;
+    public DbSet<BcpSurveyFormField> BcpSurveyFormFields { get; set; } = null!;
+    public DbSet<BcpSurveySubmission> BcpSurveySubmissions { get; set; } = null!;
+
     // --- Ozi AI: Studio Co-pilot Chat History & Snapshot Restorations ---
     public DbSet<BcpAiChatHistory> AiChatHistories { get; set; } = null!;
 
@@ -919,6 +924,20 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             .WithMany()
             .HasForeignKey(s => s.PageFormId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // --- Independent Survey & Form Builder (bcp-form-builder) ---
+        modelBuilder.Entity<BcpSurveyForm>(entity =>
+        {
+            entity.HasIndex(s => s.Slug).IsUnique();
+            entity.HasMany(s => s.Fields)
+                .WithOne(f => f.SurveyForm)
+                .HasForeignKey(f => f.BcpSurveyFormId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(s => s.Submissions)
+                .WithOne(sub => sub.SurveyForm)
+                .HasForeignKey(sub => sub.BcpSurveyFormId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // --- Independent Committees & Sub-Groups Suite (bcp-committees) ---
         modelBuilder.Entity<BcpCommittee>(entity =>

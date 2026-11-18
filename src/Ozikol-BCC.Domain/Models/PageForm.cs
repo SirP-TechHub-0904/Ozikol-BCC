@@ -53,6 +53,29 @@ namespace Ozikol_BCC.Domain.Models
         public string SuccessMessage { get; set; } = "Thank you! Your request has been submitted successfully.";
 
         /// <summary>
+        /// When true, displays a dedicated branded success screen (with title, note, and Submit Again button) after the toast alert.
+        /// </summary>
+        public bool ShowSuccessPage { get; set; } = true;
+
+        /// <summary>
+        /// Optional headline shown on the dedicated post-submission success screen.
+        /// </summary>
+        [MaxLength(200)]
+        public string? SuccessPageTitle { get; set; } = "Submission Received!";
+
+        /// <summary>
+        /// Label for the button on the success screen that resets the form for another submission.
+        /// </summary>
+        [MaxLength(100)]
+        public string? SuccessPageButtonText { get; set; } = "Submit Again";
+
+        /// <summary>
+        /// Optional custom URL to redirect the visitor to after submission (overrides inline success screen when set).
+        /// </summary>
+        [MaxLength(500)]
+        public string? SuccessRedirectUrl { get; set; }
+
+        /// <summary>
         /// Optional email address to receive instant notifications when a visitor submits this form.
         /// If null, defaults to the primary tenant admin email.
         /// </summary>

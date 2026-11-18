@@ -1,0 +1,73 @@
+# ===================================================================
+# CI/CD Workflow: Deploy Ozikol-BCC Background Worker Service
+# Target: Standalone systemd Service (ozikol-worker)
+# ===================================================================
+
+name: Deploy Ozikol Worker
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'src/Ozikol-BCC.Worker/**'
+      - 'src/Ozikol-BCC.Domain/**'
+      - 'src/Ozikol-BCC.Persistence.EF.SQL/**'
+      - 'src/Ozikol-BCC.Application/**'
+      - 'src/Ozikol-BCC.Infrastructure/**'
+      - 'src/Ozikol-BCC.EmailServices.Postmark/**'
+      - 'src/Ozikol.MasterDomain/**'
+      - 'src/Ozikol.MasterPersistence.EF.MasterSQL/**'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Publish Ozikol Worker
+        run: |
+          dotnet publish src/Ozikol-BCC.Worker/Ozikol-BCC.Worker.csproj -c Release -o ./publish-worker
+
+      - name: Package Worker Archive
+        run: |
+          tar -czf publish-worker.tar.gz -C ./publish-worker .
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          ssh-keyscan -p "$PORT" -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: SCP Archive to VPS
+        run: |
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          scp -i ~/.ssh/deploy_key -P "$PORT" publish-worker.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/publish-worker.tar.gz
+
+      - name: Deploy on VPS
+        run: |
+          PORT="${{ secrets.VPS_PORT }}"
+          PORT="${PORT:-22}"
+          ssh -i ~/.ssh/deploy_key -p "$PORT" ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            mkdir -p /var/www/ozikol-worker
+            tar -xzf /tmp/publish-worker.tar.gz -C /var/www/ozikol-worker/
+            rm -f /tmp/publish-worker.tar.gz
+            if [ ! -f /var/www/ozikol-worker/.env ] && [ -f /var/www/ozikol-api/.env ]; then
+              ln -sf /var/www/ozikol-api/.env /var/www/ozikol-worker/.env
+            fi
+            systemctl restart ozikol-worker
+            sleep 2
+            systemctl is-active --quiet ozikol-worker && echo "ozikol-worker deployed successfully and active." || (journalctl -u ozikol-worker -n 20 --no-pager && exit 1)
+          EOF

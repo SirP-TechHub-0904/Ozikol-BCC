@@ -5417,6 +5417,146 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpStaffTypes");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSurveyForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AllowAnonymous")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowSuccessPage")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("SuccessMessage")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SuccessPageButtonText")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SuccessPageTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("BcpSurveyForms");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSurveyFormField", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BcpSurveyFormId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FieldKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("OptionsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Placeholder")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BcpSurveyFormId");
+
+                    b.ToTable("BcpSurveyFormFields");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSurveySubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdminNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("BcpSurveyFormId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DataJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RespondentUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BcpSurveyFormId");
+
+                    b.ToTable("BcpSurveySubmissions");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpTicketType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7438,6 +7578,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<bool>("ShowSuccessPage")
+                        .HasColumnType("bit");
+
                     b.Property<string>("SubmitButtonText")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -7447,6 +7590,18 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SuccessPageButtonText")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SuccessPageTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SuccessRedirectUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -9575,6 +9730,28 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSurveyFormField", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpSurveyForm", "SurveyForm")
+                        .WithMany("Fields")
+                        .HasForeignKey("BcpSurveyFormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SurveyForm");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSurveySubmission", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpSurveyForm", "SurveyForm")
+                        .WithMany("Submissions")
+                        .HasForeignKey("BcpSurveyFormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SurveyForm");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpTicketType", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpEvent", "BcpEvent")
@@ -10071,6 +10248,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSmsCampaign", b =>
                 {
                     b.Navigation("Recipients");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSurveyForm", b =>
+                {
+                    b.Navigation("Fields");
+
+                    b.Navigation("Submissions");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpTicketType", b =>
