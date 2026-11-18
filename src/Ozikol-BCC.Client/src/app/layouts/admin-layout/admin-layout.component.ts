@@ -683,9 +683,9 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/settings" [class.active]="isCurrentRoute('/workforce/console/settings')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>Staff Types &amp; Policies</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>Rota Settings</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/settings')" (click)="togglePin('Staff Types', '/workforce/console/settings', 'tune')" [title]="isPinned('/workforce/console/settings') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/settings')" (click)="togglePin('Rota Settings', '/workforce/console/settings', 'tune')" [title]="isPinned('/workforce/console/settings') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/workforce/console/settings') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>

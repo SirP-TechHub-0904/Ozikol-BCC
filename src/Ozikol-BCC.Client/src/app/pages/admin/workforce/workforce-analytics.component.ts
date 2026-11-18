@@ -42,7 +42,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </button>
           <a routerLink="/workforce/console/settings" class="btn btn-outline" title="Manage Staff Classifications, Baseline Hours & Rules">
             <span class="material-symbols-outlined">settings</span>
-            <span>Staff Types</span>
+            <span>Rota Settings</span>
           </a>
           <a routerLink="/workforce/console/enroll" class="btn btn-primary">
             <span class="material-symbols-outlined">person_add</span>
