@@ -2266,10 +2266,27 @@ import { ToastService } from '../../../core/services/toast.service';
         flex-direction: column !important;
         align-items: stretch !important;
         padding: 16px !important;
-        gap: 14px !important;
+        gap: 12px !important;
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
       }
       .header-left {
         width: 100% !important;
@@ -2278,38 +2295,43 @@ import { ToastService } from '../../../core/services/toast.service';
       }
       .title-row {
         gap: 8px !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 4px !important;
         flex-wrap: wrap !important;
       }
       .title-row h1 {
-        font-size: 20px !important;
+        font-size: 18px !important;
         line-height: 1.25 !important;
       }
       .badge-suite {
-        font-size: 10px !important;
-        padding: 2px 8px !important;
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
       }
       .subtitle {
-        font-size: 12.5px !important;
-        line-height: 1.4 !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
       }
       .header-actions {
         width: 100% !important;
         display: grid !important;
         grid-template-columns: repeat(3, 1fr) !important;
-        gap: 8px !important;
+        gap: 6px !important;
         box-sizing: border-box !important;
       }
       .header-actions .btn {
         width: 100% !important;
         justify-content: center !important;
-        padding: 9px 6px !important;
-        font-size: 11.5px !important;
+        padding: 6px 4px !important;
+        font-size: 10.5px !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
         box-sizing: border-box !important;
         white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
       }
       .header-actions .btn .material-symbols-outlined {
-        font-size: 16px !important;
+        font-size: 14px !important;
       }
       .subnav-scroll-wrapper {
         width: 100% !important;
@@ -2325,8 +2347,13 @@ import { ToastService } from '../../../core/services/toast.service';
         display: none !important;
       }
       .subnav-tab {
-        padding: 8px 14px;
-        font-size: 12px;
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        border-radius: 9px !important;
+        gap: 5px !important;
+      }
+      .subnav-tab .material-symbols-outlined {
+        font-size: 15px !important;
       }
       .table-toolbar {
         padding: 14px 16px;
@@ -2359,6 +2386,31 @@ import { ToastService } from '../../../core/services/toast.service';
       }
       .toggles-grid {
         grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .header-actions {
+        gap: 4px !important;
+      }
+      .header-actions .btn {
+        font-size: 10px !important;
+        padding: 5px 2px !important;
+        gap: 3px !important;
+      }
+      .header-actions .btn .material-symbols-outlined {
+        font-size: 13px !important;
+      }
+      .breadcrumb {
+        font-size: 10px !important;
+        gap: 3px !important;
+      }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current {
+        font-size: 10px !important;
+      }
+      .subnav-tab {
+        padding: 5px 10px !important;
+        font-size: 10.5px !important;
       }
     }
 
@@ -2476,7 +2528,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
           this.currencySymbol = res.data.currencySymbol;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.routeSub = this.route.data.subscribe((data) => {
