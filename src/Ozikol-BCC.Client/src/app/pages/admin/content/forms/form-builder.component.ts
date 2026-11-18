@@ -137,7 +137,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
                     type="text"
                     [(ngModel)]="form.successPageTitle"
                     (ngModelChange)="onDataChanged()"
-                    placeholder="Submission Received!"
+                    placeholder="Thank You! Submission Received"
                     class="form-control">
                 </div>
 
@@ -153,12 +153,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
               </ng-container>
 
               <div class="form-group col-span-2">
-                <label>Optional Custom Redirect URL (Overrides Inline Success Page)</label>
+                <label>Optional Custom Redirect URL (Overrides Success Page)</label>
                 <input
                   type="text"
                   [(ngModel)]="form.successRedirectUrl"
                   (ngModelChange)="onDataChanged()"
-                  placeholder="e.g. /thank-you (leave blank to use built-in success screen)"
+                  placeholder="e.g. /thank-you (leave blank to redirect to built-in success page)"
                   class="form-control">
               </div>
 
@@ -782,9 +782,9 @@ export class FormBuilderComponent implements OnInit {
     formKey: '',
     description: '',
     submitButtonText: 'Submit Request',
-    successMessage: 'Thank you! Your submission has been received. Our team will follow up promptly.',
+    successMessage: 'We have received your submission and will get back to you shortly.',
     showSuccessPage: true,
-    successPageTitle: 'Submission Received!',
+    successPageTitle: 'Thank You! Submission Received',
     successPageButtonText: 'Submit Again',
     successRedirectUrl: '',
     notificationEmail: '',

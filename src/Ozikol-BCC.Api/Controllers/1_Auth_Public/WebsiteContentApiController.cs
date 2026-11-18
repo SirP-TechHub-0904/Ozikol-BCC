@@ -764,10 +764,10 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 submissionId = submission.Id,
-                message = form.SuccessMessage,
+                message = string.IsNullOrWhiteSpace(form.SuccessMessage) ? "We have received your submission and will get back to you shortly." : form.SuccessMessage,
                 showSuccessPage = form.ShowSuccessPage,
-                successPageTitle = form.SuccessPageTitle ?? "Submission Received!",
-                successPageButtonText = form.SuccessPageButtonText ?? "Submit Again",
+                successPageTitle = string.IsNullOrWhiteSpace(form.SuccessPageTitle) ? "Thank You! Submission Received" : form.SuccessPageTitle,
+                successPageButtonText = string.IsNullOrWhiteSpace(form.SuccessPageButtonText) ? "Submit Again" : form.SuccessPageButtonText,
                 successRedirectUrl = form.SuccessRedirectUrl
             }, form.SuccessMessage));
         }

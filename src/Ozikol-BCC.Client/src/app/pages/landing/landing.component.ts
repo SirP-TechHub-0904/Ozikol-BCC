@@ -5369,12 +5369,16 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         }
 
         if (payload.showSuccessPage !== false) {
-          this.renderInlineFormSuccessView(
-            form,
-            payload.successPageTitle || 'Submission Received!',
-            successMsg,
-            payload.successPageButtonText || 'Submit Again'
-          );
+          const successState = {
+            title: payload.successPageTitle || 'Thank You! Submission Received',
+            note: successMsg || 'We have received your submission and will get back to you shortly.',
+            buttonText: payload.successPageButtonText || 'Submit Again',
+            returnUrl: window.location.pathname || '/'
+          };
+          try {
+            sessionStorage.setItem('oz_cms_form_success', JSON.stringify(successState));
+          } catch {}
+          this.router.navigate(['/form-success'], { state: successState });
         }
       },
       error: (err: any) => {
@@ -5385,57 +5389,6 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         this.resetFormRecaptcha(widgetId);
       }
     });
-  }
-
-  /**
-   * Transitions the submitted form container into a dedicated branded success screen
-   * displaying a title, confirmation note, and a "Submit Again" button that restores the form.
-   */
-  private renderInlineFormSuccessView(
-    form: HTMLFormElement,
-    title: string,
-    note: string,
-    buttonText: string
-  ): void {
-    const parent = form.parentElement;
-    if (!parent) return;
-
-    const existingBanner = parent.querySelector('.oz-form-success-card');
-    if (existingBanner) existingBanner.remove();
-
-    form.style.display = 'none';
-
-    const card = document.createElement('div');
-    card.className = 'oz-form-success-card';
-    card.style.cssText = 'text-align:center; padding:40px 28px; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,0.06); margin:8px 0;';
-
-    const iconWrap = document.createElement('div');
-    iconWrap.style.cssText = 'width:60px; height:60px; border-radius:50%; background:#eff6ff; color:#0050e5; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;';
-    iconWrap.innerHTML = '<span class="material-symbols-outlined" style="font-size:32px;">check_circle</span>';
-
-    const heading = document.createElement('h3');
-    heading.style.cssText = 'margin:0 0 10px; font-size:22px; font-weight:800; color:#0f172a;';
-    heading.textContent = title;
-
-    const desc = document.createElement('p');
-    desc.style.cssText = 'margin:0 auto 24px; max-width:460px; font-size:15px; line-height:1.6; color:#475569;';
-    desc.textContent = note;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.style.cssText = 'display:inline-flex; align-items:center; gap:8px; padding:11px 22px; background:#0050e5; color:#ffffff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;';
-    btn.textContent = buttonText;
-    btn.addEventListener('click', () => {
-      card.remove();
-      form.style.display = '';
-      form.reset();
-    });
-
-    card.appendChild(iconWrap);
-    card.appendChild(heading);
-    card.appendChild(desc);
-    card.appendChild(btn);
-    parent.insertBefore(card, form);
   }
 }
 
