@@ -2,58 +2,65 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router, RouterModule } from '@angular/router';
+import { LandingComponent } from '../landing/landing.component';
 
 /**
  * Dedicated public confirmation page displayed after every CMS website form submission.
- * Renders the editable title, rich-text confirmation note, the configured action route
- * (Resubmit Again or a selected System/Website page), and a Back to Home button.
+ * Wrapped in LandingComponent (embeddedShellMode) to preserve the tenant's live website
+ * header, navigation, breadcrumb banner, and footer layout.
  */
 @Component({
   selector: 'app-form-success',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LandingComponent],
   template: `
-    <div class="oz-success-shell">
-      <div class="oz-success-card">
-        <div class="oz-success-icon">
-          <span class="material-symbols-outlined">check_circle</span>
-        </div>
+    <app-landing
+      [embeddedShellMode]="true"
+      [embeddedPageTitle]="title"
+      [embeddedPageSubtitle]="''">
+      <div class="oz-success-shell">
+        <div class="oz-success-card">
+          <div class="oz-success-icon">
+            <span class="material-symbols-outlined">check_circle</span>
+          </div>
 
-        <h1 class="oz-success-title">{{ title }}</h1>
-        <div class="oz-success-note" [innerHTML]="safeNoteHtml"></div>
+          <h2 class="oz-success-title">{{ title }}</h2>
+          <div class="oz-success-note" [innerHTML]="safeNoteHtml"></div>
 
-        <div class="oz-success-actions">
-          <button type="button" class="btn-primary-action" (click)="triggerPrimaryAction()">
-            <span class="material-symbols-outlined">{{ actionUrl ? 'arrow_forward' : 'refresh' }}</span>
-            <span>{{ primaryButtonLabel }}</span>
-          </button>
+          <div class="oz-success-actions">
+            <button type="button" class="btn-primary-action" (click)="triggerPrimaryAction()">
+              <span class="material-symbols-outlined">{{ actionUrl ? 'arrow_forward' : 'refresh' }}</span>
+              <span>{{ primaryButtonLabel }}</span>
+            </button>
 
-          <a routerLink="/" class="btn-secondary-action">
-            <span class="material-symbols-outlined">home</span>
-            <span>Back to Home</span>
-          </a>
+            <a routerLink="/" class="btn-secondary-action">
+              <span class="material-symbols-outlined">home</span>
+              <span>Back to Home</span>
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+    </app-landing>
   `,
   styles: [`
     .oz-success-shell {
-      min-height: 100vh;
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 64px 20px;
       background: #f8fafc;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .oz-success-card {
       width: 100%;
-      max-width: 540px;
+      max-width: 640px;
+      margin: 0 auto;
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 18px;
-      padding: 44px 32px;
+      padding: 48px 36px;
       text-align: center;
       box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
     }
@@ -84,7 +91,7 @@ import { Router, RouterModule } from '@angular/router';
 
     .oz-success-note {
       margin: 0 auto 28px;
-      max-width: 440px;
+      max-width: 480px;
       font-size: 15px;
       line-height: 1.6;
       color: #475569;
