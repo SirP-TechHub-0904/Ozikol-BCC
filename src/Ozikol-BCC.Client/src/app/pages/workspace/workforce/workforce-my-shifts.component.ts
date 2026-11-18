@@ -1119,18 +1119,20 @@ Chart.register(...registerables);
                   <input type="date" class="form-control" [(ngModel)]="leaveEndDate" />
                 </div>
               </div>
-              <div class="form-group mb-4">
+              <div class="form-group mb-3">
                 <label class="form-label">Reason / Notes</label>
                 <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Describe the reason for your leave request..."></textarea>
               </div>
-              <button
-                type="button"
-                class="btn btn-primary w-100"
-                (click)="submitLeave()"
-                [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
-                <span class="material-symbols-outlined">send</span>
-                <span>Submit Leave Request</span>
-              </button>
+              <div class="form-actions mt-3">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="submitLeave()"
+                  [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                  <span class="material-symbols-outlined">send</span>
+                  <span>Submit Leave Request</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1215,18 +1217,20 @@ Chart.register(...registerables);
                 <label class="form-label">Expiry Date</label>
                 <input type="date" class="form-control" [(ngModel)]="docForm.expiryDateUtc" />
               </div>
-              <div class="form-group mb-4">
+              <div class="form-group mb-3">
                 <label class="form-label">Document / File URL *</label>
                 <input type="url" class="form-control" [(ngModel)]="docForm.fileUrl" placeholder="https://..." />
               </div>
-              <button
-                type="button"
-                class="btn btn-primary w-100"
-                (click)="saveDocument()"
-                [disabled]="isActionLoading || !docForm.documentName || !docForm.fileUrl">
-                <span class="material-symbols-outlined">cloud_upload</span>
-                <span>Upload to Vault</span>
-              </button>
+              <div class="form-actions mt-3">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="saveDocument()"
+                  [disabled]="isActionLoading || !docForm.documentName || !docForm.fileUrl">
+                  <span class="material-symbols-outlined">cloud_upload</span>
+                  <span>Upload to Vault</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1308,18 +1312,20 @@ Chart.register(...registerables);
                   <input type="time" class="form-control" [(ngModel)]="availForm.unavailableToTime" />
                 </div>
               </div>
-              <div class="form-group mb-4">
+              <div class="form-group mb-3">
                 <label class="form-label">Reason / Notes</label>
                 <textarea class="form-control" rows="2" [(ngModel)]="availForm.reason" placeholder="e.g. University lectures, family commitment..."></textarea>
               </div>
-              <button
-                type="button"
-                class="btn btn-primary w-100"
-                (click)="saveAvailability()"
-                [disabled]="isActionLoading || !availForm.targetDate">
-                <span class="material-symbols-outlined">save</span>
-                <span>Save Availability</span>
-              </button>
+              <div class="form-actions mt-3">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="saveAvailability()"
+                  [disabled]="isActionLoading || !availForm.targetDate">
+                  <span class="material-symbols-outlined">save</span>
+                  <span>Save Availability</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1461,10 +1467,12 @@ Chart.register(...registerables);
               </div>
             </div>
 
-            <button type="button" class="btn btn-primary" (click)="saveReminderPreferences()">
-              <span class="material-symbols-outlined">save</span>
-              <span>Save Notification Preferences</span>
-            </button>
+            <div class="form-actions mt-4">
+              <button type="button" class="btn btn-primary" (click)="saveReminderPreferences()">
+                <span class="material-symbols-outlined">save</span>
+                <span>Save Notification Preferences</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -3310,7 +3318,9 @@ Chart.register(...registerables);
       padding: 16px 24px;
       border-top: 1px solid #e2e8f0;
       display: flex;
+      align-items: center;
       justify-content: flex-end;
+      gap: 12px;
       background: #f8fafc;
     }
 
@@ -3319,14 +3329,19 @@ Chart.register(...registerables);
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       font-weight: 600;
-      font-size: 13px;
-      padding: 8px 16px;
-      border-radius: 8px;
+      font-size: 13.5px;
+      padding: 9px 18px;
+      border-radius: 10px;
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s ease-in-out;
       text-decoration: none;
+    }
+    .btn .material-symbols-outlined {
+      font-size: 18px;
+      line-height: 1;
     }
     .btn-primary {
       background: #0050e5;
@@ -3445,6 +3460,10 @@ Chart.register(...registerables);
     }
     .card-body-form {
       padding: 24px;
+    }
+    .card-body-form > button,
+    .card-body-form > .btn {
+      margin-top: 24px !important;
     }
 
     /* Canonical Empty State Card */
@@ -3682,6 +3701,17 @@ Chart.register(...registerables);
       display: flex;
       flex-direction: column;
       gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px !important;
+      margin-bottom: 4px;
+    }
+    .w-100 {
+      width: 100% !important;
     }
     .form-label {
       font-size: 12.5px;
@@ -3710,11 +3740,13 @@ Chart.register(...registerables);
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
+      margin-bottom: 16px;
     }
     .form-row-3 {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 14px;
+      margin-bottom: 16px;
     }
 
     /* Tables (CMS Table) */
