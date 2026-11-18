@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -52,30 +52,61 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- 2. Sub-Nav Pill Tabs -->
-      <div class="bcp-subnav-tabs">
-        <button class="subnav-tab" [class.active]="activeTab === 'analytics'" (click)="switchTab('analytics')">
-          <span class="material-symbols-outlined">analytics</span> Shift Analytics
+      <!-- 2. Sub-Nav Pill Tabs (Touch Responsive with Visual Scroll Cues) -->
+      <div class="subnav-scroll-wrapper">
+        <button
+          type="button"
+          class="subnav-arrow-btn left"
+          *ngIf="canScrollLeft"
+          (click)="scrollTabs(-1)"
+          aria-label="Scroll tabs left">
+          <span class="material-symbols-outlined">chevron_left</span>
         </button>
-        <button class="subnav-tab" [class.active]="activeTab === 'shifts'" (click)="switchTab('shifts')">
-          <span class="material-symbols-outlined">calendar_month</span> My Schedule &amp; Rota
+
+        <div
+          class="bcp-subnav-tabs"
+          #subnavTabs
+          (scroll)="checkScrollArrows()">
+          <button class="subnav-tab" [class.active]="activeTab === 'analytics'" (click)="switchTab('analytics')">
+            <span class="material-symbols-outlined">analytics</span> Shift Analytics
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'shifts'" (click)="switchTab('shifts')">
+            <span class="material-symbols-outlined">calendar_month</span> My Schedule &amp; Rota
+          </button>
+          <button class="subnav-tab position-relative" [class.active]="activeTab === 'open-shifts'" (click)="switchTab('open-shifts')">
+            <span class="material-symbols-outlined">work_outline</span> Open Shifts &amp; Swaps
+            <span class="tab-badge" *ngIf="openShifts.length > 0">{{ openShifts.length }}</span>
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'timesheets'" (click)="switchTab('timesheets')">
+            <span class="material-symbols-outlined">description</span> Timesheets &amp; Pay
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'leave'" (click)="switchTab('leave')">
+            <span class="material-symbols-outlined">flight_takeoff</span> Time Off &amp; Availability
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'documents'" (click)="switchTab('documents')">
+            <span class="material-symbols-outlined">folder_shared</span> Compliance &amp; Documents
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'reminders'" (click)="switchTab('reminders')">
+            <span class="material-symbols-outlined">notifications_active</span> Reminders
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="subnav-arrow-btn right"
+          *ngIf="canScrollRight"
+          (click)="scrollTabs(1)"
+          aria-label="Scroll tabs right">
+          <span class="material-symbols-outlined">chevron_right</span>
         </button>
-        <button class="subnav-tab position-relative" [class.active]="activeTab === 'open-shifts'" (click)="switchTab('open-shifts')">
-          <span class="material-symbols-outlined">work_outline</span> Open Shifts &amp; Swaps
-          <span class="tab-badge" *ngIf="openShifts.length > 0">{{ openShifts.length }}</span>
-        </button>
-        <button class="subnav-tab" [class.active]="activeTab === 'timesheets'" (click)="switchTab('timesheets')">
-          <span class="material-symbols-outlined">description</span> Timesheets &amp; Pay
-        </button>
-        <button class="subnav-tab" [class.active]="activeTab === 'leave'" (click)="switchTab('leave')">
-          <span class="material-symbols-outlined">flight_takeoff</span> Time Off &amp; Availability
-        </button>
-        <button class="subnav-tab" [class.active]="activeTab === 'documents'" (click)="switchTab('documents')">
-          <span class="material-symbols-outlined">folder_shared</span> Compliance &amp; Documents
-        </button>
-        <button class="subnav-tab" [class.active]="activeTab === 'reminders'" (click)="switchTab('reminders')">
-          <span class="material-symbols-outlined">notifications_active</span> Reminders
-        </button>
+
+        <!-- Visual Scroll Cue on Mobile/Desktop -->
+        <div class="scroll-edge-glow right" *ngIf="canScrollRight" (click)="scrollTabs(1)">
+          <span class="material-symbols-outlined scroll-cue-chevron">chevron_right</span>
+        </div>
+        <div class="scroll-edge-glow left" *ngIf="canScrollLeft" (click)="scrollTabs(-1)">
+          <span class="material-symbols-outlined scroll-cue-chevron">chevron_left</span>
+        </div>
       </div>
 
       <div class="loading-state-card" *ngIf="isLoading && shifts.length === 0">
@@ -1161,21 +1192,50 @@ import { ToastService } from '../../../core/services/toast.service';
     .subtitle { color: #64748b; font-size: 14px; margin: 0; }
     .header-actions { display: flex; gap: 12px; }
 
-    /* Sub-Nav Pill Tabs */
+    /* Sub-Nav Pill Tabs (Horizontal Scrolling with Edge Glow and Arrows) */
+    .subnav-scroll-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
     .bcp-subnav-tabs {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       overflow-x: auto;
-      padding: 4px 0 8px 0;
-      scrollbar-width: none;
+      overflow-y: hidden;
+      padding: 6px 4px 10px 4px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: #0050e5 #f1f5f9;
     }
-    .bcp-subnav-tabs::-webkit-scrollbar { display: none; }
+    /* Sweet & Noticeable Styled Scrollbar */
+    .bcp-subnav-tabs::-webkit-scrollbar {
+      height: 5px;
+      display: block;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 6px;
+      margin: 0 4px;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #0050e5, #3b82f6);
+      border-radius: 6px;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-thumb:hover {
+      background: #003ebd;
+    }
+
     .subnav-tab {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 9px 16px;
-      border-radius: 10px;
+      padding: 10px 18px;
+      border-radius: 12px;
       background: #ffffff;
       border: 1px solid #e2e8f0;
       color: #475569;
@@ -1183,18 +1243,22 @@ import { ToastService } from '../../../core/services/toast.service';
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s;
+      flex-shrink: 0;
+      scroll-snap-align: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     .subnav-tab:hover {
       background: #f8fafc;
-      border-color: #cbd5e1;
-      color: #0f172a;
+      border-color: #0050e5;
+      color: #0050e5;
+      transform: translateY(-1px);
     }
     .subnav-tab.active {
       background: #0050e5;
       color: #ffffff;
       border-color: #0050e5;
-      box-shadow: 0 2px 8px rgba(0,80,229,0.25);
+      box-shadow: 0 4px 12px rgba(0,80,229,0.3);
     }
     .subnav-tab .material-symbols-outlined { font-size: 18px; }
     .tab-badge {
@@ -1204,6 +1268,74 @@ import { ToastService } from '../../../core/services/toast.service';
       font-weight: 700;
       padding: 1px 6px;
       border-radius: 10px;
+    }
+
+    /* Scroll Arrow Buttons & Edge Glow */
+    .subnav-arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-60%);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #0050e5;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+    .subnav-arrow-btn:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .subnav-arrow-btn.left { left: -4px; }
+    .subnav-arrow-btn.right { right: -4px; }
+
+    .scroll-edge-glow {
+      position: absolute;
+      top: 0;
+      bottom: 10px;
+      width: 48px;
+      display: flex;
+      align-items: center;
+      pointer-events: auto;
+      cursor: pointer;
+      z-index: 8;
+    }
+    .scroll-edge-glow.right {
+      right: 0;
+      justify-content: flex-end;
+      padding-right: 6px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.85) 40%, #ffffff 100%);
+    }
+    .scroll-edge-glow.left {
+      left: 0;
+      justify-content: flex-start;
+      padding-left: 6px;
+      background: linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.85) 60%, transparent 100%);
+    }
+    .scroll-cue-chevron {
+      font-size: 18px;
+      color: #0050e5;
+      background: #eff6ff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,80,229,0.2);
+      animation: bounceH 1.8s infinite;
+    }
+    @keyframes bounceH {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(3px); }
     }
 
     /* Top Metrics Grid */
@@ -2106,6 +2238,79 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .spin { animation: spin 0.8s linear infinite; }
 
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .bcp-page-container {
+        padding: 0 0 24px 0;
+        gap: 16px;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px 18px;
+        gap: 14px;
+      }
+      .header-left {
+        width: 100%;
+      }
+      .title-row h1 {
+        font-size: 20px;
+      }
+      .breadcrumb {
+        font-size: 11.5px;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .header-actions .btn {
+        flex: 1 1 calc(50% - 8px);
+        justify-content: center;
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+      .subnav-arrow-btn {
+        display: none !important;
+      }
+      .subnav-tab {
+        padding: 8px 14px;
+        font-size: 12px;
+      }
+      .table-toolbar {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .toolbar-right {
+        width: 100%;
+      }
+      .toolbar-right .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .shifts-card-body {
+        padding: 16px;
+      }
+      .shifts-grid {
+        grid-template-columns: 1fr;
+      }
+      .card-body-form {
+        padding: 16px;
+      }
+      .form-row-2,
+      .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* Dark Mode */
     :host-context(.dark-mode) .bcp-page-container { color: #f8fafc; }
     :host-context(.dark-mode) .page-header,
@@ -2143,7 +2348,12 @@ import { ToastService } from '../../../core/services/toast.service';
     :host-context(.dark-mode) .cal-day-cell.other-month { background: #0f172a; }
   `]
 })
-export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
+export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('subnavTabs') subnavTabsRef?: ElementRef<HTMLDivElement>;
+
+  canScrollLeft = false;
+  canScrollRight = true;
+
   shifts: Shift[] = [];
   openShifts: Shift[] = [];
   timesheetList: Shift[] = [];
@@ -2224,7 +2434,46 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
         this.activeTab = tab;
       }
       this.loadActiveTabData();
+      setTimeout(() => {
+        this.checkScrollArrows();
+        this.scrollActiveTabIntoView();
+      }, 100);
     });
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.checkScrollArrows();
+      this.scrollActiveTabIntoView();
+    }, 150);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.checkScrollArrows();
+  }
+
+  checkScrollArrows(): void {
+    const el = this.subnavTabsRef?.nativeElement;
+    if (!el) return;
+    this.canScrollLeft = el.scrollLeft > 15;
+    this.canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 15;
+  }
+
+  scrollTabs(direction: number): void {
+    const el = this.subnavTabsRef?.nativeElement;
+    if (!el) return;
+    el.scrollBy({ left: direction * 220, behavior: 'smooth' });
+    setTimeout(() => this.checkScrollArrows(), 250);
+  }
+
+  scrollActiveTabIntoView(): void {
+    const el = this.subnavTabsRef?.nativeElement;
+    if (!el) return;
+    const activeBtn = el.querySelector('.subnav-tab.active') as HTMLElement;
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
   }
 
   ngOnDestroy(): void {
@@ -2239,12 +2488,18 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
       'open-shifts': '/workforce/workspace/open-shifts',
       'timesheets': '/workforce/workspace/timesheets',
       'leave': '/workforce/workspace/leave',
-      'documents': '/workforce/workspace/documents'
+      'documents': '/workforce/workspace/documents',
+      'availability': '/workforce/workspace/availability',
+      'reminders': '/workforce/workspace/reminders'
     };
     if (routeMap[tab]) {
       this.router.navigate([routeMap[tab]], { replaceUrl: true });
     }
     this.loadActiveTabData();
+    setTimeout(() => {
+      this.checkScrollArrows();
+      this.scrollActiveTabIntoView();
+    }, 50);
   }
 
   loadActiveTabData(): void {
