@@ -91,8 +91,6 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
             builder.Services.AddScoped<Ozikol_BCC.Application.Seeders.DefaultTenantSeeder>();
             // Pushes billing/subscription changes made in Central to tenants over the notification WebSocket
             builder.Services.AddHostedService<Ozikol_BCC.Api.Services.BillingRealtimeWorker>();
-            // Autonomous 24/7 background monitor for tenant custom domain and email DNS health (every 3 hours)
-            builder.Services.AddHostedService<Ozikol_BCC.Api.Services.DomainDnsHealthMonitorWorker>();
             builder.Services.AddSingleton<Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService, Ozikol_BCC.Api.Services.TemplateSecurityInspectorService>();
             builder.Services.AddMemoryCache();
 

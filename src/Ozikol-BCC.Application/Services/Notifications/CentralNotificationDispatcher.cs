@@ -452,8 +452,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     Severity = payload.Severity,
                     Priority = payload.Priority,
                     EventType = payload.EventType,
-                    Status = BcpQueueStatus.Sent,
-                    SentAt = DateTime.UtcNow,
+                    Status = BcpQueueStatus.Queued,
+                    SentAt = null,
                     MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                     CreatedAt = DateTime.UtcNow
                 });
@@ -475,8 +475,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         Severity = payload.Severity,
                         Priority = payload.Priority,
                         EventType = payload.EventType,
-                        Status = BcpQueueStatus.Sent,
-                        SentAt = DateTime.UtcNow,
+                        Status = BcpQueueStatus.Queued,
+                        SentAt = null,
                         MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                         CreatedAt = DateTime.UtcNow
                     });
@@ -496,8 +496,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
         }
 
         /// <summary>
-        /// Dispatches branded, responsive HTML transactional emails with canonical severity styling
-        /// and real-time anti-spam blacklist validation (AGENTS.md Rule 6).
+        /// Enqueues branded, responsive HTML transactional emails into <c>BcpMessagePools</c>
+        /// with canonical severity styling and anti-spam validation so the background Worker Service
+        /// delivers them asynchronously without blocking API requests.
         /// </summary>
         private async Task DispatchEmailChannelAsync(
             NotificationDispatchPayload payload,
@@ -505,12 +506,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
             NotificationDispatchResult result,
             CancellationToken cancellationToken)
         {
-            if (_smtpEmailDispatcher == null)
-            {
-                result.Errors.Add("Mailcow SMTP email dispatch service is not registered in the service container.");
-                return;
-            }
-
             var colorHex = BcpNotificationDto.GetColorForSeverity(payload.Severity);
             var severityLabel = payload.Severity.ToString();
 
@@ -595,7 +590,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         }
                     }
 
-                    // Resolve tenant sender address and Mailcow mailbox credentials from MisConfigurationSettings
+                    // Resolve tenant sender address and display name from MisConfigurationSettings so the Worker has full context
                     var siteConfig = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
                     string fromAddress;
                     if (!string.IsNullOrWhiteSpace(siteConfig?.SenderEmail))
@@ -608,28 +603,12 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     }
                     else
                     {
-                        throw new InvalidOperationException("Tenant sender address is not configured. Expected 'noreply@{tenantKey}.ozikol.cloud'.");
+                        fromAddress = string.Empty;
                     }
 
-                    // Dispatch strictly via Mailcow SMTP with tenant mailbox credentials (falling back to platform relay if blank)
-                    var sent = await _smtpEmailDispatcher.SendEmailAsync(
-                        toEmail: email,
-                        subject: safeSubject,
-                        htmlBody: htmlBody,
-                        fromEmail: fromAddress,
-                        fromName: !string.IsNullOrWhiteSpace(siteConfig?.SenderName) ? siteConfig.SenderName.Trim() : tenantBrand,
-                        replyTo: null,
-                        isCentralPlatformEmail: false,
-                        tenantName: tenantBrand,
-                        tenantAdminEmail: null,
-                        cancellationToken: cancellationToken,
-                        smtpUsernameOverride: siteConfig?.SmtpUsername,
-                        smtpPasswordOverride: siteConfig?.SmtpPassword);
-
-                    if (!sent)
-                    {
-                        throw new InvalidOperationException($"Mailcow SMTP delivery to '{email}' from '{fromAddress}' returned failure. Please verify Mailcow server connectivity and sender ACL permissions.");
-                    }
+                    var fromName = !string.IsNullOrWhiteSpace(siteConfig?.SenderName)
+                        ? siteConfig.SenderName.Trim()
+                        : tenantBrand;
 
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
@@ -639,12 +618,23 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         RecipientName = payload.RecipientName,
                         Subject = safeSubject,
                         Content = htmlBody,
+                        PlainTextFallback = StripHtmlTags(!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message).Trim(),
+                        ActionUrl = payload.ActionUrl,
+                        Icon = payload.Icon,
+                        SenderOrTemplateName = string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress,
+                        MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            fromName,
+                            fromEmail = fromAddress,
+                            tenantKey = payload.TenantKey,
+                            module = payload.Module
+                        }),
                         Category = payload.Category,
                         Severity = payload.Severity,
                         Priority = payload.Priority,
                         EventType = payload.EventType,
-                        Status = BcpQueueStatus.Sent,
-                        SentAt = DateTime.UtcNow,
+                        Status = BcpQueueStatus.Queued,
+                        SentAt = null,
                         CreatedAt = DateTime.UtcNow
                     });
 
@@ -685,8 +675,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
         }
 
         /// <summary>
-        /// Dispatches concise SMS text messages strictly enforcing GSM 7-bit 160-character segment boundaries.
-        /// Plain text only, stripped of HTML/markdown, avoiding multi-segment carrier billing costs.
+        /// Enqueues concise SMS text messages into <c>BcpMessagePools</c> strictly enforcing GSM 7-bit
+        /// 160-character segment boundaries for asynchronous delivery by the Worker Service.
         /// </summary>
         private async Task DispatchSmsChannelAsync(
             NotificationDispatchPayload payload,
@@ -694,12 +684,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
             NotificationDispatchResult result,
             CancellationToken cancellationToken)
         {
-            if (_smsService == null)
-            {
-                result.Errors.Add("SMS service is not registered in the service container.");
-                return;
-            }
-
             var phoneNumbers = targetProfiles
                 .Where(p => !string.IsNullOrWhiteSpace(p.PhoneNumber))
                 .Select(p => p.PhoneNumber!)
@@ -733,71 +717,23 @@ namespace Ozikol_BCC.Application.Services.Notifications
             foreach (var phone in phoneNumbers)
             {
                 var targetProfile = targetProfiles.FirstOrDefault(p => p.PhoneNumber != null && p.PhoneNumber.Equals(phone, StringComparison.OrdinalIgnoreCase));
-                try
+                _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
-                    var sent = await _smsService.SendSmsWithResult(phone, smsContent);
-                    if (sent)
-                    {
-                        result.DispatchedSmsCount++;
-                        _dbContext.BcpMessagePools.Add(new BcpMessagePool
-                        {
-                            Channel = BcpMessageChannel.Sms,
-                            RelatedUserId = targetProfile?.Id,
-                            RecipientAddress = phone,
-                            RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
-                            Subject = "SMS Notification",
-                            Content = smsContent,
-                            Category = payload.Category,
-                            Severity = payload.Severity,
-                            Priority = payload.Priority,
-                            EventType = payload.EventType,
-                            Status = BcpQueueStatus.Sent,
-                            SentAt = DateTime.UtcNow,
-                            CreatedAt = DateTime.UtcNow
-                        });
-                    }
-                    else
-                    {
-                        result.Errors.Add($"SMS gateway returned failure for '{phone}'.");
-                        _dbContext.BcpMessagePools.Add(new BcpMessagePool
-                        {
-                            Channel = BcpMessageChannel.Sms,
-                            RelatedUserId = targetProfile?.Id,
-                            RecipientAddress = phone,
-                            RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
-                            Subject = "SMS Notification",
-                            Content = smsContent,
-                            Category = payload.Category,
-                            Severity = payload.Severity,
-                            Priority = payload.Priority,
-                            EventType = payload.EventType,
-                            Status = BcpQueueStatus.Failed,
-                            LastError = "SMS gateway returned delivery failure.",
-                            CreatedAt = DateTime.UtcNow
-                        });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "[CentralNotificationDispatcher] SMS dispatch failed for {Phone}: {Msg}", phone, ex.Message);
-                    result.Errors.Add($"SMS delivery to '{phone}' failed: {ex.Message}");
-                    _dbContext.BcpMessagePools.Add(new BcpMessagePool
-                    {
-                        Channel = BcpMessageChannel.Sms,
-                        RelatedUserId = targetProfile?.Id,
-                        RecipientAddress = phone,
-                        RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
-                        Subject = "SMS Notification",
-                        Content = smsContent,
-                        Category = payload.Category,
-                        Severity = payload.Severity,
-                        Priority = payload.Priority,
-                        EventType = payload.EventType,
-                        Status = BcpQueueStatus.Failed,
-                        LastError = ex.Message,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
+                    Channel = BcpMessageChannel.Sms,
+                    RelatedUserId = targetProfile?.Id,
+                    RecipientAddress = phone,
+                    RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                    Subject = "SMS Notification",
+                    Content = smsContent,
+                    Category = payload.Category,
+                    Severity = payload.Severity,
+                    Priority = payload.Priority,
+                    EventType = payload.EventType,
+                    Status = BcpQueueStatus.Queued,
+                    SentAt = null,
+                    CreatedAt = DateTime.UtcNow
+                });
+                result.DispatchedSmsCount++;
             }
 
             try
@@ -872,8 +808,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     Severity = payload.Severity,
                     Priority = payload.Priority,
                     EventType = payload.EventType,
-                    Status = BcpQueueStatus.Sent,
-                    SentAt = DateTime.UtcNow,
+                    Status = BcpQueueStatus.Queued,
+                    SentAt = null,
                     MetadataJson = payload.MetadataJson,
                     CreatedAt = DateTime.UtcNow
                 });
