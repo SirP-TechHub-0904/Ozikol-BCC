@@ -49,7 +49,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
             await SeedFeaturesAsync(dbContext, cancellationToken);
 
             // Seed canonical page-based guide and contextual workflow instructions across all suites
-            await SeedMasterPageHelpsAsync(dbContext, cancellationToken);
+            await MasterPageHelpDataSeeder.SeedAllAsync(dbContext, cancellationToken);
         }
 
         /// <summary>
@@ -2434,49 +2434,13 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
    
         /// <summary>
         /// Seeds the canonical page-based guide and contextual workflow instructions across all completed suites.
-        /// Preserves existing customized documentation and inserts newly introduced route articles.
+        /// Delegated to dedicated <see cref="MasterPageHelpDataSeeder"/>.
         /// </summary>
-        /// <param name="dbContext">The master catalog database context instance.</param>
-        /// <param name="ct">Cancellation token for async operations.</param>
         public static async Task SeedMasterPageHelpsAsync(
             MasterCatalogDbContext dbContext,
             CancellationToken ct = default)
         {
-            var baselinePages = MasterHelpBaselineCatalog.GetAll();
-            bool hasChanges = false;
-
-            foreach (var baseline in baselinePages)
-            {
-                var existing = await dbContext.MasterPageHelps
-                    .FirstOrDefaultAsync(p => p.RouteKey == baseline.RouteKey, ct);
-
-                if (existing == null)
-                {
-                    await dbContext.MasterPageHelps.AddAsync(new MasterPageHelp
-                    {
-                        Id = Guid.NewGuid(),
-                        RouteKey = baseline.RouteKey,
-                        FeatureSuite = baseline.FeatureSuite,
-                        PageTitle = baseline.PageTitle,
-                        ShortSummary = baseline.ShortSummary,
-                        OverviewMarkdown = baseline.OverviewMarkdown,
-                        ActionsJson = baseline.ActionsJson,
-                        RelatedRoutesJson = baseline.RelatedRoutesJson,
-                        TourStepsJson = baseline.TourStepsJson,
-                        Category = baseline.Category,
-                        IsPublished = baseline.IsPublished,
-                        LastUpdatedBy = "system@ozikol.cloud",
-                        CreatedAtUtc = DateTime.UtcNow,
-                        UpdatedAtUtc = DateTime.UtcNow
-                    }, ct);
-                    hasChanges = true;
-                }
-            }
-
-            if (hasChanges)
-            {
-                await dbContext.SaveChangesAsync(ct);
-            }
+            await MasterPageHelpDataSeeder.SeedAllAsync(dbContext, ct);
         }
     }
 }
