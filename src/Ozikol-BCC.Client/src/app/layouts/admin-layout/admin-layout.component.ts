@@ -643,10 +643,20 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/analytics" [class.active]="isCurrentRoute('/workforce/console/analytics')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Analytics &amp; Directory</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Analytics</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/analytics')" (click)="togglePin('Workforce Analytics', '/workforce/console/analytics', 'analytics')" [title]="isPinned('/workforce/console/analytics') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/workforce/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/staff" [class.active]="isCurrentRoute('/workforce/console/staff')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">badge</span>Staff Manager</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/staff')" (click)="togglePin('Staff Manager', '/workforce/console/staff', 'badge')" [title]="isPinned('/workforce/console/staff') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/staff') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -1307,62 +1317,72 @@ export interface SuiteInfoDetail {
           <ng-container *ngIf="isFeatureActive('bcp-staff-rota') || isFeatureActive('bcp-attendance-tracking')">
             <div class="menu-title">Shift and Rota</div>
 
-            <!-- 1. Schedule -->
+            <!-- 1. Shift Analytics -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/analytics" [class.active]="isCurrentRoute('/workforce/workspace/analytics')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">analytics</span>
+                  <span>Shift Analytics</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 2. My Schedule & Rota -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">calendar_month</span>
-                  <span>Schedule</span>
+                  <span>My Schedule &amp; Rota</span>
                 </div>
               </a>
             </div>
 
-            <!-- 2. Open Shifts -->
+            <!-- 3. Open Shifts & Swaps -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">work_outline</span>
-                  <span>Open Shifts</span>
+                  <span>Open Shifts &amp; Swaps</span>
                 </div>
               </a>
             </div>
 
-            <!-- 3. Timesheets -->
+            <!-- 4. Timesheets & Pay -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/timesheets" [class.active]="isCurrentRoute('/workforce/workspace/timesheets')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">description</span>
-                  <span>Timesheets</span>
+                  <span>Timesheets &amp; Pay</span>
                 </div>
               </a>
             </div>
 
-            <!-- 4. Time Off -->
+            <!-- 5. Time Off & Availability -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/leave" [class.active]="isCurrentRoute('/workforce/workspace/leave')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">flight_takeoff</span>
-                  <span>Time Off</span>
+                  <span>Time Off &amp; Availability</span>
                 </div>
               </a>
             </div>
 
-            <!-- 5. Documents -->
+            <!-- 6. Compliance & Documents -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/documents" [class.active]="isCurrentRoute('/workforce/workspace/documents')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">folder_shared</span>
-                  <span>Documents</span>
+                  <span>Compliance &amp; Documents</span>
                 </div>
               </a>
             </div>
 
-            <!-- 6. Duty Clock-In -->
+            <!-- 7. Duty Clock-In & Safety -->
             <div class="nav-item" *ngIf="isFeatureActive('bcp-attendance-tracking')">
               <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock') || isCurrentRoute('/workforce/workspace/clock')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">timer</span>
-                  <span>Duty Clock-In</span>
+                  <span>Duty Clock-In &amp; Safety</span>
                 </div>
               </a>
             </div>

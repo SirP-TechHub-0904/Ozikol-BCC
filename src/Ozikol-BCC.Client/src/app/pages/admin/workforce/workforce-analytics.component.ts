@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { WorkforceService } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -1468,7 +1468,7 @@ export class WorkforceAnalyticsComponent implements OnInit {
   staffMembers: any[] = [];
 
   get currencySymbol(): string {
-    return this.analytics?.currencySymbol || '₦';
+    return this.analytics?.currencySymbol || '';
   }
 
   // Filter & Search states
@@ -1491,7 +1491,8 @@ export class WorkforceAnalyticsComponent implements OnInit {
   constructor(
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
@@ -1537,9 +1538,19 @@ export class WorkforceAnalyticsComponent implements OnInit {
             this.availableJobRoles = Array.from(roleSet);
           }
         }
+        if (this.route.snapshot.data['view'] === 'staff') {
+          setTimeout(() => {
+            document.getElementById('staffRosterSection')?.scrollIntoView({ behavior: 'smooth' });
+          }, 150);
+        }
       },
       error: () => {
         this.isLoading = false;
+        if (this.route.snapshot.data['view'] === 'staff') {
+          setTimeout(() => {
+            document.getElementById('staffRosterSection')?.scrollIntoView({ behavior: 'smooth' });
+          }, 150);
+        }
       }
     });
   }

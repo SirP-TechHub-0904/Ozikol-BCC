@@ -317,6 +317,7 @@ export const routes: Routes = [
       // Admin Console Routes
       { path: 'workforce/console', redirectTo: 'workforce/console/analytics', pathMatch: 'full' },
       { path: 'workforce/console/analytics', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/staff', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', view: 'staff' } },
       { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/create', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/edit/:id', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
@@ -334,7 +335,8 @@ export const routes: Routes = [
       { path: 'attendance/console/live', component: WorkforceAttendanceLiveComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },
 
       // Member Workspace Routes
-      { path: 'workforce/workspace', redirectTo: 'workforce/workspace/my-shifts', pathMatch: 'full' },
+      { path: 'workforce/workspace', redirectTo: 'workforce/workspace/analytics', pathMatch: 'full' },
+      { path: 'workforce/workspace/analytics', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'analytics' } },
       { path: 'workforce/workspace/my-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'shifts' } },
       { path: 'workforce/workspace/open-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'open-shifts' } },
       { path: 'workforce/workspace/timesheets', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'timesheets' } },

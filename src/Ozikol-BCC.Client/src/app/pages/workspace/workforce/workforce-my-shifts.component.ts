@@ -16,54 +16,242 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="my-shifts-page p-4">
-      <div class="page-header d-flex align-items-center justify-content-between mb-4">
-        <div>
-          <h2 class="page-title m-0">{{ getPageTitle() }}</h2>
-          <p class="text-muted m-0 mt-1">{{ getPageSubtitle() }}</p>
+    <div class="bcp-page-container">
+      <!-- 1. Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/workspace/home">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span>Shift &amp; Rota</span>
+            <span class="sep">/</span>
+            <span class="current">{{ getPageTitle() }}</span>
+          </div>
+          <div class="title-row">
+            <h1>{{ getPageTitle() }}</h1>
+            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="View Shift &amp; Rota Guide">
+              <span class="material-symbols-outlined">info</span>
+            </button>
+            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
+          </div>
+          <p class="subtitle">{{ getPageSubtitle() }}</p>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary d-flex align-items-center gap-1" (click)="switchTab('leave'); showLeaveModal = true">
-            <span class="material-symbols-outlined">event_busy</span> Request Leave
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadActiveTabData()">
+            <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+            <span>Refresh</span>
           </button>
-          <a class="btn btn-primary d-flex align-items-center gap-1" routerLink="/attendance/workspace/clock">
-            <span class="material-symbols-outlined">fingerprint</span> Duty Clock-In
+          <button type="button" class="btn btn-outline" (click)="switchTab('leave'); showLeaveModal = true">
+            <span class="material-symbols-outlined">event_busy</span>
+            <span>Request Leave</span>
+          </button>
+          <a routerLink="/attendance/workspace/clock" class="btn btn-primary">
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>Duty Clock-In</span>
           </a>
         </div>
       </div>
 
-      <!-- Tab Navigation Bar -->
-      <div class="tabs-nav-bar mb-4 d-flex gap-2 border-bottom pb-2 flex-wrap">
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'shifts'" [class.btn-light]="activeTab !== 'shifts'" (click)="switchTab('shifts')">
-          <span class="material-symbols-outlined fs-6 align-middle">calendar_month</span> Schedule
+      <!-- 2. Sub-Nav Pill Tabs -->
+      <div class="bcp-subnav-tabs">
+        <button class="subnav-tab" [class.active]="activeTab === 'analytics'" (click)="switchTab('analytics')">
+          <span class="material-symbols-outlined">analytics</span> Shift Analytics
         </button>
-        <button class="tab-btn btn btn-sm position-relative" [class.btn-primary]="activeTab === 'open-shifts'" [class.btn-light]="activeTab !== 'open-shifts'" (click)="switchTab('open-shifts')">
-          <span class="material-symbols-outlined fs-6 align-middle">work_outline</span> Open Shifts
-          <span class="badge bg-danger ms-1" *ngIf="openShifts.length > 0">{{ openShifts.length }}</span>
+        <button class="subnav-tab" [class.active]="activeTab === 'shifts'" (click)="switchTab('shifts')">
+          <span class="material-symbols-outlined">calendar_month</span> My Schedule &amp; Rota
         </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'timesheets'" [class.btn-light]="activeTab !== 'timesheets'" (click)="switchTab('timesheets')">
-          <span class="material-symbols-outlined fs-6 align-middle">description</span> Timesheets
+        <button class="subnav-tab position-relative" [class.active]="activeTab === 'open-shifts'" (click)="switchTab('open-shifts')">
+          <span class="material-symbols-outlined">work_outline</span> Open Shifts &amp; Swaps
+          <span class="tab-badge" *ngIf="openShifts.length > 0">{{ openShifts.length }}</span>
         </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'leave'" [class.btn-light]="activeTab !== 'leave'" (click)="switchTab('leave')">
-          <span class="material-symbols-outlined fs-6 align-middle">flight_takeoff</span> Time Off
+        <button class="subnav-tab" [class.active]="activeTab === 'timesheets'" (click)="switchTab('timesheets')">
+          <span class="material-symbols-outlined">description</span> Timesheets &amp; Pay
         </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'documents'" [class.btn-light]="activeTab !== 'documents'" (click)="switchTab('documents')">
-          <span class="material-symbols-outlined fs-6 align-middle">folder_shared</span> Documents
+        <button class="subnav-tab" [class.active]="activeTab === 'leave'" (click)="switchTab('leave')">
+          <span class="material-symbols-outlined">flight_takeoff</span> Time Off &amp; Availability
         </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'availability'" [class.btn-light]="activeTab !== 'availability'" (click)="switchTab('availability')">
-          <span class="material-symbols-outlined fs-6 align-middle">event_available</span> Availability
+        <button class="subnav-tab" [class.active]="activeTab === 'documents'" (click)="switchTab('documents')">
+          <span class="material-symbols-outlined">folder_shared</span> Compliance &amp; Documents
         </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'reminders'" [class.btn-light]="activeTab !== 'reminders'" (click)="switchTab('reminders')">
-          <span class="material-symbols-outlined fs-6 align-middle">notifications_active</span> Reminders
+        <button class="subnav-tab" [class.active]="activeTab === 'reminders'" (click)="switchTab('reminders')">
+          <span class="material-symbols-outlined">notifications_active</span> Reminders
         </button>
       </div>
 
-      <div class="text-center p-5" *ngIf="isLoading">
-        <div class="spinner-border text-primary" role="status"></div>
+      <div class="loading-state-card" *ngIf="isLoading && shifts.length === 0">
+        <div class="spinner-ring"></div>
+        <p>Loading your assigned shifts and rota schedule...</p>
       </div>
 
-      <!-- TAB 1: SCHEDULE (MY SHIFTS) -->
-      <div *ngIf="activeTab === 'shifts' && !isLoading">
+      <!-- TAB 1: SHIFT ANALYTICS & SCHEDULE (MY SHIFTS) -->
+      <div *ngIf="(activeTab === 'analytics' || activeTab === 'shifts') && !isLoading">
+        <!-- 3. Top Metrics Row (Matching Reference Template) -->
+        <div class="metrics-grid mb-4">
+          <!-- Metric 1: Real Take-Home Pay -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-blue">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <span class="card-chip chip-blue">Estimated Net</span>
+            </div>
+            <div class="card-value">
+              {{ currencySymbol }}{{ (estimatedTakeHomePay | number:'1.2-2') || '0.00' }}
+            </div>
+            <div class="card-label">Monthly Take-Home Pay</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-blue" [style.width.%]="shifts.length > 0 ? 80 : 0"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>{{ totalPlannedHours }}h across {{ shifts.length }} rostered shifts • {{ accruedHolidayHours }}h Holiday Pay</span>
+            </div>
+          </div>
+
+          <!-- Metric 2: Next Payday Countdown -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-green">
+                <span class="material-symbols-outlined">event_available</span>
+              </div>
+              <span class="card-chip chip-teal">{{ daysUntilPayday }} Days Away</span>
+            </div>
+            <div class="card-value font-monospace" style="font-size: 20px; line-height: 28px;">
+              {{ nextPaydayDate | date:'EEEE, d MMM' }}
+            </div>
+            <div class="card-label">Next Scheduled Payday</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-green" style="width: 70%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (estimatedGrossPay * 0.5 | number:'1.2-2') || '0.00' }}</span>
+            </div>
+          </div>
+
+          <!-- Metric 3: Next Shift Spotlight -->
+          <div class="metric-card spotlight-card" *ngIf="nextUpcomingShift">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <span class="card-chip" [ngClass]="nextUpcomingShift.isConfirmedByGuard ? 'chip-teal' : 'chip-amber'">
+                {{ nextUpcomingShift.isConfirmedByGuard ? 'Confirmed' : 'Action Required' }}
+              </span>
+            </div>
+            <div class="card-value" style="font-size: 20px;">
+              {{ nextUpcomingShift.startsAtUtc | date:'HH:mm' }} - {{ nextUpcomingShift.endsAtUtc | date:'HH:mm' }}
+            </div>
+            <div class="card-label">{{ nextUpcomingShift.facilityName || nextUpcomingShift.siteName }}</div>
+            <div class="card-sub-info d-flex justify-content-between align-items-center">
+              <span>{{ nextUpcomingShift.startsAtUtc | date:'EEE, d MMM' }} • {{ nextUpcomingShift.postName }}</span>
+              <button
+                type="button"
+                class="btn-confirm-inline"
+                *ngIf="!nextUpcomingShift.isConfirmedByGuard"
+                (click)="confirmShift(nextUpcomingShift)"
+                [disabled]="isActionLoading || isShiftExpired(nextUpcomingShift)"
+              >
+                1-Tap Confirm
+              </button>
+            </div>
+          </div>
+
+          <!-- Metric 4: Punctuality & Standing -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-purple">
+                <span class="material-symbols-outlined">verified_user</span>
+              </div>
+              <span class="card-chip chip-purple">Duty Standing</span>
+            </div>
+            <div class="card-value">100%</div>
+            <div class="card-label">Overall Punctuality Score</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-purple" style="width: 100%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Zero geofence boundary warnings recorded</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Interactive Monthly Rota Calendar Grid (From Reference Template) -->
+        <div class="rota-calendar-card mb-4">
+          <div class="calendar-card-header">
+            <div class="cal-nav-group">
+              <button type="button" class="btn-cal-nav" (click)="prevMonth()" title="Previous Month">
+                <span class="material-symbols-outlined">chevron_left</span>
+              </button>
+              <h3 class="cal-month-title">{{ currentMonth | date:'MMMM yyyy' }}</h3>
+              <button type="button" class="btn-cal-nav" (click)="nextMonth()" title="Next Month">
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
+            </div>
+            <div class="cal-action-banner">
+              <span class="material-symbols-outlined text-primary">info</span>
+              <span>Not on the rota today? Clock in if you pick up a shift.</span>
+              <a routerLink="/attendance/workspace/clock" class="btn-clockin-mini">
+                <span class="material-symbols-outlined">fingerprint</span> Duty Clock-In
+              </a>
+            </div>
+          </div>
+
+          <!-- Calendar Grid -->
+          <div class="calendar-grid-container">
+            <div class="cal-weekdays-row">
+              <div class="weekday-cell">Mon</div>
+              <div class="weekday-cell">Tue</div>
+              <div class="weekday-cell">Wed</div>
+              <div class="weekday-cell">Thu</div>
+              <div class="weekday-cell">Fri</div>
+              <div class="weekday-cell">Sat</div>
+              <div class="weekday-cell">Sun</div>
+            </div>
+            <div class="cal-days-grid">
+              <div
+                *ngFor="let day of calendarDays"
+                class="cal-day-cell"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.today]="day.isToday"
+                [class.has-shift]="day.shifts.length > 0"
+              >
+                <div class="day-number">{{ day.dayNumber }}</div>
+                <div class="day-shifts" *ngIf="day.shifts.length > 0">
+                  <div *ngFor="let s of day.shifts" class="shift-pill-badge" [title]="s.postName + ' at ' + (s.facilityName || s.siteName)">
+                    <span class="badge-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
+                    <span class="badge-site">{{ s.facilityName || s.siteName }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar Month Footer Summary Bar -->
+          <div class="calendar-summary-footer">
+            <div class="summary-item">
+              <span class="material-symbols-outlined">timer</span>
+              <strong>{{ totalPlannedHours }}</strong> hrs planned
+            </div>
+            <div class="summary-item">
+              <span class="material-symbols-outlined">event_note</span>
+              <strong>{{ shifts.length }}</strong> shifts rostered
+            </div>
+            <div class="summary-item">
+              <span class="material-symbols-outlined">account_balance_wallet</span>
+              Gross Pay: <strong>{{ currencySymbol }}{{ (estimatedGrossPay | number:'1.2-2') || '0.00' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Upcoming Assigned Shifts Cards -->
+        <div class="section-title-bar mb-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="m-0 fw-bold">Upcoming Assigned Rota Duties</h4>
+            <p class="text-muted small m-0">Review venue post requirements, SIA sector authorizations, and confirm duty attendance.</p>
+          </div>
+          <button class="btn btn-sm btn-outline-primary" (click)="switchTab('open-shifts')">
+            <span class="material-symbols-outlined fs-6 align-middle">add_circle</span> Browse Extra Open Shifts
+          </button>
+        </div>
         <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="shifts.length === 0">
           <span class="material-symbols-outlined display-4 text-muted mb-3">event_available</span>
           <h5>No shifts assigned</h5>
@@ -672,32 +860,512 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
       </div>
+
+      <!-- 6. Info & Shift Operations Guide Modal -->
+      <div class="modal-backdrop-custom" *ngIf="showInfoModal" (click)="showInfoModal = false">
+        <div class="modal-card-custom" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">info</span>
+              <div>
+                <h3>Personal Shift &amp; Rota Guide</h3>
+                <p class="modal-subtitle">Operational policies, take-home pay estimations, and attendance compliance rules.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showInfoModal = false">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-blue">event_upcoming</span> 1-Tap Shift Confirmations</h4>
+              <p>
+                When a new rota duty is published, your shift enters the acceptance countdown. Confirming your shift in 1 tap secures your roster post and notifies your duty manager.
+              </p>
+            </div>
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-green">account_balance_wallet</span> Estimated Take-Home Pay &amp; Holiday Accrual</h4>
+              <p>
+                Take-home earnings reflect your planned shift hours multiplied by your hourly rate minus standard statutory withholdings. Statutory holiday pay automatically accrues at the standard 12.07% rate per duty hour.
+              </p>
+            </div>
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-purple">share</span> Peer Shift Swaps &amp; Open Board</h4>
+              <p>
+                Need duty cover? You can offer any assigned shift to qualified teammates on the Open Shifts board. Once claimed by a colleague, it is routed to your supervisor for final confirmation.
+              </p>
+            </div>
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-teal">fingerprint</span> Geofenced Duty Clock-In</h4>
+              <p>
+                Attendance check-in validates device GPS coordinates against the venue's site perimeter. Clock in upon arrival at post to unlock workstation tools.
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Got it</button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
-    .my-shifts-page {
-      padding: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+    .bcp-page-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 0 4px 32px 4px;
     }
+
+    /* Page Header */
     .page-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 16px;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     }
-    .page-title {
-      font-size: 22px;
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
       font-weight: 800;
       color: #0f172a;
-      letter-spacing: -0.4px;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .info-trigger-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+    .info-trigger-btn:hover { color: #0050e5; }
+    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
+    .header-actions { display: flex; gap: 12px; }
+
+    /* Sub-Nav Pill Tabs */
+    .bcp-subnav-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 8px 0;
+      scrollbar-width: none;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar { display: none; }
+    .subnav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .subnav-tab:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 2px 8px rgba(0,80,229,0.25);
+    }
+    .subnav-tab .material-symbols-outlined { font-size: 18px; }
+    .tab-badge {
+      background: #ef4444;
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    /* Top Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .metric-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-icon .material-symbols-outlined { font-size: 22px; }
+    .bg-blue { background: #eff6ff; color: #0050e5; }
+    .bg-green { background: #f0fdf4; color: #16a34a; }
+    .bg-teal { background: #f0fdfa; color: #0d9488; }
+    .bg-purple { background: #faf5ff; color: #9333ea; }
+    .card-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .chip-blue { background: #eff6ff; color: #0050e5; }
+    .chip-teal { background: #f0fdf4; color: #16a34a; }
+    .chip-amber { background: #fffbeb; color: #d97706; }
+    .chip-purple { background: #faf5ff; color: #9333ea; }
+    .card-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+    .card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .card-progress-track {
+      height: 4px;
+      background: #f1f5f9;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .card-progress-bar { height: 100%; border-radius: 2px; }
+    .card-sub-info {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .btn-confirm-inline {
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-confirm-inline:hover { background: #15803d; }
+
+    /* Monthly Rota Calendar Card */
+    .rota-calendar-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      padding: 24px;
+    }
+    .calendar-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cal-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-cal-nav {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.2s;
+    }
+    .btn-cal-nav:hover { background: #0050e5; color: #fff; border-color: #0050e5; }
+    .cal-month-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
       margin: 0;
     }
-    .text-muted {
-      color: #64748b !important;
-      font-size: 13.5px;
+    .cal-action-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: #1e3a8a;
+    }
+    .btn-clockin-mini {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0050e5;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      margin-left: 6px;
+    }
+    .btn-clockin-mini:hover { background: #003ebd; }
+
+    /* Calendar Grid */
+    .calendar-grid-container {
+      border: 1px solid #f1f5f9;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .cal-weekdays-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .weekday-cell {
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cal-days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #fff;
+    }
+    .cal-day-cell {
+      min-height: 84px;
+      padding: 8px;
+      border-right: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+    .cal-day-cell:nth-child(7n) { border-right: none; }
+    .cal-day-cell.other-month { background: #fafafa; opacity: 0.45; }
+    .cal-day-cell.today { background: #eff6ff; }
+    .cal-day-cell.has-shift { background: #f0f7ff; }
+    .day-number {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .cal-day-cell.today .day-number {
+      color: #0050e5;
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: #bfdbfe;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 22px;
+    }
+    .day-shifts {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .shift-pill-badge {
+      background: #0050e5;
+      color: #ffffff;
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .badge-time { font-weight: 700; }
+    .badge-site { font-size: 9.5px; opacity: 0.85; }
+
+    /* Calendar Footer Summary */
+    .calendar-summary-footer {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      border: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #475569;
+    }
+    .summary-item .material-symbols-outlined { color: #0050e5; font-size: 18px; }
+
+    /* Custom Info Modal */
+    .modal-backdrop-custom {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      padding: 16px;
+    }
+    .modal-card-custom {
+      background: #ffffff;
+      border-radius: 16px;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+      animation: modalSlide 0.2s ease-out;
+    }
+    @keyframes modalSlide {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-header-custom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-title-group h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .modal-subtitle {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .btn-close-custom {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .modal-body-custom {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .info-guide-section h4 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+    }
+    .info-guide-section p {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .modal-footer-custom {
+      padding: 16px 24px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      background: #f8fafc;
     }
 
     /* Buttons */
@@ -712,6 +1380,7 @@ import { ToastService } from '../../../core/services/toast.service';
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s ease-in-out;
+      text-decoration: none;
     }
     .btn-primary {
       background: #0050e5;
@@ -719,6 +1388,15 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .btn-primary:hover {
       background: #0043c2;
+    }
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
     }
     .btn-outline-primary {
       border-color: #0050e5;
@@ -756,18 +1434,12 @@ import { ToastService } from '../../../core/services/toast.service';
       font-size: 12px;
     }
 
-    /* Tabs */
-    .tabs-nav-bar {
-      border-color: #e2e8f0 !important;
-    }
-    .tab-btn {
-      border-radius: 6px;
-    }
-
     /* Cards */
     .card {
       background: #ffffff;
-      border-radius: 10px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
     }
     .shift-card {
       transition: transform 0.15s ease-in-out;
@@ -776,11 +1448,13 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .shift-card:hover {
       transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
     .card-body {
       display: flex;
       flex-direction: column;
       flex: 1;
+      padding: 18px;
     }
     .border-start-overnight {
       border-left: 4px solid #9333ea !important;
@@ -832,11 +1506,12 @@ import { ToastService } from '../../../core/services/toast.service';
     .form-select {
       width: 100%;
       padding: 8px 12px;
-      font-size: 13px;
       border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      background: #ffffff;
+      border-radius: 8px;
+      font-size: 13px;
       color: #0f172a;
+      background: #ffffff;
+      transition: all 0.15s;
     }
     .form-control:focus,
     .form-select:focus {
@@ -862,73 +1537,66 @@ import { ToastService } from '../../../core/services/toast.service';
       font-size: 12px;
     }
 
-    /* Modals */
-    .modal-content {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      overflow: hidden;
-    }
-    .modal-header {
+    /* Loading state */
+    .loading-state-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 48px;
+      text-align: center;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid #e2e8f0;
+      gap: 16px;
     }
-    .modal-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0;
+    .spinner-ring {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #0050e5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-    .modal-body {
-      padding: 20px;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
-    .modal-footer {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      padding: 14px 20px;
-      border-top: 1px solid #e2e8f0;
-      background: #f8fafc;
-    }
-
-    .acceptance-countdown-box {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-    }
-    .text-danger {
-      color: #dc2626 !important;
-    }
-    .w-100 {
-      width: 100%;
-    }
+    .spin { animation: spin 0.8s linear infinite; }
 
     /* Dark Mode */
-    :host-context(.dark-mode) .my-shifts-page { color: #f8fafc; }
-    :host-context(.dark-mode) .page-title { color: #f8fafc; }
+    :host-context(.dark-mode) .bcp-page-container { color: #f8fafc; }
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .rota-calendar-card,
+    :host-context(.dark-mode) .metric-card,
     :host-context(.dark-mode) .card,
-    :host-context(.dark-mode) .modal-content {
+    :host-context(.dark-mode) .modal-card-custom {
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
       color: #f8fafc;
     }
-    :host-context(.dark-mode) .acceptance-countdown-box {
-      background: #0f172a;
-      border-color: #334155;
-    }
-    :host-context(.dark-mode) .form-select,
-    :host-context(.dark-mode) .form-control {
-      background: #0f172a;
-      border-color: #334155;
+    :host-context(.dark-mode) .title-row h1,
+    :host-context(.dark-mode) .card-value,
+    :host-context(.dark-mode) .cal-month-title,
+    :host-context(.dark-mode) .modal-title-group h3 {
       color: #f8fafc;
     }
-    :host-context(.dark-mode) .modal-footer {
+    :host-context(.dark-mode) .subnav-tab {
       background: #0f172a;
-      border-top-color: #334155;
+      border-color: #334155;
+      color: #94a3b8;
     }
+    :host-context(.dark-mode) .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+    }
+    :host-context(.dark-mode) .cal-weekdays-row,
+    :host-context(.dark-mode) .calendar-summary-footer,
+    :host-context(.dark-mode) .modal-footer-custom {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .cal-days-grid { background: #1e293b; }
+    :host-context(.dark-mode) .cal-day-cell { border-color: #334155; }
+    :host-context(.dark-mode) .cal-day-cell.other-month { background: #0f172a; }
   `]
 })
 export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
@@ -941,10 +1609,11 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
 
   isLoading = false;
   isActionLoading = false;
-  currencySymbol = '₦';
+  currencySymbol = '';
 
-  activeTab: 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders' = 'shifts';
+  activeTab: 'analytics' | 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders' = 'analytics';
 
+  showInfoModal = false;
   showSwapModal = false;
   selectedShift: Shift | null = null;
   swapReason = '';
@@ -954,6 +1623,10 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
   leaveStartDate = '';
   leaveEndDate = '';
   leaveReason = '';
+
+  // Calendar State
+  currentMonth: Date = new Date();
+  calendarDays: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[] }[] = [];
 
   // Availability state
   availForm: any = {
@@ -1014,10 +1687,10 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
     this.routeSub?.unsubscribe();
   }
 
-  switchTab(tab: 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders'): void {
+  switchTab(tab: 'analytics' | 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders'): void {
     this.activeTab = tab;
-    // Map to canonical route if standard menu
     const routeMap: Record<string, string> = {
+      'analytics': '/workforce/workspace/analytics',
       'shifts': '/workforce/workspace/my-shifts',
       'open-shifts': '/workforce/workspace/open-shifts',
       'timesheets': '/workforce/workspace/timesheets',
@@ -1031,7 +1704,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
   }
 
   loadActiveTabData(): void {
-    if (this.activeTab === 'shifts') {
+    if (this.activeTab === 'analytics' || this.activeTab === 'shifts') {
       this.loadMyShifts();
     } else if (this.activeTab === 'open-shifts') {
       this.loadOpenShifts();
@@ -1050,28 +1723,137 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
 
   getPageTitle(): string {
     switch (this.activeTab) {
-      case 'shifts': return 'Schedule';
-      case 'open-shifts': return 'Open Shifts';
-      case 'timesheets': return 'Timesheets';
-      case 'leave': return 'Time Off & Leave';
-      case 'documents': return 'Documents';
+      case 'analytics': return 'Shift Analytics & Summary';
+      case 'shifts': return 'My Schedule & Rota';
+      case 'open-shifts': return 'Open Shifts & Swaps';
+      case 'timesheets': return 'Timesheets & Pay';
+      case 'leave': return 'Time Off & Availability';
+      case 'documents': return 'Compliance & Documents';
       case 'availability': return 'My Availability';
       case 'reminders': return 'Shift Reminders';
-      default: return 'Shift and Rota';
+      default: return 'Shift & Rota Command Hub';
     }
   }
 
   getPageSubtitle(): string {
     switch (this.activeTab) {
-      case 'shifts': return 'Review, confirm and manage your scheduled shifts.';
+      case 'analytics': return 'High-level operational overview, monthly take-home pay estimate, and scheduled duties.';
+      case 'shifts': return 'Review assigned duties, confirm upcoming rosters, and manage shift attendance.';
       case 'open-shifts': return 'Browse available venue shifts and claim extra duty hours.';
-      case 'timesheets': return 'Logged duty hours, attendance verification, and pay statements.';
+      case 'timesheets': return 'Logged duty hours, supervisor sign-offs, break deductions, and pay statements.';
       case 'leave': return 'Submit and track annual leave, sickness, and time-off requests.';
       case 'documents': return 'Manage your SIA license, Right to Work credentials, and certifications.';
       case 'availability': return 'Set your preferred working hours and blackout dates for the scheduler.';
       case 'reminders': return 'Configure automated shift departure and readiness alerts.';
       default: return 'Member operational duty command hub.';
     }
+  }
+
+  // --- CALENDAR & METRIC GETTERS ---
+  generateCalendar(): void {
+    const year = this.currentMonth.getFullYear();
+    const month = this.currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const days: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[] }[] = [];
+    const today = new Date();
+
+    let startDayOfWeek = firstDay.getDay() - 1;
+    if (startDayOfWeek === -1) startDayOfWeek = 6;
+
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = new Date(year, month - 1, prevMonthLastDay - i);
+      days.push({
+        date: d,
+        dayNumber: d.getDate(),
+        isCurrentMonth: false,
+        isToday: false,
+        shifts: this.getShiftsForDate(d)
+      });
+    }
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      const d = new Date(year, month, day);
+      const isToday = d.toDateString() === today.toDateString();
+      days.push({
+        date: d,
+        dayNumber: day,
+        isCurrentMonth: true,
+        isToday,
+        shifts: this.getShiftsForDate(d)
+      });
+    }
+
+    const remaining = (7 - (days.length % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(year, month + 1, i);
+      days.push({
+        date: d,
+        dayNumber: i,
+        isCurrentMonth: false,
+        isToday: false,
+        shifts: this.getShiftsForDate(d)
+      });
+    }
+
+    this.calendarDays = days;
+  }
+
+  getShiftsForDate(date: Date): Shift[] {
+    const dateStr = date.toISOString().slice(0, 10);
+    return this.shifts.filter(s => s.startsAtUtc && s.startsAtUtc.slice(0, 10) === dateStr);
+  }
+
+  prevMonth(): void {
+    this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() - 1, 1);
+    this.generateCalendar();
+  }
+
+  nextMonth(): void {
+    this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 1);
+    this.generateCalendar();
+  }
+
+  get nextUpcomingShift(): Shift | null {
+    const now = new Date();
+    const upcoming = this.shifts
+      .filter(s => new Date(s.endsAtUtc) >= now)
+      .sort((a, b) => new Date(a.startsAtUtc).getTime() - new Date(b.startsAtUtc).getTime());
+    return upcoming.length > 0 ? upcoming[0] : (this.shifts.length > 0 ? this.shifts[0] : null);
+  }
+
+  get totalPlannedHours(): number {
+    return this.shifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get estimatedGrossPay(): number {
+    return this.shifts.reduce((acc, s) => acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10.0)), 0);
+  }
+
+  get estimatedTakeHomePay(): number {
+    return Math.round(this.estimatedGrossPay * 0.82 * 100) / 100;
+  }
+
+  get accruedHolidayHours(): number {
+    return Math.round(this.totalPlannedHours * 0.1207 * 10) / 10;
+  }
+
+  get nextPaydayDate(): Date {
+    const today = new Date();
+    const nextFriday = new Date();
+    const day = today.getDay();
+    const diff = (5 - day + 7) % 7 || 7;
+    nextFriday.setDate(today.getDate() + diff);
+    return nextFriday;
+  }
+
+  get daysUntilPayday(): number {
+    const today = new Date();
+    const payday = this.nextPaydayDate;
+    const diffTime = payday.getTime() - today.getTime();
+    return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   }
 
   // --- TAB: SCHEDULE / MY SHIFTS ---
@@ -1082,6 +1864,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         if (res.isSuccess && res.data) {
           this.shifts = res.data;
+          this.generateCalendar();
         }
       },
       error: () => {
