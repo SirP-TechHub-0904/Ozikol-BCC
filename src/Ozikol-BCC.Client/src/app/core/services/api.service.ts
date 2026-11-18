@@ -122,15 +122,8 @@ export class ApiService {
     return headers;
   }
 
-  private logRequest(method: string, url: string, payload?: any): void {
-    const domain = typeof window !== 'undefined' ? window.location.host : '';
-    const tenantKey = this.getTenantKey() || '(Default Host Domain)';
-    console.groupCollapsed(`%c[ANGULAR API ${method}] ${url}`, 'color: #0050e5; font-weight: bold;');
-    console.log('%cBrowser Domain  :', 'font-weight:bold;', domain);
-    console.log('%cResolved Tenant :', 'font-weight:bold; color:#16a34a;', tenantKey);
-    console.log('%cAPI Endpoint    :', 'font-weight:bold;', url);
-    if (payload) console.log('%cPayload Sent   :', 'font-weight:bold;', payload);
-    console.groupEnd();
+  private logRequest(_method: string, _url: string, _payload?: any): void {
+    // Intentionally suppressed to keep browser DevTools console clean and avoid exposing internal API details.
   }
 
   private buildUrl(path: string): string {
