@@ -15,7 +15,7 @@ import {
 /**
  * Slide-out contextual help drawer providing page-based workflow instructions,
  * button & control breakdowns, sibling suite navigation, searchable knowledge topics,
- * and dual-guarded in-place editing for localhost developers and Central Administrators.
+ * and in-place editing for local development.
  */
 @Component({
   selector: 'app-help-drawer',
@@ -201,7 +201,7 @@ import {
             </div>
           </div>
 
-          <!-- EDIT MODE (DEVELOPER / CENTRAL ADMIN IN-PLACE EDITOR) -->
+          <!-- EDIT MODE (DEVELOPER IN-PLACE EDITOR) -->
           <div class="help-editor-view" *ngIf="isEditing">
             <div class="editor-header-bar">
               <span class="badge-dev-mode">

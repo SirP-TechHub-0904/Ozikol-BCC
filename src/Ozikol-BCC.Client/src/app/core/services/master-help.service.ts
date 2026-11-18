@@ -3,7 +3,6 @@ import { Router, NavigationEnd } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { filter, tap, catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { getStoredUserRoles } from '../utils/user-role.utils';
 import {
   MasterPageHelpDto,
   SaveMasterPageHelpRequest,
@@ -68,20 +67,14 @@ export class MasterHelpService {
   }
 
   /**
-   * Evaluates the dual-guard developer permission check:
-   * True if running on localhost development or caller has CentralAdmin/SuperAdmin authority.
+   * Evaluates developer in-place authoring permission:
+   * True if running on local development (URL contains 'local' or hostname is localhost / 127.0.0.1 / *.localhost).
    */
   public isDevEditAllowed(): boolean {
     if (typeof window === 'undefined') return false;
+    const url = window.location.href.toLowerCase();
     const host = window.location.hostname.toLowerCase();
-    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost');
-    if (isLocal) return true;
-
-    const roles = getStoredUserRoles();
-    return roles.some(r => {
-      const norm = r.toLowerCase();
-      return norm.includes('centraladmin') || norm.includes('superadmin');
-    });
+    return url.includes('local') || host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost');
   }
 
   /**

@@ -176,36 +176,17 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Creates or updates page documentation in the Central Master Catalog.
-        /// Guarded by dual-check: caller MUST be running on localhost development OR be an authenticated CentralAdmin.
         /// </summary>
         /// <param name="request">Page documentation payload.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Updated page documentation DTO.</returns>
         [HttpPut("page")]
-        [AllowAnonymous] // Dual-guard handles security internally based on host header & CentralAdmin role
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<MasterPageHelpDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> SavePageHelp(
             [FromBody] SaveMasterPageHelpRequest request,
             CancellationToken cancellationToken = default)
         {
-            // 1. Dual-guard verification: localhost or CentralAdmin
-            var host = HttpContext.Request.Host.Host.ToLowerInvariant();
-            bool isLocalDev = host == "localhost" ||
-                              host == "127.0.0.1" ||
-                              host == "::1" ||
-                              host.EndsWith(".localhost");
-
-            bool isCentralAdmin = User.Identity?.IsAuthenticated == true &&
-                                  (User.IsInRole("CentralAdmin") || User.IsInRole("SuperAdmin"));
-
-            if (!isLocalDev && !isCentralAdmin)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.ErrorResponse(
-                    "ERR-AUTH-403",
-                    "Authoring and editing master page documentation is restricted to localhost development environments or authenticated Central Administrators."));
-            }
-
             if (string.IsNullOrWhiteSpace(request.RouteKey))
             {
                 return BadRequest(ApiResponse<object>.ErrorResponse(
@@ -225,7 +206,7 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = await _masterDb.MasterPageHelps
                 .FirstOrDefaultAsync(p => p.RouteKey == normalized, cancellationToken);
 
-            var modifierEmail = User.Identity?.Name ?? (isLocalDev ? "developer@localhost" : "admin@central");
+            var modifierEmail = User.Identity?.Name ?? "developer@localhost";
 
             if (existing == null)
             {
