@@ -37,7 +37,7 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
         <div class="bulk-action-bar" *ngIf="selectedIds.size > 0">
           <div class="bulk-info">
             <span class="material-symbols-outlined text-primary">check_circle</span>
-            <span><strong>{{ selectedIds.size }}</strong> category{{ selectedIds.size > 1 ? 'ies' : '' }} selected</span>
+            <span><strong>{{ selectedIds.size }}</strong> categor{{ selectedIds.size > 1 ? 'ies' : 'y' }} selected</span>
           </div>
           <div class="bulk-buttons">
             <button type="button" class="btn btn-sm btn-outline" (click)="clearSelection()">Deselect All</button>
@@ -207,45 +207,46 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
             </div>
           </form>
         </div>
-        <!-- Bulk Delete Confirmation Modal -->
-        <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
-          <div class="modal-card">
-            <div class="modal-header">
-              <div class="modal-title-group">
-                <span class="material-symbols-outlined text-danger">delete_sweep</span>
-                <h3>Delete {{ selectedIds.size }} Blog Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}?</h3>
-              </div>
-              <button type="button" class="btn-close" (click)="closeBulkDeleteModal()">&times;</button>
+      </div>
+
+      <!-- Bulk Delete Confirmation Modal -->
+      <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-danger">delete_sweep</span>
+              <h3>Delete {{ selectedIds.size }} Blog Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}?</h3>
             </div>
-            <div class="modal-body">
-              <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
-                Are you sure you want to permanently delete the <strong>{{ selectedIds.size }}</strong> selected blog category(ies)?
-              </p>
-              <div class="force-cascade-check">
-                <label class="custom-check-label">
-                  <input type="checkbox" [(ngModel)]="unlinkBlogs" class="cms-checkbox">
-                  <span>
-                    <strong>Unlink Articles:</strong> Safely unassign attached articles so they become uncategorized.
-                  </span>
-                </label>
-              </div>
-              <div class="warning-callout">
-                <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
-                <div style="font-size: 12.5px; color: #991b1b; line-height: 1.5;">
-                  Category taxonomy and article grouping filters will be permanently removed.
-                </div>
+            <button type="button" class="btn-close" (click)="closeBulkDeleteModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6;">
+              Are you sure you want to permanently delete the <strong>{{ selectedIds.size }}</strong> selected blog category(ies)?
+            </p>
+            <div class="force-cascade-check">
+              <label class="custom-check-label">
+                <input type="checkbox" [(ngModel)]="unlinkBlogs" class="cms-checkbox">
+                <span>
+                  <strong>Unlink Articles:</strong> Safely unassign attached articles so they become uncategorized.
+                </span>
+              </label>
+            </div>
+            <div class="warning-callout">
+              <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
+              <div style="font-size: 12.5px; color: #991b1b; line-height: 1.5;">
+                Category taxonomy and article grouping filters will be permanently removed.
               </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline" (click)="closeBulkDeleteModal()" [disabled]="bulkDeleting">
-                Cancel
-              </button>
-              <button type="button" class="btn btn-danger" (click)="executeBulkDelete()" [disabled]="bulkDeleting">
-                <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
-                <span *ngIf="!bulkDeleting">Delete {{ selectedIds.size }} Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}</span>
-                <span *ngIf="bulkDeleting">Deleting Categories...</span>
-              </button>
-            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeBulkDeleteModal()" [disabled]="bulkDeleting">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" (click)="executeBulkDelete()" [disabled]="bulkDeleting">
+              <span class="material-symbols-outlined fs-6" *ngIf="!bulkDeleting">delete_forever</span>
+              <span *ngIf="!bulkDeleting">Delete {{ selectedIds.size }} Categor{{ selectedIds.size > 1 ? 'ies' : 'y' }}</span>
+              <span *ngIf="bulkDeleting">Deleting Categories...</span>
+            </button>
           </div>
         </div>
       </div>
@@ -677,7 +678,11 @@ export class BlogCategoriesManagementComponent implements OnInit {
     this.bulkDeleting = true;
     const ids = Array.from(this.selectedIds);
 
-    this.api.post<any>('ContentApi/blog-categories/bulk-delete', { ids, unlinkBlogs: this.unlinkBlogs }).subscribe({
+    this.api.post<any>('ContentApi/blog-categories/bulk-delete', { 
+      ids, 
+      unlinkBlogs: this.unlinkBlogs,
+      unlinkPosts: this.unlinkBlogs 
+    }).subscribe({
       next: (res) => {
         this.bulkDeleting = false;
         this.showBulkDeleteModal = false;
