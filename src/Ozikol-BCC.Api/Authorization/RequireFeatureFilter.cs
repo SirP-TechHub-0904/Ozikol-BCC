@@ -28,6 +28,7 @@ namespace Ozikol_BCC.Api.Authorization
     {
         private readonly string _featureCode;
         private readonly bool _allowReadOnly;
+        private readonly bool _allowMemberAccess;
         private readonly ITenantFeatureGateService? _featureGateService;
         private readonly ITenantProvider? _tenantProvider;
         private readonly DashboardDbContext _dbContext;
@@ -42,9 +43,23 @@ namespace Ozikol_BCC.Api.Authorization
             ITenantProvider? tenantProvider = null,
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ILogger<RequireFeatureFilter>? logger = null)
+            : this(featureCode, allowReadOnly, false, dbContext, featureGateService, tenantProvider, notificationDispatcher, logger)
+        {
+        }
+
+        public RequireFeatureFilter(
+            string featureCode,
+            bool allowReadOnly,
+            bool allowMemberAccess,
+            DashboardDbContext dbContext,
+            ITenantFeatureGateService? featureGateService = null,
+            ITenantProvider? tenantProvider = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null,
+            ILogger<RequireFeatureFilter>? logger = null)
         {
             _featureCode = (featureCode ?? string.Empty).Trim().ToLowerInvariant();
             _allowReadOnly = allowReadOnly;
+            _allowMemberAccess = allowMemberAccess;
             _dbContext = dbContext;
             _featureGateService = featureGateService;
             _tenantProvider = tenantProvider;
@@ -96,6 +111,14 @@ namespace Ozikol_BCC.Api.Authorization
             {
                 context.Result = new UnauthorizedObjectResult(
                     ApiResponse<object>.FailureResponse("Authentication required.", errorCode: StandardErrorCodes.AccessDenied));
+                return;
+            }
+
+            // If Member personal workspace access is explicitly allowed for this controller/action,
+            // any authenticated member of the subscribed tenant workspace is authorized.
+            if (_allowMemberAccess)
+            {
+                await next();
                 return;
             }
 

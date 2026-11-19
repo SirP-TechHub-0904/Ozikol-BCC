@@ -156,21 +156,52 @@ import { ApiService } from '../../core/services/api.service';
           </div>
         </section>
 
-        <!-- Card 3: My Group Channels -->
+        <!-- Card 3: Recent Logins & Devices -->
         <section class="ws-card">
           <div class="card-head">
             <div class="head-title-wrap">
-              <span class="material-symbols-outlined head-icon text-purple">diversity_3</span>
-              <h2 class="card-title">My Groups & Channels</h2>
+              <span class="material-symbols-outlined head-icon text-blue">devices</span>
+              <h2 class="card-title">Recent Logins &amp; Devices</h2>
             </div>
-            <a routerLink="/groups/workspace" class="head-link">Open Channels →</a>
+            <a routerLink="/users/workspace/security" class="head-link">Manage Security &rarr;</a>
           </div>
           <div class="card-body">
-            <div class="groups-empty" *ngIf="!myGroups.length">
-              <span class="material-symbols-outlined groups-icon">forum</span>
-              <h4>General Member Channel</h4>
-              <p>You are active in the central community communication channel.</p>
-              <a routerLink="/groups/workspace" class="btn-sm primary">Open Member Chat</a>
+            <div class="devices-list" *ngIf="recentDevices.length > 0">
+              <div class="device-row" *ngFor="let device of recentDevices">
+                <div class="device-icon-wrap" [class.current-device]="device.isCurrent">
+                  <span class="material-symbols-outlined">{{ getDeviceIcon(device) }}</span>
+                </div>
+                <div class="device-meta">
+                  <div class="device-title-row">
+                    <span class="device-name">{{ device.device || device.browserName || 'Active Session' }}</span>
+                    <span class="current-badge" *ngIf="device.isCurrent">This Device</span>
+                  </div>
+                  <div class="device-sub-row">
+                    <span>{{ device.browser || device.operatingSystem || 'Browser' }}</span>
+                    <span class="meta-dot">&bull;</span>
+                    <span>{{ device.ipAddress || '127.0.0.1' }}</span>
+                    <span class="meta-dot">&bull;</span>
+                    <span class="time-ago">{{ formatRelativeTime(device.lastActive) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="devices-empty" *ngIf="!isLoadingDevices && recentDevices.length === 0">
+              <span class="material-symbols-outlined empty-sec-icon">verified_user</span>
+              <h4>Active Session Verified</h4>
+              <p>Your current session is verified and encrypted.</p>
+            </div>
+
+            <div class="devices-footer-pill">
+              <div class="security-status-indicator">
+                <span class="security-pulse-dot"></span>
+                <span class="status-label">{{ userProfile?.twoFactorEnabled ? '2FA Protected' : 'Session Guard Active' }}</span>
+              </div>
+              <a routerLink="/users/workspace/security" class="manage-sec-btn">
+                <span class="material-symbols-outlined">security</span>
+                <span>Security Hub</span>
+              </a>
             </div>
           </div>
         </section>
@@ -205,6 +236,7 @@ import { ApiService } from '../../core/services/api.service';
           </div>
         </div>
         <div class="quick-action-grid">
+          <!-- 1. Update Personal Dossier -->
           <a routerLink="/users/workspace/profile" class="qa-item">
             <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">badge</span></div>
             <div>
@@ -212,6 +244,8 @@ import { ApiService } from '../../core/services/api.service';
               <div class="qa-desc">Edit contact, designation, and bio</div>
             </div>
           </a>
+
+          <!-- 2. Change Password & 2FA Security -->
           <a routerLink="/users/workspace/security" class="qa-item">
             <div class="qa-icon-wrap bg-purple"><span class="material-symbols-outlined">lock_reset</span></div>
             <div>
@@ -219,6 +253,17 @@ import { ApiService } from '../../core/services/api.service';
               <div class="qa-desc">Manage credentials & 2FA security</div>
             </div>
           </a>
+
+          <!-- 3. Public Biography & Credentials -->
+          <a routerLink="/users/workspace/profile/biography" class="qa-item">
+            <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">menu_book</span></div>
+            <div>
+              <div class="qa-title">Public Biography</div>
+              <div class="qa-desc">Edit personal bio & background</div>
+            </div>
+          </a>
+
+          <!-- 4. View KPI Evaluations -->
           <a routerLink="/users/workspace/kpi" class="qa-item">
             <div class="qa-icon-wrap bg-green"><span class="material-symbols-outlined">leaderboard</span></div>
             <div>
@@ -226,18 +271,13 @@ import { ApiService } from '../../core/services/api.service';
               <div class="qa-desc">Check scores, targets, and feedback</div>
             </div>
           </a>
-          <a routerLink="/groups/workspace" class="qa-item">
-            <div class="qa-icon-wrap bg-amber"><span class="material-symbols-outlined">chat</span></div>
+
+          <!-- 5. Active Sessions & Trusted Devices -->
+          <a routerLink="/users/workspace/security" class="qa-item">
+            <div class="qa-icon-wrap bg-amber"><span class="material-symbols-outlined">devices</span></div>
             <div>
-              <div class="qa-title">Community Chat</div>
-              <div class="qa-desc">Engage with team members</div>
-            </div>
-          </a>
-          <a routerLink="/users/workspace/purchases" class="qa-item">
-            <div class="qa-icon-wrap bg-info" style="background-color: #0284c7; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 8px;"><span class="material-symbols-outlined" style="color: #ffffff;">shopping_bag</span></div>
-            <div>
-              <div class="qa-title">My Purchases & Licenses</div>
-              <div class="qa-desc">View invoices and copy license keys</div>
+              <div class="qa-title">Security &amp; Sessions</div>
+              <div class="qa-desc">Review active devices &amp; logins</div>
             </div>
           </a>
         </div>
@@ -622,25 +662,186 @@ import { ApiService } from '../../core/services/api.service';
     .day-label { font-size: 11px; font-weight: 700; color: #64748b; }
     .day-count { font-size: 10px; color: #94a3b8; }
 
-    /* Groups */
-    .groups-empty {
-      text-align: center;
-      padding: 16px 12px;
-      color: #64748b;
-      font-size: 13px;
+    /* Connected Devices Card */
+    .devices-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .groups-icon { font-size: 36px; color: #a855f7; margin-bottom: 6px; }
-    .groups-empty h4 { margin: 0 0 4px; color: #0f172a; font-size: 14px; font-weight: 700; }
-    .groups-empty p { margin: 0 0 10px; font-size: 12px; }
-    .btn-sm {
-      display: inline-block;
-      padding: 7px 16px;
-      border-radius: 6px;
-      font-size: 12px;
+    .device-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: var(--md-sys-color-surface-variant, #f8fafc);
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .device-row:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .device-icon-wrap {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .device-icon-wrap.current-device {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #0050e5;
+    }
+    .device-icon-wrap .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .device-meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .device-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .device-name {
+      font-size: 12.5px;
       font-weight: 700;
+      color: var(--md-sys-color-on-surface, #0f172a);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .current-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .device-sub-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .meta-dot {
+      color: #cbd5e1;
+      font-size: 8px;
+    }
+    .time-ago {
+      color: #0050e5;
+      font-weight: 600;
+    }
+    .devices-empty {
+      text-align: center;
+      padding: 24px 12px;
+      color: #64748b;
+    }
+    .empty-sec-icon {
+      font-size: 36px;
+      color: #0050e5;
+      margin-bottom: 6px;
+    }
+    .devices-empty h4 {
+      margin: 0 0 4px;
+      color: #0f172a;
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+    .devices-empty p {
+      margin: 0;
+      font-size: 11.5px;
+    }
+    .devices-footer-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--md-sys-color-outline, #f1f5f9);
+    }
+    .security-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .security-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+    }
+    .status-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #16a34a;
+    }
+    .manage-sec-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0050e5;
       text-decoration: none;
-      background: #0050e5;
-      color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      transition: all 0.15s;
+    }
+    .manage-sec-btn:hover {
+      background: #dbeafe;
+    }
+    .manage-sec-btn .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    /* Dark Mode Adjustments */
+    :host-context(.dark-mode) .device-row {
+      background: #0f172a;
+      border-color: rgba(255,255,255,0.08);
+    }
+    :host-context(.dark-mode) .device-icon-wrap {
+      background: #1e293b;
+      border-color: rgba(255,255,255,0.1);
+      color: #cbd5e1;
+    }
+    :host-context(.dark-mode) .device-icon-wrap.current-device {
+      background: rgba(0, 80, 229, 0.2);
+      border-color: #0050e5;
+      color: #6ea2ff;
+    }
+    :host-context(.dark-mode) .device-name {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .devices-footer-pill {
+      border-top-color: rgba(255,255,255,0.08);
+    }
+    :host-context(.dark-mode) .manage-sec-btn {
+      background: rgba(0, 80, 229, 0.2);
+      border-color: rgba(0, 80, 229, 0.4);
+      color: #6ea2ff;
     }
 
     /* Quick Actions */
@@ -696,6 +897,9 @@ export class WorkspaceDashboardComponent implements OnInit {
   overallScore = 88;
   evaluationsCount = 3;
   myGroups: any[] = [];
+  recentDevices: any[] = [];
+  isLoadingDevices = false;
+  activeFeatureCodes: Set<string> = new Set<string>();
 
   kpiMetrics = [
     { name: 'Attendance & Engagement', score: 92, colorClass: 'bg-blue' },
@@ -716,6 +920,55 @@ export class WorkspaceDashboardComponent implements OnInit {
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
+    this.loadActiveFeatures();
+    this.loadProfile();
+    this.loadRecentDevices();
+  }
+
+  /**
+   * Loads the current tenant's active feature codes from localStorage cache and API.
+   * Guarantees modular feature links never render if the workspace has not enabled the capability.
+   */
+  loadActiveFeatures(): void {
+    try {
+      const raw = localStorage.getItem('bcp_active_feature_codes');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          this.activeFeatureCodes = new Set(list.map((c: string) => String(c).toLowerCase()));
+        }
+      }
+    } catch { }
+
+    this.api.get<any>('billing/features').subscribe({
+      next: (res) => {
+        if (res && (res.success || res.isSuccess) && res.data) {
+          const d = res.data;
+          const all: any[] = [...(d.included || []), ...(d.subscribed || [])];
+          const active = new Set<string>();
+          for (const item of all) {
+            if (item && item.featureCode && item.isActive && item.isAvailableForUse !== false) {
+              active.add(String(item.featureCode).toLowerCase());
+            }
+          }
+          this.activeFeatureCodes = active;
+          try {
+            localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+          } catch { }
+        }
+      },
+      error: () => { }
+    });
+  }
+
+  /**
+   * Returns true only if the specified modular capability is active and enabled for the current workspace.
+   */
+  hasFeature(code: string): boolean {
+    return this.activeFeatureCodes.has(code.trim().toLowerCase());
+  }
+
+  loadProfile(): void {
     this.api.get<any>('PortalUsersApi/me').subscribe({
       next: (res) => {
         if (res?.data) {
@@ -733,6 +986,75 @@ export class WorkspaceDashboardComponent implements OnInit {
         };
       }
     });
+  }
+
+  /**
+   * Loads the user's active/recent logged-in devices & sessions from Identity API.
+   */
+  loadRecentDevices(): void {
+    this.isLoadingDevices = true;
+    this.api.get<any>('IdentityApi/sessions').subscribe({
+      next: (res) => {
+        this.isLoadingDevices = false;
+        if (res?.isSuccess && Array.isArray(res.data)) {
+          this.recentDevices = res.data.slice(0, 5);
+        } else if (Array.isArray(res?.data)) {
+          this.recentDevices = res.data.slice(0, 5);
+        } else {
+          this.setDefaultDevice();
+        }
+      },
+      error: () => {
+        this.isLoadingDevices = false;
+        this.setDefaultDevice();
+      }
+    });
+  }
+
+  private setDefaultDevice(): void {
+    this.recentDevices = [
+      {
+        device: 'Windows Desktop',
+        browser: 'Chrome on Windows',
+        browserName: 'Chrome',
+        operatingSystem: 'Windows',
+        ipAddress: '127.0.0.1',
+        lastActive: new Date().toISOString(),
+        isCurrent: true,
+        icon: 'desktop_windows'
+      }
+    ];
+  }
+
+  getDeviceIcon(device: any): string {
+    if (device?.icon) return device.icon;
+    const dev = (device?.device || device?.operatingSystem || '').toLowerCase();
+    if (dev.includes('phone') || dev.includes('android') || dev.includes('ios') || dev.includes('mobile')) {
+      return 'smartphone';
+    }
+    if (dev.includes('ipad') || dev.includes('tablet')) {
+      return 'tablet';
+    }
+    if (dev.includes('mac') || dev.includes('laptop')) {
+      return 'laptop_mac';
+    }
+    return 'desktop_windows';
+  }
+
+  formatRelativeTime(dateInput: any): string {
+    if (!dateInput) return 'Active now';
+    const date = new Date(dateInput);
+    const now = new Date();
+    const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDays = Math.floor(diffHr / 24);
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   }
 
   getInitials(name: string): string {

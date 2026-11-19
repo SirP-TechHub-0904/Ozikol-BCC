@@ -441,3 +441,19 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * NEVER hardcode currency symbols (`₦`, `$`, `£`, `€`) or ISO codes (`NGN`, `USD`, `GBP`) in Angular templates, Flutter widgets, Razor views, or backend financial calculations/emails.
   * Every component, service, and controller displaying or calculating monetary values MUST bind dynamically to the tenant's configured `currencySymbol` / `currencyCode` from the API (e.g., `WorkforceService.getTenantCurrency()`, `SettingsApi/currency`, or the endpoint's `currencyCode` / `currencySymbol` payload).
   * Initialize UI `currencySymbol` fields to `''` (empty string) before API resolution so a wrong symbol never flashes or leaks into another tenant's workspace.
+
+---
+
+## 27. Strict Isolation of Administration vs. Member Personal Workspace Controllers (Mandatory)
+* **Zero Mixing of Admin & Member Controllers (CRITICAL)**:
+  * NEVER mix administrative management endpoints and member personal workspace endpoints in the same API controller.
+  * NEVER add the `Member` role to the class-level authorization or role check of an Administration controller.
+* **Controller Architectural Boundaries**:
+  1. **Administration Feature Controllers (`Controllers/4_Modular_Features/<FeatureName>/`)**:
+     * Dedicated strictly to workspace managers, administrators, and staff with administrative RBAC permissions.
+     * Decorated with `[RequireFeature("<feature-slug>")]` (and optional `[Authorize(Roles = "...")]`).
+     * Handles administrative feature CRUD, team-wide configuration, pricing, disciplinary fines, staff approvals, and high-privilege operations.
+  2. **Member Personal Workspace Controllers (`Controllers/3_Personal_Workspace/`)**:
+     * Dedicated strictly to individual staff, employees, or users accessing their own personal schedule, assignments, timesheets, documents, time-off requests, and clock-in/out attendance.
+     * Decorated with `[Authorize]` and `[RequireFeature("<feature-slug>", allowReadOnly: true, allowMemberAccess: true)]`.
+     * Scoped 100% to the authenticated user's data (`UserId == CurrentUserId`), preventing any privilege escalation or administrative leak.

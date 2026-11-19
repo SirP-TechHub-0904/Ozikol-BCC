@@ -737,15 +737,20 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var alertMsg = string.IsNullOrWhiteSpace(form.AlertMessage)
+                ? "Thank you! Your submission has been received."
+                : form.AlertMessage;
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 submissionId = submission.Id,
-                message = string.IsNullOrWhiteSpace(form.SuccessMessage) ? "We have received your submission and will get back to you shortly." : form.SuccessMessage,
-                showSuccessPage = form.ShowSuccessPage,
+                alertMessage = alertMsg,
+                message = string.IsNullOrWhiteSpace(form.SuccessMessage) ? "<p>We have received your submission and will get back to you shortly.</p>" : form.SuccessMessage,
+                showSuccessPage = true,
                 successPageTitle = string.IsNullOrWhiteSpace(form.SuccessPageTitle) ? "Thank You! Submission Received" : form.SuccessPageTitle,
                 successPageButtonText = string.IsNullOrWhiteSpace(form.SuccessPageButtonText) ? "Submit Again" : form.SuccessPageButtonText,
                 successRedirectUrl = form.SuccessRedirectUrl
-            }, form.SuccessMessage));
+            }, alertMsg));
         }
 
         /// <summary>

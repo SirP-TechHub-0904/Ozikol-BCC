@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Ozikol.MasterDomain.Models;
+using Ozikol.MasterDomain.Help;
 
 namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
 {
@@ -46,6 +47,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
 
             // Seed canonical 37 modular capabilities across the 10 platform feature suites
             await SeedFeaturesAsync(dbContext, cancellationToken);
+
+            // Seed canonical page-based guide and contextual workflow instructions across all suites
+            await MasterPageHelpDataSeeder.SeedAllAsync(dbContext, cancellationToken);
         }
 
         /// <summary>
@@ -2426,6 +2430,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
             }
 
             await dbContext.SaveChangesAsync(ct);
+        }
+   
+        /// <summary>
+        /// Seeds the canonical page-based guide and contextual workflow instructions across all completed suites.
+        /// Delegated to dedicated <see cref="MasterPageHelpDataSeeder"/>.
+        /// </summary>
+        public static async Task SeedMasterPageHelpsAsync(
+            MasterCatalogDbContext dbContext,
+            CancellationToken ct = default)
+        {
+            await MasterPageHelpDataSeeder.SeedAllAsync(dbContext, ct);
         }
     }
 }

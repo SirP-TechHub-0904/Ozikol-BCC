@@ -1,10 +1,13 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { Chart, registerables } from 'chart.js';
 import { WorkforceService, Shift } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+
+Chart.register(...registerables);
 
 /**
  * Member "Shift and Rota" Hub (`/workforce/workspace/*`).
@@ -16,220 +19,1183 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="my-shifts-page p-4">
-      <div class="page-header d-flex align-items-center justify-content-between mb-4">
-        <div>
-          <h2 class="page-title m-0">{{ getPageTitle() }}</h2>
-          <p class="text-muted m-0 mt-1">{{ getPageSubtitle() }}</p>
+    <div class="bcp-page-container">
+      <!-- 1. Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <a (click)="closeDayDetailView()" style="cursor: pointer;" *ngIf="activeTab === 'shifts' && selectedDay">Shift &amp; Rota</a>
+            <span *ngIf="!(activeTab === 'shifts' && selectedDay)">Shift &amp; Rota</span>
+            <span class="sep">/</span>
+            <span class="current">{{ getPageTitle() }}</span>
+          </div>
+          <div class="title-row">
+            <h1>{{ getPageTitle() }}</h1>
+            <span class="badge-day-today" *ngIf="activeTab === 'shifts' && selectedDay?.isToday">Today</span>
+            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="View Shift &amp; Rota Guide">
+              <span class="material-symbols-outlined">info</span>
+            </button>
+            <span class="badge-suite">{{ (activeTab === 'shifts' && selectedDay) ? 'Day Schedule &amp; Duties' : 'Suite: Workforce &amp; Shifts' }}</span>
+          </div>
+          <p class="subtitle">{{ getPageSubtitle() }}</p>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary d-flex align-items-center gap-1" (click)="switchTab('leave'); showLeaveModal = true">
-            <span class="material-symbols-outlined">event_busy</span> Request Leave
+        <div class="header-actions" *ngIf="activeTab === 'shifts' && selectedDay">
+          <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Schedule</span>
           </button>
-          <a class="btn btn-primary d-flex align-items-center gap-1" routerLink="/attendance/workspace/clock">
-            <span class="material-symbols-outlined">fingerprint</span> Duty Clock-In
+          <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+            <span class="material-symbols-outlined">add</span>
+            <span>Apply for Excuse</span>
+          </button>
+          <a routerLink="/attendance/workspace/clock" class="btn btn-primary" *ngIf="selectedDay?.isToday">
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>Duty Clock-In</span>
+          </a>
+        </div>
+        <div class="header-actions" *ngIf="!(activeTab === 'shifts' && selectedDay)">
+          <button type="button" class="btn btn-outline" (click)="loadActiveTabData()">
+            <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+            <span>Refresh</span>
+          </button>
+          <button type="button" class="btn btn-outline" (click)="switchTab('leave'); showLeaveModal = true">
+            <span class="material-symbols-outlined">event_busy</span>
+            <span>Request Leave</span>
+          </button>
+          <a routerLink="/attendance/workspace/clock" class="btn btn-primary">
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>Duty Clock-In</span>
           </a>
         </div>
       </div>
 
-      <!-- Tab Navigation Bar -->
-      <div class="tabs-nav-bar mb-4 d-flex gap-2 border-bottom pb-2 flex-wrap">
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'shifts'" [class.btn-light]="activeTab !== 'shifts'" (click)="switchTab('shifts')">
-          <span class="material-symbols-outlined fs-6 align-middle">calendar_month</span> Schedule
+      <!-- 2. Sub-Nav Pill Tabs (Touch Responsive with Visual Scroll Cues) -->
+      <div class="subnav-scroll-wrapper">
+        <button
+          type="button"
+          class="subnav-arrow-btn left"
+          *ngIf="canScrollLeft"
+          (click)="scrollTabs(-1)"
+          aria-label="Scroll tabs left">
+          <span class="material-symbols-outlined">chevron_left</span>
         </button>
-        <button class="tab-btn btn btn-sm position-relative" [class.btn-primary]="activeTab === 'open-shifts'" [class.btn-light]="activeTab !== 'open-shifts'" (click)="switchTab('open-shifts')">
-          <span class="material-symbols-outlined fs-6 align-middle">work_outline</span> Open Shifts
-          <span class="badge bg-danger ms-1" *ngIf="openShifts.length > 0">{{ openShifts.length }}</span>
-        </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'timesheets'" [class.btn-light]="activeTab !== 'timesheets'" (click)="switchTab('timesheets')">
-          <span class="material-symbols-outlined fs-6 align-middle">description</span> Timesheets
-        </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'leave'" [class.btn-light]="activeTab !== 'leave'" (click)="switchTab('leave')">
-          <span class="material-symbols-outlined fs-6 align-middle">flight_takeoff</span> Time Off
-        </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'documents'" [class.btn-light]="activeTab !== 'documents'" (click)="switchTab('documents')">
-          <span class="material-symbols-outlined fs-6 align-middle">folder_shared</span> Documents
-        </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'availability'" [class.btn-light]="activeTab !== 'availability'" (click)="switchTab('availability')">
-          <span class="material-symbols-outlined fs-6 align-middle">event_available</span> Availability
-        </button>
-        <button class="tab-btn btn btn-sm" [class.btn-primary]="activeTab === 'reminders'" [class.btn-light]="activeTab !== 'reminders'" (click)="switchTab('reminders')">
-          <span class="material-symbols-outlined fs-6 align-middle">notifications_active</span> Reminders
-        </button>
-      </div>
 
-      <div class="text-center p-5" *ngIf="isLoading">
-        <div class="spinner-border text-primary" role="status"></div>
-      </div>
-
-      <!-- TAB 1: SCHEDULE (MY SHIFTS) -->
-      <div *ngIf="activeTab === 'shifts' && !isLoading">
-        <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="shifts.length === 0">
-          <span class="material-symbols-outlined display-4 text-muted mb-3">event_available</span>
-          <h5>No shifts assigned</h5>
-          <p class="text-muted">You have no upcoming shifts assigned on your rota schedule.</p>
-          <button class="btn btn-primary mt-2" (click)="switchTab('open-shifts')">
-            Browse Open Shifts
+        <div
+          class="bcp-subnav-tabs"
+          #subnavTabs
+          (scroll)="checkScrollArrows()">
+          <button class="subnav-tab" [class.active]="activeTab === 'analytics'" (click)="switchTab('analytics')">
+            <span class="material-symbols-outlined">analytics</span> Shift Analytics
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'shifts'" (click)="switchTab('shifts')">
+            <span class="material-symbols-outlined">calendar_month</span> My Schedule &amp; Rota
+          </button>
+          <button class="subnav-tab position-relative" [class.active]="activeTab === 'open-shifts'" (click)="switchTab('open-shifts')">
+            <span class="material-symbols-outlined">work_outline</span>
+            <span>Open Shifts &amp; Swaps</span>
+            <span class="tab-badge-sup" *ngIf="(openShiftsCount || openShifts.length) > 0">{{ openShiftsCount || openShifts.length }}</span>
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'timesheets'" (click)="switchTab('timesheets')">
+            <span class="material-symbols-outlined">description</span> Timesheets &amp; Pay
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'leave'" (click)="switchTab('leave')">
+            <span class="material-symbols-outlined">flight_takeoff</span> Time Off &amp; Availability
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'documents'" (click)="switchTab('documents')">
+            <span class="material-symbols-outlined">folder_shared</span> Compliance &amp; Documents
+          </button>
+          <button class="subnav-tab" [class.active]="activeTab === 'reminders'" (click)="switchTab('reminders')">
+            <span class="material-symbols-outlined">notifications_active</span> Reminders
           </button>
         </div>
 
-        <div class="row g-3" *ngIf="shifts.length > 0">
-          <div class="col-md-6 col-xl-4" *ngFor="let s of shifts">
-            <div class="card h-100 border-0 shadow-sm shift-card" [class.border-start-overnight]="s.isOvernight">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <span class="badge bg-light text-dark font-monospace">{{ s.shiftCode }}</span>
-                    <span class="badge bg-purple ms-1" *ngIf="s.isOvernight">24/7 Overnight</span>
+        <button
+          type="button"
+          class="subnav-arrow-btn right"
+          *ngIf="canScrollRight"
+          (click)="scrollTabs(1)"
+          aria-label="Scroll tabs right">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+
+        <!-- Visual Scroll Cue on Mobile/Desktop -->
+        <div class="scroll-edge-glow right" *ngIf="canScrollRight" (click)="scrollTabs(1)">
+          <span class="material-symbols-outlined scroll-cue-chevron">chevron_right</span>
+        </div>
+        <div class="scroll-edge-glow left" *ngIf="canScrollLeft" (click)="scrollTabs(-1)">
+          <span class="material-symbols-outlined scroll-cue-chevron">chevron_left</span>
+        </div>
+      </div>
+
+      <div class="loading-state-card" *ngIf="isLoading && shifts.length === 0">
+        <div class="spinner-ring"></div>
+        <p>Loading your assigned shifts and rota schedule...</p>
+      </div>
+
+      <!-- TAB 1: SHIFT ANALYTICS (DEDICATED PERFORMANCE DASHBOARD) -->
+      <div class="analytics-tab-container" *ngIf="activeTab === 'analytics' && !isLoading">
+        <!-- Date Range Filter Bar -->
+        <div class="analytics-filter-card mb-4">
+          <div class="filter-card-header">
+            <div class="filter-title-group">
+              <span class="material-symbols-outlined text-primary">date_range</span>
+              <div>
+                <h4 class="filter-heading">Analytics Reporting Window</h4>
+                <p class="filter-subtext">Filter your duty performance, worked hours, punctuality, and pay statement</p>
+              </div>
+            </div>
+            <div class="filter-actions-right">
+              <button type="button" class="btn btn-sm btn-outline" (click)="loadActiveTabData()">
+                <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+                <span>Refresh Data</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-controls-row">
+            <!-- Left: Current Working Date Display (Default Current Month) -->
+            <div class="current-working-range">
+              <div class="active-range-chip">
+                <span class="range-chip-label">
+                  <span class="material-symbols-outlined range-chip-icon">calendar_month</span>
+                  <span class="range-date-text">{{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}</span>
+                </span>
+                <span class="badge-default-month" *ngIf="isCurrentMonthSelected()">Current Month</span>
+              </div>
+              <div class="range-meta-actions">
+                <span class="shifts-count-chip">
+                  <span class="material-symbols-outlined chip-icon-sm">work_history</span>
+                  <span>{{ analyticsTotalShifts }} Shift(s) in Window</span>
+                </span>
+                <button
+                  type="button"
+                  class="btn-reset-month"
+                  *ngIf="!isCurrentMonthSelected()"
+                  (click)="resetDateRangeToCurrentMonth()"
+                  title="Reset reporting window to Current Month (1st &mdash; End)">
+                  <span class="material-symbols-outlined">restart_alt</span>
+                  <span>Reset to This Month</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Custom Date Range Pickers -->
+            <div class="custom-range-inputs">
+              <div class="range-field">
+                <span class="range-label">From:</span>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="analyticsStartDate" (change)="onCustomDateChange()" />
+              </div>
+              <span class="range-sep">&rarr;</span>
+              <div class="range-field">
+                <span class="range-label">To:</span>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="analyticsEndDate" (change)="onCustomDateChange()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Top KPI Cards (Executive BCC Standard Set A) -->
+        <div class="metrics-grid mb-4">
+          <!-- Card 1: Shift Fulfillment -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-blue">
+                <span class="material-symbols-outlined">event_available</span>
+              </div>
+              <span class="card-chip chip-blue">{{ analyticsFulfillmentRate }}% Fulfilled</span>
+            </div>
+            <div class="card-value">{{ analyticsTotalShifts }}</div>
+            <div class="card-label">Shift Fulfillment</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-blue" [style.width.%]="analyticsFulfillmentRate"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>{{ analyticsCompletedShifts }} fulfilled &bull; {{ analyticsTotalShifts - analyticsCompletedShifts }} upcoming</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Logged Duty Hours -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">timer</span>
+              </div>
+              <span class="card-chip chip-teal">{{ analyticsHoursRatio }}% Delivered</span>
+            </div>
+            <div class="card-value">{{ analyticsClockedHours | number:'1.1-1' }} <span style="font-size: 15px; font-weight: 600; color: #64748b;">hrs</span></div>
+            <div class="card-label">Logged Duty Hours</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-teal" [style.width.%]="analyticsHoursRatio"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>of {{ analyticsPlannedHours | number:'1.1-1' }}h scheduled &bull; {{ calculateLeaveHoursInRange() }}h excused</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Punctuality & Arrival -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon" [ngClass]="analyticsLateCount > 0 ? 'bg-amber' : 'bg-green'">
+                <span class="material-symbols-outlined">{{ analyticsLateCount > 0 ? 'running_with_errors' : 'verified_user' }}</span>
+              </div>
+              <span class="card-chip" [ngClass]="analyticsLateCount > 0 ? 'chip-amber' : 'chip-teal'">
+                {{ analyticsLateCount === 0 ? 'Flawless Arrival' : analyticsLateCount + ' Late Incident(s)' }}
+              </span>
+            </div>
+            <div class="card-value" [class.text-amber]="analyticsLateCount > 0">{{ analyticsPunctualityScore }}%</div>
+            <div class="card-label">Punctuality &amp; Arrival</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar" [ngClass]="analyticsLateCount > 0 ? 'bg-amber' : 'bg-green'" [style.width.%]="analyticsPunctualityScore"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>{{ analyticsLateCount === 0 ? 'Zero late arrivals recorded' : analyticsLateCount + ' late arrival(s) in window' }} &bull; Geofence compliant</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Gross Duty Earnings -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-purple">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <span class="card-chip chip-purple">Duty Pay</span>
+            </div>
+            <div class="card-value">{{ currencySymbol }}{{ (analyticsGrossEarnings | number:'1.2-2') || '0.00' }}</div>
+            <div class="card-label">Gross Duty Earnings</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-purple" style="width: 85%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Est. Net Take-Home: {{ currencySymbol }}{{ (analyticsNetEarnings | number:'1.2-2') || '0.00' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Punctuality Pulse Strip (Visual Arrival Compliance Micro-Widget) -->
+        <div class="cms-card punctuality-pulse-card mb-4">
+          <div class="pulse-header">
+            <div class="pulse-title-group">
+              <span class="material-symbols-outlined text-primary">speed</span>
+              <div>
+                <h4 class="pulse-heading">Recent Punctuality Pulse &amp; Clock-In Compliance</h4>
+                <p class="pulse-sub">Visual audit trail of your last {{ recentClockInBeads.length }} shift arrivals</p>
+              </div>
+            </div>
+            <div class="pulse-legend">
+              <span class="legend-item"><span class="bead-indicator bead-green"></span> On-Time (&le;0m)</span>
+              <span class="legend-item"><span class="bead-indicator bead-amber"></span> Grace (1-5m)</span>
+              <span class="legend-item"><span class="bead-indicator bead-red"></span> Late (&gt;5m)</span>
+            </div>
+          </div>
+          <div class="pulse-beads-row" *ngIf="recentClockInBeads.length > 0">
+            <div class="pulse-bead-item" *ngFor="let b of recentClockInBeads" [title]="b.tooltip">
+              <div class="bead-circle" [ngClass]="b.statusClass">
+                <span class="material-symbols-outlined bead-icon">{{ b.icon }}</span>
+              </div>
+              <div class="bead-date">{{ b.dateLabel }}</div>
+              <div class="bead-status">{{ b.timeDiffLabel }}</div>
+            </div>
+          </div>
+          <div class="empty-pulse" *ngIf="recentClockInBeads.length === 0">
+            <span class="material-symbols-outlined">schedule</span>
+            <span>No completed duty clock-ins recorded in the selected reporting window.</span>
+          </div>
+        </div>
+
+        <!-- Charts Grid (2 columns on desktop) -->
+        <div class="analytics-charts-grid mb-4">
+          <!-- Chart 1: Grouped Bar Chart (Scheduled vs. Delivered Hours) -->
+          <div class="cms-card chart-panel-card">
+            <div class="chart-panel-header">
+              <div class="chart-header-left">
+                <span class="material-symbols-outlined text-primary">bar_chart</span>
+                <div>
+                  <h4 class="chart-panel-title">Scheduled vs. Delivered Hours</h4>
+                  <p class="chart-panel-sub">Given work roster vs. actual verified duty clocked on site</p>
+                </div>
+              </div>
+              <div class="chart-header-actions">
+                <div class="btn-group-granularity">
+                  <button type="button" class="btn-granularity" [class.active]="chartGranularity === 'weekly'" (click)="setChartGranularity('weekly')">
+                    Weekly
+                  </button>
+                  <button type="button" class="btn-granularity" [class.active]="chartGranularity === 'daily'" (click)="setChartGranularity('daily')">
+                    Daily
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-panel-body">
+              <div class="chart-canvas-container">
+                <canvas #hoursBarChartCanvas></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 2: Donut Chart (Roster Fulfillment & Duty Distribution) -->
+          <div class="cms-card chart-panel-card">
+            <div class="chart-panel-header">
+              <div class="chart-header-left">
+                <span class="material-symbols-outlined text-primary">pie_chart</span>
+                <div>
+                  <h4 class="chart-panel-title">Roster Fulfillment &amp; Duty Distribution</h4>
+                  <p class="chart-panel-sub">Given work hours against work hours completed &amp; excused</p>
+                </div>
+              </div>
+            </div>
+            <div class="chart-panel-body position-relative">
+              <div class="chart-canvas-container">
+                <canvas #hoursDonutChartCanvas></canvas>
+              </div>
+              <div class="donut-center-metric" *ngIf="analyticsPlannedHours > 0">
+                <span class="center-percentage">{{ analyticsHoursRatio }}%</span>
+                <span class="center-label">Fulfilled</span>
+              </div>
+            </div>
+            <!-- Rich Metric Legend Chips -->
+            <div class="donut-chips-row">
+              <div class="donut-chip">
+                <span class="chip-dot bg-blue"></span>
+                <span class="chip-name">Delivered</span>
+                <strong class="chip-val">{{ analyticsClockedHours | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsHoursRatio }}%)</span>
+              </div>
+              <div class="donut-chip">
+                <span class="chip-dot bg-sky"></span>
+                <span class="chip-name">Upcoming</span>
+                <strong class="chip-val">{{ analyticsUpcomingHours | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsUpcomingRatio }}%)</span>
+              </div>
+              <div class="donut-chip">
+                <span class="chip-dot bg-amber"></span>
+                <span class="chip-name">Excused</span>
+                <strong class="chip-val">{{ calculateLeaveHoursInRange() | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsExcusedRatio }}%)</span>
+              </div>
+              <div class="donut-chip" *ngIf="analyticsShortfallHours > 0">
+                <span class="chip-dot bg-danger"></span>
+                <span class="chip-name">Shortfall</span>
+                <strong class="chip-val">{{ analyticsShortfallHours | number:'1.1-1' }}h</strong>
+                <span class="chip-pct">({{ analyticsShortfallRatio }}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Venue / Client Deployment Breakdown Card -->
+        <div class="cms-card mb-4" *ngIf="venueDistribution.length > 0">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <span class="material-symbols-outlined text-primary">location_city</span>
+              <div>
+                <h3>Venue Deployment &amp; Duty Earnings</h3>
+                <p class="modal-subtitle">Where you delivered your duty hours and gross earnings generated per operating site</p>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <span class="count-badge">{{ venueDistribution.length }} Operating Venue(s)</span>
+            </div>
+          </div>
+          <div class="venue-breakdown-body">
+            <div class="venue-breakdown-item" *ngFor="let v of venueDistribution">
+              <div class="venue-item-top">
+                <div class="venue-item-name">
+                  <span class="material-symbols-outlined text-primary">place</span>
+                  <strong>{{ v.name }}</strong>
+                  <span class="badge-top-venue" *ngIf="v.isPrimary">⭐ Primary Venue ({{ v.percentage }}%)</span>
+                </div>
+                <div class="venue-item-stats">
+                  <span class="venue-shifts">{{ v.shiftCount }} Shifts</span>
+                  <span class="venue-hours">&bull; {{ v.hours }} hrs ({{ v.percentage }}%)</span>
+                  <span class="venue-gross">&bull; {{ currencySymbol }}{{ (v.gross | number:'1.2-2') }} ({{ currencySymbol }}{{ (v.effectiveRate | number:'1.2-2') }}/hr)</span>
+                </div>
+              </div>
+              <div class="venue-progress-track">
+                <div class="venue-progress-bar" [style.width.%]="v.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtered Duty Activity & Pay Table -->
+        <div class="cms-card">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <span class="material-symbols-outlined text-primary">receipt_long</span>
+              <div>
+                <h3>Duty Timesheet &amp; Pay Statement</h3>
+                <p class="modal-subtitle">Itemized shift records, verified clock-in/out audit timestamps, punctuality compliance, and gross earnings</p>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <div class="toolbar-actions-grid">
+                <button type="button" class="btn btn-sm btn-outline toolbar-action-btn" (click)="printDutyStatement()" [disabled]="displayedStatementShifts.length === 0" title="Print this duty statement">
+                  <span class="material-symbols-outlined">print</span>
+                  <span>Print</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline toolbar-action-btn" (click)="exportDutyStatementCsv()" [disabled]="displayedStatementShifts.length === 0" title="Export this statement as CSV">
+                  <span class="material-symbols-outlined">download</span>
+                  <span>Export CSV</span>
+                </button>
+              </div>
+              <span class="count-badge">{{ displayedStatementShifts.length }} Shift Record(s)</span>
+            </div>
+          </div>
+
+          <!-- Statement Filter Bar -->
+          <div class="statement-filters-bar">
+            <div class="table-filter-pills">
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'all'" (click)="statementFilter = 'all'">
+                All ({{ filteredAnalyticsShifts.length }})
+              </button>
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'completed'" (click)="statementFilter = 'completed'">
+                Completed ({{ statementCompletedCount }})
+              </button>
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'upcoming'" (click)="statementFilter = 'upcoming'">
+                Upcoming ({{ statementUpcomingCount }})
+              </button>
+              <button type="button" class="filter-pill-btn" [class.active]="statementFilter === 'late'" (click)="statementFilter = 'late'">
+                Late Arrivals ({{ analyticsLateCount }})
+              </button>
+            </div>
+            <div class="table-search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input type="text" class="table-search-input" [(ngModel)]="statementSearch" placeholder="Search venue, code, post..." />
+              <button type="button" class="search-clear-btn" *ngIf="statementSearch" (click)="statementSearch = ''">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="empty-state-card" *ngIf="displayedStatementShifts.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_busy</span>
+            </div>
+            <h3>No Shifts Found Matching Filters</h3>
+            <p>No duty records match your filter criteria in the current date window ({{ analyticsStartDate | date:'d MMM yyyy' }} &mdash; {{ analyticsEndDate | date:'d MMM yyyy' }}).</p>
+            <button type="button" class="btn btn-primary" (click)="statementFilter = 'all'; statementSearch = ''">
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Clear Table Filters</span>
+            </button>
+          </div>
+
+          <div class="table-responsive" *ngIf="displayedStatementShifts.length > 0">
+            <table class="cms-table">
+              <thead>
+                <tr>
+                  <th>Shift &amp; Role</th>
+                  <th>Client Venue</th>
+                  <th>Scheduled Window</th>
+                  <th>Actual Clock-In / Out</th>
+                  <th>Duration</th>
+                  <th>Punctuality Status</th>
+                  <th>Duty Status</th>
+                  <th class="text-end">Shift Earnings</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of displayedStatementShifts" (click)="openDayDetailForShift(s)" class="clickable-statement-row" title="Click to view full shift details, instructions, and apply excuse">
+                  <td>
+                    <span class="shift-code-tag">{{ s.shiftCode }}</span>
+                    <div class="venue-cell-sub"><strong>{{ s.postName || 'Security Operative' }}</strong></div>
+                  </td>
+                  <td>
+                    <div class="venue-cell-title d-flex align-items-center gap-1">
+                      <span class="material-symbols-outlined text-primary" style="font-size: 15px;">location_on</span>
+                      <span>{{ s.facilityName || s.siteName }}</span>
+                    </div>
+                    <div class="venue-cell-sub" *ngIf="s.address || s.siteAddress">{{ s.address || s.siteAddress }}</div>
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ s.startsAtUtc | date:'EEE, d MMM' }}</div>
+                    <div class="venue-cell-sub">{{ s.startsAtUtc | date:'HH:mm' }} &mdash; {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</div>
+                  </td>
+                  <td>
+                    <div class="clock-times-cell" *ngIf="getShiftClockTimes(s) as ct">
+                      <div class="d-flex align-items-center gap-1">
+                        <span class="punctuality-dot" [ngClass]="isShiftLate(s) ? 'dot-red' : (getGraceArrivalStatus(s) ? 'dot-amber' : (ct.inTime ? 'dot-green' : 'dot-gray'))"></span>
+                        <strong [class.text-amber]="isShiftLate(s)">{{ ct.inTime || 'Not Clocked' }}</strong>
+                        <span *ngIf="ct.outTime">&mdash; {{ ct.outTime }}</span>
+                      </div>
+                      <div class="venue-cell-sub" style="font-size: 10.5px;">{{ getActualClockSubtext(s) }}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge-duration">{{ s.plannedDurationHours }} hrs</span>
+                  </td>
+                  <td>
+                    <span class="status-pill status-active" *ngIf="!isShiftLate(s) && !getGraceArrivalStatus(s) && (s.status === 'Completed' || (s.endsAtUtc && isPastDate(s.endsAtUtc)))">
+                      🟢 On-Time
+                    </span>
+                    <span class="status-pill status-amber" *ngIf="getGraceArrivalStatus(s)">
+                      🟡 Grace (&lt;5m)
+                    </span>
+                    <span class="status-pill status-danger" *ngIf="isShiftLate(s)">
+                      🔴 Late (+{{ getLateMinutes(s) }}m)
+                    </span>
+                    <span class="status-pill status-pending" *ngIf="!isShiftLate(s) && !getGraceArrivalStatus(s) && s.status !== 'Completed' && (!s.endsAtUtc || !isPastDate(s.endsAtUtc))">
+                      ⚪ Upcoming
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                  </td>
+                  <td class="text-end">
+                    <div class="fw-bold text-success" style="font-size: 13.5px;">
+                      {{ currencySymbol }}{{ ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10) | number:'1.2-2') }}
+                    </div>
+                    <div class="venue-cell-sub" style="font-size: 10.5px; color: #64748b;">({{ currencySymbol }}{{ s.hourlyPayRate || 10 | number:'1.2-2' }}/hr)</div>
+                  </td>
+                </tr>
+              </tbody>
+              <!-- Pinned Summary Footer Row -->
+              <tfoot>
+                <tr class="statement-summary-footer-row">
+                  <td colspan="4" class="fw-bold">
+                    <span class="material-symbols-outlined summary-icon">verified</span>
+                    TOTALS IN WINDOW: {{ displayedStatementShifts.length }} Shifts Rostered
+                  </td>
+                  <td colspan="3" class="fw-bold text-primary">
+                    {{ statementTotalClockedHours | number:'1.1-1' }} hrs Logged
+                  </td>
+                  <td class="text-end fw-bold text-success" style="font-size: 14.5px;">
+                    {{ currencySymbol }}{{ statementTotalGross | number:'1.2-2' }} Gross
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: MY SCHEDULE & ROTA (CALENDAR & ASSIGNED DUTIES) -->
+      <div class="shifts-tab-container" *ngIf="activeTab === 'shifts' && !isLoading">
+
+        <!-- DEDICATED FULL-PAGE VIEW: SELECTED DAY DETAILS & ACTIONS -->
+        <div class="day-detail-page-container" *ngIf="selectedDay">
+          <div class="cms-card day-page-card">
+            <div class="day-page-header">
+              <div class="day-page-title-group">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
+                  <h3>{{ selectedDay.date | date:'EEEE, d MMMM yyyy' }}</h3>
+                  <span class="badge-day-today" *ngIf="selectedDay.isToday">Today</span>
+                  <span class="badge-suite">Day Schedule</span>
+                </div>
+                <p class="day-page-subtitle">
+                  {{ selectedDay.shifts.length }} Rostered Shift(s) &bull; {{ selectedDay.leaves.length }} Leave / Excuse Record(s)
+                </p>
+              </div>
+
+              <div class="day-page-header-actions">
+                <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
+                  <span class="material-symbols-outlined">arrow_back</span>
+                  <span>Back to Calendar</span>
+                </button>
+                <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Apply for Excuse / Time Off</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="day-page-body">
+              <!-- Quick Action Bar -->
+              <div class="day-quick-actions mb-4">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="openExcuseForSelectedDay('single')">
+                  <span class="material-symbols-outlined">event_busy</span>
+                  <span>Apply Excuse for This Day</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="openExcuseForSelectedDay('3days')">
+                  <span class="material-symbols-outlined">date_range</span>
+                  <span>Request Multi-Day Leave</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="closeDayDetailView(); switchTab('open-shifts')">
+                  <span class="material-symbols-outlined">work_outline</span>
+                  <span>Find Open Shifts</span>
+                </button>
+              </div>
+
+              <!-- In-Page Quick Excuse Form (Toggled when requested) -->
+              <div class="quick-excuse-form-card mb-4" *ngIf="showDayExcuseForm">
+                <div class="form-header-row">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-warning">edit_calendar</span>
+                    <h4 class="form-title">Apply for Absence / Excuse</h4>
                   </div>
-                  <span class="badge" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                  <button type="button" class="btn-close-sm" (click)="showDayExcuseForm = false">&times;</button>
                 </div>
 
-                <h5 class="card-title mb-1 text-primary">{{ s.facilityName || s.siteName }}</h5>
-                <p class="text-muted small mb-2">
-                  <span class="material-symbols-outlined align-middle fs-6">place</span> 
-                  {{ s.address || s.siteAddress }} <span *ngIf="s.postCode" class="fw-bold">({{ s.postCode }})</span>
-                </p>
+                <!-- Duration Quick Presets -->
+                <div class="duration-presets-group mb-3">
+                  <span class="presets-label">Quick Duration:</span>
+                  <div class="presets-buttons">
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'single'" (click)="onExcusePresetChange('single')">1 Day (This Day)</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '2days'" (click)="onExcusePresetChange('2days')">2 Days</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '3days'" (click)="onExcusePresetChange('3days')">3 Days</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'week'" (click)="onExcusePresetChange('week')">1 Week</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'custom'" (click)="onExcusePresetChange('custom')">Custom</button>
+                  </div>
+                </div>
 
-                <div class="border rounded p-2 bg-light mb-3">
-                  <div class="d-flex justify-content-between small">
-                    <span class="text-muted">Role / Post:</span>
-                    <span class="fw-semibold">{{ s.postName }}</span>
+                <div class="form-row-2 mb-3">
+                  <div class="form-group">
+                    <label class="form-label">Excuse / Leave Type *</label>
+                    <select class="form-select" [(ngModel)]="leaveType">
+                      <option value="Sick">Sickness / Medical</option>
+                      <option value="Compassionate">Emergency / Compassionate</option>
+                      <option value="Annual">Annual Leave</option>
+                      <option value="Unpaid">Unpaid Leave</option>
+                    </select>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Starts:</span>
-                    <span class="fw-semibold">{{ s.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="form-group">
+                    <label class="form-label">Start Date *</label>
+                    <input type="date" class="form-control" [(ngModel)]="leaveStartDate" (change)="onExcusePresetChange('custom')" />
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Ends:</span>
-                    <span class="fw-semibold">{{ s.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                </div>
+
+                <div class="form-row-2 mb-3">
+                  <div class="form-group">
+                    <label class="form-label">End Date *</label>
+                    <input type="date" class="form-control" [(ngModel)]="leaveEndDate" (change)="onExcusePresetChange('custom')" />
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Duration:</span>
-                    <span>{{ s.plannedDurationHours }} hrs (break: {{ s.breakMinutes }}m)</span>
+                  <div class="form-group">
+                    <label class="form-label">Reason / Sickness Details *</label>
+                    <input type="text" class="form-control" [(ngModel)]="leaveReason" placeholder="e.g. Flu, medical appointment, family emergency" />
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Pay Rate:</span>
-                    <span class="fw-bold text-success">{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                </div>
+
+                <div class="form-actions mt-3 d-flex justify-content-end gap-3">
+                  <button type="button" class="btn btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
+                  <button type="button" class="btn btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                    <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
+                    <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
+                    <span>Submit Excuse Request</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Two-Column Section Grid for Full Page View -->
+              <div class="day-page-columns">
+                <!-- SECTION A: Assigned Shifts -->
+                <div class="day-section">
+                  <div class="day-section-header">
+                    <span class="material-symbols-outlined text-primary">work</span>
+                    <h4>Assigned Rota Duties ({{ selectedDay.shifts.length }})</h4>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1" *ngIf="s.requiredWorkspaceStationName">
-                    <span class="text-muted">Workstation:</span>
-                    <span class="badge bg-info text-dark">{{ s.requiredWorkspaceStationName }}</span>
+
+                  <div class="day-empty-box" *ngIf="!selectedDay.shifts.length">
+                    <span class="material-symbols-outlined text-muted">event_busy</span>
+                    <div class="empty-text-group">
+                      <p class="empty-title">Off Duty / No Shifts Rostered</p>
+                      <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline ms-auto" (click)="closeDayDetailView(); switchTab('open-shifts')">
+                      <span class="material-symbols-outlined">work_outline</span>
+                      <span>Find Open Shifts</span>
+                    </button>
+                  </div>
+
+                  <div class="day-shifts-list" *ngIf="selectedDay.shifts.length > 0">
+                    <div class="day-shift-card" *ngFor="let s of selectedDay.shifts">
+                      <div class="day-shift-top">
+                        <div>
+                          <div class="shift-code-tag">{{ s.shiftCode }}</div>
+                          <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
+                          <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
+                        </div>
+                        <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                      </div>
+
+                      <div class="day-shift-meta-grid">
+                        <div class="meta-item">
+                          <span class="meta-icon material-symbols-outlined">schedule</span>
+                          <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-icon material-symbols-outlined">payments</span>
+                          <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                        </div>
+                      </div>
+
+                      <div class="day-shift-actions">
+                        <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>Confirm Shift</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
+                          <span class="material-symbols-outlined">swap_horiz</span>
+                          <span>Request Swap</span>
+                        </button>
+                        <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay.isToday" (click)="closeDayDetailView()">
+                          <span class="material-symbols-outlined">fingerprint</span>
+                          <span>Duty Clock-In</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SECTION B: Excuses & Leave -->
+                <div class="day-section">
+                  <div class="day-section-header">
+                    <span class="material-symbols-outlined text-warning">flight_takeoff</span>
+                    <h4>Logged Excuses &amp; Time Off ({{ selectedDay.leaves.length }})</h4>
+                  </div>
+
+                  <div class="day-empty-box" *ngIf="!selectedDay.leaves.length">
+                    <span class="material-symbols-outlined text-muted">event_available</span>
+                    <div class="empty-text-group">
+                      <p class="empty-title">No Excuses or Time-Off Logged</p>
+                      <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                      <span class="material-symbols-outlined">add</span>
+                      <span>Log Excuse</span>
+                    </button>
+                  </div>
+
+                  <div class="day-leaves-list" *ngIf="selectedDay.leaves.length > 0">
+                    <div class="day-leave-card" *ngFor="let l of selectedDay.leaves">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge-station">{{ l.leaveType }}</span>
+                        <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                          {{ l.status }}
+                        </span>
+                      </div>
+                      <div class="leave-date-span">
+                        <span class="material-symbols-outlined">date_range</span>
+                        <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
+                      </div>
+                      <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="day-page-footer">
+              <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span>Back to Schedule Calendar</span>
+              </button>
+              <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                <span class="material-symbols-outlined">add</span>
+                <span>Apply for Excuse / Time Off</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FULL MONTH CALENDAR & ASSIGNED DUTIES (WHEN NO SPECIFIC DAY SELECTED) -->
+        <ng-container *ngIf="!selectedDay">
+        <!-- 3. Top Metrics Row (Matching Reference Template) -->
+        <div class="metrics-grid mb-4">
+          <!-- Metric 1: Real Take-Home Pay -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-blue">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <span class="card-chip chip-blue">Estimated Net</span>
+            </div>
+            <div class="card-value">
+              {{ currencySymbol }}{{ (estimatedTakeHomePay | number:'1.2-2') || '0.00' }}
+            </div>
+            <div class="card-label">Monthly Take-Home Pay</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-blue" [style.width.%]="shifts.length > 0 ? 80 : 0"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>{{ totalPlannedHours }}h across {{ shifts.length }} rostered shifts • {{ accruedHolidayHours }}h Holiday Pay</span>
+            </div>
+          </div>
+
+          <!-- Metric 2: Next Payday Countdown -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-green">
+                <span class="material-symbols-outlined">event_available</span>
+              </div>
+              <span class="card-chip chip-teal">{{ daysUntilPayday }} Days Away</span>
+            </div>
+            <div class="card-value font-monospace" style="font-size: 20px; line-height: 28px;">
+              {{ nextPaydayDate | date:'EEEE, d MMM' }}
+            </div>
+            <div class="card-label">Next Scheduled Payday</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-green" style="width: 70%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (estimatedGrossPay * 0.5 | number:'1.2-2') || '0.00' }}</span>
+            </div>
+          </div>
+
+          <!-- Metric 3: Next Shift Spotlight -->
+          <div class="metric-card spotlight-card" *ngIf="nextUpcomingShift">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <span class="card-chip" [ngClass]="nextUpcomingShift.isConfirmedByGuard ? 'chip-teal' : 'chip-amber'">
+                {{ nextUpcomingShift.isConfirmedByGuard ? 'Confirmed' : 'Action Required' }}
+              </span>
+            </div>
+            <div class="card-value" style="font-size: 20px;">
+              {{ nextUpcomingShift.startsAtUtc | date:'HH:mm' }} - {{ nextUpcomingShift.endsAtUtc | date:'HH:mm' }}
+            </div>
+            <div class="card-label">{{ nextUpcomingShift.facilityName || nextUpcomingShift.siteName }}</div>
+            <div class="card-sub-info d-flex justify-content-between align-items-center">
+              <span>{{ nextUpcomingShift.startsAtUtc | date:'EEE, d MMM' }} • {{ nextUpcomingShift.postName }}</span>
+              <button
+                type="button"
+                class="btn-confirm-inline"
+                *ngIf="!nextUpcomingShift.isConfirmedByGuard"
+                (click)="confirmShift(nextUpcomingShift)"
+                [disabled]="isActionLoading || isShiftExpired(nextUpcomingShift)"
+              >
+                1-Tap Confirm
+              </button>
+            </div>
+          </div>
+
+          <!-- Standby Card when no upcoming shift is scheduled -->
+          <div class="metric-card" *ngIf="!nextUpcomingShift">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">event_busy</span>
+              </div>
+              <span class="card-chip chip-teal">Duty Standby</span>
+            </div>
+            <div class="card-value" style="font-size: 20px;">No Duty Assigned</div>
+            <div class="card-label">Next Scheduled Shift</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-teal" style="width: 0%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Check Open Shifts &amp; Swaps to claim duties</span>
+            </div>
+          </div>
+
+          <!-- Metric 4: Punctuality & Standing -->
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-purple">
+                <span class="material-symbols-outlined">verified_user</span>
+              </div>
+              <span class="card-chip chip-purple">Duty Standing</span>
+            </div>
+            <div class="card-value">100%</div>
+            <div class="card-label">Overall Punctuality Score</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-purple" style="width: 100%;"></div>
+            </div>
+            <div class="card-sub-info">
+              <span>Zero geofence boundary warnings recorded</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Interactive Monthly Rota Calendar Grid (From Reference Template) -->
+        <div class="rota-calendar-card mb-4">
+          <div class="calendar-card-header">
+            <div class="cal-nav-group">
+              <button type="button" class="btn-cal-nav" (click)="prevMonth()" title="Previous Month">
+                <span class="material-symbols-outlined">chevron_left</span>
+              </button>
+              <h3 class="cal-month-title">{{ currentMonth | date:'MMMM yyyy' }}</h3>
+              <button type="button" class="btn-cal-nav" (click)="nextMonth()" title="Next Month">
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
+            </div>
+            <div class="cal-action-banner">
+              <span class="material-symbols-outlined text-primary">info</span>
+              <span>Not on the rota today? Clock in if you pick up a shift.</span>
+              <a routerLink="/attendance/workspace/clock" class="btn-clockin-mini">
+                <span class="material-symbols-outlined">fingerprint</span> Duty Clock-In
+              </a>
+            </div>
+          </div>
+
+          <!-- Calendar Grid -->
+          <div class="calendar-grid-container">
+            <div class="cal-weekdays-row">
+              <div class="weekday-cell">Mon</div>
+              <div class="weekday-cell">Tue</div>
+              <div class="weekday-cell">Wed</div>
+              <div class="weekday-cell">Thu</div>
+              <div class="weekday-cell">Fri</div>
+              <div class="weekday-cell">Sat</div>
+              <div class="weekday-cell">Sun</div>
+            </div>
+            <div class="cal-days-grid">
+              <div
+                *ngFor="let day of calendarDays"
+                class="cal-day-cell"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.today]="day.isToday"
+                [class.has-shift]="day.shifts.length > 0"
+                [class.has-leave]="day.leaves && day.leaves.length > 0"
+                [class.is-selected]="isSelectedDay(day)"
+                (click)="onSelectDay(day)"
+                title="Click to view full day activity, shifts, and excuses"
+              >
+                <div class="day-cell-top">
+                  <span class="day-number">{{ day.dayNumber }}</span>
+                  <div class="day-indicators">
+                    <span class="indicator-dot dot-shift" *ngIf="day.shifts.length > 0" title="{{ day.shifts.length }} shift(s)"></span>
+                    <span class="indicator-dot dot-leave" *ngIf="day.leaves && day.leaves.length > 0" title="{{ day.leaves.length }} leave/excuse(s)"></span>
+                  </div>
+                </div>
+
+                <!-- Shift badges in cell -->
+                <div class="day-shifts" *ngIf="day.shifts.length > 0">
+                  <div *ngFor="let s of day.shifts" class="shift-pill-badge" [title]="s.postName + ' at ' + (s.facilityName || s.siteName)">
+                    <span class="badge-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
+                    <span class="badge-site">{{ s.facilityName || s.siteName }}</span>
+                  </div>
+                </div>
+
+                <!-- Leave / Excuse badges in cell -->
+                <div class="day-leaves" *ngIf="day.leaves && day.leaves.length > 0">
+                  <div *ngFor="let l of day.leaves" class="leave-pill-badge" [class.leave-approved]="l.status === 'Approved'" [class.leave-pending]="l.status === 'Pending'" [title]="l.leaveType + ' (' + l.status + ')'">
+                    <span class="material-symbols-outlined badge-leave-icon">flight_takeoff</span>
+                    <span class="badge-leave-text">{{ l.leaveType }}</span>
+                  </div>
+                </div>
+
+                <div class="cell-hover-hint" *ngIf="day.shifts.length === 0 && (!day.leaves || day.leaves.length === 0)">
+                  <span>+ Excuse / Info</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar Month Footer Summary Bar -->
+          <div class="calendar-summary-footer">
+            <div class="summary-item">
+              <span class="material-symbols-outlined">timer</span>
+              <strong>{{ totalPlannedHours }}</strong> hrs planned
+            </div>
+            <div class="summary-item">
+              <span class="material-symbols-outlined">event_note</span>
+              <strong>{{ shifts.length }}</strong> shifts rostered
+            </div>
+            <div class="summary-item">
+              <span class="material-symbols-outlined">account_balance_wallet</span>
+              Gross Pay: <strong>{{ currencySymbol }}{{ (estimatedGrossPay | number:'1.2-2') || '0.00' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Upcoming Assigned Shifts Section (Canonical CMS Card) -->
+        <div class="cms-card mt-4">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3>Upcoming Assigned Rota Duties</h3>
+              <span class="count-badge" *ngIf="shifts.length > 0">{{ shifts.length }} Rostered</span>
+            </div>
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-outline" (click)="switchTab('open-shifts')">
+                <span class="material-symbols-outlined">add_circle</span>
+                <span>Browse Extra Open Shifts</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State (Inside CMS Card) -->
+          <div class="empty-state-card" *ngIf="shifts.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_available</span>
+            </div>
+            <h3>No Upcoming Duties Rostered</h3>
+            <p>Your personal rota schedule is currently clear. You have no pending shifts assigned. You can browse open shifts or log your availability.</p>
+            <button type="button" class="btn btn-primary" (click)="switchTab('open-shifts')">
+              <span class="material-symbols-outlined">work_outline</span>
+              <span>Browse Open Shifts</span>
+            </button>
+          </div>
+
+          <!-- Shifts Grid (Inside CMS Card) -->
+          <div class="shifts-card-body" *ngIf="shifts.length > 0">
+            <div class="shifts-grid">
+              <div class="shift-card" *ngFor="let s of shifts" [class.overnight-card]="s.isOvernight">
+                <div class="shift-card-header">
+                  <div class="shift-badges-group">
+                    <span class="shift-code-badge">{{ s.shiftCode }}</span>
+                    <span class="badge-overnight" *ngIf="s.isOvernight">24/7 Overnight</span>
+                  </div>
+                  <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                </div>
+
+                <div class="shift-venue-info">
+                  <h4 class="shift-venue-title">{{ s.facilityName || s.siteName }}</h4>
+                  <p class="shift-venue-address">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>{{ s.address || s.siteAddress }} <strong *ngIf="s.postCode">({{ s.postCode }})</strong></span>
+                  </p>
+                </div>
+
+                <div class="shift-meta-box">
+                  <div class="meta-row">
+                    <span class="meta-label">Role / Post:</span>
+                    <span class="meta-val">{{ s.postName }}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Starts:</span>
+                    <span class="meta-val">{{ s.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Ends:</span>
+                    <span class="meta-val">{{ s.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Duration:</span>
+                    <span class="meta-val">{{ s.plannedDurationHours }} hrs (break: {{ s.breakMinutes }}m)</span>
+                  </div>
+                  <div class="meta-row">
+                    <span class="meta-label">Pay Rate:</span>
+                    <span class="meta-val val-rate">{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                  </div>
+                  <div class="meta-row" *ngIf="s.requiredWorkspaceStationName">
+                    <span class="meta-label">Workstation:</span>
+                    <span class="meta-val badge-station">{{ s.requiredWorkspaceStationName }}</span>
                   </div>
                 </div>
 
                 <!-- Live Acceptance Countdown Alert -->
-                <div class="acceptance-countdown-box p-2 rounded mb-3" *ngIf="!s.isConfirmedByGuard">
-                  <div class="d-flex align-items-center justify-content-between small">
-                    <span class="fw-bold d-flex align-items-center gap-1" [ngClass]="isShiftExpired(s) ? 'text-danger' : 'text-primary'">
-                      <span class="material-symbols-outlined fs-6">{{ isShiftExpired(s) ? 'timer_off' : 'timer' }}</span>
+                <div class="acceptance-countdown-box" *ngIf="!s.isConfirmedByGuard">
+                  <div class="countdown-header">
+                    <span class="countdown-title" [class.text-danger]="isShiftExpired(s)">
+                      <span class="material-symbols-outlined">{{ isShiftExpired(s) ? 'timer_off' : 'timer' }}</span>
                       {{ isShiftExpired(s) ? 'Acceptance Expired' : 'Acceptance Deadline' }}
                     </span>
-                    <span class="font-monospace fw-bold" [ngClass]="isShiftExpired(s) ? 'text-danger' : 'text-dark'">
+                    <span class="countdown-timer" [class.text-danger]="isShiftExpired(s)">
                       {{ getCountdown(s) }}
                     </span>
                   </div>
-                  <div class="small text-muted mt-1" *ngIf="!isShiftExpired(s)">
+                  <div class="countdown-sub text-muted" *ngIf="!isShiftExpired(s)">
                     Please confirm before the timer lapses to secure this shift.
                   </div>
-                  <div class="small text-danger mt-1" *ngIf="isShiftExpired(s)">
+                  <div class="countdown-sub text-danger" *ngIf="isShiftExpired(s)">
                     This assignment has expired and may be reclaimed by other team members.
                   </div>
                 </div>
 
-                <div class="site-briefing-alert p-2 rounded mb-3 small" *ngIf="s.siteAssignmentInstructions">
-                  <div class="fw-semibold text-dark d-flex align-items-center gap-1 mb-1">
-                    <span class="material-symbols-outlined fs-6 text-warning">info</span> Site Assignment Instructions (SIs)
+                <!-- Site Assignment Instructions -->
+                <div class="site-briefing-alert" *ngIf="s.siteAssignmentInstructions">
+                  <div class="briefing-header">
+                    <span class="material-symbols-outlined text-amber">info</span>
+                    <span>Site Assignment Instructions (SIs)</span>
                   </div>
-                  <div class="text-secondary">{{ s.siteAssignmentInstructions }}</div>
+                  <div class="briefing-body">{{ s.siteAssignmentInstructions }}</div>
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="shift-actions-row">
                   <button
-                    class="btn btn-sm btn-outline-success flex-fill"
+                    type="button"
+                    class="btn btn-confirm"
                     *ngIf="!s.isConfirmedByGuard"
                     (click)="confirmShift(s)"
                     [disabled]="isActionLoading || isShiftExpired(s)">
-                    Confirm Shift
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>Confirm Shift</span>
                   </button>
                   <button
-                    class="btn btn-sm btn-outline-secondary flex-fill"
+                    type="button"
+                    class="btn btn-outline"
                     (click)="openSwapModal(s)">
-                    Request Swap
+                    <span class="material-symbols-outlined">swap_horiz</span>
+                    <span>Request Swap</span>
                   </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        </ng-container>
       </div>
 
       <!-- TAB 2: OPEN SHIFTS (CLAIM BOARD) -->
       <div *ngIf="activeTab === 'open-shifts' && !isLoading">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div>
-            <h5 class="fw-bold m-0 text-dark">Available Open Shifts</h5>
-            <p class="text-muted small m-0">Claim extra venue shifts directly. Shifts are confirmed upon claiming.</p>
+        <div class="cms-card">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3>Available Open Shifts</h3>
+              <span class="count-badge" *ngIf="openShifts.length > 0">{{ openShifts.length }} Available</span>
+            </div>
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-outline" (click)="loadOpenShifts()">
+                <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
-          <button class="btn btn-sm btn-outline-primary" (click)="loadOpenShifts()">
-            <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span> Refresh
-          </button>
-        </div>
 
-        <div class="empty-state text-center p-5 bg-white rounded shadow-sm" *ngIf="openShifts.length === 0">
-          <span class="material-symbols-outlined display-4 text-muted mb-3">event_busy</span>
-          <h5>No open shifts available</h5>
-          <p class="text-muted">All venue shifts are currently assigned. Check back later for open duty calls.</p>
-        </div>
+          <div class="empty-state-card" *ngIf="openShifts.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_busy</span>
+            </div>
+            <h3>No Open Shifts Available</h3>
+            <p>All venue shifts are currently assigned to team members. Check back later for newly published shifts or peer swap opportunities.</p>
+          </div>
 
-        <div class="row g-3" *ngIf="openShifts.length > 0">
-          <div class="col-md-6 col-xl-4" *ngFor="let os of openShifts">
-            <div class="card h-100 border-0 shadow-sm shift-card">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <span class="badge bg-light text-dark font-monospace">{{ os.shiftCode }}</span>
-                  <span class="badge bg-success">Open to Claim</span>
+          <div class="shifts-card-body" *ngIf="openShifts.length > 0">
+            <div class="shifts-grid">
+              <div class="shift-card" *ngFor="let os of openShifts">
+                <div class="shift-card-header">
+                  <span class="shift-code-badge">{{ os.shiftCode }}</span>
+                  <span class="status-pill status-active">Open to Claim</span>
                 </div>
 
-                <h5 class="card-title mb-1 text-primary">{{ os.facilityName || os.siteName }}</h5>
-                <p class="text-muted small mb-2">
-                  <span class="material-symbols-outlined align-middle fs-6">place</span>
-                  {{ os.address || os.siteAddress }} <span *ngIf="os.postCode" class="fw-bold">({{ os.postCode }})</span>
-                </p>
+                <div class="shift-venue-info">
+                  <h4 class="shift-venue-title">{{ os.facilityName || os.siteName }}</h4>
+                  <p class="shift-venue-address">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>{{ os.address || os.siteAddress }} <strong *ngIf="os.postCode">({{ os.postCode }})</strong></span>
+                  </p>
+                </div>
 
-                <div class="border rounded p-2 bg-light mb-3">
-                  <div class="d-flex justify-content-between small">
-                    <span class="text-muted">Post / Role:</span>
-                    <span class="fw-semibold">{{ os.postName }}</span>
+                <div class="shift-meta-box">
+                  <div class="meta-row">
+                    <span class="meta-label">Post / Role:</span>
+                    <span class="meta-val">{{ os.postName }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Starts:</span>
-                    <span class="fw-semibold">{{ os.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Starts:</span>
+                    <span class="meta-val">{{ os.startsAtUtc | date:'dd MMM, HH:mm' }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Ends:</span>
-                    <span class="fw-semibold">{{ os.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Ends:</span>
+                    <span class="meta-val">{{ os.endsAtUtc | date:'dd MMM, HH:mm' }}</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Duration:</span>
-                    <span>{{ os.plannedDurationHours }} hrs (break: {{ os.breakMinutes }}m)</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Duration:</span>
+                    <span class="meta-val">{{ os.plannedDurationHours }} hrs (break: {{ os.breakMinutes }}m)</span>
                   </div>
-                  <div class="d-flex justify-content-between small mt-1">
-                    <span class="text-muted">Pay Rate:</span>
-                    <span class="fw-bold text-success">{{ os.hourlyPayRate ? currencySymbol + os.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                  <div class="meta-row">
+                    <span class="meta-label">Pay Rate:</span>
+                    <span class="meta-val val-rate">{{ os.hourlyPayRate ? currencySymbol + os.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
                   </div>
                 </div>
 
-                <div class="site-briefing-alert p-2 rounded mb-3 small" *ngIf="os.siteAssignmentInstructions">
-                  <div class="fw-semibold text-dark d-flex align-items-center gap-1 mb-1">
-                    <span class="material-symbols-outlined fs-6 text-warning">info</span> Site Instructions
+                <div class="site-briefing-alert" *ngIf="os.siteAssignmentInstructions">
+                  <div class="briefing-header">
+                    <span class="material-symbols-outlined text-amber">info</span>
+                    <span>Site Instructions</span>
                   </div>
-                  <div class="text-secondary">{{ os.siteAssignmentInstructions }}</div>
+                  <div class="briefing-body">{{ os.siteAssignmentInstructions }}</div>
                 </div>
 
-                <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-1"
-                        (click)="claimOpenShiftDirect(os)" [disabled]="isActionLoading">
-                  <span class="material-symbols-outlined fs-6">how_to_reg</span> Apply &amp; Claim Shift
+                <button
+                  type="button"
+                  class="btn btn-primary w-100"
+                  (click)="claimOpenShiftDirect(os)"
+                  [disabled]="isActionLoading">
+                  <span class="material-symbols-outlined">how_to_reg</span>
+                  <span>Apply &amp; Claim Shift</span>
                 </button>
               </div>
             </div>
@@ -239,56 +1205,91 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 3: TIMESHEETS (DUTY HOURS & PAY SUMMARY) -->
       <div *ngIf="activeTab === 'timesheets' && !isLoading">
-        <!-- 4 KPI Summary Cards -->
-        <div class="row g-3 mb-4">
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Completed Duties</span>
-              <div class="h3 fw-bold text-dark mt-2 mb-0">{{ timesheetList.length }}</div>
-              <small class="text-muted mt-1">Recorded shifts</small>
+        <!-- 4 KPI Summary Cards Matching Canonical Design -->
+        <div class="metrics-grid mb-4">
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-blue">
+                <span class="material-symbols-outlined">task_alt</span>
+              </div>
+              <span class="card-chip chip-blue">Completed</span>
+            </div>
+            <div class="card-value">{{ timesheetList.length }}</div>
+            <div class="card-label">Completed Duties</div>
+            <div class="card-sub-info">
+              <span>Recorded shifts</span>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Total Worked Hours</span>
-              <div class="h3 fw-bold text-primary mt-2 mb-0">{{ getTotalTimesheetHours() }} hrs</div>
-              <small class="text-muted mt-1">Logged duty time</small>
+
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <span class="card-chip chip-teal">Logged Time</span>
+            </div>
+            <div class="card-value">{{ getTotalTimesheetHours() }} hrs</div>
+            <div class="card-label">Total Worked Hours</div>
+            <div class="card-sub-info">
+              <span>Hours after break deduction</span>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Gross Earnings</span>
-              <div class="h3 fw-bold text-success mt-2 mb-0">{{ currencySymbol }}{{ getTotalGrossPay() | number:'1.2-2' }}</div>
-              <small class="text-muted mt-1">Pre-deductions</small>
+
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-amber">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <span class="card-chip chip-amber">Pre-Deductions</span>
+            </div>
+            <div class="card-value">{{ currencySymbol }}{{ getTotalGrossPay() | number:'1.2-2' }}</div>
+            <div class="card-label">Gross Earnings</div>
+            <div class="card-sub-info">
+              <span>Standard + overtime wages</span>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
-            <div class="card p-3 border-0 shadow-sm h-100">
-              <span class="text-muted small fw-semibold text-uppercase">Net Remuneration</span>
-              <div class="h3 fw-bold text-dark mt-2 mb-0">{{ currencySymbol }}{{ getTotalNetPay() | number:'1.2-2' }}</div>
-              <small class="text-muted mt-1">After fine deductions</small>
+
+          <div class="metric-card">
+            <div class="card-top">
+              <div class="card-icon bg-green">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+              </div>
+              <span class="card-chip chip-teal">Net Pay</span>
+            </div>
+            <div class="card-value">{{ currencySymbol }}{{ getTotalNetPay() | number:'1.2-2' }}</div>
+            <div class="card-label">Net Remuneration</div>
+            <div class="card-sub-info">
+              <span>After fine deductions</span>
             </div>
           </div>
         </div>
 
         <!-- Timesheet History Table -->
-        <div class="card p-3 border-0 shadow-sm">
-          <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-            <h5 class="fw-bold m-0 text-dark">Duty History &amp; Attendance Logs</h5>
-            <button class="btn btn-sm btn-outline-primary" (click)="loadTimesheets()">
-              <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span> Refresh
-            </button>
+        <div class="cms-card">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3>Duty History &amp; Attendance Logs</h3>
+              <span class="count-badge" *ngIf="timesheetList.length > 0">{{ timesheetList.length }} Records</span>
+            </div>
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-outline" (click)="loadTimesheets()">
+                <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
-          <div class="empty-state text-center p-5 text-muted" *ngIf="timesheetList.length === 0">
-            <span class="material-symbols-outlined display-4 text-muted mb-2">receipt_long</span>
-            <h6>No timesheet records found</h6>
-            <p class="small text-muted">Completed shifts with attendance logs will appear here for payroll calculation.</p>
+          <div class="empty-state-card" *ngIf="timesheetList.length === 0">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">receipt_long</span>
+            </div>
+            <h3>No Timesheet Records Found</h3>
+            <p>Completed shifts with attendance logs will appear here for payroll calculation.</p>
           </div>
 
           <div class="table-responsive" *ngIf="timesheetList.length > 0">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light small">
+            <table class="cms-table">
+              <thead>
                 <tr>
                   <th>Shift / Site</th>
                   <th>Date</th>
@@ -303,25 +1304,25 @@ import { ToastService } from '../../../core/services/toast.service';
               <tbody>
                 <tr *ngFor="let t of timesheetList">
                   <td>
-                    <div class="fw-bold text-primary">{{ t.siteName }}</div>
-                    <div class="small text-muted font-monospace">{{ t.shiftCode }} &bull; {{ t.postName }}</div>
+                    <div class="venue-cell-title">{{ t.siteName }}</div>
+                    <div class="venue-cell-sub">{{ t.shiftCode }} &bull; {{ t.postName }}</div>
                   </td>
-                  <td class="small fw-semibold">{{ t.startsAtUtc | date:'dd MMM yyyy' }}</td>
-                  <td class="small">{{ t.startsAtUtc | date:'HH:mm' }} - {{ t.endsAtUtc | date:'HH:mm' }}</td>
-                  <td class="small">
-                    <span *ngIf="t.clockInUtc" class="text-success fw-semibold">{{ t.clockInUtc | date:'HH:mm' }}</span>
+                  <td>{{ t.startsAtUtc | date:'dd MMM yyyy' }}</td>
+                  <td>{{ t.startsAtUtc | date:'HH:mm' }} - {{ t.endsAtUtc | date:'HH:mm' }}</td>
+                  <td>
+                    <span *ngIf="t.clockInUtc" class="text-success fw-bold">{{ t.clockInUtc | date:'HH:mm' }}</span>
                     <span *ngIf="!t.clockInUtc" class="text-muted">—</span>
                     to
-                    <span *ngIf="t.clockOutUtc" class="text-success fw-semibold">{{ t.clockOutUtc | date:'HH:mm' }}</span>
+                    <span *ngIf="t.clockOutUtc" class="text-success fw-bold">{{ t.clockOutUtc | date:'HH:mm' }}</span>
                     <span *ngIf="!t.clockOutUtc" class="text-muted">—</span>
                   </td>
-                  <td class="small">{{ t.actualDurationHours || t.plannedDurationHours }} hrs</td>
-                  <td class="small text-muted">{{ currencySymbol }}{{ t.hourlyPayRate || 10 }}/hr</td>
+                  <td>{{ t.actualDurationHours || t.plannedDurationHours }} hrs</td>
+                  <td>{{ currencySymbol }}{{ t.hourlyPayRate || 10 }}/hr</td>
                   <td>
-                    <span *ngIf="t.fineAttached" class="badge bg-danger">
+                    <span *ngIf="t.fineAttached" class="badge-fine-negative">
                       -{{ currencySymbol }}{{ t.fineAmount || 0 }} ({{ t.fineReason || 'Fine' }})
                     </span>
-                    <span *ngIf="!t.fineAttached" class="badge bg-light text-muted">None</span>
+                    <span *ngIf="!t.fineAttached" class="badge-fine-zero">None</span>
                   </td>
                   <td class="text-end fw-bold text-success">
                     {{ currencySymbol }}{{ getShiftNetPay(t) | number:'1.2-2' }}
@@ -335,11 +1336,15 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 4: TIME OFF & LEAVE -->
       <div *ngIf="activeTab === 'leave' && !isLoading">
-        <div class="row g-4">
-          <div class="col-md-5">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-primary">Request Time Off</h5>
-              <div class="mb-3">
+        <div class="workspace-grid-2col">
+          <!-- Request Form Card -->
+          <div class="cms-card">
+            <div class="card-header-simple">
+              <span class="material-symbols-outlined text-primary">flight_takeoff</span>
+              <h3>Request Time Off</h3>
+            </div>
+            <div class="card-body-form">
+              <div class="form-group mb-3">
                 <label class="form-label">Leave Type *</label>
                 <select class="form-select" [(ngModel)]="leaveType">
                   <option value="Annual">Annual Leave</option>
@@ -348,64 +1353,80 @@ import { ToastService } from '../../../core/services/toast.service';
                   <option value="Unpaid">Unpaid Leave</option>
                 </select>
               </div>
-              <div class="row g-2 mb-3">
-                <div class="col-6">
+              <div class="form-row-2 mb-3">
+                <div class="form-group">
                   <label class="form-label">Start Date *</label>
                   <input type="date" class="form-control" [(ngModel)]="leaveStartDate" />
                 </div>
-                <div class="col-6">
+                <div class="form-group">
                   <label class="form-label">End Date *</label>
                   <input type="date" class="form-control" [(ngModel)]="leaveEndDate" />
                 </div>
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Reason / Notes</label>
-                <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Describe the reason for your leave request"></textarea>
+                <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Describe the reason for your leave request..."></textarea>
               </div>
-              <button class="btn btn-primary w-100" (click)="submitLeave()" [disabled]="!leaveStartDate || !leaveEndDate">
-                Submit Leave Request
-              </button>
+              <div class="form-actions mt-3">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="submitLeave()"
+                  [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                  <span class="material-symbols-outlined">send</span>
+                  <span>Submit Leave Request</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="col-md-7">
-            <div class="card p-3 shadow-sm border-0">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="fw-bold m-0 text-dark">My Leave Requests</h5>
-                <button class="btn btn-sm btn-outline-primary" (click)="loadLeaveRequests()">
-                  <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span> Refresh
+          <!-- My Leave Requests Card -->
+          <div class="cms-card">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <h3>My Leave Requests</h3>
+                <span class="count-badge" *ngIf="leaveList.length > 0">{{ leaveList.length }}</span>
+              </div>
+              <div class="toolbar-right">
+                <button type="button" class="btn btn-outline" (click)="loadLeaveRequests()">
+                  <span class="material-symbols-outlined">refresh</span>
                 </button>
               </div>
+            </div>
 
-              <div class="table-responsive" *ngIf="leaveList.length > 0">
-                <table class="table table-hover align-middle">
-                  <thead class="table-light small">
-                    <tr>
-                      <th>Type</th>
-                      <th>Dates</th>
-                      <th>Days</th>
-                      <th>Status</th>
-                      <th>Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let l of leaveList">
-                      <td class="fw-semibold">{{ l.leaveType }}</td>
-                      <td class="small">{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }}</td>
-                      <td class="small">{{ l.totalDays }} day(s)</td>
-                      <td>
-                        <span class="badge" [class.bg-warning]="l.status === 'Pending'" [class.bg-success]="l.status === 'Approved'" [class.bg-danger]="l.status === 'Rejected'" [class.text-dark]="l.status === 'Pending'">
-                          {{ l.status }}
-                        </span>
-                      </td>
-                      <td class="small text-muted">{{ l.reason || '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div class="empty-state-card" *ngIf="leaveList.length === 0">
+              <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">event_busy</span>
               </div>
-              <div class="empty-state text-center p-4 text-muted" *ngIf="leaveList.length === 0">
-                No leave requests logged yet.
-              </div>
+              <h3>No Leave Requests</h3>
+              <p>You have no submitted time off requests logged yet.</p>
+            </div>
+
+            <div class="table-responsive" *ngIf="leaveList.length > 0">
+              <table class="cms-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Dates</th>
+                    <th>Days</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let l of leaveList">
+                    <td><span class="badge-station">{{ l.leaveType }}</span></td>
+                    <td>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }}</td>
+                    <td>{{ l.totalDays }} day(s)</td>
+                    <td>
+                      <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                        {{ l.status }}
+                      </span>
+                    </td>
+                    <td class="text-muted">{{ l.reason || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -413,11 +1434,15 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 5: COMPLIANCE VAULT -->
       <div *ngIf="activeTab === 'documents' && !isLoading">
-        <div class="row g-4">
-          <div class="col-md-5">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-primary">Upload Document</h5>
-              <div class="mb-3">
+        <div class="workspace-grid-2col">
+          <!-- Upload Form Card -->
+          <div class="cms-card">
+            <div class="card-header-simple">
+              <span class="material-symbols-outlined text-primary">upload_file</span>
+              <h3>Upload Compliance Document</h3>
+            </div>
+            <div class="card-body-form">
+              <div class="form-group mb-3">
                 <label class="form-label">Document Type *</label>
                 <select class="form-select" [(ngModel)]="docForm.documentType">
                   <option value="SiaLicense">SIA Security License</option>
@@ -428,49 +1453,157 @@ import { ToastService } from '../../../core/services/toast.service';
                   <option value="Other">Other Compliance Document</option>
                 </select>
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Document Name *</label>
                 <input type="text" class="form-control" [(ngModel)]="docForm.documentName" placeholder="e.g. SIA Door Supervisor Badge #1002" />
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Expiry Date</label>
                 <input type="date" class="form-control" [(ngModel)]="docForm.expiryDateUtc" />
               </div>
-              <div class="mb-3">
-                <label class="form-label">Document / File URL *</label>
-                <input type="text" class="form-control" [(ngModel)]="docForm.fileUrl" placeholder="https://..." />
+              <!-- Document Source Selection: Cloudinary File Upload OR Direct URL -->
+              <div class="form-group mb-3">
+                <div class="source-toggle-header">
+                  <label class="form-label m-0">Document Attachment *</label>
+                  <div class="source-toggle-pills">
+                    <button
+                      type="button"
+                      class="source-pill"
+                      [class.active]="docUploadMode === 'file'"
+                      (click)="docUploadMode = 'file'">
+                      <span class="material-symbols-outlined">upload_file</span>
+                      <span>Upload File</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="source-pill"
+                      [class.active]="docUploadMode === 'url'"
+                      (click)="docUploadMode = 'url'">
+                      <span class="material-symbols-outlined">link</span>
+                      <span>Direct URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 1. Direct File Upload Dropzone (Cloudinary) -->
+                <div *ngIf="docUploadMode === 'file'" class="doc-dropzone" (click)="docFileInput.click()">
+                  <input
+                    #docFileInput
+                    type="file"
+                    (change)="onDocumentFileSelected($event)"
+                    accept="image/*,.pdf,.doc,.docx"
+                    style="display: none;" />
+
+                  <!-- Empty state / Click to upload -->
+                  <div *ngIf="!docForm.fileUrl && !isUploadingDoc" class="dropzone-empty">
+                    <div class="dropzone-icon">
+                      <span class="material-symbols-outlined">cloud_upload</span>
+                    </div>
+                    <div class="dropzone-instructions">
+                      <strong>Choose a file or click to browse</strong>
+                      <span>Supports PDF, PNG, JPG, or DOC up to 10MB (Cloudinary Secured)</span>
+                    </div>
+                  </div>
+
+                  <!-- Uploading spinner state -->
+                  <div *ngIf="isUploadingDoc" class="dropzone-uploading">
+                    <span class="material-symbols-outlined spin text-primary">sync</span>
+                    <span>Uploading securely to Cloudinary Vault...</span>
+                  </div>
+
+                  <!-- Uploaded file success card -->
+                  <div *ngIf="docForm.fileUrl && !isUploadingDoc" class="dropzone-file-card" (click)="$event.stopPropagation()">
+                    <div class="file-card-info">
+                      <span class="material-symbols-outlined text-green">verified</span>
+                      <div class="file-text">
+                        <div class="file-name">{{ uploadedDocFileName || 'Document Attached' }}</div>
+                        <a [href]="docForm.fileUrl" target="_blank" class="file-preview-link">
+                          <span class="material-symbols-outlined">visibility</span>
+                          <span>Preview File</span>
+                        </a>
+                      </div>
+                    </div>
+                    <div class="file-card-actions">
+                      <button type="button" class="icon-action-btn" (click)="docFileInput.click()" title="Replace File">
+                        <span class="material-symbols-outlined">sync</span>
+                      </button>
+                      <button type="button" class="icon-action-btn text-danger" (click)="removeUploadedDoc()" title="Remove File">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Direct URL Input -->
+                <div *ngIf="docUploadMode === 'url'" class="url-input-container">
+                  <div class="url-input-group">
+                    <input
+                      type="url"
+                      class="form-control"
+                      [(ngModel)]="docForm.fileUrl"
+                      placeholder="https://res.cloudinary.com/... or https://..." />
+                    <a *ngIf="docForm.fileUrl" [href]="docForm.fileUrl" target="_blank" class="btn-url-preview" title="Test URL">
+                      <span class="material-symbols-outlined">open_in_new</span>
+                    </a>
+                  </div>
+                  <span class="url-helper-text">Enter direct Cloudinary or hosted document URL</span>
+                </div>
               </div>
-              <button class="btn btn-primary w-100" (click)="saveDocument()" [disabled]="!docForm.documentName || !docForm.fileUrl">
-                Upload to Vault
-              </button>
+
+              <div class="form-actions mt-3">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="saveDocument()"
+                  [disabled]="isActionLoading || isUploadingDoc || !docForm.documentName || !docForm.fileUrl">
+                  <span class="material-symbols-outlined">verified_user</span>
+                  <span>Save to Compliance Vault</span>
+                </button>
+              </div>
             </div>
           </div>
-          <div class="col-md-7">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-dark">Verified Documents</h5>
-              <div class="table-responsive" *ngIf="docList.length > 0">
-                <table class="table table-hover align-middle">
-                  <thead class="table-light small">
-                    <tr>
-                      <th>Document</th>
-                      <th>Type</th>
-                      <th>Expiry</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let d of docList">
-                      <td class="fw-bold">{{ d.documentName }}</td>
-                      <td><span class="badge bg-light text-dark border">{{ d.documentType }}</span></td>
-                      <td class="small">{{ d.expiryDateUtc ? (d.expiryDateUtc | date:'shortDate') : 'No Expiry' }}</td>
-                      <td><span class="badge bg-success">Verified</span></td>
-                    </tr>
-                  </tbody>
-                </table>
+
+          <!-- Verified Vault Card -->
+          <div class="cms-card">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <h3>Verified Compliance Documents</h3>
+                <span class="count-badge" *ngIf="docList.length > 0">{{ docList.length }}</span>
               </div>
-              <div class="empty-state text-center p-4 text-muted" *ngIf="docList.length === 0">
-                No documents uploaded yet.
+              <div class="toolbar-right">
+                <button type="button" class="btn btn-outline" (click)="loadDocuments()">
+                  <span class="material-symbols-outlined">refresh</span>
+                </button>
               </div>
+            </div>
+
+            <div class="empty-state-card" *ngIf="docList.length === 0">
+              <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">folder_off</span>
+              </div>
+              <h3>No Documents Uploaded</h3>
+              <p>Upload your SIA badge and proof of right to work to stay compliant on all shifts.</p>
+            </div>
+
+            <div class="table-responsive" *ngIf="docList.length > 0">
+              <table class="cms-table">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of docList">
+                    <td><strong class="text-dark">{{ d.documentName }}</strong></td>
+                    <td><span class="badge-station">{{ d.documentType }}</span></td>
+                    <td>{{ d.expiryDateUtc ? (d.expiryDateUtc | date:'dd MMM yyyy') : 'No Expiry' }}</td>
+                    <td><span class="status-pill status-active">Verified</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -478,15 +1611,19 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 6: MY AVAILABILITY -->
       <div *ngIf="activeTab === 'availability' && !isLoading">
-        <div class="row g-4">
-          <div class="col-md-5">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-primary">Log My Availability</h5>
-              <div class="mb-3">
+        <div class="workspace-grid-2col">
+          <!-- Availability Form Card -->
+          <div class="cms-card">
+            <div class="card-header-simple">
+              <span class="material-symbols-outlined text-primary">event_available</span>
+              <h3>Log My Availability</h3>
+            </div>
+            <div class="card-body-form">
+              <div class="form-group mb-3">
                 <label class="form-label">Target Date *</label>
                 <input type="date" class="form-control" [(ngModel)]="availForm.targetDate" />
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Availability State *</label>
                 <select class="form-select" [(ngModel)]="availForm.state">
                   <option value="Available">Available (Full Day)</option>
@@ -494,55 +1631,78 @@ import { ToastService } from '../../../core/services/toast.service';
                   <option value="PartlyUnavailable">Partly Unavailable (Time Slots)</option>
                 </select>
               </div>
-              <div class="row g-2 mb-3" *ngIf="availForm.state === 'PartlyUnavailable'">
-                <div class="col-6">
+              <div class="form-row-2 mb-3" *ngIf="availForm.state === 'PartlyUnavailable'">
+                <div class="form-group">
                   <label class="form-label">From Time</label>
                   <input type="time" class="form-control" [(ngModel)]="availForm.unavailableFromTime" />
                 </div>
-                <div class="col-6">
+                <div class="form-group">
                   <label class="form-label">To Time</label>
                   <input type="time" class="form-control" [(ngModel)]="availForm.unavailableToTime" />
                 </div>
               </div>
-              <div class="mb-3">
+              <div class="form-group mb-3">
                 <label class="form-label">Reason / Notes</label>
-                <textarea class="form-control" rows="2" [(ngModel)]="availForm.reason" placeholder="e.g. University lectures, family commitment"></textarea>
+                <textarea class="form-control" rows="2" [(ngModel)]="availForm.reason" placeholder="e.g. University lectures, family commitment..."></textarea>
               </div>
-              <button class="btn btn-primary w-100" (click)="saveAvailability()" [disabled]="!availForm.targetDate">
-                Save Availability
-              </button>
+              <div class="form-actions mt-3">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="saveAvailability()"
+                  [disabled]="isActionLoading || !availForm.targetDate">
+                  <span class="material-symbols-outlined">save</span>
+                  <span>Save Availability</span>
+                </button>
+              </div>
             </div>
           </div>
-          <div class="col-md-7">
-            <div class="card p-3 shadow-sm border-0">
-              <h5 class="fw-bold mb-3 text-dark">Upcoming Availability Logs</h5>
-              <div class="table-responsive" *ngIf="availList.length > 0">
-                <table class="table table-hover align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Date</th>
-                      <th>Status</th>
-                      <th>Window</th>
-                      <th>Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let a of availList">
-                      <td class="fw-bold">{{ a.targetDate | date:'dd MMM yyyy' }}</td>
-                      <td>
-                        <span class="badge" [class.bg-success]="a.state === 'Available'" [class.bg-danger]="a.state === 'Unavailable'" [class.bg-warning]="a.state === 'PartlyUnavailable'" [class.text-dark]="a.state === 'PartlyUnavailable'">
-                          {{ a.state }}
-                        </span>
-                      </td>
-                      <td class="small">{{ a.unavailableFromTime ? a.unavailableFromTime + ' - ' + a.unavailableToTime : 'Full Day' }}</td>
-                      <td class="small text-muted">{{ a.reason || '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+
+          <!-- Availability Logs Card -->
+          <div class="cms-card">
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <h3>Upcoming Availability Logs</h3>
+                <span class="count-badge" *ngIf="availList.length > 0">{{ availList.length }}</span>
               </div>
-              <div class="empty-state text-center p-4 text-muted" *ngIf="availList.length === 0">
-                No availability logs recorded yet.
+              <div class="toolbar-right">
+                <button type="button" class="btn btn-outline" (click)="loadAvailability()">
+                  <span class="material-symbols-outlined">refresh</span>
+                </button>
               </div>
+            </div>
+
+            <div class="empty-state-card" *ngIf="availList.length === 0">
+              <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">calendar_today</span>
+              </div>
+              <h3>No Availability Logs</h3>
+              <p>Log your preferred working days or unavailable slots to assist rota planners.</p>
+            </div>
+
+            <div class="table-responsive" *ngIf="availList.length > 0">
+              <table class="cms-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Window</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let a of availList">
+                    <td><strong>{{ a.targetDate | date:'dd MMM yyyy' }}</strong></td>
+                    <td>
+                      <span class="status-pill" [ngClass]="a.state === 'Available' ? 'status-active' : (a.state === 'Unavailable' ? 'status-danger' : 'status-pending')">
+                        {{ a.state }}
+                      </span>
+                    </td>
+                    <td>{{ a.unavailableFromTime ? a.unavailableFromTime + ' - ' + a.unavailableToTime : 'Full Day' }}</td>
+                    <td class="text-muted">{{ a.reason || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -550,154 +1710,1913 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <!-- TAB 7: SHIFT REMINDERS -->
       <div *ngIf="activeTab === 'reminders' && !isLoading">
-        <div class="card p-4 shadow-sm border-0" style="max-width: 700px; margin: 0 auto;">
-          <h5 class="fw-bold text-primary mb-2">Shift Readiness &amp; Departure Reminders</h5>
-          <p class="text-muted small mb-4">
-            Customize notification intervals before each shift. Choose the channels that ensure you never miss duty call.
-          </p>
-          <div class="row g-3 mb-4">
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Slot 1 Reminder</label>
-              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot1Minutes">
-                <option [ngValue]="1440">24 hours before</option>
-                <option [ngValue]="720">12 hours before</option>
-                <option [ngValue]="360">6 hours before</option>
-                <option [ngValue]="0">Disabled</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Slot 2 Reminder</label>
-              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot2Minutes">
-                <option [ngValue]="240">4 hours before</option>
-                <option [ngValue]="120">2 hours before</option>
-                <option [ngValue]="60">1 hour before</option>
-                <option [ngValue]="0">Disabled</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Slot 3 Reminder</label>
-              <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot3Minutes">
-                <option [ngValue]="45">45 mins before</option>
-                <option [ngValue]="30">30 mins before</option>
-                <option [ngValue]="15">15 mins before</option>
-                <option [ngValue]="0">Disabled</option>
-              </select>
+        <div class="cms-card">
+          <div class="card-header-simple">
+            <span class="material-symbols-outlined text-primary">notifications_active</span>
+            <div>
+              <h3>Shift Readiness &amp; Departure Reminders</h3>
+              <p class="card-sub-text">Customize notification intervals and channels before each shift so you never miss a duty call.</p>
             </div>
           </div>
-
-          <div class="mb-4">
-            <label class="form-label fw-bold mb-2">Delivery Channels</label>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="prefInApp" [(ngModel)]="reminderPrefs.allowInApp" />
-              <label class="form-check-label" for="prefInApp">In-App Notification Alerts</label>
-            </div>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="prefEmail" [(ngModel)]="reminderPrefs.allowEmail" />
-              <label class="form-check-label" for="prefEmail">Email Departure Alerts</label>
-            </div>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="prefWhatsApp" [(ngModel)]="reminderPrefs.allowWhatsApp" />
-              <label class="form-check-label" for="prefWhatsApp">WhatsApp Dispatch Reminders</label>
-            </div>
-          </div>
-
-          <button class="btn btn-primary" (click)="saveReminderPreferences()">
-            Save Preferences
-          </button>
-        </div>
-      </div>
-
-      <!-- Swap Modal -->
-      <div class="modal fade show d-block" *ngIf="showSwapModal" style="background: rgba(0,0,0,0.5)">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Request Shift Swap / Cover</h5>
-              <button type="button" class="btn-close" (click)="showSwapModal = false"></button>
-            </div>
-            <div class="modal-body">
-              <p class="small text-muted mb-3">
-                Request a swap for your shift at <strong>{{ selectedShift?.siteName }}</strong> on {{ selectedShift?.startsAtUtc | date:'mediumDate' }}.
-              </p>
-              <div class="mb-3">
-                <label class="form-label">Reason for Swap</label>
-                <textarea class="form-control" rows="3" [(ngModel)]="swapReason" placeholder="e.g. Family emergency, university exam"></textarea>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-outline-secondary" (click)="showSwapModal = false">Cancel</button>
-              <button class="btn btn-primary" (click)="submitSwap()" [disabled]="!swapReason">Submit Swap Request</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Leave Request Modal -->
-      <div class="modal fade show d-block" *ngIf="showLeaveModal" style="background: rgba(0,0,0,0.5)">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Submit Leave Request</h5>
-              <button type="button" class="btn-close" (click)="showLeaveModal = false"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Leave Type</label>
-                <select class="form-select" [(ngModel)]="leaveType">
-                  <option value="Annual">Annual Leave</option>
-                  <option value="Sick">Sick Leave</option>
-                  <option value="Compassionate">Compassionate Leave</option>
-                  <option value="Unpaid">Unpaid Leave</option>
+          <div class="card-body-form">
+            <div class="form-row-3 mb-4">
+              <div class="form-group">
+                <label class="form-label">Slot 1 Reminder</label>
+                <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot1Minutes">
+                  <option [ngValue]="1440">24 hours before</option>
+                  <option [ngValue]="720">12 hours before</option>
+                  <option [ngValue]="360">6 hours before</option>
+                  <option [ngValue]="0">Disabled</option>
                 </select>
               </div>
-              <div class="row">
-                <div class="col-6 mb-3">
-                  <label class="form-label">Start Date</label>
-                  <input type="date" class="form-control" [(ngModel)]="leaveStartDate">
-                </div>
-                <div class="col-6 mb-3">
-                  <label class="form-label">End Date</label>
-                  <input type="date" class="form-control" [(ngModel)]="leaveEndDate">
-                </div>
+              <div class="form-group">
+                <label class="form-label">Slot 2 Reminder</label>
+                <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot2Minutes">
+                  <option [ngValue]="240">4 hours before</option>
+                  <option [ngValue]="120">2 hours before</option>
+                  <option [ngValue]="60">1 hour before</option>
+                  <option [ngValue]="0">Disabled</option>
+                </select>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Reason</label>
-                <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Optional notes for supervisor"></textarea>
+              <div class="form-group">
+                <label class="form-label">Slot 3 Reminder</label>
+                <select class="form-select" [(ngModel)]="reminderPrefs.reminderSlot3Minutes">
+                  <option [ngValue]="45">45 mins before</option>
+                  <option [ngValue]="30">30 mins before</option>
+                  <option [ngValue]="15">15 mins before</option>
+                  <option [ngValue]="0">Disabled</option>
+                </select>
               </div>
             </div>
-            <div class="modal-footer">
-              <button class="btn btn-outline-secondary" (click)="showLeaveModal = false">Cancel</button>
-              <button class="btn btn-primary" (click)="submitLeave()" [disabled]="!leaveStartDate || !leaveEndDate">Submit Request</button>
+
+            <div class="mb-4">
+              <label class="form-label mb-2">Delivery Channels</label>
+              <div class="toggles-grid">
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <span class="material-symbols-outlined text-primary">notifications</span>
+                    <div>
+                      <div class="toggle-title">In-App Notification Alerts</div>
+                      <div class="toggle-desc">Instant web &amp; mobile notifications when shifts are assigned</div>
+                    </div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="reminderPrefs.allowInApp" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <span class="material-symbols-outlined text-blue">mail</span>
+                    <div>
+                      <div class="toggle-title">Email Departure Alerts</div>
+                      <div class="toggle-desc">Receive departure reminder emails with venue address</div>
+                    </div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="reminderPrefs.allowEmail" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <span class="material-symbols-outlined text-green">chat</span>
+                    <div>
+                      <div class="toggle-title">WhatsApp Dispatch Reminders</div>
+                      <div class="toggle-desc">Automated WhatsApp ping with 1-tap clock-in link</div>
+                    </div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="reminderPrefs.allowWhatsApp" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
             </div>
+
+            <div class="form-actions mt-4">
+              <button type="button" class="btn btn-primary" (click)="saveReminderPreferences()">
+                <span class="material-symbols-outlined">save</span>
+                <span>Save Notification Preferences</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Swap Modal (Custom BCC Modal) -->
+      <div class="modal-backdrop-custom" *ngIf="showSwapModal" (click)="showSwapModal = false">
+        <div class="modal-card-custom" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">swap_horiz</span>
+              <div>
+                <h3>Request Shift Swap / Cover</h3>
+                <p class="modal-subtitle">Offer your shift to eligible colleagues on the team roster</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showSwapModal = false">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <p class="small text-muted m-0">
+              Request cover for your duty at <strong>{{ selectedShift?.facilityName || selectedShift?.siteName }}</strong> on {{ selectedShift?.startsAtUtc | date:'mediumDate' }}.
+            </p>
+            <div class="form-group">
+              <label class="form-label">Reason for Swap *</label>
+              <textarea class="form-control" rows="3" [(ngModel)]="swapReason" placeholder="e.g. Family emergency, university exam, illness..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-outline" (click)="showSwapModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="submitSwap()" [disabled]="!swapReason">
+              <span>Submit Swap Request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leave Request Modal (Custom BCC Modal) -->
+      <div class="modal-backdrop-custom" *ngIf="showLeaveModal" (click)="showLeaveModal = false">
+        <div class="modal-card-custom" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">flight_takeoff</span>
+              <div>
+                <h3>Submit Leave Request</h3>
+                <p class="modal-subtitle">Request annual leave, sickness, or time off approval</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showLeaveModal = false">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <div class="form-group mb-3">
+              <label class="form-label">Leave Type *</label>
+              <select class="form-select" [(ngModel)]="leaveType">
+                <option value="Annual">Annual Leave</option>
+                <option value="Sick">Sick Leave</option>
+                <option value="Compassionate">Compassionate Leave</option>
+                <option value="Unpaid">Unpaid Leave</option>
+              </select>
+            </div>
+            <div class="form-row-2 mb-3">
+              <div class="form-group">
+                <label class="form-label">Start Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="leaveStartDate" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">End Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="leaveEndDate" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason / Notes</label>
+              <textarea class="form-control" rows="3" [(ngModel)]="leaveReason" placeholder="Optional notes for supervisor..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-outline" (click)="showLeaveModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="submitLeave()" [disabled]="!leaveStartDate || !leaveEndDate">
+              <span>Submit Request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Info & Shift Operations Guide Modal -->
+      <div class="modal-backdrop-custom" *ngIf="showInfoModal" (click)="showInfoModal = false">
+        <div class="modal-card-custom" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">info</span>
+              <div>
+                <h3>Personal Shift &amp; Rota Guide</h3>
+                <p class="modal-subtitle">Operational policies, take-home pay estimations, and attendance compliance rules.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="showInfoModal = false">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-blue">event_upcoming</span> 1-Tap Shift Confirmations</h4>
+              <p>
+                When a new rota duty is published, your shift enters the acceptance countdown. Confirming your shift in 1 tap secures your roster post and notifies your duty manager.
+              </p>
+            </div>
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-green">account_balance_wallet</span> Estimated Take-Home Pay &amp; Holiday Accrual</h4>
+              <p>
+                Take-home earnings reflect your planned shift hours multiplied by your hourly rate minus standard statutory withholdings. Statutory holiday pay automatically accrues at the standard 12.07% rate per duty hour.
+              </p>
+            </div>
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-purple">share</span> Peer Shift Swaps &amp; Open Board</h4>
+              <p>
+                Need duty cover? You can offer any assigned shift to qualified teammates on the Open Shifts board. Once claimed by a colleague, it is routed to your supervisor for final confirmation.
+              </p>
+            </div>
+            <div class="info-guide-section">
+              <h4><span class="material-symbols-outlined text-teal">fingerprint</span> Geofenced Duty Clock-In</h4>
+              <p>
+                Attendance check-in validates device GPS coordinates against the venue's site perimeter. Clock in upon arrival at post to unlock workstation tools.
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Got it</button>
           </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .my-shifts-page {
-      padding: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
+    .bcp-page-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 0 4px 32px 4px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .analytics-tab-container,
+    .shifts-tab-container {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      width: 100%;
+    }
+    .mb-4 {
+      margin-bottom: 28px !important;
+    }
+    .mb-3 {
+      margin-bottom: 20px !important;
+    }
+
+    /* Page Header */
     .page-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 16px;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
-    .page-title {
-      font-size: 22px;
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
       font-weight: 800;
       color: #0f172a;
-      letter-spacing: -0.4px;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .info-trigger-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+    .info-trigger-btn:hover { color: #0050e5; }
+    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
+    .header-actions { display: flex; gap: 12px; }
+
+    /* Sub-Nav Pill Tabs (Horizontal Scrolling with Edge Glow and Arrows) */
+    .subnav-scroll-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .bcp-subnav-tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 4px 10px 4px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: #0050e5 #f1f5f9;
+    }
+    /* Sweet & Noticeable Styled Scrollbar */
+    .bcp-subnav-tabs::-webkit-scrollbar {
+      height: 5px;
+      display: block;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 6px;
+      margin: 0 4px;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #0050e5, #3b82f6);
+      border-radius: 6px;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-thumb:hover {
+      background: #003ebd;
+    }
+
+    .subnav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      scroll-snap-align: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .subnav-tab:hover {
+      background: #f8fafc;
+      border-color: #0050e5;
+      color: #0050e5;
+      transform: translateY(-1px);
+    }
+    .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 4px 12px rgba(0,80,229,0.3);
+    }
+    .subnav-tab .material-symbols-outlined { font-size: 18px; }
+    .subnav-tab.position-relative {
+      position: relative;
+    }
+    .tab-badge,
+    .tab-badge-sup {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.35);
+      vertical-align: super;
+      transform: translateY(-2px);
+      margin-left: 6px;
+    }
+    .subnav-tab.active .tab-badge,
+    .subnav-tab.active .tab-badge-sup {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    }
+
+    /* Scroll Arrow Buttons & Edge Glow */
+    .subnav-arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-60%);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #0050e5;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+    .subnav-arrow-btn:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .subnav-arrow-btn.left { left: -4px; }
+    .subnav-arrow-btn.right { right: -4px; }
+
+    .scroll-edge-glow {
+      position: absolute;
+      top: 0;
+      bottom: 10px;
+      width: 48px;
+      display: flex;
+      align-items: center;
+      pointer-events: auto;
+      cursor: pointer;
+      z-index: 8;
+    }
+    .scroll-edge-glow.right {
+      right: 0;
+      justify-content: flex-end;
+      padding-right: 6px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.85) 40%, #ffffff 100%);
+    }
+    .scroll-edge-glow.left {
+      left: 0;
+      justify-content: flex-start;
+      padding-left: 6px;
+      background: linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.85) 60%, transparent 100%);
+    }
+    .scroll-cue-chevron {
+      font-size: 18px;
+      color: #0050e5;
+      background: #eff6ff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,80,229,0.2);
+      animation: bounceH 1.8s infinite;
+    }
+    @keyframes bounceH {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(3px); }
+    }
+
+    /* Top Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px !important;
+    }
+    .metric-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-icon .material-symbols-outlined { font-size: 22px; }
+    .bg-blue { background: #eff6ff; color: #0050e5; }
+    .bg-green { background: #f0fdf4; color: #16a34a; }
+    .bg-teal { background: #f0fdfa; color: #0d9488; }
+    .bg-purple { background: #faf5ff; color: #9333ea; }
+    .card-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .chip-blue { background: #eff6ff; color: #0050e5; }
+    .chip-teal { background: #f0fdf4; color: #16a34a; }
+    .chip-amber { background: #fffbeb; color: #d97706; }
+    .chip-purple { background: #faf5ff; color: #9333ea; }
+    .card-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+    .card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .card-progress-track {
+      height: 4px;
+      background: #f1f5f9;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .card-progress-bar { height: 100%; border-radius: 2px; }
+    .card-sub-info {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .btn-confirm-inline {
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-confirm-inline:hover { background: #15803d; }
+
+    /* Monthly Rota Calendar Card */
+    .rota-calendar-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .calendar-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cal-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-cal-nav {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.2s;
+    }
+    .btn-cal-nav:hover { background: #0050e5; color: #fff; border-color: #0050e5; }
+    .cal-month-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
       margin: 0;
     }
-    .text-muted {
-      color: #64748b !important;
-      font-size: 13.5px;
+    .cal-action-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: #1e3a8a;
+    }
+    .btn-clockin-mini {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0050e5;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      margin-left: 6px;
+    }
+    .btn-clockin-mini:hover { background: #003ebd; }
+
+    /* Calendar Grid */
+    .calendar-grid-container {
+      border: 1px solid #f1f5f9;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .cal-weekdays-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .weekday-cell {
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cal-days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #fff;
+    }
+    .cal-day-cell {
+      min-height: 92px;
+      padding: 8px;
+      border-right: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .cal-day-cell:nth-child(7n) { border-right: none; }
+    .cal-day-cell:hover {
+      background: #f8fafc;
+      box-shadow: inset 0 0 0 1.5px #0050e5;
+      z-index: 2;
+    }
+    .cal-day-cell.is-selected {
+      background: #eff6ff !important;
+      box-shadow: inset 0 0 0 2px #0050e5 !important;
+      z-index: 3;
+    }
+    .cal-day-cell.other-month { background: #fafafa; opacity: 0.45; }
+    .cal-day-cell.today { background: #eff6ff; }
+    .cal-day-cell.has-shift { background: #f0f7ff; }
+    .day-cell-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .day-number {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .cal-day-cell.today .day-number {
+      color: #0050e5;
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: #bfdbfe;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 22px;
+    }
+    .day-indicators {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .indicator-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .dot-shift { background: #0050e5; }
+    .dot-leave { background: #f59e0b; }
+    .day-shifts,
+    .day-leaves {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .shift-pill-badge {
+      background: #0050e5;
+      color: #ffffff;
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .badge-time { font-weight: 700; }
+    .badge-site { font-size: 9.5px; opacity: 0.85; }
+    .leave-pill-badge {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .leave-pill-badge.leave-approved {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    .leave-pill-badge.leave-pending {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+    }
+    .badge-leave-icon { font-size: 11px; }
+    .badge-leave-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cell-hover-hint {
+      display: none;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #0050e5;
+      margin-top: auto;
+      text-align: center;
+      padding-top: 4px;
+    }
+    .cal-day-cell:hover .cell-hover-hint {
+      display: block;
+    }
+
+    /* Day Activity & Details Modal (Spacious Full Page Modal) */
+    .day-details-modal {
+      max-width: 1240px !important;
+      width: 95vw !important;
+      height: 88vh !important;
+      max-height: 92vh !important;
+      display: flex;
+      flex-direction: column;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+      transition: all 0.25s ease-in-out;
+    }
+    .day-details-modal.maximized {
+      max-width: 100vw !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+    .btn-icon-custom {
+      background: none;
+      border: none;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-icon-custom:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-icon-custom .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .day-modal-icon {
+      font-size: 28px;
+    }
+    .badge-day-today {
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    /* Dedicated Full-Page Day Schedule View */
+    .day-detail-page-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+    .day-page-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .day-page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 28px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #ffffff;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .day-page-title-group h3 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .day-page-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+    }
+    .day-page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .day-page-body {
+      padding: 28px;
+    }
+    .day-page-columns {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .day-page-columns {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+    .day-page-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 28px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .day-details-modal .modal-header-custom {
+      padding: 20px 28px;
+      flex-shrink: 0;
+    }
+    .day-details-modal .modal-body-scrollable {
+      flex: 1 1 auto;
+      max-height: none !important;
+      overflow-y: auto;
+      padding: 24px 28px;
+    }
+    .day-quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 24px !important;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .day-quick-actions .btn {
+      padding: 8px 16px !important;
+      font-size: 12.5px !important;
+      border-radius: 9px !important;
+      margin: 0 !important;
+    }
+    .btn-sm {
+      padding: 8px 16px !important;
+      font-size: 12.5px !important;
+      border-radius: 8px !important;
+      gap: 6px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+    .btn-sm .material-symbols-outlined { font-size: 17px !important; }
+    .btn-xs {
+      padding: 6px 12px !important;
+      font-size: 11.5px !important;
+      border-radius: 7px !important;
+      gap: 4px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+    .btn-outline-primary {
+      background: #eff6ff !important;
+      color: #0050e5 !important;
+      border: 1px solid #bfdbfe !important;
+      font-weight: 600 !important;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-outline-primary:hover {
+      background: #0050e5 !important;
+      color: #ffffff !important;
+      border-color: #0050e5 !important;
+    }
+
+    /* Quick In-Modal Excuse Form */
+    .quick-excuse-form-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      animation: modalSlide 0.2s ease-out;
+    }
+    .form-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .form-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .btn-close-sm {
+      background: none;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .btn-close-sm:hover { color: #0f172a; }
+    .duration-presets-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .presets-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .presets-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .preset-btn {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .preset-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+    }
+
+    /* Sections inside Modal */
+    .day-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .day-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .day-section-header h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .day-empty-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .day-empty-box .material-symbols-outlined { font-size: 26px; }
+    .day-empty-box .btn {
+      margin-left: auto !important;
+      flex-shrink: 0;
+      padding: 8px 16px !important;
+      font-size: 12.5px !important;
+      border-radius: 8px !important;
+    }
+    .empty-text-group {
+      min-width: 0;
+    }
+    .empty-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      margin: 0;
+    }
+    .empty-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .day-shifts-list,
+    .day-leaves-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .day-shift-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .day-shift-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .shift-code-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0050e5;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .day-shift-venue {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 2px 0 0 0;
+    }
+    .day-shift-post {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .day-shift-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #334155;
+      font-weight: 600;
+    }
+    .meta-icon { font-size: 16px; color: #64748b; }
+    .day-shift-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .day-leave-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .leave-date-span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 600;
+      margin: 4px 0;
+    }
+    .leave-date-span .material-symbols-outlined { font-size: 15px; color: #64748b; }
+    .leave-reason-text {
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+      background: #f8fafc;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    /* Dedicated Shift Analytics Styles */
+    .analytics-filter-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      margin-bottom: 28px !important;
+    }
+    .filter-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-heading {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .filter-subtext {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .filter-controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .current-working-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .active-range-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    .range-chip-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .range-chip-icon {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .range-date-text {
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+    }
+    .badge-default-month {
+      background: #0050e5;
+      color: #ffffff;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.2px;
+      margin-left: 4px;
+    }
+    .range-meta-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .shifts-count-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+    }
+    .chip-icon-sm {
+      font-size: 16px;
+      color: #64748b;
+    }
+    .btn-reset-month {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0050e5;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-reset-month:hover {
+      background: #eff6ff;
+      border-color: #0050e5;
+    }
+    .btn-reset-month .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .custom-range-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .range-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .range-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .form-control-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+    .range-sep {
+      color: #94a3b8;
+      font-weight: 700;
+    }
+
+    /* Analytics Charts Grid */
+    .analytics-charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px !important;
+    }
+    @media (max-width: 900px) {
+      .analytics-charts-grid { grid-template-columns: 1fr; }
+    }
+    .chart-panel-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .chart-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .chart-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chart-panel-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .chart-panel-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .chart-panel-body {
+      position: relative;
+      height: 270px;
+      width: 100%;
+    }
+    .chart-canvas-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .donut-center-metric {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .center-percentage {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1;
+    }
+    .center-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Venue Deployment Breakdown */
+    .venue-breakdown-body {
+      padding: 18px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .venue-breakdown-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .venue-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .venue-item-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .venue-item-name .material-symbols-outlined { font-size: 16px; color: #0050e5; }
+    .venue-item-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .venue-hours { color: #64748b; font-weight: 600; }
+    .venue-gross { color: #16a34a; font-weight: 700; }
+    .venue-progress-track {
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .venue-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0050e5, #38bdf8);
+      border-radius: 4px;
+      transition: width 0.4s ease-in-out;
+    }
+    .badge-top-venue {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid #bfdbfe;
+      margin-left: 6px;
+    }
+    .venue-shifts {
+      font-size: 11.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .venue-rate {
+      font-size: 11.5px;
+      color: #0050e5;
+      font-weight: 700;
+    }
+
+    /* Punctuality Pulse Strip Micro-Widget */
+    .punctuality-pulse-card {
+      padding: 18px 24px;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      margin-bottom: 28px !important;
+    }
+    .pulse-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .pulse-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pulse-heading {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .pulse-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .pulse-legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bead-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .bead-indicator.bead-green { background: #16a34a; }
+    .bead-indicator.bead-amber { background: #d97706; }
+    .bead-indicator.bead-red { background: #dc2626; }
+    .pulse-beads-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 6px 2px 8px 2px;
+      scrollbar-width: thin;
+    }
+    .pulse-bead-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 60px;
+      cursor: pointer;
+      transition: transform 0.15s ease-in-out;
+    }
+    .pulse-bead-item:hover {
+      transform: translateY(-2px);
+    }
+    .bead-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .bead-circle.bead-green {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1.5px solid #86efac;
+    }
+    .bead-circle.bead-amber {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1.5px solid #fde68a;
+    }
+    .bead-circle.bead-red {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1.5px solid #fca5a5;
+    }
+    .bead-icon { font-size: 18px; }
+    .bead-date {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .bead-status {
+      font-size: 9.5px;
+      color: #64748b;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .empty-pulse {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: #64748b;
+      padding: 12px 0;
+    }
+
+    /* Granularity Toggle */
+    .btn-group-granularity {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 2px;
+      border: 1px solid #e2e8f0;
+    }
+    .btn-granularity {
+      border: none;
+      background: transparent;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-granularity.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* Donut Metric Legend Chips */
+    .donut-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .donut-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+    }
+    .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .chip-dot.bg-blue { background: #0050e5; }
+    .chip-dot.bg-sky { background: #38bdf8; }
+    .chip-dot.bg-amber { background: #f59e0b; }
+    .chip-dot.bg-danger { background: #f87171; }
+    .chip-name { color: #64748b; font-weight: 600; }
+    .chip-val { color: #0f172a; font-weight: 800; }
+    .chip-pct { color: #64748b; font-size: 10.5px; }
+
+    /* Statement Filter Bar & Controls */
+    .statement-filters-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      background: #fafbfc;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .table-filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .filter-pill-btn {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .filter-pill-btn:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .filter-pill-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(0,80,229,0.2);
+    }
+    .table-search-box {
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 4px 10px;
+      gap: 6px;
+      width: 240px;
+    }
+    .table-search-box .search-icon {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+    .table-search-input {
+      border: none;
+      outline: none;
+      font-size: 12px;
+      width: 100%;
+      color: #0f172a;
+      background: transparent;
+    }
+    .search-clear-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #94a3b8;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+    }
+    .search-clear-btn .material-symbols-outlined { font-size: 14px; }
+    .clock-times-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11.5px;
+    }
+    .clock-in-val { font-weight: 700; color: #16a34a; }
+    .clock-in-val.text-amber { color: #d97706; }
+    .clock-out-val { color: #64748b; font-size: 11px; }
+    .statement-summary-footer-row {
+      background: #f8fafc;
+      border-top: 2px solid #e2e8f0;
+    }
+    .statement-summary-footer-row td {
+      padding: 12px 16px !important;
+      font-size: 12.5px;
+      color: #334155;
+    }
+    .summary-icon {
+      font-size: 16px;
+      color: #0050e5;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    .clickable-statement-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out;
+    }
+    .clickable-statement-row:hover {
+      background-color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .clickable-statement-row:hover {
+      background-color: #334155 !important;
+    }
+    .punctuality-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-green { background-color: #16a34a; }
+    .dot-amber { background-color: #d97706; }
+    .dot-red { background-color: #dc2626; }
+    .dot-gray { background-color: #94a3b8; }
+    .badge-duration {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    :host-context(.dark-mode) .badge-duration {
+      background: #0f172a;
+      color: #cbd5e1;
+      border-color: #334155;
+    }
+    .status-amber {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    @media print {
+      .page-header .header-actions,
+      .subnav-scroll-wrapper,
+      .analytics-filter-card .filter-controls-row,
+      .analytics-filter-card .filter-actions-right,
+      .statement-filters-bar,
+      .toolbar-right,
+      .btn {
+        display: none !important;
+      }
+      .bcp-page-container {
+        padding: 0 !important;
+      }
+      .cms-card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        break-inside: avoid;
+      }
+    }
+
+    /* Calendar Footer Summary */
+    .calendar-summary-footer {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      border: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #475569;
+    }
+    .summary-item .material-symbols-outlined { color: #0050e5; font-size: 18px; }
+
+    /* Custom Info Modal */
+    .modal-backdrop-custom {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      padding: 16px;
+    }
+    .modal-card-custom {
+      background: #ffffff;
+      border-radius: 16px;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+      animation: modalSlide 0.2s ease-out;
+    }
+    @keyframes modalSlide {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-header-custom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-title-group h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .modal-subtitle {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .btn-close-custom {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .modal-body-custom {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .info-guide-section h4 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+    }
+    .info-guide-section p {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .modal-footer-custom {
+      padding: 16px 24px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #f8fafc;
     }
 
     /* Buttons */
@@ -705,13 +3624,19 @@ import { ToastService } from '../../../core/services/toast.service';
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       font-weight: 600;
-      font-size: 13px;
-      padding: 8px 16px;
-      border-radius: 8px;
+      font-size: 13.5px;
+      padding: 9px 18px;
+      border-radius: 10px;
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s ease-in-out;
+      text-decoration: none;
+    }
+    .btn .material-symbols-outlined {
+      font-size: 18px;
+      line-height: 1;
     }
     .btn-primary {
       background: #0050e5;
@@ -719,6 +3644,15 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .btn-primary:hover {
       background: #0043c2;
+    }
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
     }
     .btn-outline-primary {
       border-color: #0050e5;
@@ -756,195 +3690,1415 @@ import { ToastService } from '../../../core/services/toast.service';
       font-size: 12px;
     }
 
-    /* Tabs */
-    .tabs-nav-bar {
-      border-color: #e2e8f0 !important;
+    /* Canonical BCC CMS Card */
+    .cms-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      overflow: hidden;
+      margin-bottom: 28px !important;
     }
-    .tab-btn {
+    .table-toolbar {
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toolbar-left h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toolbar-actions-grid {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .count-badge {
+      font-size: 12px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Card Simple Header */
+    .card-header-simple {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-header-simple h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .card-sub-text {
+      font-size: 13px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .card-body-form {
+      padding: 24px;
+    }
+    .card-body-form > button,
+    .card-body-form > .btn {
+      margin-top: 24px !important;
+    }
+
+    /* Canonical Empty State Card */
+    .empty-state-card {
+      padding: 56px 24px;
+      text-align: center;
+      max-width: 520px;
+      margin: 20px auto;
+    }
+    .empty-icon-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+    }
+    .empty-icon-circle .material-symbols-outlined {
+      font-size: 32px;
+    }
+    .empty-state-card h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+    }
+    .empty-state-card p {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0 0 20px 0;
+      line-height: 1.5;
+    }
+
+    /* Shifts Grid & Cards */
+    .shifts-card-body {
+      padding: 24px;
+    }
+    .shifts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .shift-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all 0.2s ease-in-out;
+      position: relative;
+    }
+    .shift-card:hover {
+      border-color: #0050e5;
+      box-shadow: 0 8px 24px rgba(0, 80, 229, 0.08);
+      transform: translateY(-2px);
+    }
+    .shift-card.overnight-card {
+      border-left: 4px solid #9333ea;
+    }
+    .shift-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .shift-badges-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .shift-code-badge {
+      font-family: monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #334155;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .badge-overnight {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #faf5ff;
+      color: #7e22ce;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #e9d5ff;
+    }
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.3px;
+    }
+    .status-active { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-pending { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .status-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .shift-venue-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0050e5;
+      margin: 0 0 4px 0;
+    }
+    .shift-venue-address {
+      font-size: 12.5px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+    }
+    .shift-venue-address .material-symbols-outlined {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .shift-meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+    }
+    .meta-label { color: #64748b; }
+    .meta-val { font-weight: 600; color: #1e293b; }
+    .meta-val.val-rate { color: #16a34a; font-weight: 700; }
+    .badge-station {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 2px 8px;
       border-radius: 6px;
     }
 
-    /* Cards */
-    .card {
-      background: #ffffff;
+    /* Live Countdown */
+    .acceptance-countdown-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
       border-radius: 10px;
+      padding: 10px 12px;
     }
-    .shift-card {
-      transition: transform 0.15s ease-in-out;
+    .countdown-header {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
     }
-    .shift-card:hover {
-      transform: translateY(-2px);
-    }
-    .card-body {
+    .countdown-title {
+      font-weight: 700;
+      color: #0050e5;
       display: flex;
-      flex-direction: column;
-      flex: 1;
+      align-items: center;
+      gap: 4px;
     }
-    .border-start-overnight {
-      border-left: 4px solid #9333ea !important;
+    .countdown-timer {
+      font-family: monospace;
+      font-weight: 800;
+      color: #0f172a;
     }
+    .countdown-sub {
+      font-size: 11.5px;
+      margin-top: 4px;
+    }
+    .text-danger { color: #ef4444 !important; }
+    .text-muted { color: #64748b !important; }
+    .text-success { color: #16a34a !important; }
+
+    /* Site Briefing Alert */
     .site-briefing-alert {
       background: #fffbeb;
       border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .briefing-header {
+      font-weight: 700;
+      color: #92400e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .briefing-body {
+      color: #78350f;
     }
 
-    /* Badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
+    .shift-actions-row {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
     }
-    .bg-primary { background: #0050e5 !important; color: #ffffff !important; }
-    .bg-success { background: #16a34a !important; color: #ffffff !important; }
-    .bg-warning { background: #f59e0b !important; color: #ffffff !important; }
-    .bg-danger { background: #ef4444 !important; color: #ffffff !important; }
-    .bg-light { background: #f1f5f9 !important; color: #475569 !important; }
-    .bg-purple { background: #9333ea !important; color: #ffffff !important; }
-    .text-primary { color: #0050e5; }
-    .text-dark { color: #0f172a; }
-    .font-monospace { font-family: monospace; }
-    .fw-bold { font-weight: 700; }
-    .fw-semibold { font-weight: 600; }
-    .fs-6 { font-size: 16px; }
-    .small { font-size: 12px; }
-    .border { border: 1px solid #e2e8f0; }
-    .rounded { border-radius: 8px; }
-    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .btn-confirm {
+      background: #16a34a;
+      color: #ffffff;
+      border: 1px solid #16a34a;
+    }
+    .btn-confirm:hover:not(:disabled) {
+      background: #15803d;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+    }
+
+    /* 2-Column Workspace Grid */
+    .workspace-grid-2col {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 992px) {
+      .workspace-grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
 
     /* Forms */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px !important;
+      margin-bottom: 4px;
+    }
+    .w-100 {
+      width: 100% !important;
+    }
     .form-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #334155;
     }
     .form-control,
     .form-select {
       width: 100%;
-      padding: 8px 12px;
-      font-size: 13px;
+      padding: 10px 14px;
       border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      background: #ffffff;
+      border-radius: 10px;
+      font-size: 13.5px;
       color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s;
+      box-sizing: border-box;
     }
     .form-control:focus,
     .form-select:focus {
-      outline: none;
       border-color: #0050e5;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
     }
-
-    /* Tables */
-    .table {
-      width: 100%;
-      border-collapse: collapse;
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
     }
-    .table th,
-    .table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .table-light {
-      background: #f8fafc;
-      color: #475569;
-      font-weight: 600;
-      font-size: 12px;
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
     }
 
-    /* Modals */
-    .modal-content {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      overflow: hidden;
-    }
-    .modal-header {
+    /* Document Source Toggle & Dropzone */
+    .source-toggle-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 8px;
     }
-    .modal-title {
-      font-size: 16px;
+    .source-toggle-pills {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      gap: 3px;
+    }
+    .source-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      font-size: 11.5px;
       font-weight: 700;
-      color: #0f172a;
-      margin: 0;
+      color: #64748b;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
     }
-    .modal-body {
-      padding: 20px;
+    .source-pill .material-symbols-outlined {
+      font-size: 15px;
     }
-    .modal-footer {
+    .source-pill.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .doc-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 22px 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      box-sizing: border-box;
+    }
+    .doc-dropzone:hover {
+      border-color: #0050e5;
+      background: #f0f7ff;
+    }
+    .dropzone-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .dropzone-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #0050e5;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: center;
+    }
+    .dropzone-icon .material-symbols-outlined {
+      font-size: 24px;
+    }
+    .dropzone-instructions strong {
+      display: block;
+      font-size: 13px;
+      color: #1e293b;
+      margin-bottom: 2px;
+    }
+    .dropzone-instructions span {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .dropzone-uploading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 10px;
-      padding: 14px 20px;
-      border-top: 1px solid #e2e8f0;
+      padding: 12px 0;
+      color: #0050e5;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dropzone-file-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+    }
+    .file-card-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .file-text {
+      min-width: 0;
+    }
+    .file-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    .file-preview-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #0050e5;
+      text-decoration: none;
+      margin-top: 2px;
+    }
+    .file-preview-link .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .file-preview-link:hover {
+      text-decoration: underline;
+    }
+    .file-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-action-btn {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.15s ease-in-out;
+    }
+    .icon-action-btn:hover {
+      background: #e2e8f0;
+    }
+    .icon-action-btn.text-danger:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .icon-action-btn .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .url-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-url-preview {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
       background: #f8fafc;
+      color: #0050e5;
+      text-decoration: none;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .btn-url-preview:hover {
+      background: #eff6ff;
+      border-color: #0050e5;
+    }
+    .btn-url-preview .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .url-helper-text {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+      margin-top: 4px;
     }
 
-    .acceptance-countdown-box {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
+    /* Tables (CMS Table) */
+    .table-responsive {
+      overflow-x: auto;
     }
-    .text-danger {
-      color: #dc2626 !important;
-    }
-    .w-100 {
+    .cms-table {
       width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .cms-table thead th {
+      background: #f8fafc;
+      padding: 14px 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .cms-table tbody td {
+      padding: 14px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+      color: #334155;
+    }
+    .cms-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+    .venue-cell-title {
+      font-weight: 700;
+      color: #0050e5;
+    }
+    .venue-cell-sub {
+      font-size: 12px;
+      color: #64748b;
+      font-family: monospace;
+    }
+    .badge-fine-negative {
+      font-size: 11px;
+      font-weight: 700;
+      background: #fef2f2;
+      color: #b91c1c;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #fecaca;
+    }
+    .badge-fine-zero {
+      font-size: 11px;
+      color: #94a3b8;
+      background: #f8fafc;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* Reminders Toggles (Full Width) */
+    .toggles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .toggle-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      transition: all 0.2s;
+    }
+    .toggle-card:hover {
+      background: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.05);
+    }
+    .toggle-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-info .material-symbols-outlined {
+      font-size: 24px;
+    }
+    .toggle-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .toggle-desc {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+      border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #0050e5;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Loading state */
+    .loading-state-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 48px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .spinner-ring {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #0050e5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spin { animation: spin 0.8s linear infinite; }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .bcp-page-container {
+        padding: 0 0 24px 0 !important;
+        gap: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
+      }
+      .header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 6px 4px !important;
+        font-size: 10.5px !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      .header-actions .btn .material-symbols-outlined {
+        font-size: 14px !important;
+      }
+      .subnav-scroll-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .bcp-subnav-tabs {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .subnav-arrow-btn {
+        display: none !important;
+      }
+      .subnav-tab {
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        border-radius: 9px !important;
+        gap: 5px !important;
+      }
+      .subnav-tab .material-symbols-outlined {
+        font-size: 15px !important;
+      }
+      /* Compact Metrics Grid & Cards on Mobile */
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 16px !important;
+      }
+      .metric-card {
+        padding: 10px 12px !important;
+        border-radius: 12px !important;
+        gap: 4px !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.02) !important;
+      }
+      .metric-card .card-top {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-bottom: 2px !important;
+      }
+      .metric-card .card-icon {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        border-radius: 7px !important;
+      }
+      .metric-card .card-icon .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .metric-card .card-chip {
+        font-size: 8.5px !important;
+        font-weight: 700 !important;
+        padding: 2px 6px !important;
+        border-radius: 8px !important;
+        letter-spacing: 0.1px !important;
+        white-space: nowrap !important;
+      }
+      .metric-card .card-value {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        line-height: 1.25 !important;
+        letter-spacing: -0.3px !important;
+        word-break: break-word !important;
+      }
+      .metric-card .card-label {
+        font-size: 10.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        color: #64748b !important;
+      }
+      .metric-card .card-progress-track {
+        height: 3px !important;
+        margin-top: 2px !important;
+      }
+      .metric-card .card-sub-info {
+        font-size: 9.5px !important;
+        line-height: 1.25 !important;
+        color: #94a3b8 !important;
+        margin-top: 2px !important;
+      }
+      .metric-card .card-sub-info span {
+        font-size: 9.5px !important;
+      }
+      .metric-card .btn-confirm-inline {
+        padding: 2px 6px !important;
+        font-size: 9.5px !important;
+        border-radius: 4px !important;
+      }
+      .shifts-card-body {
+        padding: 14px 16px !important;
+      }
+      .shifts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .shift-card {
+        padding: 14px 16px !important;
+        gap: 10px !important;
+        border-radius: 12px !important;
+      }
+      .shift-venue-title {
+        font-size: 14px !important;
+      }
+      .shift-meta-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
+        padding: 8px 10px !important;
+      }
+      .cms-card {
+        border-radius: 14px !important;
+        margin-bottom: 18px !important;
+      }
+      .card-body-form {
+        padding: 16px;
+      }
+      .form-row-2,
+      .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+      .toggles-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Analytics Filter Card Mobile Layout */
+      .analytics-filter-card {
+        padding: 16px !important;
+        border-radius: 14px !important;
+        margin-bottom: 20px !important;
+      }
+      .filter-card-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .filter-title-group {
+        width: 100% !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .filter-actions-right {
+        width: 100% !important;
+      }
+      .filter-actions-right .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 8px 14px !important;
+      }
+      .filter-controls-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        margin-top: 14px !important;
+      }
+      .current-working-range {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .active-range-chip {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 9px 12px !important;
+        font-size: 12px !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .range-chip-label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+      }
+      .range-date-text {
+        font-size: 12px !important;
+      }
+      .range-meta-actions {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+      .shifts-count-chip {
+        flex: 1 !important;
+        box-sizing: border-box !important;
+        justify-content: center !important;
+        padding: 7px 10px !important;
+        font-size: 11.5px !important;
+        gap: 6px !important;
+      }
+      .btn-reset-month {
+        flex-shrink: 0 !important;
+        box-sizing: border-box !important;
+        justify-content: center !important;
+        padding: 7px 12px !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+      }
+      .custom-range-inputs {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+        box-sizing: border-box !important;
+      }
+      .range-sep {
+        display: none !important;
+      }
+      .range-field {
+        width: 100% !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+        box-sizing: border-box !important;
+      }
+      .range-label {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+      }
+      .range-field .form-control {
+        width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        padding: 7px 8px !important;
+        font-size: 12px !important;
+        height: 38px !important;
+      }
+
+      /* Pulse Card & Charts Mobile Optimization */
+      .punctuality-pulse-card {
+        padding: 16px !important;
+        border-radius: 14px !important;
+      }
+      .pulse-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .pulse-title-group {
+        align-items: flex-start !important;
+      }
+      .pulse-legend {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .pulse-beads-row {
+        gap: 6px !important;
+        padding-bottom: 6px !important;
+        overflow-x: auto !important;
+      }
+      .pulse-bead-item {
+        min-width: 58px !important;
+      }
+      .analytics-charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      .chart-panel-card {
+        padding: 16px !important;
+        border-radius: 14px !important;
+      }
+      .chart-panel-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .chart-header-actions {
+        width: 100% !important;
+      }
+      .btn-group-granularity {
+        width: 100% !important;
+        display: flex !important;
+      }
+      .btn-granularity {
+        flex: 1 !important;
+        text-align: center !important;
+      }
+      .donut-chips-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+      .donut-chip {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Statement Filter Bar & Toolbar Mobile Layout */
+      .table-toolbar {
+        padding: 16px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .toolbar-left {
+        width: 100% !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .toolbar-right {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .toolbar-actions-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .toolbar-action-btn {
+        width: 100% !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+      }
+      .toolbar-action-btn .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .count-badge {
+        width: 100% !important;
+        height: 34px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        border-radius: 8px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+      }
+      .statement-filters-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 14px 16px !important;
+      }
+      .table-filter-pills {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .filter-pill-btn {
+        width: 100% !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+      }
+      .table-search-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 42px !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        padding: 0 12px !important;
+      }
+      .table-search-input {
+        font-size: 12.5px !important;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+      }
+      .metric-card {
+        padding: 8px 10px !important;
+        gap: 3px !important;
+      }
+      .metric-card .card-icon {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+      }
+      .metric-card .card-icon .material-symbols-outlined {
+        font-size: 14px !important;
+      }
+      .metric-card .card-chip {
+        font-size: 7.5px !important;
+        padding: 1px 4px !important;
+      }
+      .metric-card .card-value {
+        font-size: 13.5px !important;
+      }
+      .metric-card .card-label {
+        font-size: 10px !important;
+      }
+      .metric-card .card-sub-info {
+        font-size: 9px !important;
+      }
+      .range-meta-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .btn-reset-month {
+        width: 100% !important;
+      }
+      .custom-range-inputs {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
+      }
+      .range-field .form-control {
+        font-size: 11px !important;
+        padding: 6px 4px !important;
+      }
+      .header-actions {
+        gap: 4px !important;
+      }
+      .header-actions .btn {
+        font-size: 10px !important;
+        padding: 5px 2px !important;
+        gap: 3px !important;
+      }
+      .header-actions .btn .material-symbols-outlined {
+        font-size: 13px !important;
+      }
+      .breadcrumb {
+        font-size: 10px !important;
+        gap: 3px !important;
+      }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current {
+        font-size: 10px !important;
+      }
+      .subnav-tab {
+        padding: 5px 10px !important;
+        font-size: 10.5px !important;
+      }
     }
 
     /* Dark Mode */
-    :host-context(.dark-mode) .my-shifts-page { color: #f8fafc; }
-    :host-context(.dark-mode) .page-title { color: #f8fafc; }
+    :host-context(.dark-mode) .bcp-page-container { color: #f8fafc; }
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .rota-calendar-card,
+    :host-context(.dark-mode) .metric-card,
     :host-context(.dark-mode) .card,
-    :host-context(.dark-mode) .modal-content {
+    :host-context(.dark-mode) .modal-card-custom,
+    :host-context(.dark-mode) .analytics-filter-card,
+    :host-context(.dark-mode) .chart-panel-card,
+    :host-context(.dark-mode) .punctuality-pulse-card,
+    :host-context(.dark-mode) .cms-card {
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
       color: #f8fafc;
     }
-    :host-context(.dark-mode) .acceptance-countdown-box {
-      background: #0f172a;
-      border-color: #334155;
-    }
-    :host-context(.dark-mode) .form-select,
-    :host-context(.dark-mode) .form-control {
-      background: #0f172a;
-      border-color: #334155;
+    :host-context(.dark-mode) .title-row h1,
+    :host-context(.dark-mode) .card-value,
+    :host-context(.dark-mode) .cal-month-title,
+    :host-context(.dark-mode) .modal-title-group h3,
+    :host-context(.dark-mode) .filter-heading,
+    :host-context(.dark-mode) .pulse-heading,
+    :host-context(.dark-mode) .chart-panel-title,
+    :host-context(.dark-mode) .center-percentage,
+    :host-context(.dark-mode) .venue-item-name {
       color: #f8fafc;
     }
-    :host-context(.dark-mode) .modal-footer {
-      background: #0f172a;
-      border-top-color: #334155;
+    :host-context(.dark-mode) .active-range-chip {
+      background: rgba(0, 80, 229, 0.15);
+      border-color: rgba(96, 165, 250, 0.35);
+      color: #93c5fd;
     }
+    :host-context(.dark-mode) .range-date-text {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .shifts-count-chip {
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
+    }
+    :host-context(.dark-mode) .btn-reset-month {
+      background: #1e293b;
+      border-color: #334155;
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .btn-reset-month:hover {
+      background: #0f172a;
+      border-color: #60a5fa;
+    }
+    :host-context(.dark-mode) .donut-chip,
+    :host-context(.dark-mode) .filter-pill-btn {
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
+    }
+    :host-context(.dark-mode) .btn-group-granularity {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .btn-granularity {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .btn-granularity.active {
+      background: #1e293b;
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .statement-filters-bar,
+    :host-context(.dark-mode) .statement-summary-footer-row {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .count-badge {
+      background: rgba(0, 80, 229, 0.2);
+      border-color: rgba(96, 165, 250, 0.3);
+      color: #93c5fd;
+    }
+    :host-context(.dark-mode) .table-search-box {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .table-search-input {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .subnav-tab {
+      background: #0f172a;
+      border-color: #334155;
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+    }
+    :host-context(.dark-mode) .cal-weekdays-row,
+    :host-context(.dark-mode) .calendar-summary-footer,
+    :host-context(.dark-mode) .modal-footer-custom,
+    :host-context(.dark-mode) .day-page-header,
+    :host-context(.dark-mode) .day-page-footer {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .day-page-card,
+    :host-context(.dark-mode) .day-shift-card,
+    :host-context(.dark-mode) .day-leave-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .day-empty-box,
+    :host-context(.dark-mode) .quick-excuse-form-card,
+    :host-context(.dark-mode) .day-shift-meta-grid,
+    :host-context(.dark-mode) .leave-reason-text {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .day-quick-actions {
+      border-bottom-color: #334155;
+    }
+    :host-context(.dark-mode) .day-page-title-group h3,
+    :host-context(.dark-mode) .day-shift-venue,
+    :host-context(.dark-mode) .day-section-header h4,
+    :host-context(.dark-mode) .form-title,
+    :host-context(.dark-mode) .empty-title {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .meta-item {
+      color: #cbd5e1;
+    }
+    :host-context(.dark-mode) .cal-days-grid { background: #1e293b; }
+    :host-context(.dark-mode) .cal-day-cell { border-color: #334155; }
+    :host-context(.dark-mode) .cal-day-cell.other-month { background: #0f172a; }
   `]
 })
-export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
+export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('subnavTabs') subnavTabsRef?: ElementRef<HTMLDivElement>;
+
+  canScrollLeft = false;
+  canScrollRight = true;
+
   shifts: Shift[] = [];
   openShifts: Shift[] = [];
-  timesheetList: Shift[] = [];
+  openShiftsCount = 0;
+  private openShiftsSub?: Subscription;
+  timesheetList: any[] = [];
   leaveList: any[] = [];
   docList: any[] = [];
   availList: any[] = [];
 
   isLoading = false;
   isActionLoading = false;
-  currencySymbol = '₦';
+  currencySymbol = '';
 
-  activeTab: 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders' = 'shifts';
+  activeTab: 'analytics' | 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders' = 'analytics';
 
+  showInfoModal = false;
   showSwapModal = false;
   selectedShift: Shift | null = null;
   swapReason = '';
@@ -954,6 +5108,29 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
   leaveStartDate = '';
   leaveEndDate = '';
   leaveReason = '';
+
+  // Calendar State
+  currentMonth: Date = new Date();
+  calendarDays: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
+  selectedDay: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] } | null = null;
+  showDayDetailModal = false;
+  isDayModalMaximized = false;
+  showDayExcuseForm = false;
+  dayExcuseDurationPreset = 'single';
+
+  // --- ANALYTICS DASHBOARD STATE ---
+  analyticsPreset: 'this_month' | 'this_week' | 'last_30_days' | 'last_month' | 'quarter' | 'custom' = 'this_month';
+  analyticsStartDate: string = '';
+  analyticsEndDate: string = '';
+  chartGranularity: 'weekly' | 'daily' = 'weekly';
+  statementFilter: 'all' | 'completed' | 'upcoming' | 'late' = 'all';
+  statementSearch: string = '';
+
+  @ViewChild('hoursBarChartCanvas') hoursBarChartCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('hoursDonutChartCanvas') hoursDonutChartCanvasRef!: ElementRef<HTMLCanvasElement>;
+
+  private hoursBarChart: Chart | null = null;
+  private hoursDonutChart: Chart | null = null;
 
   // Availability state
   availForm: any = {
@@ -971,6 +5148,9 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
     expiryDateUtc: '',
     fileUrl: ''
   };
+  docUploadMode: 'file' | 'url' = 'file';
+  isUploadingDoc = false;
+  uploadedDocFileName = '';
 
   // Reminders state
   reminderPrefs: any = {
@@ -992,13 +5172,21 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.resetDateRangeToCurrentMonth();
+
+    // Real-time listener for open shifts count across workspace
+    this.openShiftsSub = this.workforceService.openShiftsCount$.subscribe(count => {
+      this.openShiftsCount = count;
+    });
+    this.workforceService.refreshOpenShiftsCount();
+
     this.workforceService.getTenantCurrency().subscribe({
       next: (res: any) => {
         if (res?.data?.currencySymbol) {
           this.currencySymbol = res.data.currencySymbol;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.routeSub = this.route.data.subscribe((data) => {
@@ -1007,31 +5195,126 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
         this.activeTab = tab;
       }
       this.loadActiveTabData();
+      setTimeout(() => {
+        this.checkScrollArrows();
+        this.scrollActiveTabIntoView();
+        if (this.activeTab === 'analytics') {
+          this.renderCharts();
+        }
+      }, 100);
     });
+
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab && tab !== this.activeTab) {
+        this.activeTab = tab;
+      }
+      const dateParam = params['date'];
+      if (dateParam) {
+        this.syncSelectedDayFromParam(dateParam);
+      } else if (!dateParam && this.selectedDay) {
+        this.selectedDay = null;
+        this.showDayExcuseForm = false;
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.checkScrollArrows();
+      this.scrollActiveTabIntoView();
+      if (this.activeTab === 'analytics') {
+        this.renderCharts();
+      }
+    }, 150);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.checkScrollArrows();
+    if (this.activeTab === 'analytics') {
+      this.renderCharts();
+    }
+  }
+
+  checkScrollArrows(): void {
+    const el = this.subnavTabsRef?.nativeElement;
+    if (!el) return;
+    this.canScrollLeft = el.scrollLeft > 15;
+    this.canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 15;
+  }
+
+  scrollTabs(direction: number): void {
+    const el = this.subnavTabsRef?.nativeElement;
+    if (!el) return;
+    el.scrollBy({ left: direction * 220, behavior: 'smooth' });
+    setTimeout(() => this.checkScrollArrows(), 250);
+  }
+
+  scrollActiveTabIntoView(): void {
+    const el = this.subnavTabsRef?.nativeElement;
+    if (!el) return;
+    const activeBtn = el.querySelector('.subnav-tab.active') as HTMLElement;
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      const elRect = el.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      const offsetInEl = (btnRect.left - elRect.left) + el.scrollLeft;
+      const targetScroll = offsetInEl - (el.clientWidth / 2) + (btnRect.width / 2);
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      const boundedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+      el.scrollTo({ left: boundedScroll, behavior: 'smooth' });
+    }
+    // Prevent document or window horizontal overshoot
+    if (typeof window !== 'undefined' && (window.scrollX !== 0 || document.documentElement.scrollLeft !== 0)) {
+      window.scrollTo({ left: 0 });
+    }
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.openShiftsSub?.unsubscribe();
+    if (this.hoursBarChart) {
+      this.hoursBarChart.destroy();
+      this.hoursBarChart = null;
+    }
+    if (this.hoursDonutChart) {
+      this.hoursDonutChart.destroy();
+      this.hoursDonutChart = null;
+    }
   }
 
-  switchTab(tab: 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders'): void {
+  switchTab(tab: 'analytics' | 'shifts' | 'open-shifts' | 'timesheets' | 'leave' | 'documents' | 'availability' | 'reminders'): void {
     this.activeTab = tab;
-    // Map to canonical route if standard menu
     const routeMap: Record<string, string> = {
+      'analytics': '/workforce/workspace/analytics',
       'shifts': '/workforce/workspace/my-shifts',
       'open-shifts': '/workforce/workspace/open-shifts',
       'timesheets': '/workforce/workspace/timesheets',
       'leave': '/workforce/workspace/leave',
-      'documents': '/workforce/workspace/documents'
+      'documents': '/workforce/workspace/documents',
+      'availability': '/workforce/workspace/availability',
+      'reminders': '/workforce/workspace/reminders'
     };
     if (routeMap[tab]) {
       this.router.navigate([routeMap[tab]], { replaceUrl: true });
     }
     this.loadActiveTabData();
+    setTimeout(() => {
+      this.checkScrollArrows();
+      this.scrollActiveTabIntoView();
+      if (tab === 'analytics') {
+        this.renderCharts();
+      }
+    }, 100);
   }
 
   loadActiveTabData(): void {
-    if (this.activeTab === 'shifts') {
+    if (this.activeTab === 'analytics') {
+      this.loadMyShifts();
+      this.loadTimesheets();
+      this.loadLeaveRequests();
+    } else if (this.activeTab === 'shifts') {
       this.loadMyShifts();
     } else if (this.activeTab === 'open-shifts') {
       this.loadOpenShifts();
@@ -1049,29 +5332,999 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
   }
 
   getPageTitle(): string {
+    if (this.activeTab === 'shifts' && this.selectedDay) {
+      const d = this.selectedDay.date;
+      return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    }
     switch (this.activeTab) {
-      case 'shifts': return 'Schedule';
-      case 'open-shifts': return 'Open Shifts';
-      case 'timesheets': return 'Timesheets';
-      case 'leave': return 'Time Off & Leave';
-      case 'documents': return 'Documents';
+      case 'analytics': return 'Shift Analytics & Summary';
+      case 'shifts': return 'My Schedule & Rota';
+      case 'open-shifts': return 'Open Shifts & Swaps';
+      case 'timesheets': return 'Timesheets & Pay';
+      case 'leave': return 'Time Off & Availability';
+      case 'documents': return 'Compliance & Documents';
       case 'availability': return 'My Availability';
       case 'reminders': return 'Shift Reminders';
-      default: return 'Shift and Rota';
+      default: return 'Shift & Rota Command Hub';
     }
   }
 
   getPageSubtitle(): string {
+    if (this.activeTab === 'shifts' && this.selectedDay) {
+      const shiftCount = this.selectedDay.shifts?.length || 0;
+      const leaveCount = this.selectedDay.leaves?.length || 0;
+      return `${shiftCount} rostered shift(s), ${leaveCount} excuse/time-off record(s) on this date.`;
+    }
     switch (this.activeTab) {
-      case 'shifts': return 'Review, confirm and manage your scheduled shifts.';
+      case 'analytics': return 'High-level operational overview, monthly take-home pay estimate, and scheduled duties.';
+      case 'shifts': return 'Review assigned duties, confirm upcoming rosters, and manage shift attendance.';
       case 'open-shifts': return 'Browse available venue shifts and claim extra duty hours.';
-      case 'timesheets': return 'Logged duty hours, attendance verification, and pay statements.';
+      case 'timesheets': return 'Logged duty hours, supervisor sign-offs, break deductions, and pay statements.';
       case 'leave': return 'Submit and track annual leave, sickness, and time-off requests.';
       case 'documents': return 'Manage your SIA license, Right to Work credentials, and certifications.';
       case 'availability': return 'Set your preferred working hours and blackout dates for the scheduler.';
       case 'reminders': return 'Configure automated shift departure and readiness alerts.';
       default: return 'Member operational duty command hub.';
     }
+  }
+
+  // --- CALENDAR & METRIC GETTERS ---
+  generateCalendar(): void {
+    const year = this.currentMonth.getFullYear();
+    const month = this.currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const days: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
+    const today = new Date();
+
+    let startDayOfWeek = firstDay.getDay() - 1;
+    if (startDayOfWeek === -1) startDayOfWeek = 6;
+
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = new Date(year, month - 1, prevMonthLastDay - i);
+      days.push({
+        date: d,
+        dayNumber: d.getDate(),
+        isCurrentMonth: false,
+        isToday: false,
+        shifts: this.getShiftsForDate(d),
+        leaves: this.getLeavesForDate(d)
+      });
+    }
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      const d = new Date(year, month, day);
+      const isToday = d.toDateString() === today.toDateString();
+      days.push({
+        date: d,
+        dayNumber: day,
+        isCurrentMonth: true,
+        isToday,
+        shifts: this.getShiftsForDate(d),
+        leaves: this.getLeavesForDate(d)
+      });
+    }
+
+    const remaining = (7 - (days.length % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(year, month + 1, i);
+      days.push({
+        date: d,
+        dayNumber: i,
+        isCurrentMonth: false,
+        isToday: false,
+        shifts: this.getShiftsForDate(d),
+        leaves: this.getLeavesForDate(d)
+      });
+    }
+
+    this.calendarDays = days;
+
+    const urlDate = this.route.snapshot.queryParams['date'];
+    if (urlDate && !this.selectedDay) {
+      this.syncSelectedDayFromParam(urlDate);
+    } else if (this.selectedDay) {
+      this.selectedDay.shifts = this.getShiftsForDate(this.selectedDay.date);
+      this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
+    }
+  }
+
+  syncSelectedDayFromParam(dateStr: string): void {
+    if (!dateStr) return;
+    const matched = this.calendarDays.find(d => this.formatDateForInput(d.date) === dateStr);
+    if (matched) {
+      this.selectedDay = {
+        ...matched,
+        shifts: this.getShiftsForDate(matched.date),
+        leaves: this.getLeavesForDate(matched.date)
+      };
+    } else {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        const today = new Date();
+        this.selectedDay = {
+          date: parsed,
+          dayNumber: parsed.getDate(),
+          isCurrentMonth: parsed.getMonth() === this.currentMonth.getMonth(),
+          isToday: parsed.toDateString() === today.toDateString(),
+          shifts: this.getShiftsForDate(parsed),
+          leaves: this.getLeavesForDate(parsed)
+        };
+      }
+    }
+  }
+
+  getShiftsForDate(date: Date): Shift[] {
+    const dateStr = this.formatDateForInput(date);
+    return this.shifts.filter(s => s.startsAtUtc && s.startsAtUtc.slice(0, 10) === dateStr);
+  }
+
+  getLeavesForDate(date: Date): any[] {
+    if (!this.leaveList || this.leaveList.length === 0) return [];
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    return this.leaveList.filter(l => {
+      if (!l.startDate) return false;
+      const s = new Date(l.startDate);
+      const sTime = new Date(s.getFullYear(), s.getMonth(), s.getDate()).getTime();
+      const e = l.endDate ? new Date(l.endDate) : s;
+      const eTime = new Date(e.getFullYear(), e.getMonth(), e.getDate()).getTime();
+      return target >= sTime && target <= eTime;
+    });
+  }
+
+  onSelectDay(day: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }): void {
+    this.selectedDay = {
+      ...day,
+      shifts: this.getShiftsForDate(day.date),
+      leaves: this.getLeavesForDate(day.date)
+    };
+    this.showDayDetailModal = false;
+    this.showDayExcuseForm = false;
+    const dateStr = this.formatDateForInput(day.date);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'shifts', date: dateStr },
+      queryParamsHandling: 'merge'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  closeDayDetailView(): void {
+    this.selectedDay = null;
+    this.showDayExcuseForm = false;
+    this.showDayDetailModal = false;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { date: null },
+      queryParamsHandling: 'merge'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  isSelectedDay(day: { date: Date }): boolean {
+    return !!this.selectedDay && this.selectedDay.date.toDateString() === day.date.toDateString();
+  }
+
+  openExcuseForSelectedDay(preset: string = 'single'): void {
+    if (!this.selectedDay) return;
+    this.dayExcuseDurationPreset = preset;
+    const start = new Date(this.selectedDay.date);
+    this.leaveStartDate = this.formatDateForInput(start);
+
+    let end = new Date(this.selectedDay.date);
+    if (preset === '2days') {
+      end.setDate(end.getDate() + 1);
+    } else if (preset === '3days') {
+      end.setDate(end.getDate() + 2);
+    } else if (preset === 'week') {
+      end.setDate(end.getDate() + 6);
+    }
+    this.leaveEndDate = this.formatDateForInput(end);
+    this.leaveType = 'Sick';
+    this.leaveReason = '';
+    this.showDayExcuseForm = true;
+  }
+
+  onExcusePresetChange(preset: string): void {
+    this.dayExcuseDurationPreset = preset;
+    if (!this.leaveStartDate) {
+      this.leaveStartDate = this.formatDateForInput(this.selectedDay?.date || new Date());
+    }
+    const start = new Date(this.leaveStartDate);
+    let end = new Date(start);
+    if (preset === 'single') {
+      // same day
+    } else if (preset === '2days') {
+      end.setDate(end.getDate() + 1);
+    } else if (preset === '3days') {
+      end.setDate(end.getDate() + 2);
+    } else if (preset === 'week') {
+      end.setDate(end.getDate() + 6);
+    }
+    if (preset !== 'custom') {
+      this.leaveEndDate = this.formatDateForInput(end);
+    }
+  }
+
+  submitDayExcuse(): void {
+    if (!this.leaveStartDate || !this.leaveEndDate) return;
+    const req = {
+      leaveType: this.leaveType,
+      startDate: new Date(this.leaveStartDate).toISOString(),
+      endDate: new Date(this.leaveEndDate).toISOString(),
+      reason: this.leaveReason
+    };
+    this.isActionLoading = true;
+    this.workforceService.requestLeave(req).subscribe({
+      next: (res: any) => {
+        this.isActionLoading = false;
+        if (res.isSuccess) {
+          this.toast.success('Excuse / Leave request submitted successfully.');
+          this.showDayExcuseForm = false;
+          this.loadLeaveRequests();
+          setTimeout(() => {
+            if (this.selectedDay) {
+              this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
+            }
+            this.generateCalendar();
+          }, 300);
+        } else {
+          this.toast.error(res.message || 'Leave submission failed.');
+        }
+      },
+      error: () => {
+        this.isActionLoading = false;
+        this.toast.error('Failed to submit excuse/leave request.');
+      }
+    });
+  }
+
+  formatDateForInput(d: Date): string {
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // --- DEDICATED SHIFT ANALYTICS ENGINE ---
+  resetDateRangeToCurrentMonth(): void {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    this.analyticsStartDate = this.formatDateForInput(first);
+    this.analyticsEndDate = this.formatDateForInput(last);
+    this.analyticsPreset = 'this_month';
+    this.recalculateAnalytics();
+  }
+
+  isCurrentMonthSelected(): boolean {
+    if (!this.analyticsStartDate || !this.analyticsEndDate) return false;
+    const now = new Date();
+    const first = this.formatDateForInput(new Date(now.getFullYear(), now.getMonth(), 1));
+    const last = this.formatDateForInput(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    return this.analyticsStartDate === first && this.analyticsEndDate === last;
+  }
+
+  setAnalyticsPreset(preset: 'this_month' | 'this_week' | 'last_30_days' | 'last_month' | 'quarter' | 'custom'): void {
+    this.analyticsPreset = preset;
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+
+    if (preset === 'this_month') {
+      const first = new Date(y, m, 1);
+      const last = new Date(y, m + 1, 0);
+      this.analyticsStartDate = this.formatDateForInput(first);
+      this.analyticsEndDate = this.formatDateForInput(last);
+    } else if (preset === 'this_week') {
+      const day = now.getDay();
+      const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
+      const mon = new Date(now.getFullYear(), now.getMonth(), diffToMon);
+      const sun = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+      this.analyticsStartDate = this.formatDateForInput(mon);
+      this.analyticsEndDate = this.formatDateForInput(sun);
+    } else if (preset === 'last_30_days') {
+      const start = new Date();
+      start.setDate(now.getDate() - 30);
+      this.analyticsStartDate = this.formatDateForInput(start);
+      this.analyticsEndDate = this.formatDateForInput(now);
+    } else if (preset === 'last_month') {
+      const first = new Date(y, m - 1, 1);
+      const last = new Date(y, m, 0);
+      this.analyticsStartDate = this.formatDateForInput(first);
+      this.analyticsEndDate = this.formatDateForInput(last);
+    } else if (preset === 'quarter') {
+      const currentQuarter = Math.floor(m / 3);
+      const first = new Date(y, currentQuarter * 3, 1);
+      const last = new Date(y, (currentQuarter + 1) * 3, 0);
+      this.analyticsStartDate = this.formatDateForInput(first);
+      this.analyticsEndDate = this.formatDateForInput(last);
+    }
+    this.recalculateAnalytics();
+  }
+
+  onCustomDateChange(): void {
+    this.analyticsPreset = 'custom';
+    this.recalculateAnalytics();
+  }
+
+  recalculateAnalytics(): void {
+    if (this.activeTab === 'analytics') {
+      setTimeout(() => this.renderCharts(), 50);
+    }
+  }
+
+  get filteredAnalyticsShifts(): Shift[] {
+    if (!this.analyticsStartDate || !this.analyticsEndDate) return this.shifts;
+    const start = new Date(this.analyticsStartDate).getTime();
+    const end = new Date(this.analyticsEndDate + 'T23:59:59').getTime();
+    return this.shifts.filter(s => {
+      if (!s.startsAtUtc) return false;
+      const t = new Date(s.startsAtUtc).getTime();
+      return t >= start && t <= end;
+    });
+  }
+
+  get analyticsTotalShifts(): number {
+    return this.filteredAnalyticsShifts.length;
+  }
+
+  get analyticsCompletedShifts(): number {
+    return this.filteredAnalyticsShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date())).length;
+  }
+
+  get analyticsFulfillmentRate(): number {
+    if (this.analyticsTotalShifts === 0) return 100;
+    return Math.round((this.analyticsCompletedShifts / this.analyticsTotalShifts) * 100);
+  }
+
+  get analyticsPlannedHours(): number {
+    return this.filteredAnalyticsShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get analyticsClockedHours(): number {
+    return this.filteredAnalyticsShifts.reduce((acc, s) => {
+      const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+      const hrs = ts?.actualDurationHours || s.plannedDurationHours || 0;
+      return acc + (s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()) ? hrs : 0);
+    }, 0);
+  }
+
+  get analyticsHoursRatio(): number {
+    if (this.analyticsPlannedHours === 0) return 100;
+    return Math.min(100, Math.round((this.analyticsClockedHours / this.analyticsPlannedHours) * 100));
+  }
+
+  get analyticsLateCount(): number {
+    return this.filteredAnalyticsShifts.filter(s => this.isShiftLate(s)).length;
+  }
+
+  get analyticsPunctualityScore(): number {
+    if (this.analyticsCompletedShifts === 0) return 100;
+    const onTime = Math.max(0, this.analyticsCompletedShifts - this.analyticsLateCount);
+    return Math.round((onTime / this.analyticsCompletedShifts) * 100);
+  }
+
+  get analyticsGrossEarnings(): number {
+    return this.filteredAnalyticsShifts.reduce((acc, s) => {
+      const rate = s.hourlyPayRate || 10;
+      const hours = s.plannedDurationHours || 0;
+      return acc + (hours * rate);
+    }, 0);
+  }
+
+  get analyticsNetEarnings(): number {
+    return Math.round(this.analyticsGrossEarnings * 0.82 * 100) / 100;
+  }
+
+  isShiftLate(s: Shift): boolean {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    if (ts?.isLate || (ts?.lateMinutes && ts.lateMinutes > 5)) return true;
+    if (ts?.clockInUtc && s.startsAtUtc) {
+      const diff = new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime();
+      return diff > 5 * 60 * 1000;
+    }
+    return false;
+  }
+
+  calculateLeaveHoursInRange(): number {
+    if (!this.leaveList || this.leaveList.length === 0) return 0;
+    const start = new Date(this.analyticsStartDate).getTime();
+    const end = new Date(this.analyticsEndDate + 'T23:59:59').getTime();
+    let totalLeaveDays = 0;
+    for (const l of this.leaveList) {
+      if (l.status === 'Approved' && l.startDate) {
+        const sTime = new Date(l.startDate).getTime();
+        const eTime = l.endDate ? new Date(l.endDate).getTime() : sTime;
+        if (sTime <= end && eTime >= start) {
+          totalLeaveDays += (l.totalDays || 1);
+        }
+      }
+    }
+    return totalLeaveDays * 8;
+  }
+
+  setChartGranularity(g: 'weekly' | 'daily'): void {
+    this.chartGranularity = g;
+    this.renderHoursBarChart();
+  }
+
+  get analyticsUpcomingHours(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts
+      .filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now)
+      .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get analyticsUpcomingRatio(): number {
+    const total = this.analyticsPlannedHours || 1;
+    return Math.round((this.analyticsUpcomingHours / total) * 100);
+  }
+
+  get analyticsExcusedRatio(): number {
+    const total = this.analyticsPlannedHours || 1;
+    return Math.round((this.calculateLeaveHoursInRange() / total) * 100);
+  }
+
+  get analyticsPastPlannedHours(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts
+      .filter(s => !s.startsAtUtc || new Date(s.startsAtUtc) <= now)
+      .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get analyticsShortfallHours(): number {
+    const shortfall = Math.max(0, this.analyticsPastPlannedHours - this.analyticsClockedHours);
+    return Math.round(shortfall * 10) / 10;
+  }
+
+  get analyticsShortfallRatio(): number {
+    const total = this.analyticsPlannedHours || 1;
+    return Math.round((this.analyticsShortfallHours / total) * 100);
+  }
+
+  get recentClockInBeads(): any[] {
+    const now = new Date();
+    const pastShifts = this.filteredAnalyticsShifts
+      .filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < now))
+      .sort((a, b) => new Date(b.startsAtUtc).getTime() - new Date(a.startsAtUtc).getTime())
+      .slice(0, 10);
+
+    return pastShifts.map(s => {
+      const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+      const isLate = this.isShiftLate(s);
+      let diffMinutes = 0;
+
+      if (ts?.lateMinutes) {
+        diffMinutes = ts.lateMinutes;
+      } else if (ts?.clockInUtc && s.startsAtUtc) {
+        diffMinutes = Math.round((new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime()) / 60000);
+      }
+
+      let statusClass = 'bead-green';
+      let icon = 'check_circle';
+      let timeDiffLabel = 'On-Time';
+
+      if (diffMinutes > 5 || isLate) {
+        statusClass = 'bead-red';
+        icon = 'warning';
+        timeDiffLabel = diffMinutes > 0 ? `+${diffMinutes}m late` : 'Late Arrival';
+      } else if (diffMinutes > 0) {
+        statusClass = 'bead-amber';
+        icon = 'schedule';
+        timeDiffLabel = `+${diffMinutes}m grace`;
+      } else if (diffMinutes < 0) {
+        timeDiffLabel = `${Math.abs(diffMinutes)}m early`;
+      }
+
+      const d = new Date(s.startsAtUtc);
+      const dateLabel = `${d.getDate()} ${d.toLocaleString('en', { month: 'short' })}`;
+      const venueName = s.facilityName || s.siteName || 'Operating Site';
+      const tooltip = `${s.shiftCode} (${venueName}): ${timeDiffLabel} • Scheduled ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      return {
+        shiftCode: s.shiftCode,
+        dateLabel,
+        timeDiffLabel,
+        statusClass,
+        icon,
+        tooltip
+      };
+    });
+  }
+
+  get venueDistribution(): { name: string; hours: number; gross: number; percentage: number; shiftCount: number; effectiveRate: number; isPrimary: boolean }[] {
+    const map = new Map<string, { hours: number; gross: number; count: number }>();
+    const totalHours = this.analyticsPlannedHours || 1;
+
+    for (const s of this.filteredAnalyticsShifts) {
+      const v = s.facilityName || s.siteName || 'General Operating Venue';
+      const prev = map.get(v) || { hours: 0, gross: 0, count: 0 };
+      const h = s.plannedDurationHours || 0;
+      const g = h * (s.hourlyPayRate || 10);
+      map.set(v, { hours: prev.hours + h, gross: prev.gross + g, count: prev.count + 1 });
+    }
+
+    const list: { name: string; hours: number; gross: number; percentage: number; shiftCount: number; effectiveRate: number; isPrimary: boolean }[] = [];
+    map.forEach((val, key) => {
+      const hours = Math.round(val.hours * 10) / 10;
+      const gross = Math.round(val.gross * 100) / 100;
+      const effectiveRate = hours > 0 ? Math.round((gross / hours) * 100) / 100 : 0;
+      list.push({
+        name: key,
+        hours,
+        gross,
+        shiftCount: val.count,
+        effectiveRate,
+        percentage: Math.min(100, Math.round((val.hours / totalHours) * 100)),
+        isPrimary: false
+      });
+    });
+
+    list.sort((a, b) => b.hours - a.hours);
+    if (list.length > 0) {
+      list[0].isPrimary = true;
+    }
+    return list;
+  }
+
+  isPastDate(d: string | Date | undefined): boolean {
+    if (!d) return false;
+    return new Date(d).getTime() < Date.now();
+  }
+
+  getShiftClockTimes(s: Shift): { inTime: string; outTime: string } | null {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    if (ts?.clockInUtc) {
+      const inTime = new Date(ts.clockInUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const outTime = ts.clockOutUtc ? new Date(ts.clockOutUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return { inTime, outTime };
+    }
+    if (s.status === 'Completed' && s.startsAtUtc) {
+      const inTime = new Date(s.startsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const outTime = s.endsAtUtc ? new Date(s.endsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return { inTime, outTime };
+    }
+    return null;
+  }
+
+  get statementCompletedCount(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < now)).length;
+  }
+
+  get statementUpcomingCount(): number {
+    const now = new Date();
+    return this.filteredAnalyticsShifts.filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now).length;
+  }
+
+  get displayedStatementShifts(): Shift[] {
+    const now = new Date();
+    let list = this.filteredAnalyticsShifts;
+
+    // Filter by status pill
+    if (this.statementFilter === 'completed') {
+      list = list.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < now));
+    } else if (this.statementFilter === 'upcoming') {
+      list = list.filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now);
+    } else if (this.statementFilter === 'late') {
+      list = list.filter(s => this.isShiftLate(s));
+    }
+
+    // Filter by search query
+    if (this.statementSearch && this.statementSearch.trim()) {
+      const q = this.statementSearch.trim().toLowerCase();
+      list = list.filter(s =>
+        (s.shiftCode && s.shiftCode.toLowerCase().includes(q)) ||
+        (s.facilityName && s.facilityName.toLowerCase().includes(q)) ||
+        (s.siteName && s.siteName.toLowerCase().includes(q)) ||
+        (s.postName && s.postName.toLowerCase().includes(q)) ||
+        (s.address && s.address.toLowerCase().includes(q)) ||
+        (s.siteAddress && s.siteAddress.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }
+
+  get statementTotalClockedHours(): number {
+    return this.displayedStatementShifts.reduce((acc, s) => {
+      const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+      const hrs = ts?.actualDurationHours || s.plannedDurationHours || 0;
+      return acc + (s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()) ? hrs : (s.plannedDurationHours || 0));
+    }, 0);
+  }
+
+  get statementTotalGross(): number {
+    return this.displayedStatementShifts.reduce((acc, s) => {
+      return acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10));
+    }, 0);
+  }
+
+  exportDutyStatementCsv(): void {
+    const shifts = this.displayedStatementShifts;
+    if (shifts.length === 0) {
+      this.toast.warning('Export Statement', 'No shift records available to export.');
+      return;
+    }
+
+    const headers = [
+      'Shift Code',
+      'Post Name',
+      'Venue Name',
+      'Address',
+      'Duty Date',
+      'Scheduled Start',
+      'Scheduled End',
+      'Duration (Hours)',
+      'Verified Clock In',
+      'Verified Clock Out',
+      'Punctuality Status',
+      'Shift Status',
+      'Hourly Rate',
+      'Gross Pay'
+    ];
+
+    const rows = shifts.map(s => {
+      const ct = this.getShiftClockTimes(s);
+      const isLate = this.isShiftLate(s);
+      const punctuality = isLate ? 'Late Arrival' : (s.status === 'Completed' || this.isPastDate(s.endsAtUtc) ? 'On-Time' : 'Scheduled');
+      const gross = ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10)).toFixed(2);
+      const venue = (s.facilityName || s.siteName || '').replace(/"/g, '""');
+      const addr = (s.address || s.siteAddress || '').replace(/"/g, '""');
+      const post = (s.postName || '').replace(/"/g, '""');
+
+      return [
+        `"${s.shiftCode}"`,
+        `"${post}"`,
+        `"${venue}"`,
+        `"${addr}"`,
+        `"${s.startsAtUtc ? s.startsAtUtc.slice(0, 10) : ''}"`,
+        `"${s.startsAtUtc ? new Date(s.startsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}"`,
+        `"${s.endsAtUtc ? new Date(s.endsAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}"`,
+        `"${s.plannedDurationHours || 0}"`,
+        `"${ct?.inTime || ''}"`,
+        `"${ct?.outTime || ''}"`,
+        `"${punctuality}"`,
+        `"${s.status}"`,
+        `"${s.hourlyPayRate || 10}"`,
+        `"${gross}"`
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Duty_Statement_${this.analyticsStartDate}_to_${this.analyticsEndDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    this.toast.success('Export Statement', `Duty statement CSV exported successfully (${shifts.length} records).`);
+  }
+
+  printDutyStatement(): void {
+    window.print();
+  }
+
+  openDayDetailForShift(s: Shift): void {
+    const shiftDate = s.startsAtUtc ? new Date(s.startsAtUtc) : new Date();
+    const today = new Date();
+    const isToday = shiftDate.toDateString() === today.toDateString();
+    const dayShifts = this.shifts.filter(item => {
+      if (!item.startsAtUtc) return false;
+      return new Date(item.startsAtUtc).toDateString() === shiftDate.toDateString();
+    });
+    const dayLeaves = this.leaveList.filter(l => {
+      if (!l.startDate) return false;
+      const sT = new Date(l.startDate).getTime();
+      const eT = l.endDate ? new Date(l.endDate).getTime() : sT;
+      const t = shiftDate.getTime();
+      return t >= sT && t <= eT;
+    });
+
+    this.selectedDay = {
+      date: shiftDate,
+      dayNumber: shiftDate.getDate(),
+      isCurrentMonth: true,
+      isToday,
+      shifts: dayShifts.length > 0 ? dayShifts : [s],
+      leaves: dayLeaves
+    };
+    this.showDayDetailModal = false;
+    this.showDayExcuseForm = false;
+    this.activeTab = 'shifts';
+    const dateStr = this.formatDateForInput(shiftDate);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'shifts', date: dateStr },
+      queryParamsHandling: 'merge'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  getGraceArrivalStatus(s: Shift): boolean {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    let diff = 0;
+    if (ts?.lateMinutes) {
+      diff = ts.lateMinutes;
+    } else if (ts?.clockInUtc && s.startsAtUtc) {
+      diff = (new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime()) / 60000;
+    }
+    return diff > 0 && diff <= 5;
+  }
+
+  getLateMinutes(s: Shift): number {
+    const ts = this.timesheetList.find(t => t.id === s.id || t.shiftCode === s.shiftCode);
+    if (ts?.lateMinutes) return ts.lateMinutes;
+    if (ts?.clockInUtc && s.startsAtUtc) {
+      const diff = Math.round((new Date(ts.clockInUtc).getTime() - new Date(s.startsAtUtc).getTime()) / 60000);
+      return Math.max(0, diff);
+    }
+    return 10;
+  }
+
+  getActualClockSubtext(s: Shift): string {
+    const isLate = this.isShiftLate(s);
+    if (isLate) {
+      const m = this.getLateMinutes(s);
+      return `(+${m}m late arrival)`;
+    }
+    if (this.getGraceArrivalStatus(s)) {
+      const m = this.getLateMinutes(s);
+      return `(+${m}m grace arrival)`;
+    }
+    if (s.status === 'Completed' || (s.endsAtUtc && this.isPastDate(s.endsAtUtc))) {
+      return `(On-Time • ${s.plannedDurationHours || 8}h)`;
+    }
+    return `(${s.plannedDurationHours || 8}h planned)`;
+  }
+
+  calculateChartBuckets(): { labels: string[]; plannedHours: number[]; actualHours: number[] } {
+    const shifts = this.filteredAnalyticsShifts;
+    if (!this.analyticsStartDate || !this.analyticsEndDate) {
+      return { labels: ['Current Window'], plannedHours: [0], actualHours: [0] };
+    }
+
+    const start = new Date(this.analyticsStartDate);
+    const end = new Date(this.analyticsEndDate);
+    const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+    if (this.chartGranularity === 'daily' || diffDays <= 10) {
+      const labels: string[] = [];
+      const plannedHours: number[] = [];
+      const actualHours: number[] = [];
+
+      const maxDays = Math.min(31, diffDays);
+      for (let i = 0; i < maxDays; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const dateStr = this.formatDateForInput(d);
+        const dayLabel = `${d.getDate()} ${d.toLocaleString('en', { month: 'short' })}`;
+        labels.push(dayLabel);
+
+        const dayShifts = shifts.filter(s => s.startsAtUtc && s.startsAtUtc.slice(0, 10) === dateStr);
+        const p = dayShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+        const a = dayShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()))
+          .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+        plannedHours.push(Math.round(p * 10) / 10);
+        actualHours.push(Math.round(a * 10) / 10);
+      }
+      return { labels, plannedHours, actualHours };
+    } else {
+      const labels: string[] = [];
+      const plannedHours: number[] = [];
+      const actualHours: number[] = [];
+
+      const totalWeeks = Math.min(8, Math.max(1, Math.ceil(diffDays / 7)));
+      for (let w = 0; w < totalWeeks; w++) {
+        const wStart = new Date(start);
+        wStart.setDate(start.getDate() + (w * 7));
+        const wEnd = new Date(wStart);
+        wEnd.setDate(wStart.getDate() + 6);
+        if (wEnd > end) wEnd.setTime(end.getTime());
+
+        const label = `W${w + 1} (${wStart.getDate()}-${wEnd.getDate()} ${wStart.toLocaleString('en', { month: 'short' })})`;
+        labels.push(label);
+
+        const wStartT = wStart.getTime();
+        const wEndT = new Date(this.formatDateForInput(wEnd) + 'T23:59:59').getTime();
+
+        const wShifts = shifts.filter(s => {
+          if (!s.startsAtUtc) return false;
+          const t = new Date(s.startsAtUtc).getTime();
+          return t >= wStartT && t <= wEndT;
+        });
+
+        const p = wShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+        const a = wShifts.filter(s => s.status === 'Completed' || (s.endsAtUtc && new Date(s.endsAtUtc) < new Date()))
+          .reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+
+        plannedHours.push(Math.round(p * 10) / 10);
+        actualHours.push(Math.round(a * 10) / 10);
+      }
+      return { labels, plannedHours, actualHours };
+    }
+  }
+
+  renderCharts(): void {
+    if (this.activeTab !== 'analytics') return;
+    this.renderHoursBarChart();
+    this.renderHoursDonutChart();
+  }
+
+  private renderHoursBarChart(): void {
+    if (!this.hoursBarChartCanvasRef?.nativeElement) return;
+    if (this.hoursBarChart) {
+      this.hoursBarChart.destroy();
+      this.hoursBarChart = null;
+    }
+
+    const buckets = this.calculateChartBuckets();
+
+    this.hoursBarChart = new Chart(this.hoursBarChartCanvasRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: buckets.labels,
+        datasets: [
+          {
+            label: 'Given / Scheduled Hours',
+            data: buckets.plannedHours,
+            backgroundColor: 'rgba(147, 197, 253, 0.75)',
+            borderColor: '#60a5fa',
+            borderWidth: 1,
+            borderRadius: 6,
+            barPercentage: 0.6
+          },
+          {
+            label: 'Actual Clocked Hours',
+            data: buckets.actualHours,
+            backgroundColor: 'rgba(0, 80, 229, 0.9)',
+            borderColor: '#0050e5',
+            borderWidth: 1,
+            borderRadius: 6,
+            barPercentage: 0.6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { boxWidth: 12, font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} hrs`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { font: { size: 11 } },
+            grid: { color: '#f1f5f9' },
+            title: { display: true, text: 'Hours (hrs)', font: { size: 11 } }
+          },
+          x: {
+            ticks: { font: { size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  private renderHoursDonutChart(): void {
+    if (!this.hoursDonutChartCanvasRef?.nativeElement) return;
+    if (this.hoursDonutChart) {
+      this.hoursDonutChart.destroy();
+      this.hoursDonutChart = null;
+    }
+
+    const clocked = this.analyticsClockedHours;
+    const upcoming = this.analyticsUpcomingHours;
+    const leaveHours = this.calculateLeaveHoursInRange();
+    const shortfall = this.analyticsShortfallHours;
+
+    const labels: string[] = ['Delivered Hours', 'Upcoming Shifts', 'Approved Leave / Excused'];
+    const data: number[] = [clocked || 0, upcoming || 0, leaveHours || 0];
+    const bgColors: string[] = ['#0050e5', '#38bdf8', '#f59e0b'];
+
+    if (shortfall > 0) {
+      labels.push('Unfulfilled Shortfall');
+      data.push(shortfall);
+      bgColors.push('#f87171');
+    }
+
+    const allZero = data.every(v => v === 0);
+
+    this.hoursDonutChart = new Chart(this.hoursDonutChartCanvasRef.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels: allZero ? ['No Duty Hours Recorded'] : labels,
+        datasets: [{
+          data: allZero ? [1] : data,
+          backgroundColor: allZero ? ['#e2e8f0'] : bgColors,
+          borderColor: '#ffffff',
+          borderWidth: 2,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: {
+            display: false // Using rich interactive metric legend chips below canvas
+          },
+          tooltip: {
+            enabled: !allZero,
+            callbacks: {
+              label: (ctx) => ` ${ctx.label}: ${ctx.raw} hrs`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  prevMonth(): void {
+    this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() - 1, 1);
+    this.generateCalendar();
+  }
+
+  nextMonth(): void {
+    this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 1);
+    this.generateCalendar();
+  }
+
+  get nextUpcomingShift(): Shift | null {
+    const now = new Date();
+    const upcoming = this.shifts
+      .filter(s => new Date(s.endsAtUtc) >= now)
+      .sort((a, b) => new Date(a.startsAtUtc).getTime() - new Date(b.startsAtUtc).getTime());
+    return upcoming.length > 0 ? upcoming[0] : (this.shifts.length > 0 ? this.shifts[0] : null);
+  }
+
+  get totalPlannedHours(): number {
+    return this.shifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get estimatedGrossPay(): number {
+    return this.shifts.reduce((acc, s) => acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10.0)), 0);
+  }
+
+  get estimatedTakeHomePay(): number {
+    return Math.round(this.estimatedGrossPay * 0.82 * 100) / 100;
+  }
+
+  get accruedHolidayHours(): number {
+    return Math.round(this.totalPlannedHours * 0.1207 * 10) / 10;
+  }
+
+  get nextPaydayDate(): Date {
+    const today = new Date();
+    const nextFriday = new Date();
+    const day = today.getDay();
+    const diff = (5 - day + 7) % 7 || 7;
+    nextFriday.setDate(today.getDate() + diff);
+    return nextFriday;
+  }
+
+  get daysUntilPayday(): number {
+    const today = new Date();
+    const payday = this.nextPaydayDate;
+    const diffTime = payday.getTime() - today.getTime();
+    return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   }
 
   // --- TAB: SCHEDULE / MY SHIFTS ---
@@ -1082,6 +6335,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         if (res.isSuccess && res.data) {
           this.shifts = res.data;
+          this.generateCalendar();
         }
       },
       error: () => {
@@ -1089,6 +6343,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
         this.toast.error('Unable to load your assigned shifts.');
       }
     });
+    this.loadLeaveRequests();
   }
 
   getCountdown(s: Shift): string {
@@ -1139,6 +6394,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         if (res.isSuccess && res.data) {
           this.openShifts = res.data;
+          this.openShiftsCount = res.data.length;
+          this.workforceService.setOpenShiftsCount(res.data.length);
         }
       },
       error: () => {
@@ -1217,6 +6474,12 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         if (res.isSuccess && res.data) {
           this.leaveList = res.data;
+          if (this.calendarDays.length > 0) {
+            this.generateCalendar();
+          }
+          if (this.selectedDay) {
+            this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
+          }
         }
       }
     });
@@ -1286,20 +6549,62 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy {
     });
   }
 
+  onDocumentFileSelected(event: any): void {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    if (!this.docForm.documentName) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      this.docForm.documentName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    }
+
+    this.isUploadingDoc = true;
+    this.uploadedDocFileName = file.name;
+
+    this.workforceService.uploadComplianceMedia(file).subscribe({
+      next: (res: any) => {
+        this.isUploadingDoc = false;
+        const url = res?.data?.url || res?.url;
+        if (url) {
+          this.docForm.fileUrl = url;
+          this.toast.success(`"${file.name}" uploaded to Cloudinary successfully!`);
+        } else {
+          this.toast.error('File uploaded, but no URL was returned.');
+        }
+      },
+      error: (err: any) => {
+        this.isUploadingDoc = false;
+        this.uploadedDocFileName = '';
+        this.toast.error(err?.error?.message || 'Failed to upload document to Cloudinary.');
+      }
+    });
+  }
+
+  removeUploadedDoc(): void {
+    this.docForm.fileUrl = '';
+    this.uploadedDocFileName = '';
+  }
+
   saveDocument(): void {
     if (!this.docForm.documentName || !this.docForm.fileUrl) return;
+    this.isActionLoading = true;
     this.workforceService.uploadDocument(this.docForm).subscribe({
       next: (res: any) => {
+        this.isActionLoading = false;
         if (res.isSuccess) {
           this.toast.success('Document uploaded to vault.');
           this.loadDocuments();
           this.docForm.documentName = '';
           this.docForm.fileUrl = '';
+          this.uploadedDocFileName = '';
         } else {
           this.toast.error(res.message || 'Failed to save document.');
         }
       },
-      error: () => this.toast.error('Error uploading document.')
+      error: () => {
+        this.isActionLoading = false;
+        this.toast.error('Error uploading document.');
+      }
     });
   }
 

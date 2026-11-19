@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 export interface ClientSite {
@@ -144,6 +145,28 @@ export interface StationAccessValidation {
   providedIn: 'root'
 })
 export class WorkforceService {
+  private readonly _openShiftsCount = new BehaviorSubject<number>(0);
+  public readonly openShiftsCount$ = this._openShiftsCount.asObservable();
+
+  public get currentOpenShiftsCount(): number {
+    return this._openShiftsCount.value;
+  }
+
+  public setOpenShiftsCount(count: number): void {
+    this._openShiftsCount.next(Math.max(0, count));
+  }
+
+  public refreshOpenShiftsCount(): void {
+    this.apiService.get<any>('workforce/shifts/open').subscribe({
+      next: (res: any) => {
+        if (res?.isSuccess && Array.isArray(res.data)) {
+          this._openShiftsCount.next(res.data.length);
+        }
+      },
+      error: () => {}
+    });
+  }
+
   constructor(private readonly apiService: ApiService) {}
 
   // --- SITES ---
@@ -210,11 +233,24 @@ export class WorkforceService {
 
   // --- OPEN SHIFTS & CLAIMS ---
   getOpenShifts(): Observable<any> {
-    return this.apiService.get<any>('workforce/shifts/open');
+    return this.apiService.get<any>('workforce/shifts/open').pipe(
+      tap((res: any) => {
+        if (res?.isSuccess && Array.isArray(res.data)) {
+          this._openShiftsCount.next(res.data.length);
+        }
+      })
+    );
   }
 
   claimShiftDirect(shiftId: string): Observable<any> {
-    return this.apiService.post<any>(`workforce/shifts/${shiftId}/claim`, {});
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/claim`, {}).pipe(
+      tap((res: any) => {
+        if (res?.isSuccess) {
+          const next = Math.max(0, this._openShiftsCount.value - 1);
+          this._openShiftsCount.next(next);
+        }
+      })
+    );
   }
 
   // --- TIMESHEETS ---
@@ -319,6 +355,13 @@ export class WorkforceService {
 
   uploadDocument(doc: { documentType: string; documentName: string; description?: string; fileUrl: string; expiryDateUtc?: string }): Observable<any> {
     return this.apiService.post<any>('workforce/documents', doc);
+  }
+
+  uploadComplianceMedia(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'bcp-compliance-vault');
+    return this.apiService.post<any>('ContentApi/upload-media', formData);
   }
 
   // --- CUSTOM SHIFT REMINDER PREFERENCES ---

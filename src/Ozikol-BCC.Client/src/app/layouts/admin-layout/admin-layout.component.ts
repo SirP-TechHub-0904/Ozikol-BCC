@@ -14,6 +14,9 @@ import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUA
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
 import { CommitteesService } from '../../core/services/committees.service';
+import { WorkforceService } from '../../core/services/workforce.service';
+import { MasterHelpService } from '../../core/services/master-help.service';
+import { HelpDrawerComponent } from '../../shared/components/help-drawer/help-drawer.component';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
@@ -52,7 +55,7 @@ export interface SuiteInfoDetail {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe, HelpDrawerComponent],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
@@ -643,10 +646,20 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/analytics" [class.active]="isCurrentRoute('/workforce/console/analytics')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Analytics &amp; Directory</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Analytics</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/analytics')" (click)="togglePin('Workforce Analytics', '/workforce/console/analytics', 'analytics')" [title]="isPinned('/workforce/console/analytics') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/workforce/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/staff" [class.active]="isCurrentRoute('/workforce/console/staff')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">badge</span>Staff Manager</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/staff')" (click)="togglePin('Staff Manager', '/workforce/console/staff', 'badge')" [title]="isPinned('/workforce/console/staff') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/staff') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -683,9 +696,9 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/settings" [class.active]="isCurrentRoute('/workforce/console/settings')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>Staff Types &amp; Policies</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>Rota Settings</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/settings')" (click)="togglePin('Staff Types', '/workforce/console/settings', 'tune')" [title]="isPinned('/workforce/console/settings') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/settings')" (click)="togglePin('Rota Settings', '/workforce/console/settings', 'tune')" [title]="isPinned('/workforce/console/settings') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/workforce/console/settings') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -1307,62 +1320,73 @@ export interface SuiteInfoDetail {
           <ng-container *ngIf="isFeatureActive('bcp-staff-rota') || isFeatureActive('bcp-attendance-tracking')">
             <div class="menu-title">Shift and Rota</div>
 
-            <!-- 1. Schedule -->
+            <!-- 1. Shift Analytics -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/analytics" [class.active]="isCurrentRoute('/workforce/workspace/analytics')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">analytics</span>
+                  <span>Shift Analytics</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 2. My Schedule & Rota -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/my-shifts" [class.active]="isCurrentRoute('/workforce/workspace/my-shifts')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">calendar_month</span>
-                  <span>Schedule</span>
+                  <span>My Schedule &amp; Rota</span>
                 </div>
               </a>
             </div>
 
-            <!-- 2. Open Shifts -->
+            <!-- 3. Open Shifts & Swaps -->
             <div class="nav-item">
-              <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link">
+              <a routerLink="/workforce/workspace/open-shifts" [class.active]="isCurrentRoute('/workforce/workspace/open-shifts')" class="nav-link position-relative">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">work_outline</span>
-                  <span>Open Shifts</span>
+                  <span>Open Shifts &amp; Swaps</span>
                 </div>
+                <span class="sidebar-badge-sup" *ngIf="openShiftsCount > 0">{{ openShiftsCount }}</span>
               </a>
             </div>
 
-            <!-- 3. Timesheets -->
+            <!-- 4. Timesheets & Pay -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/timesheets" [class.active]="isCurrentRoute('/workforce/workspace/timesheets')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">description</span>
-                  <span>Timesheets</span>
+                  <span>Timesheets &amp; Pay</span>
                 </div>
               </a>
             </div>
 
-            <!-- 4. Time Off -->
+            <!-- 5. Time Off & Availability -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/leave" [class.active]="isCurrentRoute('/workforce/workspace/leave')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">flight_takeoff</span>
-                  <span>Time Off</span>
+                  <span>Time Off &amp; Availability</span>
                 </div>
               </a>
             </div>
 
-            <!-- 5. Documents -->
+            <!-- 6. Compliance & Documents -->
             <div class="nav-item">
               <a routerLink="/workforce/workspace/documents" [class.active]="isCurrentRoute('/workforce/workspace/documents')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">folder_shared</span>
-                  <span>Documents</span>
+                  <span>Compliance &amp; Documents</span>
                 </div>
               </a>
             </div>
 
-            <!-- 6. Duty Clock-In -->
+            <!-- 7. Duty Clock-In & Safety -->
             <div class="nav-item" *ngIf="isFeatureActive('bcp-attendance-tracking')">
               <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock') || isCurrentRoute('/workforce/workspace/clock')" class="nav-link">
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">timer</span>
-                  <span>Duty Clock-In</span>
+                  <span>Duty Clock-In &amp; Safety</span>
                 </div>
               </a>
             </div>
@@ -1443,7 +1467,7 @@ export interface SuiteInfoDetail {
           </div>
         </div>
         <div class="sidebar-footer-actions">
-          <a href="javascript:void(0)" (click)="showHelpModal = true" [title]="'adm.help_support' | translate:'Help & Support'">
+          <a href="javascript:void(0)" (click)="toggleHelpDrawer()" [title]="'adm.help_support' | translate:'Help & Support'">
             <span class="material-symbols-outlined">help_outline</span>
             <span>{{ 'adm.help_support' | translate:'Help & Support' }}</span>
           </a>
@@ -1568,7 +1592,7 @@ export interface SuiteInfoDetail {
 
 
           <!-- Help Trigger -->
-          <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" [title]="'adm.contextual_help' | translate:'Contextual Help'">
+          <button type="button" class="topbar-action-btn" (click)="toggleHelpDrawer()" [title]="'adm.contextual_help' | translate:'Contextual Help'">
             <span class="material-symbols-outlined">help_outline</span>
           </button>
 
@@ -1752,27 +1776,8 @@ export interface SuiteInfoDetail {
       </div>
     </main>
 
-    <!-- Contextual Help Modal -->
-    <div class="modal-backdrop" *ngIf="showHelpModal" (click)="showHelpModal = false">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div class="modal-title-group">
-            <span class="material-symbols-outlined text-blue">help_outline</span>
-            <h3>{{ 'adm.bcp_contextual_help_guide' | translate:'BCP Contextual Help & Guide' }}</h3>
-          </div>
-          <button (click)="showHelpModal = false" class="btn-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to your Business Command Center' }}</h4>
-          <p>{{ 'adm.this_system_allows_you_to_manage_members_col' | translate:'This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.' }}</p>
-          <ul>
-            <li><strong>{{ 'adm.taskbar_tabs' | translate:'Taskbar Tabs:' }}</strong> {{ 'adm.as_you_navigate_pages_stay_open_as_browser_l' | translate:'As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.' }}</li>
-            <li><strong>{{ 'adm.pin_navigation' | translate:'Pin Navigation:' }}</strong> {{ 'adm.click_the_push_pin_icon_on_any_sidebar_item' | translate:'Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.' }}</li>
-            <li><strong>{{ 'adm.theme_engine' | translate:'Theme Engine:' }}</strong> {{ 'adm.toggle_between_the_crisp_light_theme_and_dar' | translate:'Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.' }}</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    <!-- Central Master Page Help Drawer (Slide-Out) -->
+    <app-help-drawer></app-help-drawer>
 
     <!-- User Privileges & Access Modal -->
     <div class="modal-backdrop" *ngIf="showPrivilegesModal" (click)="closePrivilegesModal()">
@@ -2029,6 +2034,10 @@ export interface SuiteInfoDetail {
       display: none;
     }
     @media (max-width: 900px) {
+      .bcp-page-shell,
+      .bcp-page-shell.is-workspace-mode {
+        padding: 14px 12px !important;
+      }
       .sidebar-close-btn {
         display: flex !important;
       }
@@ -2041,6 +2050,13 @@ export interface SuiteInfoDetail {
         -webkit-backdrop-filter: blur(2px);
         z-index: 1040;
         cursor: pointer;
+      }
+      .workspace-switcher-wrapper,
+      .oz-lang-switcher {
+        display: none !important;
+      }
+      .user-profile-info {
+        display: none !important;
       }
     }
     .feature-locked {
@@ -2646,6 +2662,23 @@ export interface SuiteInfoDetail {
     .sub-nav-divider { padding: 8px 16px 4px; list-style: none; }
     .sub-divider-text { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
     .badge-sub-new { background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+    .sidebar-badge-sup {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #0050e5;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      margin-left: auto;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.35);
+    }
 
     /* Sidebar Mode Switcher (Admin Console <-> Users Workspace) */
     .sidebar-mode-switcher {
@@ -3515,6 +3548,8 @@ export interface SuiteInfoDetail {
 })
 export class AdminLayoutComponent implements OnInit, OnDestroy {
   private committeeAliasesSub?: Subscription;
+  private openShiftsSub?: Subscription;
+  public openShiftsCount = 0;
   sidebarCollapsed = false;
   darkMode = false;
 
@@ -4270,8 +4305,14 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     public translation: TranslationService,
     private multiWorkspace: MultiWorkspaceService,
     private committeesService: CommitteesService,
+    private workforceService: WorkforceService,
+    private masterHelpService: MasterHelpService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  public toggleHelpDrawer(): void {
+    this.masterHelpService.toggle();
+  }
 
   /// <summary>
   /// Gets all enrolled workspace sessions stored in the browser's persistent storage.
@@ -4332,6 +4373,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // 0. Live workforce open shifts count listener for sidebar indicator
+    this.openShiftsSub = this.workforceService.openShiftsCount$.subscribe(count => {
+      this.openShiftsCount = count;
+      this.cdr.markForCheck();
+    });
+    this.workforceService.refreshOpenShiftsCount();
+
     // Subscribe to global AI assistant layout and open state
     this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);
     this.aiAssistantService.layoutMode$.subscribe(mode => this.aiLayoutMode = mode);
@@ -5862,5 +5910,6 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.committeeAliasesSub?.unsubscribe();
+    this.openShiftsSub?.unsubscribe();
   }
 }

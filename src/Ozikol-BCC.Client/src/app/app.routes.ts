@@ -208,17 +208,6 @@ export const routes: Routes = [
       // 1. Unified Dashboards
       { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager', 'CmsStudioManager', 'CmsManager'] } },
       { path: 'dashboard/workspace', component: WorkspaceDashboardComponent },
-      { path: 'dashboard/messages', loadComponent: () => import('./pages/admin/communications/communications-hub.component').then(m => m.CommunicationsHubComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'admin/messages', redirectTo: 'dashboard/messages', pathMatch: 'full' },
-      { path: 'messages', redirectTo: 'dashboard/messages', pathMatch: 'full' },
-      { path: 'dashboard/mxmails', loadComponent: () => import('./pages/admin/mxmails/mxmails.component').then(m => m.MxMailsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'admin/dashboard/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
-      { path: 'admin/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
-      { path: 'mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
-      { path: 'dashboard/mxsms', loadComponent: () => import('./pages/admin/mxsms/mxsms.component').then(m => m.MxSmsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'admin/dashboard/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
-      { path: 'admin/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
-      { path: 'mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
 
       // 2. User Management Suite: Console (Admin & User Manager)
@@ -317,6 +306,7 @@ export const routes: Routes = [
       // Admin Console Routes
       { path: 'workforce/console', redirectTo: 'workforce/console/analytics', pathMatch: 'full' },
       { path: 'workforce/console/analytics', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/staff', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', view: 'staff' } },
       { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/create', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/edit/:id', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
@@ -334,12 +324,15 @@ export const routes: Routes = [
       { path: 'attendance/console/live', component: WorkforceAttendanceLiveComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },
 
       // Member Workspace Routes
-      { path: 'workforce/workspace', redirectTo: 'workforce/workspace/my-shifts', pathMatch: 'full' },
+      { path: 'workforce/workspace', redirectTo: 'workforce/workspace/analytics', pathMatch: 'full' },
+      { path: 'workforce/workspace/analytics', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'analytics' } },
       { path: 'workforce/workspace/my-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'shifts' } },
       { path: 'workforce/workspace/open-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'open-shifts' } },
       { path: 'workforce/workspace/timesheets', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'timesheets' } },
       { path: 'workforce/workspace/leave', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'leave' } },
       { path: 'workforce/workspace/documents', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'documents' } },
+      { path: 'workforce/workspace/availability', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'availability' } },
+      { path: 'workforce/workspace/reminders', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'reminders' } },
       { path: 'workforce/workspace/clock', component: WorkforceClockComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'attendance/workspace', redirectTo: 'attendance/workspace/clock', pathMatch: 'full' },
       { path: 'attendance/workspace/clock', component: WorkforceClockComponent, canActivate: [featureGuard], data: { feature: 'bcp-attendance-tracking', featureName: 'Attendance & Check-In' } },

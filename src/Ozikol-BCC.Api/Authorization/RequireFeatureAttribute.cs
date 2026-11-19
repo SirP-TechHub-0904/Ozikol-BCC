@@ -17,10 +17,11 @@ namespace Ozikol_BCC.Api.Authorization
         /// </summary>
         /// <param name="featureCode">The canonical feature code (e.g. "bcp-workspace", "bcp-committees", "bcp-staff-rota").</param>
         /// <param name="allowReadOnly">Whether read-only auditors may view this feature.</param>
-        public RequireFeatureAttribute(string featureCode, bool allowReadOnly = true)
+        /// <param name="allowMemberAccess">Whether authenticated regular members of the subscribed tenant workspace may access this personal workspace endpoint.</param>
+        public RequireFeatureAttribute(string featureCode, bool allowReadOnly = true, bool allowMemberAccess = false)
             : base(typeof(RequireFeatureFilter))
         {
-            Arguments = new object[] { featureCode, allowReadOnly };
+            Arguments = new object[] { featureCode, allowReadOnly, allowMemberAccess };
         }
     }
 }

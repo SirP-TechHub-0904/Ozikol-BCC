@@ -1,58 +1,66 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router, RouterModule } from '@angular/router';
+import { LandingComponent } from '../landing/landing.component';
 
 /**
- * Dedicated public confirmation page displayed after a CMS website form submission.
- * Renders the editable title, confirmation note, a "Submit Again" action to return
- * to the originating form, and a "Back to Home" button.
+ * Dedicated public confirmation page displayed after every CMS website form submission.
+ * Wrapped in LandingComponent (embeddedShellMode) to preserve the tenant's live website
+ * header, navigation, breadcrumb banner, and footer layout.
  */
 @Component({
   selector: 'app-form-success',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LandingComponent],
   template: `
-    <div class="oz-success-shell">
-      <div class="oz-success-card">
-        <div class="oz-success-icon">
-          <span class="material-symbols-outlined">check_circle</span>
-        </div>
+    <app-landing
+      [embeddedShellMode]="true"
+      [embeddedPageTitle]="title"
+      [embeddedPageSubtitle]="''">
+      <div class="oz-success-shell">
+        <div class="oz-success-card">
+          <div class="oz-success-icon">
+            <span class="material-symbols-outlined">check_circle</span>
+          </div>
 
-        <h1 class="oz-success-title">{{ title }}</h1>
-        <p class="oz-success-note">{{ note }}</p>
+          <h2 class="oz-success-title">{{ title }}</h2>
+          <div class="oz-success-note" [innerHTML]="safeNoteHtml"></div>
 
-        <div class="oz-success-actions">
-          <button type="button" class="btn-primary-action" (click)="submitAgain()">
-            <span class="material-symbols-outlined">refresh</span>
-            <span>{{ buttonText }}</span>
-          </button>
+          <div class="oz-success-actions">
+            <button type="button" class="btn-primary-action" (click)="triggerPrimaryAction()">
+              <span class="material-symbols-outlined">{{ actionUrl ? 'arrow_forward' : 'refresh' }}</span>
+              <span>{{ primaryButtonLabel }}</span>
+            </button>
 
-          <a routerLink="/" class="btn-secondary-action">
-            <span class="material-symbols-outlined">home</span>
-            <span>Back to Home</span>
-          </a>
+            <a routerLink="/" class="btn-secondary-action">
+              <span class="material-symbols-outlined">home</span>
+              <span>Back to Home</span>
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+    </app-landing>
   `,
   styles: [`
     .oz-success-shell {
-      min-height: 100vh;
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 64px 20px;
       background: #f8fafc;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .oz-success-card {
       width: 100%;
-      max-width: 520px;
+      max-width: 640px;
+      margin: 0 auto;
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 18px;
-      padding: 44px 32px;
+      padding: 48px 36px;
       text-align: center;
       box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
     }
@@ -83,10 +91,14 @@ import { Router, RouterModule } from '@angular/router';
 
     .oz-success-note {
       margin: 0 auto 28px;
-      max-width: 420px;
+      max-width: 480px;
       font-size: 15px;
       line-height: 1.6;
       color: #475569;
+    }
+
+    .oz-success-note p {
+      margin: 0 0 8px;
     }
 
     .oz-success-actions {
@@ -109,7 +121,7 @@ import { Router, RouterModule } from '@angular/router';
       font-weight: 700;
       text-decoration: none;
       cursor: pointer;
-      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
     }
 
     .btn-primary-action {
@@ -141,11 +153,17 @@ import { Router, RouterModule } from '@angular/router';
 })
 export class FormSuccessComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
 
   title = 'Thank You! Submission Received';
-  note = 'We have received your submission and will get back to you shortly.';
-  buttonText = 'Submit Again';
+  note = '<p>We have received your submission and will get back to you shortly.</p>';
+  safeNoteHtml: SafeHtml = '';
+  actionUrl = '';
   returnUrl = '/';
+
+  get primaryButtonLabel(): string {
+    return this.actionUrl ? 'Continue' : 'Submit Again';
+  }
 
   ngOnInit(): void {
     // Prefer router navigation state; fall back to sessionStorage so browser refreshes preserve the message.
@@ -169,18 +187,25 @@ export class FormSuccessComponent implements OnInit {
     if (resolved?.note) {
       this.note = String(resolved.note).trim() || this.note;
     }
-    if (resolved?.buttonText) {
-      this.buttonText = String(resolved.buttonText).trim() || this.buttonText;
+    if (resolved?.actionUrl) {
+      this.actionUrl = String(resolved.actionUrl).trim();
     }
     if (resolved?.returnUrl && String(resolved.returnUrl).startsWith('/')) {
       this.returnUrl = String(resolved.returnUrl);
     }
+
+    this.safeNoteHtml = this.sanitizer.bypassSecurityTrustHtml(this.note);
   }
 
   /**
-   * Navigates back to the originating form page so the visitor can submit another entry.
+   * Navigates to the configured post-submission route or returns to the originating form.
    */
-  submitAgain(): void {
-    this.router.navigateByUrl(this.returnUrl || '/');
+  triggerPrimaryAction(): void {
+    const target = this.actionUrl || this.returnUrl || '/';
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      window.location.href = target;
+      return;
+    }
+    this.router.navigateByUrl(target.startsWith('/') ? target : `/${target}`);
   }
 }
