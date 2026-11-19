@@ -1190,18 +1190,15 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves the unified workspace-wide activity and login audit stream across all users (no 30-day restriction).
-        /// Supports server-side pagination, search, module filtering, and SuperAdmin shielding.
+        /// Retrieves workspace security audit logs classified into Normal, Suspicious, and Critical severity tiers.
+        /// Includes live summary counters for the top-bar widget and dedicated audit log filtering.
         /// </summary>
         /// <param name="page">1-based page number.</param>
         /// <param name="pageSize">Records per page.</param>
         /// <param name="search">Optional search term (user name, email, action, description, IP).</param>
         /// <param name="module">Optional module filter.</param>
-        /// <returns>Paged collection of unified activity and authentication audit logs.</returns>
-        /// <summary>
-        /// Retrieves workspace security audit logs classified into Normal, Suspicious, and Critical severity tiers.
-        /// Includes live summary counters for the top-bar widget and dedicated audit log filtering.
-        /// </summary>
+        /// <param name="severity">Optional security severity classification filter (Normal, Suspicious, Critical).</param>
+        /// <returns>Paged collection of classified security audit logs with summary counters.</returns>
         [HttpGet("security-audit")]
         [Authorize(Policy = AuthPolicies.IdentityAdmin)]
         public async Task<IActionResult> GetWorkspaceSecurityAuditLogs(
@@ -1342,9 +1339,9 @@ namespace Ozikol_BCC.Api.Controllers
                     a.PerformedByProfileId,
                     !string.IsNullOrWhiteSpace(fullName) ? fullName : (!string.IsNullOrWhiteSpace(email) ? email : "System"),
                     !string.IsNullOrWhiteSpace(email) ? email : "system@workspace.local",
-                    cleanAction,
-                    cleanDesc,
-                    cleanModule,
+                    cleanAction ?? "Activity",
+                    cleanDesc ?? "Audit activity recorded.",
+                    cleanModule ?? "Core",
                     a.IpAddress ?? "127.0.0.1",
                     a.UserAgent ?? "Web Browser",
                     itemSeverity,

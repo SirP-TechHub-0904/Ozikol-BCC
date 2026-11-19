@@ -171,6 +171,10 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             // Transparent AES-256-GCM encryption at rest for tenant database connection strings
             entity.Property(e => e.ConnectionString)
                 .HasConversion(EncryptedStringValueConverter.Instance);
+
+            // Default 500 MB storage quota per tenant for website media and CMS assets
+            entity.Property(e => e.MaxStorageQuotaMb)
+                .HasDefaultValue(500);
         });
 
         var suiteSeedCreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);

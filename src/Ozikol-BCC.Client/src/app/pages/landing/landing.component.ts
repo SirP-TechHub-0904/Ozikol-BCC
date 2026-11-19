@@ -4294,12 +4294,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       });
     }
 
-    // Real published pages tagged with quicklinks for the Quick Links column
+    // Real published pages tagged with quicklinks strictly from CMS tags in database
     const quickLinkPages = (this.publishedPages || [])
-      .filter((p: any) => p.publish !== false && (
-        (p.tags && p.tags.toLowerCase().includes('quicklink')) ||
-        ['ai-agent', 'machinery', 'machineries', 'career', 'faq', 'contact', 'contact-us'].includes((p.directUrl || p.slug || '').toLowerCase().replace(/^\/+/, ''))
-      ))
+      .filter((p: any) => p.publish !== false && p.tags && typeof p.tags === 'string' && p.tags.toLowerCase().includes('quicklink'))
       .map((p: any) => ({
         title: p.title || p.Title || '',
         url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`

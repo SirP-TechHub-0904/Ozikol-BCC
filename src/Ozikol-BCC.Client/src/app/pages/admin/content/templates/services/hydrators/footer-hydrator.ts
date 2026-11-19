@@ -28,6 +28,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   output = injectDynamicForms(output, ctx);
 
   // 2. Footer Dynamic Category Columns Loop: {{#each FooterCategories}}
+  // Strictly renders categories from the tenant database; if none exist, renders empty (zero dummy fallbacks).
   const rawFooterCategories = (ctx.footerCategories && ctx.footerCategories.length > 0)
     ? ctx.footerCategories
     : ((ctx as any).categories && (ctx as any).categories.length > 0)
@@ -36,38 +37,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
           sortOrder: c.sortOrder ?? 1,
           pages: c.pages || []
         }))
-      : [
-          {
-            title: 'Solutions',
-            sortOrder: 1,
-            pages: [
-              { title: 'Enterprise Cloud', url: '/solutions/cloud', sortOrder: 1 },
-              { title: 'Edge Security', url: '/solutions/security', sortOrder: 2 },
-              { title: 'Pipeline Orchestration', url: '/solutions/pipeline', sortOrder: 3 },
-              { title: 'High Availability', url: '/solutions/ha', sortOrder: 4 }
-            ]
-          },
-          {
-            title: 'Company',
-            sortOrder: 2,
-            pages: [
-              { title: 'About Us', url: '/about', sortOrder: 1 },
-              { title: 'Leadership', url: '/leadership', sortOrder: 2 },
-              { title: 'Careers', url: '/careers', sortOrder: 3 },
-              { title: 'News & Press', url: '/press', sortOrder: 4 }
-            ]
-          },
-          {
-            title: 'Resources',
-            sortOrder: 3,
-            pages: [
-              { title: 'Documentation', url: '/docs', sortOrder: 1 },
-              { title: 'API Reference', url: '/api', sortOrder: 2 },
-              { title: 'Developer Portal', url: '/developers', sortOrder: 3 },
-              { title: 'System Status', url: '/status', sortOrder: 4 }
-            ]
-          }
-        ];
+      : [];
 
   const footerCategoriesMatcher = (openTag: string) => {
     return /^\{\{#each\s+FooterCategories\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
@@ -120,11 +90,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
       if (foundCol && foundCol.pages) {
         pages = foundCol.pages;
       } else {
-        pages = [
-          { title: `${catName} Overview`, url: `/${catName?.toLowerCase()}` },
-          { title: `${catName} Features`, url: `/${catName?.toLowerCase()}/features` },
-          { title: `${catName} Documentation`, url: `/${catName?.toLowerCase()}/docs` }
-        ];
+        pages = [];
       }
     }
 

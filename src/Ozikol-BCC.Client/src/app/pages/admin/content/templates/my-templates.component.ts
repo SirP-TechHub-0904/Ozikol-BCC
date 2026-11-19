@@ -948,6 +948,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   tagToDelete: CodeInjectionTag | null = null;
   deletingTag: boolean = false;
 
+  // Bulk Delete Code Injection Tags
+  selectedTagIds: Set<string> = new Set<string>();
+  showBulkDeleteTagsModal: boolean = false;
+  deletingBulkTags: boolean = false;
+
   // Active Singletons state (menu, hero, footer, blog, breadcrumb, ecommerce = 1 active each; body = additive)
   activeMenuId: string = 'menu-01';
   activeHeroId: string = 'hero-01';
@@ -2525,6 +2530,127 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.deletingTag = false;
         this.toast.error('Failed to delete tag.');
         this.closeDeleteTagModal();
+      }
+    });
+  }
+
+  /**
+   * Switches the active main tab and resets any active tag selections.
+   * @param tab Target tab identifier.
+   */
+  setActiveMainTab(tab: 'vault' | 'head' | 'body_open' | 'footer'): void {
+    this.activeMainTab = tab;
+    this.clearTagSelection();
+  }
+
+  /**
+   * Checks whether a code injection tag is currently selected for bulk operations.
+   * @param tagId The tag identifier.
+   */
+  isTagSelected(tagId: string): boolean {
+    return this.selectedTagIds.has(tagId);
+  }
+
+  /**
+   * Toggles the selection state of an individual code injection tag.
+   * @param tagId The tag identifier.
+   */
+  toggleTagSelection(tagId: string): void {
+    if (this.selectedTagIds.has(tagId)) {
+      this.selectedTagIds.delete(tagId);
+    } else {
+      this.selectedTagIds.add(tagId);
+    }
+  }
+
+  /**
+   * Determines whether all code injection tags in the active zone are selected.
+   */
+  isAllZoneTagsSelected(): boolean {
+    const activeTags = this.getActiveZoneTags();
+    if (activeTags.length === 0) return false;
+    return activeTags.every(t => this.selectedTagIds.has(t.id));
+  }
+
+  /**
+   * Determines whether some (but not all) tags in the active zone are selected.
+   */
+  isSomeZoneTagsSelected(): boolean {
+    const activeTags = this.getActiveZoneTags();
+    if (activeTags.length === 0) return false;
+    const selectedCount = activeTags.filter(t => this.selectedTagIds.has(t.id)).length;
+    return selectedCount > 0 && selectedCount < activeTags.length;
+  }
+
+  /**
+   * Toggles selection of all tags in the active zone.
+   */
+  toggleSelectAllZoneTags(): void {
+    const activeTags = this.getActiveZoneTags();
+    if (this.isAllZoneTagsSelected()) {
+      activeTags.forEach(t => this.selectedTagIds.delete(t.id));
+    } else {
+      activeTags.forEach(t => this.selectedTagIds.add(t.id));
+    }
+  }
+
+  /**
+   * Clears all selected tag identifiers.
+   */
+  clearTagSelection(): void {
+    this.selectedTagIds.clear();
+  }
+
+  /**
+   * Retrieves array of tag objects currently selected.
+   */
+  getSelectedTags(): CodeInjectionTag[] {
+    return this.allCodeInjections.filter(t => this.selectedTagIds.has(t.id));
+  }
+
+  /**
+   * Opens the confirmation modal for bulk tag deletion.
+   */
+  openBulkDeleteTagsModal(): void {
+    if (this.selectedTagIds.size === 0) return;
+    this.showBulkDeleteTagsModal = true;
+  }
+
+  /**
+   * Closes the bulk delete confirmation modal.
+   */
+  closeBulkDeleteTagsModal(): void {
+    this.showBulkDeleteTagsModal = false;
+    this.deletingBulkTags = false;
+  }
+
+  /**
+   * Executes batch deletion of all selected code injection tags via ContentApi/code-injections/bulk-delete.
+   */
+  confirmBulkDeleteTags(): void {
+    if (this.selectedTagIds.size === 0) return;
+    const idsToDelete = Array.from(this.selectedTagIds);
+    this.deletingBulkTags = true;
+
+    this.api.post<any>('ContentApi/code-injections/bulk-delete', { ids: idsToDelete }).subscribe({
+      next: (res: any) => {
+        this.deletingBulkTags = false;
+        const count = idsToDelete.length;
+
+        // Atomically remove deleted tags from local memory state
+        this.allCodeInjections = this.allCodeInjections.filter(t => !this.selectedTagIds.has(t.id));
+        this.headTags = this.headTags.filter(t => !this.selectedTagIds.has(t.id));
+        this.bodyOpenTags = this.bodyOpenTags.filter(t => !this.selectedTagIds.has(t.id));
+        this.footerTags = this.footerTags.filter(t => !this.selectedTagIds.has(t.id));
+
+        this.toast.success(res?.message || `${count} tag(s) deleted.`);
+        this.clearTagSelection();
+        this.closeBulkDeleteTagsModal();
+      },
+      error: (err: any) => {
+        this.deletingBulkTags = false;
+        const errMsg = err?.error?.message || 'Failed to delete selected tags.';
+        this.toast.error(errMsg);
       }
     });
   }

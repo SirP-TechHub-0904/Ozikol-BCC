@@ -83,25 +83,25 @@
   <!-- Main Navigation Tabs: Section Vault vs 3-Zone Injections -->
   <div class="mytemplates-main-tabs">
     <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'vault'"
-      (click)="activeMainTab = 'vault'">
+      (click)="setActiveMainTab('vault')">
       <span class="material-symbols-outlined">layers</span>
       <span>Section Templates</span>
       <span class="tab-count-pill">{{ getFilteredTemplatesCount() }}</span>
     </button>
     <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'head'"
-      (click)="activeMainTab = 'head'">
+      (click)="setActiveMainTab('head')">
       <span class="material-symbols-outlined">code</span>
       <span>HTML Head Tags (&lt;head&gt;)</span>
       <span class="tab-count-pill">{{ getZoneTagCount('head') }}</span>
     </button>
     <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'body_open'"
-      (click)="activeMainTab = 'body_open'">
+      (click)="setActiveMainTab('body_open')">
       <span class="material-symbols-outlined">transit_enterexit</span>
       <span>Body Open (&lt;body&gt;)</span>
       <span class="tab-count-pill">{{ getZoneTagCount('body_open') }}</span>
     </button>
     <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'footer'"
-      (click)="activeMainTab = 'footer'">
+      (click)="setActiveMainTab('footer')">
       <span class="material-symbols-outlined">dock_to_bottom</span>
       <span>Footer Scripts (&lt;/body&gt;)</span>
       <span class="tab-count-pill">{{ getZoneTagCount('footer') }}</span>
@@ -446,6 +446,11 @@
         </div>
       </div>
       <div class="zone-banner-actions">
+        <button type="button" class="btn zone-toolbar-btn btn-bulk-delete" *ngIf="selectedTagIds.size > 0"
+          (click)="openBulkDeleteTagsModal()" title="Permanently delete selected code injection tags">
+          <span class="material-symbols-outlined icon-red">delete_sweep</span>
+          <span>Delete Selected ({{ selectedTagIds.size }})</span>
+        </button>
         <button type="button" class="btn zone-toolbar-btn btn-normalize" (click)="normalizeTagOrders()"
           title="Normalize execution orders cleanly to 10, 20, 30, 40...">
           <span class="material-symbols-outlined icon-blue">reorder</span>
@@ -471,10 +476,34 @@
 
     <!-- Tags List Table -->
     <div class="installed-table-card" *ngIf="getActiveZoneTags().length > 0">
+      <!-- Bulk Selection Toolbar Strip -->
+      <div class="bulk-selection-bar" *ngIf="selectedTagIds.size > 0">
+        <div class="bulk-selection-left">
+          <span class="material-symbols-outlined select-icon">check_circle</span>
+          <span class="selection-text">
+            <strong>{{ selectedTagIds.size }}</strong> of {{ getActiveZoneTags().length }} tag(s) selected
+          </span>
+          <button type="button" class="btn-clear-selection" (click)="clearTagSelection()">Clear Selection</button>
+        </div>
+        <div class="bulk-selection-actions">
+          <button type="button" class="btn btn-sm btn-outline-white" (click)="toggleSelectAllZoneTags()">
+            {{ isAllZoneTagsSelected() ? 'Deselect All' : 'Select All (' + getActiveZoneTags().length + ')' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-danger-action" (click)="openBulkDeleteTagsModal()">
+            <span class="material-symbols-outlined">delete_sweep</span>
+            <span>Delete Selected ({{ selectedTagIds.size }})</span>
+          </button>
+        </div>
+      </div>
+
       <div class="table-responsive">
         <table class="table-modern">
           <thead>
             <tr>
+              <th style="width: 44px; text-align: center;">
+                <input type="checkbox" [checked]="isAllZoneTagsSelected()" [indeterminate]="isSomeZoneTagsSelected()"
+                  (change)="toggleSelectAllZoneTags()" title="Select all tags in this zone" class="tag-table-checkbox" />
+              </th>
               <th style="width: 125px;">Order / Arrange</th>
               <th style="width: 200px;">Name</th>
               <th style="width: 140px;">Suite Scope</th>
@@ -488,7 +517,12 @@
             <tr *ngFor="let tag of getActiveZoneTags(); let i = index; let first = first; let last = last"
               draggable="true" (dragstart)="onTagDragStart($event, i)" (dragover)="onTagDragOver($event, i)"
               (dragleave)="onTagDragLeave($event, i)" (drop)="onTagDrop($event, i)"
-              [class.row-dragged]="draggedTagIndex === i" [class.row-drag-over]="dragOverTagIndex === i">
+              [class.row-dragged]="draggedTagIndex === i" [class.row-drag-over]="dragOverTagIndex === i"
+              [class.row-selected]="isTagSelected(tag.id)">
+              <td style="text-align: center;" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="isTagSelected(tag.id)" (change)="toggleTagSelection(tag.id)"
+                  class="tag-table-checkbox" />
+              </td>
               <td>
                 <div class="tag-order-cell">
                   <span class="drag-grip-handle" title="Drag up or down to re-order execution priority">
@@ -536,11 +570,6 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="btn-tbl-action preview" (click)="openAssetEditor(tag)"
-                    title="Edit Asset File / Raw Content"
-                    style="background: rgba(99, 102, 241, 0.1); color: #6366f1; border-color: rgba(99, 102, 241, 0.3);">
-                    <span class="material-symbols-outlined">edit_note</span>
-                  </button>
                   <button type="button" class="btn-tbl-action preview" (click)="openEditTagModal(tag)"
                     title="Tag Settings">
                     <span class="material-symbols-outlined">settings</span>
@@ -767,7 +796,7 @@
 <!-- ============================================== -->
 <!-- MODAL 5: CODE INJECTION TAG (ADD / EDIT)       -->
 <!-- ============================================== -->
-<div class="modal-backdrop" *ngIf="showTagModal" (click)="closeTagModal()">
+<div class="modal-backdrop" *ngIf="showTagModal">
   <div class="modal-card tag-modal-card" (click)="$event.stopPropagation()">
     <div class="preview-modal-header">
       <div class="preview-title-info">
@@ -1358,6 +1387,51 @@
       <button type="button" class="btn btn-danger-action" (click)="confirmDeleteTag()" [disabled]="deletingTag">
         <span class="material-symbols-outlined">delete</span>
         <span>{{ deletingTag ? 'Deleting...' : 'Delete Tag' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- MODAL 7B: BULK DELETE CODE INJECTIONS CONFIRMATION     -->
+<!-- ======================================================= -->
+<div class="modal-backdrop" *ngIf="showBulkDeleteTagsModal" (click)="closeBulkDeleteTagsModal()">
+  <div class="modal-card confirm-modal-card bulk-delete-modal-card" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="confirm-modal-header">
+      <div class="confirm-danger-badge">
+        <span class="material-symbols-outlined confirm-icon">delete_sweep</span>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="closeBulkDeleteTagsModal()"><span
+          class="material-symbols-outlined">close</span></button>
+    </div>
+
+    <!-- Body -->
+    <div class="confirm-modal-body">
+      <h3 class="confirm-modal-title">Delete {{ selectedTagIds.size }} Code Injection Tag(s)?</h3>
+      <p class="confirm-modal-subtitle">
+        Are you sure you want to permanently delete the <strong>{{ selectedTagIds.size }} selected tag(s)</strong> from the
+        <strong>{{ getZoneShortTitle(activeMainTab) }}</strong> zone? This action cannot be undone.
+      </p>
+
+      <!-- Selected items pill list -->
+      <div class="bulk-items-preview-list">
+        <div class="bulk-tag-chip" *ngFor="let tag of getSelectedTags()">
+          <span class="material-symbols-outlined chip-icon">{{ getZoneIcon(tag.zone) }}</span>
+          <span class="chip-name">{{ tag.name }}</span>
+          <span class="chip-type">{{ getTagTypeLabel(tag.tagType) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="confirm-modal-footer">
+      <button type="button" class="btn btn-outline" (click)="closeBulkDeleteTagsModal()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-danger-action" (click)="confirmBulkDeleteTags()" [disabled]="deletingBulkTags">
+        <span class="material-symbols-outlined">delete_sweep</span>
+        <span>{{ deletingBulkTags ? 'Deleting...' : 'Delete Selected (' + selectedTagIds.size + ')' }}</span>
       </button>
     </div>
   </div>
