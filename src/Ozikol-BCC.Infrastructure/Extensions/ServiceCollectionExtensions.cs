@@ -59,4 +59,17 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<Ozikol_BCC.Infrastructure.Services.Email.IDomainEmailProvisioningService, Ozikol_BCC.Infrastructure.Services.Email.DomainEmailProvisioningService>();
         return services;
     }
+
+    /// <summary>
+    /// Registers enterprise Server-Side Request Forgery (SSRF) protection and hardened HTTP client factory.
+    /// Enforces multi-record DNS resolution auditing, socket IP address pinning, cloud metadata blocks, and redirect interception.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddSsrfProtection(this IServiceCollection services)
+    {
+        services.AddSingleton<Ozikol_BCC.Infrastructure.Security.Ssrf.ISsrfProtectionValidator, Ozikol_BCC.Infrastructure.Security.Ssrf.SsrfProtectionValidator>();
+        services.AddSingleton<Ozikol_BCC.Infrastructure.Security.Ssrf.ISafeHttpClientFactory, Ozikol_BCC.Infrastructure.Security.Ssrf.SafeHttpClientFactory>();
+        return services;
+    }
 }

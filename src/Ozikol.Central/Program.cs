@@ -169,6 +169,7 @@ builder.Services.AddAuthorization(options =>
 
 // 3. Multi-Tenant Infrastructure Support
 builder.Services.AddTenantSupport(builder.Configuration);
+builder.Services.AddSsrfProtection();
 
 // 4. Resolve Master Database Connection strictly from .env / Configuration / Environment Variables
 var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"]
