@@ -33,6 +33,16 @@ export interface ScanStage {
 }
 
 /**
+ * Administrative security override payload authorizing persistence with Central audit trail.
+ */
+export interface SecurityScanOverride {
+  /** Explicit administrator declaration bypassing pre-flight blocking gatekeeper */
+  overrideSecurityScan: boolean;
+  /** Audit justification recorded immutably in Central MasterAuditLogs */
+  overrideReason?: string;
+}
+
+/**
  * Payload provided by category visual editors to initiate pre-flight security verification.
  */
 export interface SecurityScanRequest {
@@ -50,8 +60,8 @@ export interface SecurityScanRequest {
   js?: string;
   /** Sample mock data string */
   mockJson?: string;
-  /** Callback triggered when user approves or security scan cleanly passes */
-  onConfirmSave: () => void;
+  /** Callback triggered when user approves or security scan cleanly passes (optional override payload) */
+  onConfirmSave: (override?: SecurityScanOverride) => void;
 }
 
 /**
@@ -230,6 +240,23 @@ export class TemplateSecurityScannerService {
     if (curr.request?.onConfirmSave) {
       this.close();
       curr.request.onConfirmSave();
+    }
+  }
+
+  /**
+   * Invoked when an administrator acknowledges security risks, declares the code safe,
+   * and requests persistence with audit logging to Central.
+   * @param reason Administrative explanation recorded immutably in Central MasterAuditLogs.
+   */
+  overrideAndProceed(reason: string): void {
+    const curr = this._state$.value;
+    if (curr.request?.onConfirmSave) {
+      const overridePayload: SecurityScanOverride = {
+        overrideSecurityScan: true,
+        overrideReason: (reason && reason.trim()) ? reason.trim() : 'Administrator acknowledged security warnings and confirmed vendor script integrity.'
+      };
+      this.close();
+      curr.request.onConfirmSave(overridePayload);
     }
   }
 

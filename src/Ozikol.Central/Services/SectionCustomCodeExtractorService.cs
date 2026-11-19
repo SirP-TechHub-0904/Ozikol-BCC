@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol_BCC.Application.Dtos.Sections;
 using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Infrastructure.Security.Ssrf;
 
 namespace Ozikol.Central.Services
 {
@@ -21,13 +22,14 @@ namespace Ozikol.Central.Services
     /// isolates interactive JavaScript, replaces hardcoded values with canonical Ozikol domain tokens,
     /// and extracts exact sample data into mock JSON.
     /// Operates against the central <see cref="IAiKeyPoolManagerService"/> with primary Gemini 2.5 Flash execution
-    /// and automatic failover to DeepSeek.
+    /// and automatic failover to DeepSeek. Hardened with <see cref="ISafeHttpClientFactory"/> against SSRF.
     /// </summary>
     public class SectionCustomCodeExtractorService : ISectionCustomCodeExtractorService
     {
         private readonly IAiKeyPoolManagerService _keyPoolService;
         private readonly ISectionLibraryResolverService _libraryResolver;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ISafeHttpClientFactory? _safeHttpClientFactory;
         private readonly ILogger<SectionCustomCodeExtractorService> _logger;
 
         /// <summary>
@@ -37,16 +39,19 @@ namespace Ozikol.Central.Services
         /// <param name="libraryResolver">Third-party library detector and CDN resolver.</param>
         /// <param name="httpClientFactory">Factory for creating configured HTTP clients.</param>
         /// <param name="logger">Structured logger instance.</param>
+        /// <param name="safeHttpClientFactory">SSRF-immune safe HTTP client factory.</param>
         public SectionCustomCodeExtractorService(
             IAiKeyPoolManagerService keyPoolService,
             ISectionLibraryResolverService libraryResolver,
             IHttpClientFactory httpClientFactory,
-            ILogger<SectionCustomCodeExtractorService> logger)
+            ILogger<SectionCustomCodeExtractorService> logger,
+            ISafeHttpClientFactory? safeHttpClientFactory = null)
         {
             _keyPoolService = keyPoolService ?? throw new ArgumentNullException(nameof(keyPoolService));
             _libraryResolver = libraryResolver ?? throw new ArgumentNullException(nameof(libraryResolver));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _safeHttpClientFactory = safeHttpClientFactory;
         }
 
         /// <inheritdoc />
@@ -902,6 +907,11 @@ Perform complete tokenization, content extraction, and CSS/JS isolation.";
         /// </summary>
         private async Task<string> DownloadRemoteAssetAsync(string url, CancellationToken cancellationToken)
         {
+            if (_safeHttpClientFactory != null)
+            {
+                return await _safeHttpClientFactory.GetSafeStringAsync(url, cancellationToken);
+            }
+
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(20);
 

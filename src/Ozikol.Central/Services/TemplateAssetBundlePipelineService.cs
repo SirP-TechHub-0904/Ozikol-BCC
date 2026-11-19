@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Application.Dtos.Sections;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Infrastructure.Security.Ssrf;
 
 namespace Ozikol.Central.Services
 {
@@ -21,10 +22,12 @@ namespace Ozikol.Central.Services
     /// Service responsible for remote template ingestion, asset discovery, vendor vs. custom separation,
     /// custom CSS/JS compilation with relative path rewriting, Cloudinary bundling, and modular section slicing.
     /// Uses <see cref="IAiKeyPoolManagerService"/> to resolve active keys from the database key pool.
+    /// Hardened with <see cref="ISafeHttpClientFactory"/> against SSRF and cloud metadata theft.
     /// </summary>
     public class TemplateAssetBundlePipelineService : ITemplateAssetBundlePipelineService
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ISafeHttpClientFactory? _safeHttpClientFactory;
         private readonly ISectionLibraryResolverService _libraryResolver;
         private readonly IAiKeyPoolManagerService? _keyPoolService;
         private readonly ICloudinaryService? _cloudinaryService;
@@ -38,13 +41,15 @@ namespace Ozikol.Central.Services
             ISectionLibraryResolverService libraryResolver,
             ILogger<TemplateAssetBundlePipelineService> logger,
             IAiKeyPoolManagerService? keyPoolService = null,
-            ICloudinaryService? cloudinaryService = null)
+            ICloudinaryService? cloudinaryService = null,
+            ISafeHttpClientFactory? safeHttpClientFactory = null)
         {
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _libraryResolver = libraryResolver ?? throw new ArgumentNullException(nameof(libraryResolver));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _keyPoolService = keyPoolService;
             _cloudinaryService = cloudinaryService;
+            _safeHttpClientFactory = safeHttpClientFactory;
         }
 
         /// <inheritdoc />
@@ -288,6 +293,11 @@ namespace Ozikol.Central.Services
 
         private async Task<string> DownloadStringAsync(string url, CancellationToken cancellationToken)
         {
+            if (_safeHttpClientFactory != null)
+            {
+                return await _safeHttpClientFactory.GetSafeStringAsync(url, cancellationToken);
+            }
+
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(25);
 
