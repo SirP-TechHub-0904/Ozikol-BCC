@@ -189,16 +189,16 @@ namespace Ozikol_BCC.Api.Controllers
         {
             if (string.IsNullOrWhiteSpace(request.RouteKey))
             {
-                return BadRequest(ApiResponse<object>.ErrorResponse(
-                    "ERR-VALIDATION-ROUTE",
-                    "RouteKey is required and cannot be empty."));
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "RouteKey is required and cannot be empty.",
+                    errorCode: "ERR-VALIDATION-ROUTE"));
             }
 
             if (_masterDb == null)
             {
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, ApiResponse<object>.ErrorResponse(
-                    "ERR-MASTER-DB-UNAVAILABLE",
-                    "Master Catalog persistence service is not configured."));
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, ApiResponse<object>.FailureResponse(
+                    "Master Catalog persistence service is not configured.",
+                    errorCode: "ERR-MASTER-DB-UNAVAILABLE"));
             }
 
             var normalized = MasterHelpBaselineCatalog.NormalizeRoute(request.RouteKey);
