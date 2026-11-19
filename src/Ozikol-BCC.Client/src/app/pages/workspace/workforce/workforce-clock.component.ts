@@ -1,198 +1,349 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { WorkforceService, Shift, ClockInResult, ClockOutResult } from '../../../core/services/workforce.service';
+import { WorkforceService, Shift } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { MasterHelpService } from '../../../core/services/master-help.service';
 
 /**
- * Member GPS Clock In & Out screen (`/attendance/workspace/clock`).
- * Captures live browser geolocation, submits it against the active shift for
- * server-side Haversine geofence verification, and supports lone-worker welfare check-calls.
+ * Member GPS Duty Clock & Geofence Verification screen (`/attendance/workspace/clock`).
+ * Built with canonical BCC Page Shell, 3-Pillar Security Verification (Live GPS Geofence,
+ * Hardware Device Biometrics, and Watermarked Facial Audit Snapshot), and seamless
+ * integration with the Central Master Help & Workflow Guide drawer.
  */
 @Component({
   selector: 'app-workforce-clock',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="clock-page p-4">
-      <div class="page-header mb-4">
-        <h2 class="page-title m-0">Duty Clock & Geofence</h2>
-        <p class="text-muted m-0 mt-1">Your live location is verified against the site geofence when you clock in or out.</p>
-      </div>
-
-      <div class="text-center p-5" *ngIf="isLoading">
-        <div class="spinner-border text-primary" role="status"></div>
-      </div>
-
-      <div class="card border-0 shadow-sm p-5 text-center" *ngIf="!isLoading && !currentShift">
-        <span class="material-symbols-outlined display-4 text-muted mb-3">event_busy</span>
-        <h5>No active shift ready to clock into</h5>
-        <p class="text-muted">You can clock in up to 30 minutes before a scheduled shift starts.</p>
-        <div>
-          <a class="btn btn-outline-primary" routerLink="/workforce/workspace/my-shifts">View My Roster</a>
+    <div class="bcp-page-container">
+      <!-- 1. Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <a routerLink="/workforce/workspace/my-shifts">Shift &amp; Rota</a>
+            <span class="sep">/</span>
+            <span class="current">Duty Clock &amp; Geofence</span>
+          </div>
+          <div class="title-row">
+            <h1>Duty Clock &amp; Geofence</h1>
+            <button type="button" class="info-trigger-btn" (click)="openHelp()" title="View Duty Clock Guide">
+              <span class="material-symbols-outlined">info</span>
+            </button>
+            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
+          </div>
+          <p class="subtitle">Live GPS geofence verification, biometric authentication, and facial audit for shift attendance.</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadTodayActiveShift()" [disabled]="isLoading">
+            <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+            <span>Refresh</span>
+          </button>
+          <a routerLink="/workforce/workspace/my-shifts" class="btn btn-primary">
+            <span class="material-symbols-outlined">calendar_month</span>
+            <span>View My Roster</span>
+          </a>
         </div>
       </div>
 
-      <div class="row justify-content-center" *ngIf="!isLoading && currentShift">
-        <div class="col-lg-6">
-          <div class="card border-0 shadow-sm p-4">
-            <div class="d-flex justify-content-between mb-2">
-              <span class="font-monospace small text-primary fw-semibold">{{ currentShift.shiftCode }}</span>
-              <span class="badge" [ngClass]="currentShift.isClockedIn ? 'bg-primary' : 'bg-warning text-dark'">
+      <!-- 2. Sub-Nav Navigation Bar (Suite Harmony) -->
+      <div class="bcp-subnav-tabs">
+        <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{tab: 'analytics'}" class="subnav-tab">
+          <span class="material-symbols-outlined">analytics</span>
+          <span>Shift Analytics</span>
+        </a>
+        <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{tab: 'shifts'}" class="subnav-tab">
+          <span class="material-symbols-outlined">calendar_month</span>
+          <span>My Schedule &amp; Rota</span>
+        </a>
+        <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{tab: 'open-shifts'}" class="subnav-tab">
+          <span class="material-symbols-outlined">work_outline</span>
+          <span>Open Shifts &amp; Swaps</span>
+        </a>
+        <a routerLink="/workforce/workspace/timesheets" class="subnav-tab">
+          <span class="material-symbols-outlined">description</span>
+          <span>Timesheets &amp; Pay</span>
+        </a>
+        <a routerLink="/workforce/workspace/leave" class="subnav-tab">
+          <span class="material-symbols-outlined">flight_takeoff</span>
+          <span>Time Off &amp; Leave</span>
+        </a>
+        <a routerLink="/attendance/workspace/clock" class="subnav-tab active">
+          <span class="material-symbols-outlined">fingerprint</span>
+          <span>Duty Clock &amp; Geofence</span>
+        </a>
+      </div>
+
+      <!-- 3. Loading State -->
+      <div class="cms-card loading-card" *ngIf="isLoading">
+        <div class="spinner-ring"></div>
+        <h4>Acquiring Telemetry</h4>
+        <p>Verifying device GPS coordinates and locating active shift rosters...</p>
+      </div>
+
+      <!-- 4. Canonical Empty State (No Active Shift) -->
+      <div class="cms-card" *ngIf="!isLoading && !currentShift">
+        <div class="empty-state-card">
+          <div class="empty-icon-circle">
+            <span class="material-symbols-outlined">event_busy</span>
+          </div>
+          <h3>No Active Shift Ready to Clock Into</h3>
+          <p>
+            You can clock in up to 30 minutes before your scheduled shift start time.
+            Please ensure you have arrived at your designated site location with device GPS enabled.
+          </p>
+          <div class="empty-actions">
+            <a class="btn btn-primary" routerLink="/workforce/workspace/my-shifts">
+              <span class="material-symbols-outlined">calendar_month</span>
+              <span>View My Roster</span>
+            </a>
+            <button type="button" class="btn btn-outline" (click)="loadTodayActiveShift()">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Check Again</span>
+            </button>
+          </div>
+
+          <!-- Guidance Feature Cards -->
+          <div class="empty-guidance-strip">
+            <div class="guidance-card">
+              <div class="guidance-icon-circle">
+                <span class="material-symbols-outlined">pin_drop</span>
+              </div>
+              <div class="guidance-text">
+                <strong>Geofence Perimeter</strong>
+                <span>Verified within 150m of your assigned post coordinate</span>
+              </div>
+            </div>
+            <div class="guidance-card">
+              <div class="guidance-icon-circle">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="guidance-text">
+                <strong>Clock-In Window</strong>
+                <span>Opens 30 mins before shift start until post briefing</span>
+              </div>
+            </div>
+            <div class="guidance-card">
+              <div class="guidance-icon-circle">
+                <span class="material-symbols-outlined">verified_user</span>
+              </div>
+              <div class="guidance-text">
+                <strong>3-Pillar Security</strong>
+                <span>GPS coordinates, biometric pass, and facial audit snapshot</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Active Shift Duty Workspace -->
+      <div class="duty-workspace-layout" *ngIf="!isLoading && currentShift">
+        <!-- Duty Overview Card -->
+        <div class="cms-card duty-card">
+          <div class="duty-card-header">
+            <div class="duty-meta-left">
+              <span class="shift-code-badge">{{ currentShift.shiftCode }}</span>
+              <span class="duty-status-badge" [class.on-duty]="currentShift.isClockedIn">
+                <span class="pulse-dot" *ngIf="currentShift.isClockedIn"></span>
                 {{ currentShift.isClockedIn ? 'ON DUTY' : 'NOT CLOCKED IN' }}
               </span>
             </div>
+            <div class="duty-meta-right">
+              <span class="badge-suite">Active Assignment</span>
+            </div>
+          </div>
 
-            <h4 class="mb-1">{{ currentShift.siteName }}</h4>
-            <p class="text-muted small mb-3"><span class="material-symbols-outlined align-middle fs-6">place</span> {{ currentShift.siteAddress }}</p>
+          <div class="duty-venue-section">
+            <h2 class="venue-name">{{ currentShift.siteName }}</h2>
+            <p class="venue-address">
+              <span class="material-symbols-outlined">place</span>
+              <span>{{ currentShift.siteAddress }}</span>
+            </p>
+          </div>
 
-            <div class="bg-light p-3 rounded mb-4">
-              <div class="d-flex justify-content-between small">
-                <span class="text-muted">Post:</span>
-                <span class="fw-semibold">{{ currentShift.postName }}</span>
+          <!-- Shift Details Grid -->
+          <div class="duty-details-grid">
+            <div class="detail-pill">
+              <span class="detail-label">Assigned Post</span>
+              <span class="detail-value">{{ currentShift.postName }}</span>
+            </div>
+            <div class="detail-pill">
+              <span class="detail-label">Scheduled Hours</span>
+              <span class="detail-value">{{ currentShift.startsAtUtc | date:'shortTime' }} – {{ currentShift.endsAtUtc | date:'shortTime' }}</span>
+            </div>
+            <div class="detail-pill" *ngIf="currentShift.requiredWorkspaceStationName">
+              <span class="detail-label">Designated Workstation</span>
+              <span class="detail-value workstation-tag">{{ currentShift.requiredWorkspaceStationName }}</span>
+            </div>
+          </div>
+
+          <!-- 3-Pillar Verification Matrix -->
+          <div class="verification-section">
+            <div class="verification-header">
+              <div class="v-title-row">
+                <span class="material-symbols-outlined v-shield-icon">security</span>
+                <div>
+                  <h4 class="v-heading">3-Pillar Security Verification</h4>
+                  <p class="v-sub">Strict multi-factor audit required for attendance compliance</p>
+                </div>
               </div>
-              <div class="d-flex justify-content-between small mt-1">
-                <span class="text-muted">Scheduled Shift:</span>
-                <span class="fw-semibold">{{ currentShift.startsAtUtc | date:'shortTime' }} – {{ currentShift.endsAtUtc | date:'shortTime' }}</span>
-              </div>
-              <div class="d-flex justify-content-between small mt-1" *ngIf="currentShift.requiredWorkspaceStationName">
-                <span class="text-muted">Workstation:</span>
-                <span class="badge bg-info text-dark">{{ currentShift.requiredWorkspaceStationName }}</span>
-              </div>
+              <span class="badge-live-sec">Live Telemetry</span>
             </div>
 
-            <!-- Three-Pillar Verification Panel -->
-            <div class="verification-panel bg-light p-3 rounded mb-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="small fw-bold text-dark text-uppercase tracking-wider">3-Pillar Duty Verification</span>
-                <span class="badge bg-primary text-white">Live Security</span>
-              </div>
-
-              <!-- Pillar 1: GPS -->
-              <div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined" [ngClass]="currentPosition ? 'text-success' : 'text-muted'">
-                    {{ currentPosition ? 'location_on' : 'location_searching' }}
-                  </span>
-                  <div>
-                    <div class="small fw-semibold">1. Geolocation Check</div>
-                    <div class="small text-muted font-monospace" *ngIf="currentPosition">
-                      {{ currentPosition.coords.latitude | number:'1.4-4' }}, {{ currentPosition.coords.longitude | number:'1.4-4' }} (±{{ currentPosition.coords.accuracy | number:'1.0-0' }}m)
-                    </div>
-                    <div class="small text-muted" *ngIf="!currentPosition">Acquiring GPS fix...</div>
-                  </div>
-                </div>
-                <span class="badge" [ngClass]="currentPosition ? 'bg-success' : 'bg-secondary'">
-                  {{ currentPosition ? 'Acquired' : 'Pending' }}
-                </span>
-              </div>
-
-              <!-- Pillar 2: Biometrics -->
-              <div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined" [ngClass]="biometricStatus.verified ? 'text-success' : 'text-primary'">
-                    {{ biometricStatus.verified ? 'fingerprint' : 'lock' }}
-                  </span>
-                  <div>
-                    <div class="small fw-semibold">2. Device Biometrics</div>
-                    <div class="small text-muted">{{ biometricStatus.label }}</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-primary"
-                  *ngIf="!biometricStatus.verified && biometricStatus.isAvailable"
-                  (click)="triggerBiometricPrompt()">
-                  Verify FaceID/Touch
-                </button>
-                <span class="badge bg-success" *ngIf="biometricStatus.verified">Verified</span>
-                <span class="badge bg-light text-muted border" *ngIf="!biometricStatus.isAvailable && !biometricStatus.verified">Bypassed</span>
-              </div>
-
-              <!-- Pillar 3: Facecam Snapshot -->
-              <div class="p-2 rounded bg-white border">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="material-symbols-outlined" [ngClass]="capturedPhotoDataUrl ? 'text-success' : 'text-primary'">
-                      photo_camera
+            <div class="pillars-grid">
+              <!-- Pillar 1: GPS Geolocation -->
+              <div class="pillar-card" [class.pillar-success]="!!currentPosition">
+                <div class="pillar-top">
+                  <div class="pillar-icon-box">
+                    <span class="material-symbols-outlined">
+                      {{ currentPosition ? 'location_on' : 'location_searching' }}
                     </span>
-                    <div>
-                      <div class="small fw-semibold">3. Live Facecam Audit</div>
-                      <div class="small text-muted">{{ capturedPhotoDataUrl ? 'Live snapshot captured' : 'Camera snapshot required on clock-in' }}</div>
+                  </div>
+                  <span class="pillar-status" [class.acquired]="!!currentPosition">
+                    {{ currentPosition ? 'Acquired' : 'Pending' }}
+                  </span>
+                </div>
+                <div class="pillar-content">
+                  <span class="pillar-name">1. Geolocation Check</span>
+                  <p class="pillar-telemetry" *ngIf="currentPosition">
+                    {{ currentPosition.coords.latitude | number:'1.4-4' }}, {{ currentPosition.coords.longitude | number:'1.4-4' }}
+                    <span class="acc-meter">(±{{ currentPosition.coords.accuracy | number:'1.0-0' }}m)</span>
+                  </p>
+                  <p class="pillar-telemetry pending" *ngIf="!currentPosition">Acquiring GPS fix...</p>
+                </div>
+              </div>
+
+              <!-- Pillar 2: Device Biometrics -->
+              <div class="pillar-card" [class.pillar-success]="biometricStatus.verified">
+                <div class="pillar-top">
+                  <div class="pillar-icon-box">
+                    <span class="material-symbols-outlined">
+                      {{ biometricStatus.verified ? 'fingerprint' : 'lock' }}
+                    </span>
+                  </div>
+                  <span class="pillar-status" [class.acquired]="biometricStatus.verified">
+                    {{ biometricStatus.verified ? 'Verified' : (biometricStatus.isAvailable ? 'Required' : 'Bypassed') }}
+                  </span>
+                </div>
+                <div class="pillar-content">
+                  <span class="pillar-name">2. Device Biometrics</span>
+                  <p class="pillar-telemetry">{{ biometricStatus.label }}</p>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline mt-2"
+                    *ngIf="!biometricStatus.verified && biometricStatus.isAvailable"
+                    (click)="triggerBiometricPrompt()">
+                    <span class="material-symbols-outlined">fingerprint</span>
+                    <span>Verify Biometrics</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Pillar 3: Live Facecam Audit Snapshot -->
+              <div class="pillar-card span-full" [class.pillar-success]="!!capturedPhotoDataUrl">
+                <div class="pillar-top">
+                  <div class="pillar-icon-box">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                  </div>
+                  <div class="pillar-actions-right">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      *ngIf="!isCameraActive && !capturedPhotoDataUrl"
+                      (click)="startCamera()">
+                      <span class="material-symbols-outlined">camera</span>
+                      <span>Open Camera</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      *ngIf="capturedPhotoDataUrl"
+                      (click)="retakePhoto()">
+                      <span class="material-symbols-outlined">replay</span>
+                      <span>Retake Snapshot</span>
+                    </button>
+                    <span class="pillar-status" [class.acquired]="!!capturedPhotoDataUrl">
+                      {{ capturedPhotoDataUrl ? 'Captured' : 'Required' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="pillar-content">
+                  <span class="pillar-name">3. Live Facial Audit Snapshot</span>
+                  <p class="pillar-telemetry">
+                    {{ capturedPhotoDataUrl ? 'Facial frame captured with embedded cryptographic watermark.' : 'Camera snapshot captured on clock-in to prevent proxy attendance.' }}
+                  </p>
+
+                  <!-- Live Camera Viewfinder -->
+                  <div class="camera-stream-box" *ngIf="isCameraActive">
+                    <video #videoEl autoplay playsinline muted class="camera-video"></video>
+                    <div class="face-oval-guide"></div>
+                    <div class="camera-overlay-controls">
+                      <button type="button" class="btn btn-primary btn-sm" (click)="snapPhoto()">
+                        <span class="material-symbols-outlined">camera</span>
+                        <span>Capture Photo</span>
+                      </button>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary"
-                    *ngIf="!isCameraActive && !capturedPhotoDataUrl"
-                    (click)="startCamera()">
-                    Open Facecam
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary"
-                    *ngIf="capturedPhotoDataUrl"
-                    (click)="retakePhoto()">
-                    Retake
-                  </button>
-                </div>
 
-                <!-- Video Viewfinder Stream -->
-                <div class="camera-stream-box text-center position-relative rounded overflow-hidden mb-2" *ngIf="isCameraActive">
-                  <video #videoEl autoplay playsinline muted class="camera-video"></video>
-                  <div class="face-oval-guide"></div>
-                  <div class="camera-overlay-controls position-absolute bottom-0 start-0 end-0 p-2 d-flex justify-content-center">
-                    <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow" (click)="snapPhoto()">
-                      <span class="material-symbols-outlined fs-6">camera</span> Capture Photo
-                    </button>
+                  <!-- Captured Photo Watermark Preview -->
+                  <div class="captured-preview-box" *ngIf="capturedPhotoDataUrl">
+                    <img [src]="capturedPhotoDataUrl" alt="Facecam Audit Snapshot" class="watermarked-img" />
+                    <div class="watermark-notice">
+                      <span class="material-symbols-outlined">verified</span>
+                      <span>Watermarked: Encoded GPS Lat/Lng &amp; Timestamp</span>
+                    </div>
                   </div>
                 </div>
-
-                <!-- Captured Photo Preview -->
-                <div class="captured-preview-box text-center p-2 rounded bg-light" *ngIf="capturedPhotoDataUrl">
-                  <img [src]="capturedPhotoDataUrl" alt="Facecam Audit Snapshot" class="rounded shadow-sm" style="max-height: 140px; max-width: 100%;" />
-                  <div class="small text-muted mt-1 font-monospace">Watermarked: Lat/Lng + Timestamp Encoded</div>
-                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Hidden canvas used for frame capture & watermarking -->
-            <canvas #canvasEl style="display: none;"></canvas>
+          <!-- Hidden Canvas for Watermark Injection -->
+          <canvas #canvasEl style="display: none;"></canvas>
 
-            <!-- Action buttons -->
-            <div class="d-grid gap-3">
+          <!-- Duty Execution Actions Bar -->
+          <div class="duty-actions-bar">
+            <!-- Clock In Action -->
+            <button
+              type="button"
+              class="btn btn-primary btn-lg full-width"
+              *ngIf="!currentShift.isClockedIn"
+              [disabled]="isActionLoading"
+              (click)="performClockIn()">
+              <span class="material-symbols-outlined">login</span>
+              <span>{{ isActionLoading ? 'Verifying & Clocking In...' : 'Clock In Now' }}</span>
+            </button>
+
+            <!-- On-Duty Actions -->
+            <div class="on-duty-action-group" *ngIf="currentShift.isClockedIn">
               <button
-                class="btn btn-primary btn-lg d-flex align-items-center justify-content-center gap-2"
-                *ngIf="!currentShift.isClockedIn"
+                type="button"
+                class="btn btn-warning-action full-width"
                 [disabled]="isActionLoading"
-                (click)="performClockIn()">
-                <span class="material-symbols-outlined">login</span> Clock In Now
+                (click)="submitCheckCall()">
+                <span class="material-symbols-outlined">health_and_safety</span>
+                <span>Lone Worker Welfare Check-In</span>
               </button>
-
-              <div *ngIf="currentShift.isClockedIn">
-                <div class="d-grid gap-2">
-                  <button
-                    class="btn btn-outline-warning d-flex align-items-center justify-content-center gap-2"
-                    [disabled]="isActionLoading"
-                    (click)="submitCheckCall()">
-                    <span class="material-symbols-outlined">health_and_safety</span> Lone Worker Welfare Check-In
-                  </button>
-                  <button
-                    class="btn btn-danger btn-lg d-flex align-items-center justify-content-center gap-2 mt-2"
-                    [disabled]="isActionLoading"
-                    (click)="performClockOut()">
-                    <span class="material-symbols-outlined">logout</span> Clock Out & End Shift
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                class="btn btn-danger btn-lg full-width mt-3"
+                [disabled]="isActionLoading"
+                (click)="performClockOut()">
+                <span class="material-symbols-outlined">logout</span>
+                <span>Clock Out &amp; End Shift</span>
+              </button>
             </div>
+          </div>
 
-            <!-- Handshake alert -->
-            <div class="alert alert-success mt-4 mb-0 small d-flex align-items-center gap-2" *ngIf="currentShift.isClockedIn && currentShift.requiredWorkspaceStationName">
-              <span class="material-symbols-outlined text-success">desktop_windows</span>
-              <div>
-                <strong>Workstation Access Unlocked:</strong> You are actively authorized to sign in to <strong>{{ currentShift.requiredWorkspaceStationName }}</strong>.
-              </div>
+          <!-- Workstation Handshake Notification -->
+          <div class="workstation-handshake-box" *ngIf="currentShift.isClockedIn && currentShift.requiredWorkspaceStationName">
+            <span class="material-symbols-outlined ws-icon">desktop_windows</span>
+            <div class="ws-content">
+              <strong>Workstation Access Unlocked</strong>
+              <p>You are actively authorized to authenticate into <strong>{{ currentShift.requiredWorkspaceStationName }}</strong>.</p>
             </div>
           </div>
         </div>
@@ -200,24 +351,156 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
-    .clock-page {
-      padding: 24px;
-      max-width: 900px;
-      margin: 0 auto;
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
+
+    .bcp-page-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 0 4px 32px 4px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    /* Page Header */
     .page-header {
-      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      box-sizing: border-box;
     }
-    .page-title {
-      font-size: 22px;
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .title-row h1 {
+      font-size: 26px;
       font-weight: 800;
       color: #0f172a;
-      letter-spacing: -0.4px;
       margin: 0;
+      letter-spacing: -0.5px;
     }
-    .text-muted {
-      color: #64748b !important;
-      font-size: 13.5px;
+
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .info-trigger-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .info-trigger-btn:hover { color: #0050e5; }
+    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
+    .header-actions { display: flex; gap: 12px; }
+
+    /* Sub-Nav Pill Navigation */
+    .bcp-subnav-tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 4px 10px 4px;
+      width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: #0050e5 #f1f5f9;
+      box-sizing: border-box;
+    }
+
+    .subnav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .subnav-tab:hover {
+      background: #f8fafc;
+      color: #0050e5;
+      border-color: #cbd5e1;
+    }
+
+    .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+    }
+
+    .subnav-tab.active .material-symbols-outlined {
+      color: #ffffff;
+    }
+
+    .subnav-tab .material-symbols-outlined {
+      font-size: 18px;
+      color: #64748b;
     }
 
     /* Buttons */
@@ -225,162 +508,743 @@ import { ToastService } from '../../../core/services/toast.service';
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13.5px;
       font-weight: 600;
-      font-size: 13px;
-      padding: 9px 16px;
-      border-radius: 8px;
-      border: 1px solid transparent;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
       text-decoration: none;
+      border: 1px solid transparent;
+      box-sizing: border-box;
     }
+
+    .btn .material-symbols-outlined {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12.5px;
+      border-radius: 8px;
+    }
+
     .btn-lg {
-      padding: 12px 24px;
+      padding: 14px 28px;
       font-size: 15px;
       font-weight: 700;
+      border-radius: 12px;
     }
+
     .btn-primary {
       background: #0050e5;
       color: #ffffff;
-      border-color: #0050e5;
     }
+
     .btn-primary:hover {
-      background: #003db3;
-      border-color: #003db3;
+      background: #0043c2;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.2);
     }
-    .btn-outline-primary {
+
+    .btn-outline {
       background: #ffffff;
-      color: #0050e5;
-      border-color: #0050e5;
+      border: 1px solid #cbd5e1;
+      color: #334155;
     }
-    .btn-outline-primary:hover {
-      background: #eff6ff;
+
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
     }
-    .btn-outline-warning {
-      background: #ffffff;
-      color: #d97706;
-      border-color: #f59e0b;
-    }
-    .btn-outline-warning:hover {
+
+    .btn-warning-action {
       background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 12px;
     }
+
+    .btn-warning-action:hover {
+      background: #fef3c7;
+      border-color: #fcd34d;
+    }
+
     .btn-danger {
       background: #dc2626;
       color: #ffffff;
-      border-color: #dc2626;
     }
+
     .btn-danger:hover {
       background: #b91c1c;
-      border-color: #b91c1c;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
     }
 
-    /* Cards & Layout */
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      margin: -12px;
+    .full-width {
+      width: 100%;
     }
-    .justify-content-center { justify-content: center; }
-    .col-lg-6 {
-      flex: 0 0 100%;
-      max-width: 600px;
-      padding: 12px;
-      box-sizing: border-box;
-    }
-    .card {
+
+    /* Canonical BCC CMS Card */
+    .cms-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      overflow: hidden;
+      box-sizing: border-box;
+      width: 100%;
     }
-    .border-0 { border: none !important; }
-    .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-    .bg-light { background: #f8fafc !important; }
 
-    /* GPS Status Box */
-    .gps-status-card {
+    /* Loading State Card */
+    .loading-card {
+      padding: 60px 24px;
+      text-align: center;
+    }
+
+    .spinner-ring {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #eff6ff;
+      border-top-color: #0050e5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px auto;
+    }
+
+    .loading-card h4 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+    }
+
+    .loading-card p {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0;
+    }
+
+    /* Canonical Empty State */
+    .empty-state-card {
+      padding: 56px 24px;
+      text-align: center;
+      max-width: 640px;
+      margin: 20px auto;
+    }
+
+    .empty-icon-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+    }
+
+    .empty-icon-circle .material-symbols-outlined {
+      font-size: 32px;
+    }
+
+    .empty-state-card h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+    }
+
+    .empty-state-card p {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0 0 24px 0;
+      line-height: 1.6;
+    }
+
+    .empty-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+
+    /* Guidance Strip */
+    .empty-guidance-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 28px;
+      text-align: left;
+    }
+
+    .guidance-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
       background: #f8fafc;
-      border: 1px dashed #cbd5e1;
+      border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 16px;
-      transition: all 0.2s ease;
-    }
-    .gps-status-card.gps-acquired {
-      background: #f0fdf4;
-      border-color: #86efac;
     }
 
-    /* Badges */
-    .badge {
+    .guidance-icon-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .guidance-icon-circle .material-symbols-outlined {
+      font-size: 20px;
+    }
+
+    .guidance-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .guidance-text strong {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .guidance-text span {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* Active Duty Card Layout */
+    .duty-workspace-layout {
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .duty-card {
+      padding: 28px;
+    }
+
+    .duty-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 20px;
+    }
+
+    .duty-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .shift-code-badge {
+      font-family: monospace;
+      font-size: 13px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .duty-status-badge {
       display: inline-flex;
       align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: #fffbeb;
+      color: #d97706;
+      border: 1px solid #fef3c7;
+      text-transform: uppercase;
+    }
+
+    .duty-status-badge.on-duty {
+      background: #f0fdf4;
+      color: #16a34a;
+      border-color: #bbf7d0;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 rgba(22, 163, 74, 0.7);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+    }
+
+    .duty-venue-section {
+      margin-bottom: 20px;
+    }
+
+    .venue-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.4px;
+    }
+
+    .venue-address {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #64748b;
+      font-size: 13.5px;
+      margin: 0;
+    }
+
+    .venue-address .material-symbols-outlined {
+      font-size: 18px;
+      color: #0050e5;
+    }
+
+    /* Duty Details Grid */
+    .duty-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .detail-pill {
+      display: flex;
+      flex-direction: column;
       gap: 4px;
-      padding: 4px 8px;
-      border-radius: 6px;
+    }
+
+    .detail-label {
       font-size: 11px;
       font-weight: 700;
+      text-transform: uppercase;
+      color: #94a3b8;
+      letter-spacing: 0.4px;
     }
-    .bg-primary { background: #0050e5 !important; color: #ffffff !important; }
-    .bg-warning { background: #f59e0b !important; color: #ffffff !important; }
-    .bg-info { background: #0284c7 !important; color: #ffffff !important; }
-    .text-primary { color: #0050e5 !important; }
-    .text-success { color: #16a34a !important; }
-    .text-dark { color: #0f172a !important; }
-    .font-monospace { font-family: monospace; }
-    .fw-bold { font-weight: 700; }
-    .fw-semibold { font-weight: 600; }
-    .fs-2 { font-size: 28px; }
-    .fs-6 { font-size: 16px; }
-    .small { font-size: 12px; }
-    .d-flex { display: flex; }
-    .d-grid { display: grid; }
-    .justify-content-between { justify-content: space-between; }
-    .align-items-center { align-items: center; }
-    .gap-2 { gap: 8px; }
-    .gap-3 { gap: 12px; }
-    .text-center { text-align: center; }
-    .mb-1 { margin-bottom: 4px; }
-    .mb-2 { margin-bottom: 8px; }
-    .mb-3 { margin-bottom: 12px; }
-    .mb-4 { margin-bottom: 24px; }
-    .m-0 { margin: 0; }
-    .mt-1 { margin-top: 4px; }
-    .mt-2 { margin-top: 8px; }
-    .mt-4 { margin-top: 24px; }
-    .p-3 { padding: 16px; }
-    .p-4 { padding: 24px; }
-    .p-5 { padding: 48px; }
-    .rounded { border-radius: 8px; }
 
-    /* Alert */
-    .alert {
-      padding: 12px 16px;
-      border-radius: 10px;
+    .detail-value {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
     }
-    .alert-success {
+
+    .workstation-tag {
+      color: #0050e5;
+    }
+
+    /* Verification Section */
+    .verification-section {
+      padding: 20px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      margin-bottom: 24px;
+    }
+
+    .verification-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .v-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .v-shield-icon {
+      font-size: 22px;
+      color: #0050e5;
+    }
+
+    .v-heading {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .v-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .badge-live-sec {
+      font-size: 10px;
+      font-weight: 800;
+      background: #0050e5;
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .pillar-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .pillar-card.span-full {
+      grid-column: 1 / -1;
+    }
+
+    .pillar-card.pillar-success {
+      border-color: #bbf7d0;
+      background: #fcfffd;
+    }
+
+    .pillar-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pillar-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pillar-success .pillar-icon-box {
       background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .pillar-icon-box .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    .pillar-status {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .pillar-status.acquired {
+      background: #f0fdf4;
+      color: #16a34a;
       border: 1px solid #bbf7d0;
-      color: #15803d;
+    }
+
+    .pillar-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .pillar-telemetry {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.4;
+      font-family: inherit;
+    }
+
+    .acc-meter {
+      font-family: monospace;
+      color: #0050e5;
+      font-weight: 600;
+    }
+
+    .pillar-telemetry.pending {
+      color: #d97706;
+      font-style: italic;
+    }
+
+    .pillar-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Camera Viewfinder */
+    .camera-stream-box {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      margin: 12px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .camera-video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .face-oval-guide {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 180px;
+      height: 220px;
+      border: 2px dashed rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .camera-overlay-controls {
+      position: absolute;
+      bottom: 12px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Captured Preview */
+    .captured-preview-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .watermarked-img {
+      max-height: 160px;
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: inline-block;
+    }
+
+    .watermark-notice {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #16a34a;
+      font-weight: 600;
+    }
+
+    .watermark-notice .material-symbols-outlined {
+      font-size: 16px;
+    }
+
+    /* Actions Bar */
+    .duty-actions-bar {
+      margin-top: 24px;
+    }
+
+    .on-duty-action-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+
+    /* Workstation Handshake */
+    .workstation-handshake-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    .ws-icon {
+      font-size: 26px;
+      color: #0050e5;
+    }
+
+    .ws-content strong {
+      font-size: 13.5px;
+      color: #0050e5;
+      display: block;
+    }
+
+    .ws-content p {
+      font-size: 12.5px;
+      color: #334155;
+      margin: 2px 0 0 0;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .spin {
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .bcp-page-container {
+        padding: 0 0 24px 0 !important;
+        gap: 14px !important;
+      }
+
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px 18px;
+        gap: 14px;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .header-actions .btn {
+        flex: 1;
+      }
+
+      .empty-guidance-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .pillars-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .duty-card {
+        padding: 18px;
+      }
     }
 
     /* Dark Mode */
-    :host-context(.dark-mode) .clock-page { color: #f8fafc; }
-    :host-context(.dark-mode) .page-title { color: #f8fafc; }
-    :host-context(.dark-mode) .card {
+    :host-context(.dark-mode) .bcp-page-container { color: #f8fafc; }
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .cms-card {
       background: #1e293b;
       border-color: rgba(255,255,255,0.08);
       color: #f8fafc;
     }
-    :host-context(.dark-mode) .bg-light {
-      background: #0f172a !important;
+
+    :host-context(.dark-mode) .title-row h1,
+    :host-context(.dark-mode) .empty-state-card h3,
+    :host-context(.dark-mode) .venue-name,
+    :host-context(.dark-mode) .v-heading,
+    :host-context(.dark-mode) .pillar-name,
+    :host-context(.dark-mode) .guidance-text strong {
+      color: #f8fafc;
     }
-    :host-context(.dark-mode) .gps-status-card {
+
+    :host-context(.dark-mode) .breadcrumb .current { color: #cbd5e1; }
+    :host-context(.dark-mode) .duty-details-grid,
+    :host-context(.dark-mode) .verification-section,
+    :host-context(.dark-mode) .guidance-card,
+    :host-context(.dark-mode) .captured-preview-box {
       background: #0f172a;
-      border-color: #334155;
+      border-color: rgba(255,255,255,0.08);
     }
-    :host-context(.dark-mode) .gps-status-card.gps-acquired {
-      background: rgba(22, 163, 74, 0.15);
-      border-color: rgba(22, 163, 74, 0.4);
+
+    :host-context(.dark-mode) .pillar-card {
+      background: #1e293b;
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    :host-context(.dark-mode) .pillar-card.pillar-success {
+      background: rgba(22, 163, 74, 0.1);
+      border-color: rgba(22, 163, 74, 0.3);
+    }
+
+    :host-context(.dark-mode) .subnav-tab {
+      background: #1e293b;
+      border-color: rgba(255,255,255,0.08);
+      color: #cbd5e1;
+    }
+
+    :host-context(.dark-mode) .subnav-tab:hover {
+      background: #334155;
+    }
+
+    :host-context(.dark-mode) .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+    }
+
+    :host-context(.dark-mode) .btn-outline {
+      background: #1e293b;
+      border-color: rgba(255,255,255,0.15);
+      color: #cbd5e1;
+    }
+
+    :host-context(.dark-mode) .btn-outline:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+
+    :host-context(.dark-mode) .guidance-icon-circle {
+      background: #1e293b;
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    :host-context(.dark-mode) .detail-value {
+      color: #f8fafc;
     }
   `]
 })
@@ -408,7 +1272,8 @@ export class WorkforceClockComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly workforceService: WorkforceService,
-    private readonly toast: ToastService
+    private readonly toast: ToastService,
+    private readonly masterHelpService: MasterHelpService
   ) { }
 
   ngOnInit(): void {
@@ -419,6 +1284,13 @@ export class WorkforceClockComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopCamera();
+  }
+
+  /**
+   * Opens the Central Master Page Help & Workflow Guide drawer for this screen.
+   */
+  openHelp(): void {
+    this.masterHelpService.open('/attendance/workspace/clock');
   }
 
   acquireGps(): void {
