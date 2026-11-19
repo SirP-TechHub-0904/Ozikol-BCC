@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } from '../services/template-security-scanner.service';
 
 /**
@@ -10,7 +11,7 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
 @Component({
   selector: 'app-template-security-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="security-modal-overlay" *ngIf="state.isOpen" (click)="onBackdropClick($event)">
       <div class="security-modal-card" (click)="$event.stopPropagation()">
@@ -148,8 +149,35 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
           </div>
         </div>
 
+        <!-- Security Override Panel (When user clicks Acknowledge & Declare Safe) -->
+        <div class="override-panel" *ngIf="showOverridePrompt && state.hasCriticalThreats">
+          <div class="override-panel-header">
+            <span class="material-symbols-outlined text-royal-blue">verified_user</span>
+            <span>Declare Code Safe &amp; Record Central Audit Trail</span>
+          </div>
+          <p class="override-panel-desc">
+            You are authorizing persistence of code patterns flagged by the security engine. An immutable audit record with your operator email, IP, and the audited snippets will be dispatched to Central Administration.
+          </p>
+          <div class="override-input-row">
+            <input
+              type="text"
+              class="form-control override-input"
+              [(ngModel)]="overrideReason"
+              placeholder="e.g. Verified vendor slider library or trusted template asset"
+              maxlength="250"
+            />
+            <button type="button" class="btn btn-confirm-override" (click)="confirmOverride()">
+              <span class="material-symbols-outlined">shield</span>
+              <span>Confirm &amp; Upload</span>
+            </button>
+            <button type="button" class="btn btn-cancel-override" (click)="cancelOverridePrompt()">
+              Cancel
+            </button>
+          </div>
+        </div>
+
         <!-- Footer Actions -->
-        <div class="modal-footer">
+        <div class="modal-footer" *ngIf="!showOverridePrompt">
           <button type="button" class="btn btn-secondary-back" (click)="close()">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Return to Editor</span>
@@ -168,12 +196,13 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
 
           <button
             type="button"
-            class="btn btn-blocked-disabled"
+            class="btn btn-declare-safe"
             *ngIf="state.hasCriticalThreats"
-            disabled
+            (click)="openOverridePrompt()"
+            title="Acknowledge flagged patterns and proceed with Central audit record"
           >
-            <span class="material-symbols-outlined">block</span>
-            <span>Save Blocked (Resolve Violations)</span>
+            <span class="material-symbols-outlined">verified_user</span>
+            <span>Acknowledge &amp; Declare Safe</span>
           </button>
         </div>
       </div>
@@ -587,6 +616,111 @@ import { TemplateSecurityScannerService, SecurityScanState, SecurityViolation } 
       box-shadow: 0 6px 16px rgba(0, 80, 229, 0.35);
     }
 
+    .btn-declare-safe {
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+    }
+
+    .btn-declare-safe:hover {
+      background: #0043c2;
+      box-shadow: 0 6px 16px rgba(0, 80, 229, 0.35);
+    }
+
+    .override-panel {
+      padding: 16px 20px;
+      margin: 16px 24px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .override-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .text-royal-blue {
+      color: #0050e5;
+    }
+
+    .override-panel-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+
+    .override-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .override-input {
+      flex: 1;
+      min-width: 220px;
+      height: 40px;
+      padding: 0 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .override-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
+    }
+
+    .btn-confirm-override {
+      background: #0050e5;
+      color: #ffffff;
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+      transition: background 0.15s ease;
+    }
+
+    .btn-confirm-override:hover {
+      background: #0043c2;
+    }
+
+    .btn-cancel-override {
+      background: #f1f5f9;
+      color: #475569;
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+    }
+
+    .btn-cancel-override:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
     .btn-blocked-disabled {
       background: #fee2e2;
       color: #991b1b;
@@ -625,9 +759,18 @@ export class TemplateSecurityModalComponent {
     violations: []
   };
 
+  /** Controls display of the inline override justification form */
+  showOverridePrompt: boolean = false;
+  /** Admin-provided justification for bypassing false positives */
+  overrideReason: string = '';
+
   constructor(private securityScanner: TemplateSecurityScannerService) {
     this.securityScanner.state$.subscribe(s => {
       this.state = s;
+      if (!s.isOpen) {
+        this.showOverridePrompt = false;
+        this.overrideReason = '';
+      }
     });
   }
 
@@ -635,7 +778,24 @@ export class TemplateSecurityModalComponent {
     this.securityScanner.proceedWithSave();
   }
 
+  openOverridePrompt(): void {
+    this.showOverridePrompt = true;
+  }
+
+  cancelOverridePrompt(): void {
+    this.showOverridePrompt = false;
+  }
+
+  confirmOverride(): void {
+    const reason = this.overrideReason && this.overrideReason.trim().length > 0
+      ? this.overrideReason.trim()
+      : 'Approved vendor script or trusted template asset.';
+    this.securityScanner.overrideAndProceed(reason);
+  }
+
   close(): void {
+    this.showOverridePrompt = false;
+    this.overrideReason = '';
     this.securityScanner.close();
   }
 

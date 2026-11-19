@@ -11,7 +11,7 @@ import { HtmlAssemblerService } from './services/html-assembler.service';
 import { UniversalPreviewModalService } from './services/universal-preview-modal.service';
 import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
 import { TemplateSecurityModalComponent } from './template-security-modal/template-security-modal.component';
-import { TemplateSecurityScannerService } from './services/template-security-scanner.service';
+import { TemplateSecurityScannerService, SecurityScanOverride } from './services/template-security-scanner.service';
 
 export interface InstalledTemplateItem {
   id: string;
@@ -1626,7 +1626,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         category: 'CSS File Upload',
         html: '',
         css: cssContent,
-        onConfirmSave: () => this.executeUploadAndLinkCss()
+        onConfirmSave: (override) => this.executeUploadAndLinkCss(override)
       });
     };
     reader.onerror = () => {
@@ -1635,12 +1635,18 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     reader.readAsText(this.selectedCssFile);
   }
 
-  private executeUploadAndLinkCss(): void {
+  private executeUploadAndLinkCss(override?: SecurityScanOverride): void {
     if (!this.selectedCssFile) return;
 
     this.uploadingCss = true;
     const formData = new FormData();
     formData.append('file', this.selectedCssFile);
+    if (override?.overrideSecurityScan) {
+      formData.append('overrideSecurityScan', 'true');
+      if (override.overrideReason) {
+        formData.append('overrideReason', override.overrideReason);
+      }
+    }
 
     this.api.post<any>('ContentApi/upload-css', formData).subscribe({
       next: (res) => {
@@ -1660,9 +1666,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.uploadingCss = false;
-        this.resetCssUploadState();
-        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
-        this.toast.error(errMsg);
+        if (err?.status === 400 && err?.error?.data?.violations) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          this.resetCssUploadState();
+          const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
+          this.toast.error(errMsg);
+        }
       }
     });
   }
@@ -1685,7 +1695,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         category: 'JavaScript File Upload',
         html: '',
         js: jsContent,
-        onConfirmSave: () => this.executeUploadAndLinkJs()
+        onConfirmSave: (override) => this.executeUploadAndLinkJs(override)
       });
     };
     reader.onerror = () => {
@@ -1694,12 +1704,18 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     reader.readAsText(this.selectedJsFile);
   }
 
-  private executeUploadAndLinkJs(): void {
+  private executeUploadAndLinkJs(override?: SecurityScanOverride): void {
     if (!this.selectedJsFile) return;
 
     this.uploadingJs = true;
     const formData = new FormData();
     formData.append('file', this.selectedJsFile);
+    if (override?.overrideSecurityScan) {
+      formData.append('overrideSecurityScan', 'true');
+      if (override.overrideReason) {
+        formData.append('overrideReason', override.overrideReason);
+      }
+    }
 
     this.api.post<any>('ContentApi/upload-js', formData).subscribe({
       next: (res) => {
@@ -1723,9 +1739,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.uploadingJs = false;
-        this.resetJsUploadState();
-        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
-        this.toast.error(errMsg);
+        if (err?.status === 400 && err?.error?.data?.violations) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          this.resetJsUploadState();
+          const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
+          this.toast.error(errMsg);
+        }
       }
     });
   }
@@ -1956,12 +1976,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         html: '',
         css: combinedCss,
         js: combinedJs,
-        onConfirmSave: () => this.performBulkUpload()
+        onConfirmSave: (override) => this.performBulkUpload(override)
       });
     });
   }
 
-  private performBulkUpload(): void {
+  private performBulkUpload(override?: SecurityScanOverride): void {
     this.uploadingBulk = true;
     this.bulkUploadFiles.forEach(f => f.status = 'uploading');
 
@@ -1974,6 +1994,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     formData.append('suiteCode', this.bulkUploadSuiteCode || 'global');
     formData.append('startSortOrder', this.bulkUploadStartSort.toString());
     formData.append('sortIncrement', this.bulkUploadSortIncrement.toString());
+    if (override?.overrideSecurityScan) {
+      formData.append('overrideSecurityScan', 'true');
+      if (override.overrideReason) {
+        formData.append('overrideReason', override.overrideReason);
+      }
+    }
 
     this.api.post<any>('ContentApi/code-injections/bulk-upload', formData).subscribe({
       next: (res) => {
@@ -1990,8 +2016,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.bulkUploadFiles.forEach(f => {
           if (f.status === 'uploading') f.status = 'error';
         });
-        const msg = err?.error?.message || err?.error || err?.message || 'Bulk upload failed.';
-        this.toast.error(typeof msg === 'string' ? msg : 'Bulk upload failed.');
+        if (err?.status === 400 && err?.error?.data?.violations) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          const msg = err?.error?.message || err?.error || err?.message || 'Bulk upload failed.';
+          this.toast.error(typeof msg === 'string' ? msg : 'Bulk upload failed.');
+        }
       }
     });
   }
@@ -2066,16 +2096,18 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       html: '',
       css: !isJs ? this.editingAssetContent : '',
       js: isJs ? this.editingAssetContent : '',
-      onConfirmSave: () => this.executeSaveAssetContent()
+      onConfirmSave: (override) => this.executeSaveAssetContent(override)
     });
   }
 
-  private executeSaveAssetContent(): void {
+  private executeSaveAssetContent(override?: SecurityScanOverride): void {
     if (!this.editingAssetTag) return;
 
     this.savingAssetContent = true;
     this.api.put<any>(`ContentApi/code-injections/${this.editingAssetTag.id}/save-asset-content`, {
-      rawContent: this.editingAssetContent
+      rawContent: this.editingAssetContent,
+      overrideSecurityScan: override?.overrideSecurityScan ?? false,
+      overrideReason: override?.overrideReason
     }).subscribe({
       next: (res) => {
         this.savingAssetContent = false;
@@ -2085,7 +2117,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.savingAssetContent = false;
-        this.toast.error('Failed to save asset: ' + (err?.error?.message || err?.message));
+        if (err?.status === 400 && err?.error?.data?.violations) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          this.toast.error('Failed to save asset: ' + (err?.error?.message || err?.message));
+        }
       }
     });
   }
@@ -2234,7 +2270,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           html: '',
           css: cssContent,
           js: '',
-          onConfirmSave: () => this.executeUploadAndSaveCssTag()
+          onConfirmSave: (override) => this.executeUploadAndSaveCssTag(override)
         });
       };
       reader.onerror = () => {
@@ -2255,7 +2291,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           html: '',
           css: '',
           js: jsContent,
-          onConfirmSave: () => this.executeUploadAndSaveJsTag()
+          onConfirmSave: (override) => this.executeUploadAndSaveJsTag(override)
         });
       };
       reader.onerror = () => {
@@ -2276,20 +2312,26 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       html: (!isCss && !isJs) ? this.tagForm.content : '',
       css: isCss ? this.tagForm.content : '',
       js: isJs ? this.tagForm.content : '',
-      onConfirmSave: () => this.executeSaveTag()
+      onConfirmSave: (override) => this.executeSaveTag(override)
     });
   }
 
   /**
    * Uploads the selected CSS file to CDN and atomically saves the code injection tag to the database.
    */
-  private executeUploadAndSaveCssTag(): void {
+  private executeUploadAndSaveCssTag(override?: SecurityScanOverride): void {
     if (!this.selectedCssFile) return;
 
     this.uploadingCss = true;
     this.savingTag = true;
     const formData = new FormData();
     formData.append('file', this.selectedCssFile);
+    if (override?.overrideSecurityScan) {
+      formData.append('overrideSecurityScan', 'true');
+      if (override.overrideReason) {
+        formData.append('overrideReason', override.overrideReason);
+      }
+    }
 
     this.api.post<any>('ContentApi/upload-css', formData).subscribe({
       next: (res) => {
@@ -2301,7 +2343,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.tagForm.tagType = 'link_stylesheet';
           this.tagForm.zone = this.tagFormZone;
 
-          this.persistTagToDatabase(`Stylesheet '${this.tagForm.name}' uploaded to CDN and saved.`);
+          this.persistTagToDatabase(`Stylesheet '${this.tagForm.name}' uploaded to CDN and saved.`, override);
         } else {
           this.uploadingCss = false;
           this.savingTag = false;
@@ -2311,8 +2353,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.uploadingCss = false;
         this.savingTag = false;
-        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
-        this.toast.error(errMsg);
+        if (err?.status === 400 && err?.error?.data?.violations) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
+          this.toast.error(errMsg);
+        }
       }
     });
   }
@@ -2320,13 +2366,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   /**
    * Uploads the selected JS file to CDN and atomically saves the code injection tag to the database.
    */
-  private executeUploadAndSaveJsTag(): void {
+  private executeUploadAndSaveJsTag(override?: SecurityScanOverride): void {
     if (!this.selectedJsFile) return;
 
     this.uploadingJs = true;
     this.savingTag = true;
     const formData = new FormData();
     formData.append('file', this.selectedJsFile);
+    if (override?.overrideSecurityScan) {
+      formData.append('overrideSecurityScan', 'true');
+      if (override.overrideReason) {
+        formData.append('overrideReason', override.overrideReason);
+      }
+    }
 
     this.api.post<any>('ContentApi/upload-js', formData).subscribe({
       next: (res) => {
@@ -2341,7 +2393,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.tagForm.tagType = isFooter ? 'footer_script_url' : 'script_url';
           this.tagForm.zone = this.tagFormZone;
 
-          this.persistTagToDatabase(`Script '${this.tagForm.name}' uploaded to CDN and saved.`);
+          this.persistTagToDatabase(`Script '${this.tagForm.name}' uploaded to CDN and saved.`, override);
         } else {
           this.uploadingJs = false;
           this.savingTag = false;
@@ -2351,28 +2403,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.uploadingJs = false;
         this.savingTag = false;
-        const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
-        this.toast.error(errMsg);
+        if (err?.status === 400 && err?.error?.data?.violations) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          const errMsg = err?.error?.message || err?.message || 'Unable to proceed.';
+          this.toast.error(errMsg);
+        }
       }
     });
   }
 
-  private executeSaveTag(): void {
+  private executeSaveTag(override?: SecurityScanOverride): void {
     const successMsg = this.isEditingTag 
       ? `Tag '${this.tagForm.name}' updated.`
       : `Tag '${this.tagForm.name}' injected into ${this.getZoneShortTitle(this.tagFormZone)}.`;
-    this.persistTagToDatabase(successMsg);
+    this.persistTagToDatabase(successMsg, override);
   }
 
   /**
    * Persists tagForm to the database via ContentApi, displays success feedback, and reloads tag registry.
    */
-  private persistTagToDatabase(successMsg: string): void {
+  private persistTagToDatabase(successMsg: string, override?: SecurityScanOverride): void {
     this.savingTag = true;
     this.tagForm.zone = this.tagFormZone;
 
+    const payload = {
+      ...this.tagForm,
+      overrideSecurityScan: override?.overrideSecurityScan ?? false,
+      overrideReason: override?.overrideReason
+    };
+
     if (this.isEditingTag) {
-      this.api.put<any>(`ContentApi/code-injections/${this.tagForm.id}`, this.tagForm).subscribe({
+      this.api.put<any>(`ContentApi/code-injections/${this.tagForm.id}`, payload).subscribe({
         next: () => {
           this.savingTag = false;
           this.uploadingCss = false;
@@ -2387,12 +2449,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.savingTag = false;
           this.uploadingCss = false;
           this.uploadingJs = false;
-          const msg = err?.error?.message || 'Failed to update tag.';
-          this.toast.error(msg);
+          if (err?.status === 400 && err?.error?.data?.violations) {
+            this.securityScanner.handleBackendError(err);
+          } else {
+            const msg = err?.error?.message || 'Failed to update tag.';
+            this.toast.error(msg);
+          }
         }
       });
     } else {
-      this.api.post<any>('ContentApi/code-injections', this.tagForm).subscribe({
+      this.api.post<any>('ContentApi/code-injections', payload).subscribe({
         next: () => {
           this.savingTag = false;
           this.uploadingCss = false;
@@ -2407,8 +2473,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.savingTag = false;
           this.uploadingCss = false;
           this.uploadingJs = false;
-          const msg = err?.error?.message || 'Failed to save tag.';
-          this.toast.error(msg);
+          if (err?.status === 400 && err?.error?.data?.violations) {
+            this.securityScanner.handleBackendError(err);
+          } else {
+            const msg = err?.error?.message || 'Failed to save tag.';
+            this.toast.error(msg);
+          }
         }
       });
     }

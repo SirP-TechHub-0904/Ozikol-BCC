@@ -443,10 +443,15 @@ namespace Ozikol_BCC.Api.Controllers
         /// Returns the high-speed global CDN stylesheet URL, metadata, and raw CSS content.
         /// </summary>
         /// <param name="file">The .css stylesheet file to upload.</param>
+        /// <param name="overrideSecurityScan">Optional parameter to bypass pre-flight heuristic security blocks.</param>
+        /// <param name="overrideReason">Optional administrative justification for bypassing security blocks.</param>
         /// <returns>JSON payload containing the public Cloudflare CDN stylesheet URL, metadata, and raw CSS content.</returns>
         [HttpPost("upload-css")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadCss([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadCss(
+            [FromForm] IFormFile file,
+            [FromForm] bool overrideSecurityScan = false,
+            [FromForm] string? overrideReason = null)
         {
             if (file == null || file.Length == 0)
             {
@@ -475,11 +480,23 @@ namespace Ozikol_BCC.Api.Controllers
                     var scan = _templateSecurityInspector.Inspect(null, cssText, null, null);
                     if (!scan.IsPassed)
                     {
-                        var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
-                        return BadRequest(ApiResponse<object>.FailureResponse(
-                            $"Security scan failed for stylesheet '{fileName}': {threat?.Message ?? "Prohibited CSS signature detected."}",
-                            null,
-                            scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                        if (overrideSecurityScan)
+                        {
+                            await LogSecurityOverrideToMasterAuditAsync(
+                                "StylesheetAsset",
+                                fileName,
+                                fileName,
+                                overrideReason,
+                                scan.Violations);
+                        }
+                        else
+                        {
+                            var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                            return BadRequest(ApiResponse<object>.FailureResponse(
+                                $"Security scan failed for stylesheet '{fileName}': {threat?.Message ?? "Prohibited CSS signature detected."}",
+                                null,
+                                scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                        }
                     }
                 }
 
@@ -518,10 +535,15 @@ namespace Ozikol_BCC.Api.Controllers
         /// Uploads a custom JavaScript file (.js or .js.download) to Cloudflare R2 Object Storage or local server storage with automatic CDN distribution.
         /// </summary>
         /// <param name="file">The .js script file to upload.</param>
+        /// <param name="overrideSecurityScan">Optional parameter to bypass pre-flight heuristic security blocks.</param>
+        /// <param name="overrideReason">Optional administrative justification for bypassing security blocks.</param>
         /// <returns>JSON payload containing the public script URL, metadata, and raw JS content.</returns>
         [HttpPost("upload-js")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadJs([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadJs(
+            [FromForm] IFormFile file,
+            [FromForm] bool overrideSecurityScan = false,
+            [FromForm] string? overrideReason = null)
         {
             if (file == null || file.Length == 0)
             {
@@ -550,11 +572,23 @@ namespace Ozikol_BCC.Api.Controllers
                     var scan = _templateSecurityInspector.Inspect(null, null, jsText, null);
                     if (!scan.IsPassed)
                     {
-                        var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
-                        return BadRequest(ApiResponse<object>.FailureResponse(
-                            $"Security scan failed for script '{fileName}': {threat?.Message ?? "Prohibited JavaScript execution signature detected."}",
-                            null,
-                            scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                        if (overrideSecurityScan)
+                        {
+                            await LogSecurityOverrideToMasterAuditAsync(
+                                "ScriptAsset",
+                                fileName,
+                                fileName,
+                                overrideReason,
+                                scan.Violations);
+                        }
+                        else
+                        {
+                            var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                            return BadRequest(ApiResponse<object>.FailureResponse(
+                                $"Security scan failed for script '{fileName}': {threat?.Message ?? "Prohibited JavaScript execution signature detected."}",
+                                null,
+                                scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                        }
                     }
                 }
 
@@ -3345,10 +3379,22 @@ Reply ONLY with the valid JSON object.";
 
             if (!scanResult.IsSecure)
             {
-                var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
-                return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Template installation blocked: {criticalCount} security violation(s) detected.",
-                    new { violations = scanResult.Violations }));
+                if (request.OverrideSecurityScan)
+                {
+                    await LogSecurityOverrideToMasterAuditAsync(
+                        "Template",
+                        request.TemplateKey,
+                        request.Name ?? request.TemplateKey,
+                        request.OverrideReason,
+                        scanResult.Violations);
+                }
+                else
+                {
+                    var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Template installation blocked: {criticalCount} security violation(s) detected.",
+                        new { violations = scanResult.Violations }));
+                }
             }
 
             try
@@ -4174,10 +4220,22 @@ Reply ONLY with the valid JSON object.";
 
             if (!scanResult.IsSecure)
             {
-                var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
-                return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Template creation blocked: {criticalCount} security violation(s) detected.",
-                    new { violations = scanResult.Violations }));
+                if (request.OverrideSecurityScan)
+                {
+                    await LogSecurityOverrideToMasterAuditAsync(
+                        "Template",
+                        request.TemplateKey ?? request.Name,
+                        request.Name,
+                        request.OverrideReason,
+                        scanResult.Violations);
+                }
+                else
+                {
+                    var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Template creation blocked: {criticalCount} security violation(s) detected.",
+                        new { violations = scanResult.Violations }));
+                }
             }
 
             try
@@ -4334,10 +4392,22 @@ Reply ONLY with the valid JSON object.";
 
             if (!scanResult.IsSecure)
             {
-                var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
-                return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Template update blocked: {criticalCount} security violation(s) detected.",
-                    new { violations = scanResult.Violations }));
+                if (request.OverrideSecurityScan)
+                {
+                    await LogSecurityOverrideToMasterAuditAsync(
+                        "Template",
+                        id,
+                        request.Name ?? id,
+                        request.OverrideReason,
+                        scanResult.Violations);
+                }
+                else
+                {
+                    var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Template update blocked: {criticalCount} security violation(s) detected.",
+                        new { violations = scanResult.Violations }));
+                }
             }
 
             try
@@ -7117,11 +7187,23 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!scan.IsPassed)
             {
-                var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
-                return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Security inspection failed for tag '{request.Name}': {threat?.Message ?? "Prohibited code signature detected."}",
-                    null,
-                    scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                if (request.OverrideSecurityScan)
+                {
+                    await LogSecurityOverrideToMasterAuditAsync(
+                        "CodeInjectionTag",
+                        request.Name,
+                        request.Name,
+                        request.OverrideReason,
+                        scan.Violations);
+                }
+                else
+                {
+                    var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Security inspection failed for tag '{request.Name}': {threat?.Message ?? "Prohibited code signature detected."}",
+                        null,
+                        scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                }
             }
 
             try
@@ -7205,6 +7287,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         /// <param name="suiteCode">Theme suite scope: 'global' or a specific theme suite code. Defaults to 'global'.</param>
         /// <param name="startSortOrder">Starting sort order. Defaults to 10.</param>
         /// <param name="sortIncrement">Sort order increment per item. Defaults to 10.</param>
+        /// <param name="overrideSecurityScan">Optional parameter to bypass pre-flight heuristic security blocks.</param>
+        /// <param name="overrideReason">Optional administrative justification for bypassing security blocks.</param>
         /// <returns>List of newly created and injected SiteCodeInjectionTag entities.</returns>
         [HttpPost("code-injections/bulk-upload")]
         [Consumes("multipart/form-data")]
@@ -7214,7 +7298,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
             [FromForm] string zone = "head",
             [FromForm] string suiteCode = "global",
             [FromForm] int startSortOrder = 10,
-            [FromForm] int sortIncrement = 10)
+            [FromForm] int sortIncrement = 10,
+            [FromForm] bool overrideSecurityScan = false,
+            [FromForm] string? overrideReason = null)
         {
             if (files == null || files.Count == 0)
             {
@@ -7300,11 +7386,23 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
                         if (!fileScan.IsPassed)
                         {
-                            var threat = fileScan.CriticalViolations.FirstOrDefault() ?? fileScan.Violations.FirstOrDefault();
-                            return BadRequest(ApiResponse<object>.FailureResponse(
-                                $"Security inspection failed for file '{fileName}': {threat?.Message ?? "Prohibited code signature detected."}",
-                                null,
-                                fileScan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                            if (overrideSecurityScan)
+                            {
+                                await LogSecurityOverrideToMasterAuditAsync(
+                                    "BulkCodeInjection",
+                                    fileName,
+                                    fileName,
+                                    overrideReason,
+                                    fileScan.Violations);
+                            }
+                            else
+                            {
+                                var threat = fileScan.CriticalViolations.FirstOrDefault() ?? fileScan.Violations.FirstOrDefault();
+                                return BadRequest(ApiResponse<object>.FailureResponse(
+                                    $"Security inspection failed for file '{fileName}': {threat?.Message ?? "Prohibited code signature detected."}",
+                                    null,
+                                    fileScan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                            }
                         }
                     }
                 }
@@ -7432,11 +7530,23 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!scan.IsPassed)
             {
-                var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
-                return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Security inspection failed for tag '{request.Name}': {threat?.Message ?? "Prohibited code signature detected."}",
-                    null,
-                    scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                if (request.OverrideSecurityScan)
+                {
+                    await LogSecurityOverrideToMasterAuditAsync(
+                        "CodeInjectionTag",
+                        request.Name,
+                        request.Name,
+                        request.OverrideReason,
+                        scan.Violations);
+                }
+                else
+                {
+                    var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Security inspection failed for tag '{request.Name}': {threat?.Message ?? "Prohibited code signature detected."}",
+                        null,
+                        scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                }
             }
 
             var incomingContent = request.Content.Trim();
@@ -7665,11 +7775,23 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             if (!scan.IsPassed)
             {
-                var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
-                return BadRequest(ApiResponse<object>.FailureResponse(
-                    $"Security inspection failed for asset content: {threat?.Message ?? "Prohibited code signature detected."}",
-                    null,
-                    scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                if (request?.OverrideSecurityScan == true)
+                {
+                    await LogSecurityOverrideToMasterAuditAsync(
+                        "CodeInjectionAsset",
+                        id.ToString(),
+                        tag.Name,
+                        request.OverrideReason,
+                        scan.Violations);
+                }
+                else
+                {
+                    var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        $"Security inspection failed for asset content: {threat?.Message ?? "Prohibited code signature detected."}",
+                        null,
+                        scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                }
             }
 
             var extractedUrl = ExtractUrlFromTag(tag.Content);
@@ -7863,6 +7985,77 @@ You MUST respond strictly with a valid JSON object matching this schema without 
 
             return null;
         }
+
+        /// <summary>
+        /// Records an immutable security override event directly into the Central Master Catalog audit log (MasterAuditLogs).
+        /// Captures tenant identification, user credentials, justification reason, and flagged code patterns for platform oversight.
+        /// </summary>
+        /// <param name="entityType">Type of template asset (e.g. 'Template', 'CodeInjection', 'TemplateAsset').</param>
+        /// <param name="entityId">Unique identifier or file name of the affected asset.</param>
+        /// <param name="targetName">Human-readable name of the template or asset.</param>
+        /// <param name="overrideReason">Administrative justification provided by the operator.</param>
+        /// <param name="violations">Collection of security violations detected by the inspector.</param>
+        private async Task LogSecurityOverrideToMasterAuditAsync(
+            string entityType,
+            string entityId,
+            string targetName,
+            string? overrideReason,
+            IEnumerable<Ozikol_BCC.Api.Services.TemplateSecurityViolation> violations)
+        {
+            if (_masterCatalogDbContext == null) return;
+
+            try
+            {
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                var operatorName = User?.Identity?.Name ?? "Tenant Administrator";
+                var operatorEmail = User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? operatorName;
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var ua = Request.Headers.UserAgent.ToString();
+
+                var violationList = violations?.ToList() ?? new List<Ozikol_BCC.Api.Services.TemplateSecurityViolation>();
+                var critCount = violationList.Count(v => v.Severity == "Critical");
+
+                var auditLog = new MasterAuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
+                    UserName = $"{operatorName} ({tenantSlug})",
+                    Action = "SecurityOverride",
+                    EntityType = entityType,
+                    EntityId = entityId,
+                    Summary = $"Security override by {operatorEmail} on tenant '{tenantSlug}': {overrideReason ?? "Declared safe by tenant admin"}. {critCount} critical violation(s) bypassed for '{targetName}'.",
+                    NewValues = JsonSerializer.Serialize(new
+                    {
+                        tenantKey = tenantSlug,
+                        targetName,
+                        overrideReason = overrideReason ?? "Declared safe by tenant admin",
+                        operatorEmail,
+                        operatorName,
+                        violations = violationList.Select(v => new
+                        {
+                            v.Field,
+                            v.ThreatCategory,
+                            v.Severity,
+                            v.Message,
+                            v.Snippet,
+                            v.LineNumber
+                        }),
+                        timestampUtc = DateTime.UtcNow
+                    }),
+                    IpAddress = ip,
+                    UserAgent = ua,
+                    CreatedUtc = DateTime.UtcNow
+                };
+
+                _masterCatalogDbContext.MasterAuditLogs.Add(auditLog);
+                await _masterCatalogDbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Telemetry warning: log failure to console without impeding tenant operations
+                Console.WriteLine($"[SecurityOverrideAudit] Warning: Failed to persist MasterAuditLog: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>
@@ -7871,6 +8064,17 @@ You MUST respond strictly with a valid JSON object matching this schema without 
     public class SaveAssetContentRequest
     {
         public string RawContent { get; set; } = string.Empty;
+
+        /// <summary>
+        /// When true, allows an authorized tenant administrator to bypass pre-flight heuristic security blocks.
+        /// Automatically dispatches an immutable security override event to Central MasterAuditLogs for supervisory oversight.
+        /// </summary>
+        public bool OverrideSecurityScan { get; set; } = false;
+
+        /// <summary>
+        /// Administrative justification recorded when declaring flagged assets safe.
+        /// </summary>
+        public string? OverrideReason { get; set; }
     }
 
     /// <summary>
@@ -7890,6 +8094,17 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? DefaultContentJson { get; set; }
         public string? Version { get; set; }
         public string? InstalledVersion { get; set; } = "1.0.0";
+
+        /// <summary>
+        /// When true, allows an authorized tenant administrator to bypass pre-flight heuristic security blocks.
+        /// Automatically dispatches an immutable security override event to Central MasterAuditLogs for supervisory oversight.
+        /// </summary>
+        public bool OverrideSecurityScan { get; set; } = false;
+
+        /// <summary>
+        /// Administrative justification recorded when declaring flagged assets safe.
+        /// </summary>
+        public string? OverrideReason { get; set; }
     }
 
     /// <summary>
@@ -7944,6 +8159,17 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string Content { get; set; } = string.Empty;
         public int SortOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
+
+        /// <summary>
+        /// When true, allows an authorized tenant administrator to bypass pre-flight heuristic security blocks.
+        /// Automatically dispatches an immutable security override event to Central MasterAuditLogs for supervisory oversight.
+        /// </summary>
+        public bool OverrideSecurityScan { get; set; } = false;
+
+        /// <summary>
+        /// Administrative justification recorded when declaring flagged assets safe.
+        /// </summary>
+        public string? OverrideReason { get; set; }
     }
 
     public class UpdateCodeInjectionRequest
@@ -7955,6 +8181,17 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string Content { get; set; } = string.Empty;
         public int SortOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
+
+        /// <summary>
+        /// When true, allows an authorized tenant administrator to bypass pre-flight heuristic security blocks.
+        /// Automatically dispatches an immutable security override event to Central MasterAuditLogs for supervisory oversight.
+        /// </summary>
+        public bool OverrideSecurityScan { get; set; } = false;
+
+        /// <summary>
+        /// Administrative justification recorded when declaring flagged assets safe.
+        /// </summary>
+        public string? OverrideReason { get; set; }
     }
 
     public class InstallTemplateRequest
@@ -7969,6 +8206,17 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? JsScript { get; set; }
         public string? DefaultContentJson { get; set; }
         public string? InstalledVersion { get; set; } = "1.0.0";
+
+        /// <summary>
+        /// When true, allows an authorized tenant administrator to bypass pre-flight heuristic security blocks.
+        /// Automatically dispatches an immutable security override event to Central MasterAuditLogs for supervisory oversight.
+        /// </summary>
+        public bool OverrideSecurityScan { get; set; } = false;
+
+        /// <summary>
+        /// Administrative justification recorded when declaring flagged assets safe.
+        /// </summary>
+        public string? OverrideReason { get; set; }
     }
 
     public class CreateWebPageRequest
