@@ -7678,6 +7678,34 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         }
 
         /// <summary>
+        /// Deletes multiple code injection tags in a single batch operation.
+        /// </summary>
+        /// <param name="request">Request containing list of tag identifiers to delete.</param>
+        /// <returns>Batch deletion confirmation response.</returns>
+        [HttpPost("code-injections/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteCodeInjections([FromBody] BulkDeleteCodeInjectionsRequest request)
+        {
+            if (request == null || request.Ids == null || request.Ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No tag identifiers provided for deletion."));
+            }
+
+            var tags = await _context.SiteCodeInjectionTags
+                .Where(t => request.Ids.Contains(t.Id))
+                .ToListAsync();
+
+            if (tags.Count == 0)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("None of the specified tags were found."));
+            }
+
+            _context.SiteCodeInjectionTags.RemoveRange(tags);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{tags.Count} tag(s) deleted successfully."));
+        }
+
+        /// <summary>
         /// Toggles active/inactive state of a code injection tag.
         /// </summary>
         /// <param name="id">Tag identifier.</param>
@@ -8192,6 +8220,17 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         /// Administrative justification recorded when declaring flagged assets safe.
         /// </summary>
         public string? OverrideReason { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for batch deleting multiple code injection tags.
+    /// </summary>
+    public class BulkDeleteCodeInjectionsRequest
+    {
+        /// <summary>
+        /// List of unique tag identifiers to delete.
+        /// </summary>
+        public List<Guid> Ids { get; set; } = new();
     }
 
     public class InstallTemplateRequest

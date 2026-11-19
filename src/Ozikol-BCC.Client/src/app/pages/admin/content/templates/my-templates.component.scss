@@ -2784,6 +2784,23 @@
 
       .icon-blue { color: #0284c7; }
       .icon-purple { color: #8b5cf6; }
+      .icon-red { color: #ef4444; }
+
+      &.btn-bulk-delete {
+        background: rgba(239, 68, 68, 0.08) !important;
+        color: #dc2626 !important;
+        border: 1.5px solid rgba(239, 68, 68, 0.35) !important;
+
+        &:hover {
+          background: #dc2626 !important;
+          color: #ffffff !important;
+          border-color: #dc2626 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+
+          .icon-red { color: #ffffff !important; }
+        }
+      }
 
       &.btn-normalize,
       &.btn-font-vault,
@@ -4267,6 +4284,162 @@
     tr.row-drag-over {
       border-top: 2.5px solid #4f46e5 !important;
       background: #eef2ff !important;
+    }
+
+    /* Checkbox & Bulk Selection Styles */
+    .tag-table-checkbox {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      border-radius: 4px;
+      accent-color: #0050e5;
+      vertical-align: middle;
+      transition: transform 0.1s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+
+    tr.row-selected td {
+      background: rgba(0, 80, 229, 0.04) !important;
+    }
+
+    .bulk-selection-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 12px;
+      flex-wrap: wrap;
+
+      .bulk-selection-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .select-icon {
+          color: #38bdf8;
+          font-size: 20px;
+        }
+
+        .selection-text {
+          font-size: 13px;
+          color: #e2e8f0;
+
+          strong {
+            color: #38bdf8;
+          }
+        }
+
+        .btn-clear-selection {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          font-size: 12px;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0 6px;
+
+          &:hover {
+            color: #ffffff;
+          }
+        }
+      }
+
+      .bulk-selection-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .btn-outline-white {
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: #ffffff;
+          padding: 6px 14px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff;
+          }
+        }
+
+        .btn-danger-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 8px;
+          background: #ef4444;
+          color: #ffffff;
+          border: none;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          .material-symbols-outlined {
+            font-size: 16px;
+          }
+
+          &:hover {
+            background: #dc2626;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+          }
+        }
+      }
+    }
+
+    /* Bulk Items Preview Chip List inside confirmation modal */
+    .bulk-items-preview-list {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+
+      .bulk-tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #0f172a;
+
+        .chip-icon {
+          font-size: 14px;
+          color: #0050e5;
+        }
+
+        .chip-name {
+          font-weight: 700;
+        }
+
+        .chip-type {
+          font-size: 10px;
+          color: #64748b;
+          background: #f1f5f9;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+      }
     }
 
     /* ==========================================================================
