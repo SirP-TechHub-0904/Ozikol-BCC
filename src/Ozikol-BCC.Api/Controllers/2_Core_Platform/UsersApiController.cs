@@ -488,8 +488,14 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Permanently deletes a user account with safety checks.
+        /// Safely soft-deletes and archives a member profile.
+        /// Requires the account to be in Suspended state first to guarantee intentional deactivation.
+        /// Automatically revokes active sessions, feature permissions, and marks IsDeleted = true
+        /// so the profile is excluded globally from all queries and counts via the EF Core Global Query Filter
+        /// while preserving historical audit and relational integrity.
         /// </summary>
+        /// <param name="id">The unique identifier of the user to soft-delete.</param>
+        /// <returns>Standardized API response confirming soft deletion and archiving.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
@@ -499,7 +505,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
             }
 
-            var user = await _userManager.FindByIdAsync(id);
+            // Look up user including soft-deleted check
+            var user = await _dbContext.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -508,27 +515,57 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("You cannot delete your own active administrator account."));
             }
 
+            if (user.IsDeleted)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This member account has already been deleted and archived."));
+            }
+
+            // Enforce suspend-first requirement
+            if (user.UserStatus != UserStatus.Suspended)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Member account must be Suspended before it can be deleted. Please suspend the account first in Administrative Actions."));
+            }
+
             var userName = user.FullName;
 
-            // Clean up dependencies
+            // 1. Clean up transient administrative notes and KPI scores
             var notes = _dbContext.BcpUserNotes.Where(n => n.ProfileId == id);
             _dbContext.BcpUserNotes.RemoveRange(notes);
 
             var kpis = _dbContext.BcpKpiUserScores.Where(k => k.ProfileId == id);
             _dbContext.BcpKpiUserScores.RemoveRange(kpis);
 
-            var roles = await _userManager.GetRolesAsync(user);
-            await _userManager.RemoveFromRolesAsync(user, roles);
+            // 2. Revoke active device sessions & tokens immediately
+            var deviceSessions = _dbContext.UserDeviceSessions.Where(s => s.ProfileId == id);
+            _dbContext.UserDeviceSessions.RemoveRange(deviceSessions);
 
-            var result = await _userManager.DeleteAsync(user);
-            if (!result.Succeeded)
+            var userDevices = _dbContext.BcpUserDevices.Where(d => d.UserId == id);
+            _dbContext.BcpUserDevices.RemoveRange(userDevices);
+
+            // 3. Revoke all feature-level permission roles
+            var featureRoles = _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == id);
+            _dbContext.BcpUserFeatureRoles.RemoveRange(featureRoles);
+
+            // 4. Strip ASP.NET Identity roles
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Any())
             {
-                return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", result.Errors.Select(e => e.Description))));
+                await _userManager.RemoveFromRolesAsync(user, roles);
             }
 
-            await LogActivityAsync("CRITICAL_DELETE_USER", $"[CRITICAL] Permanently deleted member account for '{userName}' ({user.Email})", id, userName);
-            await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was permanently deleted by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
-            return Ok(ApiResponse<object>.SuccessResponse(null, $"Member account for '{userName}' has been deleted."));
+            // 5. Apply Soft Delete and permanent lockout
+            user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
+            user.UserStatus = UserStatus.Deleted;
+            user.LockoutEnabled = true;
+            user.LockoutEnd = DateTimeOffset.MaxValue;
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            await _dbContext.SaveChangesAsync();
+
+            await LogActivityAsync("CRITICAL_DELETE_USER", $"[CRITICAL] Soft-deleted and archived member account for '{userName}' ({user.Email})", id, userName);
+            await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was soft-deleted and archived by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Member account for '{userName}' has been securely deleted and archived."));
         }
 
         /// <summary>

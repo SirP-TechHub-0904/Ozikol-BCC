@@ -258,11 +258,15 @@ import { TranslationService } from '../../../core/services/translation.service';
               <div class="danger-row" style="border-top:1px solid #fee2e2; padding-top:14px;">
                 <div>
                   <strong class="text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
-                  <p>{{ 'user_details.delete_desc' | translate:'Permanently remove profile, roles, and records' }}</p>
+                  <p>{{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') }}</p>
                 </div>
-                <a [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
+                <a *ngIf="user.userStatus === 'Suspended'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
                   {{ 'user_details.delete_user' | translate:'Delete User' }}
                 </a>
+                <button *ngIf="user.userStatus !== 'Suspended'" type="button" class="btn btn-outline-danger btn-sm" (click)="toggleAccountStatus()" title="Suspend account to unlock deletion">
+                  <span class="material-symbols-outlined fs-6">block</span>
+                  <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete' }}</span>
+                </button>
               </div>
             </div>
           </div>

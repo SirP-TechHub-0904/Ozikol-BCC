@@ -8048,6 +8048,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Designation")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -8071,6 +8074,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("GuestCompanyName")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("JoinDate")
                         .HasColumnType("datetime2");
@@ -8144,6 +8150,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BcpUserCategoryId");
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");

@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -729,6 +731,305 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             }
         }
         return false;
+    }
+
+    /// <inheritdoc />
+    public async Task<DomainLiveProbeResult> ProbeLiveEndpointsAsync(string domain, CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateDomain(domain);
+        var cleanDomain = validation.IsValid ? validation.SanitizedDomain : (domain ?? string.Empty).Trim().ToLowerInvariant();
+
+        var result = new DomainLiveProbeResult
+        {
+            Domain = cleanDomain
+        };
+
+        if (string.IsNullOrWhiteSpace(cleanDomain))
+        {
+            result.NeedsRepair = false;
+            result.OverallHealthy = false;
+            result.RepairReason = "No domain specified to probe.";
+            return result;
+        }
+
+        // Determine apex host and www host
+        var apexHost = cleanDomain.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+            ? cleanDomain.Substring(4)
+            : cleanDomain;
+        var wwwHost = $"www.{apexHost}";
+
+        result.ProbeLogs.Add($"[{DateTime.UtcNow:O}] Starting live HTTPS endpoint probes for Apex ({apexHost}) and WWW ({wwwHost}).");
+
+        // 1. Probe Apex: https://{apexHost}
+        result.ApexEndpoint = await ProbeSingleEndpointAsync($"https://{apexHost}", apexHost, cancellationToken);
+        result.ProbeLogs.Add($"[{DateTime.UtcNow:O}] Apex ({result.ApexEndpoint.Url}): Live={result.ApexEndpoint.IsLive}, StatusCode={result.ApexEndpoint.StatusCode}, CertSubject='{result.ApexEndpoint.CertSubject}', Mismatch={result.ApexEndpoint.HasCertMismatch}");
+
+        // 2. Probe WWW: https://{wwwHost}
+        result.WwwEndpoint = await ProbeSingleEndpointAsync($"https://{wwwHost}", apexHost, cancellationToken);
+        result.ProbeLogs.Add($"[{DateTime.UtcNow:O}] WWW ({result.WwwEndpoint.Url}): Live={result.WwwEndpoint.IsLive}, StatusCode={result.WwwEndpoint.StatusCode}, CertSubject='{result.WwwEndpoint.CertSubject}', Mismatch={result.WwwEndpoint.HasCertMismatch}");
+
+        // 3. Evaluate health status
+        if (result.ApexEndpoint.HasCertMismatch || result.WwwEndpoint.HasCertMismatch)
+        {
+            result.NeedsRepair = true;
+            result.OverallHealthy = false;
+            var mismatchedEndpoint = result.ApexEndpoint.HasCertMismatch ? result.ApexEndpoint : result.WwwEndpoint;
+            result.RepairReason = $"SSL certificate mismatch detected on {mismatchedEndpoint.Url}. The web server is serving '{mismatchedEndpoint.CertSubject}' instead of a dedicated certificate for '{apexHost}'. Auto-repair can re-issue the certificate and reload Nginx.";
+        }
+        else if (!result.ApexEndpoint.IsLive && !result.WwwEndpoint.IsLive)
+        {
+            result.NeedsRepair = true;
+            result.OverallHealthy = false;
+            result.RepairReason = "Neither apex nor www endpoints responded successfully over HTTPS. Verify DNS propagation or trigger auto-repair.";
+        }
+        else if (!result.ApexEndpoint.IsLive || !result.WwwEndpoint.IsLive)
+        {
+            result.NeedsRepair = true;
+            result.OverallHealthy = false;
+            var offlineName = !result.ApexEndpoint.IsLive ? "Apex (@)" : "WWW";
+            result.RepairReason = $"{offlineName} endpoint is not responding over HTTPS. Both endpoints should be secured.";
+        }
+        else
+        {
+            result.NeedsRepair = false;
+            result.OverallHealthy = true;
+            result.RepairReason = "All endpoints are live, responding over HTTPS, and serving valid SSL certificates.";
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Connects to a specific HTTPS endpoint, capturing the HTTP status code and TLS certificate details.
+    /// Determines whether the server served the correct certificate or fell back to a default vhost.
+    /// </summary>
+    private static async Task<EndpointHealthStatus> ProbeSingleEndpointAsync(string url, string expectedApexDomain, CancellationToken cancellationToken)
+    {
+        var status = new EndpointHealthStatus { Url = url };
+
+        try
+        {
+            using var handler = new SocketsHttpHandler
+            {
+                ConnectTimeout = TimeSpan.FromSeconds(6),
+                PooledConnectionLifetime = TimeSpan.FromMinutes(1),
+                AllowAutoRedirect = false // Inspect this exact endpoint's certificate and HTTP status
+            };
+
+            string? capturedSubject = null;
+            string? capturedIssuer = null;
+            DateTime? capturedNotAfter = null;
+            var sanList = new List<string>();
+
+            handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                if (certificate != null)
+                {
+                    capturedSubject = certificate.Subject;
+                    capturedIssuer = certificate.Issuer;
+
+                    if (certificate is X509Certificate2 cert2)
+                    {
+                        capturedNotAfter = cert2.NotAfter;
+                        foreach (var extension in cert2.Extensions)
+                        {
+                            if (extension.Oid?.Value == "2.5.29.17") // SAN (Subject Alternative Name) OID
+                            {
+                                var rawData = extension.Format(true);
+                                if (!string.IsNullOrWhiteSpace(rawData))
+                                {
+                                    sanList.AddRange(rawData.Split(new[] { '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(s => s.Replace("DNS Name=", string.Empty).Trim())
+                                        .Where(s => !string.IsNullOrWhiteSpace(s)));
+                                }
+                            }
+                        }
+                    }
+                }
+                return true; // Complete handshake to capture HTTP status code
+            };
+
+            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(8) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Ozikol-BCC-LiveProbe/1.0");
+
+            var response = await client.GetAsync(url, cancellationToken);
+            status.StatusCode = (int)response.StatusCode;
+            status.CertSubject = capturedSubject;
+            status.CertIssuer = capturedIssuer;
+            status.CertValidTo = capturedNotAfter;
+
+            // Check if certificate matches expected domain or SAN
+            var cleanExpected = expectedApexDomain.ToLowerInvariant();
+            var matchesSubject = !string.IsNullOrWhiteSpace(capturedSubject) &&
+                capturedSubject.IndexOf(cleanExpected, StringComparison.OrdinalIgnoreCase) >= 0;
+
+            var matchesSan = sanList.Any(san =>
+                san.Equals(cleanExpected, StringComparison.OrdinalIgnoreCase) ||
+                san.Equals($"www.{cleanExpected}", StringComparison.OrdinalIgnoreCase) ||
+                (san.StartsWith("*.") && cleanExpected.EndsWith(san.Substring(2), StringComparison.OrdinalIgnoreCase)));
+
+            if (!matchesSubject && !matchesSan)
+            {
+                status.HasCertMismatch = true;
+                status.DetectedDomainInCert = capturedSubject ?? "Unknown / Default Server";
+                status.ErrorMessage = $"Server returned foreign certificate ({capturedSubject ?? "Default"}). Expected '{expectedApexDomain}'.";
+                status.IsLive = false;
+            }
+            else
+            {
+                status.HasCertMismatch = false;
+                status.DetectedDomainInCert = cleanExpected;
+                // Considered live if status is not server error (502, 503, 504)
+                status.IsLive = response.StatusCode != HttpStatusCode.BadGateway &&
+                                response.StatusCode != HttpStatusCode.ServiceUnavailable &&
+                                response.StatusCode != HttpStatusCode.GatewayTimeout;
+            }
+        }
+        catch (Exception ex)
+        {
+            status.IsLive = false;
+            status.ErrorMessage = ex.Message;
+        }
+
+        return status;
+    }
+
+    /// <inheritdoc />
+    public async Task<DomainRepairResult> RepairSslAndRoutingAsync(
+        string tenantKey,
+        string domain,
+        CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateDomain(domain);
+        if (!validation.IsValid)
+        {
+            return new DomainRepairResult
+            {
+                Succeeded = false,
+                Domain = domain ?? string.Empty,
+                TenantKey = tenantKey,
+                Message = validation.ErrorMessage ?? "Invalid domain format."
+            };
+        }
+
+        var cleanDomain = validation.SanitizedDomain;
+        var apexHost = cleanDomain.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+            ? cleanDomain.Substring(4)
+            : cleanDomain;
+        var wwwHost = $"www.{apexHost}";
+
+        var result = new DomainRepairResult
+        {
+            Domain = cleanDomain,
+            TenantKey = tenantKey,
+            ExecutionLogs = new List<string>()
+        };
+
+        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Initiating automated SSL and routing repair for {cleanDomain} (Tenant: {tenantKey}).");
+
+        // 1. Check DNS resolution for both Apex and WWW to determine which domain flags to pass to Certbot
+        var apexProbe = await ProbeDnsAsync(apexHost, cancellationToken);
+        var wwwProbe = await ProbeDnsAsync(wwwHost, cancellationToken);
+
+        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] DNS probe Apex ({apexHost}): Pointed={apexProbe.IsDnsPointed} (Detected: {apexProbe.DetectedTarget}).");
+        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] DNS probe WWW ({wwwHost}): Pointed={wwwProbe.IsDnsPointed} (Detected: {wwwProbe.DetectedTarget}).");
+
+        var domainFlags = new List<string>();
+        if (apexProbe.IsDnsPointed)
+        {
+            domainFlags.Add($"-d {apexHost}");
+        }
+        if (wwwProbe.IsDnsPointed)
+        {
+            domainFlags.Add($"-d {wwwHost}");
+        }
+
+        // If neither is pointed according to probe, still attempt apexHost and wwwHost
+        if (domainFlags.Count == 0)
+        {
+            result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Warning: Public DNS resolvers did not report platform IP yet. Attempting repair with apex {apexHost} and www {wwwHost}.");
+            domainFlags.Add($"-d {apexHost}");
+            domainFlags.Add($"-d {wwwHost}");
+        }
+
+        // 2. Generate initial Nginx config to ensure /.well-known/acme-challenge/ webroot is active on port 80
+        var configPath = GenerateNginxConfiguration(apexHost, tenantKey, result.ExecutionLogs);
+        ReloadNginx(result.ExecutionLogs);
+
+        // 3. Force Certbot renewal / expansion
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            result.CertbotExecuted = true;
+            try
+            {
+                var adminEmail = _configuration["CustomDomain:SslAdminEmail"] ?? DefaultAdminEmail;
+                var domainArgs = string.Join(" ", domainFlags);
+                var certbotArgs = $"certonly --webroot -w /var/www/certbot {domainArgs} --non-interactive --agree-tos -m {adminEmail} --expand --force-renewal";
+
+                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Running Certbot repair: certbot {certbotArgs}");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "certbot",
+                    Arguments = certbotArgs,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var process = Process.Start(psi);
+                if (process != null)
+                {
+                    var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+                    var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
+                    await process.WaitForExitAsync(cancellationToken);
+
+                    result.CertbotSuccess = process.ExitCode == 0;
+                    result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Certbot exit code: {process.ExitCode}");
+                    if (!string.IsNullOrWhiteSpace(stdout))
+                    {
+                        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Certbot stdout: {stdout.Trim()}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(stderr))
+                    {
+                        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Certbot stderr: {stderr.Trim()}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result.CertbotSuccess = false;
+                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Certbot exception: {ex.Message}");
+                _logger.LogWarning(ex, "Certbot repair failed for {Domain}", cleanDomain);
+            }
+        }
+        else
+        {
+            result.CertbotExecuted = false;
+            result.CertbotSuccess = false;
+            result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Non-Linux environment detected ({RuntimeInformation.OSDescription}). Staging Nginx configuration without direct Certbot execution.");
+        }
+
+        // 4. Regenerate Nginx configuration (which now checks File.Exists for fullchain.pem and binds port 443 SSL block)
+        configPath = GenerateNginxConfiguration(apexHost, tenantKey, result.ExecutionLogs);
+        result.NginxConfigured = !string.IsNullOrWhiteSpace(configPath);
+
+        // 5. Reload Nginx
+        result.NginxReloaded = ReloadNginx(result.ExecutionLogs);
+
+        // 6. Test Live Endpoints
+        result.LiveProbe = await ProbeLiveEndpointsAsync(apexHost, cancellationToken);
+        result.ExecutionLogs.AddRange(result.LiveProbe.ProbeLogs);
+
+        result.Succeeded = result.LiveProbe.OverallHealthy || result.CertbotSuccess;
+        result.Message = result.LiveProbe.OverallHealthy
+            ? $"Domain '{cleanDomain}' repaired successfully. Dedicated SSL certificates are active for {apexHost} and {wwwHost}."
+            : (result.CertbotSuccess
+                ? $"SSL certificate re-issued and Nginx reloaded for '{cleanDomain}'. Live HTTPS endpoints are synchronizing."
+                : $"Repair completed. Check live endpoint logs for details.");
+
+        return result;
     }
 }
 

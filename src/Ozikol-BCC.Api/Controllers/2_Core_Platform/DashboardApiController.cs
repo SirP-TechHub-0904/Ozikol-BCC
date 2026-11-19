@@ -609,6 +609,66 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Probes live HTTPS connectivity, HTTP response status codes, and TLS certificates
+        /// for both Apex (@) and WWW hostnames to detect reachability or certificate mismatches.
+        /// </summary>
+        /// <param name="domain">The domain to probe.</param>
+        /// <returns>Endpoint-specific live TLS diagnostic report.</returns>
+        [HttpGet("probe-custom-domain-live")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> ProbeCustomDomainLive([FromQuery] string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Domain parameter is required."));
+            }
+
+            var probeResult = await _domainProvisioningService.ProbeLiveEndpointsAsync(domain, HttpContext.RequestAborted);
+            return Ok(ApiResponse<DomainLiveProbeResult>.SuccessResponse(probeResult, probeResult.RepairReason));
+        }
+
+        /// <summary>
+        /// Triggers automated SSL re-issuance and Nginx reverse proxy configuration repair
+        /// for a domain experiencing certificate mismatches or missing port 443 virtual host blocks.
+        /// </summary>
+        /// <param name="request">Payload containing tenant key and custom domain.</param>
+        /// <returns>Automated repair execution outcome.</returns>
+        [HttpPost("repair-custom-domain-ssl")]
+        [Authorize(Policy = AuthPolicies.CmsStudio)]
+        public async Task<IActionResult> RepairCustomDomainSsl([FromBody] UpdateCustomDomainRequest request)
+        {
+            var host = HttpContext.Request.Host.ToString();
+            var tenantKeyHeader = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            var candidateKey = !string.IsNullOrWhiteSpace(request.TenantKey) ? request.TenantKey.Trim() : tenantKeyHeader;
+
+            var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => (!string.IsNullOrWhiteSpace(candidateKey) && t.TenantKey == candidateKey)
+                                       || t.PrimaryDomain == host 
+                                       || t.CustomDomain == host);
+
+            if (masterTenant == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
+            }
+
+            var targetDomain = !string.IsNullOrWhiteSpace(request.CustomDomain)
+                ? request.CustomDomain
+                : masterTenant.CustomDomain;
+
+            if (string.IsNullOrWhiteSpace(targetDomain))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No custom domain is linked to this workspace."));
+            }
+
+            var repairResult = await _domainProvisioningService.RepairSslAndRoutingAsync(
+                masterTenant.TenantKey,
+                targetDomain,
+                HttpContext.RequestAborted);
+
+            return Ok(ApiResponse<DomainRepairResult>.SuccessResponse(repairResult, repairResult.Message));
+        }
+
+        /// <summary>
         /// Request model for creating 1 free custom business mailbox.
         /// </summary>
         public class CreateCustomMailboxRequest
