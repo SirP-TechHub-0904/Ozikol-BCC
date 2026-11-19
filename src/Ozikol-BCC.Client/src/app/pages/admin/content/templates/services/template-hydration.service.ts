@@ -402,25 +402,7 @@ export class TemplateHydrationService {
 
     // 0e. Loop over {{#each MenuDropdowns}}...{{/each}} (Legacy Support)
     output = this.replaceBalancedBlock(output, 'MenuDropdowns', (outerTemplate) => {
-      const dropdowns = ctx.dropdowns || opts.previewMenuContent?.dropdowns || (opts.editorTokens?.menuDropdowns?.length ? opts.editorTokens.menuDropdowns : [
-        {
-          title: 'Services',
-          pages: [
-            { title: 'Strategic Consulting', url: '/strategic-advisory', customClass: '' },
-            { title: 'Systems Modernization', url: '/systems-modernization', customClass: '' },
-            { title: 'Performance & Scale', url: '/performance-scale', customClass: '' },
-            { title: 'Enterprise Advisory', url: '/enterprise-governance', customClass: '' }
-          ]
-        },
-        {
-          title: 'Company',
-          pages: [
-            { title: 'About Us', url: '/about', customClass: '' },
-            { title: 'Our History', url: '/history', customClass: '' },
-            { title: 'Leadership Team', url: '/team', customClass: '' }
-          ]
-        }
-      ]);
+      const dropdowns = ctx.dropdowns || opts.previewMenuContent?.dropdowns || opts.editorTokens?.menuDropdowns || [];
 
       if (!Array.isArray(dropdowns) || dropdowns.length === 0) return '';
 
@@ -537,20 +519,6 @@ export class TemplateHydrationService {
             : (p.pageCategory?.categoryName || p.pageCategory?.name || p.categoryName || '');
           return Boolean(catStr && catStr.toLowerCase().trim() === normalized);
         });
-      } else if (normalized.includes('service') || normalized.includes('solution')) {
-        pages = [
-          { title: 'Strategic Consulting', url: '/strategic-advisory' },
-          { title: 'Systems Modernization', url: '/systems-modernization' },
-          { title: 'Performance & Scale', url: '/performance-scale' },
-          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
-        ];
-      } else if (normalized.includes('company') || normalized.includes('about')) {
-        pages = [
-          { title: 'About Us', url: '/about' },
-          { title: 'Leadership & Team', url: '/about' },
-          { title: 'Insights & News', url: '/blog' },
-          { title: 'Request a Service', url: '/request-service' }
-        ];
       }
 
       return pages.map((p: any) => {
@@ -588,14 +556,6 @@ export class TemplateHydrationService {
         });
       }
 
-      // 3. Fallback sample items for realistic preview display if tenant has no tagged pages yet
-      if (pages.length === 0) {
-        const displayTag = tag ? (tag.charAt(0).toUpperCase() + tag.slice(1)) : 'Resource';
-        pages = [
-          { title: `${displayTag} Overview`, url: '#' },
-          { title: `${displayTag} Documentation`, url: '#' }
-        ];
-      }
 
       return pages.map((p: any) => {
         let rendered = innerTemplate;
@@ -644,14 +604,6 @@ export class TemplateHydrationService {
         );
       }
 
-      if (pages.length === 0) {
-        pages = [
-          { title: 'Privacy Policy', url: '/privacy-policy' },
-          { title: 'Terms of Service', url: '/terms-and-conditions' },
-          { title: 'Cookie Policy', url: '/cookie-policy' },
-          { title: 'Sign In', url: '/auth/login' }
-        ];
-      }
 
       return pages.map((lp: any) => {
         let rendered = innerTemplate;
