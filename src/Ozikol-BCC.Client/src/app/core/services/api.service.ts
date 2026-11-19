@@ -9,17 +9,18 @@ import { environment } from '../../../environments/environment';
 export class ApiService {
   /**
    * Resolves the API base endpoint dynamically:
-   * - Local development hosts (`localhost`, `127.0.0.1`, `*.localhost`, `*.127.0.0.1.nip.io`) and
-   *   platform domains (`ozikol.cloud`, `*.ozikol.cloud`, `ozikol.com`, `*.ozikol.com`) use `environment.apiUrl`
-   *   (`http://localhost:51025/api` locally, `https://api-ozikol.ozikol.cloud/api` in production).
-   * - Sovereign custom domains (e.g. `nightpresssecurity.co.uk`) use the same-origin relative `'/api'` endpoint,
-   *   routing through the custom domain's Nginx `location /api/` reverse proxy with zero CORS latency.
+   * - Local development hosts (`localhost`, `127.0.0.1`, `*.localhost`, `*.127.0.0.1.nip.io`) use `environment.apiUrl`
+   *   (`http://localhost:51025/api` locally).
+   * - All production environments (sovereign custom domains e.g. `nightpresssecurity.co.uk` and
+   *   platform subdomains e.g. `choosehc.ozikol.cloud`) use the same-origin relative `'/api'` endpoint,
+   *   routing through Nginx's `location /api/` reverse proxy with zero CORS latency, zero preflights,
+   *   and zero hardcoded hostnames.
    * @returns Resolved API base URL string.
    */
   public static resolveDynamicApiBaseUrl(): string {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname.toLowerCase();
-      if (!ApiService.isLocalOrPlatformHost(hostname)) {
+      if (!ApiService.isLocalDevelopmentHost(hostname)) {
         return '/api';
       }
     }
@@ -28,8 +29,8 @@ export class ApiService {
 
   /**
    * Resolves the root API origin (without trailing `/api`) for SignalR WebSocket hubs:
-   * - Local and platform hosts resolve the origin of `environment.apiUrl`.
-   * - Sovereign custom domains resolve `window.location.origin` so `/hubs/*` routes through the custom domain's Nginx proxy.
+   * - Local development hosts resolve the origin of `environment.apiUrl`.
+   * - All production environments resolve `window.location.origin` so `/hubs/*` routes through Nginx same-origin.
    * @returns Resolved API origin URL string.
    */
   public static resolveDynamicApiOrigin(): string {
@@ -42,6 +43,20 @@ export class ApiService {
   }
 
   /**
+   * Determines whether the specified hostname is a local development environment.
+   * @param hostname Lowercase browser hostname.
+   * @returns True when running on localhost or a loopback address.
+   */
+  public static isLocalDevelopmentHost(hostname: string): boolean {
+    if (!hostname) return true;
+    const lower = hostname.toLowerCase();
+    return lower === 'localhost' ||
+           lower === '127.0.0.1' ||
+           lower.endsWith('.localhost') ||
+           lower.endsWith('.127.0.0.1.nip.io');
+  }
+
+  /**
    * Determines whether the current browser hostname is a local development address
    * or an official Ozikol platform domain/subdomain.
    * @param hostname Lowercase browser hostname.
@@ -50,10 +65,7 @@ export class ApiService {
   public static isLocalOrPlatformHost(hostname: string): boolean {
     if (!hostname) return true;
     const lower = hostname.toLowerCase();
-    return lower === 'localhost' ||
-           lower === '127.0.0.1' ||
-           lower.endsWith('.localhost') ||
-           lower.endsWith('.127.0.0.1.nip.io') ||
+    return ApiService.isLocalDevelopmentHost(lower) ||
            lower === 'ozikol.cloud' ||
            lower.endsWith('.ozikol.cloud') ||
            lower === 'ozikol.com' ||

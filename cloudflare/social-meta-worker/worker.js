@@ -104,27 +104,38 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url);
+      const host = url.hostname.toLowerCase();
       const pathname = url.pathname.toLowerCase();
 
-    // 0. Handle CORS preflight
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          "Access-Control-Allow-Headers": "*"
-        }
-      });
-    }
+      // 0. Immediate Origin Pass-Through for API endpoints & SignalR hubs
+      // Guarantees zero edge interception or CORS degradation for backend services
+      if (host.startsWith("api") || pathname.startsWith("/api/") || pathname.startsWith("/hubs/")) {
+        return fetch(request);
+      }
 
-    // 1. High-performance Edge intercept for AI discovery & SEO metadata endpoints
-    // Normalizes culture prefixes (e.g. /en/sitemap.xml -> /sitemap.xml) and attaches universal CORS
-    const isAiOrSeoFile =
-      pathname === "/llms.txt" || pathname === "/en/llms.txt" || pathname === "/fr/llms.txt" || pathname === "/es/llms.txt" || pathname === "/de/llms.txt" ||
-      pathname === "/llms-full.txt" || pathname === "/en/llms-full.txt" || pathname === "/fr/llms-full.txt" || pathname === "/es/llms-full.txt" || pathname === "/de/llms-full.txt" ||
-      pathname === "/robots.txt" || pathname === "/en/robots.txt" || pathname === "/fr/robots.txt" || pathname === "/es/robots.txt" || pathname === "/de/robots.txt" ||
-      pathname === "/sitemap.xml" || pathname === "/en/sitemap.xml" || pathname === "/fr/sitemap.xml" || pathname === "/es/sitemap.xml" || pathname === "/de/sitemap.xml";
+      // 1. High-performance Edge intercept for AI discovery & SEO metadata endpoints
+      // Normalizes culture prefixes (e.g. /en/sitemap.xml -> /sitemap.xml) and attaches universal CORS
+      const isAiOrSeoFile =
+        pathname === "/llms.txt" || pathname === "/en/llms.txt" || pathname === "/fr/llms.txt" || pathname === "/es/llms.txt" || pathname === "/de/llms.txt" ||
+        pathname === "/llms-full.txt" || pathname === "/en/llms-full.txt" || pathname === "/fr/llms-full.txt" || pathname === "/es/llms-full.txt" || pathname === "/de/llms-full.txt" ||
+        pathname === "/robots.txt" || pathname === "/en/robots.txt" || pathname === "/fr/robots.txt" || pathname === "/es/robots.txt" || pathname === "/de/robots.txt" ||
+        pathname === "/sitemap.xml" || pathname === "/en/sitemap.xml" || pathname === "/fr/sitemap.xml" || pathname === "/es/sitemap.xml" || pathname === "/de/sitemap.xml";
+
+      // Handle CORS preflight specifically for AI discovery & SEO endpoints only
+      if (request.method === "OPTIONS") {
+        if (isAiOrSeoFile) {
+          return new Response(null, {
+            status: 204,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+              "Access-Control-Allow-Headers": "*"
+            }
+          });
+        }
+        // Let any other OPTIONS requests pass directly to origin
+        return fetch(request);
+      }
 
     if (isAiOrSeoFile) {
       let canonicalPath = pathname;
@@ -187,7 +198,6 @@ export default {
       return fetch(request);
     }
 
-    const host = url.hostname.toLowerCase();
     const parts = host.split(".");
 
     // Only process HTML pages (ignore images, JS, CSS, JSON)
