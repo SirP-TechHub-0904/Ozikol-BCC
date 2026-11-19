@@ -236,7 +236,7 @@ import { ApiService } from '../../core/services/api.service';
           </div>
         </div>
         <div class="quick-action-grid">
-          <!-- Core: Update Personal Dossier (Always Available) -->
+          <!-- 1. Update Personal Dossier -->
           <a routerLink="/users/workspace/profile" class="qa-item">
             <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">badge</span></div>
             <div>
@@ -245,7 +245,7 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </a>
 
-          <!-- Core: Change Password & Security (Always Available) -->
+          <!-- 2. Change Password & 2FA Security -->
           <a routerLink="/users/workspace/security" class="qa-item">
             <div class="qa-icon-wrap bg-purple"><span class="material-symbols-outlined">lock_reset</span></div>
             <div>
@@ -254,7 +254,7 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </a>
 
-          <!-- Core: Public Biography (Always Available) -->
+          <!-- 3. Public Biography & Credentials -->
           <a routerLink="/users/workspace/profile/biography" class="qa-item">
             <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">menu_book</span></div>
             <div>
@@ -263,7 +263,7 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </a>
 
-          <!-- Core: View KPI Evaluations (Always Available) -->
+          <!-- 4. View KPI Evaluations -->
           <a routerLink="/users/workspace/kpi" class="qa-item">
             <div class="qa-icon-wrap bg-green"><span class="material-symbols-outlined">leaderboard</span></div>
             <div>
@@ -272,30 +272,12 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </a>
 
-          <!-- Modular Feature: Duty Clock & Attendance (Only rendered if tenant enabled feature) -->
-          <a *ngIf="hasFeature('bcp-attendance-tracking') || hasFeature('bcp-staff-rota')" routerLink="/attendance/workspace/clock" class="qa-item">
-            <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">fingerprint</span></div>
+          <!-- 5. Active Sessions & Trusted Devices -->
+          <a routerLink="/users/workspace/security" class="qa-item">
+            <div class="qa-icon-wrap bg-amber"><span class="material-symbols-outlined">devices</span></div>
             <div>
-              <div class="qa-title">Duty Clock &amp; Attendance</div>
-              <div class="qa-desc">GPS geofence clock-in &amp; roster</div>
-            </div>
-          </a>
-
-          <!-- Modular Feature: Community Chat (Only rendered if tenant enabled feature) -->
-          <a *ngIf="hasFeature('bcp-community-messenger')" routerLink="/groups/workspace" class="qa-item">
-            <div class="qa-icon-wrap bg-amber"><span class="material-symbols-outlined">forum</span></div>
-            <div>
-              <div class="qa-title">Community Chat</div>
-              <div class="qa-desc">Engage with team members</div>
-            </div>
-          </a>
-
-          <!-- Modular Feature: My Purchases & Licenses (Only rendered if tenant enabled feature) -->
-          <a *ngIf="hasFeature('bcp-store-ecommerce')" routerLink="/users/workspace/purchases" class="qa-item">
-            <div class="qa-icon-wrap bg-info" style="background-color: #0284c7; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 8px;"><span class="material-symbols-outlined" style="color: #ffffff;">shopping_bag</span></div>
-            <div>
-              <div class="qa-title">My Purchases &amp; Licenses</div>
-              <div class="qa-desc">View invoices and copy license keys</div>
+              <div class="qa-title">Security &amp; Sessions</div>
+              <div class="qa-desc">Review active devices &amp; logins</div>
             </div>
           </a>
         </div>
