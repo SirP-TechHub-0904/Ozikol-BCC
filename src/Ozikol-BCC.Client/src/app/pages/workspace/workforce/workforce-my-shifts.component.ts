@@ -580,12 +580,12 @@ Chart.register(...registerables);
               <div class="day-page-title-group">
                 <div class="d-flex align-items-center gap-2">
                   <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
-                  <h3>{{ selectedDay?.date | date:'EEEE, d MMMM yyyy' }}</h3>
-                  <span class="badge-day-today" *ngIf="selectedDay?.isToday">Today</span>
+                  <h3>{{ selectedDay.date | date:'EEEE, d MMMM yyyy' }}</h3>
+                  <span class="badge-day-today" *ngIf="selectedDay.isToday">Today</span>
                   <span class="badge-suite">Day Schedule</span>
                 </div>
                 <p class="day-page-subtitle">
-                  {{ selectedDay?.shifts?.length || 0 }} Rostered Shift(s) &bull; {{ selectedDay?.leaves?.length || 0 }} Leave / Excuse Record(s)
+                  {{ selectedDay.shifts.length }} Rostered Shift(s) &bull; {{ selectedDay.leaves.length }} Leave / Excuse Record(s)
                 </p>
               </div>
 
@@ -683,10 +683,10 @@ Chart.register(...registerables);
                 <div class="day-section">
                   <div class="day-section-header">
                     <span class="material-symbols-outlined text-primary">work</span>
-                    <h4>Assigned Rota Duties ({{ selectedDay?.shifts?.length || 0 }})</h4>
+                    <h4>Assigned Rota Duties ({{ selectedDay.shifts.length }})</h4>
                   </div>
 
-                  <div class="day-empty-box" *ngIf="!selectedDay?.shifts?.length">
+                  <div class="day-empty-box" *ngIf="!selectedDay.shifts.length">
                     <span class="material-symbols-outlined text-muted">event_busy</span>
                     <div class="empty-text-group">
                       <p class="empty-title">Off Duty / No Shifts Rostered</p>
@@ -698,8 +698,8 @@ Chart.register(...registerables);
                     </button>
                   </div>
 
-                  <div class="day-shifts-list" *ngIf="(selectedDay?.shifts?.length ?? 0) > 0">
-                    <div class="day-shift-card" *ngFor="let s of (selectedDay?.shifts || [])">
+                  <div class="day-shifts-list" *ngIf="selectedDay.shifts.length > 0">
+                    <div class="day-shift-card" *ngFor="let s of selectedDay.shifts">
                       <div class="day-shift-top">
                         <div>
                           <div class="shift-code-tag">{{ s.shiftCode }}</div>
@@ -729,7 +729,7 @@ Chart.register(...registerables);
                           <span class="material-symbols-outlined">swap_horiz</span>
                           <span>Request Swap</span>
                         </button>
-                        <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay?.isToday" (click)="closeDayDetailView()">
+                        <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay.isToday" (click)="closeDayDetailView()">
                           <span class="material-symbols-outlined">fingerprint</span>
                           <span>Duty Clock-In</span>
                         </a>
@@ -742,10 +742,10 @@ Chart.register(...registerables);
                 <div class="day-section">
                   <div class="day-section-header">
                     <span class="material-symbols-outlined text-warning">flight_takeoff</span>
-                    <h4>Logged Excuses &amp; Time Off ({{ selectedDay?.leaves?.length || 0 }})</h4>
+                    <h4>Logged Excuses &amp; Time Off ({{ selectedDay.leaves.length }})</h4>
                   </div>
 
-                  <div class="day-empty-box" *ngIf="!selectedDay?.leaves?.length">
+                  <div class="day-empty-box" *ngIf="!selectedDay.leaves.length">
                     <span class="material-symbols-outlined text-muted">event_available</span>
                     <div class="empty-text-group">
                       <p class="empty-title">No Excuses or Time-Off Logged</p>
@@ -757,8 +757,8 @@ Chart.register(...registerables);
                     </button>
                   </div>
 
-                  <div class="day-leaves-list" *ngIf="(selectedDay?.leaves?.length ?? 0) > 0">
-                    <div class="day-leave-card" *ngFor="let l of (selectedDay?.leaves || [])">
+                  <div class="day-leaves-list" *ngIf="selectedDay.leaves.length > 0">
+                    <div class="day-leave-card" *ngFor="let l of selectedDay.leaves">
                       <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="badge-station">{{ l.leaveType }}</span>
                         <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
@@ -938,7 +938,7 @@ Chart.register(...registerables);
                 [class.today]="day.isToday"
                 [class.has-shift]="day.shifts.length > 0"
                 [class.has-leave]="day.leaves && day.leaves.length > 0"
-                [class.is-selected]="selectedDay?.date?.toDateString() === day.date.toDateString()"
+                [class.is-selected]="isSelectedDay(day)"
                 (click)="onSelectDay(day)"
                 title="Click to view full day activity, shifts, and excuses"
               >
@@ -5501,6 +5501,10 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       queryParamsHandling: 'merge'
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  isSelectedDay(day: { date: Date }): boolean {
+    return !!this.selectedDay && this.selectedDay.date.toDateString() === day.date.toDateString();
   }
 
   openExcuseForSelectedDay(preset: string = 'single'): void {
