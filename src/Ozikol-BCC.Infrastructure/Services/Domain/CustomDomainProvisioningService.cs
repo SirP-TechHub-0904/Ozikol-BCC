@@ -625,23 +625,48 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
                 }
             }
 
-            // Reload nginx: systemctl reload nginx or nginx -s reload
-            var reloadPsi = new ProcessStartInfo
+            // Reload Nginx using standard reload or sudoers fallbacks
+            var reloadCommands = new[]
             {
-                FileName = "nginx",
-                Arguments = "-s reload",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                new { File = "nginx", Args = "-s reload" },
+                new { File = "sudo", Args = "nginx -s reload" },
+                new { File = "sudo", Args = "systemctl reload nginx" }
             };
 
-            using var reloadProc = Process.Start(reloadPsi);
-            if (reloadProc != null)
+            foreach (var cmd in reloadCommands)
             {
-                reloadProc.WaitForExit(5000);
-                logs.Add($"[{DateTime.UtcNow:O}] Nginx reloaded successfully (Exit Code: {reloadProc.ExitCode}).");
-                return reloadProc.ExitCode == 0;
+                try
+                {
+                    var reloadPsi = new ProcessStartInfo
+                    {
+                        FileName = cmd.File,
+                        Arguments = cmd.Args,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var reloadProc = Process.Start(reloadPsi);
+                    if (reloadProc != null)
+                    {
+                        reloadProc.WaitForExit(5000);
+                        if (reloadProc.ExitCode == 0)
+                        {
+                            logs.Add($"[{DateTime.UtcNow:O}] Nginx reloaded successfully via '{cmd.File} {cmd.Args}'.");
+                            return true;
+                        }
+                        var err = reloadProc.StandardError.ReadToEnd();
+                        if (!string.IsNullOrWhiteSpace(err))
+                        {
+                            logs.Add($"[{DateTime.UtcNow:O}] '{cmd.File} {cmd.Args}' exited with code {reloadProc.ExitCode}: {err.Trim()}");
+                        }
+                    }
+                }
+                catch (Exception cmdEx)
+                {
+                    logs.Add($"[{DateTime.UtcNow:O}] '{cmd.File} {cmd.Args}' execution note: {cmdEx.Message}");
+                }
             }
         }
         catch (Exception ex)
@@ -774,7 +799,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             result.NeedsRepair = true;
             result.OverallHealthy = false;
             var mismatchedEndpoint = result.ApexEndpoint.HasCertMismatch ? result.ApexEndpoint : result.WwwEndpoint;
-            result.RepairReason = $"SSL certificate mismatch detected on {mismatchedEndpoint.Url}. The web server is serving '{mismatchedEndpoint.CertSubject}' instead of a dedicated certificate for '{apexHost}'. Auto-repair can re-issue the certificate and reload Nginx.";
+            result.RepairReason = $"SSL certificate mismatch detected on {mismatchedEndpoint.Url}. A dedicated SSL certificate has not yet been activated for '{apexHost}'. Auto-repair can re-issue the certificate and reload web routing.";
         }
         else if (!result.ApexEndpoint.IsLive && !result.WwwEndpoint.IsLive)
         {
@@ -871,13 +896,15 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             if (!matchesSubject && !matchesSan)
             {
                 status.HasCertMismatch = true;
-                status.DetectedDomainInCert = capturedSubject ?? "Unknown / Default Server";
-                status.ErrorMessage = $"Server returned foreign certificate ({capturedSubject ?? "Default"}). Expected '{expectedApexDomain}'.";
+                status.CertSubject = "Unassigned / Pending Dedicated Certificate";
+                status.DetectedDomainInCert = null;
+                status.ErrorMessage = $"SSL certificate mismatch detected. The server has not yet activated a dedicated SSL certificate for '{expectedApexDomain}'.";
                 status.IsLive = false;
             }
             else
             {
                 status.HasCertMismatch = false;
+                status.CertSubject = cleanExpected;
                 status.DetectedDomainInCert = cleanExpected;
                 // Considered live if status is not server error (502, 503, 504)
                 status.IsLive = response.StatusCode != HttpStatusCode.BadGateway &&
@@ -995,6 +1022,40 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
                     {
                         result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Certbot stderr: {stderr.Trim()}");
                     }
+
+                    // If certbot exited with failure (e.g. permission denied), retry with sudo elevation
+                    if (!result.CertbotSuccess)
+                    {
+                        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Retrying Certbot with sudo elevation: sudo certbot {certbotArgs}");
+                        var sudoPsi = new ProcessStartInfo
+                        {
+                            FileName = "sudo",
+                            Arguments = $"certbot {certbotArgs}",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+
+                        using var sudoProc = Process.Start(sudoPsi);
+                        if (sudoProc != null)
+                        {
+                            var sudoStdout = await sudoProc.StandardOutput.ReadToEndAsync(cancellationToken);
+                            var sudoStderr = await sudoProc.StandardError.ReadToEndAsync(cancellationToken);
+                            await sudoProc.WaitForExitAsync(cancellationToken);
+
+                            result.CertbotSuccess = sudoProc.ExitCode == 0;
+                            result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Sudo Certbot exit code: {sudoProc.ExitCode}");
+                            if (!string.IsNullOrWhiteSpace(sudoStdout))
+                            {
+                                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Sudo Certbot stdout: {sudoStdout.Trim()}");
+                            }
+                            if (!string.IsNullOrWhiteSpace(sudoStderr))
+                            {
+                                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Sudo Certbot stderr: {sudoStderr.Trim()}");
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -1022,12 +1083,12 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         result.LiveProbe = await ProbeLiveEndpointsAsync(apexHost, cancellationToken);
         result.ExecutionLogs.AddRange(result.LiveProbe.ProbeLogs);
 
-        result.Succeeded = result.LiveProbe.OverallHealthy || result.CertbotSuccess;
+        result.Succeeded = result.LiveProbe.OverallHealthy;
         result.Message = result.LiveProbe.OverallHealthy
             ? $"Domain '{cleanDomain}' repaired successfully. Dedicated SSL certificates are active for {apexHost} and {wwwHost}."
             : (result.CertbotSuccess
-                ? $"SSL certificate re-issued and Nginx reloaded for '{cleanDomain}'. Live HTTPS endpoints are synchronizing."
-                : $"Repair completed. Check live endpoint logs for details.");
+                ? $"SSL certificate re-issued, but live endpoints are still synchronizing. Please allow a few moments or reload Nginx."
+                : $"Repair attempted. Check execution logs for details.");
 
         return result;
     }
