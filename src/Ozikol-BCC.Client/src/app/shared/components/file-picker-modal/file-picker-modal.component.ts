@@ -350,7 +350,7 @@ export class FilePickerModalComponent implements OnChanges {
     this.api.get<any>('ContentApi/files').subscribe({
       next: (res) => {
         this.loading = false;
-        this.files = res?.data || [];
+        this.files = Array.isArray(res?.data) ? res.data : (res?.data?.files || []);
         this.applyFilters();
       },
       error: (err) => {

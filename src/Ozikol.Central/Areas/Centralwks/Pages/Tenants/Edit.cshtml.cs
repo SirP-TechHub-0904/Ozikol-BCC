@@ -68,6 +68,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 WebsiteUrl = tenant.WebsiteUrl,
                 AdminEmail = tenant.AdminEmail,
                 IsActive = tenant.IsActive,
+                MaxStorageQuotaMb = tenant.MaxStorageQuotaMb > 0 ? tenant.MaxStorageQuotaMb : 500,
                 ReferredByPartnerCode = tenant.ReferredByPartnerCode,
                 ConnectionString = tenant.ConnectionString
             };
@@ -173,6 +174,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             tenant.WebsiteUrl = string.IsNullOrWhiteSpace(Input.WebsiteUrl) ? null : Input.WebsiteUrl.Trim();
             tenant.AdminEmail = string.IsNullOrWhiteSpace(Input.AdminEmail) ? null : Input.AdminEmail.Trim().ToLowerInvariant();
             tenant.IsActive = Input.IsActive;
+            tenant.MaxStorageQuotaMb = Input.MaxStorageQuotaMb > 0 ? Input.MaxStorageQuotaMb : 500;
             tenant.ReferredByPartnerCode = string.IsNullOrWhiteSpace(Input.ReferredByPartnerCode) ? null : Input.ReferredByPartnerCode.Trim();
 
             // Update dedicated connection string (transparently encrypted with AES-256-GCM upon SaveChanges)
@@ -254,6 +256,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             [Display(Name = "Accepting Requests (Active)")]
             public bool IsActive { get; set; }
+
+            /// <summary>
+            /// Maximum allowed file storage quota in megabytes (MB) for this tenant's website and CMS assets.
+            /// Defaults to 500 MB.
+            /// </summary>
+            [Range(50, 1000000, ErrorMessage = "Storage quota must be between 50 MB and 1,000,000 MB.")]
+            [Display(Name = "CMS File Storage Quota (MB)")]
+            public int MaxStorageQuotaMb { get; set; } = 500;
 
             [StringLength(100)]
             [Display(Name = "Affiliate Referral Code")]

@@ -45,6 +45,24 @@ namespace Ozikol_BCC.Api.Controllers
         private static Guid? _lastSuccessfulGeminiKeyId = null;
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, int> _geminiKeyFailureCounts = new();
 
+        /// <summary>
+        /// Strict whitelist of safe file extensions permitted for upload into the CMS File Manager and CMS media assets.
+        /// Prohibits executable binaries, server-side scripts (.php, .asp, .jsp), shell scripts, and system files.
+        /// </summary>
+        private static readonly HashSet<string> PermittedCmsFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Images
+            "PNG", "JPG", "JPEG", "WEBP", "SVG", "GIF", "ICO", "BMP", "AVIF",
+            // Documents & PDFs
+            "PDF", "DOC", "DOCX", "TXT", "RTF", "ODT",
+            // Spreadsheets
+            "XLS", "XLSX", "CSV",
+            // Presentations
+            "PPT", "PPTX",
+            // Archives & Compressed Packages
+            "ZIP", "RAR", "7Z", "TAR", "GZ"
+        };
+
         public ContentApiController(
             DashboardDbContext context, 
             IMediator mediator, 
@@ -82,6 +100,29 @@ namespace Ozikol_BCC.Api.Controllers
             if (file == null || file.Length == 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
+            }
+
+            // Whitelist validation for media upload (images and safe media assets)
+            var rawMediaExt = Path.GetExtension(file.FileName);
+            var normalizedMediaExt = rawMediaExt?.TrimStart('.').ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(normalizedMediaExt) || !PermittedCmsFileExtensions.Contains(normalizedMediaExt))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"File format '{rawMediaExt}' is not permitted. Only safe files (images, PDFs, Word/Excel documents, and Zip archives) are supported."));
+            }
+
+            // Reject disguised executable/script payloads
+            var lowerMediaFileName = file.FileName.ToLowerInvariant();
+            if (lowerMediaFileName.Contains('\0') ||
+                lowerMediaFileName.EndsWith(".exe") ||
+                lowerMediaFileName.Contains(".php.") ||
+                lowerMediaFileName.Contains(".asp.") ||
+                lowerMediaFileName.Contains(".aspx.") ||
+                lowerMediaFileName.Contains(".jsp.") ||
+                lowerMediaFileName.Contains(".sh.") ||
+                lowerMediaFileName.Contains(".bat."))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded."));
             }
 
             // 1. Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) Cloudinary credentials
@@ -227,7 +268,36 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderByDescending(f => f.CreatedAtUtc)
                 .ToListAsync();
 
-            return Ok(ApiResponse<object>.SuccessResponse(files, "CMS files retrieved successfully."));
+            long totalStorageUsedBytes = files.Sum(f => f.FileSizeBytes);
+            int maxQuotaMb = 500;
+
+            try
+            {
+                var tenantSlug = _tenantProvider?.CurrentTenant;
+                if (!string.IsNullOrWhiteSpace(tenantSlug) && _masterCatalogDbContext != null)
+                {
+                    var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(t => t.TenantKey == tenantSlug);
+                    if (masterTenant != null && masterTenant.MaxStorageQuotaMb > 0)
+                    {
+                        maxQuotaMb = masterTenant.MaxStorageQuotaMb;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[ContentApi] Failed to resolve tenant storage quota from Master Catalog DB in GetCmsFiles.");
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                files = files,
+                totalFilesCount = files.Count,
+                totalStorageUsedBytes = totalStorageUsedBytes,
+                maxStorageQuotaMb = maxQuotaMb,
+                maxStorageQuotaBytes = maxQuotaMb * 1024L * 1024L
+            }, "CMS files retrieved successfully."));
         }
 
         /// <summary>
@@ -246,7 +316,60 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
             }
 
-            var extension = Path.GetExtension(file.FileName)?.TrimStart('.').ToUpperInvariant();
+            var rawExt = Path.GetExtension(file.FileName);
+            var extension = rawExt?.TrimStart('.').ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(extension) || !PermittedCmsFileExtensions.Contains(extension))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"File format '{rawExt}' is not permitted. Only safe files (images, PDFs, Word/Excel documents, and Zip archives) are supported."));
+            }
+
+            // Reject disguised executable/script payloads or null bytes
+            var lowerCmsFileName = file.FileName.ToLowerInvariant();
+            if (lowerCmsFileName.Contains('\0') ||
+                lowerCmsFileName.EndsWith(".exe") ||
+                lowerCmsFileName.Contains(".php.") ||
+                lowerCmsFileName.Contains(".asp.") ||
+                lowerCmsFileName.Contains(".aspx.") ||
+                lowerCmsFileName.Contains(".jsp.") ||
+                lowerCmsFileName.Contains(".sh.") ||
+                lowerCmsFileName.Contains(".bat."))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded."));
+            }
+
+            // Validate tenant storage quota against custom Central configuration (defaults to 500 MB)
+            long currentTotalBytes = await _context.CmsMediaFiles.SumAsync(f => (long?)f.FileSizeBytes) ?? 0;
+            int maxQuotaMb = 500;
+
+            try
+            {
+                var tenantSlug = _tenantProvider?.CurrentTenant;
+                if (!string.IsNullOrWhiteSpace(tenantSlug) && _masterCatalogDbContext != null)
+                {
+                    var masterTenant = await _masterCatalogDbContext.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(t => t.TenantKey == tenantSlug);
+                    if (masterTenant != null && masterTenant.MaxStorageQuotaMb > 0)
+                    {
+                        maxQuotaMb = masterTenant.MaxStorageQuotaMb;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[ContentApi] Failed to resolve tenant storage quota from Master Catalog DB during upload.");
+            }
+
+            long maxQuotaBytes = maxQuotaMb * 1024L * 1024L;
+            if (currentTotalBytes + file.Length > maxQuotaBytes)
+            {
+                var usedMb = (double)currentTotalBytes / (1024 * 1024);
+                var fileMb = (double)file.Length / (1024 * 1024);
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Storage quota exceeded. Your workspace has used {usedMb:F1} MB of the allocated {maxQuotaMb} MB limit. Uploading this {fileMb:F1} MB file would exceed your storage cap. Please delete unused files or request a quota upgrade from Central support."));
+            }
+
             var normalizedType = string.IsNullOrWhiteSpace(extension) ? "FILE" : extension;
             var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
             var isImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||

@@ -210,5 +210,11 @@ public class MasterTenantCatalog
     [MaxLength(150)]
     public string? FlatRatePlanName { get; set; }
 
+    /// <summary>
+    /// Maximum allowed file storage quota in megabytes (MB) for this tenant's website and CMS assets.
+    /// Defaults to 500 MB. Can be adjusted on a per-tenant basis by Super Admin from Central.
+    /// </summary>
+    public int MaxStorageQuotaMb { get; set; } = 500;
+
     public ICollection<MasterTenantFeatureSubscription> FeatureSubscriptions { get; set; } = new List<MasterTenantFeatureSubscription>();
 }

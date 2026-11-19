@@ -4107,6 +4107,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("MaxStorageQuotaMb")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(500);
+
                     b.Property<string>("OrganizationName")
                         .IsRequired()
                         .HasMaxLength(200)
