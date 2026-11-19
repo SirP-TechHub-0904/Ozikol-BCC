@@ -725,9 +725,13 @@ Chart.register(...registerables);
                           <span class="material-symbols-outlined">check_circle</span>
                           <span>Confirm Shift</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
+                        <button type="button" class="btn btn-sm btn-outline" *ngIf="s.status !== 'SwapOffered'" (click)="openSwapModal(s)">
                           <span class="material-symbols-outlined">swap_horiz</span>
                           <span>Request Swap</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fecaca;" *ngIf="s.status === 'SwapOffered'" (click)="withdrawShiftSwap(s)">
+                          <span class="material-symbols-outlined">cancel</span>
+                          <span>Withdraw Swap</span>
                         </button>
                         <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay.isToday" (click)="closeDayDetailView()">
                           <span class="material-symbols-outlined">fingerprint</span>
@@ -1106,9 +1110,19 @@ Chart.register(...registerables);
                   <button
                     type="button"
                     class="btn btn-outline"
+                    *ngIf="s.status !== 'SwapOffered'"
                     (click)="openSwapModal(s)">
                     <span class="material-symbols-outlined">swap_horiz</span>
                     <span>Request Swap</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    style="color: #dc2626; border-color: #fecaca;"
+                    *ngIf="s.status === 'SwapOffered'"
+                    (click)="withdrawShiftSwap(s)">
+                    <span class="material-symbols-outlined">cancel</span>
+                    <span>Withdraw Swap</span>
                   </button>
                 </div>
               </div>
@@ -6657,6 +6671,33 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         this.showSwapModal = false;
         this.toast.error('Failed to request shift swap.');
       }
+    });
+  }
+
+  withdrawShiftSwap(shift: Shift): void {
+    if (!confirm(`Are you sure you want to withdraw the swap offer for shift ${shift.shiftCode}?`)) return;
+    this.workforceService.getWorkspaceSwaps().subscribe({
+      next: (res: any) => {
+        const swaps = res?.data || [];
+        const mySwap = swaps.find((sw: any) => sw.shiftId === shift.id && sw.status !== 'Cancelled' && sw.status !== 'Approved');
+        if (mySwap) {
+          this.workforceService.cancelSwap(mySwap.id).subscribe({
+            next: (cRes: any) => {
+              if (cRes.isSuccess) {
+                this.toast.success('Shift swap offer withdrawn.');
+                this.loadMyShifts();
+              } else {
+                this.toast.error(cRes.message || 'Failed to withdraw swap.');
+              }
+            },
+            error: () => this.toast.error('Error withdrawing shift swap.')
+          });
+        } else {
+          this.toast.info('No active swap offer found for this shift.');
+          this.loadMyShifts();
+        }
+      },
+      error: () => this.toast.error('Could not verify swap status.')
     });
   }
 

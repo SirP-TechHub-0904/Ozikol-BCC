@@ -68,6 +68,25 @@ namespace Ozikol_BCC.Api.Controllers
             return "default";
         }
 
+        private async Task<NotificationChannels> ResolveStaffNotificationChannelsAsync(string userId, CancellationToken ct)
+        {
+            var pref = await _db.BcpShiftNotificationPreferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            if (pref == null)
+            {
+                return NotificationChannels.InApp | NotificationChannels.Email;
+            }
+
+            var channels = NotificationChannels.None;
+            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableEmail) channels |= NotificationChannels.Email;
+            if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
+
+            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+        }
+
         // =========================================================================
         // 1. LIVE SITE MONITOR & SUPERVISOR TIMESHEETS
         // =========================================================================
@@ -146,7 +165,117 @@ namespace Ozikol_BCC.Api.Controllers
             attendance.UpdatedUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 
+            // Notify staff member of timesheet approval
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var channels = await ResolveStaffNotificationChannelsAsync(attendance.UserId, ct);
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = attendance.UserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Timesheet Approved & Signed Off",
+                        Message = $"Your timesheet for duty ({attendance.BillableHours} billable hours) has been approved by {CurrentUserName} and signed off for payroll.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Success,
+                        Channels = channels,
+                        Module = "Workforce",
+                        Icon = "verified",
+                        ActionUrl = "/workforce/workspace/timesheets"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Timesheet approved and signed off for payroll."));
+        }
+
+        /// <summary>
+        /// Retrieves all duty attendance timesheets across the tenant workspace for supervisor approval and payroll sign-off.
+        /// </summary>
+        [HttpGet("timesheets")]
+        public async Task<ActionResult<ApiResponse<List<object>>>> GetSupervisorTimesheets(
+            [FromQuery] string? status,
+            CancellationToken ct)
+        {
+            var query = _db.BcpShiftAttendances
+                .AsNoTracking()
+                .Include(a => a.Shift)
+                .ThenInclude(s => s!.ClientSite)
+                .Where(a => a.TenantKey == CurrentTenantKey);
+
+            if (status == "pending")
+            {
+                query = query.Where(a => !a.SupervisorApproved);
+            }
+            else if (status == "approved")
+            {
+                query = query.Where(a => a.SupervisorApproved);
+            }
+
+            var userIds = await query.Select(a => a.UserId).Distinct().ToListAsync(ct);
+            var users = await _db.Users
+                .AsNoTracking()
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.FullName, ct);
+
+            var items = await query
+                .OrderByDescending(a => a.ClockInUtc ?? a.CreatedUtc)
+                .Take(100)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.ShiftId,
+                    ShiftCode = a.Shift != null ? a.Shift.ShiftCode : "Unknown",
+                    PostName = a.Shift != null ? a.Shift.PostName : "Post",
+                    SiteName = a.Shift != null && a.Shift.ClientSite != null ? a.Shift.ClientSite.SiteName : "Site",
+                    a.UserId,
+                    a.ClockInUtc,
+                    a.ClockOutUtc,
+                    a.ActualDurationHours,
+                    a.BillableHours,
+                    a.OvertimeHours,
+                    a.IsClockInGeofenceVerified,
+                    a.IsFlagged,
+                    a.FlagReason,
+                    a.SupervisorApproved,
+                    a.SupervisorApprovedBy,
+                    a.SupervisorApprovedAtUtc,
+                    a.SupervisorNotes,
+                    a.CreatedUtc
+                })
+                .ToListAsync(ct);
+
+            var result = items.Select(i => (object)new
+            {
+                i.Id,
+                i.ShiftId,
+                i.ShiftCode,
+                i.PostName,
+                i.SiteName,
+                i.UserId,
+                OfficerName = users.TryGetValue(i.UserId, out var name) ? name : "Staff Officer",
+                i.ClockInUtc,
+                i.ClockOutUtc,
+                i.ActualDurationHours,
+                i.BillableHours,
+                i.OvertimeHours,
+                i.IsClockInGeofenceVerified,
+                i.IsFlagged,
+                i.FlagReason,
+                i.SupervisorApproved,
+                i.SupervisorApprovedBy,
+                i.SupervisorApprovedAtUtc,
+                i.SupervisorNotes,
+                i.CreatedUtc
+            }).ToList();
+
+            return Ok(ApiResponse<List<object>>.SuccessResponse(result, "Supervisor timesheets retrieved."));
         }
 
         // =========================================================================

@@ -64,8 +64,12 @@ jobs:
             mkdir -p /var/www/ozikol-worker
             tar -xzf /tmp/publish-worker.tar.gz -C /var/www/ozikol-worker/
             rm -f /tmp/publish-worker.tar.gz
-            if [ ! -f /var/www/ozikol-worker/.env ] && [ -f /var/www/ozikol-api/.env ]; then
-              ln -sf /var/www/ozikol-api/.env /var/www/ozikol-worker/.env
+            if [ ! -f /var/www/ozikol-worker/.env ]; then
+              if [ -f /opt/ozikol/.env ]; then
+                ln -sf /opt/ozikol/.env /var/www/ozikol-worker/.env
+              elif [ -f /var/www/ozikol-api/.env ]; then
+                ln -sf /var/www/ozikol-api/.env /var/www/ozikol-worker/.env
+              fi
             fi
             systemctl restart ozikol-worker
             sleep 2

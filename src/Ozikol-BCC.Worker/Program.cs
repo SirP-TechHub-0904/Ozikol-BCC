@@ -71,6 +71,7 @@ public static class Program
         builder.Services.AddMemoryCache();
 
         builder.Services.AddHostedService<MessagePoolDispatchWorker>();
+        builder.Services.AddHostedService<ShiftDepartureReminderWorker>();
         builder.Services.AddHostedService<DomainDnsHealthMonitorWorker>();
 
         var host = builder.Build();

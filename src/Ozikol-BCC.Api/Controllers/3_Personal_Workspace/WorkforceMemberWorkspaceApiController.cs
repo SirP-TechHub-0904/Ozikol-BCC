@@ -72,6 +72,25 @@ namespace Ozikol_BCC.Api.Controllers
             return "default";
         }
 
+        private async Task<NotificationChannels> ResolveStaffNotificationChannelsAsync(string userId, CancellationToken ct)
+        {
+            var pref = await _db.BcpShiftNotificationPreferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+
+            if (pref == null)
+            {
+                return NotificationChannels.InApp | NotificationChannels.Email;
+            }
+
+            var channels = NotificationChannels.None;
+            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableEmail) channels |= NotificationChannels.Email;
+            if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
+
+            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+        }
+
         /// <summary>
         /// Resolves the active running currency code and symbol for the current tenant.
         /// </summary>
@@ -241,6 +260,50 @@ namespace Ozikol_BCC.Api.Controllers
             shift.ConfirmedAtUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+
+            // Dispatch confirmation notifications
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var channels = await ResolveStaffNotificationChannelsAsync(CurrentUserId, ct);
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = CurrentUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Shift Claim Confirmed",
+                        Message = $"You have successfully claimed shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName}. It has been added to your roster.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = channels,
+                        Module = "Workforce",
+                        Icon = "check_circle",
+                        ActionUrl = "/workforce/my-shifts"
+                    }, ct);
+
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                        TargetUserId = supervisorTarget,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Open Shift Claimed",
+                        Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "person_check",
+                        ActionUrl = "/workforce/console/schedule"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift claimed successfully. It has been added to your schedule."));
         }
 
@@ -266,6 +329,34 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await _db.SaveChangesAsync(ct);
+
+            // Notify scheduler that officer confirmed duty readiness
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                        TargetUserId = supervisorTarget,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Duty Confirmed by Officer",
+                        Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "verified",
+                        ActionUrl = "/workforce/console/schedule"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift confirmed successfully."));
         }
 
@@ -364,6 +455,53 @@ namespace Ozikol_BCC.Api.Controllers
             shift.Status = "SwapOffered";
 
             await _db.SaveChangesAsync(ct);
+
+            // Dispatch notification to colleague or team
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(request.OfferedToUserId))
+                    {
+                        var channels = await ResolveStaffNotificationChannelsAsync(request.OfferedToUserId, ct);
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = request.OfferedToUserId,
+                            TenantKey = CurrentTenantKey,
+                            Title = "Peer Shift Swap Offered",
+                            Message = $"Officer {CurrentUserName} has offered to swap shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}) with you. Reason: {request.Reason}",
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = channels,
+                            Module = "Workforce",
+                            Icon = "swap_horiz",
+                            ActionUrl = "/workforce/my-shifts"
+                        }, ct);
+                    }
+                    else
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.BroadcastAll,
+                            TenantKey = CurrentTenantKey,
+                            Title = "Available Shift Swap",
+                            Message = $"A shift swap is available for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Tap to review and claim.",
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = NotificationChannels.InApp,
+                            Module = "Workforce",
+                            Icon = "swap_horiz",
+                            ActionUrl = "/workforce/my-shifts"
+                        }, ct);
+                    }
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
             return Ok(ApiResponse<Guid>.SuccessResponse(swap.Id, "Shift swap request broadcasted."));
         }
 
@@ -374,6 +512,7 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<ActionResult<ApiResponse<bool>>> ClaimShiftSwap(Guid id, CancellationToken ct)
         {
             var swap = await _db.BcpShiftSwapRequests
+                .Include(s => s.Shift)
                 .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey && (s.Status == "PendingPeer" || s.Status == "Offered"), ct);
 
             if (swap == null)
@@ -386,7 +525,85 @@ namespace Ozikol_BCC.Api.Controllers
             swap.Status = "PendingSupervisor";
 
             await _db.SaveChangesAsync(ct);
+
+            // Notify original requester and supervisor
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var requesterChannels = await ResolveStaffNotificationChannelsAsync(swap.RequestingUserId, ct);
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = swap.RequestingUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Shift Swap Accepted by Colleague",
+                        Message = $"Officer {CurrentUserName} has accepted your shift swap offer for shift {swap.Shift?.ShiftCode ?? "assignment"}. It is now awaiting supervisor review.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = requesterChannels,
+                        Module = "Workforce",
+                        Icon = "swap_horiz",
+                        ActionUrl = "/workforce/my-shifts"
+                    }, ct);
+
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Shift Swap Awaiting Review",
+                        Message = $"Officers {swap.RequestingUserName} and {CurrentUserName} have agreed on a shift swap for {swap.Shift?.ShiftCode ?? "duty"} and are awaiting administrative approval.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "supervisor_account",
+                        ActionUrl = "/workforce/console/schedule"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Swap claimed and submitted for administrative approval."));
+        }
+
+        /// <summary>
+        /// Allows a staff member to withdraw/cancel their offered shift swap before supervisor sign-off.
+        /// </summary>
+        [HttpPost("swaps/{id:guid}/cancel")]
+        [HttpDelete("swaps/{id:guid}")]
+        public async Task<ActionResult<ApiResponse<bool>>> CancelShiftSwap(Guid id, CancellationToken ct)
+        {
+            var swap = await _db.BcpShiftSwapRequests
+                .Include(s => s.Shift)
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (swap == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Swap request not found.", errorCode: "ERR-2004"));
+            }
+
+            if (swap.RequestingUserId != CurrentUserId)
+            {
+                return Forbid();
+            }
+
+            if (swap.Status == "Approved")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("Cannot cancel a shift swap that has already been approved.", errorCode: "ERR-2002"));
+            }
+
+            swap.Status = "Cancelled";
+            if (swap.Shift != null && swap.Shift.Status == "SwapOffered")
+            {
+                swap.Shift.Status = "Assigned";
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift swap offer withdrawn successfully."));
         }
 
         // =========================================================================
@@ -438,6 +655,31 @@ namespace Ozikol_BCC.Api.Controllers
 
             _db.BcpShiftLeaveRequests.Add(leave);
             await _db.SaveChangesAsync(ct);
+
+            // Notify supervisor / management of new time-off request
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        TenantKey = CurrentTenantKey,
+                        Title = "New Time-Off Request",
+                        Message = $"Officer {CurrentUserName} requested {leave.LeaveType} leave ({leave.StartDate:dd MMM yyyy} - {leave.EndDate:dd MMM yyyy}). Reason: {leave.Reason ?? "Not specified"}",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "event_busy",
+                        ActionUrl = "/workforce/console/schedule"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
 
             return Ok(ApiResponse<Guid>.SuccessResponse(leave.Id, "Leave request submitted for review."));
         }
@@ -753,6 +995,33 @@ namespace Ozikol_BCC.Api.Controllers
             shift.UpdatedUtc = nowUtc;
 
             await _db.SaveChangesAsync(ct);
+
+            // Dispatch alert to supervisor if arrival is late or outside geofence boundary
+            if (isFlagged && _notificationDispatcher != null)
+            {
+                try
+                {
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                        TargetUserId = supervisorTarget,
+                        TenantKey = CurrentTenantKey,
+                        Title = "⚠️ Duty Clock-In Alert: " + (isLate && !isInsideGeofence ? "Out of Geofence & Late" : !isInsideGeofence ? "Out of Geofence" : "Late Arrival"),
+                        Message = $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with alert: {flagReason}",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Error,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        Module = "Workforce",
+                        Icon = "warning",
+                        ActionUrl = "/workforce/console/live"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
 
             return Ok(ApiResponse<ClockInResultDto>.SuccessResponse(new ClockInResultDto
             {
