@@ -24,22 +24,38 @@ Chart.register(...registerables);
       <div class="page-header">
         <div class="header-left">
           <div class="breadcrumb">
-            <a routerLink="/workspace/home">Personal Workspace</a>
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
             <span class="sep">/</span>
-            <span>Shift &amp; Rota</span>
+            <a (click)="closeDayDetailView()" style="cursor: pointer;" *ngIf="activeTab === 'shifts' && selectedDay">Shift &amp; Rota</a>
+            <span *ngIf="!(activeTab === 'shifts' && selectedDay)">Shift &amp; Rota</span>
             <span class="sep">/</span>
             <span class="current">{{ getPageTitle() }}</span>
           </div>
           <div class="title-row">
             <h1>{{ getPageTitle() }}</h1>
+            <span class="badge-day-today" *ngIf="activeTab === 'shifts' && selectedDay?.isToday">Today</span>
             <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="View Shift &amp; Rota Guide">
               <span class="material-symbols-outlined">info</span>
             </button>
-            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
+            <span class="badge-suite">{{ (activeTab === 'shifts' && selectedDay) ? 'Day Schedule &amp; Duties' : 'Suite: Workforce &amp; Shifts' }}</span>
           </div>
           <p class="subtitle">{{ getPageSubtitle() }}</p>
         </div>
-        <div class="header-actions">
+        <div class="header-actions" *ngIf="activeTab === 'shifts' && selectedDay">
+          <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Schedule</span>
+          </button>
+          <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+            <span class="material-symbols-outlined">add</span>
+            <span>Apply for Excuse</span>
+          </button>
+          <a routerLink="/attendance/workspace/clock" class="btn btn-primary" *ngIf="selectedDay?.isToday">
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>Duty Clock-In</span>
+          </a>
+        </div>
+        <div class="header-actions" *ngIf="!(activeTab === 'shifts' && selectedDay)">
           <button type="button" class="btn btn-outline" (click)="loadActiveTabData()">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
@@ -556,6 +572,225 @@ Chart.register(...registerables);
 
       <!-- TAB 2: MY SCHEDULE & ROTA (CALENDAR & ASSIGNED DUTIES) -->
       <div class="shifts-tab-container" *ngIf="activeTab === 'shifts' && !isLoading">
+
+        <!-- DEDICATED FULL-PAGE VIEW: SELECTED DAY DETAILS & ACTIONS -->
+        <div class="day-detail-page-container" *ngIf="selectedDay">
+          <div class="cms-card day-page-card">
+            <div class="day-page-header">
+              <div class="day-page-title-group">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
+                  <h3>{{ selectedDay?.date | date:'EEEE, d MMMM yyyy' }}</h3>
+                  <span class="badge-day-today" *ngIf="selectedDay?.isToday">Today</span>
+                  <span class="badge-suite">Day Schedule</span>
+                </div>
+                <p class="day-page-subtitle">
+                  {{ selectedDay?.shifts?.length || 0 }} Rostered Shift(s) &bull; {{ selectedDay?.leaves?.length || 0 }} Leave / Excuse Record(s)
+                </p>
+              </div>
+
+              <div class="day-page-header-actions">
+                <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
+                  <span class="material-symbols-outlined">arrow_back</span>
+                  <span>Back to Calendar</span>
+                </button>
+                <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Apply for Excuse / Time Off</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="day-page-body">
+              <!-- Quick Action Bar -->
+              <div class="day-quick-actions mb-4">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="openExcuseForSelectedDay('single')">
+                  <span class="material-symbols-outlined">event_busy</span>
+                  <span>Apply Excuse for This Day</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="openExcuseForSelectedDay('3days')">
+                  <span class="material-symbols-outlined">date_range</span>
+                  <span>Request Multi-Day Leave</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="closeDayDetailView(); switchTab('open-shifts')">
+                  <span class="material-symbols-outlined">work_outline</span>
+                  <span>Find Open Shifts</span>
+                </button>
+              </div>
+
+              <!-- In-Page Quick Excuse Form (Toggled when requested) -->
+              <div class="quick-excuse-form-card mb-4" *ngIf="showDayExcuseForm">
+                <div class="form-header-row">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-warning">edit_calendar</span>
+                    <h4 class="form-title">Apply for Absence / Excuse</h4>
+                  </div>
+                  <button type="button" class="btn-close-sm" (click)="showDayExcuseForm = false">&times;</button>
+                </div>
+
+                <!-- Duration Quick Presets -->
+                <div class="duration-presets-group mb-3">
+                  <span class="presets-label">Quick Duration:</span>
+                  <div class="presets-buttons">
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'single'" (click)="onExcusePresetChange('single')">1 Day (This Day)</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '2days'" (click)="onExcusePresetChange('2days')">2 Days</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '3days'" (click)="onExcusePresetChange('3days')">3 Days</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'week'" (click)="onExcusePresetChange('week')">1 Week</button>
+                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'custom'" (click)="onExcusePresetChange('custom')">Custom</button>
+                  </div>
+                </div>
+
+                <div class="form-row-2 mb-3">
+                  <div class="form-group">
+                    <label class="form-label">Excuse / Leave Type *</label>
+                    <select class="form-select" [(ngModel)]="leaveType">
+                      <option value="Sick">Sickness / Medical</option>
+                      <option value="Compassionate">Emergency / Compassionate</option>
+                      <option value="Annual">Annual Leave</option>
+                      <option value="Unpaid">Unpaid Leave</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Start Date *</label>
+                    <input type="date" class="form-control" [(ngModel)]="leaveStartDate" (change)="onExcusePresetChange('custom')" />
+                  </div>
+                </div>
+
+                <div class="form-row-2 mb-3">
+                  <div class="form-group">
+                    <label class="form-label">End Date *</label>
+                    <input type="date" class="form-control" [(ngModel)]="leaveEndDate" (change)="onExcusePresetChange('custom')" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Reason / Sickness Details *</label>
+                    <input type="text" class="form-control" [(ngModel)]="leaveReason" placeholder="e.g. Flu, medical appointment, family emergency" />
+                  </div>
+                </div>
+
+                <div class="form-actions mt-3 d-flex justify-content-end gap-3">
+                  <button type="button" class="btn btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
+                  <button type="button" class="btn btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                    <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
+                    <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
+                    <span>Submit Excuse Request</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Two-Column Section Grid for Full Page View -->
+              <div class="day-page-columns">
+                <!-- SECTION A: Assigned Shifts -->
+                <div class="day-section">
+                  <div class="day-section-header">
+                    <span class="material-symbols-outlined text-primary">work</span>
+                    <h4>Assigned Rota Duties ({{ selectedDay?.shifts?.length || 0 }})</h4>
+                  </div>
+
+                  <div class="day-empty-box" *ngIf="!selectedDay?.shifts?.length">
+                    <span class="material-symbols-outlined text-muted">event_busy</span>
+                    <div class="empty-text-group">
+                      <p class="empty-title">Off Duty / No Shifts Rostered</p>
+                      <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline ms-auto" (click)="closeDayDetailView(); switchTab('open-shifts')">
+                      <span class="material-symbols-outlined">work_outline</span>
+                      <span>Find Open Shifts</span>
+                    </button>
+                  </div>
+
+                  <div class="day-shifts-list" *ngIf="(selectedDay?.shifts?.length ?? 0) > 0">
+                    <div class="day-shift-card" *ngFor="let s of (selectedDay?.shifts || [])">
+                      <div class="day-shift-top">
+                        <div>
+                          <div class="shift-code-tag">{{ s.shiftCode }}</div>
+                          <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
+                          <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
+                        </div>
+                        <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                      </div>
+
+                      <div class="day-shift-meta-grid">
+                        <div class="meta-item">
+                          <span class="meta-icon material-symbols-outlined">schedule</span>
+                          <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-icon material-symbols-outlined">payments</span>
+                          <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                        </div>
+                      </div>
+
+                      <div class="day-shift-actions">
+                        <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>Confirm Shift</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
+                          <span class="material-symbols-outlined">swap_horiz</span>
+                          <span>Request Swap</span>
+                        </button>
+                        <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay?.isToday" (click)="closeDayDetailView()">
+                          <span class="material-symbols-outlined">fingerprint</span>
+                          <span>Duty Clock-In</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SECTION B: Excuses & Leave -->
+                <div class="day-section">
+                  <div class="day-section-header">
+                    <span class="material-symbols-outlined text-warning">flight_takeoff</span>
+                    <h4>Logged Excuses &amp; Time Off ({{ selectedDay?.leaves?.length || 0 }})</h4>
+                  </div>
+
+                  <div class="day-empty-box" *ngIf="!selectedDay?.leaves?.length">
+                    <span class="material-symbols-outlined text-muted">event_available</span>
+                    <div class="empty-text-group">
+                      <p class="empty-title">No Excuses or Time-Off Logged</p>
+                      <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                      <span class="material-symbols-outlined">add</span>
+                      <span>Log Excuse</span>
+                    </button>
+                  </div>
+
+                  <div class="day-leaves-list" *ngIf="(selectedDay?.leaves?.length ?? 0) > 0">
+                    <div class="day-leave-card" *ngFor="let l of (selectedDay?.leaves || [])">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge-station">{{ l.leaveType }}</span>
+                        <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                          {{ l.status }}
+                        </span>
+                      </div>
+                      <div class="leave-date-span">
+                        <span class="material-symbols-outlined">date_range</span>
+                        <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
+                      </div>
+                      <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="day-page-footer">
+              <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span>Back to Schedule Calendar</span>
+              </button>
+              <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                <span class="material-symbols-outlined">add</span>
+                <span>Apply for Excuse / Time Off</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FULL MONTH CALENDAR & ASSIGNED DUTIES (WHEN NO SPECIFIC DAY SELECTED) -->
+        <ng-container *ngIf="!selectedDay">
         <!-- 3. Top Metrics Row (Matching Reference Template) -->
         <div class="metrics-grid mb-4">
           <!-- Metric 1: Real Take-Home Pay -->
@@ -880,6 +1115,7 @@ Chart.register(...registerables);
             </div>
           </div>
         </div>
+        </ng-container>
       </div>
 
       <!-- TAB 2: OPEN SHIFTS (CLAIM BOARD) -->
@@ -1596,219 +1832,6 @@ Chart.register(...registerables);
             <button type="button" class="btn btn-outline" (click)="showSwapModal = false">Cancel</button>
             <button type="button" class="btn btn-primary" (click)="submitSwap()" [disabled]="!swapReason">
               <span>Submit Swap Request</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- DAY ACTIVITY & DETAILS MODAL -->
-      <div class="modal-backdrop-custom" *ngIf="showDayDetailModal" (click)="showDayDetailModal = false">
-        <div class="modal-card-custom day-details-modal" [class.maximized]="isDayModalMaximized" (click)="$event.stopPropagation()">
-          <div class="modal-header-custom">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <h3>{{ selectedDay?.date | date:'EEEE, d MMMM yyyy' }}</h3>
-                  <span class="badge-day-today" *ngIf="selectedDay?.isToday">Today</span>
-                </div>
-                <p class="modal-subtitle">
-                  {{ selectedDay?.shifts?.length || 0 }} Rostered Shift(s) &bull; {{ selectedDay?.leaves?.length || 0 }} Leave / Excuse Record(s)
-                </p>
-              </div>
-            </div>
-            <div class="modal-header-actions d-flex align-items-center gap-2">
-              <button
-                type="button"
-                class="btn-icon-custom"
-                (click)="isDayModalMaximized = !isDayModalMaximized"
-                [title]="isDayModalMaximized ? 'Restore View' : 'Full Screen View'">
-                <span class="material-symbols-outlined">{{ isDayModalMaximized ? 'fullscreen_exit' : 'fullscreen' }}</span>
-              </button>
-              <button type="button" class="btn-close-custom" (click)="showDayDetailModal = false">&times;</button>
-            </div>
-          </div>
-
-          <div class="modal-body-custom modal-body-scrollable">
-            <!-- Quick Action Bar -->
-            <div class="day-quick-actions mb-4">
-              <button type="button" class="btn btn-sm btn-outline-primary" (click)="openExcuseForSelectedDay('single')">
-                <span class="material-symbols-outlined">event_busy</span>
-                <span>Apply Excuse for This Day</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" (click)="openExcuseForSelectedDay('3days')">
-                <span class="material-symbols-outlined">date_range</span>
-                <span>Request Multi-Day Leave</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" (click)="showDayDetailModal = false; switchTab('open-shifts')">
-                <span class="material-symbols-outlined">work_outline</span>
-                <span>Find Open Shifts</span>
-              </button>
-            </div>
-
-            <!-- In-Modal Quick Excuse Form (Toggled when requested) -->
-            <div class="quick-excuse-form-card mb-4" *ngIf="showDayExcuseForm">
-              <div class="form-header-row">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined text-warning">edit_calendar</span>
-                  <h4 class="form-title">Apply for Absence / Excuse</h4>
-                </div>
-                <button type="button" class="btn-close-sm" (click)="showDayExcuseForm = false">&times;</button>
-              </div>
-
-              <!-- Duration Quick Presets -->
-              <div class="duration-presets-group mb-3">
-                <span class="presets-label">Quick Duration:</span>
-                <div class="presets-buttons">
-                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'single'" (click)="onExcusePresetChange('single')">1 Day (This Day)</button>
-                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '2days'" (click)="onExcusePresetChange('2days')">2 Days</button>
-                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '3days'" (click)="onExcusePresetChange('3days')">3 Days</button>
-                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'week'" (click)="onExcusePresetChange('week')">1 Week</button>
-                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'custom'" (click)="onExcusePresetChange('custom')">Custom</button>
-                </div>
-              </div>
-
-              <div class="form-row-2 mb-3">
-                <div class="form-group">
-                  <label class="form-label">Excuse / Leave Type *</label>
-                  <select class="form-select" [(ngModel)]="leaveType">
-                    <option value="Sick">Sickness / Medical</option>
-                    <option value="Compassionate">Emergency / Compassionate</option>
-                    <option value="Annual">Annual Leave</option>
-                    <option value="Unpaid">Unpaid Leave</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Start Date *</label>
-                  <input type="date" class="form-control" [(ngModel)]="leaveStartDate" (change)="onExcusePresetChange('custom')" />
-                </div>
-              </div>
-
-              <div class="form-row-2 mb-3">
-                <div class="form-group">
-                  <label class="form-label">End Date *</label>
-                  <input type="date" class="form-control" [(ngModel)]="leaveEndDate" (change)="onExcusePresetChange('custom')" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Reason / Sickness Details *</label>
-                  <input type="text" class="form-control" [(ngModel)]="leaveReason" placeholder="e.g. Flu, medical appointment, family emergency" />
-                </div>
-              </div>
-
-              <div class="form-actions mt-3 d-flex justify-content-end gap-3">
-                <button type="button" class="btn btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
-                <button type="button" class="btn btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
-                  <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
-                  <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
-                  <span>Submit Excuse Request</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Two-Column Section Grid for Full Page View -->
-            <div class="day-modal-columns">
-              <!-- SECTION A: Assigned Shifts -->
-              <div class="day-section">
-                <div class="day-section-header">
-                  <span class="material-symbols-outlined text-primary">work</span>
-                  <h4>Assigned Rota Duties ({{ selectedDay?.shifts?.length || 0 }})</h4>
-                </div>
-
-                <div class="day-empty-box" *ngIf="!selectedDay?.shifts?.length">
-                  <span class="material-symbols-outlined text-muted">event_busy</span>
-                  <div class="empty-text-group">
-                    <p class="empty-title">Off Duty / No Shifts Rostered</p>
-                    <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-outline ms-auto" (click)="showDayDetailModal = false; switchTab('open-shifts')">
-                    <span class="material-symbols-outlined">work_outline</span>
-                    <span>Find Open Shifts</span>
-                  </button>
-                </div>
-
-                <div class="day-shifts-list" *ngIf="(selectedDay?.shifts?.length ?? 0) > 0">
-                  <div class="day-shift-card" *ngFor="let s of (selectedDay?.shifts || [])">
-                    <div class="day-shift-top">
-                      <div>
-                        <div class="shift-code-tag">{{ s.shiftCode }}</div>
-                        <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
-                        <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
-                      </div>
-                      <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
-                    </div>
-
-                    <div class="day-shift-meta-grid">
-                      <div class="meta-item">
-                        <span class="meta-icon material-symbols-outlined">schedule</span>
-                        <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
-                      </div>
-                      <div class="meta-item">
-                        <span class="meta-icon material-symbols-outlined">payments</span>
-                        <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
-                      </div>
-                    </div>
-
-                    <div class="day-shift-actions">
-                      <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
-                        <span class="material-symbols-outlined">check_circle</span>
-                        <span>Confirm Shift</span>
-                      </button>
-                      <button type="button" class="btn btn-sm btn-outline" (click)="openSwapModal(s)">
-                        <span class="material-symbols-outlined">swap_horiz</span>
-                        <span>Request Swap</span>
-                      </button>
-                      <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay?.isToday" (click)="showDayDetailModal = false">
-                        <span class="material-symbols-outlined">fingerprint</span>
-                        <span>Duty Clock-In</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- SECTION B: Excuses & Leave -->
-              <div class="day-section">
-                <div class="day-section-header">
-                  <span class="material-symbols-outlined text-warning">flight_takeoff</span>
-                  <h4>Logged Excuses &amp; Time Off ({{ selectedDay?.leaves?.length || 0 }})</h4>
-                </div>
-
-                <div class="day-empty-box" *ngIf="!selectedDay?.leaves?.length">
-                  <span class="material-symbols-outlined text-muted">event_available</span>
-                  <div class="empty-text-group">
-                    <p class="empty-title">No Excuses or Time-Off Logged</p>
-                    <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
-                    <span class="material-symbols-outlined">add</span>
-                    <span>Log Excuse</span>
-                  </button>
-                </div>
-
-                <div class="day-leaves-list" *ngIf="(selectedDay?.leaves?.length ?? 0) > 0">
-                  <div class="day-leave-card" *ngFor="let l of (selectedDay?.leaves || [])">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <span class="badge-station">{{ l.leaveType }}</span>
-                      <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
-                        {{ l.status }}
-                      </span>
-                    </div>
-                    <div class="leave-date-span">
-                      <span class="material-symbols-outlined">date_range</span>
-                      <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
-                    </div>
-                    <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer-custom">
-            <button type="button" class="btn btn-outline" (click)="showDayDetailModal = false">Close</button>
-            <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
-              <span class="material-symbols-outlined">add</span>
-              <span>Apply for Excuse / Time Off</span>
             </button>
           </div>
         </div>
@@ -2535,6 +2558,73 @@ Chart.register(...registerables);
       font-size: 11px;
       font-weight: 700;
     }
+    /* Dedicated Full-Page Day Schedule View */
+    .day-detail-page-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+    .day-page-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .day-page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 28px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #ffffff;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .day-page-title-group h3 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .day-page-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+    }
+    .day-page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .day-page-body {
+      padding: 28px;
+    }
+    .day-page-columns {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .day-page-columns {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+    .day-page-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 28px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
     .day-details-modal .modal-header-custom {
       padding: 20px 28px;
       flex-shrink: 0;
@@ -2559,18 +2649,6 @@ Chart.register(...registerables);
       font-size: 12.5px !important;
       border-radius: 9px !important;
       margin: 0 !important;
-    }
-    .day-modal-columns {
-      display: grid;
-      grid-template-columns: 1.25fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-    @media (max-width: 960px) {
-      .day-modal-columns {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
     }
     .btn-sm {
       padding: 8px 16px !important;
@@ -4962,9 +5040,37 @@ Chart.register(...registerables);
     }
     :host-context(.dark-mode) .cal-weekdays-row,
     :host-context(.dark-mode) .calendar-summary-footer,
-    :host-context(.dark-mode) .modal-footer-custom {
+    :host-context(.dark-mode) .modal-footer-custom,
+    :host-context(.dark-mode) .day-page-header,
+    :host-context(.dark-mode) .day-page-footer {
       background: #0f172a;
       border-color: #334155;
+    }
+    :host-context(.dark-mode) .day-page-card,
+    :host-context(.dark-mode) .day-shift-card,
+    :host-context(.dark-mode) .day-leave-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .day-empty-box,
+    :host-context(.dark-mode) .quick-excuse-form-card,
+    :host-context(.dark-mode) .day-shift-meta-grid,
+    :host-context(.dark-mode) .leave-reason-text {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .day-quick-actions {
+      border-bottom-color: #334155;
+    }
+    :host-context(.dark-mode) .day-page-title-group h3,
+    :host-context(.dark-mode) .day-shift-venue,
+    :host-context(.dark-mode) .day-section-header h4,
+    :host-context(.dark-mode) .form-title,
+    :host-context(.dark-mode) .empty-title {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .meta-item {
+      color: #cbd5e1;
     }
     :host-context(.dark-mode) .cal-days-grid { background: #1e293b; }
     :host-context(.dark-mode) .cal-day-cell { border-color: #334155; }
@@ -5097,6 +5203,20 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         }
       }, 100);
     });
+
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab && tab !== this.activeTab) {
+        this.activeTab = tab;
+      }
+      const dateParam = params['date'];
+      if (dateParam) {
+        this.syncSelectedDayFromParam(dateParam);
+      } else if (!dateParam && this.selectedDay) {
+        this.selectedDay = null;
+        this.showDayExcuseForm = false;
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -5212,6 +5332,10 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   getPageTitle(): string {
+    if (this.activeTab === 'shifts' && this.selectedDay) {
+      const d = this.selectedDay.date;
+      return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    }
     switch (this.activeTab) {
       case 'analytics': return 'Shift Analytics & Summary';
       case 'shifts': return 'My Schedule & Rota';
@@ -5226,6 +5350,11 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   getPageSubtitle(): string {
+    if (this.activeTab === 'shifts' && this.selectedDay) {
+      const shiftCount = this.selectedDay.shifts?.length || 0;
+      const leaveCount = this.selectedDay.leaves?.length || 0;
+      return `${shiftCount} rostered shift(s), ${leaveCount} excuse/time-off record(s) on this date.`;
+    }
     switch (this.activeTab) {
       case 'analytics': return 'High-level operational overview, monthly take-home pay estimate, and scheduled duties.';
       case 'shifts': return 'Review assigned duties, confirm upcoming rosters, and manage shift attendance.';
@@ -5292,6 +5421,39 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     }
 
     this.calendarDays = days;
+
+    const urlDate = this.route.snapshot.queryParams['date'];
+    if (urlDate && !this.selectedDay) {
+      this.syncSelectedDayFromParam(urlDate);
+    } else if (this.selectedDay) {
+      this.selectedDay.shifts = this.getShiftsForDate(this.selectedDay.date);
+      this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
+    }
+  }
+
+  syncSelectedDayFromParam(dateStr: string): void {
+    if (!dateStr) return;
+    const matched = this.calendarDays.find(d => this.formatDateForInput(d.date) === dateStr);
+    if (matched) {
+      this.selectedDay = {
+        ...matched,
+        shifts: this.getShiftsForDate(matched.date),
+        leaves: this.getLeavesForDate(matched.date)
+      };
+    } else {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        const today = new Date();
+        this.selectedDay = {
+          date: parsed,
+          dayNumber: parsed.getDate(),
+          isCurrentMonth: parsed.getMonth() === this.currentMonth.getMonth(),
+          isToday: parsed.toDateString() === today.toDateString(),
+          shifts: this.getShiftsForDate(parsed),
+          leaves: this.getLeavesForDate(parsed)
+        };
+      }
+    }
   }
 
   getShiftsForDate(date: Date): Shift[] {
@@ -5318,8 +5480,27 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       shifts: this.getShiftsForDate(day.date),
       leaves: this.getLeavesForDate(day.date)
     };
-    this.showDayDetailModal = true;
+    this.showDayDetailModal = false;
     this.showDayExcuseForm = false;
+    const dateStr = this.formatDateForInput(day.date);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'shifts', date: dateStr },
+      queryParamsHandling: 'merge'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  closeDayDetailView(): void {
+    this.selectedDay = null;
+    this.showDayExcuseForm = false;
+    this.showDayDetailModal = false;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { date: null },
+      queryParamsHandling: 'merge'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   openExcuseForSelectedDay(preset: string = 'single'): void {
@@ -5851,7 +6032,16 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       shifts: dayShifts.length > 0 ? dayShifts : [s],
       leaves: dayLeaves
     };
-    this.showDayDetailModal = true;
+    this.showDayDetailModal = false;
+    this.showDayExcuseForm = false;
+    this.activeTab = 'shifts';
+    const dateStr = this.formatDateForInput(shiftDate);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'shifts', date: dateStr },
+      queryParamsHandling: 'merge'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   getGraceArrivalStatus(s: Shift): boolean {
