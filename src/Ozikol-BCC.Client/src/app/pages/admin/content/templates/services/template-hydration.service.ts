@@ -617,19 +617,13 @@ export class TemplateHydrationService {
     // 5. Loop over {{#each SocialLinks}}...{{/each}}
     const socialRegex = /\{\{#each\s+SocialLinks\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(socialRegex, (_match, innerTemplate) => {
-      const socials = [
-        { platform: 'LinkedIn', url: 'https://linkedin.com', iconClass: 'fa-brands fa-linkedin-in' },
-        { platform: 'Twitter / X', url: 'https://x.com', iconClass: 'fa-brands fa-x-twitter' },
-        { platform: 'Facebook', url: 'https://facebook.com', iconClass: 'fa-brands fa-facebook-f' },
-        { platform: 'Instagram', url: 'https://instagram.com', iconClass: 'fa-brands fa-instagram' },
-        { platform: 'YouTube', url: 'https://youtube.com', iconClass: 'fa-brands fa-youtube' }
-      ];
+      const socials = ctx.socialLinks || opts.previewFooterContent?.socialLinks || [];
 
       return socials.map((s: any) => {
         let rendered = innerTemplate;
-        rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, s.platform);
-        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, s.url);
-        rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, s.iconClass);
+        rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, s.platform || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, s.url || '#');
+        rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, s.iconClass || '');
         return rendered;
       }).join('\n');
     });
@@ -637,38 +631,7 @@ export class TemplateHydrationService {
     // 6b. Articles Loop ({{#each Articles}}...{{/each}})
     const articlesRegex = /\{\{#each\s+Articles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(articlesRegex, (_match, innerTemplate) => {
-      const articles = ctx.articles || opts.previewBlogContent?.articles || [
-        {
-          title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture',
-          excerpt: 'Discover how modern organizations integrate resilient cloud patterns, zero-trust security postures, and dynamic automation pipelines.',
-          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
-          category: 'Technology',
-          authorName: 'Dr. Jennifer Miller',
-          authorRole: 'Principal Cloud Strategist',
-          publishedDate: 'Sep 14, 2026',
-          url: '/blog/enterprise-scalability-hybrid-cloud'
-        },
-        {
-          title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics',
-          excerpt: 'Strategic methodologies for reducing transit footprint while accelerating fulfillment predictability and inventory velocity.',
-          coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-          category: 'Operations',
-          authorName: 'Marcus Vance',
-          authorRole: 'Logistics Director',
-          publishedDate: 'Sep 10, 2026',
-          url: '/blog/sustainable-commerce-supply-chain'
-        },
-        {
-          title: 'AI-Driven Workflow Orchestration and Customer Personalization',
-          excerpt: 'How cognitive machine learning agents streamline intake triage, automate ticket resolution, and elevate user satisfaction benchmarks.',
-          coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80',
-          category: 'Innovation',
-          authorName: 'Elena Rostova',
-          authorRole: 'AI Research Lead',
-          publishedDate: 'Sep 06, 2026',
-          url: '/blog/ai-driven-workflow-orchestration'
-        }
-      ];
+      const articles = ctx.articles || opts.previewBlogContent?.articles || [];
 
       return articles.map((art: any) => {
         let rendered = innerTemplate;
@@ -689,11 +652,7 @@ export class TemplateHydrationService {
     // 6c. RecentArticles Loop ({{#each RecentArticles}}...{{/each}})
     const recentArticlesRegex = /\{\{#each\s+RecentArticles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(recentArticlesRegex, (_match, innerTemplate) => {
-      const recents = artDetail.recentArticles || [
-        { title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture', publishedDate: 'Sep 14, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80', url: '/blog/enterprise-scalability-hybrid-cloud' },
-        { title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics', publishedDate: 'Sep 10, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80', url: '/blog/sustainable-commerce-supply-chain' },
-        { title: 'AI-Driven Workflow Orchestration and Customer Personalization', publishedDate: 'Sep 06, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&auto=format&fit=crop&q=80', url: '/blog/ai-driven-workflow-orchestration' }
-      ];
+      const recents = artDetail.recentArticles || [];
       return recents.map((r: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, r.title || '');
@@ -707,13 +666,7 @@ export class TemplateHydrationService {
     // 6d. BlogCategories Loop ({{#each BlogCategories}}...{{/each}})
     const blogCatsRegex = /\{\{#each\s+BlogCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(blogCatsRegex, (_match, innerTemplate) => {
-      const cats = artDetail.categories || [
-        { name: 'Technology & Cloud', postCount: 14, url: '/blog?category=technology' },
-        { name: 'Enterprise Strategy', postCount: 9, url: '/blog?category=strategy' },
-        { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
-        { name: 'AI & Automation', postCount: 12, url: '/blog?category=ai' },
-        { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
-      ];
+      const cats = artDetail.categories || [];
       return cats.map((c: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*(?:Name|Title|CategoryTitle)\s*\}\}/gi, c.name || '');
@@ -726,7 +679,7 @@ export class TemplateHydrationService {
     // 6e. Article.Tags or ArticleTags Loop
     const tagsRegex = /\{\{#each\s+(?:Article\.Tags|ArticleTags)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(tagsRegex, (_match, innerTemplate) => {
-      const rawTags = artDetail.tags || (artDetail.tagsInput ? artDetail.tagsInput.split(',').map((s: string) => s.trim()).filter(Boolean) : null) || ['Cloud Architecture', 'Enterprise Security', 'Scalability', 'Automation'];
+      const rawTags = artDetail.tags || (artDetail.tagsInput ? artDetail.tagsInput.split(',').map((s: string) => s.trim()).filter(Boolean) : null) || [];
       return rawTags.map((t: string) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*this\s*\}\}/gi, t);
