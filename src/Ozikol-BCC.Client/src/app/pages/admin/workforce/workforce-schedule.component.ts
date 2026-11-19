@@ -63,7 +63,7 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="view-btn"
               [class.active]="activeView === 'list'"
-              (click)="activeView = 'list'"
+              (click)="switchView('list')"
             >
               <span class="material-symbols-outlined">table_rows</span>
               <span>Roster List</span>
@@ -72,7 +72,7 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="view-btn"
               [class.active]="activeView === 'timesheet'"
-              (click)="activeView = 'timesheet'"
+              (click)="switchView('timesheet')"
             >
               <span class="material-symbols-outlined">assignment</span>
               <span>Daily Timesheet</span>
@@ -81,10 +81,28 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="view-btn"
               [class.active]="activeView === 'calendar'"
-              (click)="activeView = 'calendar'"
+              (click)="switchView('calendar')"
             >
               <span class="material-symbols-outlined">calendar_month</span>
               <span>Monthly Calendar</span>
+            </button>
+            <button
+              type="button"
+              class="view-btn"
+              [class.active]="activeView === 'swaps'"
+              (click)="switchView('swaps')"
+            >
+              <span class="material-symbols-outlined">swap_horiz</span>
+              <span>Shift Swaps</span>
+            </button>
+            <button
+              type="button"
+              class="view-btn"
+              [class.active]="activeView === 'leave'"
+              (click)="switchView('leave')"
+            >
+              <span class="material-symbols-outlined">event_busy</span>
+              <span>Leave Approvals</span>
             </button>
           </div>
 
@@ -224,6 +242,17 @@ import { ToastService } from '../../../core/services/toast.service';
                   </td>
                   <td style="text-align: right;">
                     <div class="row-actions-group">
+                      <button
+                        type="button"
+                        class="btn-action-sm btn-broadcast"
+                        *ngIf="!s.assignedUserId || s.status === 'Open'"
+                        (click)="broadcastShift(s)"
+                        [disabled]="isBroadcasting[s.id]"
+                        title="Broadcast Open Shift across Email, WhatsApp, and In-App"
+                      >
+                        <span class="material-symbols-outlined">campaign</span>
+                        <span>{{ isBroadcasting[s.id] ? 'Broadcasting...' : 'Broadcast' }}</span>
+                      </button>
                       <a [routerLink]="['/workforce/console/schedule/edit', s.id]" class="btn-action-sm" title="Edit Schedule">
                         <span class="material-symbols-outlined">edit</span>
                         <span>Edit</span>
@@ -349,8 +378,169 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
 
+        <!-- View 4: Shift Swap Review & Approvals View -->
+        <div class="cms-card" *ngIf="activeView === 'swaps'">
+          <div class="timesheet-header">
+            <div>
+              <h3>Peer Shift Swap Approvals</h3>
+              <p class="timesheet-sub">Review peer coverage requests, verify roster compliance, and approve duty transfers.</p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" (click)="loadWorkspaceSwaps()">
+              <span class="material-symbols-outlined" [class.spin]="isLoadingSwaps">refresh</span>
+              <span>Refresh Swaps</span>
+            </button>
+          </div>
+
+          <div class="table-responsive" *ngIf="workspaceSwaps.length > 0">
+            <table class="cms-table">
+              <thead>
+                <tr>
+                  <th>SHIFT CODE</th>
+                  <th>WORK LOCATION &amp; POST</th>
+                  <th>SCHEDULED DATE &amp; TIME</th>
+                  <th>REQUESTING OFFICER</th>
+                  <th>COVERING OFFICER</th>
+                  <th>REASON</th>
+                  <th>STATUS</th>
+                  <th style="text-align: right;">SUPERVISOR ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let sw of workspaceSwaps">
+                  <td>
+                    <span class="code-badge">{{ sw.shiftCode }}</span>
+                  </td>
+                  <td>
+                    <div class="site-cell">
+                      <strong>{{ sw.siteName }}</strong>
+                      <span class="post-sub">{{ sw.postName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="time-cell" *ngIf="sw.startsAtUtc">
+                      <span class="date-text">{{ sw.startsAtUtc | date:'shortDate' }}</span>
+                      <small class="break-sub">{{ sw.startsAtUtc | date:'HH:mm' }} - {{ sw.endsAtUtc | date:'HH:mm' }}</small>
+                    </div>
+                    <span *ngIf="!sw.startsAtUtc">—</span>
+                  </td>
+                  <td>
+                    <div class="officer-name-bold">{{ sw.requestingUserName }}</div>
+                  </td>
+                  <td>
+                    <div class="officer-name-bold" *ngIf="sw.offeredToUserName">{{ sw.offeredToUserName }}</div>
+                    <span class="badge-status open" *ngIf="!sw.offeredToUserName">Team Broadcast</span>
+                  </td>
+                  <td>
+                    <span class="postal-sub">{{ sw.reason || 'None stated' }}</span>
+                  </td>
+                  <td>
+                    <span class="badge-status" [ngClass]="getSwapStatusBadge(sw.status)">{{ sw.status }}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <div class="row-actions-group" *ngIf="sw.status === 'PendingSupervisor'">
+                      <button type="button" class="btn btn-sm btn-success" (click)="reviewSwap(sw, true)" title="Approve Swap">
+                        <span class="material-symbols-outlined">check</span>
+                        <span>Approve</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="reviewSwap(sw, false)" title="Decline Swap">
+                        <span class="material-symbols-outlined">close</span>
+                        <span>Decline</span>
+                      </button>
+                    </div>
+                    <span class="confirmed-pill" *ngIf="sw.status === 'Approved'">✓ Approved</span>
+                    <span class="badge-status-rejected" *ngIf="sw.status === 'Rejected'">Declined</span>
+                    <span class="postal-sub" *ngIf="sw.status !== 'PendingSupervisor' && sw.status !== 'Approved' && sw.status !== 'Rejected'">Pending peer</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty-state-card" *ngIf="workspaceSwaps.length === 0 && !isLoadingSwaps" style="border: none; box-shadow: none;">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">swap_horiz</span>
+            </div>
+            <h3>No Shift Swap Requests</h3>
+            <p>There are currently no active or pending shift swaps submitted by team members.</p>
+          </div>
+        </div>
+
+        <!-- View 5: Staff Leave & Time-Off Approvals View -->
+        <div class="cms-card" *ngIf="activeView === 'leave'">
+          <div class="timesheet-header">
+            <div>
+              <h3>Staff Time-Off &amp; Leave Approvals</h3>
+              <p class="timesheet-sub">Manage staff absence requests, review doctor's notes, and black out calendar availability.</p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" (click)="loadLeaveRequests()">
+              <span class="material-symbols-outlined" [class.spin]="isLoadingLeave">refresh</span>
+              <span>Refresh Leave</span>
+            </button>
+          </div>
+
+          <div class="table-responsive" *ngIf="leaveRequests.length > 0">
+            <table class="cms-table">
+              <thead>
+                <tr>
+                  <th>STAFF OFFICER</th>
+                  <th>LEAVE TYPE</th>
+                  <th>DATES REQUESTED</th>
+                  <th>DURATION</th>
+                  <th>REASON &amp; NOTES</th>
+                  <th>STATUS</th>
+                  <th style="text-align: right;">SUPERVISOR ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let lv of leaveRequests">
+                  <td>
+                    <div class="officer-name-bold">{{ lv.userName }}</div>
+                  </td>
+                  <td>
+                    <span class="badge-leave-type">{{ lv.leaveType }}</span>
+                  </td>
+                  <td>
+                    <span class="time-bold">{{ lv.startDate | date:'dd MMM yyyy' }} - {{ lv.endDate | date:'dd MMM yyyy' }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ lv.totalDays }} day{{ lv.totalDays === 1 ? '' : 's' }}</strong>
+                  </td>
+                  <td>
+                    <span class="postal-sub">{{ lv.reason || 'None provided' }}</span>
+                  </td>
+                  <td>
+                    <span class="badge-status" [ngClass]="getLeaveStatusBadge(lv.status)">{{ lv.status }}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <div class="row-actions-group" *ngIf="lv.status === 'Pending'">
+                      <button type="button" class="btn btn-sm btn-success" (click)="reviewLeave(lv, true)" title="Approve Leave">
+                        <span class="material-symbols-outlined">check</span>
+                        <span>Approve</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="reviewLeave(lv, false)" title="Decline Leave">
+                        <span class="material-symbols-outlined">close</span>
+                        <span>Decline</span>
+                      </button>
+                    </div>
+                    <span class="confirmed-pill" *ngIf="lv.status === 'Approved'">✓ Approved by {{ lv.reviewedBy || 'Manager' }}</span>
+                    <span class="badge-status-rejected" *ngIf="lv.status === 'Rejected'">Declined</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty-state-card" *ngIf="leaveRequests.length === 0 && !isLoadingLeave" style="border: none; box-shadow: none;">
+            <div class="empty-icon-circle">
+              <span class="material-symbols-outlined">event_busy</span>
+            </div>
+            <h3>No Time-Off Requests</h3>
+            <p>There are currently no pending absence or time-off applications from staff officers.</p>
+          </div>
+        </div>
+
         <!-- Empty State Card (When filteredShifts is 0 and not in Calendar view) -->
-        <div class="empty-state-card" *ngIf="filteredShifts.length === 0 && activeView !== 'calendar'">
+        <div class="empty-state-card" *ngIf="filteredShifts.length === 0 && activeView !== 'calendar' && activeView !== 'swaps' && activeView !== 'leave'">
           <div class="empty-icon-circle">
             <span class="material-symbols-outlined">calendar_month</span>
           </div>
@@ -1500,6 +1690,41 @@ import { ToastService } from '../../../core/services/toast.service';
       .day-shifts-pill {
         font-size: 10px;
       }
+      .btn-broadcast {
+        background: #f0fdf4;
+        color: #16a34a;
+        border: 1px solid #bbf7d0;
+      }
+      .btn-broadcast:hover {
+        background: #dcfce7;
+      }
+      .badge-leave-type {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: #eff6ff;
+        color: #0050e5;
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .badge-status-rejected {
+        color: #dc2626;
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .btn-success {
+        background: #16a34a;
+        color: #ffffff;
+        border: none;
+      }
+      .btn-outline-danger {
+        background: transparent;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+      }
+      .btn-outline-danger:hover {
+        background: #fef2f2;
+      }
     }
   `]
 })
@@ -1513,7 +1738,14 @@ export class WorkforceScheduleComponent implements OnInit {
   showInfoModal = false;
   currencySymbol = '₦';
 
-  activeView: 'list' | 'timesheet' | 'calendar' = 'list';
+  activeView: 'list' | 'timesheet' | 'calendar' | 'swaps' | 'leave' = 'list';
+  workspaceSwaps: any[] = [];
+  leaveRequests: any[] = [];
+  supervisorTimesheets: any[] = [];
+  isLoadingSwaps = false;
+  isLoadingLeave = false;
+  isLoadingTimesheets = false;
+  isBroadcasting: { [shiftId: string]: boolean } = {};
   selectedSiteId = '';
   selectedStatus = '';
   selectedDateFilter = '';
@@ -1786,6 +2018,144 @@ export class WorkforceScheduleComponent implements OnInit {
     if (!name || name.trim().toLowerCase().includes('undefined')) return 'OP';
     const parts = name.trim().split(' ').filter(p => p.length > 0 && !p.toLowerCase().includes('undefined'));
     return parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
+  }
+
+  switchView(view: 'list' | 'timesheet' | 'calendar' | 'swaps' | 'leave'): void {
+    this.activeView = view;
+    if (view === 'swaps') {
+      this.loadWorkspaceSwaps();
+    } else if (view === 'leave') {
+      this.loadLeaveRequests();
+    } else if (view === 'timesheet') {
+      this.loadSupervisorTimesheets();
+    }
+  }
+
+  loadWorkspaceSwaps(): void {
+    this.isLoadingSwaps = true;
+    this.workforceService.getWorkspaceSwaps().subscribe({
+      next: (res: any) => {
+        this.isLoadingSwaps = false;
+        this.workspaceSwaps = res?.data || [];
+      },
+      error: () => {
+        this.isLoadingSwaps = false;
+        this.toast.error('Failed to load shift swaps.');
+      }
+    });
+  }
+
+  loadLeaveRequests(): void {
+    this.isLoadingLeave = true;
+    this.workforceService.getSupervisorLeaveRequests().subscribe({
+      next: (res: any) => {
+        this.isLoadingLeave = false;
+        this.leaveRequests = res?.data || [];
+      },
+      error: () => {
+        this.isLoadingLeave = false;
+        this.toast.error('Failed to load leave requests.');
+      }
+    });
+  }
+
+  loadSupervisorTimesheets(): void {
+    this.isLoadingTimesheets = true;
+    this.workforceService.getSupervisorTimesheets().subscribe({
+      next: (res: any) => {
+        this.isLoadingTimesheets = false;
+        this.supervisorTimesheets = res?.data || [];
+      },
+      error: () => {
+        this.isLoadingTimesheets = false;
+      }
+    });
+  }
+
+  broadcastShift(shift: Shift): void {
+    this.isBroadcasting[shift.id] = true;
+    this.workforceService.broadcastOpenShift(shift.id).subscribe({
+      next: (res: any) => {
+        this.isBroadcasting[shift.id] = false;
+        if (res.isSuccess) {
+          this.toast.success(`Open shift ${shift.shiftCode} broadcasted to all active officers across In-App, Email, and WhatsApp.`);
+        } else {
+          this.toast.error(res.message || 'Failed to broadcast open shift.');
+        }
+      },
+      error: () => {
+        this.isBroadcasting[shift.id] = false;
+        this.toast.error('Failed to broadcast open shift.');
+      }
+    });
+  }
+
+  reviewSwap(swap: any, isApproved: boolean): void {
+    this.workforceService.reviewSwap(swap.id, { isApproved }).subscribe({
+      next: (res: any) => {
+        if (res.isSuccess) {
+          this.toast.success(isApproved ? 'Shift swap approved and roster updated.' : 'Shift swap declined.');
+          this.loadWorkspaceSwaps();
+          this.loadData();
+        } else {
+          this.toast.error(res.message || 'Swap review failed.');
+        }
+      },
+      error: () => this.toast.error('Error reviewing shift swap.')
+    });
+  }
+
+  reviewLeave(leave: any, isApproved: boolean): void {
+    let rejectionReason: string | undefined;
+    if (!isApproved) {
+      const reason = prompt('Please specify reason for declining time-off:');
+      if (reason === null) return;
+      rejectionReason = reason;
+    }
+
+    this.workforceService.reviewLeaveRequest(leave.id, { isApproved, rejectionReason }).subscribe({
+      next: (res: any) => {
+        if (res.isSuccess) {
+          this.toast.success(isApproved ? 'Leave request approved.' : 'Leave request declined.');
+          this.loadLeaveRequests();
+        } else {
+          this.toast.error(res.message || 'Leave review failed.');
+        }
+      },
+      error: () => this.toast.error('Error reviewing leave request.')
+    });
+  }
+
+  approveTimesheet(item: any): void {
+    this.workforceService.approveTimesheet(item.id, {}).subscribe({
+      next: (res: any) => {
+        if (res.isSuccess) {
+          this.toast.success('Duty timesheet approved and signed off for payroll.');
+          this.loadSupervisorTimesheets();
+          this.loadData();
+        } else {
+          this.toast.error(res.message || 'Timesheet sign-off failed.');
+        }
+      },
+      error: () => this.toast.error('Failed to approve timesheet.')
+    });
+  }
+
+  getSwapStatusBadge(status: string): string {
+    switch (status) {
+      case 'Approved': return 'bg-success';
+      case 'Rejected': return 'bg-danger';
+      case 'PendingSupervisor': return 'bg-primary';
+      default: return 'bg-warning text-dark';
+    }
+  }
+
+  getLeaveStatusBadge(status: string): string {
+    switch (status) {
+      case 'Approved': return 'bg-success';
+      case 'Rejected': return 'bg-danger';
+      default: return 'bg-warning text-dark';
+    }
   }
 
   private formatDateForInput(date: Date): string {

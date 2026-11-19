@@ -258,6 +258,11 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/shifts/timesheets', params);
   }
 
+  // --- OPEN SHIFTS & BROADCAST ---
+  broadcastOpenShift(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/rota/shifts/${shiftId}/broadcast`, {});
+  }
+
   // --- SWAPS ---
   requestSwap(swap: any): Observable<any> {
     return this.apiService.post<any>('workforce/swaps', swap);
@@ -267,8 +272,16 @@ export class WorkforceService {
     return this.apiService.post<any>(`workforce/swaps/${swapId}/claim`, {});
   }
 
+  cancelSwap(swapId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/swaps/${swapId}/cancel`, {});
+  }
+
+  getWorkspaceSwaps(): Observable<any> {
+    return this.apiService.get<any>('workforce/rota/swaps');
+  }
+
   reviewSwap(swapId: string, review: { isApproved: boolean; rejectionReason?: string }): Observable<any> {
-    return this.apiService.post<any>(`workforce/swaps/${swapId}/review`, review);
+    return this.apiService.post<any>(`workforce/rota/swaps/${swapId}/review`, review);
   }
 
   // --- LEAVE ---
@@ -278,6 +291,16 @@ export class WorkforceService {
 
   getMyLeaveRequests(): Observable<any> {
     return this.apiService.get<any>('workforce/leave/my');
+  }
+
+  getSupervisorLeaveRequests(status?: string): Observable<any> {
+    const params: any = {};
+    if (status) params.status = status;
+    return this.apiService.get<any>('workforce/rota/leave/requests', params);
+  }
+
+  reviewLeaveRequest(leaveId: string, review: { isApproved: boolean; rejectionReason?: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/rota/leave/requests/${leaveId}/review`, review);
   }
 
   // --- ATTENDANCE & GEOFENCE ---
@@ -295,6 +318,12 @@ export class WorkforceService {
 
   getLiveDutyMonitor(): Observable<any> {
     return this.apiService.get<any>('workforce/attendance/live-monitor');
+  }
+
+  getSupervisorTimesheets(status?: string): Observable<any> {
+    const params: any = {};
+    if (status) params.status = status;
+    return this.apiService.get<any>('workforce/attendance/timesheets', params);
   }
 
   approveTimesheet(attendanceId: string, payload: { adjustedBillableHours?: number; supervisorNotes?: string }): Observable<any> {
