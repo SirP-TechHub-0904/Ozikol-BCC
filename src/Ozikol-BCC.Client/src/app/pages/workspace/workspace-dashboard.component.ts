@@ -236,6 +236,7 @@ import { ApiService } from '../../core/services/api.service';
           </div>
         </div>
         <div class="quick-action-grid">
+          <!-- Core: Update Personal Dossier (Always Available) -->
           <a routerLink="/users/workspace/profile" class="qa-item">
             <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">badge</span></div>
             <div>
@@ -243,6 +244,8 @@ import { ApiService } from '../../core/services/api.service';
               <div class="qa-desc">Edit contact, designation, and bio</div>
             </div>
           </a>
+
+          <!-- Core: Change Password & Security (Always Available) -->
           <a routerLink="/users/workspace/security" class="qa-item">
             <div class="qa-icon-wrap bg-purple"><span class="material-symbols-outlined">lock_reset</span></div>
             <div>
@@ -250,6 +253,17 @@ import { ApiService } from '../../core/services/api.service';
               <div class="qa-desc">Manage credentials & 2FA security</div>
             </div>
           </a>
+
+          <!-- Core: Public Biography (Always Available) -->
+          <a routerLink="/users/workspace/profile/biography" class="qa-item">
+            <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">menu_book</span></div>
+            <div>
+              <div class="qa-title">Public Biography</div>
+              <div class="qa-desc">Edit personal bio & background</div>
+            </div>
+          </a>
+
+          <!-- Core: View KPI Evaluations (Always Available) -->
           <a routerLink="/users/workspace/kpi" class="qa-item">
             <div class="qa-icon-wrap bg-green"><span class="material-symbols-outlined">leaderboard</span></div>
             <div>
@@ -257,17 +271,30 @@ import { ApiService } from '../../core/services/api.service';
               <div class="qa-desc">Check scores, targets, and feedback</div>
             </div>
           </a>
-          <a routerLink="/attendance/workspace/clock" class="qa-item">
+
+          <!-- Modular Feature: Duty Clock & Attendance (Only rendered if tenant enabled feature) -->
+          <a *ngIf="hasFeature('bcp-attendance-tracking') || hasFeature('bcp-staff-rota')" routerLink="/attendance/workspace/clock" class="qa-item">
             <div class="qa-icon-wrap bg-blue"><span class="material-symbols-outlined">fingerprint</span></div>
             <div>
               <div class="qa-title">Duty Clock &amp; Attendance</div>
               <div class="qa-desc">GPS geofence clock-in &amp; roster</div>
             </div>
           </a>
-          <a routerLink="/users/workspace/purchases" class="qa-item">
+
+          <!-- Modular Feature: Community Chat (Only rendered if tenant enabled feature) -->
+          <a *ngIf="hasFeature('bcp-community-messenger')" routerLink="/groups/workspace" class="qa-item">
+            <div class="qa-icon-wrap bg-amber"><span class="material-symbols-outlined">forum</span></div>
+            <div>
+              <div class="qa-title">Community Chat</div>
+              <div class="qa-desc">Engage with team members</div>
+            </div>
+          </a>
+
+          <!-- Modular Feature: My Purchases & Licenses (Only rendered if tenant enabled feature) -->
+          <a *ngIf="hasFeature('bcp-store-ecommerce')" routerLink="/users/workspace/purchases" class="qa-item">
             <div class="qa-icon-wrap bg-info" style="background-color: #0284c7; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 8px;"><span class="material-symbols-outlined" style="color: #ffffff;">shopping_bag</span></div>
             <div>
-              <div class="qa-title">My Purchases & Licenses</div>
+              <div class="qa-title">My Purchases &amp; Licenses</div>
               <div class="qa-desc">View invoices and copy license keys</div>
             </div>
           </a>
@@ -890,6 +917,7 @@ export class WorkspaceDashboardComponent implements OnInit {
   myGroups: any[] = [];
   recentDevices: any[] = [];
   isLoadingDevices = false;
+  activeFeatureCodes: Set<string> = new Set<string>();
 
   kpiMetrics = [
     { name: 'Attendance & Engagement', score: 92, colorClass: 'bg-blue' },
@@ -910,8 +938,52 @@ export class WorkspaceDashboardComponent implements OnInit {
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
+    this.loadActiveFeatures();
     this.loadProfile();
     this.loadRecentDevices();
+  }
+
+  /**
+   * Loads the current tenant's active feature codes from localStorage cache and API.
+   * Guarantees modular feature links never render if the workspace has not enabled the capability.
+   */
+  loadActiveFeatures(): void {
+    try {
+      const raw = localStorage.getItem('bcp_active_feature_codes');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          this.activeFeatureCodes = new Set(list.map((c: string) => String(c).toLowerCase()));
+        }
+      }
+    } catch { }
+
+    this.api.get<any>('billing/features').subscribe({
+      next: (res) => {
+        if (res && (res.success || res.isSuccess) && res.data) {
+          const d = res.data;
+          const all: any[] = [...(d.included || []), ...(d.subscribed || [])];
+          const active = new Set<string>();
+          for (const item of all) {
+            if (item && item.featureCode && item.isActive && item.isAvailableForUse !== false) {
+              active.add(String(item.featureCode).toLowerCase());
+            }
+          }
+          this.activeFeatureCodes = active;
+          try {
+            localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+          } catch { }
+        }
+      },
+      error: () => { }
+    });
+  }
+
+  /**
+   * Returns true only if the specified modular capability is active and enabled for the current workspace.
+   */
+  hasFeature(code: string): boolean {
+    return this.activeFeatureCodes.has(code.trim().toLowerCase());
   }
 
   loadProfile(): void {
