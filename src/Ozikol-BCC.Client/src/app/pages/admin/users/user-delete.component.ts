@@ -113,6 +113,19 @@ import { ToastService } from '../../../core/services/toast.service';
           </ul>
         </div>
 
+        <!-- Suspend-First Enforcement Banner if Account is Still Active -->
+        <div *ngIf="user && user.userStatus !== 'Suspended' && !loading" class="alert-banner warning">
+          <span class="material-symbols-outlined">shield_person</span>
+          <div style="flex: 1;">
+            <strong>Account Must Be Suspended First:</strong>
+            <span> Active member accounts cannot be deleted directly. You must suspend workspace access before permanently archiving this profile.</span>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="suspendUserFirst()" [disabled]="suspending">
+            <span class="material-symbols-outlined fs-6">{{ suspending ? 'hourglass_top' : 'block' }}</span>
+            <span>{{ suspending ? 'Suspending...' : 'Suspend Account Now' }}</span>
+          </button>
+        </div>
+
         <!-- Exact Full Name Confirmation & Action -->
         <div class="confirmation-card" *ngIf="!policyDisabled">
           <div class="confirm-instruction">
@@ -152,10 +165,10 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isNameMatched() || deleting"
+              [disabled]="!isNameMatched() || deleting || (user && user.userStatus !== 'Suspended')"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'person_remove' }}</span>
-              <span>{{ deleting ? 'Deleting Account...' : 'I understand the consequences, delete this user permanently' }}</span>
+              <span>{{ user && user.userStatus !== 'Suspended' ? 'Suspend Account First to Delete' : (deleting ? 'Archiving Account...' : 'I understand the consequences, delete this user permanently') }}</span>
             </button>
           </div>
         </div>
@@ -418,6 +431,7 @@ export class UserDeleteComponent implements OnInit {
   user: any = null;
   loading = false;
   deleting = false;
+  suspending = false;
   policyDisabled = false;
   confirmationInput = '';
   errorMsg = '';
@@ -428,6 +442,28 @@ export class UserDeleteComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router
   ) {}
+
+  /// <summary>
+  /// Suspends active workspace access for this member account prior to permanent deletion.
+  /// </summary>
+  suspendUserFirst(): void {
+    if (!this.userId) return;
+    this.suspending = true;
+    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: false }).subscribe({
+      next: () => {
+        this.suspending = false;
+        if (this.user) {
+          this.user.userStatus = 'Suspended';
+          this.user.isActive = false;
+        }
+        this.toast.success('Account suspended successfully. Account destruction is now unlocked.');
+      },
+      error: (err) => {
+        this.suspending = false;
+        this.toast.error(err?.error?.message || 'Failed to suspend account.');
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.checkPolicy();
@@ -495,7 +531,7 @@ export class UserDeleteComponent implements OnInit {
     this.api.delete<any>(`UsersApi/${this.userId}`).subscribe({
       next: () => {
         this.deleting = false;
-        this.toast.success(`Account for '${this.user.fullName}' deleted permanently.`);
+        this.toast.success(`Account for '${this.user.fullName}' archived and deleted successfully.`);
         this.router.navigate(['/users/console/list']);
       },
       error: (err) => {

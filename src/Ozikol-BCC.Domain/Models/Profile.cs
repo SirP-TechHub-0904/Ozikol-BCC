@@ -168,6 +168,20 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [Display(Name = "Custom Attributes (JSON)")]
         public string? CustomAttributesJson { get; set; }
+
+        /// <summary>
+        /// Indicates whether this member profile has been soft-deleted.
+        /// Soft-deleted profiles are excluded from all active member listings, counts, and feature assignments
+        /// via an EF Core Global Query Filter while preserving historical audit trails and relational integrity.
+        /// </summary>
+        [Display(Name = "Is Deleted")]
+        public bool IsDeleted { get; set; } = false;
+
+        /// <summary>
+        /// UTC timestamp indicating when this member account was soft-deleted.
+        /// </summary>
+        [Display(Name = "Deleted At")]
+        public DateTime? DeletedAt { get; set; }
     }
 }
 

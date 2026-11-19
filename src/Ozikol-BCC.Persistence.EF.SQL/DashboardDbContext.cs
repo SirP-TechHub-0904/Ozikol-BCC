@@ -677,6 +677,15 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     {
         base.OnModelCreating(modelBuilder);
 
+        // --- Central Soft-Delete Global Query Filter for User Profiles ---
+        // Automatically excludes soft-deleted user profiles from all queries, member counts,
+        // and feature lookups across the entire tenant database while preserving audit trails.
+        modelBuilder.Entity<Profile>(entity =>
+        {
+            entity.HasQueryFilter(p => !p.IsDeleted);
+            entity.HasIndex(p => p.IsDeleted);
+        });
+
         // --- Audit & Operational Log Indexes for Fast Telemetry Queries ---
         modelBuilder.Entity<BcpActivityLog>(entity =>
         {
