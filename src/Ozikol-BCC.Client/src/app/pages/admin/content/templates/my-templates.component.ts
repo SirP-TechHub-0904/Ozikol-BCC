@@ -12,6 +12,7 @@ import { UniversalPreviewModalService } from './services/universal-preview-modal
 import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
 import { TemplateSecurityModalComponent } from './template-security-modal/template-security-modal.component';
 import { TemplateSecurityScannerService, SecurityScanOverride } from './services/template-security-scanner.service';
+import { MonacoLoaderService } from './services/monaco-loader.service';
 
 export interface InstalledTemplateItem {
   id: string;
@@ -127,6 +128,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   customMetaAttrType: 'name' | 'property' | 'http-equiv' = 'name';
   customMetaAttrName: string = '';
   customMetaAttrContent: string = '';
+
+  // Tag Modal Monaco Editor State
+  @ViewChild('tagMonacoContainer', { static: false }) tagMonacoContainer?: ElementRef;
+  private tagMonacoInstance?: any;
+  private monacoGlobal?: any;
+  tagMonacoLoaded: boolean = false;
 
   // CSS File Upload State (Cloudflare R2 + CDN)
   @ViewChild('cssFileInput') cssFileInput?: ElementRef<HTMLInputElement>;
@@ -975,7 +982,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     private contentHydrator: ContentHydrationService,
     private htmlAssembler: HtmlAssemblerService,
     private universalPreviewModal: UniversalPreviewModalService,
-    private securityScanner: TemplateSecurityScannerService
+    private securityScanner: TemplateSecurityScannerService,
+    private monacoLoader: MonacoLoaderService
   ) {}
 
   ngOnInit(): void {
@@ -1014,6 +1022,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cleanupLeakedStyles();
+    if (this.tagMonacoInstance) {
+      this.tagMonacoInstance.dispose();
+      this.tagMonacoInstance = null;
+    }
   }
 
   private cleanupLeakedStyles(): void {
@@ -1418,6 +1430,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       isActive: true
     };
     this.showTagModal = true;
+    setTimeout(() => this.initTagMonacoEditor(), 80);
   }
 
   openEditTagModal(tag: CodeInjectionTag): void {
@@ -1427,6 +1440,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.tagFormZone = tag.zone;
     this.tagForm = { ...tag };
     this.showTagModal = true;
+    setTimeout(() => this.initTagMonacoEditor(), 80);
 
     // Cloudflare R2 Offloader: If the tag references an external CDN asset, fetch the live raw source code for editing
     if (tag.content && (tag.content.includes('<link rel="stylesheet"') || tag.content.includes('<script src='))) {
@@ -1434,6 +1448,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res?.data?.rawContent) {
             this.tagForm.content = res.data.rawContent;
+            this.updateTagMonacoValue(res.data.rawContent);
           }
         }
       });
@@ -1444,6 +1459,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.showTagModal = false;
     this.resetCssUploadState();
     this.resetJsUploadState();
+    if (this.tagMonacoInstance) {
+      this.tagMonacoInstance.dispose();
+      this.tagMonacoInstance = null;
+      this.tagMonacoLoaded = false;
+    }
   }
 
   onTagTypeChanged(): void {
@@ -1456,6 +1476,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (!this.tagForm.name || this.tagForm.name === 'SEO / Social Meta Tag') {
         this.tagForm.name = 'Primary SEO, Social & Favicon Meta Suite';
       }
+      this.updateTagMonacoValue(this.tagForm.content);
       return;
     }
 
@@ -1464,6 +1485,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     } else {
       this.tagForm.content = '';
     }
+    this.updateTagMonacoValue(this.tagForm.content);
   }
 
   /**
@@ -1474,6 +1496,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       this.tagForm.content = this.metaPresets[this.selectedMetaPreset].content;
       this.tagForm.name = `Meta: ${this.metaPresets[this.selectedMetaPreset].name.split('(')[0].trim()}`;
       this.toast.info(`Loaded ${this.metaPresets[this.selectedMetaPreset].name.split('(')[0].trim()} preset.`);
+      this.updateTagMonacoValue(this.tagForm.content);
     }
   }
 
@@ -1491,6 +1514,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.toast.success(`Inserted <meta ${this.customMetaAttrType}="${this.customMetaAttrName.trim()}">`);
     this.customMetaAttrName = '';
     this.customMetaAttrContent = '';
+    this.updateTagMonacoValue(this.tagForm.content);
   }
 
   /**
@@ -1499,6 +1523,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   insertPlaceholderIntoTag(placeholder: string): void {
     this.tagForm.content = (this.tagForm.content || '').trimEnd() + ' ' + placeholder;
     this.toast.info(`Inserted ${placeholder}`);
+    this.updateTagMonacoValue(this.tagForm.content);
   }
 
   /**
@@ -1555,6 +1580,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.tagForm.name = `Stylesheet: ${displayName}`;
     this.tagForm.tagType = 'link_stylesheet';
     this.tagForm.content = `/* Upload pending: ${file.name} (${this.selectedCssFileSize}) */`;
+    this.updateTagMonacoValue(this.tagForm.content);
 
     // Clear input so selecting the same file again triggers change event
     if (event.target) event.target.value = '';
@@ -1582,6 +1608,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.tagForm.name = `Script: ${displayName}`;
     this.tagForm.tagType = this.tagFormZone === 'footer' ? 'footer_script_url' : 'script_url';
     this.tagForm.content = `/* Upload pending: ${file.name} (${this.selectedJsFileSize}) */`;
+    this.updateTagMonacoValue(this.tagForm.content);
 
     // Clear input so selecting the same file again triggers change event
     if (event.target) event.target.value = '';
@@ -1594,7 +1621,113 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.tagForm.name = preset.name;
     this.tagForm.tagType = preset.tagType;
     this.tagForm.content = preset.content;
+    this.updateTagMonacoValue(preset.content);
     this.toast.success(`Applied ${preset.name} CDN template!`);
+  }
+
+  /**
+   * Initializes or refreshes the Monaco Editor instance inside the Tag Modal.
+   */
+  private initTagMonacoEditor(): void {
+    const lang = this.getTagEditorLanguage();
+    if (this.tagMonacoInstance) {
+      this.tagMonacoInstance.setValue(this.tagForm.content || '');
+      if (this.monacoGlobal?.editor) {
+        const model = this.tagMonacoInstance.getModel();
+        if (model) {
+          this.monacoGlobal.editor.setModelLanguage(model, lang);
+        }
+      }
+      setTimeout(() => {
+        this.tagMonacoInstance?.layout();
+      }, 50);
+      return;
+    }
+
+    this.monacoLoader.loadMonaco().then((monaco) => {
+      this.monacoGlobal = monaco;
+      setTimeout(() => {
+        if (!this.tagMonacoContainer?.nativeElement) return;
+
+        if (this.tagMonacoInstance) {
+          this.tagMonacoInstance.dispose();
+          this.tagMonacoInstance = null;
+        }
+
+        this.tagMonacoInstance = monaco.editor.create(this.tagMonacoContainer.nativeElement, {
+          theme: 'ozikol-studio-dark',
+          value: this.tagForm.content || '',
+          language: this.getTagEditorLanguage(),
+          automaticLayout: true,
+          folding: true,
+          foldingStrategy: 'auto',
+          showFoldingControls: 'always',
+          matchBrackets: 'always',
+          autoClosingBrackets: 'always',
+          autoClosingQuotes: 'always',
+          lineNumbers: 'on',
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          wordWrap: 'on',
+          fontSize: 13,
+          fontFamily: "'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace",
+          tabSize: 2
+        });
+
+        this.tagMonacoLoaded = true;
+
+        this.tagMonacoInstance.onDidChangeModelContent(() => {
+          this.tagForm.content = this.tagMonacoInstance.getValue();
+        });
+
+        setTimeout(() => {
+          this.tagMonacoInstance?.layout();
+        }, 80);
+      }, 50);
+    }).catch((err) => {
+      console.warn('Monaco failed to load for tag modal:', err);
+      this.tagMonacoLoaded = false;
+    });
+  }
+
+  /**
+   * Detects the Monaco language ('css', 'javascript', or 'html') based on active tag type and content.
+   */
+  getTagEditorLanguage(): 'css' | 'javascript' | 'html' {
+    if (this.isCssTagType()) return 'css';
+    if (this.isJsTagType()) return 'javascript';
+    const c = (this.tagForm?.content || '').trim().toLowerCase();
+    if (c.startsWith('<style') || (c.includes('{') && (c.includes(':') || c.includes('margin') || c.includes('padding') || c.includes('color')))) {
+      if (!c.includes('<html') && !c.includes('<script') && !c.includes('<div') && !c.includes('<body')) {
+        return 'css';
+      }
+    }
+    if (c.startsWith('<script') || c.includes('function') || c.includes('const ') || c.includes('let ') || c.includes('var ')) {
+      if (!c.includes('<div') && !c.includes('<meta')) {
+        return 'javascript';
+      }
+    }
+    return 'html';
+  }
+
+  /**
+   * Updates the value and language in the Monaco editor instance if initialized.
+   */
+  private updateTagMonacoValue(newContent: string): void {
+    if (this.tagMonacoInstance) {
+      if (this.tagMonacoInstance.getValue() !== newContent) {
+        this.tagMonacoInstance.setValue(newContent || '');
+      }
+      if (this.monacoGlobal?.editor) {
+        const model = this.tagMonacoInstance.getModel();
+        if (model) {
+          this.monacoGlobal.editor.setModelLanguage(model, this.getTagEditorLanguage());
+        }
+      }
+      setTimeout(() => {
+        this.tagMonacoInstance?.layout();
+      }, 30);
+    }
   }
 
   /**
@@ -2236,6 +2369,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    * generates the link/script tag, and saves the injection directly to the database.
    */
   saveTag(): void {
+    // 0. Sync latest content from Monaco editor instance
+    if (this.tagMonacoInstance) {
+      this.tagForm.content = this.tagMonacoInstance.getValue();
+    }
+
     // 1. Auto-fill name if missing when a file is selected
     if (this.selectedCssFile && !this.tagForm.name?.trim()) {
       const displayName = this.selectedCssFileName.replace(/\.download$/i, '').replace(/\.css$/i, '');

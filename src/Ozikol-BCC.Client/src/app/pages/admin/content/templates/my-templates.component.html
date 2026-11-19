@@ -1199,8 +1199,18 @@
             Customize as needed!
           </span>
         </div>
-        <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9"
-          [placeholder]="tagForm.tagType === 'link_stylesheet' ? 'Upload your CSS file above to CDN, choose a 1-click preset, or paste a <link rel=&quot;stylesheet&quot; href=&quot;...&quot; /> tag here...' : (tagForm.tagType === 'script_url' ? 'Paste an external script tag here, e.g. <script src=&quot;https://...&quot; async></script>' : 'Paste your HTML, script, or link snippet here...')"></textarea>
+        <div class="tag-monaco-wrapper">
+          <div class="tag-monaco-toolbar">
+            <span class="editor-lang-badge">
+              <span class="material-symbols-outlined" style="font-size: 15px;">code</span>
+              <span>{{ getTagEditorLanguage().toUpperCase() }} MODE</span>
+            </span>
+            <span class="editor-help-text">VS Code Engine • Line Numbers, Syntax Highlighting &amp; Brackets</span>
+          </div>
+          <div #tagMonacoContainer class="tag-monaco-host" [class.d-none]="!tagMonacoLoaded"></div>
+          <textarea *ngIf="!tagMonacoLoaded" [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9"
+            [placeholder]="tagForm.tagType === 'link_stylesheet' ? 'Upload your CSS file above to CDN, choose a 1-click preset, or paste a <link rel=&quot;stylesheet&quot; href=&quot;...&quot; /> tag here...' : (tagForm.tagType === 'script_url' ? 'Paste an external script tag here, e.g. <script src=&quot;https://...&quot; async></script>' : 'Paste your HTML, script, or link snippet here...')"></textarea>
+        </div>
       </div>
     </div>
 

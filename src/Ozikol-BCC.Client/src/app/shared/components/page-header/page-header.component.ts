@@ -34,7 +34,7 @@ export interface PageHeaderButton {
           <span class="material-symbols-outlined">arrow_back</span>
           <span>{{ backText || 'Back' }}</span>
         </a>
-        <ng-container *ngFor="let btn of buttons">
+        <ng-container *ngFor="let btn of buttons; trackBy: trackByButton">
           <button *ngIf="btn.action" type="button" class="btn-custom" [class.active]="btn.isPrimary" [disabled]="btn.disabled || btn.loading || loading" (click)="btn.action()">
             <span class="material-symbols-outlined" [class.spin-icon]="btn.loading || (loading && btn.icon === 'refresh')">{{ btn.icon }}</span>
             <span>{{ (btn.loading || (loading && btn.icon === 'refresh')) ? 'Loading...' : btn.text }}</span>
@@ -57,7 +57,7 @@ export interface PageHeaderButton {
     <!-- Floating Save Bar: Appears automatically whenever the user scrolls away from the top Save action -->
     <div class="bcp-floating-save-bar" *ngIf="isHeaderOutOfView && floatingSaveButtons.length > 0" role="region" aria-label="Floating Save Actions">
       <button
-        *ngFor="let btn of floatingSaveButtons"
+        *ngFor="let btn of floatingSaveButtons; trackBy: trackByButton"
         type="button"
         class="bcp-floating-save-btn"
         [disabled]="btn.disabled || btn.loading || loading"
@@ -355,6 +355,18 @@ export class PageHeaderComponent implements AfterViewInit, OnDestroy {
     private readonly ngZone: NgZone,
     private readonly cdr: ChangeDetectorRef
   ) {}
+
+  /// <summary>
+  /// Tracks button items by unique identifier or index to prevent Angular NgFor from destroying
+  /// and recreating the DOM button element during input blur change detection cycles, ensuring
+  /// single-click execution across all header and floating action buttons.
+  /// </summary>
+  /// <param name="index">Index in the button array.</param>
+  /// <param name="btn">The page header button model.</param>
+  /// <returns>A stable tracking key.</returns>
+  public trackByButton(index: number, btn: PageHeaderButton): string {
+    return (btn.routerLink || btn.url || btn.icon || 'btn') + '_' + index;
+  }
 
   /**
    * Resolves primary/save action buttons to float when the user scrolls past the header.
