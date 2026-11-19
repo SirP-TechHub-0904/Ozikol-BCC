@@ -34,6 +34,34 @@ interface DnsProbeResult {
 }
 
 /**
+ * Status and certificate details for an HTTPS endpoint probe.
+ */
+interface EndpointHealthStatus {
+  url: string;
+  isLive: boolean;
+  statusCode?: number;
+  certSubject?: string;
+  certIssuer?: string;
+  certValidTo?: string;
+  hasCertMismatch: boolean;
+  detectedDomainInCert?: string;
+  errorMessage?: string;
+}
+
+/**
+ * Live TLS probe report for apex and www endpoints.
+ */
+interface DomainLiveProbeResult {
+  domain: string;
+  overallHealthy: boolean;
+  needsRepair: boolean;
+  repairReason: string;
+  apexEndpoint: EndpointHealthStatus;
+  wwwEndpoint: EndpointHealthStatus;
+  probeLogs: string[];
+}
+
+/**
  * Dedicated Custom Domain & DNS Routing Studio Component.
  * Enables workspace administrators to connect their custom apex and subdomain
  * with real-time Master Catalog synchronization, live propagation tests, and Cloudflare instructions.
@@ -256,6 +284,108 @@ interface DnsProbeResult {
                 </div>
               </div>
 
+              <!-- Live HTTPS Endpoint Connectivity & SSL Certificate Verification -->
+              <div class="live-health-section">
+                <div class="live-health-header">
+                  <div class="live-health-header-left">
+                    <span class="material-symbols-outlined text-blue">verified_user</span>
+                    <strong>Live HTTPS Endpoint Health Check</strong>
+                  </div>
+                  <button type="button" class="btn-live-test" (click)="probeLiveEndpoints()" [disabled]="liveProbing" title="Test live HTTPS connections and verify certificates">
+                    <span class="material-symbols-outlined" [class.spin-icon]="liveProbing">{{ liveProbing ? 'sync' : 'network_ping' }}</span>
+                    <span>{{ liveProbing ? 'Testing Endpoints...' : 'Test Live Endpoints' }}</span>
+                  </button>
+                </div>
+
+                <!-- Live Endpoints Status Grid -->
+                <div *ngIf="liveProbe" class="live-endpoints-grid">
+                  <!-- Apex Endpoint: https://{domain} -->
+                  <div class="live-endpoint-card" [class.card-healthy]="liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch" [class.card-mismatch]="liveProbe.apexEndpoint.hasCertMismatch" [class.card-offline]="!liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch">
+                    <div class="endpoint-top">
+                      <div class="endpoint-url-box">
+                        <span class="material-symbols-outlined status-icon">
+                          {{ liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch ? 'check_circle' : (liveProbe.apexEndpoint.hasCertMismatch ? 'warning' : 'cancel') }}
+                        </span>
+                        <span class="endpoint-url">{{ liveProbe.apexEndpoint.url }}</span>
+                      </div>
+                      <span class="endpoint-badge" [class.badge-healthy]="liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch" [class.badge-mismatch]="liveProbe.apexEndpoint.hasCertMismatch" [class.badge-offline]="!liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch">
+                        {{ liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch ? 'Live & Secure 🔒' : (liveProbe.apexEndpoint.hasCertMismatch ? 'Certificate Mismatch ⚠️' : 'Offline / Error ❌') }}
+                      </span>
+                    </div>
+
+                    <div class="endpoint-details">
+                      <div *ngIf="liveProbe.apexEndpoint.hasCertMismatch" class="detail-alert">
+                        <strong>SSL Mismatch:</strong> Server is returning foreign certificate (<code>{{ liveProbe.apexEndpoint.certSubject || 'Default' }}</code>) instead of <code>{{ liveProbe.domain }}</code>.
+                      </div>
+                      <div *ngIf="!liveProbe.apexEndpoint.hasCertMismatch && liveProbe.apexEndpoint.isLive" class="detail-ok">
+                        Response: <strong>{{ liveProbe.apexEndpoint.statusCode }} OK</strong> | Certificate: <code>{{ liveProbe.apexEndpoint.certSubject }}</code>
+                      </div>
+                      <div *ngIf="!liveProbe.apexEndpoint.isLive && !liveProbe.apexEndpoint.hasCertMismatch" class="detail-err">
+                        <span>{{ liveProbe.apexEndpoint.errorMessage || 'Connection timed out or failed to establish TLS handshake.' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- WWW Endpoint: https://www.{domain} -->
+                  <div class="live-endpoint-card" [class.card-healthy]="liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch" [class.card-mismatch]="liveProbe.wwwEndpoint.hasCertMismatch" [class.card-offline]="!liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch">
+                    <div class="endpoint-top">
+                      <div class="endpoint-url-box">
+                        <span class="material-symbols-outlined status-icon">
+                          {{ liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch ? 'check_circle' : (liveProbe.wwwEndpoint.hasCertMismatch ? 'warning' : 'cancel') }}
+                        </span>
+                        <span class="endpoint-url">{{ liveProbe.wwwEndpoint.url }}</span>
+                      </div>
+                      <span class="endpoint-badge" [class.badge-healthy]="liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch" [class.badge-mismatch]="liveProbe.wwwEndpoint.hasCertMismatch" [class.badge-offline]="!liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch">
+                        {{ liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch ? 'Live & Secure 🔒' : (liveProbe.wwwEndpoint.hasCertMismatch ? 'Certificate Mismatch ⚠️' : 'Offline / Error ❌') }}
+                      </span>
+                    </div>
+
+                    <div class="endpoint-details">
+                      <div *ngIf="liveProbe.wwwEndpoint.hasCertMismatch" class="detail-alert">
+                        <strong>SSL Mismatch:</strong> Server is returning foreign certificate (<code>{{ liveProbe.wwwEndpoint.certSubject || 'Default' }}</code>) instead of <code>{{ liveProbe.domain }}</code>.
+                      </div>
+                      <div *ngIf="!liveProbe.wwwEndpoint.hasCertMismatch && liveProbe.wwwEndpoint.isLive" class="detail-ok">
+                        Response: <strong>{{ liveProbe.wwwEndpoint.statusCode }} OK</strong> | Certificate: <code>{{ liveProbe.wwwEndpoint.certSubject }}</code>
+                      </div>
+                      <div *ngIf="!liveProbe.wwwEndpoint.isLive && !liveProbe.wwwEndpoint.hasCertMismatch" class="detail-err">
+                        <span>{{ liveProbe.wwwEndpoint.errorMessage || 'Connection timed out or failed to establish TLS handshake.' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 1-Click Auto-Repair Action Banner -->
+                <div *ngIf="liveProbe?.needsRepair" class="repair-trigger-box">
+                  <div class="repair-trigger-info">
+                    <span class="material-symbols-outlined text-amber">handyman</span>
+                    <div class="repair-trigger-text">
+                      <strong>SSL Routing Repair Required</strong>
+                      <p>{{ liveProbe?.repairReason }}</p>
+                    </div>
+                  </div>
+                  <div class="repair-trigger-btn-wrap">
+                    <button type="button" class="btn btn-repair" (click)="triggerAutoRepair()" [disabled]="repairing">
+                      <span class="material-symbols-outlined" [class.spin-icon]="repairing">{{ repairing ? 'sync' : 'auto_fix_high' }}</span>
+                      <span>{{ repairing ? 'Repairing & Re-Issuing SSL...' : 'Auto-Repair & Re-Issue SSL' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Repair Logs Accordion (if repair was executed) -->
+                <div *ngIf="repairLogs && repairLogs.length > 0" class="repair-logs-box">
+                  <div class="logs-header" (click)="showRepairLogs = !showRepairLogs">
+                    <div class="logs-header-left">
+                      <span class="material-symbols-outlined">terminal</span>
+                      <span>Repair Execution Logs ({{ repairLogs.length }} steps)</span>
+                    </div>
+                    <span class="material-symbols-outlined">{{ showRepairLogs ? 'expand_less' : 'expand_more' }}</span>
+                  </div>
+                  <div *ngIf="showRepairLogs" class="logs-body">
+                    <div *ngFor="let log of repairLogs" class="log-line">{{ log }}</div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Remediation Guide (Shown when DNS has not propagated or is pointing to the wrong target) -->
               <div *ngIf="!probeResults.cnamePassed" class="probe-remediation-box">
                 <div class="remediation-header">
@@ -394,6 +524,19 @@ interface DnsProbeResult {
           <div>
             <h3>DNS Records</h3>
             <p class="card-subtitle">Update your DNS with these records to route your custom domain to your website.</p>
+          </div>
+        </div>
+
+        <!-- Conflict Protection Callout -->
+        <div class="dns-conflict-callout">
+          <span class="material-symbols-outlined text-amber">info</span>
+          <div class="callout-content">
+            <strong>Choose IP Address OR Hostname (Never Add Both For The Same Name!)</strong>
+            <p>
+              Standard DNS rules forbid having both an <strong>A</strong> record and a <strong>CNAME</strong> record for the same host name.
+              If your registrar returned error <code>400 Bad Request. Patch item 1 conflicts with existing/previous record</code>, an A record already exists.
+              Keep the <strong>A record pointing to 2.24.162.42</strong> and do not add a CNAME on that same host name.
+            </p>
           </div>
         </div>
 
@@ -2178,6 +2321,262 @@ interface DnsProbeResult {
       padding: 1px 4px;
       border-radius: 4px;
     }
+
+    /* Live HTTPS Endpoint Health Section */
+    .live-health-section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .live-health-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .live-health-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .live-health-header strong {
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .btn-live-test {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-live-test:hover:not(:disabled) {
+      background: #dbeafe;
+    }
+    .btn-live-test:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .live-endpoints-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 10px;
+    }
+    .live-endpoint-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s ease;
+    }
+    .live-endpoint-card.card-healthy {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .live-endpoint-card.card-mismatch {
+      border-color: #fde047;
+      background: #fefce8;
+    }
+    .live-endpoint-card.card-offline {
+      border-color: #fca5a5;
+      background: #fff5f5;
+    }
+    .endpoint-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .endpoint-url-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .endpoint-url-box .status-icon {
+      font-size: 18px;
+    }
+    .card-healthy .status-icon { color: #16a34a; }
+    .card-mismatch .status-icon { color: #ca8a04; }
+    .card-offline .status-icon { color: #dc2626; }
+    .endpoint-url {
+      font-weight: 700;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .endpoint-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+    }
+    .badge-healthy { background: #dcfce7; color: #15803d; }
+    .badge-mismatch { background: #fef9c3; color: #854d0e; }
+    .badge-offline { background: #fee2e2; color: #991b1b; }
+    .endpoint-details {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .detail-alert {
+      color: #854d0e;
+    }
+    .detail-alert code {
+      background: #fef08a;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 700;
+      color: #713f12;
+    }
+    .detail-ok {
+      color: #166534;
+    }
+    .detail-ok code {
+      background: #dcfce7;
+      padding: 1px 4px;
+      border-radius: 4px;
+      color: #14532d;
+    }
+    .detail-err {
+      color: #b91c1c;
+    }
+
+    /* 1-Click Auto-Repair Box */
+    .repair-trigger-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .repair-trigger-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1;
+    }
+    .repair-trigger-text strong {
+      display: block;
+      font-size: 13px;
+      color: #92400e;
+      margin-bottom: 2px;
+    }
+    .repair-trigger-text p {
+      margin: 0;
+      font-size: 12px;
+      color: #78350f;
+    }
+    .btn-repair {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #d97706;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: background 0.15s ease;
+    }
+    .btn-repair:hover:not(:disabled) {
+      background: #b45309;
+    }
+    .btn-repair:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Repair Logs Box */
+    .repair-logs-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 11px;
+    }
+    .logs-header {
+      background: #f8fafc;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      color: #475569;
+      font-weight: 600;
+    }
+    .logs-header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logs-body {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      padding: 10px 14px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-line {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Conflict Warning Callout */
+    .dns-conflict-callout {
+      margin-bottom: 14px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .dns-conflict-callout strong {
+      display: block;
+      color: #92400e;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+    .dns-conflict-callout p {
+      margin: 0;
+      font-size: 12px;
+      color: #78350f;
+      line-height: 1.4;
+    }
+    .dns-conflict-callout code {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
   `]
 })
 export class CustomDomainComponent implements OnInit, OnDestroy {
@@ -2195,8 +2594,14 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
 
   probeResults: DnsProbeResult | null = null;
   copySuccess: { [key: string]: boolean } = {};
-
   headerButtons: PageHeaderButton[] = [];
+
+  // Live HTTPS Endpoint & Automated Repair State
+  liveProbe: DomainLiveProbeResult | null = null;
+  liveProbing = false;
+  repairing = false;
+  showRepairLogs = false;
+  repairLogs: string[] = [];
 
   // Email Suite State
   emailConfig: any = null;
@@ -2340,12 +2745,20 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
     const targetHost = this.cleanTargetHost;
     return [
       {
+        type: 'A',
+        name: 'www',
+        target: '2.24.162.42',
+        ttl: 'Auto (300s)',
+        key: 'a_www',
+        description: 'Option 1 (IP Address - Direct): Point www subdomain directly to platform IPv4 address via A record'
+      },
+      {
         type: 'CNAME',
         name: 'www',
         target: targetHost,
         ttl: 'Auto (300s)',
         key: 'cname_www',
-        description: 'Subdomain routing to your workspace'
+        description: `Option 2 (Hostname - CNAME): Point www subdomain to ${targetHost}`
       },
       {
         type: 'A',
@@ -2353,7 +2766,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         target: '2.24.162.42',
         ttl: 'Auto (300s)',
         key: 'a_root',
-        description: 'Recommended: for Hostinger, GoDaddy, Namecheap or any registrar requiring an IP'
+        description: 'Option 1 (IP Address - Recommended): Required for Hostinger, GoDaddy, Namecheap apex domain'
       },
       {
         type: 'CNAME',
@@ -2361,7 +2774,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         target: targetHost,
         ttl: 'Auto (300s)',
         key: 'cname_root',
-        description: 'Alternative: for Cloudflare DNS or registrars supporting CNAME Flattening'
+        description: 'Option 2 (Hostname - Cloudflare Only): Only for Cloudflare or registrars supporting CNAME Flattening'
       }
     ];
   }
@@ -2436,10 +2849,12 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
           if (this.customDomain) {
             localStorage.setItem('tenant_custom_domain', this.customDomain);
             this.probeDnsSilently(this.customDomain);
+            this.probeLiveEndpoints();
             this.loadDomainEmailConfig(this.customDomain);
           } else {
             localStorage.removeItem('tenant_custom_domain');
             this.emailConfig = null;
+            this.liveProbe = null;
           }
           if (this.primaryDomain) {
             localStorage.setItem('tenant_primary_domain', this.primaryDomain);
@@ -2582,6 +2997,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         this.customDomain = '';
         this.customDomainInput = '';
         this.probeResults = null;
+        this.liveProbe = null;
         this.emailConfig = null;
         localStorage.removeItem('tenant_custom_domain');
 
@@ -2771,7 +3187,73 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       }
     } finally {
       this.probing = false;
+      this.probeLiveEndpoints();
     }
+  }
+
+  /**
+   * Probes live HTTPS connectivity for both Apex (@) and WWW hostnames to inspect actual TLS certificate CN.
+   */
+  probeLiveEndpoints(): void {
+    const domain = (this.customDomain || this.customDomainInput || '').trim();
+    if (!domain) return;
+
+    this.liveProbing = true;
+    this.api.get<any>(`DashboardApi/probe-custom-domain-live?domain=${encodeURIComponent(domain)}`).subscribe({
+      next: (res) => {
+        this.liveProbing = false;
+        const data = res?.data || res?.Data || res;
+        this.liveProbe = data;
+        if (data?.overallHealthy) {
+          this.toast.success(`Live HTTPS verified for ${domain}! Dedicated certificates are active.`, 'Endpoints Live');
+        } else if (data?.needsRepair) {
+          this.toast.warning(data.repairReason || 'Certificate mismatch or endpoint error detected.', 'Repair Recommended');
+        }
+      },
+      error: (err) => {
+        this.liveProbing = false;
+        console.error('[Custom Domain] Live endpoint probe failed:', err);
+      }
+    });
+  }
+
+  /**
+   * Triggers automated SSL renewal/expansion and Nginx reverse proxy configuration repair.
+   */
+  triggerAutoRepair(): void {
+    const domain = (this.customDomain || this.customDomainInput || '').trim();
+    if (!domain) return;
+
+    this.repairing = true;
+    const payload = {
+      tenantKey: this.tenantKey,
+      customDomain: domain
+    };
+
+    this.api.post<any>('DashboardApi/repair-custom-domain-ssl', payload).subscribe({
+      next: (res) => {
+        this.repairing = false;
+        const data = res?.data || res?.Data || res;
+        this.repairLogs = data?.executionLogs || [];
+        if (data?.liveProbe) {
+          this.liveProbe = data.liveProbe;
+        } else {
+          this.probeLiveEndpoints();
+        }
+
+        if (data?.succeeded) {
+          this.toast.success(data.message || 'Domain repaired and SSL re-issued successfully!', 'Repair Complete');
+        } else {
+          this.toast.error(data?.message || 'Repair attempted, check execution logs.', 'Repair Notice');
+        }
+      },
+      error: (err) => {
+        this.repairing = false;
+        console.error('[Custom Domain] Repair failed:', err);
+        const msg = err?.error?.message || err?.error?.Message || 'Failed to execute repair.';
+        this.toast.error(msg, 'Repair Failed');
+      }
+    });
   }
 
   /**

@@ -44,5 +44,25 @@ public interface ICustomDomainProvisioningService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Deprovisioning result.</returns>
     Task<DomainDeprovisionResult> DeprovisionDomainAsync(string tenantKey, string domain, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Probes live HTTPS connectivity, HTTP response status codes, and TLS certificate Subject/SAN
+    /// for both apex (@) and www hostnames to identify whether the domain is live or suffering an SSL mismatch.
+    /// </summary>
+    /// <param name="domain">The custom domain to probe.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Live probe diagnostic report with endpoint-specific health details.</returns>
+    Task<DomainLiveProbeResult> ProbeLiveEndpointsAsync(string domain, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Triggers an automated repair workflow: re-runs Certbot with expansion/force-renewal flags,
+    /// re-writes the Nginx virtual host with active port 443 SSL directives, reloads Nginx,
+    /// and tests live HTTPS connectivity.
+    /// </summary>
+    /// <param name="tenantKey">The tenant workspace identifier.</param>
+    /// <param name="domain">The custom domain to repair.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Repair execution result containing stage outcomes and updated live probe.</returns>
+    Task<DomainRepairResult> RepairSslAndRoutingAsync(string tenantKey, string domain, CancellationToken cancellationToken = default);
 }
 
