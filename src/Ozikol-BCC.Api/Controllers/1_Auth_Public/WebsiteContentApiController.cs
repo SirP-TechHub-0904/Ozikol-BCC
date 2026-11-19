@@ -715,44 +715,26 @@ namespace Ozikol_BCC.Api.Controllers
             _context.PageFormSubmissions.Add(submission);
             await _context.SaveChangesAsync();
 
-            if (_scopeFactory != null || _notificationDispatcher != null)
+            if (_notificationDispatcher != null)
             {
-                var formTitle = form.Title;
-                var notificationEmail = form.NotificationEmail?.Trim();
-                var sourcePageUrl = submission.SourcePageUrl ?? "N/A";
-                var fieldCount = data.Count;
-                var tenantKey = _tenantProvider?.CurrentTenant;
-                var fieldRows = string.Join("", data.Select(kv =>
-                    $"<tr><td style='padding:6px 10px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#334155;'>{System.Net.WebUtility.HtmlEncode(kv.Key)}</td><td style='padding:6px 10px; border-bottom:1px solid #e2e8f0; color:#0f172a;'>{System.Net.WebUtility.HtmlEncode(kv.Value?.ToString() ?? string.Empty)}</td></tr>"));
-
-                // Run email and in-app notification dispatch in the background so SMTP timeouts never delay the visitor's response.
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        if (_scopeFactory != null)
-                        {
-                            using var scope = _scopeFactory.CreateScope();
-                            var scopedTenantProvider = scope.ServiceProvider.GetService<ITenantProvider>();
-                            using var tenantScope = (!string.IsNullOrWhiteSpace(tenantKey) && scopedTenantProvider != null)
-                                ? scopedTenantProvider.BeginScope(tenantKey)
-                                : null;
+                    var fieldRows = string.Join("", data.Select(kv =>
+                        $"<tr><td style='padding:6px 10px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#334155;'>{System.Net.WebUtility.HtmlEncode(kv.Key)}</td><td style='padding:6px 10px; border-bottom:1px solid #e2e8f0; color:#0f172a;'>{System.Net.WebUtility.HtmlEncode(kv.Value?.ToString() ?? string.Empty)}</td></tr>"));
 
-                            var dispatcher = scope.ServiceProvider.GetService<ICentralNotificationDispatcher>();
-                            if (dispatcher == null) return;
-
-                            await DispatchFormNotificationsAsync(dispatcher, formTitle, notificationEmail, fieldRows, fieldCount, sourcePageUrl, clientIp);
-                        }
-                        else if (_notificationDispatcher != null)
-                        {
-                            await DispatchFormNotificationsAsync(_notificationDispatcher, formTitle, notificationEmail, fieldRows, fieldCount, sourcePageUrl, clientIp);
-                        }
-                    }
-                    catch
-                    {
-                        // Non-fatal background notification dispatch
-                    }
-                });
+                    await DispatchFormNotificationsAsync(
+                        _notificationDispatcher,
+                        form.Title,
+                        form.NotificationEmail?.Trim(),
+                        fieldRows,
+                        data.Count,
+                        submission.SourcePageUrl ?? "N/A",
+                        clientIp);
+                }
+                catch
+                {
+                    // Non-fatal notification enqueue
+                }
             }
 
             var alertMsg = string.IsNullOrWhiteSpace(form.AlertMessage)

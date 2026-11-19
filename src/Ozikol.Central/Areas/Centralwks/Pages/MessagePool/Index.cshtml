@@ -1,0 +1,341 @@
+@page "/centralwks/message-pool"
+@model Ozikol.Central.Areas.Centralwks.Pages.MessagePool.IndexModel
+@using System.Text.Json
+@using static Ozikol_BCC.Domain.Enum.Enum
+@{
+    ViewData["Title"] = "Cross-Tenant Message Pool";
+    ViewData["BreadcrumbSection"] = "Support";
+}
+
+<div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">Cross-Tenant Message Pool</h1>
+        <p class="admin-subtitle" style="color: #64748b; font-size: 14px; margin: 0;">Live outbox queue &amp; delivery diagnostics across all tenant organizations (<code style="font-size: 12px;">BcpMessagePools</code>).</p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="/centralwks/message-pool" class="btn btn-sm" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> Refresh
+        </a>
+        @if (Model.FailedCount > 0)
+        {
+            <form method="post" asp-page-handler="RetryAllFailed" asp-route-tenantKey="@Model.TenantFilter" style="display: inline;">
+                <button type="submit" class="btn btn-sm" style="background: #0050e5; color: #ffffff; border: none; font-weight: 700; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" onclick="return confirm('Re-queue all failed messages for Worker delivery?');">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">replay</span> Retry All Failed (@Model.FailedCount)
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    var isAlertError = Model.StatusMessage.StartsWith("Error", StringComparison.OrdinalIgnoreCase);
+    <div class="alert" style="background: @(isAlertError ? "#fef2f2" : "#f0fdf4"); border: 1px solid @(isAlertError ? "#fecaca" : "#bbf7d0"); color: @(isAlertError ? "#991b1b" : "#166534"); border-radius: 8px; padding: 12px 18px; margin-bottom: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="font-size: 20px;">@(isAlertError ? "error" : "check_circle")</span>
+        @Model.StatusMessage
+    </div>
+}
+
+@if (Model.UnreachableTenants.Any())
+{
+    <div class="alert" style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+        <span>Could not reach tenant database(s): <strong>@string.Join(", ", Model.UnreachableTenants)</strong></span>
+    </div>
+}
+
+@* ── KPI Summary Cards ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; color: #0050e5; display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">schedule_send</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Queued</div>
+            <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 2px;">@Model.QueuedCount</div>
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #fefce8; color: #b45309; display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">sync</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase;">Processing</div>
+            <div style="font-size: 24px; font-weight: 800; color: #b45309; margin-top: 2px;">@Model.ProcessingCount</div>
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">mark_email_read</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase;">Sent</div>
+            <div style="font-size: 24px; font-weight: 800; color: #047857; margin-top: 2px;">@Model.SentCount</div>
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">error_outline</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; font-weight: 700; color: #dc2626; text-transform: uppercase;">Failed</div>
+            <div style="font-size: 24px; font-weight: 800; color: #dc2626; margin-top: 2px;">@Model.FailedCount</div>
+        </div>
+    </div>
+</div>
+
+@* ── Filter Bar ── *@
+<form method="get" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end;">
+    <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Tenant</label>
+        <select name="TenantFilter" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="All">All Tenants</option>
+            @foreach (var t in Model.Tenants)
+            {
+                <option value="@t.TenantKey" selected="@(string.Equals(Model.TenantFilter, t.TenantKey, StringComparison.OrdinalIgnoreCase))">@t.OrganizationName (@t.TenantKey)</option>
+            }
+        </select>
+    </div>
+
+    <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Channel</label>
+        <select name="ChannelFilter" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="">All Channels</option>
+            @foreach (var ch in Enum.GetNames<BcpMessageChannel>())
+            {
+                <option value="@ch" selected="@(string.Equals(Model.ChannelFilter, ch, StringComparison.OrdinalIgnoreCase))">@ch</option>
+            }
+        </select>
+    </div>
+
+    <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Status</label>
+        <select name="StatusFilter" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="">All Statuses</option>
+            @foreach (var st in Enum.GetNames<BcpQueueStatus>())
+            {
+                <option value="@st" selected="@(string.Equals(Model.StatusFilter, st, StringComparison.OrdinalIgnoreCase))">@st</option>
+            }
+        </select>
+    </div>
+
+    <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Search</label>
+        <input type="text" name="Search" value="@Model.Search" placeholder="Recipient, subject, error..." style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;" />
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+        <button type="submit" style="flex: 1; padding: 8px 14px; background: #0050e5; color: #ffffff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">Apply</button>
+        <a href="/centralwks/message-pool" style="padding: 8px 12px; background: #f1f5f9; color: #334155; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none;">Reset</a>
+    </div>
+</form>
+
+@* ── Pool Table ── *@
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; text-align: left; color: #475569; font-size: 11.5px; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Tenant</th>
+                    <th style="padding: 12px 14px;">Channel</th>
+                    <th style="padding: 12px 14px;">Recipient</th>
+                    <th style="padding: 12px 14px;">Subject / Error</th>
+                    <th style="padding: 12px 14px;">Status</th>
+                    <th style="padding: 12px 14px;">Retries</th>
+                    <th style="padding: 12px 14px;">Timestamps (UTC)</th>
+                    <th style="padding: 12px 14px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Messages.Any())
+                {
+                    <tr>
+                        <td colspan="8" style="padding: 40px 16px; text-align: center; color: #64748b;">
+                            No message pool records match your current filters.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Messages)
+                    {
+                        var (bg, fg) = item.Status switch
+                        {
+                            BcpQueueStatus.Queued => ("#eff6ff", "#0050e5"),
+                            BcpQueueStatus.Processing => ("#fefce8", "#b45309"),
+                            BcpQueueStatus.Sent => ("#ecfdf5", "#047857"),
+                            BcpQueueStatus.Failed => ("#fef2f2", "#dc2626"),
+                            _ => ("#f1f5f9", "#475569")
+                        };
+
+                        var modalPayload = JsonSerializer.Serialize(new
+                        {
+                            item.Id,
+                            item.TenantKey,
+                            item.OrganizationName,
+                            Channel = item.Channel.ToString(),
+                            Status = item.Status.ToString(),
+                            item.RecipientAddress,
+                            item.RecipientName,
+                            item.SenderOrTemplateName,
+                            item.Subject,
+                            item.Content,
+                            item.PlainTextFallback,
+                            item.MetadataJson,
+                            item.LastError,
+                            item.ProviderMessageId,
+                            Retries = $"{item.Retries}/{item.MaxRetries}",
+                            CreatedAt = item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                            SentAt = item.SentAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "—"
+                        });
+
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 12px 14px; white-space: nowrap;">
+                                <div style="font-weight: 700; color: #0f172a;">@item.OrganizationName</div>
+                                <div style="font-size: 11.5px; color: #64748b;">@item.TenantKey</div>
+                            </td>
+                            <td style="padding: 12px 14px; white-space: nowrap;">
+                                <span style="padding: 3px 9px; border-radius: 999px; background: #f1f5f9; color: #334155; font-size: 11.5px; font-weight: 700;">@item.Channel</span>
+                            </td>
+                            <td style="padding: 12px 14px;">
+                                <div style="font-weight: 600; color: #0f172a;">@item.RecipientAddress</div>
+                                @if (!string.IsNullOrWhiteSpace(item.RecipientName))
+                                {
+                                    <div style="font-size: 11.5px; color: #64748b;">@item.RecipientName</div>
+                                }
+                            </td>
+                            <td style="padding: 12px 14px; max-width: 320px;">
+                                <div style="font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(item.Subject ?? "(No Subject)")</div>
+                                @if (!string.IsNullOrWhiteSpace(item.LastError))
+                                {
+                                    <div style="font-size: 11.5px; color: #dc2626; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@item.LastError">@item.LastError</div>
+                                }
+                            </td>
+                            <td style="padding: 12px 14px; white-space: nowrap;">
+                                <span style="padding: 3px 10px; border-radius: 999px; background: @bg; color: @fg; font-size: 11.5px; font-weight: 700;">@item.Status</span>
+                            </td>
+                            <td style="padding: 12px 14px; white-space: nowrap; font-weight: 600; color: #475569;">
+                                @item.Retries / @item.MaxRetries
+                            </td>
+                            <td style="padding: 12px 14px; white-space: nowrap; font-size: 12px; color: #475569;">
+                                <div>Created: @item.CreatedAt.ToString("MMM dd, HH:mm:ss")</div>
+                                @if (item.SentAt.HasValue)
+                                {
+                                    <div style="color: #047857;">Sent: @item.SentAt.Value.ToString("MMM dd, HH:mm:ss")</div>
+                                }
+                            </td>
+                            <td style="padding: 12px 14px; text-align: right; white-space: nowrap;">
+                                <button type="button" onclick='openPoolInspector(@Html.Raw(modalPayload))' style="padding: 5px 10px; background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 4px;">
+                                    Inspect
+                                </button>
+                                @if (item.Status == BcpQueueStatus.Failed || item.Status == BcpQueueStatus.Processing)
+                                {
+                                    <form method="post" asp-page-handler="Retry" style="display: inline;">
+                                        <input type="hidden" name="tenantKey" value="@item.TenantKey" />
+                                        <input type="hidden" name="messageId" value="@item.Id" />
+                                        <button type="submit" style="padding: 5px 10px; background: #0050e5; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                                            Retry
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div style="padding: 12px 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #475569;">
+            <span>Page @Model.PageIndex of @Model.TotalPages (@Model.TotalFilteredItems items)</span>
+            <div style="display: flex; gap: 6px;">
+                @if (Model.PageIndex > 1)
+                {
+                    <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageIndex="@(Model.PageIndex - 1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600;">Previous</a>
+                }
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageIndex="@(Model.PageIndex + 1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600;">Next</a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@* ── Message Inspector Modal ── *@
+<div id="poolInspectorModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 760px; max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(15,23,42,0.2);">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 id="inspSubject" style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Message Details</h3>
+                <div id="inspMeta" style="font-size: 12px; color: #64748b; margin-top: 2px;"></div>
+            </div>
+            <button type="button" onclick="closePoolInspector()" style="background: #f1f5f9; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer;">Close</button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; font-size: 13px;">
+            <div id="inspErrorWrap" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
+                <strong>Last Error:</strong>
+                <div id="inspError" style="margin-top: 4px; word-break: break-word;"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; background: #f8fafc; padding: 12px; border-radius: 8px;">
+                <div><strong>Recipient:</strong> <span id="inspRecipient"></span></div>
+                <div><strong>Sender / Template:</strong> <span id="inspSender"></span></div>
+                <div><strong>Retries:</strong> <span id="inspRetries"></span></div>
+                <div><strong>Provider ID:</strong> <span id="inspProviderId"></span></div>
+                <div><strong>Created (UTC):</strong> <span id="inspCreated"></span></div>
+                <div><strong>Sent (UTC):</strong> <span id="inspSent"></span></div>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <strong>Content Preview:</strong>
+                <pre id="inspContent" style="background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; max-height: 240px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-top: 6px;"></pre>
+            </div>
+            <div id="inspJsonWrap" style="display: none;">
+                <strong>Metadata JSON:</strong>
+                <pre id="inspJson" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; padding: 10px; border-radius: 8px; max-height: 140px; overflow: auto; font-size: 12px; margin-top: 6px;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openPoolInspector(data) {
+            document.getElementById('inspSubject').textContent = data.Subject || '(No Subject)';
+            document.getElementById('inspMeta').textContent = `${data.OrganizationName} (${data.TenantKey}) • ${data.Channel} • ${data.Status}`;
+            document.getElementById('inspRecipient').textContent = data.RecipientAddress + (data.RecipientName ? ` (${data.RecipientName})` : '');
+            document.getElementById('inspSender').textContent = data.SenderOrTemplateName || '—';
+            document.getElementById('inspRetries').textContent = data.Retries;
+            document.getElementById('inspProviderId').textContent = data.ProviderMessageId || '—';
+            document.getElementById('inspCreated').textContent = data.CreatedAt;
+            document.getElementById('inspSent').textContent = data.SentAt;
+            document.getElementById('inspContent').textContent = data.Content || '';
+
+            const errWrap = document.getElementById('inspErrorWrap');
+            if (data.LastError) {
+                errWrap.style.display = 'block';
+                document.getElementById('inspError').textContent = data.LastError;
+            } else {
+                errWrap.style.display = 'none';
+            }
+
+            const jsonWrap = document.getElementById('inspJsonWrap');
+            if (data.MetadataJson) {
+                jsonWrap.style.display = 'block';
+                document.getElementById('inspJson').textContent = data.MetadataJson;
+            } else {
+                jsonWrap.style.display = 'none';
+            }
+
+            document.getElementById('poolInspectorModal').style.display = 'flex';
+        }
+
+        function closePoolInspector() {
+            document.getElementById('poolInspectorModal').style.display = 'none';
+        }
+    </script>
+}
