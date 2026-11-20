@@ -174,7 +174,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
-                    var masterTenant = await _master.MasterTenants
+                    var masterTenant = await _master.MasterTenantCatalogs
                         .AsNoTracking()
                         .FirstOrDefaultAsync(t => t.TenantKey == CurrentTenantKey, ct);
                     if (masterTenant != null && !string.IsNullOrWhiteSpace(masterTenant.OrganizationName))
