@@ -250,7 +250,7 @@ interface DomainLiveProbeResult {
                   </span>
                   <div class="probe-item-text">
                     <span class="probe-item-label">
-                      <span *ngIf="probeResults.isIpMatch">A Record Points to Platform IP <code>2.24.162.42</code></span>
+                      <span *ngIf="probeResults.isIpMatch">A Record Points to Platform IP <code>{{ platformIp }}</code></span>
                       <span *ngIf="!probeResults.isIpMatch">DNS Host Record Points to <code>{{ cleanTargetHost }}</code></span>
                     </span>
                     <div *ngIf="!probeResults.cnamePassed" class="probe-subtext">
@@ -394,7 +394,7 @@ interface DomainLiveProbeResult {
                 </div>
                 <p class="remediation-desc">
                   Public DNS resolvers (Google 8.8.8.8, Cloudflare 1.1.1.1) report that <strong>{{ probeResults.domain }}</strong>
-                  is <strong>not currently pointing</strong> to <strong>{{ cleanTargetHost }}</strong> or Platform IP <strong>2.24.162.42</strong>.
+                  is <strong>not currently pointing</strong> to <strong>{{ cleanTargetHost }}</strong> or Platform IP <strong>{{ platformIp }}</strong>.
                   Anyone typing <code>https://{{ probeResults.domain }}</code> will receive a browser error (<code>DNS_PROBE_FINISHED_NXDOMAIN</code>).
                 </p>
                 <div class="remediation-steps">
@@ -415,7 +415,7 @@ interface DomainLiveProbeResult {
                     <div class="step-desc">
                       Add or update your <strong>DNS Records</strong>:
                       <div class="code-snippet-box">
-                        <div class="code-row"><span>Option 1 (Hostinger / GoDaddy A Record):</span> <strong>Type: A | Name: &#64; | Value: 2.24.162.42</strong></div>
+                        <div class="code-row"><span>Option 1 (Hostinger / GoDaddy A Record):</span> <strong>Type: A | Name: &#64; | Value: {{ platformIp }}</strong></div>
                         <div class="code-row"><span>Option 2 (Subdomain CNAME Record):</span> <strong>Type: CNAME | Name: www | Value: {{ cleanTargetHost }}</strong></div>
                         <div class="code-row"><span>TTL:</span> <strong>Auto (or 300s)</strong></div>
                       </div>
@@ -555,8 +555,8 @@ interface DomainLiveProbeResult {
                   <div class="target-options-stack">
                     <div class="target-option-line">
                       <span class="target-opt-label">IP Address:</span>
-                      <code>2.24.162.42</code>
-                      <button type="button" class="btn-copy" (click)="copyValue('2.24.162.42', 'ip_www')" title="Copy IP Address">
+                      <code>{{ platformIp }}</code>
+                      <button type="button" class="btn-copy" (click)="copyValue(platformIp, 'ip_www')" title="Copy IP Address">
                         <span class="material-symbols-outlined">{{ copySuccess['ip_www'] ? 'done' : 'content_copy' }}</span>
                         <span>{{ copySuccess['ip_www'] ? 'Copied' : 'Copy IP' }}</span>
                       </button>
@@ -585,14 +585,14 @@ interface DomainLiveProbeResult {
                       <span>{{ copySuccess['name_root'] ? 'Copied' : 'Copy' }}</span>
                     </button>
                   </div>
-                  <span class="rec-desc">Root domain (use IP 2.24.162.42 for Hostinger, GoDaddy, Namecheap)</span>
+                  <span class="rec-desc">Root domain (use IP {{ platformIp }} for Hostinger, GoDaddy, Namecheap)</span>
                 </td>
                 <td>
                   <div class="target-options-stack">
                     <div class="target-option-line">
                       <span class="target-opt-label">IP Address:</span>
-                      <code>2.24.162.42</code>
-                      <button type="button" class="btn-copy" (click)="copyValue('2.24.162.42', 'ip_root')" title="Copy IP Address">
+                      <code>{{ platformIp }}</code>
+                      <button type="button" class="btn-copy" (click)="copyValue(platformIp, 'ip_root')" title="Copy IP Address">
                         <span class="material-symbols-outlined">{{ copySuccess['ip_root'] ? 'done' : 'content_copy' }}</span>
                         <span>{{ copySuccess['ip_root'] ? 'Copied' : 'Copy IP' }}</span>
                       </button>
@@ -2620,6 +2620,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
   customDomainInput: string = '';
   websiteUrl: string = '';
   adminEmail: string = '';
+  platformIp: string = '2.24.162.42';
 
   probeResults: DnsProbeResult | null = null;
   copySuccess: { [key: string]: boolean } = {};
@@ -2776,7 +2777,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       {
         type: 'A',
         name: 'www',
-        target: '2.24.162.42',
+        target: this.platformIp,
         ttl: 'Auto (300s)',
         key: 'a_www',
         description: 'Option 1 (IP Address - Direct): Point www subdomain directly to platform IPv4 address via A record'
@@ -2792,7 +2793,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       {
         type: 'A',
         name: '@ (Apex Root)',
-        target: '2.24.162.42',
+        target: this.platformIp,
         ttl: 'Auto (300s)',
         key: 'a_root',
         description: 'Option 1 (IP Address - Recommended): Required for Hostinger, GoDaddy, Namecheap apex domain'
@@ -2930,7 +2931,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         // If DNS did NOT verify, reset saving immediately so the button is NOT disabled!
         this.saving = false;
         this.toast.warning(
-          `Domain not yet pointed. DNS records do not match Platform IP '2.24.162.42' or '${this.cleanTargetHost}'. The button remains active so you can try again once your registrar updates.`,
+          `Domain not yet pointed. DNS records do not match Platform IP '${this.platformIp}' or '${this.cleanTargetHost}'. The button remains active so you can try again once your registrar updates.`,
           'Verification Required'
         );
         return;
@@ -2958,7 +2959,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
           if (prov?.dnsProbe) {
             this.probeResults = {
               domain: cleanDomain,
-              expectedTarget: prov.dnsProbe.expectedTarget || '2.24.162.42',
+              expectedTarget: prov.dnsProbe.expectedTarget || this.platformIp,
               detectedTarget: prov.dnsProbe.detectedTarget || cleanDomain,
               cnamePassed: prov.dnsProbe.isDnsPointed,
               sslReady: prov.sslActive,
@@ -3071,10 +3072,13 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       const serverRes: any = await this.api.get<any>(`DashboardApi/probe-custom-domain-dns?domain=${encodeURIComponent(cleanDomain)}`).toPromise();
       const probeData = serverRes?.data || serverRes?.Data;
       if (probeData) {
+        if (probeData.expectedTarget && /^[0-9.]+$/.test(probeData.expectedTarget)) {
+          this.platformIp = probeData.expectedTarget;
+        }
         const passed = !!probeData.isDnsPointed;
         this.probeResults = {
           domain: cleanDomain,
-          expectedTarget: probeData.expectedTarget || '2.24.162.42',
+          expectedTarget: probeData.expectedTarget || this.platformIp,
           detectedTarget: probeData.detectedTarget || cleanDomain,
           cnamePassed: passed,
           sslReady: passed,
@@ -3135,7 +3139,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       .map(a => a.data?.trim());
 
     const cnameMatch = detectedCnames.some(c => c === expectedHost || c.includes(expectedHost) || c.endsWith('.ozikol.cloud'));
-    const validPlatformIps = ['2.24.162.42', '104.21.32.45', '172.67.182.206'];
+    const validPlatformIps = [this.platformIp, '104.21.32.45', '172.67.182.206'];
     const ipMatch = detectedIps.some(ip => validPlatformIps.includes(ip));
     const dnsPassed = cnameMatch || ipMatch;
     const isNxDomain = cnameData?.Status === 3 || aRecordData?.Status === 3;
@@ -3186,7 +3190,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
     try {
       const dnsPassed = await this.executeDnsProbe(cleanDomain);
       if (dnsPassed) {
-        const resolutionNote = this.probeResults?.isIpMatch ? 'A Record IP (2.24.162.42)' : `'${this.cleanTargetHost}'`;
+        const resolutionNote = this.probeResults?.isIpMatch ? `A Record IP (${this.platformIp})` : `'${this.cleanTargetHost}'`;
         this.toast.success(`DNS verified! '${cleanDomain}' correctly points to ${resolutionNote}.`, 'DNS Verified');
 
         // Automatically trigger server routing and SSL provisioning in background
@@ -3210,7 +3214,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         });
       } else {
         this.toast.warning(
-          `Domain not yet pointed. DNS records do not match '${this.cleanTargetHost}' or Platform IP '2.24.162.42'. The button remains active.`,
+          `Domain not yet pointed. DNS records do not match '${this.cleanTargetHost}' or Platform IP '${this.platformIp}'. The button remains active.`,
           'Domain Not Yet Pointed'
         );
       }
