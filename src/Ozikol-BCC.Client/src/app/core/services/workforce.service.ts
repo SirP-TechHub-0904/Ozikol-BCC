@@ -320,6 +320,19 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/attendance/live-monitor');
   }
 
+  notifyActiveDutyStaff(payload: {
+    targetUserId?: string | null;
+    shiftId?: string | null;
+    title: string;
+    message: string;
+    sendPush: boolean;
+    sendEmail: boolean;
+    sendWhatsApp: boolean;
+    sendSms: boolean;
+  }): Observable<any> {
+    return this.apiService.post<any>('workforce/attendance/notify-active', payload);
+  }
+
   getSupervisorTimesheets(status?: string): Observable<any> {
     const params: any = {};
     if (status) params.status = status;
