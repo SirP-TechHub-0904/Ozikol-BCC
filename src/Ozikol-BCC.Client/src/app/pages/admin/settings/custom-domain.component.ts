@@ -3271,9 +3271,11 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         }
 
         if (data?.succeeded) {
-          this.toast.success(data.message || 'Domain repaired and SSL re-issued successfully!', 'Repair Complete');
+          this.toast.success(data.message || 'Domain verified and dedicated SSL certificate active!', 'Domain Activated');
+        } else if (data?.certbotSuccess) {
+          this.toast.info(data?.message || 'SSL certificate is active. Web application routing is synchronizing.', 'Domain Routing Synchronizing');
         } else {
-          this.toast.error(data?.message || 'Repair attempted, check execution logs.', 'Repair Notice');
+          this.toast.error(data?.message || 'Domain verification could not be completed. Please verify DNS propagation.', 'Verification Notice');
         }
       },
       error: (err) => {

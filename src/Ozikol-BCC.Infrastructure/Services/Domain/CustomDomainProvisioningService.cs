@@ -350,6 +350,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
         var webPort = _configuration["CustomDomain:ClientProxyPort"] ?? DefaultWebClientPort;
         var apiPort = _configuration["CustomDomain:ApiProxyPort"] ?? DefaultApiPort;
+        var clientStaticRoot = _configuration["CustomDomain:ClientStaticRoot"] ?? "/var/www/ozikol-client";
 
         // Check if SSL certificate already exists on the server
         var certPath = $"/etc/letsencrypt/live/{domain}/fullchain.pem";
@@ -386,13 +387,13 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             sb.AppendLine("        return 301 https://$host$request_uri;");
             sb.AppendLine("    }");
             sb.AppendLine();
-            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort);
+            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort, clientStaticRoot);
         }
         else
         {
             // Initial boot mode before SSL certificate is issued: proxy directly over HTTP
             sb.AppendLine("    # Initial HTTP proxy before Let's Encrypt certificate issuance completes");
-            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort);
+            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort, clientStaticRoot);
         }
 
         sb.AppendLine("}");
@@ -421,7 +422,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             sb.AppendLine("    add_header X-Content-Type-Options \"nosniff\" always;");
             sb.AppendLine("    add_header Referrer-Policy \"strict-origin-when-cross-origin\" always;");
             sb.AppendLine();
-            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort);
+            AppendProxyLocations(sb, domain, tenantKey, webPort, apiPort, clientStaticRoot);
             sb.AppendLine("}");
         }
 
@@ -454,7 +455,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
     /// <summary>
     /// Appends reverse proxy location directives for API, SignalR, social media crawlers, and Angular web client.
     /// </summary>
-    private static void AppendProxyLocations(StringBuilder sb, string domain, string tenantKey, string webPort, string apiPort)
+    private static void AppendProxyLocations(StringBuilder sb, string domain, string tenantKey, string webPort, string apiPort, string clientStaticRoot)
     {
         sb.AppendLine("    # Social Media Crawler Detection (WhatsApp, Facebook, Twitter/X, Telegram, LinkedIn, Discord, Slack)");
         sb.AppendLine("    set $social_crawler 0;");
@@ -507,23 +508,43 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         sb.AppendLine("        proxy_read_timeout 86400s;");
         sb.AppendLine("    }");
         sb.AppendLine();
-        sb.AppendLine("    # Dedicated Ozikol Workspace Web App Proxy");
-        sb.AppendLine("    location / {");
-        sb.AppendLine("        if ($social_crawler = 1) {");
-        sb.AppendLine("            rewrite ^ /_social_preview_internal last;");
-        sb.AppendLine("        }");
-        sb.AppendLine($"        proxy_pass http://127.0.0.1:{webPort}/;");
-        sb.AppendLine("        proxy_http_version 1.1;");
-        sb.AppendLine("        proxy_set_header Upgrade $http_upgrade;");
-        sb.AppendLine("        proxy_set_header Connection \"upgrade\";");
-        sb.AppendLine("        proxy_set_header Host $host;");
-        sb.AppendLine($"        proxy_set_header X-Tenant-Key \"{tenantKey}\";");
-        sb.AppendLine($"        proxy_set_header X-Tenant-Slug \"{tenantKey}\";");
-        sb.AppendLine($"        proxy_set_header X-Tenant-Custom-Domain \"{domain}\";");
-        sb.AppendLine("        proxy_set_header X-Real-IP $remote_addr;");
-        sb.AppendLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
-        sb.AppendLine("        proxy_set_header X-Forwarded-Proto $scheme;");
-        sb.AppendLine("    }");
+        // In Linux production environments, serve the static Angular SPA directly from /var/www/ozikol-client
+        // to prevent 502 Bad Gateway from targeting dev port 4200
+        var isProductionStatic = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Directory.Exists(clientStaticRoot);
+
+        if (isProductionStatic)
+        {
+            sb.AppendLine("    # Static Angular SPA Client");
+            sb.AppendLine($"    root {clientStaticRoot};");
+            sb.AppendLine("    index index.html;");
+            sb.AppendLine();
+            sb.AppendLine("    location / {");
+            sb.AppendLine("        if ($social_crawler = 1) {");
+            sb.AppendLine("            rewrite ^ /_social_preview_internal last;");
+            sb.AppendLine("        }");
+            sb.AppendLine("        try_files $uri $uri/ /index.html;");
+            sb.AppendLine("    }");
+        }
+        else
+        {
+            sb.AppendLine("    # Dedicated Ozikol Workspace Web App Proxy");
+            sb.AppendLine("    location / {");
+            sb.AppendLine("        if ($social_crawler = 1) {");
+            sb.AppendLine("            rewrite ^ /_social_preview_internal last;");
+            sb.AppendLine("        }");
+            sb.AppendLine($"        proxy_pass http://127.0.0.1:{webPort}/;");
+            sb.AppendLine("        proxy_http_version 1.1;");
+            sb.AppendLine("        proxy_set_header Upgrade $http_upgrade;");
+            sb.AppendLine("        proxy_set_header Connection \"upgrade\";");
+            sb.AppendLine("        proxy_set_header Host $host;");
+            sb.AppendLine($"        proxy_set_header X-Tenant-Key \"{tenantKey}\";");
+            sb.AppendLine($"        proxy_set_header X-Tenant-Slug \"{tenantKey}\";");
+            sb.AppendLine($"        proxy_set_header X-Tenant-Custom-Domain \"{domain}\";");
+            sb.AppendLine("        proxy_set_header X-Real-IP $remote_addr;");
+            sb.AppendLine("        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
+            sb.AppendLine("        proxy_set_header X-Forwarded-Proto $scheme;");
+            sb.AppendLine("    }");
+        }
     }
 
     /// <summary>
@@ -1178,10 +1199,10 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
         result.Succeeded = result.LiveProbe.OverallHealthy;
         result.Message = result.LiveProbe.OverallHealthy
-            ? $"Domain '{cleanDomain}' repaired successfully. Dedicated SSL certificates are active for {apexHost} and {wwwHost}."
+            ? $"Domain '{cleanDomain}' verified and active. Dedicated SSL certificates are operating securely for {apexHost} and {wwwHost}."
             : (result.CertbotSuccess
-                ? $"SSL certificate re-issued, but live endpoints are still synchronizing. Please allow a few moments or reload Nginx."
-                : $"Repair attempted. Check execution logs for details.");
+                ? $"SSL certificate is active. Web application routing is synchronizing with your workspace. This usually completes in under a minute."
+                : $"Domain verification in progress. Please ensure DNS propagation has completed at your domain registrar.");
 
         return result;
     }
