@@ -425,7 +425,9 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             sb.AppendLine("}");
         }
 
-        File.WriteAllText(fullPath, sb.ToString(), Encoding.UTF8);
+        // Use UTF8 without BOM (Byte Order Mark) - Nginx fails to parse files with UTF-8 BOM, treating '\xEF\xBB\xBF#' as an unknown directive
+        var utf8WithoutBom = new UTF8Encoding(false);
+        File.WriteAllText(fullPath, sb.ToString(), utf8WithoutBom);
         logs.Add($"[{DateTime.UtcNow:O}] Wrote Nginx virtual host configuration: {fullPath} (SSL Active: {hasSslCert}).");
 
         // On Linux systems, enable the site by symlinking into /etc/nginx/sites-enabled
