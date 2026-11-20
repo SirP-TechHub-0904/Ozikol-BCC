@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Security;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -430,19 +431,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
 
         private async Task<List<(string TenantKey, string OrganizationName, string ConnectionString)>> LoadActiveTenantsAsync()
         {
+            var masterConnStr = _masterDb.Database.GetConnectionString() ?? string.Empty;
+
             var raw = await _masterDb.MasterTenantCatalogs
                 .AsNoTracking()
-                .Where(t => t.IsActive && !t.IsDeleted && !string.IsNullOrWhiteSpace(t.ConnectionString))
-                .Select(t => new { t.TenantKey, t.OrganizationName, t.ConnectionString })
+                .Where(t => t.IsActive && !t.IsDeleted)
+                .Select(t => new { t.TenantKey, t.OrganizationName, t.ConnectionString, t.DatabaseName })
                 .ToListAsync();
 
             var list = new List<(string, string, string)>();
             foreach (var item in raw)
             {
                 var decrypted = OzikolDataCipher.DecryptIfNeeded(item.ConnectionString)?.Trim();
-                if (!string.IsNullOrWhiteSpace(decrypted))
+                var harmonized = TenantConnectionHarmonizer.Harmonize(masterConnStr, decrypted, item.DatabaseName);
+                if (!string.IsNullOrWhiteSpace(harmonized))
                 {
-                    list.Add((item.TenantKey, item.OrganizationName, decrypted));
+                    list.Add((item.TenantKey, item.OrganizationName, harmonized));
                 }
             }
             return list;
@@ -450,16 +454,19 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
 
         private async Task<(string TenantKey, string OrganizationName, string ConnectionString)?> ResolveTenantAsync(string tenantKey)
         {
+            var masterConnStr = _masterDb.Database.GetConnectionString() ?? string.Empty;
+
             var item = await _masterDb.MasterTenantCatalogs
                 .AsNoTracking()
                 .Where(t => t.TenantKey == tenantKey && !t.IsDeleted)
-                .Select(t => new { t.TenantKey, t.OrganizationName, t.ConnectionString })
+                .Select(t => new { t.TenantKey, t.OrganizationName, t.ConnectionString, t.DatabaseName })
                 .FirstOrDefaultAsync();
 
             if (item == null) return null;
             var decrypted = OzikolDataCipher.DecryptIfNeeded(item.ConnectionString)?.Trim();
-            if (string.IsNullOrWhiteSpace(decrypted)) return null;
-            return (item.TenantKey, item.OrganizationName, decrypted);
+            var harmonized = TenantConnectionHarmonizer.Harmonize(masterConnStr, decrypted, item.DatabaseName);
+            if (string.IsNullOrWhiteSpace(harmonized)) return null;
+            return (item.TenantKey, item.OrganizationName, harmonized);
         }
 
         private static DashboardDbContext CreateTenantDbContext(string tenantKey, string decryptedConnectionString)
