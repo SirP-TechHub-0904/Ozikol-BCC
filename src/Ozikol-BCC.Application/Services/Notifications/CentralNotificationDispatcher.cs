@@ -619,7 +619,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                             actionUrl: payload.ActionUrl,
                             actionText: "View in Workspace",
                             brandColorHex: colorHex,
-                            badgeLabel: severityLabel);
+                            badgeLabel: null);
                     }
                     else
                     {
@@ -903,12 +903,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 {
                     warnings.Add($"Subject contains high-risk spam trigger phrase '{trigger}'. Consider rephrasing to prevent mailbox junk filtering.");
                 }
-            }
-
-            var prefix = $"[{severity.ToString().ToUpperInvariant()}] ";
-            if (!trimmed.StartsWith("[", StringComparison.Ordinal))
-            {
-                trimmed = prefix + trimmed;
             }
 
             return (trimmed, warnings);

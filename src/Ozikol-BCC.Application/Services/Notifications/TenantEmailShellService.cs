@@ -45,10 +45,30 @@ namespace Ozikol_BCC.Application.Services.Notifications
             var primaryColor = !string.IsNullOrWhiteSpace(brandColorHex) ? brandColorHex.Trim() : DefaultBrandColor;
             var safeTitle = !string.IsNullOrWhiteSpace(title) ? title.Trim() : "Notification";
 
-            // Salutation formatting
-            var salutationHtml = !string.IsNullOrWhiteSpace(recipientFirstName)
+            // Salutation formatting — avoid duplicate greetings if innerHtml already begins with a greeting
+            var trimmedContent = innerHtml.TrimStart();
+            var hasExistingGreeting = trimmedContent.StartsWith("Hello", StringComparison.OrdinalIgnoreCase) ||
+                                      trimmedContent.StartsWith("Dear", StringComparison.OrdinalIgnoreCase) ||
+                                      trimmedContent.StartsWith("<p>Hello", StringComparison.OrdinalIgnoreCase) ||
+                                      trimmedContent.StartsWith("<p>Dear", StringComparison.OrdinalIgnoreCase);
+
+            var salutationHtml = (!string.IsNullOrWhiteSpace(recipientFirstName) && !hasExistingGreeting)
                 ? $"<p style='margin:0 0 16px 0; font-size:15px; line-height:1.6; color:#1e293b;'>Hello <strong>{System.Net.WebUtility.HtmlEncode(recipientFirstName.Trim())}</strong>,</p>"
                 : string.Empty;
+
+            // Normalize plain text messages with markdown formatting into clean HTML
+            var renderedContent = innerHtml;
+            if (!renderedContent.Contains("<p>") && !renderedContent.Contains("<div>") && !renderedContent.Contains("<table"))
+            {
+                if (renderedContent.Contains("**"))
+                {
+                    renderedContent = System.Text.RegularExpressions.Regex.Replace(renderedContent, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+                }
+                if (renderedContent.Contains("\n"))
+                {
+                    renderedContent = renderedContent.Replace("\r\n", "\n").Replace("\n", "<br/>");
+                }
+            }
 
             // Brand header logo or text
             var headerBrandHtml = !string.IsNullOrWhiteSpace(tenantLogoUrl)
@@ -108,7 +128,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                             </h2>
                             {salutationHtml}
                             <div style='color:#334155;'>
-                                {innerHtml}
+                                {renderedContent}
                             </div>
                             {buttonHtml}
                         </td>

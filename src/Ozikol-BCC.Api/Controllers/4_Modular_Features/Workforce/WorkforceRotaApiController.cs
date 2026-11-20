@@ -1578,7 +1578,7 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientName = request.FullName?.Trim() ?? "Staff Member",
                         TenantKey = CurrentTenantKey,
                         Title = "Welcome to Your Workforce Rota & Shift Workspace",
-                        Message = $"Hello {request.FullName ?? "Team Member"},\n\nYou have been invited to join the Workforce Rota system as a **{profile.JobTitle}**.\n\nPlease log in to your workspace to configure your availability, upload required compliance documents, and set your shift reminder preferences.",
+                        Message = $"You have been enrolled in the Workforce Rota system as a **{profile.JobTitle}**.\n\nPlease log in to your workspace to configure your availability, upload required compliance documents, and set your shift reminder preferences.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
@@ -1729,7 +1729,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Title = !string.IsNullOrWhiteSpace(request.JobTitle)
                             ? $"Invitation to Join Workforce Rota as {request.JobTitle.Trim()}"
                             : "Invitation to Complete Your Workforce Registration",
-                        Message = $"Hello {fullName},\n\nYou have been invited to join the workforce team{roleText}.{customNote}\n\nPlease click the button below to complete your registration form using your single-use onboarding link.",
+                        Message = $"You have been invited to join the workforce team{roleText}.{customNote}\n\nPlease click the button below to complete your registration form using your single-use onboarding link.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.Email,
@@ -1976,7 +1976,7 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientName = fullName,
                         TenantKey = CurrentTenantKey,
                         Title = "Your Workforce Account Has Been Created",
-                        Message = $"Hello {fullName},\n\nAn administrator has pre-enrolled you into the Workforce Rota system as a **{staffProfile.JobTitle}**.\n\nPlease sign in with your email (`{email}`) to review your rota schedule, confirm shifts, and set your permanent password.",
+                        Message = $"An administrator has pre-enrolled you into the Workforce Rota system as a **{staffProfile.JobTitle}**.\n\nPlease sign in with your email (`{email}`) to review your rota schedule, confirm shifts, and set your permanent password.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
