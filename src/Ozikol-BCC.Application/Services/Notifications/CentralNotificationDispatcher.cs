@@ -148,6 +148,12 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         .Where(u => u.BcpUserCategoryId == payload.TargetCategoryId.Value)
                         .ToListAsync(cancellationToken);
                 }
+                else if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
+                {
+                    targetProfiles = await _dbContext.Users
+                        .Where(u => u.UserStatus == UserStatus.Active)
+                        .ToListAsync(cancellationToken);
+                }
 
                 // 3. Channel 1: In-App Database Persistence & Live SignalR Broadcast
                 if (payload.Channels.HasFlag(NotificationChannels.InApp))

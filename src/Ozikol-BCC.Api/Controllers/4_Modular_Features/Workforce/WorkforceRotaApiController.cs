@@ -195,19 +195,133 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var pref = await _db.BcpShiftNotificationPreferences
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == userId, ct);
+                .FirstOrDefaultAsync(p => p.UserId == userId, ct);
 
             if (pref == null)
             {
                 return NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             }
 
-            var channels = NotificationChannels.None;
-            if (pref.EnableInApp) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
-            if (pref.EnableEmail) channels |= NotificationChannels.Email;
+            var channels = NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
 
-            return channels == NotificationChannels.None ? (NotificationChannels.InApp | NotificationChannels.Push) : channels;
+            return channels;
+        }
+
+        /// <summary>
+        /// Dispatches a multi-channel (In-App + Push + Email) workforce notification to a specific staff member,
+        /// ensuring both BcpNotifications (Bell UI) and BcpMessagePools (Cross-Tenant Message Pool / Mailcow SMTP) are populated.
+        /// </summary>
+        private async Task NotifySingleWorkforceStaffAsync(
+            string userId,
+            string title,
+            string message,
+            string actionUrl,
+            string icon,
+            NotificationSeverity severity,
+            CancellationToken ct)
+        {
+            if (_notificationDispatcher == null || string.IsNullOrWhiteSpace(userId)) return;
+
+            try
+            {
+                var user = await _db.Users.AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == userId || u.Email == userId || u.UserName == userId, ct);
+
+                var resolvedUserId = user?.Id ?? userId;
+                var recipientName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : "Staff Member";
+                if (string.IsNullOrWhiteSpace(recipientName)) recipientName = user?.Email ?? "Staff Member";
+
+                var channels = await ResolveStaffNotificationChannelsAsync(resolvedUserId, ct);
+
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = resolvedUserId,
+                    RecipientEmail = user?.Email,
+                    RecipientName = recipientName,
+                    RecipientPhone = user?.PhoneNumber,
+                    TenantKey = CurrentTenantKey,
+                    Title = title,
+                    Message = message,
+                    EmailSubject = title,
+                    PushTitle = title,
+                    PushBody = message,
+                    Category = BcpMessageCategory.General,
+                    Severity = severity,
+                    Channels = channels,
+                    SendEmailCopy = true,
+                    Module = "Workforce",
+                    Icon = icon,
+                    ActionUrl = actionUrl
+                }, ct);
+            }
+            catch
+            {
+                // Non-blocking notification dispatch
+            }
+        }
+
+        /// <summary>
+        /// Dispatches a multi-channel (In-App + Push + Email) workforce notification to all active staff members
+        /// (e.g. when an Open Shift is created or broadcasted).
+        /// </summary>
+        private async Task NotifyAllActiveWorkforceStaffAsync(
+            string title,
+            string message,
+            string actionUrl,
+            string icon,
+            NotificationSeverity severity,
+            CancellationToken ct)
+        {
+            if (_notificationDispatcher == null) return;
+
+            try
+            {
+                var profileUserIds = await _db.BcpShiftStaffProfiles
+                    .AsNoTracking()
+                    .Where(p => p.IsActive && !string.IsNullOrEmpty(p.UserId))
+                    .Select(p => p.UserId)
+                    .ToListAsync(ct);
+
+                var activeUsers = await _db.Users
+                    .AsNoTracking()
+                    .Where(u => u.UserStatus == UserStatus.Active || profileUserIds.Contains(u.Id))
+                    .ToListAsync(ct);
+
+                foreach (var user in activeUsers)
+                {
+                    var recipientName = $"{user.FirstName} {user.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(recipientName)) recipientName = user.Email ?? "Staff Member";
+                    var channels = await ResolveStaffNotificationChannelsAsync(user.Id, ct);
+
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        RecipientEmail = user.Email,
+                        RecipientName = recipientName,
+                        RecipientPhone = user.PhoneNumber,
+                        TenantKey = CurrentTenantKey,
+                        Title = title,
+                        Message = message,
+                        EmailSubject = title,
+                        PushTitle = title,
+                        PushBody = message,
+                        Category = BcpMessageCategory.General,
+                        Severity = severity,
+                        Channels = channels,
+                        SendEmailCopy = true,
+                        Module = "Workforce",
+                        Icon = icon,
+                        ActionUrl = actionUrl
+                    }, ct);
+                }
+            }
+            catch
+            {
+                // Non-blocking notification dispatch
+            }
         }
 
         // =========================================================================
@@ -799,38 +913,41 @@ namespace Ozikol_BCC.Api.Controllers
             _db.BcpShifts.Add(shift);
             await _db.SaveChangesAsync(ct);
 
-            // Dispatch notification to assigned guard
-            if (!string.IsNullOrWhiteSpace(shift.AssignedUserId) && _notificationDispatcher != null)
+            var siteEntity = await _db.BcpClientSites.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == shift.ClientSiteId, ct);
+            var venueDisplayName = siteEntity?.SiteName ?? shift.FacilityName ?? shift.PostName;
+            var timeWindowStr = $"{startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}";
+
+            // Dispatch In-App + Push + Email notification:
+            // - If assigned to a specific staff member, notify that staff member directly.
+            // - If created as an Open / Unassigned shift, notify all active workforce staff members so they can claim it.
+            if (!string.IsNullOrWhiteSpace(shift.AssignedUserId))
             {
-                try
-                {
-                    var channels = await ResolveStaffNotificationChannelsAsync(shift.AssignedUserId, ct);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                    {
-                        TargetType = NotificationDispatchTarget.SingleUser,
-                        TargetUserId = shift.AssignedUserId,
-                        TenantKey = CurrentTenantKey,
-                        Title = "New Shift Assigned",
-                        Message = $"You have been assigned to shift {shift.ShiftCode} ({startUtc:ddd, dd MMM HH:mm} - {endUtc:HH:mm}) at {shift.PostName}. Please review and confirm.",
-                        Category = BcpMessageCategory.General,
-                        Severity = NotificationSeverity.NewFeature,
-                        Channels = channels,
-                        Module = "Workforce",
-                        Icon = "calendar_month",
-                        ActionUrl = "/workforce/my-shifts"
-                    }, ct);
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
+                await NotifySingleWorkforceStaffAsync(
+                    shift.AssignedUserId,
+                    $"New Shift Assigned ({shift.ShiftCode})",
+                    $"You have been assigned to shift {shift.ShiftCode} at {venueDisplayName} ({shift.PostName}) for {timeWindowStr}. Please review and confirm your duty schedule.",
+                    "/workforce/workspace/my-shifts",
+                    "calendar_month",
+                    NotificationSeverity.NewFeature,
+                    ct);
+            }
+            else
+            {
+                await NotifyAllActiveWorkforceStaffAsync(
+                    $"New Open Shift Available ({shift.ShiftCode})",
+                    $"A new open shift ({shift.ShiftCode}) has been posted at {venueDisplayName} ({shift.PostName}) for {timeWindowStr}. Open your workspace to claim this shift.",
+                    "/workforce/workspace/open-shifts",
+                    "campaign",
+                    NotificationSeverity.NewFeature,
+                    ct);
             }
 
             return Ok(ApiResponse<Guid>.SuccessResponse(shift.Id, $"Shift {shift.ShiftCode} created successfully."));
         }
 
         /// <summary>
-        /// Broadcasts an open/unassigned shift to all active workforce members across In-App, Email, and WhatsApp.
+        /// Broadcasts an open/unassigned shift to all active workforce members across In-App, Push, Email, and WhatsApp.
         /// </summary>
         [HttpPost("shifts/{id:guid}/broadcast")]
         public async Task<ActionResult<ApiResponse<bool>>> BroadcastOpenShift(Guid id, CancellationToken ct)
@@ -853,45 +970,17 @@ namespace Ozikol_BCC.Api.Controllers
             shift.UpdatedUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 
-            if (_notificationDispatcher != null)
-            {
-                try
-                {
-                    var activeStaffUserIds = await _db.BcpShiftStaffProfiles
-                        .AsNoTracking()
-                        .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive)
-                        .Select(p => p.UserId)
-                        .Distinct()
-                        .ToListAsync(ct);
+            var siteName = shift.ClientSite?.SiteName ?? shift.FacilityName ?? shift.PostName;
+            var timeStr = $"{shift.StartsAtUtc:ddd, dd MMM yyyy HH:mm} – {shift.EndsAtUtc:HH:mm}";
+            var venueStr = shift.Address ?? shift.FacilityName ?? siteName;
 
-                    var siteName = shift.ClientSite?.SiteName ?? shift.PostName;
-                    var timeStr = $"{shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}";
-                    var venueStr = shift.Address ?? shift.FacilityName ?? siteName;
-
-                    foreach (var staffUserId in activeStaffUserIds)
-                    {
-                        var channels = await ResolveStaffNotificationChannelsAsync(staffUserId, ct);
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                        {
-                            TargetType = NotificationDispatchTarget.SingleUser,
-                            TargetUserId = staffUserId,
-                            TenantKey = CurrentTenantKey,
-                            Title = "🚨 Open Shift Available",
-                            Message = $"Open shift {shift.ShiftCode} at {siteName} ({timeStr}). Venue: {venueStr}. First to claim secures the shift!",
-                            Category = BcpMessageCategory.General,
-                            Severity = NotificationSeverity.NewFeature,
-                            Channels = channels,
-                            Module = "Workforce",
-                            Icon = "campaign",
-                            ActionUrl = "/workforce/my-shifts?tab=open"
-                        }, ct);
-                    }
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
-            }
+            await NotifyAllActiveWorkforceStaffAsync(
+                $"Open Shift Available ({shift.ShiftCode})",
+                $"Open shift {shift.ShiftCode} is available at {siteName} ({timeStr}). Location: {venueStr}. First to claim secures the shift!",
+                "/workforce/workspace/open-shifts",
+                "campaign",
+                NotificationSeverity.NewFeature,
+                ct);
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, $"Open shift {shift.ShiftCode} broadcasted to all active officers."));
         }
@@ -1052,73 +1141,40 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync(ct);
 
-            // Dispatch update/reassignment notifications
-            if (_notificationDispatcher != null)
+            // Dispatch update/reassignment notifications across In-App, Push, and Email
+            if (!string.IsNullOrWhiteSpace(previousAssignedUser) && previousAssignedUser != shift.AssignedUserId)
             {
-                try
-                {
-                    // 1. Reassignment to a different guard
-                    if (!string.IsNullOrWhiteSpace(previousAssignedUser) && previousAssignedUser != shift.AssignedUserId)
-                    {
-                        var prevChannels = await ResolveStaffNotificationChannelsAsync(previousAssignedUser, ct);
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                        {
-                            TargetType = NotificationDispatchTarget.SingleUser,
-                            TargetUserId = previousAssignedUser,
-                            TenantKey = CurrentTenantKey,
-                            Title = "Shift Reassigned",
-                            Message = $"You have been unassigned from shift {shift.ShiftCode} at {shift.PostName}.",
-                            Category = BcpMessageCategory.General,
-                            Severity = NotificationSeverity.Update,
-                            Channels = prevChannels,
-                            Module = "Workforce",
-                            Icon = "event_busy",
-                            ActionUrl = "/workforce/my-shifts"
-                        }, ct);
-                    }
+                await NotifySingleWorkforceStaffAsync(
+                    previousAssignedUser,
+                    $"Shift Reassigned ({shift.ShiftCode})",
+                    $"You have been unassigned from shift {shift.ShiftCode} at {shift.PostName}.",
+                    "/workforce/workspace/my-shifts",
+                    "event_busy",
+                    NotificationSeverity.Update,
+                    ct);
+            }
 
-                    if (!string.IsNullOrWhiteSpace(shift.AssignedUserId) && shift.AssignedUserId != previousAssignedUser)
-                    {
-                        var newChannels = await ResolveStaffNotificationChannelsAsync(shift.AssignedUserId, ct);
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                        {
-                            TargetType = NotificationDispatchTarget.SingleUser,
-                            TargetUserId = shift.AssignedUserId,
-                            TenantKey = CurrentTenantKey,
-                            Title = "New Shift Assigned",
-                            Message = $"You have been assigned to shift {shift.ShiftCode} ({startUtc:ddd, dd MMM HH:mm} - {endUtc:HH:mm}) at {shift.PostName}. Please review and confirm.",
-                            Category = BcpMessageCategory.General,
-                            Severity = NotificationSeverity.NewFeature,
-                            Channels = newChannels,
-                            Module = "Workforce",
-                            Icon = "calendar_month",
-                            ActionUrl = "/workforce/my-shifts"
-                        }, ct);
-                    }
-                    // 2. Schedule time update for the same guard
-                    else if (!string.IsNullOrWhiteSpace(shift.AssignedUserId) && (oldStart != startUtc || oldEnd != endUtc))
-                    {
-                        var channels = await ResolveStaffNotificationChannelsAsync(shift.AssignedUserId, ct);
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                        {
-                            TargetType = NotificationDispatchTarget.SingleUser,
-                            TargetUserId = shift.AssignedUserId,
-                            TenantKey = CurrentTenantKey,
-                            Title = "Shift Schedule Rescheduled",
-                            Message = $"Your shift {shift.ShiftCode} at {shift.PostName} has been rescheduled to {startUtc:ddd, dd MMM HH:mm} - {endUtc:HH:mm}.",
-                            Category = BcpMessageCategory.General,
-                            Severity = NotificationSeverity.Update,
-                            Channels = channels,
-                            Module = "Workforce",
-                            Icon = "schedule",
-                            ActionUrl = "/workforce/my-shifts"
-                        }, ct);
-                    }
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
+            if (!string.IsNullOrWhiteSpace(shift.AssignedUserId) && shift.AssignedUserId != previousAssignedUser)
+            {
+                await NotifySingleWorkforceStaffAsync(
+                    shift.AssignedUserId,
+                    $"New Shift Assigned ({shift.ShiftCode})",
+                    $"You have been assigned to shift {shift.ShiftCode} ({startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}) at {shift.PostName}. Please review and confirm.",
+                    "/workforce/workspace/my-shifts",
+                    "calendar_month",
+                    NotificationSeverity.NewFeature,
+                    ct);
+            }
+            else if (!string.IsNullOrWhiteSpace(shift.AssignedUserId) && (oldStart != startUtc || oldEnd != endUtc))
+            {
+                await NotifySingleWorkforceStaffAsync(
+                    shift.AssignedUserId,
+                    $"Shift Schedule Rescheduled ({shift.ShiftCode})",
+                    $"Your shift {shift.ShiftCode} at {shift.PostName} has been rescheduled to {startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}.",
+                    "/workforce/workspace/my-shifts",
+                    "schedule",
+                    NotificationSeverity.Update,
+                    ct);
             }
 
             return Ok(ApiResponse<Guid>.SuccessResponse(shift.Id, $"Shift {shift.ShiftCode} updated successfully."));
@@ -1159,31 +1215,17 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync(ct);
 
-            // Notify assigned officer of shift cancellation
-            if (!string.IsNullOrWhiteSpace(assignedOfficerId) && _notificationDispatcher != null)
+            // Notify assigned officer of shift cancellation across In-App, Push, and Email
+            if (!string.IsNullOrWhiteSpace(assignedOfficerId))
             {
-                try
-                {
-                    var channels = await ResolveStaffNotificationChannelsAsync(assignedOfficerId, ct);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                    {
-                        TargetType = NotificationDispatchTarget.SingleUser,
-                        TargetUserId = assignedOfficerId,
-                        TenantKey = CurrentTenantKey,
-                        Title = "Shift Cancelled",
-                        Message = $"Your scheduled shift {shiftCode} on {shiftDate:ddd, dd MMM yyyy} has been cancelled by management.",
-                        Category = BcpMessageCategory.General,
-                        Severity = NotificationSeverity.Update,
-                        Channels = channels,
-                        Module = "Workforce",
-                        Icon = "cancel",
-                        ActionUrl = "/workforce/my-shifts"
-                    }, ct);
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
+                await NotifySingleWorkforceStaffAsync(
+                    assignedOfficerId,
+                    $"Shift Cancelled ({shiftCode})",
+                    $"Your scheduled shift {shiftCode} on {shiftDate:ddd, dd MMM yyyy} has been cancelled by management.",
+                    "/workforce/workspace/my-shifts",
+                    "cancel",
+                    NotificationSeverity.Update,
+                    ct);
             }
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift removed successfully."));
@@ -1318,31 +1360,31 @@ namespace Ozikol_BCC.Api.Controllers
             _db.BcpShifts.AddRange(generatedShifts);
             await _db.SaveChangesAsync(ct);
 
-            // Notify assigned member if applicable
-            if (!string.IsNullOrWhiteSpace(request.AssignedUserId) && _notificationDispatcher != null)
+            var batchSite = await _db.BcpClientSites.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == request.ClientSiteId, ct);
+            var batchVenueName = batchSite?.SiteName ?? request.FacilityName ?? request.PostName;
+
+            // Notify assigned member or all active workforce staff (for Open Recurring Shifts) across In-App, Push, and Email
+            if (!string.IsNullOrWhiteSpace(request.AssignedUserId))
             {
-                try
-                {
-                    var channels = await ResolveStaffNotificationChannelsAsync(request.AssignedUserId, ct);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                    {
-                        TargetType = NotificationDispatchTarget.SingleUser,
-                        TargetUserId = request.AssignedUserId,
-                        TenantKey = CurrentTenantKey,
-                        Title = "New Recurring Schedule Assigned",
-                        Message = $"You have been assigned {generatedShifts.Count} scheduled working shifts between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}.",
-                        Category = BcpMessageCategory.General,
-                        Severity = NotificationSeverity.NewFeature,
-                        Channels = channels,
-                        Module = "Workforce",
-                        Icon = "calendar_month",
-                        ActionUrl = "/workforce/my-shifts"
-                    }, ct);
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
+                await NotifySingleWorkforceStaffAsync(
+                    request.AssignedUserId,
+                    $"New Recurring Schedule Assigned ({generatedShifts.Count} Shifts)",
+                    $"You have been assigned {generatedShifts.Count} scheduled working shifts at {batchVenueName} ({request.PostName}) between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}.",
+                    "/workforce/workspace/my-shifts",
+                    "calendar_month",
+                    NotificationSeverity.NewFeature,
+                    ct);
+            }
+            else
+            {
+                await NotifyAllActiveWorkforceStaffAsync(
+                    $"New Open Shifts Posted ({generatedShifts.Count} Shifts)",
+                    $"{generatedShifts.Count} new open shifts have been posted at {batchVenueName} ({request.PostName}) between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}. Visit Open Shifts in your workspace to claim them.",
+                    "/workforce/workspace/open-shifts",
+                    "campaign",
+                    NotificationSeverity.NewFeature,
+                    ct);
             }
 
             var ids = generatedShifts.Select(s => s.Id).ToList();
@@ -1397,58 +1439,32 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync(ct);
 
-            // Dispatch outcome notifications to both officers
-            if (_notificationDispatcher != null)
+            // Dispatch outcome notifications to both officers across In-App, Push, and Email
+            var shiftCode = swap.Shift?.ShiftCode ?? "assignment";
+
+            await NotifySingleWorkforceStaffAsync(
+                swap.RequestingUserId,
+                review.IsApproved ? $"Shift Swap Approved ({shiftCode})" : $"Shift Swap Declined ({shiftCode})",
+                review.IsApproved
+                    ? $"Your shift swap request for {shiftCode} has been approved by {CurrentUserName} and transferred to {swap.OfferedToUserName}."
+                    : $"Your shift swap request for {shiftCode} was declined. Reason: {review.RejectionReason ?? "Management review"}",
+                "/workforce/workspace/my-shifts",
+                review.IsApproved ? "check_circle" : "cancel",
+                review.IsApproved ? NotificationSeverity.Success : NotificationSeverity.Error,
+                ct);
+
+            if (!string.IsNullOrWhiteSpace(swap.OfferedToUserId))
             {
-                try
-                {
-                    var shiftCode = swap.Shift?.ShiftCode ?? "assignment";
-
-                    // 1. Notify requesting officer
-                    var requesterChannels = await ResolveStaffNotificationChannelsAsync(swap.RequestingUserId, ct);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                    {
-                        TargetType = NotificationDispatchTarget.SingleUser,
-                        TargetUserId = swap.RequestingUserId,
-                        TenantKey = CurrentTenantKey,
-                        Title = review.IsApproved ? "Shift Swap Approved" : "Shift Swap Declined",
-                        Message = review.IsApproved
-                            ? $"Your shift swap request for {shiftCode} has been approved by {CurrentUserName} and transferred to {swap.OfferedToUserName}."
-                            : $"Your shift swap request for {shiftCode} was declined. Reason: {review.RejectionReason ?? "Management review"}",
-                        Category = BcpMessageCategory.General,
-                        Severity = review.IsApproved ? NotificationSeverity.Success : NotificationSeverity.Error,
-                        Channels = requesterChannels,
-                        Module = "Workforce",
-                        Icon = review.IsApproved ? "check_circle" : "cancel",
-                        ActionUrl = "/workforce/my-shifts"
-                    }, ct);
-
-                    // 2. Notify recipient officer if present
-                    if (!string.IsNullOrWhiteSpace(swap.OfferedToUserId))
-                    {
-                        var offeredChannels = await ResolveStaffNotificationChannelsAsync(swap.OfferedToUserId, ct);
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                        {
-                            TargetType = NotificationDispatchTarget.SingleUser,
-                            TargetUserId = swap.OfferedToUserId,
-                            TenantKey = CurrentTenantKey,
-                            Title = review.IsApproved ? "Shift Swap Approved" : "Shift Swap Declined",
-                            Message = review.IsApproved
-                                ? $"The shift swap for {shiftCode} has been approved. This shift has now been added to your schedule."
-                                : $"The shift swap request for {shiftCode} was declined.",
-                            Category = BcpMessageCategory.General,
-                            Severity = review.IsApproved ? NotificationSeverity.Success : NotificationSeverity.Error,
-                            Channels = offeredChannels,
-                            Module = "Workforce",
-                            Icon = review.IsApproved ? "calendar_month" : "cancel",
-                            ActionUrl = "/workforce/my-shifts"
-                        }, ct);
-                    }
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
+                await NotifySingleWorkforceStaffAsync(
+                    swap.OfferedToUserId,
+                    review.IsApproved ? $"Shift Swap Approved ({shiftCode})" : $"Shift Swap Declined ({shiftCode})",
+                    review.IsApproved
+                        ? $"The shift swap for {shiftCode} has been approved. This shift has now been added to your schedule."
+                        : $"The shift swap request for {shiftCode} was declined.",
+                    "/workforce/workspace/my-shifts",
+                    review.IsApproved ? "calendar_month" : "cancel",
+                    review.IsApproved ? NotificationSeverity.Success : NotificationSeverity.Error,
+                    ct);
             }
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, review.IsApproved ? "Swap approved and shift transferred." : "Swap request rejected."));
@@ -1540,34 +1556,17 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync(ct);
 
-            // Notify staff member of leave review decision
-            if (_notificationDispatcher != null)
-            {
-                try
-                {
-                    var channels = await ResolveStaffNotificationChannelsAsync(leave.UserId, ct);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
-                    {
-                        TargetType = NotificationDispatchTarget.SingleUser,
-                        TargetUserId = leave.UserId,
-                        TenantKey = CurrentTenantKey,
-                        Title = review.IsApproved ? "Time-Off Request Approved" : "Time-Off Request Declined",
-                        Message = review.IsApproved
-                            ? $"Your {leave.LeaveType} leave request for {leave.StartDate:dd MMM} - {leave.EndDate:dd MMM yyyy} ({leave.TotalDays} days) has been approved."
-                            : $"Your {leave.LeaveType} leave request for {leave.StartDate:dd MMM} - {leave.EndDate:dd MMM yyyy} was declined. Reason: {review.RejectionReason ?? "Management review"}",
-                        Category = BcpMessageCategory.General,
-                        Severity = review.IsApproved ? NotificationSeverity.Success : NotificationSeverity.Error,
-                        Channels = channels,
-                        Module = "Workforce",
-                        Icon = review.IsApproved ? "event_available" : "event_busy",
-                        ActionUrl = "/workforce/my-shifts?tab=leave"
-                    }, ct);
-                }
-                catch
-                {
-                    // Non-blocking notification dispatch
-                }
-            }
+            // Notify staff member of leave review decision across In-App, Push, and Email
+            await NotifySingleWorkforceStaffAsync(
+                leave.UserId,
+                review.IsApproved ? "Time-Off Request Approved" : "Time-Off Request Declined",
+                review.IsApproved
+                    ? $"Your {leave.LeaveType} leave request for {leave.StartDate:dd MMM} – {leave.EndDate:dd MMM yyyy} ({leave.TotalDays} days) has been approved."
+                    : $"Your {leave.LeaveType} leave request for {leave.StartDate:dd MMM} – {leave.EndDate:dd MMM yyyy} was declined. Reason: {review.RejectionReason ?? "Management review"}",
+                "/workforce/workspace/leave",
+                review.IsApproved ? "event_available" : "event_busy",
+                review.IsApproved ? NotificationSeverity.Success : NotificationSeverity.Error,
+                ct);
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, review.IsApproved ? "Leave request approved." : "Leave request rejected."));
         }
