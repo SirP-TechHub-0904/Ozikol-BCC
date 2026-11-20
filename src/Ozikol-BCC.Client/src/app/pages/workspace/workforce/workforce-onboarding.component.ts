@@ -110,7 +110,7 @@ import {
               ></app-phone-input>
             </div>
 
-            <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+            <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
               <label class="rf-sim-label">Member Category / Tier</label>
               <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                 <option [ngValue]="null">Standard Member (No Category Tier)</option>
@@ -205,7 +205,7 @@ import {
                 ></app-phone-input>
               </div>
 
-              <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+              <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Category Tier</label>
                 <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                   <option [ngValue]="null">Standard Member</option>
@@ -321,7 +321,7 @@ import {
                   [(phoneNumber)]="onboardingModel.phoneNumber"
                 ></app-phone-input>
               </div>
-              <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+              <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category Tier</label>
                 <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                   <option [ngValue]="null">Standard Member</option>
@@ -445,7 +445,7 @@ import {
                   [(phoneNumber)]="onboardingModel.phoneNumber"
                 ></app-phone-input>
               </div>
-              <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+              <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category</label>
                 <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                   <option [ngValue]="null">Standard Member</option>
@@ -868,7 +868,9 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     pageShellLayout: 'website' as 'website' | 'auth',
     formLayoutMode: 'single' as 'single' | 'sections' | 'stepper' | 'pages',
     requirePassword: true,
+    isFormDisabled: false,
     unpublishedCoreFields: [] as string[],
+    deletedCoreFields: [] as string[],
     customSections: [] as string[]
   };
   fields: any[] = [];
@@ -958,12 +960,18 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const schema = res?.data || res;
         if (schema) {
+          if (schema.isFormDisabled) {
+            this.router.navigate(['/404'], { skipLocationChange: true });
+            return;
+          }
+          this.policy.isFormDisabled = schema.isFormDisabled ?? false;
           this.policy.registrationFormTitle = schema.formTitle || 'Create Your Account';
           this.policy.registrationWelcomeMessage = schema.welcomeMessage || 'Join our member directory and workspace portal.';
           this.policy.pageShellLayout = schema.pageShellLayout || 'website';
           this.policy.formLayoutMode = schema.formLayoutMode || 'single';
           this.policy.requirePassword = schema.requirePassword ?? true;
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
+          this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
           this.recaptchaSiteKey = schema.recaptchaSiteKey || '';
           this.categories = schema.categories || [];
@@ -1014,8 +1022,9 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
   }
 
   isCoreFieldPublished(key: string): boolean {
-    if (!this.policy.unpublishedCoreFields) return true;
-    return !this.policy.unpublishedCoreFields.includes(key);
+    const unpublished = Array.isArray(this.policy.unpublishedCoreFields) && this.policy.unpublishedCoreFields.includes(key);
+    const deleted = Array.isArray(this.policy.deletedCoreFields) && this.policy.deletedCoreFields.includes(key);
+    return !unpublished && !deleted;
   }
 
   private verifyToken(): void {

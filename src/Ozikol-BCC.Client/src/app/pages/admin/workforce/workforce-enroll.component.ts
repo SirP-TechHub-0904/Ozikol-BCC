@@ -429,7 +429,7 @@ import {
                     </div>
 
                     <!-- Core Category -->
-                    <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                    <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                       <label class="rf-sim-label">Member Category / Tier</label>
                       <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                         <option [ngValue]="null">Standard Member (No Category Tier)</option>
@@ -537,7 +537,7 @@ import {
                         <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
                       </div>
 
-                      <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                      <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                         <label class="rf-sim-label">Category Tier</label>
                         <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                           <option [ngValue]="null">Standard Member</option>
@@ -683,7 +683,7 @@ import {
                         <label class="rf-sim-label">Phone Number (Optional)</label>
                         <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
                       </div>
-                      <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                      <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                         <label class="rf-sim-label">Member Category Tier</label>
                         <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                           <option [ngValue]="null">Standard Member</option>
@@ -827,7 +827,7 @@ import {
                         <label class="rf-sim-label">Phone Number</label>
                         <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
                       </div>
-                      <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                      <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                         <label class="rf-sim-label">Member Category</label>
                         <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                           <option [ngValue]="null">Standard Member</option>
@@ -2227,6 +2227,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     requirePassword: true,
     allowSaveAndContinue: false,
     unpublishedCoreFields: [] as string[],
+    deletedCoreFields: [] as string[],
     customSections: [] as string[]
   };
   fields: any[] = [];
@@ -2372,6 +2373,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
           this.policy.allowSaveAndContinue = schema.allowSaveAndContinue ?? false;
           this.policy.defaultIndustrySector = schema.defaultIndustrySector || 'Business & Enterprise';
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
+          this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
           this.categories = schema.categories || [];
 
@@ -2452,8 +2454,9 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
    * Checks whether a built-in core field (phone or category) is published on the registration form.
    */
   isCoreFieldPublished(key: string): boolean {
-    if (!this.policy.unpublishedCoreFields) return true;
-    return !this.policy.unpublishedCoreFields.includes(key);
+    const unpublished = Array.isArray(this.policy.unpublishedCoreFields) && this.policy.unpublishedCoreFields.includes(key);
+    const deleted = Array.isArray(this.policy.deletedCoreFields) && this.policy.deletedCoreFields.includes(key);
+    return !unpublished && !deleted;
   }
 
   /**
