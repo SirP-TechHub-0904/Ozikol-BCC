@@ -407,44 +407,81 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
 
         <!-- Bottom Pagination & Page List Count Bar -->
         <div class="pagination-footer" *ngIf="!isLoading && filteredShifts.length > 0">
-          <div class="page-summary">
-            Showing <strong>{{ startEntryIndex }}</strong> to <strong>{{ endEntryIndex }}</strong> of
-            <strong>{{ filteredShifts.length }}</strong> shifts
-          </div>
+          <div class="footer-left">
+            <div class="page-size-controls">
+              <span class="size-label">Rows per page:</span>
+              <div class="size-pills">
+                <button
+                  *ngFor="let opt of pageSizeOptions"
+                  type="button"
+                  class="size-pill"
+                  [class.active]="pageSize === opt.value"
+                  (click)="setPageSize(opt.value)"
+                >
+                  {{ opt.label }}
+                </button>
+              </div>
+            </div>
 
-          <div class="page-size-controls">
-            <span class="size-label">Rows per page:</span>
-            <div class="size-pills">
-              <button
-                *ngFor="let opt of pageSizeOptions"
-                type="button"
-                class="size-pill"
-                [class.active]="pageSize === opt.value"
-                (click)="setPageSize(opt.value)"
-              >
-                {{ opt.label }}
-              </button>
+            <div class="page-summary">
+              Showing <strong>{{ startEntryIndex }}</strong> to <strong>{{ endEntryIndex }}</strong> of
+              <strong>{{ filteredShifts.length }}</strong> shifts
             </div>
           </div>
 
-          <div class="page-nav-controls" *ngIf="totalPages > 1">
-            <button type="button" class="nav-btn" [disabled]="currentPage <= 1" (click)="goToPage(currentPage - 1)">
-              <span class="material-symbols-outlined">chevron_left</span>
-              <span>Prev</span>
-            </button>
-            <button
-              *ngFor="let p of pageNumbers"
-              type="button"
-              class="page-num-btn"
-              [class.active]="p === currentPage"
-              (click)="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button type="button" class="nav-btn" [disabled]="currentPage >= totalPages" (click)="goToPage(currentPage + 1)">
-              <span>Next</span>
-              <span class="material-symbols-outlined">chevron_right</span>
-            </button>
+          <div class="footer-right">
+            <div class="page-nav-controls" *ngIf="totalPages >= 1">
+              <button
+                type="button"
+                class="nav-btn"
+                [disabled]="currentPage <= 1"
+                (click)="goToPage(1)"
+                title="First Page"
+              >
+                <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
+              </button>
+              <button
+                type="button"
+                class="nav-btn"
+                [disabled]="currentPage <= 1"
+                (click)="goToPage(currentPage - 1)"
+                title="Previous Page"
+              >
+                <span class="material-symbols-outlined">chevron_left</span>
+              </button>
+
+              <ng-container *ngFor="let item of visiblePaginationItems">
+                <span class="pagination-ellipsis" *ngIf="item === '...'">...</span>
+                <button
+                  *ngIf="item !== '...'"
+                  type="button"
+                  class="page-num-btn"
+                  [class.active]="item === currentPage"
+                  (click)="goToPage(+item)"
+                >
+                  {{ item }}
+                </button>
+              </ng-container>
+
+              <button
+                type="button"
+                class="nav-btn"
+                [disabled]="currentPage >= totalPages"
+                (click)="goToPage(currentPage + 1)"
+                title="Next Page"
+              >
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
+              <button
+                type="button"
+                class="nav-btn"
+                [disabled]="currentPage >= totalPages"
+                (click)="goToPage(totalPages)"
+                title="Last Page"
+              >
+                <span class="material-symbols-outlined">keyboard_double_arrow_right</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -925,6 +962,8 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
     .sn-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 26px; padding: 0 6px; border-radius: 6px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; font-family: monospace; }
 
     .pagination-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-top: 1px solid #f1f5f9; background: #fafbfc; flex-wrap: wrap; }
+    .footer-left { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .footer-right { display: flex; align-items: center; }
     .page-summary { font-size: 12.5px; color: #64748b; }
     .page-summary strong { color: #0f172a; }
     .page-size-controls { display: flex; align-items: center; gap: 10px; }
@@ -933,13 +972,14 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
     .size-pill { border: none; background: transparent; color: #475569; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
     .size-pill:hover { background: #f1f5f9; color: #0f172a; }
     .size-pill.active { background: #0050e5; color: #ffffff; }
-    .page-nav-controls { display: flex; align-items: center; gap: 6px; }
-    .nav-btn, .page-num-btn { display: inline-flex; align-items: center; justify-content: center; gap: 2px; height: 32px; padding: 0 10px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+    .page-nav-controls { display: flex; align-items: center; gap: 4px; }
+    .nav-btn, .page-num-btn { display: inline-flex; align-items: center; justify-content: center; gap: 2px; height: 32px; padding: 0 8px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
     .page-num-btn { min-width: 32px; padding: 0 6px; }
     .nav-btn:hover:not(:disabled), .page-num-btn:hover { background: #eff6ff; color: #0050e5; border-color: #bfdbfe; }
     .page-num-btn.active { background: #0050e5; color: #ffffff; border-color: #0050e5; }
-    .nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .nav-btn .material-symbols-outlined { font-size: 16px; }
+    .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .nav-btn .material-symbols-outlined { font-size: 17px; }
+    .pagination-ellipsis { display: inline-flex; align-items: center; justify-content: center; width: 24px; font-size: 13px; font-weight: 700; color: #94a3b8; }
 
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -1061,6 +1101,27 @@ export class WorkforceShiftManagerComponent implements OnInit {
       pages.push(i);
     }
     return pages;
+  }
+
+  get visiblePaginationItems(): (number | string)[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+
+    if (total <= 7) {
+      const items: (number | string)[] = [];
+      for (let i = 1; i <= total; i++) items.push(i);
+      return items;
+    }
+
+    if (current <= 4) {
+      return [1, 2, 3, 4, 5, '...', total];
+    }
+
+    if (current >= total - 3) {
+      return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+    }
+
+    return [1, '...', current - 1, current, current + 1, '...', total];
   }
 
   get paginatedShifts(): any[] {
