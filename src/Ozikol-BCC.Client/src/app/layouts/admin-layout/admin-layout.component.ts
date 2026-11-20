@@ -695,6 +695,16 @@ export interface SuiteInfoDetail {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/messages" [class.active]="isCurrentRoute('/workforce/console/messages')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">forum</span>Staff Message Pool</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/messages')" (click)="togglePin('Staff Message Pool', '/workforce/console/messages', 'forum')" [title]="isPinned('/workforce/console/messages') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/messages') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/sites" [class.active]="isCurrentRoute('/workforce/console/sites')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">location_on</span>Client Sites &amp; Geofences</span>
                   </a>
@@ -1387,6 +1397,16 @@ export interface SuiteInfoDetail {
                 <div class="nav-link-content">
                   <span class="material-symbols-outlined">folder_shared</span>
                   <span>Compliance &amp; Documents</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- 6b. Messages & Support Desk -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/messages" [class.active]="isCurrentRoute('/workforce/workspace/messages')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">forum</span>
+                  <span>Messages &amp; Support Desk</span>
                 </div>
               </a>
             </div>

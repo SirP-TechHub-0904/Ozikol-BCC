@@ -4142,6 +4142,397 @@ namespace Ozikol_BCC.Api.Controllers
             await _db.SaveChangesAsync(ct);
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Staff member profile updated successfully."));
         }
+
+        // =========================================================================
+        // 12. STAFF–ADMIN MESSAGE POOL & SUPPORT TICKET DESK (WITH 48H AUTO-CLOSE)
+        // =========================================================================
+
+        private const string WorkforceTicketMarker = "WORKFORCE_TICKET";
+
+        /// <summary>
+        /// Evaluates 48-hour (2-day) automatic inactivity closure across open tickets and persists changes if any expired.
+        /// </summary>
+        private async Task<List<WorkforceMessageTicketDto>> LoadAndProcessTicketsAsync(string? filterStaffUserId, CancellationToken ct)
+        {
+            var query = _db.BcpUserNotes
+                .Where(n => n.CreatedBy == WorkforceTicketMarker);
+
+            if (!string.IsNullOrWhiteSpace(filterStaffUserId))
+            {
+                query = query.Where(n => n.ProfileId == filterStaffUserId);
+            }
+
+            var rawNotes = await query
+                .OrderByDescending(n => n.Date)
+                .ToListAsync(ct);
+
+            var tickets = new List<WorkforceMessageTicketDto>();
+            var anyAutoClosed = false;
+            var now = DateTime.UtcNow;
+
+            foreach (var note in rawNotes)
+            {
+                if (string.IsNullOrWhiteSpace(note.Note)) continue;
+                try
+                {
+                    var ticket = JsonSerializer.Deserialize<WorkforceMessageTicketDto>(note.Note);
+                    if (ticket == null) continue;
+
+                    ticket.Id = note.Id;
+                    if (string.IsNullOrWhiteSpace(ticket.StaffUserId))
+                    {
+                        ticket.StaffUserId = note.ProfileId ?? string.Empty;
+                    }
+
+                    // 48-Hour (2-Day) Automatic Inactivity Closure Rule
+                    if (string.Equals(ticket.Status, "Open", StringComparison.OrdinalIgnoreCase) &&
+                        (now - ticket.LastActivityUtc).TotalHours >= 48.0)
+                    {
+                        ticket.Status = "Closed";
+                        ticket.ClosedReason = "AutoClosed48h";
+                        ticket.ClosedUtc = ticket.LastActivityUtc.AddHours(48);
+                        note.Note = JsonSerializer.Serialize(ticket);
+                        anyAutoClosed = true;
+                    }
+
+                    tickets.Add(ticket);
+                }
+                catch
+                {
+                    // Skip malformed entries
+                }
+            }
+
+            if (anyAutoClosed)
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+
+            return tickets
+                .OrderByDescending(t => t.LastActivityUtc)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Retrieves all Staff–Admin Message Pool tickets for the Admin Console, automatically closing any Open ticket inactive for >48 hours.
+        /// </summary>
+        [HttpGet("messages")]
+        [HttpGet("rota/messages")]
+        public async Task<ActionResult<ApiResponse<List<WorkforceMessageTicketDto>>>> GetAllWorkforceMessages(CancellationToken ct)
+        {
+            var tickets = await LoadAndProcessTicketsAsync(null, ct);
+            return Ok(ApiResponse<List<WorkforceMessageTicketDto>>.SuccessResponse(tickets));
+        }
+
+        /// <summary>
+        /// Retrieves the currently authenticated staff member's tickets, automatically closing any Open ticket inactive for >48 hours.
+        /// </summary>
+        [HttpGet("my-messages")]
+        [HttpGet("rota/my-messages")]
+        public async Task<ActionResult<ApiResponse<List<WorkforceMessageTicketDto>>>> GetMyWorkforceMessages(CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(CurrentUserId))
+            {
+                return Unauthorized(ApiResponse<List<WorkforceMessageTicketDto>>.FailureResponse("Authentication required."));
+            }
+
+            var tickets = await LoadAndProcessTicketsAsync(CurrentUserId, ct);
+            return Ok(ApiResponse<List<WorkforceMessageTicketDto>>.SuccessResponse(tickets));
+        }
+
+        /// <summary>
+        /// Raises a new topic/ticket in the Workforce Message Pool (either Staff -> Admin or Admin -> Staff follow-up).
+        /// </summary>
+        [HttpPost("messages")]
+        [HttpPost("rota/messages")]
+        public async Task<ActionResult<ApiResponse<WorkforceMessageTicketDto>>> CreateWorkforceMessageTicket(
+            [FromBody] CreateWorkforceMessageTicketRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(CurrentUserId))
+            {
+                return Unauthorized(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Authentication required."));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Topic) || string.IsNullOrWhiteSpace(request.Message))
+            {
+                return BadRequest(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Both Topic title and Message body are required."));
+            }
+
+            var callerIsAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("User Manager") ||
+                                (!string.IsNullOrWhiteSpace(request.StaffUserId) && request.StaffUserId != CurrentUserId);
+
+            var targetStaffUserId = callerIsAdmin && !string.IsNullOrWhiteSpace(request.StaffUserId)
+                ? request.StaffUserId.Trim()
+                : CurrentUserId;
+
+            var staffUser = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == targetStaffUserId, ct);
+            var staffName = staffUser != null
+                ? $"{staffUser.FirstName} {staffUser.LastName}".Trim()
+                : (callerIsAdmin ? "Staff Member" : CurrentUserName);
+            if (string.IsNullOrWhiteSpace(staffName)) staffName = staffUser?.Email ?? "Staff Member";
+
+            var now = DateTime.UtcNow;
+            var ticketId = Guid.CreateVersion7();
+            var ticketNumber = $"TCK-{Random.Shared.Next(1000, 9999)}";
+            var senderRole = callerIsAdmin && targetStaffUserId != CurrentUserId ? "Admin" : "Staff";
+
+            var ticket = new WorkforceMessageTicketDto
+            {
+                Id = ticketId,
+                TicketNumber = ticketNumber,
+                StaffUserId = targetStaffUserId,
+                StaffFullName = staffName,
+                StaffEmail = staffUser?.Email ?? string.Empty,
+                Category = string.IsNullOrWhiteSpace(request.Category) ? "General Inquiry" : request.Category.Trim(),
+                RelatedShiftId = request.RelatedShiftId,
+                RelatedShiftLabel = request.RelatedShiftLabel?.Trim(),
+                Topic = request.Topic.Trim(),
+                Status = "Open",
+                InitiatedByRole = senderRole,
+                LastSenderRole = senderRole,
+                CreatedUtc = now,
+                LastActivityUtc = now,
+                Replies = new List<WorkforceTicketReplyDto>
+                {
+                    new WorkforceTicketReplyDto
+                    {
+                        ReplyId = Guid.CreateVersion7(),
+                        SenderUserId = CurrentUserId,
+                        SenderName = CurrentUserName,
+                        SenderRole = senderRole,
+                        Message = request.Message.Trim(),
+                        SentUtc = now
+                    }
+                }
+            };
+
+            var noteEntity = new BcpUserNote
+            {
+                Id = ticketId,
+                ProfileId = targetStaffUserId,
+                CreatedBy = WorkforceTicketMarker,
+                IsPrivate = false,
+                Date = now,
+                Note = JsonSerializer.Serialize(ticket)
+            };
+
+            _db.BcpUserNotes.Add(noteEntity);
+            await _db.SaveChangesAsync(ct);
+
+            // Dispatch real-time notification
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    if (senderRole == "Admin")
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = targetStaffUserId,
+                            RecipientEmail = staffUser?.Email,
+                            RecipientName = staffName,
+                            TenantKey = CurrentTenantKey,
+                            Title = $"New Admin Follow-Up Ticket ({ticketNumber}): {ticket.Topic}",
+                            Message = $"An administrator opened a follow-up message topic for you under **{ticket.Category}**:\n\n\"{request.Message.Trim()}\"\n\nPlease log in to your Workforce Message Desk to reply.",
+                            Category = BcpMessageCategory.System,
+                            Severity = NotificationSeverity.Info,
+                            Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                            SendEmailCopy = true,
+                            Module = "Workforce",
+                            Icon = "forum",
+                            ActionUrl = "/workforce/workspace/messages"
+                        }, ct);
+                    }
+                    else
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.BroadcastAll,
+                            TenantKey = CurrentTenantKey,
+                            Title = $"New Staff Ticket ({ticketNumber}) from {staffName}",
+                            Message = $"{staffName} raised a new topic (**{ticket.Topic}**) under {ticket.Category}.",
+                            Category = BcpMessageCategory.System,
+                            Severity = NotificationSeverity.Info,
+                            Channels = NotificationChannels.InApp,
+                            Module = "Workforce",
+                            Icon = "support_agent",
+                            ActionUrl = "/workforce/console/messages"
+                        }, ct);
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(ApiResponse<WorkforceMessageTicketDto>.SuccessResponse(ticket, "Message topic created successfully."));
+        }
+
+        /// <summary>
+        /// Posts a reply to an existing Workforce Message Pool ticket.
+        /// Enforces the 48-hour inactivity closure rule and blocks staff from replying to closed tickets.
+        /// </summary>
+        [HttpPost("messages/{ticketId:guid}/reply")]
+        [HttpPost("rota/messages/{ticketId:guid}/reply")]
+        public async Task<ActionResult<ApiResponse<WorkforceMessageTicketDto>>> ReplyToWorkforceMessageTicket(
+            Guid ticketId,
+            [FromBody] ReplyWorkforceMessageTicketRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(CurrentUserId))
+            {
+                return Unauthorized(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Authentication required."));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Message))
+            {
+                return BadRequest(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Reply message cannot be empty."));
+            }
+
+            var noteEntity = await _db.BcpUserNotes
+                .FirstOrDefaultAsync(n => n.Id == ticketId && n.CreatedBy == WorkforceTicketMarker, ct);
+
+            if (noteEntity == null || string.IsNullOrWhiteSpace(noteEntity.Note))
+            {
+                return NotFound(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Ticket not found."));
+            }
+
+            var ticket = JsonSerializer.Deserialize<WorkforceMessageTicketDto>(noteEntity.Note);
+            if (ticket == null)
+            {
+                return NotFound(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Ticket payload could not be read."));
+            }
+
+            var now = DateTime.UtcNow;
+
+            // Check 48-hour automatic inactivity closure first
+            if (string.Equals(ticket.Status, "Open", StringComparison.OrdinalIgnoreCase) &&
+                (now - ticket.LastActivityUtc).TotalHours >= 48.0)
+            {
+                ticket.Status = "Closed";
+                ticket.ClosedReason = "AutoClosed48h";
+                ticket.ClosedUtc = ticket.LastActivityUtc.AddHours(48);
+                noteEntity.Note = JsonSerializer.Serialize(ticket);
+                await _db.SaveChangesAsync(ct);
+            }
+
+            var isCallerStaffOwner = string.Equals(ticket.StaffUserId, CurrentUserId, StringComparison.OrdinalIgnoreCase);
+            var isCallerAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("User Manager") || !isCallerStaffOwner;
+
+            if (string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<WorkforceMessageTicketDto>.FailureResponse(
+                    "This ticket is closed (due to resolution or >48 hours of inactivity). An administrator must re-open the ticket before new replies can be posted."));
+            }
+
+            var senderRole = isCallerAdmin && !isCallerStaffOwner ? "Admin" : (request.SenderRole == "Admin" ? "Admin" : "Staff");
+
+            ticket.Replies.Add(new WorkforceTicketReplyDto
+            {
+                ReplyId = Guid.CreateVersion7(),
+                SenderUserId = CurrentUserId,
+                SenderName = CurrentUserName,
+                SenderRole = senderRole,
+                Message = request.Message.Trim(),
+                SentUtc = now
+            });
+
+            ticket.LastSenderRole = senderRole;
+            ticket.LastActivityUtc = now;
+            noteEntity.Date = now;
+            noteEntity.Note = JsonSerializer.Serialize(ticket);
+
+            await _db.SaveChangesAsync(ct);
+
+            // Notify recipient
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    if (senderRole == "Admin")
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = ticket.StaffUserId,
+                            RecipientEmail = ticket.StaffEmail,
+                            RecipientName = ticket.StaffFullName,
+                            TenantKey = CurrentTenantKey,
+                            Title = $"Admin Reply on Ticket {ticket.TicketNumber}: {ticket.Topic}",
+                            Message = $"{CurrentUserName} replied to your ticket **{ticket.Topic}**:\n\n\"{request.Message.Trim()}\"",
+                            Category = BcpMessageCategory.System,
+                            Severity = NotificationSeverity.Info,
+                            Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                            SendEmailCopy = true,
+                            Module = "Workforce",
+                            Icon = "mark_chat_Read",
+                            ActionUrl = "/workforce/workspace/messages"
+                        }, ct);
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(ApiResponse<WorkforceMessageTicketDto>.SuccessResponse(ticket, "Reply posted."));
+        }
+
+        /// <summary>
+        /// Allows an Administrator to manually Close an open ticket or Re-Open a closed/auto-closed ticket.
+        /// Staff members cannot re-open closed tickets.
+        /// </summary>
+        [HttpPut("messages/{ticketId:guid}/status")]
+        [HttpPut("rota/messages/{ticketId:guid}/status")]
+        public async Task<ActionResult<ApiResponse<WorkforceMessageTicketDto>>> UpdateWorkforceTicketStatus(
+            Guid ticketId,
+            [FromBody] UpdateWorkforceTicketStatusRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(CurrentUserId))
+            {
+                return Unauthorized(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Authentication required."));
+            }
+
+            var noteEntity = await _db.BcpUserNotes
+                .FirstOrDefaultAsync(n => n.Id == ticketId && n.CreatedBy == WorkforceTicketMarker, ct);
+
+            if (noteEntity == null || string.IsNullOrWhiteSpace(noteEntity.Note))
+            {
+                return NotFound(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Ticket not found."));
+            }
+
+            var ticket = JsonSerializer.Deserialize<WorkforceMessageTicketDto>(noteEntity.Note);
+            if (ticket == null)
+            {
+                return NotFound(ApiResponse<WorkforceMessageTicketDto>.FailureResponse("Ticket data invalid."));
+            }
+
+            var now = DateTime.UtcNow;
+            var targetStatus = string.Equals(request.Status, "Open", StringComparison.OrdinalIgnoreCase) ? "Open" : "Closed";
+
+            if (targetStatus == "Open")
+            {
+                ticket.Status = "Open";
+                ticket.ClosedReason = null;
+                ticket.ClosedUtc = null;
+                ticket.ClosedByAdminName = null;
+                ticket.LastActivityUtc = now;
+            }
+            else
+            {
+                ticket.Status = "Closed";
+                ticket.ClosedReason = "ManualByAdmin";
+                ticket.ClosedUtc = now;
+                ticket.ClosedByAdminName = CurrentUserName;
+            }
+
+            noteEntity.Date = now;
+            noteEntity.Note = JsonSerializer.Serialize(ticket);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(ApiResponse<WorkforceMessageTicketDto>.SuccessResponse(
+                ticket,
+                targetStatus == "Open" ? "Ticket re-opened by administrator." : "Ticket marked as closed."));
+        }
     }
 
     // =========================================================================
@@ -4970,6 +5361,59 @@ namespace Ozikol_BCC.Api.Controllers
         public int TotalFinesCount { get; set; }
         public decimal TotalFinesAmount { get; set; }
         public List<ShiftDto> Shifts { get; set; } = new();
+    }
+
+    public class WorkforceMessageTicketDto
+    {
+        public Guid Id { get; set; }
+        public string TicketNumber { get; set; } = string.Empty;
+        public string StaffUserId { get; set; } = string.Empty;
+        public string StaffFullName { get; set; } = string.Empty;
+        public string StaffEmail { get; set; } = string.Empty;
+        public string Category { get; set; } = "General Inquiry";
+        public Guid? RelatedShiftId { get; set; }
+        public string? RelatedShiftLabel { get; set; }
+        public string Topic { get; set; } = string.Empty;
+        public string Status { get; set; } = "Open"; // "Open" | "Closed"
+        public string? ClosedReason { get; set; } // "ManualByAdmin" | "AutoClosed48h"
+        public string? ClosedByAdminName { get; set; }
+        public string InitiatedByRole { get; set; } = "Staff"; // "Staff" | "Admin"
+        public string LastSenderRole { get; set; } = "Staff"; // "Staff" | "Admin"
+        public DateTime CreatedUtc { get; set; }
+        public DateTime LastActivityUtc { get; set; }
+        public DateTime? ClosedUtc { get; set; }
+        public List<WorkforceTicketReplyDto> Replies { get; set; } = new();
+    }
+
+    public class WorkforceTicketReplyDto
+    {
+        public Guid ReplyId { get; set; }
+        public string SenderUserId { get; set; } = string.Empty;
+        public string SenderName { get; set; } = string.Empty;
+        public string SenderRole { get; set; } = "Staff"; // "Staff" | "Admin"
+        public string Message { get; set; } = string.Empty;
+        public DateTime SentUtc { get; set; }
+    }
+
+    public class CreateWorkforceMessageTicketRequest
+    {
+        public string? StaffUserId { get; set; }
+        public string Category { get; set; } = "General Inquiry";
+        public Guid? RelatedShiftId { get; set; }
+        public string? RelatedShiftLabel { get; set; }
+        public string Topic { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class ReplyWorkforceMessageTicketRequest
+    {
+        public string Message { get; set; } = string.Empty;
+        public string? SenderRole { get; set; }
+    }
+
+    public class UpdateWorkforceTicketStatusRequest
+    {
+        public string Status { get; set; } = "Closed"; // "Open" | "Closed"
     }
 }
 

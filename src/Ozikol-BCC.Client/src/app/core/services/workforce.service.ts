@@ -517,4 +517,32 @@ export class WorkforceService {
   deleteDocumentCategory(id: string): Observable<any> {
     return this.apiService.delete<any>(`workforce/document-categories/${id}`);
   }
+
+  // --- STAFF–ADMIN MESSAGE POOL & SUPPORT TICKET DESK ---
+  getAllMessages(): Observable<any> {
+    return this.apiService.get<any>('workforce/messages');
+  }
+
+  getMyMessages(): Observable<any> {
+    return this.apiService.get<any>('workforce/my-messages');
+  }
+
+  createMessageTicket(payload: {
+    staffUserId?: string;
+    category: string;
+    relatedShiftId?: string | null;
+    relatedShiftLabel?: string | null;
+    topic: string;
+    message: string;
+  }): Observable<any> {
+    return this.apiService.post<any>('workforce/messages', payload);
+  }
+
+  replyToMessageTicket(ticketId: string, payload: { message: string; senderRole?: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/messages/${ticketId}/reply`, payload);
+  }
+
+  updateMessageTicketStatus(ticketId: string, status: 'Open' | 'Closed'): Observable<any> {
+    return this.apiService.put<any>(`workforce/messages/${ticketId}/status`, { status });
+  }
 }
