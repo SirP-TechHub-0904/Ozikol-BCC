@@ -70,7 +70,7 @@ public static class Program
         builder.Services.AddHttpClient();
         builder.Services.AddMemoryCache();
 
-        // 100% Dedicated Mailcow SMTP Outbox Email Dispatcher
+        // 100% Dedicated Mailcow SMTP Outbox Email Dispatcher with auto-harmonized tenant resolution
         builder.Services.AddHostedService<MailcowWorker>();
 
         var host = builder.Build();
