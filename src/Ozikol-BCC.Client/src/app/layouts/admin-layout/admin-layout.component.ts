@@ -432,6 +432,7 @@ export interface SuiteInfoDetail {
           </ng-container>
 
           <!-- Administrator Account & Security Management Dropdown (Top-Level) -->
+          <div class="menu-title">{{ 'nav.my_account' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('admin_manage_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account') || isCurrentRoute('/users/workspace/profile')" (click)="toggleMenu('admin_manage_account')">
               <div class="nav-link-content">
@@ -1424,6 +1425,7 @@ export interface SuiteInfoDetail {
           </ng-container>
 
           <!-- 5. Manage My Account Dropdown -->
+          <div class="menu-title">{{ 'nav.my_account' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account') || isParentActive('/users/workspace/profile')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
