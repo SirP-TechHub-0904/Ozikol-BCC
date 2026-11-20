@@ -528,13 +528,17 @@ interface DomainLiveProbeResult {
         </div>
 
         <div class="table-responsive">
+          <div class="mobile-scroll-hint">
+            <span class="material-symbols-outlined">swipe</span>
+            <span>Scroll horizontally to view all DNS targets and copy options</span>
+          </div>
           <table class="dns-table">
             <thead>
               <tr>
-                <th>TYPE</th>
-                <th>NAME / HOST</th>
-                <th>TARGET / VALUE (IP or Hostname)</th>
-                <th>TTL</th>
+                <th style="width: 120px;">TYPE</th>
+                <th style="width: 170px;">NAME / HOST</th>
+                <th style="min-width: 260px;">TARGET / VALUE (IP or Hostname)</th>
+                <th style="width: 120px;">TTL</th>
               </tr>
             </thead>
             <tbody>
@@ -677,15 +681,19 @@ interface DomainLiveProbeResult {
           </div>
 
           <div class="table-responsive">
+            <div class="mobile-scroll-hint">
+              <span class="material-symbols-outlined">swipe</span>
+              <span>Scroll horizontally to view target values, status, and verification actions</span>
+            </div>
             <table class="dns-table email-dns-table">
               <thead>
                 <tr>
-                  <th style="width: 100px;">TYPE</th>
+                  <th style="width: 90px;">TYPE</th>
                   <th style="width: 170px;">HOST / NAME</th>
-                  <th>VALUE / TARGET</th>
+                  <th style="min-width: 260px;">VALUE / TARGET</th>
                   <th style="width: 120px;">PRIORITY / TTL</th>
                   <th style="width: 120px;">STATUS</th>
-                  <th style="width: 150px; text-align: right;">ACTION</th>
+                  <th style="width: 140px; text-align: right;">ACTION</th>
                 </tr>
               </thead>
               <tbody>
@@ -1621,33 +1629,64 @@ interface DomainLiveProbeResult {
       margin: 0;
     }
     .table-responsive {
+      width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #ffffff;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .mobile-scroll-hint {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #0050e5;
+      background: #eff6ff;
+      border-bottom: 1px solid #dbeafe;
+    }
+    .mobile-scroll-hint .material-symbols-outlined {
+      font-size: 16px;
+      color: #0050e5;
     }
     .dns-table {
       width: 100%;
+      min-width: 680px;
       border-collapse: collapse;
       font-size: 13px;
     }
+    .email-dns-table {
+      min-width: 860px;
+      margin-top: 0;
+    }
     .dns-table th {
       text-align: left;
-      padding: 12px 16px;
+      padding: 12px 14px;
       background: #f8fafc;
       color: #64748b;
       font-weight: 700;
       font-size: 11px;
       text-transform: uppercase;
       border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
     }
     .dns-table td {
-      padding: 14px 16px;
+      padding: 12px 14px;
       border-bottom: 1px solid #f1f5f9;
       color: #1e293b;
+      vertical-align: middle;
     }
     .dns-type-tag {
       font-size: 11px;
       font-weight: 700;
       padding: 3px 8px;
       border-radius: 6px;
+      display: inline-block;
+      white-space: nowrap;
     }
     .tag-cname { background: #eff6ff; color: #1d4ed8; }
     .tag-a { background: #f0fdf4; color: #15803d; }
@@ -1655,15 +1694,21 @@ interface DomainLiveProbeResult {
     .value-cell {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: nowrap;
+    }
+    .value-cell .btn-copy {
+      flex-shrink: 0;
     }
     .value-cell code {
       font-size: 12px;
       background: #f1f5f9;
-      padding: 3px 8px;
+      padding: 4px 8px;
       border-radius: 6px;
       font-family: monospace;
       color: #0f172a;
+      min-width: 0;
     }
     .btn-copy, .btn-copy-full {
       display: inline-flex;
@@ -1677,7 +1722,9 @@ interface DomainLiveProbeResult {
       font-weight: 600;
       color: #475569;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.15s ease;
+      flex-shrink: 0;
     }
     .btn-copy:hover, .btn-copy-full:hover {
       background: #0050e5;
@@ -1842,8 +1889,9 @@ interface DomainLiveProbeResult {
       margin-top: 3px;
     }
     .code-long {
-      max-width: 480px;
-      white-space: pre-wrap !important;
+      min-width: 180px;
+      max-width: 440px;
+      white-space: normal !important;
       word-break: break-all !important;
       overflow-wrap: anywhere !important;
       line-height: 1.45;
@@ -2605,6 +2653,123 @@ interface DomainLiveProbeResult {
       font-size: 11px;
       color: #94a3b8;
       font-style: italic;
+    }
+
+    /* Comprehensive Mobile & Tablet Responsive Media Queries */
+    @media (max-width: 768px) {
+      .mobile-scroll-hint {
+        display: flex;
+      }
+      .domain-overview-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .overview-card {
+        padding: 16px;
+      }
+      .card-header, .card-header-bar {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .card-body {
+        padding: 16px;
+      }
+      .email-suite-header {
+        padding: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .header-title-group {
+        width: 100%;
+        min-width: 0;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      .email-section-block {
+        padding: 0 16px;
+      }
+      .title-with-quota {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .quota-pill {
+        align-self: flex-start;
+      }
+      .live-health-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .live-health-header .btn-live-test {
+        width: 100%;
+        justify-content: center;
+      }
+      .live-endpoints-grid {
+        grid-template-columns: 1fr;
+      }
+      .endpoint-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .endpoint-url-box {
+        word-break: break-all;
+      }
+      .probe-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .probe-header-title {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .repair-trigger-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .repair-trigger-box .btn-repair {
+        width: 100%;
+        justify-content: center;
+      }
+      .form-row-compact {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .form-col {
+        width: 100%;
+        min-width: 0;
+      }
+      .prefix-input-wrap {
+        width: 100%;
+      }
+      .domain-addon {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .mailbox-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .mailbox-body {
+        padding: 16px;
+      }
+      .target-option-line {
+        flex-wrap: wrap;
+      }
     }
   `]
 })
