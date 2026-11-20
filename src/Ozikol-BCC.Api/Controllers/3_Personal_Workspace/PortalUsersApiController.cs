@@ -10,6 +10,7 @@ using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Application.Common;
 using System.Security.Claims;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -288,7 +289,23 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("User identity not resolved."));
 
-            var result = await _otpService.SendPhoneOtpAsync(userId, request.NewPhoneNumber.Trim());
+            var cleanPhone = request.NewPhoneNumber.Trim();
+            var normalizedPhone = PhoneNumberNormalizer.Normalize(cleanPhone);
+            var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(cleanPhone);
+
+            var phoneInUse = await _dbContext.Users.AnyAsync(u =>
+                u.PhoneNumber != null &&
+                u.Id != userId &&
+                (u.PhoneNumber == cleanPhone ||
+                 u.PhoneNumber == normalizedPhone ||
+                 (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
+            if (phoneInUse)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This phone number is already registered to another account."));
+            }
+
+            var result = await _otpService.SendPhoneOtpAsync(userId, normalizedPhone);
             if (!result.Success)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(result.Message));
@@ -322,7 +339,22 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var cleanPhone = request.NewPhoneNumber.Trim();
-            var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, cleanPhone);
+            var normalizedPhone = PhoneNumberNormalizer.Normalize(cleanPhone);
+            var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(cleanPhone);
+
+            var phoneInUse = await _dbContext.Users.AnyAsync(u =>
+                u.PhoneNumber != null &&
+                u.Id != userId &&
+                (u.PhoneNumber == cleanPhone ||
+                 u.PhoneNumber == normalizedPhone ||
+                 (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
+            if (phoneInUse)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This phone number is already registered to another account."));
+            }
+
+            var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, normalizedPhone);
             if (!setPhoneResult.Succeeded)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", setPhoneResult.Errors.Select(e => e.Description))));

@@ -1817,9 +1817,19 @@ namespace Ozikol_BCC.Api.Controllers
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && _dbContext != null)
             {
                 var trimmedPhone = model.PhoneNumber.Trim();
-                var phoneExists = await _dbContext.Users.AnyAsync(u => u.PhoneNumber == trimmedPhone);
+                var normalizedPhone = PhoneNumberNormalizer.Normalize(trimmedPhone);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(trimmedPhone);
+
+                var phoneExists = await _dbContext.Users.AnyAsync(u =>
+                    u.PhoneNumber != null &&
+                    (u.PhoneNumber == trimmedPhone ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
                 if (phoneExists)
                     return BadRequest(ApiResponse<object>.FailureResponse($"An account with phone number '{trimmedPhone}' is already registered."));
+
+                model.PhoneNumber = normalizedPhone;
             }
 
             string? catName = null;

@@ -20,6 +20,7 @@ using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Ozikol_BCC.Application.Common;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -1662,20 +1663,42 @@ namespace Ozikol_BCC.Api.Controllers
             var phoneNumber = request.PhoneNumber?.Trim();
 
             // Validate that the email is not already enrolled
-            var existingUserByEmail = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
+            var existingUserByEmail = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == email, ct);
             if (existingUserByEmail != null)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse($"A staff member is already registered with this email address ({email})."));
             }
 
             // Validate that the phone number is not already registered to another staff member
+            string? normalizedPhone = null;
             if (!string.IsNullOrWhiteSpace(phoneNumber))
             {
-                var existingUserByPhone = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber, ct);
+                normalizedPhone = PhoneNumberNormalizer.Normalize(phoneNumber);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(phoneNumber);
+
+                var existingUserByPhone = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u =>
+                    u.PhoneNumber != null &&
+                    (u.PhoneNumber == phoneNumber ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))), ct);
+
                 if (existingUserByPhone != null)
                 {
                     return BadRequest(ApiResponse<object>.FailureResponse($"A staff member is already registered with this phone number ({phoneNumber})."));
                 }
+
+                // Invalidate any unredeemed invitations with this phone number or core digits
+                var existingPendingPhone = await _db.Invitations
+                    .Where(i => i.PhoneNumber != null && !i.IsUsed &&
+                                (i.PhoneNumber == phoneNumber || i.PhoneNumber == normalizedPhone ||
+                                 (sigDigits.Length >= 8 && i.PhoneNumber.EndsWith(sigDigits))))
+                    .ToListAsync(ct);
+                foreach (var old in existingPendingPhone)
+                {
+                    old.IsUsed = true;
+                }
+
+                phoneNumber = normalizedPhone;
             }
 
             // Invalidate any previous unredeemed invitations for this email so there are no dangling duplicate links
@@ -1835,6 +1858,27 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             string userId;
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                var phone = request.PhoneNumber.Trim();
+                var normalizedPhone = PhoneNumberNormalizer.Normalize(phone);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(phone);
+
+                var phoneExists = await _db.Users.AsNoTracking().AnyAsync(u =>
+                    u.PhoneNumber != null &&
+                    (u.PhoneNumber == phone ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits)))
+                    && (user == null || u.Id != user.Id), ct);
+
+                if (phoneExists)
+                {
+                    return BadRequest(ApiResponse<Guid>.FailureResponse($"A staff member is already registered with this phone number ({phone})."));
+                }
+
+                request.PhoneNumber = normalizedPhone;
+            }
+
             if (user == null)
             {
                 userId = Guid.CreateVersion7().ToString();
@@ -2200,6 +2244,27 @@ namespace Ozikol_BCC.Api.Controllers
                     accountNumber = request.AccountNumber?.Trim(),
                     nationalInsurance = request.NationalInsuranceNumber?.Trim()
                 };
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                var phone = request.PhoneNumber.Trim();
+                var normalizedPhone = PhoneNumberNormalizer.Normalize(phone);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(phone);
+
+                var phoneExists = await _db.Users.AsNoTracking().AnyAsync(u =>
+                    u.PhoneNumber != null &&
+                    (u.PhoneNumber == phone ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits)))
+                    && (user == null || u.Id != user.Id), ct);
+
+                if (phoneExists)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse($"A staff member is already registered with this phone number ({phone})."));
+                }
+
+                request.PhoneNumber = normalizedPhone;
             }
 
             if (user == null)
