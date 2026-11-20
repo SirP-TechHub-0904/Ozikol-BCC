@@ -10,11 +10,21 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div class="kpi-container">
-      <!-- Header with Interactive Evaluation Period Switcher -->
-      <div class="kpi-header-row">
-        <div>
-          <h1 class="page-title">My Performance & KPI Scorecard</h1>
-          <p class="page-sub">Review your quarterly evaluations, milestone metrics, and supervisor appraisal feedback.</p>
+      <!-- Canonical Dashboard Page Header -->
+      <div class="kpi-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
+            <a routerLink="/dashboard/workspace" style="color: #0050e5; text-decoration: none; font-weight: 600;">Personal Workspace</a>
+            <span>/</span>
+            <span>Manage My Account</span>
+            <span>/</span>
+            <span style="color: #0f172a; font-weight: 600;">My Performance &amp; KPI Scorecard</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">My Performance &amp; KPI Scorecard</h1>
+            <span style="background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">Personal Workspace</span>
+          </div>
+          <p class="page-sub" style="margin: 0; font-size: 13.5px; color: #64748b;">Review your quarterly evaluations, milestone metrics, and supervisor appraisal feedback.</p>
         </div>
 
         <!-- Period Switcher Selector -->

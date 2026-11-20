@@ -10,10 +10,31 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="profile-container">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">My Profile & Dossier</h1>
-          <p class="page-sub">Manage your personal information, security credentials, contact details, and organization dossier.</p>
+      <!-- Canonical Dashboard Page Header -->
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); margin-bottom: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
+            <a routerLink="/dashboard/workspace" style="color: #0050e5; text-decoration: none; font-weight: 600;">Personal Workspace</a>
+            <span>/</span>
+            <span>Manage My Account</span>
+            <span>/</span>
+            <span style="color: #0f172a; font-weight: 600;">My Profile &amp; Dossier</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">My Profile &amp; Dossier</h1>
+            <span style="background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">Personal Workspace</span>
+          </div>
+          <p class="page-sub" style="margin: 0; font-size: 13.5px; color: #64748b;">Manage your personal information, security credentials, contact details, and organization dossier.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <a routerLink="/dashboard/workspace" style="display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            <span>Workspace Home</span>
+          </a>
+          <a routerLink="/users/workspace/security" style="display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #0050e5; background: #0050e5; color: #ffffff; font-size: 12px; font-weight: 600; text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">security</span>
+            <span>Security &amp; 2FA</span>
+          </a>
         </div>
       </div>
 

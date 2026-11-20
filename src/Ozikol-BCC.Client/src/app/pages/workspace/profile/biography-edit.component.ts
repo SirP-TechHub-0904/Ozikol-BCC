@@ -1,24 +1,42 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BiographyService, UserBiography, WorkExperience, Education, CertificationProject, LanguageSkill } from '../../../core/services/biography.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-biography-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bio-editor-container">
-      <div class="editor-header">
-        <div>
-          <h1 class="page-title">My Professional CV Biography</h1>
-          <p class="page-sub">Set up your biography to share with the alumni network and download a print-ready CV.</p>
+      <!-- Canonical Dashboard Page Header -->
+      <div class="editor-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); margin-bottom: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
+            <a routerLink="/dashboard/workspace" style="color: #0050e5; text-decoration: none; font-weight: 600;">Personal Workspace</a>
+            <span>/</span>
+            <a routerLink="/users/workspace/profile" style="color: #0050e5; text-decoration: none; font-weight: 600;">My Profile</a>
+            <span>/</span>
+            <span style="color: #0f172a; font-weight: 600;">Professional CV Biography</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">My Professional CV Biography</h1>
+            <span style="background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">Personal Workspace</span>
+          </div>
+          <p class="page-sub" style="margin: 0; font-size: 13.5px; color: #64748b;">Set up your biography to share with the alumni network and download a print-ready CV.</p>
         </div>
-        <button type="button" class="btn-primary" (click)="saveBiography()" [disabled]="saving">
-          <span class="material-symbols-outlined">save</span>
-          <span>{{ saving ? 'Saving Changes...' : 'Save CV Biography' }}</span>
-        </button>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <a routerLink="/users/workspace/profile" style="display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            <span>Back to Profile</span>
+          </a>
+          <button type="button" class="btn-primary" style="height: 34px; padding: 0 12px; font-size: 12px; border-radius: 8px;" (click)="saveBiography()" [disabled]="saving">
+            <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+            <span>{{ saving ? 'Saving Changes...' : 'Save CV Biography' }}</span>
+          </button>
+        </div>
       </div>
 
       <div class="editor-grid">

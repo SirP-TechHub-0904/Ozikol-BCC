@@ -76,18 +76,16 @@ interface WorkforcePolicies {
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="settings-page">
-      <!-- Breadcrumb Header -->
-      <nav class="breadcrumb-nav">
-        <span class="crumb-root">Command Center</span>
-        <span class="crumb-sep">/</span>
-        <span class="crumb-parent">Workforce &amp; Shifts</span>
-        <span class="crumb-sep">/</span>
-        <span class="crumb-active">Workforce &amp; Shift Settings Hub</span>
-      </nav>
-
-      <!-- Main Title Bar -->
+      <!-- Canonical Dashboard Page Header -->
       <div class="page-header">
         <div class="header-left">
+          <nav class="breadcrumb-nav">
+            <a routerLink="/admin/dashboard" class="crumb-root" style="color: #0050e5; text-decoration: none; font-weight: 600;">Command Center</a>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-parent">Workforce &amp; Shifts</span>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-active">Rota Settings</span>
+          </nav>
           <div class="title-row">
             <h1 class="page-title">Workforce &amp; Shift Settings</h1>
             <button
@@ -845,7 +843,13 @@ interface WorkforcePolicies {
     .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
       margin-bottom: 1.5rem;
       gap: 1.5rem;
     }
