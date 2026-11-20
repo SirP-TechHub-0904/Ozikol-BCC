@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { OneSignalService } from '../../core/services/onesignal.service';
 
 @Component({
   selector: 'app-workspace-security',
@@ -245,6 +246,33 @@ import { ToastService } from '../../core/services/toast.service';
                   <button type="button" class="btn-primary" (click)="finishMfaVerifiedFlow()">Done</button>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <!-- Card: Push Notifications -->
+          <section class="sec-card animate-fade">
+            <div class="card-head">
+              <div class="head-title-wrap">
+                <span class="material-symbols-outlined head-icon text-primary">notifications_active</span>
+                <h2 class="card-title">Push Notifications</h2>
+              </div>
+              <span class="status-pill good" *ngIf="pushStatus === 'granted'">Enabled</span>
+              <span class="status-pill blue" *ngIf="pushStatus !== 'granted'">Not Enabled</span>
+            </div>
+            <div class="card-body">
+              <p class="section-desc-text">
+                Receive instant alerts for new shifts, open shifts, swaps, leave decisions and admin messages on this device.
+              </p>
+              <p class="section-desc-text" *ngIf="pushStatus === 'denied'" style="color: #b45309;">
+                Notifications are blocked in your browser. Click the lock icon beside the address bar, set Notifications to Allow, then press the button below.
+              </p>
+              <p class="section-desc-text" *ngIf="pushStatus === 'unsupported'">
+                This browser does not support push notifications.
+              </p>
+              <button type="button" class="btn-primary" (click)="enablePushNotifications()" [disabled]="isEnablingPush || pushStatus === 'unsupported'">
+                <span class="material-symbols-outlined">{{ isEnablingPush ? 'hourglass_top' : 'notifications_active' }}</span>
+                <span>{{ pushStatus === 'granted' ? 'Re-Sync Push on This Device' : 'Enable Push Notifications' }}</span>
+              </button>
             </div>
           </section>
 
@@ -714,9 +742,29 @@ export class WorkspaceSecurityComponent implements OnInit {
   activeSessions: any[] = [];
   isRevoking = false;
 
-  constructor(private api: ApiService, private toast: ToastService) {}
+  constructor(private api: ApiService, private toast: ToastService, private oneSignal: OneSignalService) {}
+
+  pushStatus: 'granted' | 'denied' | 'default' | 'unsupported' = 'default';
+  isEnablingPush = false;
+
+  /**
+   * Re-triggers the browser push permission prompt and OneSignal subscription for users
+   * who previously dismissed or never saw the push notice.
+   */
+  async enablePushNotifications(): Promise<void> {
+    this.isEnablingPush = true;
+    const res = await this.oneSignal.enableAndPromptPushNotifications();
+    this.pushStatus = this.oneSignal.getPermissionStatus();
+    this.isEnablingPush = false;
+    if (res.status === 'granted') {
+      this.toast.success(res.message, 'Push Enabled');
+    } else {
+      this.toast.warning(res.message, 'Push Not Enabled');
+    }
+  }
 
   ngOnInit(): void {
+    this.pushStatus = this.oneSignal.getPermissionStatus();
     this.loadMfaStatus();
     this.loadActiveSessions();
   }

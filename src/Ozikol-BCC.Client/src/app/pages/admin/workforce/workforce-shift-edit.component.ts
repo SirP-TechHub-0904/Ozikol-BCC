@@ -226,7 +226,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="startDate"
                       name="startDate"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">First date of recurring schedule.</span>
@@ -239,7 +239,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="endDate"
                       name="endDate"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">Concludes the recurring batch.</span>
@@ -310,7 +310,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="dailyStartTime"
                       name="dailyStartTime"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">e.g. 08:00 AM</span>
@@ -323,7 +323,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="dailyEndTime"
                       name="dailyEndTime"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">e.g. 17:00 (5:00 PM)</span>
@@ -348,7 +348,7 @@ interface StaffMember {
                         type="checkbox"
                         [(ngModel)]="hasBreak"
                         name="hasBreak"
-                        (change)="onBreakToggle()"
+                        (ngModelChange)="onBreakToggle()"
                       />
                       <span class="slider round"></span>
                     </label>
@@ -568,6 +568,7 @@ interface StaffMember {
                   step="0.25"
                   class="form-control"
                   [(ngModel)]="hourlyPayRate"
+                  (ngModelChange)="recalculateScheduleMetrics()"
                   name="hourlyPayRate"
                   placeholder="e.g. 15.00"
                 />
@@ -749,6 +750,21 @@ interface StaffMember {
                 <span class="badge-overnight">
                   <span class="material-symbols-outlined">bedtime</span> Overnight Window (Crosses Midnight)
                 </span>
+              </div>
+
+              <div class="detail-row">
+                <span class="detail-label">Time Frame:</span>
+                <span class="detail-value">{{ summaryTimeFrame }}</span>
+              </div>
+
+              <div class="detail-row" *ngIf="hasBreak && breakMinutes > 0">
+                <span class="detail-label">Unpaid Break:</span>
+                <span class="detail-value">{{ breakMinutes }} mins ({{ formatTime12(breakStartTime) }} – {{ formatTime12(breakEndTime) }})</span>
+              </div>
+
+              <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly'">
+                <span class="detail-label">Hourly Rate:</span>
+                <span class="detail-value">{{ currencySymbol }}{{ (hourlyPayRate || 0) | number:'1.2-2' }}/hr</span>
               </div>
 
               <div class="detail-row">
@@ -2028,6 +2044,21 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.loadShiftDetails(this.shiftId!);
       }
     });
+  }
+
+  /**
+   * Human-readable duty window shown in the Schedule Impact summary, derived live from the
+   * currently entered start/end values (single shift or recurring daily window).
+   */
+  get summaryTimeFrame(): string {
+    if (this.isEditMode || this.schedulePattern === 'Single') {
+      if (!this.singleStartDateTime || !this.singleEndDateTime) return '—';
+      const s = new Date(this.singleStartDateTime);
+      const e = new Date(this.singleEndDateTime);
+      const fmt: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true };
+      return `${s.toLocaleString('en-GB', fmt)} → ${e.toLocaleString('en-GB', fmt)}`;
+    }
+    return `${this.formatTime12(this.dailyStartTime)} → ${this.formatTime12(this.dailyEndTime)} daily`;
   }
 
   // --- Availability Checker & Skipping Logic ---
