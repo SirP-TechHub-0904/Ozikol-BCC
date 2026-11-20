@@ -84,6 +84,7 @@ public sealed class MailcowWorker : BackgroundService
                      && m.Provider == "Mailcow"
                      && m.Status == "Processing"
                      && m.CreatedAt <= staleCutoff)
+            .OrderBy(m => m.CreatedAt)
             .Take(BatchSize)
             .ToListAsync(ct);
 
@@ -187,7 +188,8 @@ public sealed class MailcowWorker : BackgroundService
             isCentralPlatformEmail: false,
             tenantName: fromName,
             tenantAdminEmail: null,
-            cancellationToken: ct);
+            cancellationToken: ct,
+            strictDeliveryCheck: true);
     }
 
     private static void MarkFailedAttempt(MasterMessagePool item, string error)

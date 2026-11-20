@@ -1,6 +1,9 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Mail;
+using System.Net.Security;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,9 +15,10 @@ using Ozikol.MasterDomain.Security;
 namespace Ozikol_BCC.Infrastructure.Services.Email;
 
 /// <summary>
-/// Implements transactional email delivery over Mailcow SMTP with STARTTLS on port 587,
+/// Implements transactional email delivery over Mailcow SMTP with dual-channel support:
+/// SMTPS direct SSL on port 465 (RFC 8314) and STARTTLS on port 587 (RFC 5321),
 /// encrypted password resolution via <see cref="OzikolDataCipher"/>, and responsive compliance footers.
-/// Automatically handles development environments gracefully with detailed console telemetry.
+/// Automatically handles development environments gracefully and auto-recovers from port 587 network blocks.
 /// </summary>
 public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
 {
@@ -84,12 +88,12 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
                 ?? _configuration["SMTP_PORT"]
                 ?? Environment.GetEnvironmentVariable("EmailSettings__SmtpPort")
                 ?? Environment.GetEnvironmentVariable("SMTP_PORT")
-                ?? (centralCreds?.MailcowSmtpPort > 0 ? centralCreds.MailcowSmtpPort.ToString() : "587");
+                ?? (centralCreds?.MailcowSmtpPort > 0 ? centralCreds.MailcowSmtpPort.ToString() : "465");
 
             int.TryParse(rawPort, out var smtpPort);
             if (smtpPort <= 0)
             {
-                smtpPort = 587;
+                smtpPort = 465;
             }
 
             var smtpUser = !string.IsNullOrWhiteSpace(smtpUsernameOverride)
@@ -129,10 +133,46 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
             // Append compliance & security footer
             var bodyWithFooter = AppendComplianceFooter(htmlBody, isCentralPlatformEmail, tenantName, tenantAdminEmail);
 
-            // If valid SMTP credentials exist, attempt real STARTTLS transmission over port 587
+            // If valid SMTP credentials exist, attempt real transmission over port 465 (SMTPS) or port 587 (STARTTLS)
             if (!string.IsNullOrWhiteSpace(smtpPassword))
             {
-                // Set From and Sender to the resolved domain email address to ensure strict SPF/DKIM/DMARC domain alignment
+                // Priority 1: Port 465 Direct SSL (SMTPS, RFC 8314) - resilient to residential ISP port blocks
+                if (smtpPort == 465)
+                {
+                    _logger.LogInformation(
+                        "📧 [SmtpEmailDispatcher] Dispatching '{Subject}' from '{From}' to [{To}] via Mailcow SMTPS Direct SSL ({Host}:465)...",
+                        subject, resolvedFromEmail, toEmail, smtpHost);
+
+                    try
+                    {
+                        var delivered = await SendSmtpDirectSslAsync(
+                            smtpHost,
+                            465,
+                            smtpUser.Trim(),
+                            smtpPassword.Trim(),
+                            resolvedFromEmail,
+                            resolvedFromName,
+                            toEmail,
+                            subject,
+                            bodyWithFooter,
+                            replyTo,
+                            cancellationToken);
+
+                        if (delivered)
+                        {
+                            _logger.LogInformation("✅ [SmtpEmailDispatcher] Successfully delivered '{Subject}' to [{To}] over SMTPS (port 465).", subject, toEmail);
+                            return true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "❌ [SmtpEmailDispatcher] Port 465 SMTPS transmission failed: {Msg}", ex.Message);
+                        if (strictDeliveryCheck) throw;
+                        return false;
+                    }
+                }
+
+                // Priority 2: Port 587 STARTTLS (RFC 5321) with automatic, seamless fallback to Port 465 on network/timeout errors
                 using var mailMessage = new MailMessage
                 {
                     From = new MailAddress(resolvedFromEmail, resolvedFromName, Encoding.UTF8),
@@ -151,24 +191,53 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
                     mailMessage.ReplyToList.Add(new MailAddress(replyTo.Trim()));
                 }
 
-                using var smtpClient = new SmtpClient(smtpHost, smtpPort)
+                try
                 {
-                    EnableSsl = true, // Engages STARTTLS on port 587
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Timeout = 8000 // 8s timeout to avoid blocking requests
-                };
+                    using var smtpClient = new SmtpClient(smtpHost, smtpPort)
+                    {
+                        EnableSsl = true, // Engages STARTTLS on port 587
+                        DeliveryMethod = SmtpDeliveryMethod.Network,
+                        UseDefaultCredentials = false,
+                        Timeout = 8000 // 8s timeout to avoid blocking requests
+                    };
 
-                smtpClient.Credentials = new NetworkCredential(smtpUser.Trim(), smtpPassword.Trim());
+                    smtpClient.Credentials = new NetworkCredential(smtpUser.Trim(), smtpPassword.Trim());
 
-                _logger.LogInformation(
-                    "📧 [SmtpEmailDispatcher] Dispatching '{Subject}' from '{From}' to [{To}] via Mailcow ({Host}:{Port})...",
-                    subject, resolvedFromEmail, toEmail, smtpHost, smtpPort);
+                    _logger.LogInformation(
+                        "📧 [SmtpEmailDispatcher] Dispatching '{Subject}' from '{From}' to [{To}] via Mailcow ({Host}:{Port})...",
+                        subject, resolvedFromEmail, toEmail, smtpHost, smtpPort);
 
-                await smtpClient.SendMailAsync(mailMessage, cancellationToken);
+                    await smtpClient.SendMailAsync(mailMessage, cancellationToken);
 
-                _logger.LogInformation("✅ [SmtpEmailDispatcher] Successfully delivered '{Subject}' to [{To}].", subject, toEmail);
-                return true;
+                    _logger.LogInformation("✅ [SmtpEmailDispatcher] Successfully delivered '{Subject}' to [{To}].", subject, toEmail);
+                    return true;
+                }
+                catch (Exception ex) when (smtpPort != 465 && (ex is SocketException || ex is TimeoutException || ex.InnerException is SocketException))
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "⚠️ [SmtpEmailDispatcher] STARTTLS on port {Port} timed out or failed connection ({Message}). Seamlessly falling back to SMTPS Direct SSL on port 465...",
+                        smtpPort, ex.Message);
+
+                    var delivered = await SendSmtpDirectSslAsync(
+                        smtpHost,
+                        465,
+                        smtpUser.Trim(),
+                        smtpPassword.Trim(),
+                        resolvedFromEmail,
+                        resolvedFromName,
+                        toEmail,
+                        subject,
+                        bodyWithFooter,
+                        replyTo,
+                        cancellationToken);
+
+                    if (delivered)
+                    {
+                        _logger.LogInformation("✅ [SmtpEmailDispatcher] Successfully delivered '{Subject}' to [{To}] via Port 465 fallback.", subject, toEmail);
+                        return true;
+                    }
+                }
             }
 
             // In local development, if SMTP credentials are not yet provisioned and strict verification is off, simulate delivery
@@ -195,7 +264,185 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
             }
 
             _logger.LogError(ex, "❌ [SmtpEmailDispatcher] Failed delivering '{Subject}' to [{To}].", subject, toEmail);
+            if (strictDeliveryCheck) throw;
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Direct SMTPS (Implicit TLS on port 465) transmission using <see cref="TcpClient"/> and <see cref="SslStream"/>.
+    /// Implements RFC 8314 implicit TLS with AUTH LOGIN and base64-encoded UTF-8 body.
+    /// Resilient to firewall and ISP port 587 blockages.
+    /// </summary>
+    private static async Task<bool> SendSmtpDirectSslAsync(
+        string host,
+        int port,
+        string username,
+        string password,
+        string fromEmail,
+        string fromName,
+        string toEmail,
+        string subject,
+        string htmlBody,
+        string? replyTo,
+        CancellationToken ct)
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(20)); // 20s overall transmission timeout
+        var token = timeoutCts.Token;
+
+        using var client = new TcpClient();
+        await client.ConnectAsync(host, port, token);
+
+        using var sslStream = new SslStream(client.GetStream(), false);
+        await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+        {
+            TargetHost = host
+        }, token);
+
+        using var reader = new StreamReader(sslStream, Encoding.UTF8);
+        using var writer = new StreamWriter(sslStream, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\r\n" };
+
+        // 1. Read 220 banner
+        var banner = await ReadSmtpResponseAsync(reader, token);
+        if (!banner.StartsWith("220", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP banner rejected by {host}:{port} -> {banner}");
+        }
+
+        // 2. Send EHLO
+        await writer.WriteLineAsync("EHLO ozikol.cloud".AsMemory(), token);
+        var ehloResp = await ReadSmtpResponseAsync(reader, token);
+        if (!ehloResp.StartsWith("250", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP EHLO rejected by {host}:{port} -> {ehloResp}");
+        }
+
+        // 3. AUTH LOGIN
+        await writer.WriteLineAsync("AUTH LOGIN".AsMemory(), token);
+        var authResp = await ReadSmtpResponseAsync(reader, token);
+        if (!authResp.StartsWith("334", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP AUTH LOGIN initiation rejected -> {authResp}");
+        }
+
+        // 4. Send base64 username
+        var userB64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(username));
+        await writer.WriteLineAsync(userB64.AsMemory(), token);
+        var userResp = await ReadSmtpResponseAsync(reader, token);
+        if (!userResp.StartsWith("334", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP username rejected -> {userResp}");
+        }
+
+        // 5. Send base64 password
+        var passB64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+        await writer.WriteLineAsync(passB64.AsMemory(), token);
+        var passResp = await ReadSmtpResponseAsync(reader, token);
+        if (!passResp.StartsWith("235", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP authentication failed for user '{username}' -> {passResp}");
+        }
+
+        // 6. MAIL FROM
+        await writer.WriteLineAsync($"MAIL FROM:<{fromEmail}>".AsMemory(), token);
+        var fromResp = await ReadSmtpResponseAsync(reader, token);
+        if (!fromResp.StartsWith("250", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP MAIL FROM rejected for <{fromEmail}> -> {fromResp}");
+        }
+
+        // 7. RCPT TO
+        await writer.WriteLineAsync($"RCPT TO:<{toEmail}>".AsMemory(), token);
+        var rcptResp = await ReadSmtpResponseAsync(reader, token);
+        if (!rcptResp.StartsWith("250", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP RCPT TO rejected for <{toEmail}> -> {rcptResp}");
+        }
+
+        // 8. DATA
+        await writer.WriteLineAsync("DATA".AsMemory(), token);
+        var dataResp = await ReadSmtpResponseAsync(reader, token);
+        if (!dataResp.StartsWith("354", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP DATA initiation rejected -> {dataResp}");
+        }
+
+        // 9. Write MIME email headers & base64 body (RFC 2045 & RFC 5322)
+        var messageId = $"<{Guid.NewGuid():N}@{host}>";
+        var dateHeader = DateTime.UtcNow.ToString("r");
+        var encodedSubject = $"=?UTF-8?B?{Convert.ToBase64String(Encoding.UTF8.GetBytes(subject))}?=";
+        var encodedFromName = $"=?UTF-8?B?{Convert.ToBase64String(Encoding.UTF8.GetBytes(fromName))}?=";
+
+        await writer.WriteLineAsync($"From: {encodedFromName} <{fromEmail}>".AsMemory(), token);
+        await writer.WriteLineAsync($"To: <{toEmail}>".AsMemory(), token);
+        await writer.WriteLineAsync($"Subject: {encodedSubject}".AsMemory(), token);
+        await writer.WriteLineAsync($"Date: {dateHeader}".AsMemory(), token);
+        await writer.WriteLineAsync($"Message-ID: {messageId}".AsMemory(), token);
+        await writer.WriteLineAsync("MIME-Version: 1.0".AsMemory(), token);
+        await writer.WriteLineAsync("Content-Type: text/html; charset=UTF-8".AsMemory(), token);
+        await writer.WriteLineAsync("Content-Transfer-Encoding: base64".AsMemory(), token);
+        if (!string.IsNullOrWhiteSpace(replyTo))
+        {
+            await writer.WriteLineAsync($"Reply-To: <{replyTo}>".AsMemory(), token);
+        }
+        await writer.WriteLineAsync(string.Empty.AsMemory(), token); // Blank line separates MIME header from body
+
+        // Write Base64 body chunks of 76 characters per RFC 2045
+        var bodyB64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(htmlBody ?? string.Empty));
+        for (int i = 0; i < bodyB64.Length; i += 76)
+        {
+            var chunk = bodyB64.Substring(i, Math.Min(76, bodyB64.Length - i));
+            await writer.WriteLineAsync(chunk.AsMemory(), token);
+        }
+
+        // 10. End of DATA indicator
+        await writer.WriteLineAsync(".".AsMemory(), token);
+        var endResp = await ReadSmtpResponseAsync(reader, token);
+        if (!endResp.StartsWith("250", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"SMTP body rejected by {host} -> {endResp}");
+        }
+
+        // 11. QUIT
+        try
+        {
+            await writer.WriteLineAsync("QUIT".AsMemory(), token);
+        }
+        catch
+        {
+            // Best effort connection termination
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Reads single-line or multi-line responses from an active SMTP stream according to RFC 5321.
+    /// </summary>
+    private static async Task<string> ReadSmtpResponseAsync(StreamReader reader, CancellationToken ct)
+    {
+        var lastLine = string.Empty;
+        while (true)
+        {
+            var line = await reader.ReadLineAsync(ct);
+            if (line == null)
+            {
+                return lastLine;
+            }
+
+            lastLine = line;
+
+            // RFC 5321: A reply code is 3 digits followed by a space ' ' for the final line,
+            // or a hyphen '-' for intermediate multiline continuations (e.g. 250-PIPELINING)
+            if (line.Length >= 4 && line[3] == ' ')
+            {
+                return line;
+            }
+            if (line.Length == 3)
+            {
+                return line;
+            }
         }
     }
 

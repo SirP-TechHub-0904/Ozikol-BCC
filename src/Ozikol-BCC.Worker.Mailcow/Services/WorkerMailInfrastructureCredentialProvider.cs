@@ -47,7 +47,7 @@ public sealed class WorkerMailInfrastructureCredentialProvider : IMailInfrastruc
                 DecryptSafe(settings.CloudflareDnsApiToken),
                 settings.MailcowSmtpUser?.Trim(),
                 DecryptSafe(settings.MailcowSmtpPassword),
-                settings.MailcowSmtpPort > 0 ? settings.MailcowSmtpPort : 587);
+                settings.MailcowSmtpPort > 0 ? settings.MailcowSmtpPort : 465);
         }
         catch
         {
