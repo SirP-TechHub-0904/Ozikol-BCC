@@ -148,6 +148,49 @@ namespace Ozikol_BCC.Api.Controllers
             return "default";
         }
 
+        private async Task<string> ResolveTenantCompanyNameAsync(CancellationToken ct)
+        {
+            try
+            {
+                var site = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                if (site != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(site.CompanyName))
+                    {
+                        return site.CompanyName.Trim();
+                    }
+                    if (!string.IsNullOrWhiteSpace(site.BrandName))
+                    {
+                        return site.BrandName.Trim();
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback
+            }
+
+            if (_master != null)
+            {
+                try
+                {
+                    var masterTenant = await _master.MasterTenants
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(t => t.TenantKey == CurrentTenantKey, ct);
+                    if (masterTenant != null && !string.IsNullOrWhiteSpace(masterTenant.OrganizationName))
+                    {
+                        return masterTenant.OrganizationName.Trim();
+                    }
+                }
+                catch
+                {
+                    // Fallback
+                }
+            }
+
+            return "our organization";
+        }
+
         private async Task<NotificationChannels> ResolveStaffNotificationChannelsAsync(string userId, CancellationToken ct)
         {
             var pref = await _db.BcpShiftNotificationPreferences
@@ -1571,6 +1614,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
+                    var companyName = await ResolveTenantCompanyNameAsync(ct);
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
@@ -1578,8 +1622,8 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientEmail = request.Email?.Trim(),
                         RecipientName = request.FullName?.Trim() ?? "Staff Member",
                         TenantKey = CurrentTenantKey,
-                        Title = "Welcome to Your Workforce Rota & Shift Workspace",
-                        Message = $"You have been enrolled in the Workforce Rota system as a **{profile.JobTitle}**.\n\nPlease log in to your workspace to configure your availability, upload required compliance documents, and set your shift reminder preferences.",
+                        Title = $"Welcome to {companyName}",
+                        Message = $"You have been enrolled at {companyName} as a **{profile.JobTitle}**.\n\nPlease log in to your workspace to configure your availability, upload required compliance documents, and set your shift reminder preferences.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
@@ -1762,6 +1806,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
+                    var companyName = await ResolveTenantCompanyNameAsync(ct);
                     var customNote = !string.IsNullOrWhiteSpace(request.WelcomeNote)
                         ? $"\n\n**Note from Administrator:**\n_{request.WelcomeNote.Trim()}_\n"
                         : string.Empty;
@@ -1777,9 +1822,9 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientName = fullName,
                         TenantKey = CurrentTenantKey,
                         Title = !string.IsNullOrWhiteSpace(request.JobTitle)
-                            ? $"Invitation to Join Workforce Rota as {request.JobTitle.Trim()}"
-                            : "Invitation to Complete Your Workforce Registration",
-                        Message = $"You have been invited to join the workforce team{roleText}.{customNote}\n\nPlease click the button below to complete your registration form using your single-use onboarding link.",
+                            ? $"Invitation to Join {companyName} as {request.JobTitle.Trim()}"
+                            : $"Invitation to Join {companyName}",
+                        Message = $"You have been invited to join {companyName}{roleText}.{customNote}\n\nPlease click the button below to complete your registration form using your single-use onboarding link.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.Email,
@@ -2049,6 +2094,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
+                    var companyName = await ResolveTenantCompanyNameAsync(ct);
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
@@ -2056,8 +2102,8 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientEmail = email,
                         RecipientName = fullName,
                         TenantKey = CurrentTenantKey,
-                        Title = "Your Workforce Account Has Been Created",
-                        Message = $"An administrator has pre-enrolled you into the Workforce Rota system as a **{staffProfile.JobTitle}**.\n\nPlease sign in with your email (`{email}`) to review your rota schedule, confirm shifts, and set your permanent password.",
+                        Title = $"Your {companyName} Account Has Been Created",
+                        Message = $"An administrator has pre-enrolled you at {companyName} as a **{staffProfile.JobTitle}**.\n\nPlease sign in with your email (`{email}`) to review your rota schedule, confirm shifts, and set your permanent password.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
