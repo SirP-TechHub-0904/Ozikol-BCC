@@ -10,6 +10,40 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
 
 Chart.register(...registerables);
 
+interface CalendarDayMetrics {
+  date: Date;
+  dateStr: string;
+  dayNum: number;
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isPast: boolean;
+  isFuture: boolean;
+  shiftsCount: number;
+  activeNowCount: number;
+  openCount: number;
+  leaveCount: number;
+  swapCount: number;
+  doneCount: number;
+  shifts: Shift[];
+  leaves: any[];
+}
+
+interface YearMonthGrid {
+  monthIndex: number;
+  monthName: string;
+  days: Array<{
+    date: Date;
+    dayNum: number;
+    isCurrentMonth: boolean;
+    isToday: boolean;
+    isPast: boolean;
+    isFuture: boolean;
+    shiftsCount: number;
+    leaveCount: number;
+  }>;
+}
+
 /**
  * Member "Shift and Rota" Hub (`/workforce/workspace/*`).
  * Unifies Schedule, Open Shifts claiming, Timesheets duty pay, Time Off / Leave,
@@ -574,235 +608,7 @@ Chart.register(...registerables);
       <!-- TAB 2: MY SCHEDULE & ROTA (CALENDAR & ASSIGNED DUTIES) -->
       <div class="shifts-tab-container" *ngIf="activeTab === 'shifts' && !isLoading">
 
-        <!-- DEDICATED FULL-PAGE VIEW: SELECTED DAY DETAILS & ACTIONS -->
-        <div class="day-detail-page-container" *ngIf="selectedDay">
-          <div class="cms-card day-page-card">
-            <div class="day-page-header">
-              <div class="day-page-title-group">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined text-primary day-modal-icon">calendar_month</span>
-                  <h3>{{ selectedDay.date | date:'EEEE, d MMMM yyyy' }}</h3>
-                  <span class="badge-day-today" *ngIf="selectedDay.isToday">Today</span>
-                  <span class="badge-suite">Day Schedule</span>
-                </div>
-                <p class="day-page-subtitle">
-                  {{ selectedDay.shifts.length }} Rostered Shift(s) &bull; {{ selectedDay.leaves.length }} Leave / Excuse Record(s)
-                </p>
-              </div>
-
-              <div class="day-page-header-actions">
-                <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
-                  <span class="material-symbols-outlined">arrow_back</span>
-                  <span>Back to Calendar</span>
-                </button>
-                <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
-                  <span class="material-symbols-outlined">add</span>
-                  <span>Apply for Excuse / Time Off</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="day-page-body">
-              <!-- Quick Action Bar -->
-              <div class="day-quick-actions mb-4">
-                <button type="button" class="btn btn-sm btn-outline-primary" (click)="openExcuseForSelectedDay('single')">
-                  <span class="material-symbols-outlined">event_busy</span>
-                  <span>Apply Excuse for This Day</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" (click)="openExcuseForSelectedDay('3days')">
-                  <span class="material-symbols-outlined">date_range</span>
-                  <span>Request Multi-Day Leave</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" (click)="closeDayDetailView(); switchTab('open-shifts')">
-                  <span class="material-symbols-outlined">work_outline</span>
-                  <span>Find Open Shifts</span>
-                </button>
-              </div>
-
-              <!-- In-Page Quick Excuse Form (Toggled when requested) -->
-              <div class="quick-excuse-form-card mb-4" *ngIf="showDayExcuseForm">
-                <div class="form-header-row">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="material-symbols-outlined text-warning">edit_calendar</span>
-                    <h4 class="form-title">Apply for Absence / Excuse</h4>
-                  </div>
-                  <button type="button" class="btn-close-sm" (click)="showDayExcuseForm = false">&times;</button>
-                </div>
-
-                <!-- Duration Quick Presets -->
-                <div class="duration-presets-group mb-3">
-                  <span class="presets-label">Quick Duration:</span>
-                  <div class="presets-buttons">
-                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'single'" (click)="onExcusePresetChange('single')">1 Day (This Day)</button>
-                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '2days'" (click)="onExcusePresetChange('2days')">2 Days</button>
-                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '3days'" (click)="onExcusePresetChange('3days')">3 Days</button>
-                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'week'" (click)="onExcusePresetChange('week')">1 Week</button>
-                    <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'custom'" (click)="onExcusePresetChange('custom')">Custom</button>
-                  </div>
-                </div>
-
-                <div class="form-row-2 mb-3">
-                  <div class="form-group">
-                    <label class="form-label">Excuse / Leave Type *</label>
-                    <select class="form-select" [(ngModel)]="leaveType">
-                      <option value="Sick">Sickness / Medical</option>
-                      <option value="Compassionate">Emergency / Compassionate</option>
-                      <option value="Annual">Annual Leave</option>
-                      <option value="Unpaid">Unpaid Leave</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Start Date *</label>
-                    <input type="date" class="form-control" [(ngModel)]="leaveStartDate" (change)="onExcusePresetChange('custom')" />
-                  </div>
-                </div>
-
-                <div class="form-row-2 mb-3">
-                  <div class="form-group">
-                    <label class="form-label">End Date *</label>
-                    <input type="date" class="form-control" [(ngModel)]="leaveEndDate" (change)="onExcusePresetChange('custom')" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Reason / Sickness Details *</label>
-                    <input type="text" class="form-control" [(ngModel)]="leaveReason" placeholder="e.g. Flu, medical appointment, family emergency" />
-                  </div>
-                </div>
-
-                <div class="form-actions mt-3 d-flex justify-content-end gap-3">
-                  <button type="button" class="btn btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
-                  <button type="button" class="btn btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
-                    <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
-                    <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
-                    <span>Submit Excuse Request</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Two-Column Section Grid for Full Page View -->
-              <div class="day-page-columns">
-                <!-- SECTION A: Assigned Shifts -->
-                <div class="day-section">
-                  <div class="day-section-header">
-                    <span class="material-symbols-outlined text-primary">work</span>
-                    <h4>Assigned Rota Duties ({{ selectedDay.shifts.length }})</h4>
-                  </div>
-
-                  <div class="day-empty-box" *ngIf="!selectedDay.shifts.length">
-                    <span class="material-symbols-outlined text-muted">event_busy</span>
-                    <div class="empty-text-group">
-                      <p class="empty-title">Off Duty / No Shifts Rostered</p>
-                      <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline ms-auto" (click)="closeDayDetailView(); switchTab('open-shifts')">
-                      <span class="material-symbols-outlined">work_outline</span>
-                      <span>Find Open Shifts</span>
-                    </button>
-                  </div>
-
-                  <div class="day-shifts-list" *ngIf="selectedDay.shifts.length > 0">
-                    <div class="day-shift-card" *ngFor="let s of selectedDay.shifts">
-                      <div class="day-shift-top">
-                        <div>
-                          <div class="shift-code-tag">{{ s.shiftCode }}</div>
-                          <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
-                          <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
-                        </div>
-                        <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
-                      </div>
-
-                      <div class="day-shift-meta-grid">
-                        <div class="meta-item">
-                          <span class="meta-icon material-symbols-outlined">schedule</span>
-                          <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
-                        </div>
-                        <div class="meta-item">
-                          <span class="meta-icon material-symbols-outlined">payments</span>
-                          <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
-                        </div>
-                      </div>
-
-                      <div class="day-shift-actions">
-                        <span class="card-chip chip-amber" *ngIf="s.status === 'ClaimPending' || s.status === 'PendingClaim'" title="Awaiting supervisor approval">Claim Pending Approval</span>
-                        <span class="card-chip chip-purple" *ngIf="s.assignmentMode === 'Mandatory' && s.status !== 'ClaimPending'" title="Mandatory duty: you must attend">Mandatory Duty</span>
-                        <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
-                          <span class="material-symbols-outlined">check_circle</span>
-                          <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge Duty' : 'Accept Shift' }}</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fecaca;" *ngIf="!s.isConfirmedByGuard && s.assignmentMode !== 'Mandatory' && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="declineShiftOffer(s)" [disabled]="isActionLoading">
-                          <span class="material-symbols-outlined">close</span>
-                          <span>Decline</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline" *ngIf="s.status !== 'SwapOffered'" (click)="openSwapModal(s)">
-                          <span class="material-symbols-outlined">swap_horiz</span>
-                          <span>Request Swap</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fecaca;" *ngIf="s.status === 'SwapOffered'" (click)="withdrawShiftSwap(s)">
-                          <span class="material-symbols-outlined">cancel</span>
-                          <span>Withdraw Swap</span>
-                        </button>
-                        <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay.isToday" (click)="closeDayDetailView()">
-                          <span class="material-symbols-outlined">fingerprint</span>
-                          <span>Duty Clock-In</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- SECTION B: Excuses & Leave -->
-                <div class="day-section">
-                  <div class="day-section-header">
-                    <span class="material-symbols-outlined text-warning">flight_takeoff</span>
-                    <h4>Logged Excuses &amp; Time Off ({{ selectedDay.leaves.length }})</h4>
-                  </div>
-
-                  <div class="day-empty-box" *ngIf="!selectedDay.leaves.length">
-                    <span class="material-symbols-outlined text-muted">event_available</span>
-                    <div class="empty-text-group">
-                      <p class="empty-title">No Excuses or Time-Off Logged</p>
-                      <p class="empty-desc">Your attendance record has no reported sickness or absence for this date.</p>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary ms-auto" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
-                      <span class="material-symbols-outlined">add</span>
-                      <span>Log Excuse</span>
-                    </button>
-                  </div>
-
-                  <div class="day-leaves-list" *ngIf="selectedDay.leaves.length > 0">
-                    <div class="day-leave-card" *ngFor="let l of selectedDay.leaves">
-                      <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge-station">{{ l.leaveType }}</span>
-                        <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
-                          {{ l.status }}
-                        </span>
-                      </div>
-                      <div class="leave-date-span">
-                        <span class="material-symbols-outlined">date_range</span>
-                        <span>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }})</span>
-                      </div>
-                      <p class="leave-reason-text" *ngIf="l.reason"><strong>Reason:</strong> {{ l.reason }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="day-page-footer">
-              <button type="button" class="btn btn-outline" (click)="closeDayDetailView()">
-                <span class="material-symbols-outlined">arrow_back</span>
-                <span>Back to Schedule Calendar</span>
-              </button>
-              <button type="button" class="btn btn-primary" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
-                <span class="material-symbols-outlined">add</span>
-                <span>Apply for Excuse / Time Off</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- FULL MONTH CALENDAR & ASSIGNED DUTIES (WHEN NO SPECIFIC DAY SELECTED) -->
-        <ng-container *ngIf="!selectedDay">
-        <!-- 3. Top Metrics Row (Matching Reference Template) -->
+        <!-- 1. Top Metrics Row (KPIs) -->
         <div class="metrics-grid mb-4">
           <!-- Metric 1: Real Take-Home Pay -->
           <div class="metric-card">
@@ -820,7 +626,7 @@ Chart.register(...registerables);
               <div class="card-progress-bar bg-blue" [style.width.%]="shifts.length > 0 ? 80 : 0"></div>
             </div>
             <div class="card-sub-info">
-              <span>{{ totalPlannedHours }}h across {{ shifts.length }} rostered shifts • {{ accruedHolidayHours }}h Holiday Pay</span>
+              <span>{{ totalPlannedHours }}h across {{ shifts.length }} rostered shifts &bull; {{ accruedHolidayHours }}h Holiday Pay</span>
             </div>
           </div>
 
@@ -859,7 +665,7 @@ Chart.register(...registerables);
             </div>
             <div class="card-label">{{ nextUpcomingShift.facilityName || nextUpcomingShift.siteName }}</div>
             <div class="card-sub-info d-flex justify-content-between align-items-center">
-              <span>{{ nextUpcomingShift.startsAtUtc | date:'EEE, d MMM' }} • {{ nextUpcomingShift.postName }}</span>
+              <span>{{ nextUpcomingShift.startsAtUtc | date:'EEE, d MMM' }} &bull; {{ nextUpcomingShift.postName }}</span>
               <button
                 type="button"
                 class="btn-confirm-inline"
@@ -909,76 +715,185 @@ Chart.register(...registerables);
           </div>
         </div>
 
-        <!-- 4. Interactive Monthly Rota Calendar Grid (From Reference Template) -->
-        <div class="rota-calendar-card mb-4">
-          <div class="calendar-card-header">
-            <div class="cal-nav-group">
-              <button type="button" class="btn-cal-nav" (click)="prevMonth()" title="Previous Month">
+        <!-- 2. Google-Calendar-Style Master Navigation & View Toolbar -->
+        <div class="calendar-toolbar-card">
+          <div class="cal-nav-left">
+            <button type="button" class="btn-today" (click)="goToToday()">Today</button>
+            <div class="nav-arrows">
+              <button type="button" class="nav-icon-btn" (click)="navigatePeriod(-1)" title="Previous">
                 <span class="material-symbols-outlined">chevron_left</span>
               </button>
-              <h3 class="cal-month-title">{{ currentMonth | date:'MMMM yyyy' }}</h3>
-              <button type="button" class="btn-cal-nav" (click)="nextMonth()" title="Next Month">
+              <button type="button" class="nav-icon-btn" (click)="navigatePeriod(1)" title="Next">
                 <span class="material-symbols-outlined">chevron_right</span>
               </button>
             </div>
-            <div class="cal-action-banner">
-              <span class="material-symbols-outlined text-primary">info</span>
-              <span>Not on the rota today? Clock in if you pick up a shift.</span>
-              <a routerLink="/attendance/workspace/clock" class="btn-clockin-mini">
-                <span class="material-symbols-outlined">fingerprint</span> Duty Clock-In
-              </a>
+            <h2 class="period-heading">{{ currentPeriodHeading }}</h2>
+
+            <!-- Direct Month & Year Jump Pickers -->
+            <div class="month-year-pickers">
+              <select class="cal-picker-select" [ngModel]="currentCalendarDate.getMonth()" (ngModelChange)="onSelectMonth($event)">
+                <option *ngFor="let m of monthNames; let idx = index" [ngValue]="idx">{{ m }}</option>
+              </select>
+              <select class="cal-picker-select" [ngModel]="currentCalendarDate.getFullYear()" (ngModelChange)="onSelectYear($event)">
+                <option *ngFor="let y of availableYears" [ngValue]="y">{{ y }}</option>
+              </select>
             </div>
           </div>
 
-          <!-- Calendar Grid -->
-          <div class="calendar-grid-container">
-            <div class="cal-weekdays-row">
-              <div class="weekday-cell">Mon</div>
-              <div class="weekday-cell">Tue</div>
-              <div class="weekday-cell">Wed</div>
-              <div class="weekday-cell">Thu</div>
-              <div class="weekday-cell">Fri</div>
-              <div class="weekday-cell">Sat</div>
-              <div class="weekday-cell">Sun</div>
-            </div>
-            <div class="cal-days-grid">
-              <div
-                *ngFor="let day of calendarDays"
-                class="cal-day-cell"
-                [class.other-month]="!day.isCurrentMonth"
-                [class.today]="day.isToday"
-                [class.has-shift]="day.shifts.length > 0"
-                [class.has-leave]="day.leaves && day.leaves.length > 0"
-                [class.is-selected]="isSelectedDay(day)"
-                (click)="onSelectDay(day)"
-                title="Click to view full day activity, shifts, and excuses"
+          <div class="cal-nav-right">
+            <!-- Venue Filter Dropdown (if multiple venues exist) -->
+            <select class="cal-picker-select" [(ngModel)]="selectedVenueId" (change)="rebuildAllCalendarViews()" *ngIf="distinctVenues.length > 1">
+              <option value="">All Venues ({{ distinctVenues.length }})</option>
+              <option *ngFor="let v of distinctVenues" [value]="v.id">{{ v.name }}</option>
+            </select>
+
+            <!-- Calendar View Mode Switcher (Month | Week | Day | Year) -->
+            <div class="cal-view-switcher">
+              <button
+                type="button"
+                class="cal-view-btn"
+                [class.active]="calendarMode === 'month'"
+                (click)="setCalendarMode('month')"
               >
-                <div class="day-cell-top">
-                  <span class="day-number">{{ day.dayNumber }}</span>
-                  <div class="day-indicators">
-                    <span class="indicator-dot dot-shift" *ngIf="day.shifts.length > 0" title="{{ day.shifts.length }} shift(s)"></span>
-                    <span class="indicator-dot dot-leave" *ngIf="day.leaves && day.leaves.length > 0" title="{{ day.leaves.length }} leave/excuse(s)"></span>
+                <span class="material-symbols-outlined">calendar_view_month</span>
+                <span>Month</span>
+              </button>
+              <button
+                type="button"
+                class="cal-view-btn"
+                [class.active]="calendarMode === 'week'"
+                (click)="setCalendarMode('week')"
+              >
+                <span class="material-symbols-outlined">calendar_view_week</span>
+                <span>Week</span>
+              </button>
+              <button
+                type="button"
+                class="cal-view-btn"
+                [class.active]="calendarMode === 'day'"
+                (click)="setCalendarMode('day')"
+              >
+                <span class="material-symbols-outlined">calendar_view_day</span>
+                <span>Day</span>
+              </button>
+              <button
+                type="button"
+                class="cal-view-btn"
+                [class.active]="calendarMode === 'year'"
+                (click)="setCalendarMode('year')"
+              >
+                <span class="material-symbols-outlined">apps</span>
+                <span>Year</span>
+              </button>
+            </div>
+
+            <!-- Fast Action Banner -->
+            <div class="cal-action-banner">
+              <span class="material-symbols-outlined text-primary">info</span>
+              <span>Not on rota today? Clock in if on duty:</span>
+              <a routerLink="/attendance/workspace/clock" class="btn-clockin-mini" title="Instant Duty Clock-In">
+                <span class="material-symbols-outlined">fingerprint</span>
+                <span>Duty Clock-In</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Color Legend Strip -->
+        <div class="calendar-legend-bar">
+          <div class="legend-group">
+            <span class="legend-title">Day Indicator Key:</span>
+            <span class="legend-swatch upcoming-swatch">
+              <span class="swatch-dot"></span> Upcoming Day with Shifts
+            </span>
+            <span class="legend-swatch today-swatch">
+              <span class="swatch-dot"></span> Today / Current Day
+            </span>
+            <span class="legend-swatch past-swatch">
+              <span class="swatch-dot"></span> Past Day with Shifts
+            </span>
+          </div>
+
+          <div class="legend-group">
+            <span class="legend-title">Daily Metric Badges:</span>
+            <span class="metric-pill pill-blue">Shifts</span>
+            <span class="metric-pill pill-green">Active Now</span>
+            <span class="metric-pill pill-purple">Excused / Leave</span>
+            <span class="metric-pill pill-yellow">Swap Offered</span>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW A: MONTHLY CALENDAR GRID (DEFAULT) -->
+        <!-- ========================================================================= -->
+        <div class="calendar-board-card" *ngIf="calendarMode === 'month'">
+          <div class="month-grid-scroll">
+            <div class="month-grid-header">
+              <div class="weekday-col" *ngFor="let wd of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']">
+                {{ wd }}
+              </div>
+            </div>
+
+            <div class="month-grid-body">
+              <div
+                *ngFor="let cell of calendarDays"
+                class="month-day-cell"
+                [class.other-month]="!cell.isCurrentMonth"
+                [class.day-today]="cell.isToday"
+                [class.day-upcoming-shifts]="cell.isFuture && cell.shiftsCount > 0"
+                [class.day-past-shifts]="cell.isPast && cell.shiftsCount > 0"
+                [class.day-selected]="selectedDay?.dateStr === cell.dateStr"
+                (click)="onDayCellClick(cell)"
+              >
+                <!-- Cell Top Row: Date Number + Timeline State Tag -->
+                <div class="cell-top-row">
+                  <div class="day-num-wrap">
+                    <span class="day-num-circle" [class.today-circle]="cell.isToday">
+                      {{ cell.dayNum }}
+                    </span>
+                    <span class="month-abbr" *ngIf="cell.dayNum === 1 || !cell.isCurrentMonth">
+                      {{ cell.date | date:'MMM' }}
+                    </span>
+                  </div>
+
+                  <span class="day-era-tag today" *ngIf="cell.isToday">Today</span>
+                  <span class="day-era-tag upcoming" *ngIf="cell.isFuture && cell.shiftsCount > 0">Upcoming</span>
+                  <span class="day-era-tag past" *ngIf="cell.isPast && cell.shiftsCount > 0">Past</span>
+                </div>
+
+                <!-- Multi-Metric Daily Activity Pills -->
+                <div class="cell-metrics-wrap" *ngIf="cell.shiftsCount > 0 || cell.leaveCount > 0 || cell.swapCount > 0">
+                  <span class="metric-pill pill-blue" *ngIf="cell.shiftsCount > 0" title="Total scheduled shifts">
+                    {{ cell.shiftsCount }} {{ cell.shiftsCount === 1 ? 'Shift' : 'Shifts' }}
+                  </span>
+                  <span class="metric-pill pill-green" *ngIf="cell.activeNowCount > 0" title="Clocked in on duty right now">
+                    {{ cell.activeNowCount }} Active Now
+                  </span>
+                  <span class="metric-pill pill-purple" *ngIf="cell.leaveCount > 0" title="Excused absence or time-off">
+                    {{ cell.leaveCount }} Leave
+                  </span>
+                  <span class="metric-pill pill-yellow" *ngIf="cell.swapCount > 0" title="Swap offer pending">
+                    {{ cell.swapCount }} Swap
+                  </span>
+                </div>
+
+                <!-- Compact Google-Calendar-Style Shift Preview Bars (Top 2) -->
+                <div class="cell-events-list" *ngIf="cell.shifts.length > 0">
+                  <div
+                    *ngFor="let s of cell.shifts.slice(0, 2)"
+                    class="cell-event-chip"
+                    [class.chip-done]="isShiftDone(s)"
+                  >
+                    <span class="ev-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
+                    <span class="ev-title">{{ s.facilityName || s.siteName }} &bull; {{ s.postName }}</span>
+                  </div>
+                  <div class="more-events-link" *ngIf="cell.shifts.length > 2">
+                    +{{ cell.shifts.length - 2 }} more duties
                   </div>
                 </div>
 
-                <!-- Shift badges in cell -->
-                <div class="day-shifts" *ngIf="day.shifts.length > 0">
-                  <div *ngFor="let s of day.shifts" class="shift-pill-badge" [title]="s.postName + ' at ' + (s.facilityName || s.siteName)">
-                    <span class="badge-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
-                    <span class="badge-site">{{ s.facilityName || s.siteName }}</span>
-                  </div>
-                </div>
-
-                <!-- Leave / Excuse badges in cell -->
-                <div class="day-leaves" *ngIf="day.leaves && day.leaves.length > 0">
-                  <div *ngFor="let l of day.leaves" class="leave-pill-badge" [class.leave-approved]="l.status === 'Approved'" [class.leave-pending]="l.status === 'Pending'" [title]="l.leaveType + ' (' + l.status + ')'">
-                    <span class="material-symbols-outlined badge-leave-icon">flight_takeoff</span>
-                    <span class="badge-leave-text">{{ l.leaveType }}</span>
-                  </div>
-                </div>
-
-                <div class="cell-hover-hint" *ngIf="day.shifts.length === 0 && (!day.leaves || day.leaves.length === 0)">
-                  <span>+ Excuse / Info</span>
+                <div class="cell-hover-hint" *ngIf="cell.shiftsCount === 0 && cell.leaveCount === 0">
+                  <span>+ View Day / Excuse</span>
                 </div>
               </div>
             </div>
@@ -997,6 +912,528 @@ Chart.register(...registerables);
             <div class="summary-item">
               <span class="material-symbols-outlined">account_balance_wallet</span>
               Gross Pay: <strong>{{ currencySymbol }}{{ (estimatedGrossPay | number:'1.2-2') || '0.00' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW B: WEEKLY TIMELINE CALENDAR (7-DAY HOURLY GRID) -->
+        <!-- ========================================================================= -->
+        <div class="calendar-board-card" *ngIf="calendarMode === 'week'">
+          <div class="week-grid-container">
+            <!-- Week Header Row -->
+            <div class="week-header-row">
+              <div class="time-gutter-header">Time</div>
+              <div
+                *ngFor="let wd of currentWeekDays"
+                class="week-day-col-header"
+                [class.is-today]="wd.isToday"
+                [class.is-selected]="selectedDay?.dateStr === wd.dateStr"
+                (click)="onDayCellClick(wd)"
+              >
+                <span class="wk-day-name">{{ wd.date | date:'EEE' }}</span>
+                <span class="wk-day-num" [class.today-circle]="wd.isToday">{{ wd.dayNum }}</span>
+                <div class="wk-mini-pills">
+                  <span class="metric-pill pill-blue" *ngIf="wd.shiftsCount > 0">{{ wd.shiftsCount }} shift{{ wd.shiftsCount === 1 ? '' : 's' }}</span>
+                  <span class="metric-pill pill-purple" *ngIf="wd.leaveCount > 0">{{ wd.leaveCount }} leave</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Week Hourly Rows -->
+            <div class="week-timeline-scroll">
+              <div class="week-hour-row" *ngFor="let hr of timelineHours">
+                <div class="time-gutter-cell">{{ formatHourLabel(hr) }}</div>
+                <div
+                  *ngFor="let wd of currentWeekDays"
+                  class="week-slot-cell"
+                  [class.slot-today]="wd.isToday"
+                  [class.slot-upcoming]="wd.isFuture && wd.shiftsCount > 0"
+                  (click)="onDayCellClick(wd)"
+                >
+                  <div
+                    *ngFor="let s of getShiftsStartingInHour(wd, hr)"
+                    class="timeline-event-card"
+                    [class.ev-done]="isShiftDone(s)"
+                    [class.ev-upcoming]="wd.isFuture"
+                  >
+                    <div class="tev-time">{{ s.startsAtUtc | date:'HH:mm' }} &ndash; {{ s.endsAtUtc | date:'HH:mm' }}</div>
+                    <div class="tev-venue">{{ s.facilityName || s.siteName }}</div>
+                    <div class="tev-staff">{{ s.postName }} &bull; {{ s.hourlyPayRate ? (currencySymbol + s.hourlyPayRate + '/hr') : '' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW C: SINGLE-DAY CALENDAR (GRID TIMELINE OR STRUCTURED LIST) -->
+        <!-- ========================================================================= -->
+        <div class="calendar-board-card" *ngIf="calendarMode === 'day' && selectedDay">
+          <div class="day-view-Subheader">
+            <div class="day-hero-badge">
+              <div class="day-big-circle" [class.today]="selectedDay.isToday">
+                <span class="dbc-dow">{{ selectedDay.date | date:'EEE' }}</span>
+                <span class="dbc-num">{{ selectedDay.dayNum }}</span>
+              </div>
+              <div>
+                <h3>{{ selectedDay.date | date:'EEEE, d MMMM yyyy' }}</h3>
+                <div class="cell-metrics-wrap" style="margin-top: 4px;">
+                  <span class="metric-pill pill-blue">{{ selectedDay.shiftsCount }} Shift{{ selectedDay.shiftsCount === 1 ? '' : 's' }}</span>
+                  <span class="metric-pill pill-green" *ngIf="selectedDay.activeNowCount > 0">{{ selectedDay.activeNowCount }} Active Now</span>
+                  <span class="metric-pill pill-purple" *ngIf="selectedDay.leaveCount > 0">{{ selectedDay.leaveCount }} Leave</span>
+                  <span class="metric-pill pill-yellow" *ngIf="selectedDay.swapCount > 0">{{ selectedDay.swapCount }} Swap</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="day-layout-toggle">
+              <span class="toggle-lbl">Day Layout:</span>
+              <button
+                type="button"
+                class="cal-view-btn"
+                [class.active]="dayDisplayMode === 'grid'"
+                (click)="dayDisplayMode = 'grid'"
+              >
+                <span class="material-symbols-outlined">schedule</span>
+                <span>Hourly Timeline</span>
+              </button>
+              <button
+                type="button"
+                class="cal-view-btn"
+                [class.active]="dayDisplayMode === 'list'"
+                (click)="dayDisplayMode = 'list'"
+              >
+                <span class="material-symbols-outlined">view_list</span>
+                <span>Duty Cards</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Day Hourly Timeline Grid -->
+          <div class="day-hourly-timeline" *ngIf="dayDisplayMode === 'grid'">
+            <div class="day-all-day-bar" *ngIf="selectedDay.leaves.length > 0">
+              <span class="all-day-lbl">TIME OFF / LEAVE</span>
+              <div class="all-day-chips">
+                <span class="metric-pill pill-purple" *ngFor="let lv of selectedDay.leaves">
+                  {{ lv.leaveType }} ({{ lv.status }}) &bull; {{ lv.reason || 'Approved leave' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="day-hour-row" *ngFor="let hr of timelineHours">
+              <div class="time-gutter-cell">{{ formatHourLabel(hr) }}</div>
+              <div class="day-hour-slot">
+                <div
+                  *ngFor="let s of getShiftsStartingInHour(selectedDay, hr)"
+                  class="day-timeline-shift-block"
+                  [class.ev-done]="isShiftDone(s)"
+                >
+                  <div class="dts-main">
+                    <strong>{{ s.startsAtUtc | date:'HH:mm' }} &ndash; {{ s.endsAtUtc | date:'HH:mm' }}</strong>
+                    <span class="dts-site">{{ s.facilityName || s.siteName }} &bull; {{ s.postName }}</span>
+                    <span class="dts-staff">
+                      <span class="material-symbols-outlined">payments</span>
+                      {{ s.hourlyPayRate ? (currencySymbol + s.hourlyPayRate + '/hr') : (currencySymbol + '10.00/hr') }}
+                    </span>
+                  </div>
+                  <div class="dts-actions">
+                    <a
+                      routerLink="/attendance/workspace/clock"
+                      [queryParams]="{ shiftId: s.id }"
+                      class="btn btn-primary btn-sm"
+                      *ngIf="selectedDay.isToday || s.isClockedIn"
+                    >
+                      <span class="material-symbols-outlined">fingerprint</span>
+                      <span>Fast Clock-In</span>
+                    </a>
+                    <button type="button" class="btn btn-outline btn-sm" *ngIf="s.status !== 'SwapOffered'" (click)="openSwapModal(s)">
+                      Swap
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day Structured Duty Cards -->
+          <div class="day-page-body p-4" *ngIf="dayDisplayMode === 'list'">
+            <div class="day-empty-box" *ngIf="!selectedDay.shifts.length">
+              <span class="material-symbols-outlined text-muted">event_busy</span>
+              <div class="empty-text-group">
+                <p class="empty-title">Off Duty / No Shifts Rostered</p>
+                <p class="empty-desc">You are not assigned to any duty posts on this day.</p>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline ms-auto" (click)="switchTab('open-shifts')">
+                <span class="material-symbols-outlined">work_outline</span>
+                <span>Find Open Shifts</span>
+              </button>
+            </div>
+
+            <div class="day-shifts-list" *ngIf="selectedDay.shifts.length > 0">
+              <div class="day-shift-card mb-3" *ngFor="let s of selectedDay.shifts">
+                <div class="day-shift-top">
+                  <div>
+                    <div class="shift-code-tag">{{ s.shiftCode }}</div>
+                    <h5 class="day-shift-venue">{{ s.facilityName || s.siteName }}</h5>
+                    <p class="day-shift-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</p>
+                  </div>
+                  <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                </div>
+
+                <div class="day-shift-meta-grid">
+                  <div class="meta-item">
+                    <span class="meta-icon material-symbols-outlined">schedule</span>
+                    <span>{{ s.startsAtUtc | date:'HH:mm' }} - {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-icon material-symbols-outlined">payments</span>
+                    <span>{{ s.hourlyPayRate ? currencySymbol + s.hourlyPayRate + '/hr' : (currencySymbol + '10.00/hr') }}</span>
+                  </div>
+                </div>
+
+                <div class="day-shift-actions mt-3">
+                  <span class="card-chip chip-amber" *ngIf="s.status === 'ClaimPending' || s.status === 'PendingClaim'">Claim Pending Approval</span>
+                  <span class="card-chip chip-purple" *ngIf="s.assignmentMode === 'Mandatory' && s.status !== 'ClaimPending'">Mandatory Duty</span>
+                  <a
+                    routerLink="/attendance/workspace/clock"
+                    [queryParams]="{ shiftId: s.id }"
+                    class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                    *ngIf="selectedDay.isToday || s.isClockedIn"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 15px;">fingerprint</span>
+                    <span>Fast Duty Clock-In</span>
+                  </a>
+                  <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge Duty' : 'Accept Shift' }}</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fecaca;" *ngIf="!s.isConfirmedByGuard && s.assignmentMode !== 'Mandatory' && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="declineShiftOffer(s)" [disabled]="isActionLoading">
+                    <span class="material-symbols-outlined">close</span>
+                    <span>Decline</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" *ngIf="s.status !== 'SwapOffered'" (click)="openSwapModal(s)">
+                    <span class="material-symbols-outlined">swap_horiz</span>
+                    <span>Request Swap</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fecaca;" *ngIf="s.status === 'SwapOffered'" (click)="withdrawShiftSwap(s)">
+                    <span class="material-symbols-outlined">cancel</span>
+                    <span>Withdraw Swap</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW D: YEAR CALENDAR (12-MONTH FULL YEAR OVERVIEW) -->
+        <!-- ========================================================================= -->
+        <div class="calendar-board-card year-board-pad" *ngIf="calendarMode === 'year'">
+          <div class="year-months-grid">
+            <div class="mini-month-card" *ngFor="let ym of yearMonthsGrid">
+              <div class="mini-month-header" (click)="jumpToMonthFromYear(ym.monthIndex)">
+                <h4>{{ ym.monthName }} {{ currentCalendarDate.getFullYear() }}</h4>
+                <span class="jump-hint">Open Month &rarr;</span>
+              </div>
+              <div class="mini-weekdays">
+                <span *ngFor="let d of ['M', 'T', 'W', 'T', 'F', 'S', 'S']">{{ d }}</span>
+              </div>
+              <div class="mini-days-grid">
+                <button
+                  type="button"
+                  *ngFor="let md of ym.days"
+                  class="mini-day-btn"
+                  [class.other]="!md.isCurrentMonth"
+                  [class.today]="md.isToday"
+                  [class.upcoming-shifts]="md.isCurrentMonth && md.isFuture && md.shiftsCount > 0"
+                  [class.past-shifts]="md.isCurrentMonth && md.isPast && md.shiftsCount > 0"
+                  [title]="md.shiftsCount > 0 ? (md.shiftsCount + ' shift(s) on ' + (md.date | date:'d MMM y')) : (md.date | date:'d MMM y')"
+                  (click)="jumpToDateFromYear(md.date)"
+                >
+                  {{ md.dayNum }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- INTERACTIVE "DAY OPERATIONS BREAKDOWN" PANEL (CLICK TO SEE ALL SHIFTS & CLOCK IN FAST) -->
+        <!-- ========================================================================= -->
+        <div class="day-inspector-card" id="dayOperationsInspector" *ngIf="selectedDay">
+          <div class="inspector-header">
+            <div class="inspector-title-left">
+              <div class="inspector-date-icon" [class.today]="selectedDay.isToday" [class.upcoming]="selectedDay.isFuture">
+                <span class="idi-month">{{ selectedDay.date | date:'MMM' }}</span>
+                <span class="idi-day">{{ selectedDay.dayNum }}</span>
+              </div>
+              <div>
+                <div class="inspector-heading-row">
+                  <h3>Day Operations Breakdown &mdash; {{ selectedDay.date | date:'EEEE, d MMMM yyyy' }}</h3>
+                  <span class="day-era-tag today" *ngIf="selectedDay.isToday">Today</span>
+                  <span class="day-era-tag upcoming" *ngIf="selectedDay.isFuture">Upcoming Date</span>
+                  <span class="day-era-tag past" *ngIf="selectedDay.isPast">Past Date</span>
+                </div>
+                <p class="inspector-sub">
+                  {{ selectedDay.shifts.length }} Rostered Duty Shift(s) &bull; {{ selectedDay.leaves.length }} Leave / Excuse Record(s) for this date.
+                </p>
+              </div>
+            </div>
+
+            <div class="inspector-header-actions">
+              <a
+                routerLink="/attendance/workspace/clock"
+                class="btn btn-primary d-inline-flex align-items-center gap-1"
+                *ngIf="selectedDay.isToday"
+                title="Clock in immediately to your duty post"
+              >
+                <span class="material-symbols-outlined">fingerprint</span>
+                <span>Fast Duty Clock-In</span>
+              </a>
+              <button type="button" class="btn btn-outline" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                <span class="material-symbols-outlined">event_busy</span>
+                <span>Apply for Excuse</span>
+              </button>
+              <button type="button" class="btn btn-outline" (click)="closeDayDetailView()" title="Close day inspector">
+                <span class="material-symbols-outlined">close</span>
+                <span>Close</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Inspector Quick Metrics Strip -->
+          <div class="inspector-metrics-strip">
+            <div class="insp-stat blue">
+              <span class="material-symbols-outlined">work</span>
+              <div>
+                <strong>{{ selectedDay.shifts.length }}</strong>
+                <span>Rostered Shift(s)</span>
+              </div>
+            </div>
+            <div class="insp-stat green" *ngIf="selectedDay.isToday">
+              <span class="material-symbols-outlined">verified_user</span>
+              <div>
+                <strong>{{ selectedDay.activeNowCount > 0 ? 'Clocked In' : 'Ready' }}</strong>
+                <span>Today's Attendance</span>
+              </div>
+            </div>
+            <div class="insp-stat purple">
+              <span class="material-symbols-outlined">timer</span>
+              <div>
+                <strong>{{ calculateShiftsHours(selectedDay.shifts) }}h</strong>
+                <span>Planned Hours</span>
+              </div>
+            </div>
+            <div class="insp-stat amber" *ngIf="selectedDay.leaves.length > 0">
+              <span class="material-symbols-outlined">flight_takeoff</span>
+              <div>
+                <strong>{{ selectedDay.leaves.length }}</strong>
+                <span>Excuse / Leave Record(s)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-sections-body">
+            <!-- In-Page Quick Excuse Form (Toggled when requested) -->
+            <div class="quick-excuse-form-card mb-4" *ngIf="showDayExcuseForm">
+              <div class="form-header-row">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-warning">edit_calendar</span>
+                  <h4 class="form-title">Apply for Absence / Excuse</h4>
+                </div>
+                <button type="button" class="btn-close-sm" (click)="showDayExcuseForm = false">&times;</button>
+              </div>
+
+              <!-- Duration Quick Presets -->
+              <div class="duration-presets-group mb-3">
+                <span class="presets-label">Quick Duration:</span>
+                <div class="presets-buttons">
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'single'" (click)="onExcusePresetChange('single')">1 Day (This Day)</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '2days'" (click)="onExcusePresetChange('2days')">2 Days</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === '3days'" (click)="onExcusePresetChange('3days')">3 Days</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'week'" (click)="onExcusePresetChange('week')">1 Week</button>
+                  <button type="button" class="preset-btn" [class.active]="dayExcuseDurationPreset === 'custom'" (click)="onExcusePresetChange('custom')">Custom</button>
+                </div>
+              </div>
+
+              <div class="form-row-2 mb-3">
+                <div class="form-group">
+                  <label class="form-label">Excuse / Leave Type *</label>
+                  <select class="form-select" [(ngModel)]="leaveType">
+                    <option value="Sick">Sickness / Medical</option>
+                    <option value="Compassionate">Emergency / Compassionate</option>
+                    <option value="Annual">Annual Leave</option>
+                    <option value="Unpaid">Unpaid Leave</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Start Date *</label>
+                  <input type="date" class="form-control" [(ngModel)]="leaveStartDate" (change)="onExcusePresetChange('custom')" />
+                </div>
+              </div>
+
+              <div class="form-row-2 mb-3">
+                <div class="form-group">
+                  <label class="form-label">End Date *</label>
+                  <input type="date" class="form-control" [(ngModel)]="leaveEndDate" (change)="onExcusePresetChange('custom')" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Reason / Sickness Details *</label>
+                  <input type="text" class="form-control" [(ngModel)]="leaveReason" placeholder="e.g. Flu, medical appointment, emergency" />
+                </div>
+              </div>
+
+              <div class="form-actions mt-3 d-flex justify-content-end gap-3">
+                <button type="button" class="btn btn-outline" (click)="showDayExcuseForm = false">Cancel</button>
+                <button type="button" class="btn btn-primary" (click)="submitDayExcuse()" [disabled]="isActionLoading || !leaveStartDate || !leaveEndDate">
+                  <span class="material-symbols-outlined" *ngIf="!isActionLoading">send</span>
+                  <span class="material-symbols-outlined spin" *ngIf="isActionLoading">refresh</span>
+                  <span>Submit Excuse Request</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- SECTION A: Assigned Rota Duties on this Date -->
+            <div class="inspector-section">
+              <div class="sec-head">
+                <div class="sec-title">
+                  <span class="sec-badge blue">Duties</span>
+                  <h4>Assigned Rota Duties ({{ selectedDay.shifts.length }})</h4>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-sm btn-outline" (click)="openExcuseForSelectedDay('single')" *ngIf="!showDayExcuseForm">
+                    <span class="material-symbols-outlined">event_busy</span>
+                    <span>Apply Excuse</span>
+                  </button>
+                  <a routerLink="/attendance/workspace/clock" class="btn btn-sm btn-primary" *ngIf="selectedDay.isToday">
+                    <span class="material-symbols-outlined">fingerprint</span>
+                    <span>Duty Clock-In</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sec-empty" *ngIf="selectedDay.shifts.length === 0">
+                <span class="material-symbols-outlined text-muted" style="font-size: 32px; display: block; margin-bottom: 6px;">event_available</span>
+                <strong>Off Duty / No Shifts Rostered</strong>
+                <p style="margin: 4px 0 10px 0;">You have no scheduled shifts assigned for {{ selectedDay.date | date:'EEEE, d MMMM yyyy' }}.</p>
+                <button type="button" class="btn btn-sm btn-primary" (click)="switchTab('open-shifts')">
+                  <span class="material-symbols-outlined">work_outline</span>
+                  <span>Find &amp; Claim Open Shifts</span>
+                </button>
+              </div>
+
+              <div class="day-shifts-cards-grid" *ngIf="selectedDay.shifts.length > 0">
+                <div
+                  class="day-shift-card"
+                  *ngFor="let s of selectedDay.shifts"
+                  [class.card-upcoming]="selectedDay.isFuture"
+                >
+                  <div class="dsc-top">
+                    <div class="shift-code-tag">{{ s.shiftCode }}</div>
+                    <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                  </div>
+
+                  <h5 class="dsc-venue">{{ s.facilityName || s.siteName }}</h5>
+                  <div class="dsc-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</div>
+
+                  <div class="dsc-time">
+                    <span class="material-symbols-outlined">schedule</span>
+                    <span>{{ s.startsAtUtc | date:'HH:mm' }} &ndash; {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                  </div>
+
+                  <div class="dsc-staff">
+                    <span class="material-symbols-outlined">payments</span>
+                    <span>Rate: <strong>{{ s.hourlyPayRate ? (currencySymbol + s.hourlyPayRate + '/hr') : (currencySymbol + '10.00/hr') }}</strong></span>
+                  </div>
+
+                  <!-- Quick Action Buttons for Shift -->
+                  <div class="dsc-actions">
+                    <!-- Fast Clock In Button -->
+                    <a
+                      routerLink="/attendance/workspace/clock"
+                      [queryParams]="{ shiftId: s.id }"
+                      class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                      *ngIf="selectedDay.isToday || s.isClockedIn"
+                      title="Fast Duty Clock-In"
+                    >
+                      <span class="material-symbols-outlined" style="font-size: 15px;">fingerprint</span>
+                      <span>Clock In Fast</span>
+                    </a>
+
+                    <!-- 1-Tap Confirm / Acknowledge -->
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-confirm"
+                      *ngIf="!s.isConfirmedByGuard && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'"
+                      (click)="confirmShift(s)"
+                      [disabled]="isActionLoading || isShiftExpired(s)"
+                    >
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge' : 'Accept' }}</span>
+                    </button>
+
+                    <!-- Decline offer -->
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      style="color: #dc2626; border-color: #fecaca;"
+                      *ngIf="!s.isConfirmedByGuard && s.assignmentMode !== 'Mandatory' && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'"
+                      (click)="declineShiftOffer(s)"
+                      [disabled]="isActionLoading"
+                    >
+                      <span class="material-symbols-outlined">close</span>
+                      <span>Decline</span>
+                    </button>
+
+                    <!-- Request Swap -->
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      *ngIf="s.status !== 'SwapOffered'"
+                      (click)="openSwapModal(s)"
+                    >
+                      <span class="material-symbols-outlined">swap_horiz</span>
+                      <span>Swap</span>
+                    </button>
+
+                    <!-- Withdraw Swap -->
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      style="color: #dc2626; border-color: #fecaca;"
+                      *ngIf="s.status === 'SwapOffered'"
+                      (click)="withdrawShiftSwap(s)"
+                    >
+                      <span class="material-symbols-outlined">cancel</span>
+                      <span>Withdraw Swap</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION B: Logged Excuses & Time Off on this Date -->
+            <div class="inspector-section" *ngIf="selectedDay.leaves.length > 0">
+              <div class="sec-head">
+                <div class="sec-title">
+                  <span class="sec-badge purple">Time Off</span>
+                  <h4>Logged Excuses &amp; Time Off ({{ selectedDay.leaves.length }})</h4>
+                </div>
+              </div>
+
+              <div class="compact-item-list">
+                <div class="compact-item" *ngFor="let l of selectedDay.leaves">
+                  <div>
+                    <strong>{{ l.leaveType }}</strong> &bull;
+                    <span class="status-pill" [ngClass]="l.status === 'Approved' ? 'status-active' : (l.status === 'Rejected' ? 'status-danger' : 'status-pending')">
+                      {{ l.status }}
+                    </span>
+                    <span class="ci-sub">{{ l.startDate | date:'dd MMM' }} &ndash; {{ l.endDate | date:'dd MMM yyyy' }} ({{ l.totalDays }} day{{ l.totalDays > 1 ? 's' : '' }}) &bull; {{ l.reason || 'No reason specified' }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1147,7 +1584,6 @@ Chart.register(...registerables);
             </div>
           </div>
         </div>
-        </ng-container>
       </div>
 
       <!-- TAB 2: OPEN SHIFTS (CLAIM BOARD) -->
@@ -2319,56 +2755,112 @@ Chart.register(...registerables);
     .btn-confirm-inline:hover { background: #15803d; }
 
     /* Monthly Rota Calendar Card */
-    .rota-calendar-card {
-      background: #ffffff;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-      padding: 24px;
-      margin-bottom: 28px;
-    }
-    .calendar-card-header {
+    /* Master Calendar Navigation Toolbar */
+    .calendar-toolbar-card {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+      gap: 14px;
       flex-wrap: wrap;
-      gap: 12px;
+      background: #ffffff;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
     }
-    .cal-nav-group {
+    .cal-nav-left, .cal-nav-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .btn-cal-nav {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      width: 34px;
+    .btn-today {
       height: 34px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-today:hover { background: #f1f5f9; }
+    .nav-arrows { display: inline-flex; align-items: center; gap: 4px; }
+    .nav-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #334155;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: #475569;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
     }
-    .btn-cal-nav:hover { background: #0050e5; color: #fff; border-color: #0050e5; }
-    .cal-month-title {
+    .nav-icon-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .period-heading {
+      margin: 0 4px;
       font-size: 18px;
       font-weight: 800;
       color: #0f172a;
-      margin: 0;
+      min-width: 155px;
+    }
+    .month-year-pickers { display: inline-flex; align-items: center; gap: 6px; }
+    .cal-picker-select {
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 12.5px;
+      font-weight: 600;
+      outline: none;
+    }
+    .cal-view-switcher {
+      display: inline-flex;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      gap: 4px;
+    }
+    .cal-view-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .cal-view-btn .material-symbols-outlined { font-size: 16px; }
+    .cal-view-btn:hover { color: #0f172a; background: #e2e8f0; }
+    .cal-view-btn.active {
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.25);
     }
     .cal-action-banner {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
       background: #eff6ff;
       border: 1px solid #bfdbfe;
-      padding: 6px 14px;
-      border-radius: 10px;
-      font-size: 12.5px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
       color: #1e3a8a;
     }
     .btn-clockin-mini {
@@ -2379,164 +2871,527 @@ Chart.register(...registerables);
       color: #fff;
       padding: 4px 10px;
       border-radius: 6px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       text-decoration: none;
-      margin-left: 6px;
+      transition: background 0.15s;
     }
     .btn-clockin-mini:hover { background: #003ebd; }
 
-    /* Calendar Grid */
-    .calendar-grid-container {
-      border: 1px solid #f1f5f9;
+    /* Color Legend Bar */
+    .calendar-legend-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 10px 16px;
       border-radius: 12px;
-      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      font-size: 11.5px;
     }
-    .cal-weekdays-row {
+    .legend-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .legend-title { font-weight: 700; color: #475569; }
+    .legend-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .swatch-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .upcoming-swatch { background: #dcfce7; color: #065f46; border: 1px solid #86efac; }
+    .upcoming-swatch .swatch-dot { background: #16a34a; }
+    .today-swatch { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .today-swatch .swatch-dot { background: #0050e5; }
+    .past-swatch { background: #eef2ff; color: #334155; border: 1px solid #cbd5e1; }
+    .past-swatch .swatch-dot { background: #64748b; }
+
+    /* Multi-Metric Daily Badges */
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .pill-blue { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .pill-green { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .pill-orange { background: #ffedd5; color: #9a3412; border: 1px solid #fdba74; }
+    .pill-purple { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+    .pill-yellow { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+    .pill-gray { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+
+    /* Monthly Calendar Board */
+    .calendar-board-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    }
+    .month-grid-scroll { overflow-x: auto; }
+    .month-grid-header {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, minmax(135px, 1fr));
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
     }
-    .weekday-cell {
-      padding: 10px 8px;
+    .weekday-col {
+      padding: 10px 12px;
       text-align: center;
-      font-size: 12px;
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #475569;
+      border-right: 1px solid #f1f5f9;
+    }
+    .month-grid-body {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(135px, 1fr));
+    }
+    .month-day-cell {
+      min-height: 120px;
+      padding: 8px 10px;
+      border-right: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      position: relative;
+    }
+    .month-day-cell:hover {
+      box-shadow: inset 0 0 0 2px #0050e5;
+      z-index: 2;
+    }
+    .month-day-cell.other-month {
+      background: #fcfcfd;
+      opacity: 0.55;
+    }
+    .month-day-cell.day-upcoming-shifts {
+      background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+      border-color: #86efac;
+      color: #064e3b;
+    }
+    .month-day-cell.day-today {
+      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+      border: 2px solid #0050e5;
+      color: #0f172a;
+    }
+    .month-day-cell.day-past-shifts {
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      border-color: #cbd5e1;
+      color: #1e293b;
+    }
+    .month-day-cell.day-selected {
+      box-shadow: inset 0 0 0 2.5px #0050e5;
+    }
+
+    .cell-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .day-num-wrap { display: inline-flex; align-items: center; gap: 4px; }
+    .day-num-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .day-num-circle.today-circle {
+      background: #0050e5;
+      color: #ffffff;
+    }
+    .month-abbr {
+      font-size: 11px;
       font-weight: 700;
       color: #64748b;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
-    .cal-days-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      background: #fff;
+    .day-era-tag {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 999px;
+      letter-spacing: 0.03em;
     }
-    .cal-day-cell {
-      min-height: 92px;
-      padding: 8px;
-      border-right: 1px solid #f1f5f9;
-      border-bottom: 1px solid #f1f5f9;
+    .day-era-tag.today { background: #0050e5; color: #ffffff; }
+    .day-era-tag.upcoming { background: #16a34a; color: #ffffff; }
+    .day-era-tag.past { background: #64748b; color: #ffffff; }
+
+    .cell-metrics-wrap {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       gap: 4px;
-      cursor: pointer;
-      position: relative;
-      transition: background 0.15s, box-shadow 0.15s;
     }
-    .cal-day-cell:nth-child(7n) { border-right: none; }
-    .cal-day-cell:hover {
-      background: #f8fafc;
-      box-shadow: inset 0 0 0 1.5px #0050e5;
-      z-index: 2;
-    }
-    .cal-day-cell.is-selected {
-      background: #eff6ff !important;
-      box-shadow: inset 0 0 0 2px #0050e5 !important;
-      z-index: 3;
-    }
-    .cal-day-cell.other-month { background: #fafafa; opacity: 0.45; }
-    .cal-day-cell.today { background: #eff6ff; }
-    .cal-day-cell.has-shift { background: #f0f7ff; }
-    .day-cell-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-    .day-number {
-      font-size: 13px;
-      font-weight: 700;
-      color: #334155;
-    }
-    .cal-day-cell.today .day-number {
-      color: #0050e5;
-      display: inline-block;
-      width: 22px;
-      height: 22px;
-      background: #bfdbfe;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 22px;
-    }
-    .day-indicators {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .indicator-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-    .dot-shift { background: #0050e5; }
-    .dot-leave { background: #f59e0b; }
-    .day-shifts,
-    .day-leaves {
+    .cell-events-list {
       display: flex;
       flex-direction: column;
       gap: 3px;
+      margin-top: 2px;
     }
-    .shift-pill-badge {
-      background: #0050e5;
-      color: #ffffff;
-      padding: 3px 6px;
-      border-radius: 6px;
-      font-size: 10.5px;
-      font-weight: 600;
+    .cell-event-chip {
       display: flex;
-      flex-direction: column;
-      line-height: 1.2;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .badge-time { font-weight: 700; }
-    .badge-site { font-size: 9.5px; opacity: 0.85; }
-    .leave-pill-badge {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fde68a;
+      align-items: center;
+      gap: 4px;
       padding: 2px 6px;
       border-radius: 5px;
-      font-size: 10px;
-      font-weight: 700;
+      background: rgba(255, 255, 255, 0.92);
+      border-left: 3px solid #0050e5;
+      font-size: 10.5px;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .cell-event-chip.chip-done { border-left-color: #64748b; opacity: 0.85; }
+    .ev-time { font-weight: 800; color: #0050e5; flex-shrink: 0; }
+    .ev-title { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+    .more-events-link { font-size: 10px; font-weight: 700; color: #0050e5; padding-left: 4px; }
+    .cell-hover-hint { font-size: 9.5px; font-weight: 600; color: #94a3b8; margin-top: auto; }
+    .month-day-cell:hover .cell-hover-hint { color: #0050e5; }
+
+    /* Calendar Summary Footer */
+    .calendar-summary-footer {
       display: flex;
       align-items: center;
-      gap: 3px;
-      line-height: 1.2;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      justify-content: flex-end;
+      gap: 20px;
+      padding: 12px 18px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12.5px;
+      color: #475569;
     }
-    .leave-pill-badge.leave-approved {
-      background: #ecfdf5;
-      color: #065f46;
-      border-color: #a7f3d0;
+    .summary-item { display: inline-flex; align-items: center; gap: 6px; }
+    .summary-item .material-symbols-outlined { font-size: 16px; color: #64748b; }
+
+    /* Week Timeline View */
+    .week-grid-container { display: flex; flex-direction: column; overflow-x: auto; }
+    .week-header-row {
+      display: grid;
+      grid-template-columns: 76px repeat(7, minmax(120px, 1fr));
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
     }
-    .leave-pill-badge.leave-pending {
-      background: #fffbeb;
-      color: #b45309;
-      border-color: #fde68a;
-    }
-    .badge-leave-icon { font-size: 11px; }
-    .badge-leave-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .cell-hover-hint {
-      display: none;
-      font-size: 9.5px;
-      font-weight: 600;
-      color: #0050e5;
-      margin-top: auto;
+    .time-gutter-header {
+      padding: 12px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #64748b;
       text-align: center;
-      padding-top: 4px;
+      border-right: 1px solid #e2e8f0;
     }
-    .cal-day-cell:hover .cell-hover-hint {
-      display: block;
+    .week-day-col-header {
+      padding: 10px 8px;
+      text-align: center;
+      border-right: 1px solid #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
     }
+    .week-day-col-header.is-today { background: #eff6ff; }
+    .wk-day-name { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; }
+    .wk-day-num { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #0f172a; }
+    .wk-day-num.today-circle { background: #0050e5; color: #ffffff; }
+    .wk-mini-pills { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+    .week-timeline-scroll { max-height: 520px; overflow-y: auto; }
+    .week-hour-row {
+      display: grid;
+      grid-template-columns: 76px repeat(7, minmax(120px, 1fr));
+      min-height: 52px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .time-gutter-cell {
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      text-align: right;
+      border-right: 1px solid #e2e8f0;
+      background: #fafbfc;
+    }
+    .week-slot-cell {
+      padding: 4px;
+      border-right: 1px solid #f1f5f9;
+      cursor: pointer;
+    }
+    .week-slot-cell.slot-today { background: rgba(239, 246, 255, 0.45); }
+    .week-slot-cell.slot-upcoming { background: rgba(240, 253, 244, 0.45); }
+    .timeline-event-card {
+      padding: 5px 7px;
+      border-radius: 6px;
+      background: #eff6ff;
+      border-left: 3px solid #0050e5;
+      color: #0f172a;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .timeline-event-card.ev-upcoming { background: #dcfce7; border-left-color: #16a34a; color: #064e3b; }
+    .timeline-event-card.ev-done { background: #f1f5f9; border-left-color: #64748b; opacity: 0.85; }
+    .tev-time { font-weight: 800; }
+    .tev-venue { font-weight: 700; }
+    .tev-staff { font-size: 10px; opacity: 0.9; }
+
+    /* Single Day View */
+    .day-view-Subheader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fafbfc;
+    }
+    .day-hero-badge { display: flex; align-items: center; gap: 14px; }
+    .day-big-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .day-big-circle.today { background: #0050e5; color: #ffffff; }
+    .dbc-dow { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .dbc-num { font-size: 20px; font-weight: 800; line-height: 1.1; }
+    .day-hero-badge h3 { margin: 0; font-size: 17px; font-weight: 800; color: #0f172a; }
+    .day-layout-toggle { display: flex; align-items: center; gap: 8px; }
+    .toggle-lbl { font-size: 12px; font-weight: 700; color: #64748b; }
+    .day-hourly-timeline { max-height: 520px; overflow-y: auto; }
+    .day-all-day-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #faf5ff;
+      border-bottom: 1px solid #e9d5ff;
+    }
+    .all-day-lbl { font-size: 10.5px; font-weight: 800; color: #6b21a8; }
+    .all-day-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .day-hour-row {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      min-height: 56px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .day-hour-slot { padding: 6px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .day-timeline-shift-block {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #eff6ff;
+      border-left: 4px solid #0050e5;
+    }
+    .day-timeline-shift-block.ev-done { background: #f1f5f9; border-left-color: #64748b; }
+    .dts-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; color: #0f172a; }
+    .dts-site { font-weight: 700; color: #0050e5; }
+    .dts-staff { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+    .dts-staff .material-symbols-outlined { font-size: 16px; }
+    .dts-actions { display: flex; gap: 6px; }
+
+    /* Year 12-Month Overview Grid */
+    .year-board-pad { padding: 20px; }
+    .year-months-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+    .mini-month-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      background: #ffffff;
+    }
+    .mini-month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .mini-month-header h4 { margin: 0; font-size: 14px; font-weight: 800; color: #0f172a; }
+    .jump-hint { font-size: 11px; font-weight: 700; color: #0050e5; }
+    .mini-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .mini-days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .mini-day-btn {
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    .mini-day-btn:hover { background: #e2e8f0; }
+    .mini-day-btn.other { opacity: 0.3; }
+    .mini-day-btn.today { background: #0050e5; color: #ffffff; }
+    .mini-day-btn.upcoming-shifts { background: #dcfce7; color: #065f46; border: 1px solid #86efac; }
+    .mini-day-btn.past-shifts { background: #eef2ff; color: #334155; border: 1px solid #cbd5e1; }
+
+    /* Interactive Day Operations Breakdown Panel */
+    .day-inspector-card {
+      background: #ffffff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 80, 229, 0.06);
+      margin-top: 24px;
+    }
+    .inspector-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%);
+      border-bottom: 1px solid #dbeafe;
+    }
+    .inspector-title-left { display: flex; align-items: center; gap: 14px; }
+    .inspector-date-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: #0f172a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .inspector-date-icon.today { background: #0050e5; }
+    .inspector-date-icon.upcoming { background: #16a34a; }
+    .idi-month { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+    .idi-day { font-size: 20px; font-weight: 800; line-height: 1.1; }
+    .inspector-heading-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .inspector-heading-row h3 { margin: 0; font-size: 17px; font-weight: 800; color: #0f172a; }
+    .inspector-sub { margin: 2px 0 0 0; font-size: 12.5px; color: #475569; }
+    .inspector-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .inspector-metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 14px 20px;
+      background: #fafbfc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .insp-stat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+    }
+    .insp-stat .material-symbols-outlined { font-size: 22px; }
+    .insp-stat.blue .material-symbols-outlined { color: #0050e5; }
+    .insp-stat.green .material-symbols-outlined { color: #16a34a; }
+    .insp-stat.purple .material-symbols-outlined { color: #7c3aed; }
+    .insp-stat.amber .material-symbols-outlined { color: #d97706; }
+    .insp-stat strong { display: block; font-size: 16px; font-weight: 800; color: #0f172a; }
+    .insp-stat span { font-size: 11.5px; color: #64748b; font-weight: 600; }
+
+    .inspector-sections-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 18px; }
+    .inspector-section {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #ffffff;
+    }
+    .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .sec-title { display: flex; align-items: center; gap: 8px; }
+    .sec-title h4 { margin: 0; font-size: 14px; font-weight: 800; color: #0f172a; }
+    .sec-badge { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+    .sec-badge.blue { background: #dbeafe; color: #1e40af; }
+    .sec-badge.green { background: #dcfce7; color: #166534; }
+    .sec-badge.purple { background: #f3e8ff; color: #6b21a8; }
+    .sec-badge.amber { background: #ffedd5; color: #9a3412; }
+    .sec-empty { padding: 20px; text-align: center; font-size: 13px; color: #64748b; background: #f8fafc; border-radius: 8px; }
+
+    .day-shifts-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .day-shift-card {
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .day-shift-card.card-upcoming {
+      background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+      border-color: #86efac;
+    }
+    .dsc-top { display: flex; justify-content: space-between; align-items: center; }
+    .dsc-venue { font-size: 14px; font-weight: 800; color: #0f172a; margin: 4px 0 0 0; }
+    .dsc-post { font-size: 12px; font-weight: 700; color: #0050e5; }
+    .dsc-time, .dsc-staff { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #334155; }
+    .dsc-time .material-symbols-outlined, .dsc-staff .material-symbols-outlined { font-size: 16px; color: #64748b; }
+    .dsc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+    .compact-item-list { display: flex; flex-direction: column; gap: 8px; }
+    .compact-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 12.5px;
+    }
+    .ci-sub { display: block; font-size: 11.5px; color: #64748b; margin-top: 2px; }
 
     /* Day Activity & Details Modal (Spacious Full Page Modal) */
     .day-details-modal {
@@ -4983,6 +5838,10 @@ Chart.register(...registerables);
     /* Dark Mode */
     :host-context(.dark-mode) .bcp-page-container { color: #f8fafc; }
     :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .calendar-toolbar-card,
+    :host-context(.dark-mode) .calendar-legend-bar,
+    :host-context(.dark-mode) .calendar-board-card,
+    :host-context(.dark-mode) .day-inspector-card,
     :host-context(.dark-mode) .rota-calendar-card,
     :host-context(.dark-mode) .metric-card,
     :host-context(.dark-mode) .card,
@@ -5142,10 +6001,25 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   leaveEndDate = '';
   leaveReason = '';
 
-  // Calendar State
+  // --- CALENDAR & ROTA STATE (Google-Calendar-Style Multi-View) ---
+  calendarMode: 'month' | 'week' | 'day' | 'year' = 'month';
+  dayDisplayMode: 'grid' | 'list' = 'list';
+  currentToday: Date = new Date();
+  currentCalendarDate: Date = new Date();
   currentMonth: Date = new Date();
-  calendarDays: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
-  selectedDay: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] } | null = null;
+  selectedVenueId: string = '';
+
+  monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  availableYears: number[] = [];
+  timelineHours: number[] = Array.from({ length: 24 }, (_, i) => i);
+
+  calendarDays: CalendarDayMetrics[] = [];
+  currentWeekDays: CalendarDayMetrics[] = [];
+  yearMonthsGrid: YearMonthGrid[] = [];
+  selectedDay: CalendarDayMetrics | null = null;
   showDayDetailModal = false;
   isDayModalMaximized = false;
   showDayExcuseForm = false;
@@ -5203,7 +6077,12 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly confirmDialog: ConfirmDialogService
-  ) { }
+  ) {
+    const curYear = new Date().getFullYear();
+    for (let y = curYear - 2; y <= curYear + 3; y++) {
+      this.availableYears.push(y);
+    }
+  }
 
   ngOnInit(): void {
     this.resetDateRangeToCurrentMonth();
@@ -5402,90 +6281,351 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     }
   }
 
-  // --- CALENDAR & METRIC GETTERS ---
+  // --- CALENDAR & ROTA ENGINE (Google-Calendar-Style Multi-View) ---
+  get currentPeriodHeading(): string {
+    const y = this.currentCalendarDate.getFullYear();
+    const m = this.monthNames[this.currentCalendarDate.getMonth()];
+    if (this.calendarMode === 'year') {
+      return `Year ${y}`;
+    }
+    if (this.calendarMode === 'day' && this.selectedDay) {
+      return this.selectedDay.date.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+    if (this.calendarMode === 'week' && this.currentWeekDays.length > 0) {
+      const first = this.currentWeekDays[0].date;
+      const last = this.currentWeekDays[6].date;
+      return `${first.getDate()} ${this.monthNames[first.getMonth()].slice(0, 3)} – ${last.getDate()} ${this.monthNames[last.getMonth()].slice(0, 3)} ${y}`;
+    }
+    return `${m} ${y}`;
+  }
+
+  get distinctVenues(): { id: string; name: string }[] {
+    const map = new Map<string, string>();
+    for (const s of this.shifts) {
+      const id = s.clientSiteId || (s as any).siteId || s.facilityName || s.siteName;
+      const name = s.facilityName || s.siteName;
+      if (id && name && !map.has(id)) {
+        map.set(id, name);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }
+
+  setCalendarMode(mode: 'month' | 'week' | 'day' | 'year'): void {
+    this.calendarMode = mode;
+    this.rebuildAllCalendarViews();
+  }
+
+  goToToday(): void {
+    this.currentToday = new Date();
+    this.currentCalendarDate = new Date(this.currentToday);
+    this.currentMonth = new Date(this.currentToday);
+    this.rebuildAllCalendarViews();
+    const todayCell = this.calendarDays.find(c => c.isToday);
+    if (todayCell) {
+      this.selectedDay = todayCell;
+    }
+  }
+
+  navigatePeriod(delta: number): void {
+    if (this.calendarMode === 'month') {
+      this.currentCalendarDate = new Date(
+        this.currentCalendarDate.getFullYear(),
+        this.currentCalendarDate.getMonth() + delta,
+        1
+      );
+      this.currentMonth = new Date(this.currentCalendarDate);
+    } else if (this.calendarMode === 'week') {
+      const next = new Date(this.currentCalendarDate);
+      next.setDate(next.getDate() + delta * 7);
+      this.currentCalendarDate = next;
+      this.currentMonth = new Date(this.currentCalendarDate);
+    } else if (this.calendarMode === 'day') {
+      const base = this.selectedDay ? new Date(this.selectedDay.date) : new Date(this.currentCalendarDate);
+      base.setDate(base.getDate() + delta);
+      this.currentCalendarDate = base;
+      this.currentMonth = new Date(this.currentCalendarDate);
+    } else if (this.calendarMode === 'year') {
+      this.currentCalendarDate = new Date(
+        this.currentCalendarDate.getFullYear() + delta,
+        this.currentCalendarDate.getMonth(),
+        1
+      );
+      this.currentMonth = new Date(this.currentCalendarDate);
+    }
+    this.rebuildAllCalendarViews();
+  }
+
+  onSelectMonth(monthIndex: number): void {
+    this.currentCalendarDate = new Date(this.currentCalendarDate.getFullYear(), Number(monthIndex), 1);
+    this.currentMonth = new Date(this.currentCalendarDate);
+    if (this.calendarMode === 'year') {
+      this.calendarMode = 'month';
+    }
+    this.rebuildAllCalendarViews();
+  }
+
+  onSelectYear(year: number): void {
+    this.currentCalendarDate = new Date(Number(year), this.currentCalendarDate.getMonth(), 1);
+    this.currentMonth = new Date(this.currentCalendarDate);
+    this.rebuildAllCalendarViews();
+  }
+
+  onDayCellClick(cell: CalendarDayMetrics): void {
+    const clickedDate = cell.date;
+    if (
+      clickedDate.getMonth() !== this.currentCalendarDate.getMonth() ||
+      clickedDate.getFullYear() !== this.currentCalendarDate.getFullYear()
+    ) {
+      this.currentCalendarDate = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate());
+      this.currentMonth = new Date(this.currentCalendarDate);
+      this.rebuildAllCalendarViews();
+      const targetStr = this.formatDateForInput(clickedDate);
+      this.selectedDay = this.calendarDays.find(c => c.dateStr === targetStr) || this.buildDayMetrics(clickedDate, true);
+    } else {
+      this.selectedDay = cell;
+    }
+
+    this.showDayDetailModal = false;
+    this.showDayExcuseForm = false;
+    const dateStr = this.formatDateForInput(this.selectedDay.date);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'shifts', date: dateStr },
+      queryParamsHandling: 'merge'
+    });
+    setTimeout(() => {
+      const el = document.getElementById('dayOperationsInspector');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
+  }
+
+  jumpToMonthFromYear(monthIndex: number): void {
+    this.currentCalendarDate = new Date(this.currentCalendarDate.getFullYear(), monthIndex, 1);
+    this.currentMonth = new Date(this.currentCalendarDate);
+    this.calendarMode = 'month';
+    this.rebuildAllCalendarViews();
+  }
+
+  jumpToDateFromYear(date: Date): void {
+    this.currentCalendarDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    this.currentMonth = new Date(this.currentCalendarDate);
+    this.calendarMode = 'month';
+    this.rebuildAllCalendarViews();
+    const targetStr = this.formatDateForInput(date);
+    this.selectedDay = this.calendarDays.find(c => c.dateStr === targetStr) || null;
+  }
+
+  rebuildAllCalendarViews(): void {
+    this.buildMonthGrid();
+    this.buildWeekGrid();
+    if (this.calendarMode === 'year') {
+      this.buildYearGrid();
+    }
+
+    if (this.selectedDay) {
+      const targetStr = this.formatDateForInput(this.selectedDay.date);
+      const match = this.calendarDays.find(c => c.dateStr === targetStr);
+      this.selectedDay = match || this.buildDayMetrics(this.selectedDay.date, true);
+    } else {
+      const todayMatch = this.calendarDays.find(c => c.isToday);
+      this.selectedDay = todayMatch || this.calendarDays.find(c => c.isCurrentMonth) || null;
+    }
+  }
+
   generateCalendar(): void {
-    const year = this.currentMonth.getFullYear();
-    const month = this.currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    const days: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }[] = [];
-    const today = new Date();
-
-    let startDayOfWeek = firstDay.getDay() - 1;
-    if (startDayOfWeek === -1) startDayOfWeek = 6;
-
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
-      const d = new Date(year, month - 1, prevMonthLastDay - i);
-      days.push({
-        date: d,
-        dayNumber: d.getDate(),
-        isCurrentMonth: false,
-        isToday: false,
-        shifts: this.getShiftsForDate(d),
-        leaves: this.getLeavesForDate(d)
-      });
-    }
-
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-      const d = new Date(year, month, day);
-      const isToday = d.toDateString() === today.toDateString();
-      days.push({
-        date: d,
-        dayNumber: day,
-        isCurrentMonth: true,
-        isToday,
-        shifts: this.getShiftsForDate(d),
-        leaves: this.getLeavesForDate(d)
-      });
-    }
-
-    const remaining = (7 - (days.length % 7)) % 7;
-    for (let i = 1; i <= remaining; i++) {
-      const d = new Date(year, month + 1, i);
-      days.push({
-        date: d,
-        dayNumber: i,
-        isCurrentMonth: false,
-        isToday: false,
-        shifts: this.getShiftsForDate(d),
-        leaves: this.getLeavesForDate(d)
-      });
-    }
-
-    this.calendarDays = days;
+    this.rebuildAllCalendarViews();
 
     const urlDate = this.route.snapshot.queryParams['date'];
     if (urlDate && !this.selectedDay) {
       this.syncSelectedDayFromParam(urlDate);
-    } else if (this.selectedDay) {
-      this.selectedDay.shifts = this.getShiftsForDate(this.selectedDay.date);
-      this.selectedDay.leaves = this.getLeavesForDate(this.selectedDay.date);
     }
+  }
+
+  private buildMonthGrid(): void {
+    const year = this.currentCalendarDate.getFullYear();
+    const month = this.currentCalendarDate.getMonth();
+    const firstDayDow = (new Date(year, month, 1).getDay() + 6) % 7; // Monday = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const cells: CalendarDayMetrics[] = [];
+
+    for (let i = firstDayDow - 1; i >= 0; i--) {
+      const d = new Date(year, month - 1, prevMonthDays - i);
+      cells.push(this.buildDayMetrics(d, false));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dObj = new Date(year, month, d);
+      cells.push(this.buildDayMetrics(dObj, true));
+    }
+
+    const remaining = (7 - (cells.length % 7)) % 7;
+    for (let t = 1; t <= remaining; t++) {
+      const d = new Date(year, month + 1, t);
+      cells.push(this.buildDayMetrics(d, false));
+    }
+
+    this.calendarDays = cells;
+  }
+
+  private buildWeekGrid(): void {
+    const ref = this.selectedDay ? new Date(this.selectedDay.date) : new Date(this.currentCalendarDate);
+    const dow = (ref.getDay() + 6) % 7;
+    const monday = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - dow);
+
+    const week: CalendarDayMetrics[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      week.push(this.buildDayMetrics(d, d.getMonth() === this.currentCalendarDate.getMonth()));
+    }
+    this.currentWeekDays = week;
+  }
+
+  private buildYearGrid(): void {
+    const year = this.currentCalendarDate.getFullYear();
+    const months: YearMonthGrid[] = [];
+
+    for (let m = 0; m < 12; m++) {
+      const firstDow = (new Date(year, m, 1).getDay() + 6) % 7;
+      const daysCount = new Date(year, m + 1, 0).getDate();
+      const prevCount = new Date(year, m, 0).getDate();
+      const days: YearMonthGrid['days'] = [];
+
+      for (let i = firstDow - 1; i >= 0; i--) {
+        const d = new Date(year, m - 1, prevCount - i);
+        const metrics = this.buildDayMetrics(d, false);
+        days.push({
+          date: d,
+          dayNum: d.getDate(),
+          isCurrentMonth: false,
+          isToday: metrics.isToday,
+          isPast: metrics.isPast,
+          isFuture: metrics.isFuture,
+          shiftsCount: metrics.shiftsCount,
+          leaveCount: metrics.leaveCount
+        });
+      }
+
+      for (let day = 1; day <= daysCount; day++) {
+        const d = new Date(year, m, day);
+        const metrics = this.buildDayMetrics(d, true);
+        days.push({
+          date: d,
+          dayNum: day,
+          isCurrentMonth: true,
+          isToday: metrics.isToday,
+          isPast: metrics.isPast,
+          isFuture: metrics.isFuture,
+          shiftsCount: metrics.shiftsCount,
+          leaveCount: metrics.leaveCount
+        });
+      }
+
+      months.push({
+        monthIndex: m,
+        monthName: this.monthNames[m],
+        days
+      });
+    }
+
+    this.yearMonthsGrid = months;
+  }
+
+  private buildDayMetrics(date: Date, isCurrentMonth: boolean): CalendarDayMetrics {
+    const dateStr = this.formatDateForInput(date);
+    const todayStr = this.formatDateForInput(this.currentToday);
+    const isToday = dateStr === todayStr;
+    const isPast = dateStr < todayStr;
+    const isFuture = dateStr > todayStr;
+
+    const dayShifts = this.shifts.filter(s => {
+      if (this.selectedVenueId) {
+        const venueMatch = (s.clientSiteId === this.selectedVenueId) ||
+                           ((s as any).siteId === this.selectedVenueId) ||
+                           ((s.facilityName || s.siteName) === this.selectedVenueId);
+        if (!venueMatch) return false;
+      }
+      if (!s.startsAtUtc) return false;
+      return s.startsAtUtc.slice(0, 10) === dateStr;
+    });
+
+    const dayLeaves = this.getLeavesForDate(date);
+    const activeNowCount = dayShifts.filter(s =>
+      (s.isClockedIn && !s.isClockedOut) || (s.status || '').toLowerCase() === 'inprogress'
+    ).length;
+    const openCount = dayShifts.filter(s => this.isOpenShift(s)).length;
+    const doneCount = dayShifts.filter(s => this.isShiftDone(s)).length;
+
+    return {
+      date,
+      dateStr,
+      dayNum: date.getDate(),
+      dayNumber: date.getDate(),
+      isCurrentMonth,
+      isToday,
+      isPast,
+      isFuture,
+      shiftsCount: dayShifts.length,
+      activeNowCount,
+      openCount,
+      leaveCount: dayLeaves.length,
+      swapCount: dayShifts.filter(s => s.status === 'SwapOffered').length,
+      doneCount,
+      shifts: dayShifts,
+      leaves: dayLeaves
+    };
+  }
+
+  formatHourLabel(hour: number): string {
+    return `${hour.toString().padStart(2, '0')}:00`;
+  }
+
+  getShiftsStartingInHour(day: CalendarDayMetrics, hour: number): Shift[] {
+    return day.shifts.filter(s => {
+      if (!s.startsAtUtc) return false;
+      const d = new Date(s.startsAtUtc);
+      return d.getHours() === hour;
+    });
+  }
+
+  getActiveShiftsForDay(day: CalendarDayMetrics): Shift[] {
+    return day.shifts.filter(s =>
+      (s.isClockedIn && !s.isClockedOut) || (s.status || '').toLowerCase() === 'inprogress'
+    );
+  }
+
+  isOpenShift(s: Shift): boolean {
+    return !s.assignedUserId || s.status === 'Open';
+  }
+
+  isShiftDone(s: Shift): boolean {
+    return s.isClockedOut || s.status === 'Completed';
+  }
+
+  calculateShiftsHours(shifts: Shift[]): number {
+    if (!shifts || shifts.length === 0) return 0;
+    const total = shifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+    return Math.round(total * 10) / 10;
   }
 
   syncSelectedDayFromParam(dateStr: string): void {
     if (!dateStr) return;
-    const matched = this.calendarDays.find(d => this.formatDateForInput(d.date) === dateStr);
+    const matched = this.calendarDays.find(d => d.dateStr === dateStr);
     if (matched) {
-      this.selectedDay = {
-        ...matched,
-        shifts: this.getShiftsForDate(matched.date),
-        leaves: this.getLeavesForDate(matched.date)
-      };
+      this.selectedDay = matched;
     } else {
       const parsed = new Date(dateStr);
       if (!isNaN(parsed.getTime())) {
-        const today = new Date();
-        this.selectedDay = {
-          date: parsed,
-          dayNumber: parsed.getDate(),
-          isCurrentMonth: parsed.getMonth() === this.currentMonth.getMonth(),
-          isToday: parsed.toDateString() === today.toDateString(),
-          shifts: this.getShiftsForDate(parsed),
-          leaves: this.getLeavesForDate(parsed)
-        };
+        this.selectedDay = this.buildDayMetrics(parsed, parsed.getMonth() === this.currentCalendarDate.getMonth());
       }
     }
   }
@@ -5508,21 +6648,10 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
   }
 
-  onSelectDay(day: { date: Date; dayNumber: number; isCurrentMonth: boolean; isToday: boolean; shifts: Shift[]; leaves: any[] }): void {
-    this.selectedDay = {
-      ...day,
-      shifts: this.getShiftsForDate(day.date),
-      leaves: this.getLeavesForDate(day.date)
-    };
-    this.showDayDetailModal = false;
-    this.showDayExcuseForm = false;
-    const dateStr = this.formatDateForInput(day.date);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { tab: 'shifts', date: dateStr },
-      queryParamsHandling: 'merge'
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  onSelectDay(day: any): void {
+    if (day && day.date) {
+      this.onDayCellClick(day);
+    }
   }
 
   closeDayDetailView(): void {
@@ -6062,14 +7191,11 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       return t >= sT && t <= eT;
     });
 
-    this.selectedDay = {
-      date: shiftDate,
-      dayNumber: shiftDate.getDate(),
-      isCurrentMonth: true,
-      isToday,
-      shifts: dayShifts.length > 0 ? dayShifts : [s],
-      leaves: dayLeaves
-    };
+    this.selectedDay = this.buildDayMetrics(shiftDate, true);
+    if (dayShifts.length === 0) {
+      this.selectedDay.shifts = [s];
+      this.selectedDay.shiftsCount = 1;
+    }
     this.showDayDetailModal = false;
     this.showDayExcuseForm = false;
     this.activeTab = 'shifts';
