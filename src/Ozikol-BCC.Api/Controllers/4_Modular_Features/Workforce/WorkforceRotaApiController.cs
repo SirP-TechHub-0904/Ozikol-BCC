@@ -240,7 +240,6 @@ namespace Ozikol_BCC.Api.Controllers
                     TargetUserId = resolvedUserId,
                     RecipientEmail = user?.Email,
                     RecipientName = recipientName,
-                    RecipientPhone = user?.PhoneNumber,
                     TenantKey = CurrentTenantKey,
                     Title = title,
                     Message = message,
@@ -301,7 +300,6 @@ namespace Ozikol_BCC.Api.Controllers
                         TargetUserId = user.Id,
                         RecipientEmail = user.Email,
                         RecipientName = recipientName,
-                        RecipientPhone = user.PhoneNumber,
                         TenantKey = CurrentTenantKey,
                         Title = title,
                         Message = message,
@@ -468,6 +466,8 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    AssignmentMode = s.AssignmentMode,
+                    RequireClaimApproval = s.RequireClaimApproval,
                     ConfirmedAtUtc = s.ConfirmedAtUtc,
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     Notes = s.Notes,
@@ -762,6 +762,8 @@ namespace Ozikol_BCC.Api.Controllers
             [FromQuery] string? status,
             CancellationToken ct)
         {
+            await ExpireOverdueOffersAsync(ct);
+
             var query = _db.BcpShifts
                 .AsNoTracking()
                 .Include(s => s.ClientSite)
@@ -806,6 +808,8 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    AssignmentMode = s.AssignmentMode,
+                    RequireClaimApproval = s.RequireClaimApproval,
                     ConfirmedAtUtc = s.ConfirmedAtUtc,
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
@@ -905,6 +909,8 @@ namespace Ozikol_BCC.Api.Controllers
                 AcceptanceDeadlineUtc = request.AcceptanceDeadlineUtc,
                 Status = "Scheduled",
                 IsConfirmedByGuard = false,
+                AssignmentMode = string.Equals(request.AssignmentMode, "Mandatory", StringComparison.OrdinalIgnoreCase) ? "Mandatory" : "Offer",
+                RequireClaimApproval = request.RequireClaimApproval,
                 Notes = request.Notes?.Trim(),
                 CreatedByUserId = CurrentUserId,
                 CreatedUtc = DateTime.UtcNow
@@ -925,8 +931,10 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await NotifySingleWorkforceStaffAsync(
                     shift.AssignedUserId,
-                    $"New Shift Assigned ({shift.ShiftCode})",
-                    $"You have been assigned to shift {shift.ShiftCode} at {venueDisplayName} ({shift.PostName}) for {timeWindowStr}. Please review and confirm your duty schedule.",
+                    shift.AssignmentMode == "Mandatory" ? $"Mandatory Duty Assigned ({shift.ShiftCode})" : $"Shift Offer – Please Accept or Decline ({shift.ShiftCode})",
+                    shift.AssignmentMode == "Mandatory"
+                        ? $"You have been assigned mandatory duty {shift.ShiftCode} at {venueDisplayName} ({shift.PostName}) for {timeWindowStr}. Please acknowledge this duty in your workspace."
+                        : $"You have been offered shift {shift.ShiftCode} at {venueDisplayName} ({shift.PostName}) for {timeWindowStr}. Please accept or decline it in your workspace.",
                     "/workforce/workspace/my-shifts",
                     "calendar_month",
                     NotificationSeverity.NewFeature,
@@ -986,6 +994,169 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Returns any unaccepted "Offer" shift whose acceptance deadline has passed back to the Open pool
+        /// and alerts the administrator who created it.
+        /// </summary>
+        private async Task ExpireOverdueOffersAsync(CancellationToken ct)
+        {
+            var now = DateTime.UtcNow;
+            var overdue = await _db.BcpShifts
+                .Where(s => s.TenantKey == CurrentTenantKey
+                            && s.AssignedUserId != null && s.AssignedUserId != ""
+                            && !s.IsConfirmedByGuard
+                            && s.AssignmentMode == "Offer"
+                            && s.AcceptanceDeadlineUtc != null && s.AcceptanceDeadlineUtc < now
+                            && (s.Status == "Scheduled" || s.Status == "Assigned"))
+                .ToListAsync(ct);
+
+            if (overdue.Count == 0) return;
+
+            foreach (var s in overdue)
+            {
+                var previous = s.AssignedUserName;
+                s.AssignedUserId = null;
+                s.AssignedUserName = null;
+                s.Status = "Open";
+                s.AcceptanceDeadlineUtc = null;
+                s.UpdatedUtc = now;
+
+                if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(s.CreatedByUserId))
+                {
+                    await NotifySingleWorkforceStaffAsync(
+                        s.CreatedByUserId,
+                        $"Shift Offer Expired ({s.ShiftCode})",
+                        $"{previous ?? "The assigned staff member"} did not respond before the deadline. Shift {s.ShiftCode} is open again.",
+                        "/workforce/console/shifts",
+                        "timer_off",
+                        NotificationSeverity.Update,
+                        ct);
+                }
+            }
+
+            await _db.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Admin action: revokes a shift that has been assigned but not yet accepted, returning it to Open.
+        /// Accepted, started, or completed shifts cannot be revoked.
+        /// </summary>
+        [HttpPost("shifts/{id:guid}/revoke")]
+        public async Task<ActionResult<ApiResponse<bool>>> RevokeShiftAssignment(Guid id, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts.FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            if (string.IsNullOrWhiteSpace(shift.AssignedUserId))
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This shift is not assigned to anyone."));
+            }
+
+            if (shift.IsConfirmedByGuard || shift.Status is "InProgress" or "Completed" or "Confirmed")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This shift has already been accepted or started. Use Edit to reassign it."));
+            }
+
+            var previousUser = shift.AssignedUserId;
+            shift.AssignedUserId = null;
+            shift.AssignedUserName = null;
+            shift.Status = "Open";
+            shift.AcceptanceDeadlineUtc = null;
+            shift.UpdatedUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            await NotifySingleWorkforceStaffAsync(
+                previousUser,
+                $"Shift Offer Withdrawn ({shift.ShiftCode})",
+                $"The shift offer {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM yyyy HH:mm} – {shift.EndsAtUtc:HH:mm}) has been withdrawn by management.",
+                "/workforce/workspace/my-shifts",
+                "event_busy",
+                NotificationSeverity.Update,
+                ct);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, $"Shift {shift.ShiftCode} assignment revoked and returned to Open."));
+        }
+
+        /// <summary>
+        /// Reviews an officer's pending claim on an open shift (Approve or Reject).
+        /// When approved, the shift becomes officially assigned to the claiming officer.
+        /// When rejected, the shift returns to the Open shifts pool.
+        /// </summary>
+        [HttpPost("shifts/{id:guid}/review-claim")]
+        public async Task<ActionResult<ApiResponse<bool>>> ReviewShiftClaim(
+            Guid id,
+            [FromBody] ReviewShiftClaimRequest request,
+            CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts.FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            if (shift.Status != "ClaimPending" && shift.Status != "PendingClaim")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This shift does not have a pending claim awaiting review."));
+            }
+
+            var claimingUserId = shift.AssignedUserId;
+            var claimingUserName = shift.AssignedUserName;
+
+            if (request.Approve)
+            {
+                shift.Status = "Assigned";
+                shift.IsConfirmedByGuard = true;
+                shift.ConfirmedAtUtc = DateTime.UtcNow;
+                shift.UpdatedUtc = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+
+                if (!string.IsNullOrWhiteSpace(claimingUserId))
+                {
+                    await NotifySingleWorkforceStaffAsync(
+                        claimingUserId,
+                        $"Shift Claim Approved ({shift.ShiftCode})",
+                        $"Your request to claim shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM yyyy HH:mm}) has been approved. You are now officially scheduled.",
+                        "/workforce/workspace/my-shifts",
+                        "check_circle",
+                        NotificationSeverity.Update,
+                        ct);
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, $"Shift claim approved for {claimingUserName}. Shift is now officially scheduled."));
+            }
+            else
+            {
+                // Reject claim: return shift to Open
+                shift.AssignedUserId = null;
+                shift.AssignedUserName = null;
+                shift.Status = "Open";
+                shift.IsConfirmedByGuard = false;
+                shift.ConfirmedAtUtc = null;
+                shift.UpdatedUtc = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+
+                if (!string.IsNullOrWhiteSpace(claimingUserId))
+                {
+                    var reasonSuffix = !string.IsNullOrWhiteSpace(request.ReviewNote) ? $": {request.ReviewNote.Trim()}" : ".";
+                    await NotifySingleWorkforceStaffAsync(
+                        claimingUserId,
+                        $"Shift Claim Declined ({shift.ShiftCode})",
+                        $"Your request to claim shift {shift.ShiftCode} was not approved{reasonSuffix} The shift has returned to the open shifts pool.",
+                        "/workforce/workspace/my-shifts",
+                        "event_busy",
+                        NotificationSeverity.Warning,
+                        ct);
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, $"Shift claim rejected. Shift {shift.ShiftCode} has returned to Open status."));
+            }
+        }
+
+        /// <summary>
         /// Retrieves detailed information for a single scheduled shift.
         /// </summary>
         /// <param name="id">Unique identifier of the shift.</param>
@@ -1029,7 +1200,7 @@ namespace Ozikol_BCC.Api.Controllers
                 RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
                 RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                 Status = s.Status,
-                IsConfirmedByGuard = s.IsConfirmedByGuard,
+                IsConfirmedByGuard = s.IsConfirmedByGuard, AssignmentMode = s.AssignmentMode,
                 ConfirmedAtUtc = s.ConfirmedAtUtc,
                 AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                 AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
@@ -1137,6 +1308,16 @@ namespace Ozikol_BCC.Api.Controllers
             shift.AcceptanceDeadlineUtc = request.AcceptanceDeadlineUtc;
             shift.Status = string.IsNullOrWhiteSpace(request.Status) ? shift.Status : request.Status.Trim();
             shift.Notes = request.Notes?.Trim();
+            shift.AssignmentMode = string.Equals(request.AssignmentMode, "Mandatory", StringComparison.OrdinalIgnoreCase) ? "Mandatory" : "Offer";
+            shift.RequireClaimApproval = request.RequireClaimApproval;
+            if (!string.IsNullOrWhiteSpace(shift.AssignedUserId) && shift.Status == "Open") shift.Status = "Scheduled";
+            if (string.IsNullOrWhiteSpace(shift.AssignedUserId) && shift.Status == "Scheduled") shift.Status = "Open";
+            if (shift.AssignedUserId != previousAssignedUser)
+            {
+                // New assignee must respond again (accept or acknowledge) for the new assignment.
+                shift.IsConfirmedByGuard = false;
+                shift.ConfirmedAtUtc = null;
+            }
             shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -1341,6 +1522,8 @@ namespace Ozikol_BCC.Api.Controllers
                         AcceptanceDeadlineUtc = request.AcceptanceDeadlineUtc,
                         Status = "Scheduled",
                         IsConfirmedByGuard = false,
+                        AssignmentMode = string.Equals(request.AssignmentMode, "Mandatory", StringComparison.OrdinalIgnoreCase) ? "Mandatory" : "Offer",
+                        RequireClaimApproval = request.RequireClaimApproval,
                         Notes = request.Notes?.Trim(),
                         CreatedByUserId = CurrentUserId,
                         CreatedUtc = DateTime.UtcNow
@@ -4605,6 +4788,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string? RequiredWorkspaceStationName { get; set; }
         public string Status { get; set; } = "Scheduled";
         public bool IsConfirmedByGuard { get; set; }
+        public string AssignmentMode { get; set; } = "Offer";
+        public bool RequireClaimApproval { get; set; }
         public DateTime? ConfirmedAtUtc { get; set; }
         public DateTime? AcceptanceDeadlineUtc { get; set; }
         public int? AcceptanceCountdownMinutes { get; set; }
@@ -4660,6 +4845,8 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal? HourlyPayRate { get; set; }
         public decimal? HourlyChargeRate { get; set; }
         public DateTime? AcceptanceDeadlineUtc { get; set; }
+        public string AssignmentMode { get; set; } = "Offer";
+        public bool RequireClaimApproval { get; set; } = false;
         public string? Notes { get; set; }
     }
 
@@ -4668,6 +4855,8 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     public class UpdateShiftRequest
     {
+        public string AssignmentMode { get; set; } = "Offer";
+        public bool RequireClaimApproval { get; set; } = false;
         public Guid ClientSiteId { get; set; }
         public string? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
@@ -4721,6 +4910,17 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? RequiredWorkspaceStationId { get; set; }
         public string? RequiredWorkspaceStationName { get; set; }
         public DateTime? AcceptanceDeadlineUtc { get; set; }
+        public string AssignmentMode { get; set; } = "Offer";
+        public bool RequireClaimApproval { get; set; } = false;
+    }
+
+    /// <summary>
+    /// Review payload for an officer's pending claim on an open shift.
+    /// </summary>
+    public class ReviewShiftClaimRequest
+    {
+        public bool Approve { get; set; }
+        public string? ReviewNote { get; set; }
     }
 
     public class CreateSwapRequest

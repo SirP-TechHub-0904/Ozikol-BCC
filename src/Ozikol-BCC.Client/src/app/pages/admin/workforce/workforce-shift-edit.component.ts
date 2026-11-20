@@ -664,6 +664,77 @@ interface StaffMember {
                 <span class="field-hint">If left unassigned, this schedule appears on the Open Shift Claim Board.</span>
               </div>
 
+              <!-- Condition A: Personnel Assigned -> Offer vs Mandatory -->
+              <div class="assignment-condition-panel" *ngIf="assignedUserId">
+                <label class="form-label d-block mb-2">Assignment Mode &amp; Attendance Condition</label>
+                <div class="assignment-mode-options">
+                  <label class="assignment-mode-card" [class.selected]="assignmentMode === 'Offer'">
+                    <input type="radio" [(ngModel)]="assignmentMode" name="assignmentMode" value="Offer" class="sr-only" />
+                    <div class="mode-header">
+                      <span class="material-symbols-outlined mode-icon offer-icon">how_to_reg</span>
+                      <div>
+                        <strong>Offer to Staff (Can Accept or Decline)</strong>
+                        <span class="mode-tag offer-tag">Default Policy</span>
+                      </div>
+                    </div>
+                    <p class="mode-desc">
+                      Dispatched as a shift offer. The officer can review and <em>Accept</em> or <em>Decline</em>.
+                      While pending acceptance, management can <em>Revoke</em> the assignment.
+                    </p>
+                  </label>
+
+                  <label class="assignment-mode-card" [class.selected]="assignmentMode === 'Mandatory'">
+                    <input type="radio" [(ngModel)]="assignmentMode" name="assignmentMode" value="Mandatory" class="sr-only" />
+                    <div class="mode-header">
+                      <span class="material-symbols-outlined mode-icon mandatory-icon">notification_important</span>
+                      <div>
+                        <strong>Mandatory Duty (Staff Must Attend)</strong>
+                        <span class="mode-tag mandatory-tag">Compulsory</span>
+                      </div>
+                    </div>
+                    <p class="mode-desc">
+                      Designated as required operational attendance. The officer can only <em>Acknowledge Duty</em>
+                      and cannot decline without submitting a formal shift swap or excuse request.
+                    </p>
+                  </label>
+                </div>
+
+                <!-- Acceptance Deadline for Offers -->
+                <div class="acceptance-deadline-group" *ngIf="assignmentMode === 'Offer'">
+                  <label class="form-label">
+                    Acceptance Response Deadline (Optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    class="form-control"
+                    [(ngModel)]="acceptanceDeadlineLocal"
+                    name="acceptanceDeadlineLocal"
+                  />
+                  <span class="field-hint">
+                    If unaccepted after this deadline, the shift offer automatically expires and returns to Open Shifts.
+                  </span>
+                </div>
+              </div>
+
+              <!-- Condition B: Open Shift (Unassigned) -> Claim Approval Policy -->
+              <div class="open-shift-condition-panel" *ngIf="!assignedUserId">
+                <label class="form-label d-block mb-2">Open Shift Claiming Policy</label>
+                <label class="claim-policy-checkbox-card">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="requireClaimApproval"
+                    name="requireClaimApproval"
+                  />
+                  <div class="checkbox-body">
+                    <strong>Require Management Approval to Claim</strong>
+                    <p class="mb-0 text-muted small">
+                      When enabled: Officer applies to claim this shift, creating a pending claim that awaits your review (<em>Claim Pending Approval</em>).
+                      When disabled: The first eligible officer to claim is immediately assigned and confirmed on the roster.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               <!-- Warning if selected staff member is incompatible -->
               <div class="staff-conflict-alert" *ngIf="selectedStaffConflict">
                 <span class="material-symbols-outlined text-danger">warning</span>
@@ -1874,6 +1945,111 @@ interface StaffMember {
       font-size: 0.8125rem;
     }
 
+    .assignment-condition-panel, .open-shift-condition-panel {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.65rem;
+    }
+    .assignment-mode-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    .assignment-mode-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.85rem;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .assignment-mode-card:hover {
+      border-color: #94a3b8;
+    }
+    .assignment-mode-card.selected {
+      border-color: #0050e5;
+      background: #eff6ff;
+      box-shadow: 0 0 0 1px #0050e5;
+    }
+    .mode-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mode-header strong {
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+    .mode-icon {
+      font-size: 1.25rem;
+      padding: 6px;
+      border-radius: 6px;
+    }
+    .offer-icon {
+      background: #eff6ff;
+      color: #0050e5;
+    }
+    .mandatory-icon {
+      background: #f5f3ff;
+      color: #7c3aed;
+    }
+    .mode-tag {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .offer-tag {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .mandatory-tag {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+    .mode-desc {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #475569;
+      line-height: 1.35;
+    }
+    .acceptance-deadline-group {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .claim-policy-checkbox-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.85rem;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .claim-policy-checkbox-card input[type="checkbox"] {
+      margin-top: 0.2rem;
+      accent-color: #0050e5;
+      width: 1rem;
+      height: 1rem;
+    }
+    .claim-policy-checkbox-card strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
+      margin-bottom: 0.2rem;
+    }
+
     .staff-conflict-alert p {
       margin: 0.2rem 0 0 0;
       font-size: 0.75rem;
@@ -1998,6 +2174,8 @@ export class WorkforceShiftEditComponent implements OnInit {
   assignedUserId = '';
   assignedStaffName = '';
   shiftStatus = 'Scheduled';
+  assignmentMode: 'Offer' | 'Mandatory' = 'Offer';
+  requireClaimApproval = false;
   acceptanceDeadlineLocal = '';
   requiredWorkspaceStationName = '';
   dutyNotes = '';
@@ -2538,6 +2716,8 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.hasBreak = this.breakMinutes > 0;
         this.requiredWorkspaceStationName = s.requiredWorkspaceStationName || '';
         this.shiftStatus = s.status || 'Scheduled';
+        this.assignmentMode = (s.assignmentMode === 'Mandatory') ? 'Mandatory' : 'Offer';
+        this.requireClaimApproval = !!s.requireClaimApproval;
         this.dutyNotes = s.notes || '';
 
         if (s.startsAtUtc) {
@@ -2648,6 +2828,8 @@ export class WorkforceShiftEditComponent implements OnInit {
         clientSiteId: this.selectedSiteId,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignmentMode: this.assignmentMode,
+        requireClaimApproval: this.requireClaimApproval,
         postName: this.postName,
         facilityName: this.facilityName,
         address: this.address,
@@ -2659,7 +2841,7 @@ export class WorkforceShiftEditComponent implements OnInit {
         hourlyChargeRate: this.hourlyChargeRate,
         status: this.shiftStatus,
         requiredWorkspaceStationName: this.requiredWorkspaceStationName,
-        acceptanceDeadlineUtc: this.acceptanceDeadlineLocal ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
+        acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
         notes: this.dutyNotes
       };
 
@@ -2683,6 +2865,9 @@ export class WorkforceShiftEditComponent implements OnInit {
         clientSiteId: this.selectedSiteId,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignmentMode: this.assignmentMode,
+        requireClaimApproval: this.requireClaimApproval,
+        acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
         postName: this.postName,
         facilityName: this.facilityName,
         address: this.address,
@@ -2717,6 +2902,9 @@ export class WorkforceShiftEditComponent implements OnInit {
       clientSiteId: this.selectedSiteId,
       assignedUserId: this.assignedUserId || null,
       assignedUserName: this.assignedStaffName || null,
+      assignmentMode: this.assignmentMode,
+      requireClaimApproval: this.requireClaimApproval,
+      acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
       postName: this.postName,
       facilityName: this.facilityName,
       address: this.address,

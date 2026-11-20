@@ -208,7 +208,6 @@ namespace Ozikol_BCC.Api.Controllers
                             TargetType = NotificationDispatchTarget.SingleUser,
                             TargetUserId = u.Id,
                             RecipientEmail = u.Email,
-                            RecipientPhone = u.PhoneNumber,
                             RecipientName = u.FullName ?? "Staff Member",
                             TenantKey = CurrentTenantKey,
                             Title = request.Title.Trim(),
@@ -217,8 +216,6 @@ namespace Ozikol_BCC.Api.Controllers
                             Severity = NotificationSeverity.Update,
                             Channels = channels,
                             SendEmailCopy = request.SendEmail,
-                            SendSmsCopy = request.SendSms,
-                            SendWhatsAppCopy = request.SendWhatsApp,
                             Module = "Workforce",
                             Icon = "campaign",
                             ActionUrl = "/workforce/workspace/clock"

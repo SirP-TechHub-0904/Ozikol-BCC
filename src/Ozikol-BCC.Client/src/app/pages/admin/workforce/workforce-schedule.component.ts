@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { WorkforceService, Shift, ClientSite } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 interface CalendarDayMetrics {
   date: Date;
@@ -1402,7 +1403,8 @@ export class WorkforceScheduleComponent implements OnInit {
 
   constructor(
     private readonly workforceService: WorkforceService,
-    private readonly toast: ToastService
+    private readonly toast: ToastService,
+    private readonly confirmDialog: ConfirmDialogService
   ) {
     const curYear = new Date().getFullYear();
     for (let y = curYear - 2; y <= curYear + 3; y++) {
@@ -1792,10 +1794,19 @@ export class WorkforceScheduleComponent implements OnInit {
     });
   }
 
-  reviewLeave(leave: any, isApproved: boolean): void {
+  async reviewLeave(leave: any, isApproved: boolean): Promise<void> {
     let rejectionReason: string | undefined;
     if (!isApproved) {
-      const reason = prompt('Please specify reason for declining time-off:');
+      const reason = await this.confirmDialog.prompt({
+        title: 'Decline Time-Off Request',
+        message: `Please specify the reason for declining ${leave.staffName || 'this staff member'}'s time-off request:`,
+        inputLabel: 'Reason for decline',
+        inputPlaceholder: 'e.g. Insufficient post coverage, overlapping shift schedule',
+        inputRequired: true,
+        confirmLabel: 'Decline Request',
+        cancelLabel: 'Cancel',
+        isDestructive: true
+      });
       if (reason === null) return;
       rejectionReason = reason;
     }

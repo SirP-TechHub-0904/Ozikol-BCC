@@ -178,6 +178,7 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    AssignmentMode = s.AssignmentMode,
                     ConfirmedAtUtc = s.ConfirmedAtUtc,
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
@@ -225,6 +226,7 @@ namespace Ozikol_BCC.Api.Controllers
                     PlannedDurationHours = s.PlannedDurationHours,
                     HourlyPayRate = s.HourlyPayRate,
                     HourlyChargeRate = s.HourlyChargeRate,
+                    RequireClaimApproval = s.RequireClaimApproval,
                     Status = "Open",
                     Notes = s.Notes,
                     SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
@@ -253,11 +255,69 @@ namespace Ozikol_BCC.Api.Controllers
                 return Conflict(ApiResponse<bool>.FailureResponse("This shift has already been claimed by another officer.", errorCode: "ERR-2005"));
             }
 
+            if (shift.RequireClaimApproval)
+            {
+                shift.AssignedUserId = CurrentUserId;
+                shift.AssignedUserName = CurrentUserName;
+                shift.Status = "ClaimPending";
+                shift.IsConfirmedByGuard = false;
+                shift.ConfirmedAtUtc = null;
+                shift.UpdatedUtc = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+
+                // Dispatch claim pending notifications
+                if (_notificationDispatcher != null)
+                {
+                    try
+                    {
+                        var channels = await ResolveStaffNotificationChannelsAsync(CurrentUserId, ct);
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = CurrentUserId,
+                            TenantKey = CurrentTenantKey,
+                            Title = "Shift Claim Submitted",
+                            Message = $"Your request to claim open shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName} has been submitted for supervisor approval.",
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = channels,
+                            Module = "Workforce",
+                            Icon = "hourglass_top",
+                            ActionUrl = "/workforce/workspace/my-shifts"
+                        }, ct);
+
+                        var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                            TargetUserId = supervisorTarget,
+                            TenantKey = CurrentTenantKey,
+                            Title = "Shift Claim Awaiting Approval",
+                            Message = $"Officer {CurrentUserName} requested to claim open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Supervisor review required.",
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                            Module = "Workforce",
+                            Icon = "pending_actions",
+                            ActionUrl = "/workforce/console/shifts"
+                        }, ct);
+                    }
+                    catch
+                    {
+                        // Non-blocking notification dispatch
+                    }
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Your request to claim this shift has been submitted for supervisor approval."));
+            }
+
             shift.AssignedUserId = CurrentUserId;
             shift.AssignedUserName = CurrentUserName;
             shift.Status = "Assigned";
             shift.IsConfirmedByGuard = true;
             shift.ConfirmedAtUtc = DateTime.UtcNow;
+            shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
 
@@ -321,6 +381,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
             }
 
+            if (shift.AssignedUserId != CurrentUserId)
+            {
+                return Forbid();
+            }
+
             shift.IsConfirmedByGuard = true;
             shift.ConfirmedAtUtc = DateTime.UtcNow;
             if (shift.Status == "Draft" || shift.Status == "Scheduled")
@@ -361,6 +426,73 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Allows an assigned staff member to decline an offered shift that they have not yet accepted.
+        /// Mandatory duties cannot be declined (staff must request a swap or excuse instead).
+        /// The shift returns to the Open pool and the scheduling administrator is notified.
+        /// </summary>
+        [HttpPost("shifts/{id:guid}/decline")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeclineShiftOffer(Guid id, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            if (shift.AssignedUserId != CurrentUserId)
+            {
+                return Forbid();
+            }
+
+            if (shift.AssignmentMode == "Mandatory")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This is a mandatory duty and cannot be declined. Please request a shift swap or submit an excuse for approval."));
+            }
+
+            if (shift.IsConfirmedByGuard || shift.Status is "InProgress" or "Completed")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This shift has already been accepted. Please request a swap or excuse instead."));
+            }
+
+            shift.AssignedUserId = null;
+            shift.AssignedUserName = null;
+            shift.Status = "Open";
+            shift.AcceptanceDeadlineUtc = null;
+            shift.UpdatedUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                        TargetUserId = supervisorTarget,
+                        TenantKey = CurrentTenantKey,
+                        Title = $"Shift Offer Declined ({shift.ShiftCode})",
+                        Message = $"{CurrentUserName} declined shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). It is open again.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                        Module = "Workforce",
+                        Icon = "person_off",
+                        ActionUrl = "/workforce/console/shifts"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift declined and returned to the open pool."));
+        }
+
+        /// <summary>
         /// Returns past duty history and attendance records for the current staff member's timesheet calculations.
         /// </summary>
         [HttpGet("shifts/timesheets")]
@@ -398,6 +530,7 @@ namespace Ozikol_BCC.Api.Controllers
                     HourlyPayRate = s.HourlyPayRate,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    AssignmentMode = s.AssignmentMode,
                     IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue,
                     IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
                     ClockInUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInUtc : null,

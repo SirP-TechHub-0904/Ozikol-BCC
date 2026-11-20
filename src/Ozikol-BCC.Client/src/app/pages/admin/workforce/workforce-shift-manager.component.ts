@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { WorkforceService, ClientSite } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 /**
  * Dedicated Administrator Shift Manager Component (`/workforce/console/shifts`).
@@ -326,6 +327,40 @@ import { ToastService } from '../../../core/services/toast.service';
                 </td>
                 <td class="text-right">
                   <div class="actions-cell">
+                    <!-- Shift Claim Review (Approve/Decline) -->
+                    <ng-container *ngIf="shift.status === 'ClaimPending' || shift.status === 'PendingClaim'">
+                      <button
+                        type="button"
+                        class="action-btn btn-approve-claim"
+                        (click)="reviewClaim(shift, true)"
+                        title="Approve officer shift claim"
+                      >
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <span>Approve</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="action-btn btn-decline-claim"
+                        (click)="reviewClaim(shift, false)"
+                        title="Decline claim and return shift to Open pool"
+                      >
+                        <span class="material-symbols-outlined">cancel</span>
+                        <span>Decline</span>
+                      </button>
+                    </ng-container>
+
+                    <!-- Revoke Offer Action (unaccepted offers) -->
+                    <button
+                      *ngIf="canRevokeShift(shift)"
+                      type="button"
+                      class="action-btn btn-revoke"
+                      (click)="confirmRevoke(shift)"
+                      title="Revoke shift offer and return to Open"
+                    >
+                      <span class="material-symbols-outlined">undo</span>
+                      <span>Revoke</span>
+                    </button>
+
                     <a
                       *ngIf="!isShiftDone(shift)"
                       [routerLink]="['/workforce/console/schedule/edit', shift.id]"
@@ -659,29 +694,6 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Delete Confirmation Modal -->
-      <div class="modal-backdrop" *ngIf="shiftToDelete" (click)="shiftToDelete = null">
-        <div class="modal-card" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <span class="material-symbols-outlined text-red">warning</span>
-            <h3>Delete Shift</h3>
-          </div>
-          <div class="modal-body">
-            <p>
-              Are you sure you want to delete shift <strong>{{ shiftToDelete.shiftCode }}</strong> at
-              <strong>{{ shiftToDelete.siteName }}</strong> on
-              <strong>{{ shiftToDelete.startsAtUtc | date:'d MMM y, HH:mm' }}</strong>?
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="shiftToDelete = null">Cancel</button>
-            <button type="button" class="btn btn-danger" [disabled]="isDeleting" (click)="deleteConfirmed()">
-              {{ isDeleting ? 'Deleting...' : 'Delete Shift' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- Info Guide Modal -->
       <div class="modal-backdrop" *ngIf="showInfoModal" (click)="showInfoModal = false">
         <div class="modal-card" (click)="$event.stopPropagation()">
@@ -871,6 +883,10 @@ import { ToastService } from '../../../core/services/toast.service';
     .status-pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
     .status-open { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
     .status-scheduled { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .status-pending-accept { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .status-claim-pending { background: #fefce8; color: #a16207; border: 1px solid #fef08a; }
+    .status-mandatory { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .status-accepted { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
     .status-active { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
     .status-completed { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
     .status-cancelled { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
@@ -881,6 +897,12 @@ import { ToastService } from '../../../core/services/toast.service';
     .action-btn.btn-edit:hover { background: #eff6ff; color: #0050e5; border-color: #bfdbfe; }
     .action-btn.btn-approve { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
     .action-btn.btn-approve:hover { background: #16a34a; color: #ffffff; }
+    .action-btn.btn-revoke { color: #b45309; border-color: #fed7aa; background: #fff7ed; }
+    .action-btn.btn-revoke:hover { background: #ffedd5; color: #9a3412; }
+    .action-btn.btn-approve-claim { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .action-btn.btn-approve-claim:hover { background: #16a34a; color: #ffffff; }
+    .action-btn.btn-decline-claim { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+    .action-btn.btn-decline-claim:hover { background: #dc2626; color: #ffffff; }
     .action-btn.btn-report:hover { background: #f8fafc; color: #0f172a; border-color: #94a3b8; }
     .action-btn.btn-delete { color: #dc2626; }
     .action-btn.btn-delete:hover { background: #fef2f2; border-color: #fecaca; }
@@ -960,7 +982,8 @@ export class WorkforceShiftManagerComponent implements OnInit {
   constructor(
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly confirmDialog: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -1144,10 +1167,19 @@ export class WorkforceShiftManagerComponent implements OnInit {
     });
   }
 
-  reviewLeave(leave: any, isApproved: boolean): void {
+  async reviewLeave(leave: any, isApproved: boolean): Promise<void> {
     let rejectionReason: string | undefined;
     if (!isApproved) {
-      const reason = prompt('Please specify reason for declining time-off:');
+      const reason = await this.confirmDialog.prompt({
+        title: 'Decline Time-Off Request',
+        message: `Please specify the reason for declining ${leave.staffName || 'this staff member'}'s time-off request:`,
+        inputLabel: 'Reason for decline',
+        inputPlaceholder: 'e.g. Insufficient post coverage, overlapping shift schedule',
+        inputRequired: true,
+        confirmLabel: 'Decline Request',
+        cancelLabel: 'Cancel',
+        isDestructive: true
+      });
       if (reason === null) return;
       rejectionReason = reason;
     }
@@ -1232,11 +1264,14 @@ export class WorkforceShiftManagerComponent implements OnInit {
 
   getDisplayStatus(shift: any): string {
     if (this.isShiftDone(shift)) return 'Completed';
-    if ((shift?.status || '').toLowerCase() === 'cancelled') return 'Cancelled';
-    if ((shift?.status || '').toLowerCase() === 'inprogress' || (shift?.status || '').toLowerCase() === 'active') return 'On Duty';
+    const st = (shift?.status || '').toLowerCase();
+    if (st === 'cancelled') return 'Cancelled';
+    if (st === 'inprogress' || st === 'active') return 'On Duty';
+    if (st === 'claimpending' || st === 'pendingclaim') return 'Claim Pending';
     if (this.isOpenShift(shift)) return 'Open Shift';
-    if ((shift?.status || '').toLowerCase() === 'confirmed') return 'Confirmed';
-    return shift?.status || 'Scheduled';
+    if (shift?.isConfirmedByGuard || st === 'confirmed') return 'Accepted';
+    if (shift?.assignmentMode === 'Mandatory') return 'Mandatory';
+    return 'Pending Accept';
   }
 
   getStatusClass(shift: any): string {
@@ -1244,8 +1279,108 @@ export class WorkforceShiftManagerComponent implements OnInit {
     const st = (shift?.status || '').toLowerCase();
     if (st === 'cancelled') return 'status-cancelled';
     if (st === 'inprogress' || st === 'active') return 'status-active';
+    if (st === 'claimpending' || st === 'pendingclaim') return 'status-claim-pending';
     if (this.isOpenShift(shift)) return 'status-open';
-    return 'status-scheduled';
+    if (shift?.isConfirmedByGuard || st === 'confirmed') return 'status-accepted';
+    if (shift?.assignmentMode === 'Mandatory') return 'status-mandatory';
+    return 'status-pending-accept';
+  }
+
+  canRevokeShift(shift: any): boolean {
+    if (this.isShiftDone(shift)) return false;
+    const st = (shift?.status || '').toLowerCase();
+    if (st === 'inprogress' || st === 'completed' || st === 'cancelled' || st === 'claimpending' || st === 'pendingclaim') return false;
+    return !!shift.assignedUserId && !shift.isConfirmedByGuard;
+  }
+
+  async confirmRevoke(shift: any): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Revoke Shift Offer?',
+      message: `Revoke shift ${shift.shiftCode} assigned to ${shift.assignedUserName || 'assigned staff'}? The shift will return to the Open Shifts pool and the officer will be notified.`,
+      confirmLabel: 'Revoke Offer',
+      cancelLabel: 'Keep Assigned',
+      isDestructive: true
+    });
+    if (!ok) return;
+
+    this.workforceService.revokeShift(shift.id).subscribe({
+      next: () => {
+        this.toast.success(`Shift ${shift.shiftCode} revoked and returned to Open.`);
+        this.loadAll();
+      },
+      error: (err: any) => {
+        this.toast.error(err?.error?.message || 'Failed to revoke shift.');
+      }
+    });
+  }
+
+  async reviewClaim(shift: any, approve: boolean): Promise<void> {
+    if (approve) {
+      const ok = await this.confirmDialog.confirm({
+        title: 'Approve Shift Claim?',
+        message: `Approve ${shift.assignedUserName || 'officer'}'s claim for shift ${shift.shiftCode}? They will be officially scheduled.`,
+        confirmLabel: 'Approve Claim',
+        cancelLabel: 'Cancel',
+        isDestructive: false
+      });
+      if (!ok) return;
+
+      this.workforceService.reviewShiftClaim(shift.id, { approve: true }).subscribe({
+        next: () => {
+          this.toast.success(`Claim approved for ${shift.assignedUserName}.`);
+          this.loadAll();
+        },
+        error: (err: any) => this.toast.error(err?.error?.message || 'Failed to approve claim.')
+      });
+    } else {
+      const reason = await this.confirmDialog.prompt({
+        title: 'Decline Shift Claim',
+        message: `Decline ${shift.assignedUserName || 'officer'}'s claim for shift ${shift.shiftCode}? The shift will return to Open Shifts.`,
+        inputLabel: 'Reason for decline (Optional)',
+        inputPlaceholder: 'e.g. Schedule conflict or qualification requirement',
+        inputRequired: false,
+        confirmLabel: 'Decline Claim',
+        cancelLabel: 'Cancel',
+        isDestructive: true
+      });
+      if (reason === null) return;
+
+      this.workforceService.reviewShiftClaim(shift.id, { approve: false, reviewNote: reason }).subscribe({
+        next: () => {
+          this.toast.success('Shift claim declined and returned to Open.');
+          this.loadAll();
+        },
+        error: (err: any) => this.toast.error(err?.error?.message || 'Failed to decline claim.')
+      });
+    }
+  }
+
+  async confirmDelete(shift: any): Promise<void> {
+    if (this.isShiftDone(shift)) {
+      this.toast.warning('Completed shifts cannot be deleted.');
+      return;
+    }
+    const ok = await this.confirmDialog.confirm({
+      title: 'Delete Shift?',
+      message: `Are you sure you want to delete shift ${shift.shiftCode}? This action cannot be undone.`,
+      confirmLabel: 'Delete Shift',
+      cancelLabel: 'Cancel',
+      isDestructive: true
+    });
+    if (!ok) return;
+
+    this.isDeleting = true;
+    this.workforceService.deleteShift(shift.id).subscribe({
+      next: () => {
+        this.isDeleting = false;
+        this.toast.success(`Shift ${shift.shiftCode} deleted.`);
+        this.shifts = this.shifts.filter(s => s.id !== shift.id);
+      },
+      error: (err: any) => {
+        this.isDeleting = false;
+        this.toast.error(err?.error?.message || 'Could not delete shift.');
+      }
+    });
   }
 
   setStatusFilter(status: string): void {
@@ -1296,31 +1431,6 @@ export class WorkforceShiftManagerComponent implements OnInit {
       error: (err: any) => {
         this.broadcastingId = null;
         this.toast.error(err?.error?.message || 'Could not dispatch open shift alert.');
-      }
-    });
-  }
-
-  confirmDelete(shift: any): void {
-    if (this.isShiftDone(shift)) {
-      this.toast.warning('Completed shifts cannot be deleted.');
-      return;
-    }
-    this.shiftToDelete = shift;
-  }
-
-  deleteConfirmed(): void {
-    if (!this.shiftToDelete) return;
-    this.isDeleting = true;
-    this.workforceService.deleteShift(this.shiftToDelete.id).subscribe({
-      next: () => {
-        this.isDeleting = false;
-        this.toast.success('Shift deleted.');
-        this.shifts = this.shifts.filter(s => s.id !== this.shiftToDelete.id);
-        this.shiftToDelete = null;
-      },
-      error: (err: any) => {
-        this.isDeleting = false;
-        this.toast.error(err?.error?.message || 'Could not delete shift.');
       }
     });
   }

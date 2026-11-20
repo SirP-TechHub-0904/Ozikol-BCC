@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { WorkforceService, Shift } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 Chart.register(...registerables);
 
@@ -721,9 +722,15 @@ Chart.register(...registerables);
                       </div>
 
                       <div class="day-shift-actions">
-                        <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
+                        <span class="card-chip chip-amber" *ngIf="s.status === 'ClaimPending' || s.status === 'PendingClaim'" title="Awaiting supervisor approval">Claim Pending Approval</span>
+                        <span class="card-chip chip-purple" *ngIf="s.assignmentMode === 'Mandatory' && s.status !== 'ClaimPending'" title="Mandatory duty: you must attend">Mandatory Duty</span>
+                        <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>Confirm Shift</span>
+                          <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge Duty' : 'Accept Shift' }}</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fecaca;" *ngIf="!s.isConfirmedByGuard && s.assignmentMode !== 'Mandatory' && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="declineShiftOffer(s)" [disabled]="isActionLoading">
+                          <span class="material-symbols-outlined">close</span>
+                          <span>Decline</span>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline" *ngIf="s.status !== 'SwapOffered'" (click)="openSwapModal(s)">
                           <span class="material-symbols-outlined">swap_horiz</span>
@@ -1098,14 +1105,25 @@ Chart.register(...registerables);
                 </div>
 
                 <div class="shift-actions-row">
+                  <span class="card-chip chip-amber" *ngIf="s.status === 'ClaimPending' || s.status === 'PendingClaim'" title="Awaiting supervisor approval">Claim Pending Approval</span>
                   <button
                     type="button"
                     class="btn btn-confirm"
-                    *ngIf="!s.isConfirmedByGuard"
+                    *ngIf="!s.isConfirmedByGuard && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'"
                     (click)="confirmShift(s)"
                     [disabled]="isActionLoading || isShiftExpired(s)">
                     <span class="material-symbols-outlined">check_circle</span>
-                    <span>Confirm Shift</span>
+                    <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge Duty' : 'Accept Shift' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    style="color: #dc2626; border-color: #fecaca;"
+                    *ngIf="!s.isConfirmedByGuard && s.assignmentMode !== 'Mandatory' && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'"
+                    (click)="declineShiftOffer(s)"
+                    [disabled]="isActionLoading">
+                    <span class="material-symbols-outlined">close</span>
+                    <span>Decline</span>
                   </button>
                   <button
                     type="button"
@@ -1161,7 +1179,8 @@ Chart.register(...registerables);
               <div class="shift-card" *ngFor="let os of openShifts">
                 <div class="shift-card-header">
                   <span class="shift-code-badge">{{ os.shiftCode }}</span>
-                  <span class="status-pill status-active">Open to Claim</span>
+                  <span class="status-pill status-active" *ngIf="!os.requireClaimApproval">Open to Claim</span>
+                  <span class="status-pill status-pending" *ngIf="os.requireClaimApproval" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">Requires Approval</span>
                 </div>
 
                 <div class="shift-venue-info">
@@ -1208,8 +1227,8 @@ Chart.register(...registerables);
                   class="btn btn-primary w-100"
                   (click)="claimOpenShiftDirect(os)"
                   [disabled]="isActionLoading">
-                  <span class="material-symbols-outlined">how_to_reg</span>
-                  <span>Apply &amp; Claim Shift</span>
+                  <span class="material-symbols-outlined">{{ os.requireClaimApproval ? 'assignment_turned_in' : 'how_to_reg' }}</span>
+                  <span>{{ os.requireClaimApproval ? 'Apply to Claim Shift' : 'Claim Shift Immediately' }}</span>
                 </button>
               </div>
             </div>
@@ -5182,7 +5201,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly confirmDialog: ConfirmDialogService
   ) { }
 
   ngOnInit(): void {
@@ -6400,6 +6420,33 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
   }
 
+  /**
+   * Declines an offered (non-mandatory) shift after custom-modal confirmation.
+   * The shift returns to the open pool and the admin is notified.
+   */
+  async declineShiftOffer(shift: Shift): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Decline this shift?',
+      message: `Shift ${shift.shiftCode} will be returned to the open pool and the administrator will be notified.`,
+      confirmText: 'Decline Shift',
+      danger: true
+    });
+    if (!ok) return;
+
+    this.isActionLoading = true;
+    this.workforceService.declineShift(shift.id).subscribe({
+      next: (res) => {
+        this.isActionLoading = false;
+        this.toast.success(res?.message || 'Shift declined.');
+        this.loadActiveTabData();
+      },
+      error: (err) => {
+        this.isActionLoading = false;
+        this.toast.error(err?.error?.message || 'Failed to decline shift.');
+      }
+    });
+  }
+
   // --- TAB: OPEN SHIFTS ---
   loadOpenShifts(): void {
     this.isLoading = true;
@@ -6419,14 +6466,29 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
   }
 
-  claimOpenShiftDirect(shift: Shift): void {
+  async claimOpenShiftDirect(shift: Shift): Promise<void> {
+    const isApproval = !!shift.requireClaimApproval;
+    const ok = await this.confirmDialog.confirm({
+      title: isApproval ? 'Apply to Claim Shift?' : 'Claim Open Shift?',
+      message: isApproval
+        ? `Submit an application to claim shift ${shift.shiftCode} at ${shift.facilityName || shift.siteName}? Management will review and approve your request.`
+        : `Claim shift ${shift.shiftCode} at ${shift.facilityName || shift.siteName}? You will be immediately assigned and scheduled on the duty roster.`,
+      confirmLabel: isApproval ? 'Submit Application' : 'Claim Shift',
+      cancelLabel: 'Cancel',
+      isDestructive: false
+    });
+    if (!ok) return;
+
     this.isActionLoading = true;
     this.workforceService.claimShiftDirect(shift.id).subscribe({
       next: (res: any) => {
         this.isActionLoading = false;
         if (res.isSuccess) {
-          this.toast.success('Shift claimed successfully! Added to your schedule.');
+          this.toast.success(isApproval
+            ? 'Claim request submitted! Awaiting manager approval.'
+            : 'Shift claimed successfully! Added to your schedule.');
           this.loadOpenShifts();
+          this.loadMyShifts();
         } else {
           this.toast.error(res.message || 'Unable to claim shift.');
         }
@@ -6674,8 +6736,13 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
   }
 
-  withdrawShiftSwap(shift: Shift): void {
-    if (!confirm(`Are you sure you want to withdraw the swap offer for shift ${shift.shiftCode}?`)) return;
+  async withdrawShiftSwap(shift: Shift): Promise<void> {
+    if (!(await this.confirmDialog.confirm({
+      title: 'Withdraw swap offer?',
+      message: `Withdraw the swap offer for shift ${shift.shiftCode}?`,
+      confirmText: 'Withdraw',
+      danger: true
+    }))) return;
     this.workforceService.getWorkspaceSwaps().subscribe({
       next: (res: any) => {
         const swaps = res?.data || [];

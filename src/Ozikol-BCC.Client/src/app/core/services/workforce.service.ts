@@ -47,6 +47,8 @@ export interface Shift {
   requiredWorkspaceStationName?: string;
   status: string;
   isConfirmedByGuard: boolean;
+  assignmentMode?: 'Offer' | 'Mandatory' | string;
+  requireClaimApproval?: boolean;
   confirmedAtUtc?: string;
   acceptanceDeadlineUtc?: string;
   acceptanceCountdownMinutes?: number;
@@ -229,6 +231,21 @@ export class WorkforceService {
 
   confirmShift(shiftId: string): Observable<any> {
     return this.apiService.post<any>(`workforce/shifts/${shiftId}/confirm`, {});
+  }
+
+  /** Staff declines an offered (non-mandatory) shift; it returns to the open pool. */
+  declineShift(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/decline`, {});
+  }
+
+  /** Admin revokes an assigned shift that has not yet been accepted. */
+  revokeShift(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/revoke`, {});
+  }
+
+  /** Admin reviews a pending claim on an open shift (approve or reject). */
+  reviewShiftClaim(shiftId: string, payload: { approve: boolean; reviewNote?: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/review-claim`, payload);
   }
 
   // --- OPEN SHIFTS & CLAIMS ---

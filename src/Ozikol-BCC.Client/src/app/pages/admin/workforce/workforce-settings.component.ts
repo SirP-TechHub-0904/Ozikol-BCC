@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { WorkforceService } from '../../../core/services/workforce.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 interface StaffTypeItem {
   id: string;
@@ -1983,7 +1984,8 @@ export class WorkforceSettingsComponent implements OnInit {
 
   constructor(
     private workforceService: WorkforceService,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmDialog: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -2108,8 +2110,16 @@ export class WorkforceSettingsComponent implements OnInit {
     }
   }
 
-  deleteRole(role: JobRoleItem): void {
-    if (!confirm(`Are you sure you want to delete role '${role.title}'?`)) return;
+  async deleteRole(role: JobRoleItem): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Delete Job Role?',
+      message: `Are you sure you want to delete role '${role.title}'? This role will no longer be available for assignment.`,
+      confirmLabel: 'Delete Role',
+      cancelLabel: 'Cancel',
+      isDestructive: true
+    });
+    if (!ok) return;
+
     this.workforceService.deleteJobRole(role.id).subscribe({
       next: () => {
         this.toast.success(`Role '${role.title}' deleted.`);
@@ -2217,12 +2227,19 @@ export class WorkforceSettingsComponent implements OnInit {
     }
   }
 
-  deleteStaffType(type: StaffTypeItem): void {
+  async deleteStaffType(type: StaffTypeItem): Promise<void> {
     if (type.isCompulsory) {
       this.toast.error(`Classification '${type.name}' is compulsory and cannot be deleted.`);
       return;
     }
-    if (!confirm(`Are you sure you want to delete classification '${type.name}'?`)) return;
+    const ok = await this.confirmDialog.confirm({
+      title: 'Delete Staff Classification?',
+      message: `Are you sure you want to delete classification '${type.name}'?`,
+      confirmLabel: 'Delete Classification',
+      cancelLabel: 'Cancel',
+      isDestructive: true
+    });
+    if (!ok) return;
 
     this.workforceService.deleteStaffType(type.id).subscribe({
       next: () => {
@@ -2307,8 +2324,15 @@ export class WorkforceSettingsComponent implements OnInit {
     }
   }
 
-  deleteCategory(cat: DocumentCategoryItem): void {
-    if (!confirm(`Are you sure you want to delete category '${cat.name}'?`)) return;
+  async deleteCategory(cat: DocumentCategoryItem): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Delete Document Category?',
+      message: `Are you sure you want to delete category '${cat.name}'?`,
+      confirmLabel: 'Delete Category',
+      cancelLabel: 'Cancel',
+      isDestructive: true
+    });
+    if (!ok) return;
 
     this.workforceService.deleteDocumentCategory(cat.id).subscribe({
       next: () => {

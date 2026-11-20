@@ -4499,6 +4499,11 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("AssignmentMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<int>("BreakMinutes")
                         .HasColumnType("int");
 
@@ -4580,6 +4585,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<DateTime?>("ReportSubmissionUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("RequireClaimApproval")
+                        .HasColumnType("bit");
 
                     b.Property<Guid?>("RequiredWorkspaceStationId")
                         .HasColumnType("uniqueidentifier");
