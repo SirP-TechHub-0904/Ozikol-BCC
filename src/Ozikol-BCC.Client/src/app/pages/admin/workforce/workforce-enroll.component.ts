@@ -64,7 +64,31 @@ import {
 
       <!-- 2. ONE-TIME INVITATION (LEFT) + EXACT LIVE PUBLISHED REGISTRATION FORM (RIGHT) -->
       <div class="tab-pane-content">
-        <div class="invite-form-grid">
+        <!-- Status Warning Banner: Form Disabled -->
+        <div *ngIf="policy.isFormDisabled" class="enroll-status-banner banner-disabled">
+          <span class="material-symbols-outlined">blur_on</span>
+          <div class="banner-body">
+            <strong>Form Disabled:</strong> The Registration Form is currently disabled. Staff enrollment is blurred and locked until you re-enable the form in the Registration Form Builder.
+          </div>
+          <a routerLink="/users/console/registration-form" class="banner-action-btn">
+            <span class="material-symbols-outlined">tune</span>
+            <span>Enable in Form Builder</span>
+          </a>
+        </div>
+
+        <!-- Status Warning Banner: Form Unpublished -->
+        <div *ngIf="!policy.isFormDisabled && policy.isFormPublished === false" class="enroll-status-banner banner-unpublished">
+          <span class="material-symbols-outlined">visibility_off</span>
+          <div class="banner-body">
+            <strong>Form Unpublished:</strong> The Registration Form is currently in draft mode and not published. You cannot send onboarding invitations until you publish the form.
+          </div>
+          <a routerLink="/users/console/registration-form" class="banner-action-btn">
+            <span class="material-symbols-outlined">publish</span>
+            <span>Publish in Form Builder</span>
+          </a>
+        </div>
+
+        <div class="invite-form-grid" [class.enroll-blurred]="policy.isFormDisabled">
           <!-- Left Column: Simple One-Time Invitation Inputs -->
           <div class="cms-card">
             <div class="card-header">
@@ -265,11 +289,13 @@ import {
                   type="button"
                   class="btn btn-primary full-width"
                   (click)="sendInvite()"
-                  [disabled]="isSubmitting"
+                  [disabled]="isSubmitting || policy.isFormDisabled || policy.isFormPublished === false"
+                  [title]="policy.isFormDisabled ? 'Form is disabled' : (policy.isFormPublished === false ? 'Form is unpublished — publish it first to send invitations' : 'Send Invitation Link')"
                 >
-                  <span class="material-symbols-outlined" *ngIf="!isSubmitting">send</span>
+                  <span class="material-symbols-outlined" *ngIf="!isSubmitting && !policy.isFormDisabled && policy.isFormPublished !== false">send</span>
+                  <span class="material-symbols-outlined" *ngIf="!isSubmitting && (policy.isFormDisabled || policy.isFormPublished === false)">lock</span>
                   <span class="material-symbols-outlined spin" *ngIf="isSubmitting">sync</span>
-                  <span>{{ isSubmitting ? 'Sending...' : 'Send Invitation Link' }}</span>
+                  <span>{{ isSubmitting ? 'Sending...' : (policy.isFormDisabled ? 'Form Disabled — Cannot Invite' : (policy.isFormPublished === false ? 'Form Unpublished — Cannot Invite' : 'Send Invitation Link')) }}</span>
                 </button>
               </div>
 
@@ -1060,6 +1086,75 @@ import {
       gap: 24px;
       padding: 0 4px 40px 4px;
       width: 100%;
+    }
+
+    .enroll-status-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .enroll-status-banner .material-symbols-outlined {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .enroll-status-banner .banner-body {
+      flex: 1;
+    }
+    .enroll-status-banner.banner-disabled {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: #991B1B;
+    }
+    .enroll-status-banner.banner-disabled .material-symbols-outlined {
+      color: #DC2626;
+    }
+    .enroll-status-banner.banner-unpublished {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+    }
+    .enroll-status-banner.banner-unpublished .material-symbols-outlined {
+      color: #D97706;
+    }
+    .enroll-status-banner .banner-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .enroll-status-banner.banner-disabled .banner-action-btn {
+      background: #DC2626;
+      color: #FFFFFF;
+    }
+    .enroll-status-banner.banner-disabled .banner-action-btn .material-symbols-outlined {
+      color: #FFFFFF;
+      font-size: 16px;
+    }
+    .enroll-status-banner.banner-unpublished .banner-action-btn {
+      background: #D97706;
+      color: #FFFFFF;
+    }
+    .enroll-status-banner.banner-unpublished .banner-action-btn .material-symbols-outlined {
+      color: #FFFFFF;
+      font-size: 16px;
+    }
+    .enroll-blurred {
+      filter: blur(5px);
+      opacity: 0.55;
+      pointer-events: none;
+      user-select: none;
+      transition: filter 0.2s ease, opacity 0.2s ease;
     }
 
     /* Page Header */
@@ -2226,6 +2321,8 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     formLayoutMode: 'single' as 'single' | 'sections' | 'stepper' | 'pages',
     requirePassword: true,
     allowSaveAndContinue: false,
+    isFormDisabled: false,
+    isFormPublished: true,
     unpublishedCoreFields: [] as string[],
     deletedCoreFields: [] as string[],
     customSections: [] as string[]
@@ -2365,6 +2462,12 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const schema = res?.data || res;
         if (schema) {
+          if (schema.isFormDisabled !== undefined) {
+            this.policy.isFormDisabled = schema.isFormDisabled;
+          }
+          if (schema.isFormPublished !== undefined) {
+            this.policy.isFormPublished = schema.isFormPublished;
+          }
           this.policy.registrationFormTitle = schema.formTitle || this.policy.registrationFormTitle || 'Create Your Account';
           this.policy.registrationWelcomeMessage = schema.welcomeMessage || this.policy.registrationWelcomeMessage || 'Join our member directory and workspace portal.';
           this.policy.pageShellLayout = schema.pageShellLayout || this.policy.pageShellLayout || 'website';
@@ -2499,6 +2602,14 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   }
 
   sendInvite(): void {
+    if (this.policy.isFormDisabled) {
+      this.toast.error('Cannot send invitation: The Registration Form is currently disabled.');
+      return;
+    }
+    if (this.policy.isFormPublished === false) {
+      this.toast.error('Cannot send invitation: The Registration Form is unpublished. Please publish the form first.');
+      return;
+    }
     if (!this.inviteModel.fullName?.trim() || !this.inviteModel.email?.trim() || !this.inviteModel.phoneNumber?.trim()) {
       this.toast.warning('Full Name, Email Address, and Phone Number are mandatory.');
       return;

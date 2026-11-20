@@ -960,7 +960,7 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const schema = res?.data || res;
         if (schema) {
-          if (schema.isFormDisabled) {
+          if (schema.isFormDisabled || schema.isFormPublished === false) {
             this.router.navigate(['/404'], { skipLocationChange: true });
             return;
           }

@@ -1702,6 +1702,46 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Email address is mandatory for dispatching an invitation."));
             }
 
+            // Ensure the Registration Form is enabled and published before dispatching invitations
+            var formPolicyField = await _db.BcpRegistrationFormFields
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__", ct);
+
+            if (formPolicyField != null && !string.IsNullOrWhiteSpace(formPolicyField.OptionsJson))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(formPolicyField.OptionsJson);
+                    var root = doc.RootElement;
+                    bool isFormDisabled = false;
+                    bool isFormPublished = true;
+
+                    if (root.TryGetProperty("IsFormDisabled", out var disProp) && (disProp.ValueKind == System.Text.Json.JsonValueKind.True || disProp.ValueKind == System.Text.Json.JsonValueKind.False))
+                        isFormDisabled = disProp.GetBoolean();
+                    else if (root.TryGetProperty("isFormDisabled", out var disPropLower) && (disPropLower.ValueKind == System.Text.Json.JsonValueKind.True || disPropLower.ValueKind == System.Text.Json.JsonValueKind.False))
+                        isFormDisabled = disPropLower.GetBoolean();
+
+                    if (root.TryGetProperty("IsFormPublished", out var pubProp) && (pubProp.ValueKind == System.Text.Json.JsonValueKind.True || pubProp.ValueKind == System.Text.Json.JsonValueKind.False))
+                        isFormPublished = pubProp.GetBoolean();
+                    else if (root.TryGetProperty("isFormPublished", out var pubPropLower) && (pubPropLower.ValueKind == System.Text.Json.JsonValueKind.True || pubPropLower.ValueKind == System.Text.Json.JsonValueKind.False))
+                        isFormPublished = pubPropLower.GetBoolean();
+
+                    if (isFormDisabled)
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResponse("Cannot send invitation: The Registration Form is currently disabled. Please enable it in the Registration Form Builder before inviting members."));
+                    }
+
+                    if (!isFormPublished)
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResponse("Cannot send invitation: The Registration Form is currently unpublished. Please publish the form in the Registration Form Builder before inviting members."));
+                    }
+                }
+                catch
+                {
+                    // Fallback resilience if layout policy JSON is unparsed
+                }
+            }
+
             var email = request.Email.Trim().ToLowerInvariant();
             var fullName = string.IsNullOrWhiteSpace(request.FullName) ? "Team Member" : request.FullName.Trim();
             var phoneNumber = request.PhoneNumber?.Trim();
