@@ -1592,35 +1592,6 @@ export interface SuiteInfoDetail {
 
 
 
-          <!-- Calendar Popover -->
-          <div class="calendar-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('calendar', $event)" [title]="'adm.calendar' | translate:'Calendar'">
-              <span class="material-symbols-outlined">calendar_today</span>
-            </button>
-            <div class="calendar-dropdown-menu" *ngIf="activeDropdown === 'calendar'">
-              <div class="calendar-header">
-                <span class="calendar-month-title">August 2026</span>
-                <div style="display:flex; gap:4px;">
-                  <button type="button" class="calendar-nav-btn"><span class="material-symbols-outlined">chevron_left</span></button>
-                  <button type="button" class="calendar-nav-btn"><span class="material-symbols-outlined">chevron_right</span></button>
-                </div>
-              </div>
-              <div class="calendar-weekdays">
-                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-              </div>
-              <div class="calendar-days">
-                <span class="prev-month">26</span><span class="prev-month">27</span><span class="prev-month">28</span><span class="prev-month">29</span><span class="prev-month">30</span><span class="prev-month">31</span><span>1</span>
-                <span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
-                <span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span class="today">15</span>
-                <span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span>
-                <span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span>
-                <span>30</span><span>31</span>
-              </div>
-            </div>
-          </div>
-
-
-
           <!-- Help Trigger -->
           <button type="button" class="topbar-action-btn" (click)="toggleHelpDrawer()" [title]="'adm.contextual_help' | translate:'Contextual Help'">
             <span class="material-symbols-outlined">help_outline</span>
@@ -2223,7 +2194,7 @@ export interface SuiteInfoDetail {
     }
     .tab-close-btn:hover { color: var(--md-sys-color-error); }
 
-    .apps-grid-wrapper, .calendar-wrapper, .notifications-wrapper, .user-profile-wrapper, .workspace-switcher-wrapper {
+    .apps-grid-wrapper, .notifications-wrapper, .user-profile-wrapper, .workspace-switcher-wrapper {
       position: relative;
     }
     .workspace-badge-btn {
@@ -2392,54 +2363,6 @@ export interface SuiteInfoDetail {
       color: #fff;
     }
     .app-icon-bg span { font-size: 20px; }
-
-    .calendar-dropdown-menu {
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-      width: 280px;
-      background: var(--md-sys-color-surface);
-      border: 1px solid var(--md-sys-color-outline);
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      z-index: 1000;
-      padding: 14px;
-    }
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-    .calendar-nav-btn {
-      background: none;
-      border: 1px solid var(--md-sys-color-outline);
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px;
-      color: var(--sidebar-color);
-    }
-    .calendar-weekdays, .calendar-days {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      text-align: center;
-      font-size: 11px;
-    }
-    .calendar-weekdays { font-weight: 700; color: var(--sidebar-header-color); margin-bottom: 6px; }
-    .calendar-days span {
-      padding: 6px 0;
-      border-radius: 4px;
-      cursor: pointer;
-      color: var(--sidebar-color);
-    }
-    .calendar-days span:hover { background: var(--sidebar-hover-bg); }
-    .calendar-days .today { background: var(--sidebar-active-color); color: #fff; font-weight: 700; }
-    .calendar-days .prev-month { color: var(--md-sys-color-outline); }
 
     .notification-circle-btn {
       width: 38px !important;
@@ -5622,7 +5545,6 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.apps-grid-wrapper') &&
-        !target.closest('.calendar-wrapper') &&
         !target.closest('.notifications-wrapper') &&
         !target.closest('.user-profile-wrapper') &&
         !target.closest('.oz-lang-switcher')) {

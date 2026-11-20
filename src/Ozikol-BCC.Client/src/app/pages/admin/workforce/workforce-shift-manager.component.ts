@@ -984,7 +984,7 @@ export class WorkforceShiftManagerComponent implements OnInit {
     private readonly toast: ToastService,
     private readonly route: ActivatedRoute,
     private readonly confirmDialog: ConfirmDialogService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.restoreSavedPageSize();
@@ -1031,7 +1031,7 @@ export class WorkforceShiftManagerComponent implements OnInit {
           }
         }
       }
-    } catch {}
+    } catch { }
   }
 
   setPageSize(size: number | 'all'): void {
@@ -1041,7 +1041,7 @@ export class WorkforceShiftManagerComponent implements OnInit {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(this.PAGE_SIZE_STORAGE_KEY, String(size));
       }
-    } catch {}
+    } catch { }
   }
 
   get effectivePageSize(): number {
@@ -1101,7 +1101,7 @@ export class WorkforceShiftManagerComponent implements OnInit {
           this.currencySymbol = res.data.currencySymbol;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -1111,7 +1111,7 @@ export class WorkforceShiftManagerComponent implements OnInit {
       next: (res: any) => {
         this.sites = Array.isArray(res?.data) ? res.data : [];
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.workforceService.getShifts().subscribe({
