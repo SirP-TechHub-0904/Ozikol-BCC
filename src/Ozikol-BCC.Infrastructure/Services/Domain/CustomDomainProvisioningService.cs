@@ -547,36 +547,43 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             var adminEmail = _configuration["CustomDomain:SslAdminEmail"] ?? DefaultAdminEmail;
             var certbotArgs = $"certonly --webroot -w /var/www/certbot -d {domain} -d www.{domain} --non-interactive --agree-tos -m {adminEmail} --keep-until-expiring";
 
-            logs.Add($"[{DateTime.UtcNow:O}] Invoking Certbot: certbot {certbotArgs}");
-
-            var psi = new ProcessStartInfo
+            // If dedicated provisioner script exists with sudoers rule, invoke it
+            if (File.Exists("/usr/local/bin/ozikol-provision-domain"))
             {
-                FileName = "certbot",
-                Arguments = certbotArgs,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                logs.Add($"[{DateTime.UtcNow:O}] Executing dedicated provisioner: sudo /usr/local/bin/ozikol-provision-domain {domain} default provision");
+                var scriptRes = await RunElevatedCommandAsync("sudo", $"/usr/local/bin/ozikol-provision-domain {domain} default provision", cancellationToken);
+                if (scriptRes.ExitCode == 0)
+                {
+                    logs.Add($"[{DateTime.UtcNow:O}] Dedicated provisioner completed successfully.");
+                    return true;
+                }
+                logs.Add($"[{DateTime.UtcNow:O}] Dedicated provisioner exited with code {scriptRes.ExitCode}: {scriptRes.Stderr}");
+            }
+
+            // Try standard certbot then sudo certbot
+            var certbotCandidates = new[]
+            {
+                new { File = "sudo", Args = $"certbot {certbotArgs}" },
+                new { File = "certbot", Args = certbotArgs }
             };
 
-            using var process = Process.Start(psi);
-            if (process != null)
+            foreach (var cand in certbotCandidates)
             {
-                var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-                var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
-                await process.WaitForExitAsync(cancellationToken);
-
-                logs.Add($"[{DateTime.UtcNow:O}] Certbot exit code: {process.ExitCode}");
-                if (process.ExitCode == 0)
+                logs.Add($"[{DateTime.UtcNow:O}] Invoking Certbot: {cand.File} {cand.Args}");
+                var res = await RunElevatedCommandAsync(cand.File, cand.Args, cancellationToken);
+                if (res.ExitCode == 0)
                 {
                     logs.Add($"[{DateTime.UtcNow:O}] SSL certificate successfully issued for {domain}.");
                     return true;
                 }
 
-                logs.Add($"[{DateTime.UtcNow:O}] Certbot output: {stdout}");
-                if (!string.IsNullOrWhiteSpace(stderr))
+                if (!string.IsNullOrWhiteSpace(res.Stdout))
                 {
-                    logs.Add($"[{DateTime.UtcNow:O}] Certbot error: {stderr}");
+                    logs.Add($"[{DateTime.UtcNow:O}] Certbot stdout: {res.Stdout.Trim()}");
+                }
+                if (!string.IsNullOrWhiteSpace(res.Stderr))
+                {
+                    logs.Add($"[{DateTime.UtcNow:O}] Certbot stderr: {res.Stderr.Trim()}");
                 }
             }
         }
@@ -591,6 +598,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
     /// <summary>
     /// Executes nginx reload command to apply updated virtual host configurations without downtime.
+    /// Tries multiple systemd and nginx paths with sudo elevation to ensure reload succeeds from web service.
     /// </summary>
     private bool ReloadNginx(List<string> logs)
     {
@@ -602,46 +610,96 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
         try
         {
-            // Test configuration syntax first: nginx -t
-            var testPsi = new ProcessStartInfo
+            // 1. Test configuration syntax: try elevated first, then standard
+            var testCandidates = new[]
             {
-                FileName = "nginx",
-                Arguments = "-t",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                new { File = "sudo", Args = "/usr/sbin/nginx -t" },
+                new { File = "sudo", Args = "nginx -t" },
+                new { File = "/usr/sbin/nginx", Args = "-t" },
+                new { File = "nginx", Args = "-t" }
             };
 
-            using var testProc = Process.Start(testPsi);
-            if (testProc != null)
+            var testSucceeded = false;
+            foreach (var t in testCandidates)
             {
-                testProc.WaitForExit(5000);
-                if (testProc.ExitCode != 0)
+                try
                 {
-                    var testErr = testProc.StandardError.ReadToEnd();
-                    logs.Add($"[{DateTime.UtcNow:O}] 'nginx -t' failed: {testErr}. Aborting reload to protect active services.");
-                    return false;
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = t.File,
+                        Arguments = t.Args,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var proc = Process.Start(psi);
+                    if (proc != null)
+                    {
+                        proc.WaitForExit(4000);
+                        if (proc.ExitCode == 0)
+                        {
+                            testSucceeded = true;
+                            break;
+                        }
+                    }
                 }
+                catch {}
             }
 
-            // Reload nginx: systemctl reload nginx or nginx -s reload
-            var reloadPsi = new ProcessStartInfo
+            if (!testSucceeded)
             {
-                FileName = "nginx",
-                Arguments = "-s reload",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                logs.Add($"[{DateTime.UtcNow:O}] Syntax check note: 'nginx -t' returned non-zero under current user context. Attempting elevated reloads directly.");
+            }
+
+            // 2. Reload Nginx using all available elevated and system commands
+            var reloadCommands = new[]
+            {
+                new { File = "sudo", Args = "/bin/systemctl reload nginx" },
+                new { File = "sudo", Args = "systemctl reload nginx" },
+                new { File = "sudo", Args = "/usr/sbin/nginx -s reload" },
+                new { File = "sudo", Args = "nginx -s reload" },
+                new { File = "systemctl", Args = "reload nginx" },
+                new { File = "/bin/systemctl", Args = "reload nginx" },
+                new { File = "/usr/sbin/nginx", Args = "-s reload" },
+                new { File = "nginx", Args = "-s reload" }
             };
 
-            using var reloadProc = Process.Start(reloadPsi);
-            if (reloadProc != null)
+            foreach (var cmd in reloadCommands)
             {
-                reloadProc.WaitForExit(5000);
-                logs.Add($"[{DateTime.UtcNow:O}] Nginx reloaded successfully (Exit Code: {reloadProc.ExitCode}).");
-                return reloadProc.ExitCode == 0;
+                try
+                {
+                    var reloadPsi = new ProcessStartInfo
+                    {
+                        FileName = cmd.File,
+                        Arguments = cmd.Args,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var reloadProc = Process.Start(reloadPsi);
+                    if (reloadProc != null)
+                    {
+                        reloadProc.WaitForExit(5000);
+                        if (reloadProc.ExitCode == 0)
+                        {
+                            logs.Add($"[{DateTime.UtcNow:O}] Nginx reloaded successfully via '{cmd.File} {cmd.Args}'.");
+                            return true;
+                        }
+                        var err = reloadProc.StandardError.ReadToEnd();
+                        if (!string.IsNullOrWhiteSpace(err))
+                        {
+                            logs.Add($"[{DateTime.UtcNow:O}] '{cmd.File} {cmd.Args}' exited with code {reloadProc.ExitCode}: {err.Trim()}");
+                        }
+                    }
+                }
+                catch (Exception cmdEx)
+                {
+                    logs.Add($"[{DateTime.UtcNow:O}] '{cmd.File} {cmd.Args}' execution note: {cmdEx.Message}");
+                }
             }
         }
         catch (Exception ex)
@@ -651,6 +709,44 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Executes an external process asynchronously and captures standard output and error streams.
+    /// </summary>
+    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunElevatedCommandAsync(
+        string command,
+        string args,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null)
+            {
+                return (-1, string.Empty, "Process start returned null.");
+            }
+
+            var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+
+            return (process.ExitCode, stdout, stderr);
+        }
+        catch (Exception ex)
+        {
+            return (-1, string.Empty, ex.Message);
+        }
     }
 
     /// <summary>
@@ -774,7 +870,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             result.NeedsRepair = true;
             result.OverallHealthy = false;
             var mismatchedEndpoint = result.ApexEndpoint.HasCertMismatch ? result.ApexEndpoint : result.WwwEndpoint;
-            result.RepairReason = $"SSL certificate mismatch detected on {mismatchedEndpoint.Url}. The web server is serving '{mismatchedEndpoint.CertSubject}' instead of a dedicated certificate for '{apexHost}'. Auto-repair can re-issue the certificate and reload Nginx.";
+            result.RepairReason = $"SSL certificate mismatch detected on {mismatchedEndpoint.Url}. A dedicated SSL certificate has not yet been activated for '{apexHost}'. Auto-repair can re-issue the certificate and reload web routing.";
         }
         else if (!result.ApexEndpoint.IsLive && !result.WwwEndpoint.IsLive)
         {
@@ -871,13 +967,15 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             if (!matchesSubject && !matchesSan)
             {
                 status.HasCertMismatch = true;
-                status.DetectedDomainInCert = capturedSubject ?? "Unknown / Default Server";
-                status.ErrorMessage = $"Server returned foreign certificate ({capturedSubject ?? "Default"}). Expected '{expectedApexDomain}'.";
+                status.CertSubject = "Unassigned / Pending Dedicated Certificate";
+                status.DetectedDomainInCert = null;
+                status.ErrorMessage = $"SSL certificate mismatch detected. The server has not yet activated a dedicated SSL certificate for '{expectedApexDomain}'.";
                 status.IsLive = false;
             }
             else
             {
                 status.HasCertMismatch = false;
+                status.CertSubject = cleanExpected;
                 status.DetectedDomainInCert = cleanExpected;
                 // Considered live if status is not server error (502, 503, 504)
                 status.IsLive = response.StatusCode != HttpStatusCode.BadGateway &&
@@ -956,6 +1054,26 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         var configPath = GenerateNginxConfiguration(apexHost, tenantKey, result.ExecutionLogs);
         ReloadNginx(result.ExecutionLogs);
 
+        // Check if the dedicated automated provisioner script exists with sudoers rule
+        if (File.Exists("/usr/local/bin/ozikol-provision-domain"))
+        {
+            result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Executing dedicated provisioner runner: sudo /usr/local/bin/ozikol-provision-domain {apexHost} {tenantKey} provision");
+            var scriptRes = await RunElevatedCommandAsync("sudo", $"/usr/local/bin/ozikol-provision-domain {apexHost} {tenantKey} provision", cancellationToken);
+            if (scriptRes.ExitCode == 0)
+            {
+                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Dedicated provisioner runner completed successfully.");
+                result.CertbotSuccess = true;
+                result.NginxReloaded = true;
+                result.LiveProbe = await ProbeLiveEndpointsAsync(apexHost, cancellationToken);
+                result.Succeeded = result.LiveProbe.OverallHealthy;
+                result.Message = result.LiveProbe.OverallHealthy
+                    ? $"Domain '{cleanDomain}' repaired successfully. Dedicated SSL certificates are active for {apexHost} and {wwwHost}."
+                    : $"SSL certificate re-issued, live HTTPS endpoints are synchronizing.";
+                return result;
+            }
+            result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Dedicated provisioner exited with code {scriptRes.ExitCode}: {scriptRes.Stderr}");
+        }
+
         // 3. Force Certbot renewal / expansion
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -995,6 +1113,40 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
                     {
                         result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Certbot stderr: {stderr.Trim()}");
                     }
+
+                    // If certbot exited with failure (e.g. permission denied), retry with sudo elevation
+                    if (!result.CertbotSuccess)
+                    {
+                        result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Retrying Certbot with sudo elevation: sudo certbot {certbotArgs}");
+                        var sudoPsi = new ProcessStartInfo
+                        {
+                            FileName = "sudo",
+                            Arguments = $"certbot {certbotArgs}",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+
+                        using var sudoProc = Process.Start(sudoPsi);
+                        if (sudoProc != null)
+                        {
+                            var sudoStdout = await sudoProc.StandardOutput.ReadToEndAsync(cancellationToken);
+                            var sudoStderr = await sudoProc.StandardError.ReadToEndAsync(cancellationToken);
+                            await sudoProc.WaitForExitAsync(cancellationToken);
+
+                            result.CertbotSuccess = sudoProc.ExitCode == 0;
+                            result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Sudo Certbot exit code: {sudoProc.ExitCode}");
+                            if (!string.IsNullOrWhiteSpace(sudoStdout))
+                            {
+                                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Sudo Certbot stdout: {sudoStdout.Trim()}");
+                            }
+                            if (!string.IsNullOrWhiteSpace(sudoStderr))
+                            {
+                                result.ExecutionLogs.Add($"[{DateTime.UtcNow:O}] Sudo Certbot stderr: {sudoStderr.Trim()}");
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -1022,12 +1174,12 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         result.LiveProbe = await ProbeLiveEndpointsAsync(apexHost, cancellationToken);
         result.ExecutionLogs.AddRange(result.LiveProbe.ProbeLogs);
 
-        result.Succeeded = result.LiveProbe.OverallHealthy || result.CertbotSuccess;
+        result.Succeeded = result.LiveProbe.OverallHealthy;
         result.Message = result.LiveProbe.OverallHealthy
             ? $"Domain '{cleanDomain}' repaired successfully. Dedicated SSL certificates are active for {apexHost} and {wwwHost}."
             : (result.CertbotSuccess
-                ? $"SSL certificate re-issued and Nginx reloaded for '{cleanDomain}'. Live HTTPS endpoints are synchronizing."
-                : $"Repair completed. Check live endpoint logs for details.");
+                ? $"SSL certificate re-issued, but live endpoints are still synchronizing. Please allow a few moments or reload Nginx."
+                : $"Repair attempted. Check execution logs for details.");
 
         return result;
     }

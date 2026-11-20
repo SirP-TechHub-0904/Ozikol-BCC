@@ -315,7 +315,7 @@ interface DomainLiveProbeResult {
 
                     <div class="endpoint-details">
                       <div *ngIf="liveProbe.apexEndpoint.hasCertMismatch" class="detail-alert">
-                        <strong>SSL Mismatch:</strong> Server is returning foreign certificate (<code>{{ liveProbe.apexEndpoint.certSubject || 'Default' }}</code>) instead of <code>{{ liveProbe.domain }}</code>.
+                        <strong>Status:</strong> SSL Certificate Mismatch. A dedicated SSL certificate has not yet been activated for this domain.
                       </div>
                       <div *ngIf="!liveProbe.apexEndpoint.hasCertMismatch && liveProbe.apexEndpoint.isLive" class="detail-ok">
                         Response: <strong>{{ liveProbe.apexEndpoint.statusCode }} OK</strong> | Certificate: <code>{{ liveProbe.apexEndpoint.certSubject }}</code>
@@ -342,7 +342,7 @@ interface DomainLiveProbeResult {
 
                     <div class="endpoint-details">
                       <div *ngIf="liveProbe.wwwEndpoint.hasCertMismatch" class="detail-alert">
-                        <strong>SSL Mismatch:</strong> Server is returning foreign certificate (<code>{{ liveProbe.wwwEndpoint.certSubject || 'Default' }}</code>) instead of <code>{{ liveProbe.domain }}</code>.
+                        <strong>Status:</strong> SSL Certificate Mismatch. A dedicated SSL certificate has not yet been activated for this domain.
                       </div>
                       <div *ngIf="!liveProbe.wwwEndpoint.hasCertMismatch && liveProbe.wwwEndpoint.isLive" class="detail-ok">
                         Response: <strong>{{ liveProbe.wwwEndpoint.statusCode }} OK</strong> | Certificate: <code>{{ liveProbe.wwwEndpoint.certSubject }}</code>
@@ -523,20 +523,7 @@ interface DomainLiveProbeResult {
         <div class="card-header-bar">
           <div>
             <h3>DNS Records</h3>
-            <p class="card-subtitle">Update your DNS with these records to route your custom domain to your website.</p>
-          </div>
-        </div>
-
-        <!-- Conflict Protection Callout -->
-        <div class="dns-conflict-callout">
-          <span class="material-symbols-outlined text-amber">info</span>
-          <div class="callout-content">
-            <strong>Choose IP Address OR Hostname (Never Add Both For The Same Name!)</strong>
-            <p>
-              Standard DNS rules forbid having both an <strong>A</strong> record and a <strong>CNAME</strong> record for the same host name.
-              If your registrar returned error <code>400 Bad Request. Patch item 1 conflicts with existing/previous record</code>, an A record already exists.
-              Keep the <strong>A record pointing to 2.24.162.42</strong> and do not add a CNAME on that same host name.
-            </p>
+            <p class="card-subtitle">Configure these 2 records at your domain registrar. Choose either the IP Address or Hostname.</p>
           </div>
         </div>
 
@@ -546,40 +533,82 @@ interface DomainLiveProbeResult {
               <tr>
                 <th>TYPE</th>
                 <th>NAME / HOST</th>
-                <th>TARGET / VALUE</th>
+                <th>TARGET / VALUE (IP or Hostname)</th>
                 <th>TTL</th>
-                <th style="text-align: right;">ACTION</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let rec of dnsRecords">
-                <td><span class="dns-type-tag" [class.tag-cname]="rec.type === 'CNAME'" [class.tag-a]="rec.type === 'A'" [class.tag-txt]="rec.type === 'TXT'">{{ rec.type }}</span></td>
+              <!-- Row 1: WWW Subdomain -->
+              <tr>
+                <td><span class="dns-type-tag tag-cname">A or CNAME</span></td>
                 <td>
                   <div class="value-cell">
-                    <code>{{ rec.name }}</code>
-                    <button type="button" class="btn-copy" (click)="copyValue(rec.name, 'name_' + rec.key)" [title]="'Copy ' + rec.name">
-                      <span class="material-symbols-outlined">{{ copySuccess['name_' + rec.key] ? 'done' : 'content_copy' }}</span>
-                      <span>{{ copySuccess['name_' + rec.key] ? 'Copied' : 'Copy' }}</span>
+                    <code>www</code>
+                    <button type="button" class="btn-copy" (click)="copyValue('www', 'name_www')" title="Copy www">
+                      <span class="material-symbols-outlined">{{ copySuccess['name_www'] ? 'done' : 'content_copy' }}</span>
+                      <span>{{ copySuccess['name_www'] ? 'Copied' : 'Copy' }}</span>
                     </button>
                   </div>
-                  <span *ngIf="rec.description" style="display:block; font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">{{ rec.description }}</span>
+                  <span class="rec-desc">Subdomain routing for www.{{ customDomain || 'yourdomain.com' }}</span>
                 </td>
                 <td>
-                  <div class="value-cell">
-                    <code>{{ rec.target }}</code>
-                    <button type="button" class="btn-copy" (click)="copyValue(rec.target, 'val_' + rec.key)" [title]="'Copy ' + rec.target">
-                      <span class="material-symbols-outlined">{{ copySuccess['val_' + rec.key] ? 'done' : 'content_copy' }}</span>
-                      <span>{{ copySuccess['val_' + rec.key] ? 'Copied' : 'Copy' }}</span>
-                    </button>
+                  <div class="target-options-stack">
+                    <div class="target-option-line">
+                      <span class="target-opt-label">IP Address:</span>
+                      <code>2.24.162.42</code>
+                      <button type="button" class="btn-copy" (click)="copyValue('2.24.162.42', 'ip_www')" title="Copy IP Address">
+                        <span class="material-symbols-outlined">{{ copySuccess['ip_www'] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['ip_www'] ? 'Copied' : 'Copy IP' }}</span>
+                      </button>
+                    </div>
+                    <div class="target-option-line">
+                      <span class="target-opt-label">Hostname:</span>
+                      <code>{{ cleanTargetHost }}</code>
+                      <button type="button" class="btn-copy" (click)="copyValue(cleanTargetHost, 'host_www')" title="Copy Hostname">
+                        <span class="material-symbols-outlined">{{ copySuccess['host_www'] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['host_www'] ? 'Copied' : 'Copy Host' }}</span>
+                      </button>
+                    </div>
                   </div>
                 </td>
-                <td><span>{{ rec.ttl }}</span></td>
-                <td style="text-align: right;">
-                  <button type="button" class="btn-copy-full" (click)="copyFullRecord(rec)" title="Copy full record values">
-                    <span class="material-symbols-outlined">copy_all</span>
-                    <span>Copy All</span>
-                  </button>
+                <td><span>Auto (300s)</span></td>
+              </tr>
+
+              <!-- Row 2: Apex Root (@) -->
+              <tr>
+                <td><span class="dns-type-tag tag-a">A</span></td>
+                <td>
+                  <div class="value-cell">
+                    <code>&#64; (Apex Root)</code>
+                    <button type="button" class="btn-copy" (click)="copyValue('@', 'name_root')" title="Copy @">
+                      <span class="material-symbols-outlined">{{ copySuccess['name_root'] ? 'done' : 'content_copy' }}</span>
+                      <span>{{ copySuccess['name_root'] ? 'Copied' : 'Copy' }}</span>
+                    </button>
+                  </div>
+                  <span class="rec-desc">Root domain (use IP 2.24.162.42 for Hostinger, GoDaddy, Namecheap)</span>
                 </td>
+                <td>
+                  <div class="target-options-stack">
+                    <div class="target-option-line">
+                      <span class="target-opt-label">IP Address:</span>
+                      <code>2.24.162.42</code>
+                      <button type="button" class="btn-copy" (click)="copyValue('2.24.162.42', 'ip_root')" title="Copy IP Address">
+                        <span class="material-symbols-outlined">{{ copySuccess['ip_root'] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['ip_root'] ? 'Copied' : 'Copy IP' }}</span>
+                      </button>
+                    </div>
+                    <div class="target-option-line">
+                      <span class="target-opt-label">Hostname:</span>
+                      <code>{{ cleanTargetHost }}</code>
+                      <span class="opt-note">(Cloudflare only)</span>
+                      <button type="button" class="btn-copy" (click)="copyValue(cleanTargetHost, 'host_root')" title="Copy Hostname">
+                        <span class="material-symbols-outlined">{{ copySuccess['host_root'] ? 'done' : 'content_copy' }}</span>
+                        <span>{{ copySuccess['host_root'] ? 'Copied' : 'Copy Host' }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </td>
+                <td><span>Auto (300s)</span></td>
               </tr>
             </tbody>
           </table>
@@ -2547,35 +2576,35 @@ interface DomainLiveProbeResult {
       word-break: break-all;
     }
 
-    /* Conflict Warning Callout */
-    .dns-conflict-callout {
-      margin-bottom: 14px;
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 12px 14px;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .dns-conflict-callout strong {
+    /* DNS Target Stack Styles for 2-Record View */
+    .rec-desc {
       display: block;
-      color: #92400e;
-      font-size: 13px;
-      margin-bottom: 2px;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 3px;
+      line-height: 1.3;
     }
-    .dns-conflict-callout p {
-      margin: 0;
-      font-size: 12px;
-      color: #78350f;
-      line-height: 1.4;
+    .target-options-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .dns-conflict-callout code {
-      background: #fef3c7;
-      color: #92400e;
-      padding: 1px 4px;
-      border-radius: 4px;
+    .target-option-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .target-opt-label {
+      font-size: 11px;
       font-weight: 700;
+      color: #475569;
+      min-width: 70px;
+    }
+    .opt-note {
+      font-size: 11px;
+      color: #94a3b8;
+      font-style: italic;
     }
   `]
 })
@@ -3207,7 +3236,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         if (data?.overallHealthy) {
           this.toast.success(`Live HTTPS verified for ${domain}! Dedicated certificates are active.`, 'Endpoints Live');
         } else if (data?.needsRepair) {
-          this.toast.warning(data.repairReason || 'Certificate mismatch or endpoint error detected.', 'Repair Recommended');
+          this.toast.warning('A dedicated SSL certificate is not yet active for this domain. Auto-repair is recommended.', 'SSL Mismatch');
         }
       },
       error: (err) => {
