@@ -3925,9 +3925,23 @@ namespace Ozikol_BCC.Api.Controllers
             var medicalDisclosures = string.Empty;
             var dbsDisclosure = string.Empty;
             var optOut48Hours = false;
+            var customAttributesDict = new Dictionary<string, object?>();
 
             if (customObj.ValueKind == JsonValueKind.Object)
             {
+                foreach (var prop in customObj.EnumerateObject())
+                {
+                    if (prop.Name == "emergencyContact" || prop.Name == "bankDetails") continue;
+                    customAttributesDict[prop.Name] = prop.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => prop.Value.GetString(),
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.Number => prop.Value.TryGetDecimal(out var dec) ? dec : prop.Value.ToString(),
+                        _ => prop.Value.ToString()
+                    };
+                }
+
                 if (customObj.TryGetProperty("emergencyContact", out var ec))
                 {
                     if (ec.TryGetProperty("name", out var n)) emergencyName = n.GetString() ?? "";
@@ -3946,7 +3960,7 @@ namespace Ozikol_BCC.Api.Controllers
                 if (customObj.TryGetProperty("drivingLicenseStatus", out var dl)) drivingLicenseStatus = dl.GetString() ?? "";
                 if (customObj.TryGetProperty("medicalDisclosures", out var md)) medicalDisclosures = md.GetString() ?? "";
                 if (customObj.TryGetProperty("dbsDisclosure", out var dd)) dbsDisclosure = dd.GetString() ?? "";
-                if (customObj.TryGetProperty("optOut48Hours", out var opt)) optOut48Hours = opt.GetBoolean();
+                if (customObj.TryGetProperty("optOut48Hours", out var opt) && (opt.ValueKind == JsonValueKind.True || opt.ValueKind == JsonValueKind.False)) optOut48Hours = opt.GetBoolean();
             }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
@@ -3994,6 +4008,7 @@ namespace Ozikol_BCC.Api.Controllers
                 MedicalDisclosures = medicalDisclosures,
                 DbsDisclosure = dbsDisclosure,
                 OptOut48Hours = optOut48Hours,
+                CustomAttributes = customAttributesDict,
 
                 Documents = docs.Select(d => new StaffDocumentDto
                 {
@@ -4085,6 +4100,18 @@ namespace Ozikol_BCC.Api.Controllers
                 if (request.MedicalDisclosures != null) customDict["medicalDisclosures"] = request.MedicalDisclosures.Trim();
                 if (request.DbsDisclosure != null) customDict["dbsDisclosure"] = request.DbsDisclosure.Trim();
                 customDict["optOut48Hours"] = request.OptOut48Hours;
+
+                if (request.CustomAttributes != null)
+                {
+                    foreach (var kv in request.CustomAttributes)
+                    {
+                        if (kv.Key == "emergencyContact" || kv.Key == "bankDetails") continue;
+                        if (kv.Value != null)
+                        {
+                            customDict[kv.Key] = kv.Value;
+                        }
+                    }
+                }
 
                 user.CustomAttributesJson = JsonSerializer.Serialize(customDict);
             }
@@ -4854,6 +4881,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string MedicalDisclosures { get; set; } = string.Empty;
         public string DbsDisclosure { get; set; } = string.Empty;
         public bool OptOut48Hours { get; set; }
+        public Dictionary<string, object?> CustomAttributes { get; set; } = new();
 
         public List<StaffDocumentDto> Documents { get; set; } = new();
         public List<ShiftDto> RecentShifts { get; set; } = new();
@@ -4889,6 +4917,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? MedicalDisclosures { get; set; }
         public string? DbsDisclosure { get; set; }
         public bool OptOut48Hours { get; set; }
+        public Dictionary<string, object?>? CustomAttributes { get; set; }
     }
 
     public class SiteActivityResponse

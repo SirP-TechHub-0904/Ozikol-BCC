@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { WorkforceService } from '../../../core/services/workforce.service';
+import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 interface StaffMemberDetail {
@@ -50,6 +51,7 @@ interface StaffMemberDetail {
   medicalDisclosures: string;
   dbsDisclosure: string;
   optOut48Hours: boolean;
+  customAttributes?: Record<string, any>;
 
   documents: any[];
   recentShifts: any[];
@@ -65,7 +67,7 @@ interface StaffMemberDetail {
       <nav class="breadcrumb-nav">
         <a routerLink="/admin/dashboard" class="crumb-link">Command Center</a>
         <span class="crumb-sep">/</span>
-        <a routerLink="/workforce/console/analytics" class="crumb-link">Workforce &amp; Shifts</a>
+        <a routerLink="/workforce/console/staff" class="crumb-link">Staff Manager</a>
         <span class="crumb-sep">/</span>
         <span class="crumb-active">{{ member?.fullName || 'Staff Member Profile' }}</span>
       </nav>
@@ -80,9 +82,9 @@ interface StaffMemberDetail {
       <div *ngIf="!isLoading && member" class="profile-container">
         <!-- Top Navigation Bar -->
         <div class="profile-top-nav">
-          <a routerLink="/workforce/console/enroll" class="btn btn-outline" title="Back to Staff Directory &amp; Roster">
+          <a routerLink="/workforce/console/staff" class="btn btn-outline" title="Back to Staff Manager">
             <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Staff Directory</span>
+            <span>Back to Staff Manager</span>
           </a>
         </div>
 
@@ -489,6 +491,7 @@ interface StaffMemberDetail {
               <table class="settings-table">
                 <thead>
                   <tr>
+                    <th style="width: 56px;">S/N</th>
                     <th>Document Type</th>
                     <th>Document Name</th>
                     <th>Reference / Sector</th>
@@ -499,7 +502,10 @@ interface StaffMemberDetail {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let doc of member.documents">
+                  <tr *ngFor="let doc of member.documents; let i = index">
+                    <td>
+                      <span class="sn-badge">{{ i + 1 }}</span>
+                    </td>
                     <td>
                       <span class="doc-type-badge">{{ doc.documentType }}</span>
                     </td>
@@ -525,7 +531,7 @@ interface StaffMemberDetail {
                     </td>
                   </tr>
                   <tr *ngIf="!member.documents || member.documents.length === 0">
-                    <td colspan="7" class="empty-state">
+                    <td colspan="8" class="empty-state">
                       No compliance documents uploaded yet for this staff member.
                     </td>
                   </tr>
@@ -536,85 +542,97 @@ interface StaffMemberDetail {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- TAB 4: CUSTOM ONBOARDING RESPONSES -->
+        <!-- TAB 4: CUSTOM ONBOARDING RESPONSES (DYNAMIC FROM REGISTRATION FORM BUILDER) -->
         <!-- ========================================================================= -->
         <div class="tab-pane" *ngIf="activeTab === 'custom-forms'">
-          <div class="form-grid-2col">
-            <div class="profile-card">
-              <div class="card-header">
-                <span class="material-symbols-outlined text-blue">apparel</span>
-                <h3>Uniform &amp; PPE Sizing</h3>
-              </div>
-              <div class="card-body">
-                <div class="form-group">
-                  <label class="form-label">Uniform &amp; Boot Sizing Details</label>
-                  <textarea
-                    class="form-control"
-                    rows="3"
-                    [(ngModel)]="member.uniformSizes"
-                    placeholder="e.g. Jacket: L, Trousers: 34W/32L, Boots: UK 10"
-                  ></textarea>
-                  <span class="field-hint">Sizes provided by guard during registration.</span>
+          <div class="onboarding-info-banner">
+            <span class="material-symbols-outlined">fact_check</span>
+            <div class="banner-text">
+              <strong>Registration Form Onboarding Responses:</strong>
+              These questions are dynamically synced from your <strong>Registration Form Builder</strong>. They are filled by the staff member during self-onboarding (via invitation link) or completed in-house by an administrator during Full Staff Registration. Administrators can review or update any response below.
+            </div>
+            <a routerLink="/users/console/registration-form" class="btn btn-outline btn-sm">
+              <span class="material-symbols-outlined">tune</span>
+              <span>Manage Form Questions</span>
+            </a>
+          </div>
+
+          <div class="content-card" *ngIf="registrationFields.length > 0">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">assignment_turned_in</span>
+                <div>
+                  <h3 class="card-heading">Submitted Registration Form Questions ({{ registrationFields.length }})</h3>
+                  <p class="card-sub">Answers recorded for {{ member.fullName }} across your custom onboarding fields.</p>
                 </div>
               </div>
             </div>
 
-            <div class="profile-card">
-              <div class="card-header">
-                <span class="material-symbols-outlined text-blue">directions_car</span>
-                <h3>Driving License &amp; Transport</h3>
-              </div>
-              <div class="card-body">
-                <div class="form-group">
-                  <label class="form-label">Driving Status &amp; Vehicle Access</label>
-                  <textarea
-                    class="form-control"
-                    rows="3"
-                    [(ngModel)]="member.drivingLicenseStatus"
-                    placeholder="e.g. Full UK Driving License (Clean), Owns vehicle for patrol deployments"
-                  ></textarea>
-                </div>
-              </div>
-            </div>
+            <div class="card-body">
+              <div class="form-grid-2col">
+                <div class="form-group" *ngFor="let f of registrationFields">
+                  <label class="form-label">
+                    {{ f.label }}
+                    <span *ngIf="f.isRequired" style="color:#dc2626;">*</span>
+                    <span class="field-origin-tag" *ngIf="f.sectionName">{{ f.sectionName }}</span>
+                  </label>
 
-            <div class="profile-card">
-              <div class="card-header">
-                <span class="material-symbols-outlined text-blue">medical_information</span>
-                <h3>Medical Conditions &amp; Allergies</h3>
-              </div>
-              <div class="card-body">
-                <div class="form-group">
-                  <label class="form-label">Emergency Medical Disclosures</label>
-                  <textarea
+                  <input
+                    *ngIf="f.fieldType === 'text' || f.fieldType === 'number' || f.fieldType === 'email' || f.fieldType === 'phone'"
+                    [type]="f.fieldType === 'number' ? 'number' : 'text'"
                     class="form-control"
-                    rows="3"
-                    [(ngModel)]="member.medicalDisclosures"
-                    placeholder="e.g. Asthmatic (inhaler carried), Penicillin allergy"
-                  ></textarea>
-                </div>
-              </div>
-            </div>
+                    [(ngModel)]="customAttributes[f.fieldKey]"
+                    [placeholder]="f.placeholder || 'No response recorded'"
+                  />
 
-            <div class="profile-card">
-              <div class="card-header">
-                <span class="material-symbols-outlined text-blue">shield_person</span>
-                <h3>DBS Criminal Record &amp; Vetting Disclosure</h3>
-              </div>
-              <div class="card-body">
-                <div class="form-group">
-                  <label class="form-label">BS 7858 Vetting &amp; DBS Status</label>
+                  <select
+                    *ngIf="f.fieldType === 'select'"
+                    class="form-control"
+                    [(ngModel)]="customAttributes[f.fieldKey]"
+                  >
+                    <option value="">{{ f.placeholder || '-- Select Option --' }}</option>
+                    <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
+                  </select>
+
                   <textarea
+                    *ngIf="f.fieldType === 'textarea'"
                     class="form-control"
                     rows="3"
-                    [(ngModel)]="member.dbsDisclosure"
-                    placeholder="e.g. Enhanced DBS Certificate #001482910 issued Jan 2026, No convictions"
+                    [(ngModel)]="customAttributes[f.fieldKey]"
+                    [placeholder]="f.placeholder || 'No response recorded'"
                   ></textarea>
+
+                  <input
+                    *ngIf="f.fieldType === 'date'"
+                    type="date"
+                    class="form-control"
+                    [(ngModel)]="customAttributes[f.fieldKey]"
+                  />
+
+                  <label *ngIf="f.fieldType === 'checkbox'" class="checkbox-inline-row">
+                    <input type="checkbox" [(ngModel)]="customAttributes[f.fieldKey]" />
+                    <span>{{ f.placeholder || f.label }}</span>
+                  </label>
+
+                  <span class="field-hint" *ngIf="f.helpText">{{ f.helpText }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="save-bar">
+          <div class="content-card" *ngIf="registrationFields.length === 0">
+            <div class="empty-state">
+              <span class="material-symbols-outlined" style="font-size:40px; color:#94a3b8; display:block; margin-bottom:8px;">playlist_add</span>
+              <h4 style="margin:0 0 6px 0; color:#0f172a;">No Custom Onboarding Questions Configured</h4>
+              <p style="margin:0 0 14px 0;">You have not added any custom questions in the Registration Form Builder yet.</p>
+              <a routerLink="/users/console/registration-form" class="btn btn-primary btn-sm">
+                <span class="material-symbols-outlined">add</span>
+                <span>Configure Questions in Form Builder</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="save-bar" *ngIf="registrationFields.length > 0">
             <button type="button" class="btn btn-primary" (click)="saveMemberDetail()" [disabled]="isSaving">
               <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
               <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
@@ -714,6 +732,7 @@ interface StaffMemberDetail {
               <table class="settings-table">
                 <thead>
                   <tr>
+                    <th style="width: 56px;">S/N</th>
                     <th>WORK LOCATION / POST</th>
                     <th>DUTY DATE &amp; TIMING</th>
                     <th>HOURS</th>
@@ -725,7 +744,10 @@ interface StaffMemberDetail {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let s of displayedStaffShifts">
+                  <tr *ngFor="let s of displayedStaffShifts; let i = index">
+                    <td>
+                      <span class="sn-badge">{{ i + 1 }}</span>
+                    </td>
                     <td>
                       <strong>{{ s.siteName || s.clientSiteName || 'Operating Post' }}</strong>
                       <span class="desc-muted" *ngIf="s.postName">{{ s.postName }}</span>
@@ -766,7 +788,7 @@ interface StaffMemberDetail {
                     </td>
                   </tr>
                   <tr *ngIf="displayedStaffShifts.length === 0">
-                    <td colspan="8" class="empty-state">
+                    <td colspan="9" class="empty-state">
                       No duty records found for this staff member yet.
                     </td>
                   </tr>
@@ -1073,56 +1095,67 @@ interface StaffMemberDetail {
     /* Tabs Bar */
     .profile-tabs-bar {
       display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
       margin-bottom: 1.5rem;
       overflow-x: auto;
+      overflow-y: hidden;
     }
 
     .tab-btn {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
+      gap: 8px;
+      padding: 9px 16px;
       background: transparent;
       border: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      font-size: 0.875rem;
+      border-radius: 8px;
+      margin: 0;
+      font-size: 13px;
       font-weight: 600;
-      color: #64748b;
+      color: #475569;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s ease;
+      transition: all 0.16s ease;
+    }
+
+    .tab-btn .material-symbols-outlined {
+      font-size: 18px;
     }
 
     .tab-btn:hover {
+      background: #e2e8f0;
       color: #0f172a;
     }
 
     .tab-btn.active {
-      color: #0050e5;
-      border-bottom-color: #0050e5;
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25);
     }
 
     .tab-count {
-      font-size: 0.6875rem;
-      background: #e2e8f0;
-      color: #475569;
-      padding: 0.1rem 0.45rem;
+      font-size: 11px;
+      background: #cbd5e1;
+      color: #334155;
+      padding: 2px 7px;
       border-radius: 9999px;
       font-weight: 700;
     }
 
     .tab-btn.active .tab-count {
-      background: #eff6ff;
-      color: #0050e5;
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
     }
 
     /* Form Grid */
     .form-grid-2col {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1.5rem;
     }
 
@@ -1148,6 +1181,7 @@ interface StaffMemberDetail {
       border-radius: 0.75rem;
       overflow: hidden;
       margin-bottom: 1.5rem;
+      box-sizing: border-box;
     }
 
     .profile-card.full-width {
@@ -1157,9 +1191,11 @@ interface StaffMemberDetail {
     .card-header {
       display: flex;
       align-items: center;
+      justify-content: flex-start !important;
       gap: 0.75rem;
-      padding: 1.25rem 1.5rem;
+      padding: 1.15rem 1.5rem;
       border-bottom: 1px solid #f1f5f9;
+      background: #fafbfc;
     }
 
     .card-header h3 {
@@ -1171,28 +1207,36 @@ interface StaffMemberDetail {
 
     .card-body {
       padding: 1.5rem;
+      box-sizing: border-box;
     }
 
     .form-group {
       margin-bottom: 1.25rem;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .form-label {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
       font-size: 0.8125rem;
       font-weight: 600;
       color: #334155;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.45rem;
     }
 
     .form-control {
       width: 100%;
-      padding: 0.55rem 0.85rem;
+      box-sizing: border-box;
+      padding: 0.6rem 0.85rem;
       font-size: 0.875rem;
       border: 1px solid #cbd5e1;
       border-radius: 0.5rem;
       background: #ffffff;
       color: #0f172a;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
     .form-control:focus {
@@ -1215,19 +1259,26 @@ interface StaffMemberDetail {
 
     .form-row-dual {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.25rem;
     }
 
     .form-row-4col {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1.25rem;
     }
 
     @media (max-width: 900px) {
       .form-row-4col {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .form-row-dual,
+      .form-row-4col {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -1516,13 +1567,14 @@ interface StaffMemberDetail {
     }
     .schedule-day-row {
       display: grid;
-      grid-template-columns: 140px 220px 1fr;
+      grid-template-columns: 120px 230px minmax(0, 1fr);
       align-items: center;
       gap: 1rem;
       padding: 0.75rem 1rem;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 0.5rem;
+      box-sizing: border-box;
     }
     @media (max-width: 768px) {
       .schedule-day-row {
@@ -1538,14 +1590,92 @@ interface StaffMemberDetail {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      flex-wrap: wrap;
+      min-width: 0;
     }
     .time-col .form-control {
-      max-width: 140px;
+      width: 135px;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .time-sep {
       font-size: 0.8125rem;
       color: #64748b;
       font-weight: 600;
+    }
+    .sn-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      height: 24px;
+      padding: 0 7px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .onboarding-info-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+    .onboarding-info-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #0050e5;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .onboarding-info-text {
+      flex: 1;
+      font-size: 13px;
+      color: #1e3a8a;
+      line-height: 1.5;
+    }
+    .onboarding-info-text strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 3px;
+    }
+    .onboarding-info-text p {
+      margin: 0;
+    }
+    .field-origin-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #dbeafe;
+    }
+    .checkbox-inline-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      cursor: pointer;
     }
     .badge-tag {
       display: inline-flex;
@@ -1817,6 +1947,8 @@ export class WorkforceMemberProfileComponent implements OnInit {
   jobRoles: any[] = [];
   staffTypes: any[] = [];
   documentCategories: any[] = [];
+  registrationFields: any[] = [];
+  customAttributes: Record<string, any> = {};
   weeklySchedule: { dayKey: string; dayLabel: string; mode: string; startTime?: string; endTime?: string }[] = [];
   fallbackCategories = [
     { name: 'Right to Work / Passport', code: 'RTW' },
@@ -1841,6 +1973,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private workforceService: WorkforceService,
+    private api: ApiService,
     private toast: ToastService
   ) {}
 
@@ -1854,6 +1987,23 @@ export class WorkforceMemberProfileComponent implements OnInit {
 
     this.loadMemberDetail();
     this.loadMetadata();
+    this.loadRegistrationSchema();
+  }
+
+  /**
+   * Loads the active Registration Form Builder fields so the admin can view and edit
+   * all onboarding responses submitted by the staff member (or filled in-house).
+   */
+  loadRegistrationSchema(): void {
+    this.api.get<any>(`RegistrationFormApi/public-schema?t=${Date.now()}`).subscribe({
+      next: (schema: any) => {
+        const fields = schema?.fields || schema?.data?.fields || [];
+        this.registrationFields = fields.filter((f: any) => f.isActive !== false);
+      },
+      error: () => {
+        this.registrationFields = [];
+      }
+    });
   }
 
   get displayedStaffShifts(): any[] {
@@ -1889,6 +2039,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
         this.isLoading = false;
         if (res && res.data) {
           this.member = res.data;
+          this.customAttributes = { ...(this.member?.customAttributes || {}) };
           this.initWeeklySchedule();
           this.loadStaffDutyHistory();
         }
@@ -2013,7 +2164,8 @@ export class WorkforceMemberProfileComponent implements OnInit {
       drivingLicenseStatus: this.member.drivingLicenseStatus,
       medicalDisclosures: this.member.medicalDisclosures,
       dbsDisclosure: this.member.dbsDisclosure,
-      optOut48Hours: this.member.optOut48Hours
+      optOut48Hours: this.member.optOut48Hours,
+      customAttributes: this.customAttributes
     };
 
     this.workforceService.updateMemberDetail(this.userId, payload).subscribe({
@@ -2022,6 +2174,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
         this.toast.success('Staff member profile updated successfully.');
         if (res && res.data) {
           this.member = res.data;
+          this.customAttributes = { ...(this.member?.customAttributes || {}) };
           this.initWeeklySchedule();
         }
       },
