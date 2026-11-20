@@ -461,11 +461,13 @@ namespace Ozikol_BCC.Api.Controllers
 
             var averageScore = periodScores.Count > 0
                 ? (int)Math.Round(periodScores.Average(x => ((double)x.Score / (double)(x.TargetValue > 0 ? x.TargetValue : 100)) * 100))
-                : 88;
+                : 0;
 
-            var grade = averageScore >= 80 ? "A" : (averageScore >= 70 ? "B" : (averageScore >= 60 ? "C" : "D"));
+            var grade = periodScores.Count == 0
+                ? "N/A"
+                : (averageScore >= 80 ? "A" : (averageScore >= 70 ? "B" : (averageScore >= 60 ? "C" : "D")));
 
-            // Compute historical multi-quarter trend
+            // Compute historical multi-quarter trend strictly from real database records
             var historicalTrend = allUserScores
                 .Where(s => !string.IsNullOrEmpty(s.Period))
                 .GroupBy(s => s.Period)
@@ -476,15 +478,7 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToList();
 
-            if (historicalTrend.Count == 0)
-            {
-                historicalTrend.Add(new { Period = "Q1 2026", Score = 82 });
-                historicalTrend.Add(new { Period = "Q2 2026", Score = 85 });
-                historicalTrend.Add(new { Period = "Q3 2026", Score = 88 });
-            }
-
-            var latestRemarks = periodScores.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Remarks))?.Remarks
-                ?? "Exceptional consistency across operational deliverables and high engagement.";
+            var latestRemarks = periodScores.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Remarks))?.Remarks ?? string.Empty;
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {

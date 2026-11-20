@@ -76,22 +76,23 @@ import { ApiService } from '../../core/services/api.service';
                 </svg>
                 <div class="donut-center-content">
                   <span class="donut-score">{{ overallScore }}%</span>
-                  <span class="donut-grade-pill grade-{{ grade.toLowerCase() }}">Grade {{ grade }}</span>
+                  <span class="donut-grade-pill grade-{{ grade.toLowerCase() }}">{{ grade === 'N/A' ? 'No Grade' : ('Grade ' + grade) }}</span>
                 </div>
               </div>
 
               <div class="kpi-score-meta">
-                <div class="score-status text-success">
-                  <span class="material-symbols-outlined">check_circle</span>
-                  <span>Performance on track</span>
+                <div class="score-status" [class.text-success]="evaluationsCount > 0" [style.color]="evaluationsCount === 0 ? '#64748b' : ''">
+                  <span class="material-symbols-outlined">{{ evaluationsCount > 0 ? 'check_circle' : 'info' }}</span>
+                  <span>{{ evaluationsCount > 0 ? 'Performance on track' : 'No KPI evaluations yet' }}</span>
                 </div>
                 <p class="score-eval-count">{{ evaluationsCount }} evaluation milestone(s) recorded</p>
-                <div class="kpi-target-indicator">Target: 85% • Standing: <strong>Top 15%</strong></div>
+                <div class="kpi-target-indicator" *ngIf="evaluationsCount > 0">Target: 85% • Score: <strong>{{ overallScore }}%</strong></div>
+                <div class="kpi-target-indicator" *ngIf="evaluationsCount === 0">Scores appear once an administrator records an evaluation</div>
               </div>
             </div>
 
             <!-- Horizontal Metric Progress Bars -->
-            <div class="metrics-bars-wrap">
+            <div class="metrics-bars-wrap" *ngIf="kpiMetrics.length > 0">
               <div class="metric-bar-item" *ngFor="let m of kpiMetrics">
                 <div class="metric-bar-header">
                   <span class="metric-bar-label">{{ m.name }}</span>
@@ -101,6 +102,9 @@ import { ApiService } from '../../core/services/api.service';
                   <div class="metric-progress-fill" [style.width.%]="m.score" [ngClass]="m.colorClass"></div>
                 </div>
               </div>
+            </div>
+            <div *ngIf="kpiMetrics.length === 0" style="padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center; font-size: 12px; color: #64748b;">
+              No individual KPI metrics have been scored for your account yet.
             </div>
           </div>
         </section>
@@ -112,13 +116,13 @@ import { ApiService } from '../../core/services/api.service';
               <span class="material-symbols-outlined head-icon text-info">badge</span>
               <h2 class="card-title">Membership Status</h2>
             </div>
-            <span class="status-pill good">Verified</span>
+            <span class="status-pill good">{{ userProfile?.userStatus || 'Active' }}</span>
           </div>
           <div class="card-body">
             <ul class="meta-list">
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">tag</span> Member ID:</span>
-                <strong class="meta-value">{{ userProfile?.memberId || 'CC-2026-0099' }}</strong>
+                <strong class="meta-value">{{ userProfile?.memberId || 'N/A' }}</strong>
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">category</span> User Category:</span>
@@ -126,31 +130,37 @@ import { ApiService } from '../../core/services/api.service';
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">mail</span> Email Status:</span>
-                <span class="status-tag verified">
+                <span class="status-tag verified" *ngIf="userProfile?.emailConfirmed">
                   <span class="material-symbols-outlined">check</span>
                   Verified
+                </span>
+                <span class="status-tag" *ngIf="!userProfile?.emailConfirmed" style="color: #d97706; font-weight: 700; font-size: 12px;">
+                  Pending Verification
                 </span>
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">call</span> Phone Status:</span>
-                <span class="status-tag verified">
-                  <span class="material-symbols-outlined">check</span>
-                  {{ userProfile?.phoneNumber ? 'Verified (' + userProfile.phoneNumber + ')' : 'Verified (+234)' }}
+                <span class="status-tag verified" *ngIf="userProfile?.phoneNumber">
+                  <span class="material-symbols-outlined">{{ userProfile?.phoneNumberConfirmed ? 'check' : 'schedule' }}</span>
+                  {{ (userProfile?.phoneNumberConfirmed ? 'Verified' : 'Registered') + ' (' + userProfile.phoneNumber + ')' }}
+                </span>
+                <span class="status-tag" *ngIf="!userProfile?.phoneNumber" style="color: #64748b; font-size: 12px;">
+                  Not Provided
                 </span>
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">event_available</span> Member Since:</span>
-                <strong class="meta-value">{{ (userProfile?.joinDate | date:'mediumDate') || '2026' }}</strong>
+                <strong class="meta-value">{{ (userProfile?.joinDate | date:'mediumDate') || 'N/A' }}</strong>
               </li>
             </ul>
 
             <div class="profile-complete-box">
               <div class="p-comp-head">
                 <span>Profile Completeness</span>
-                <strong>95%</strong>
+                <strong>{{ profileCompleteness }}%</strong>
               </div>
               <div class="metric-progress-track">
-                <div class="metric-progress-fill bg-blue" style="width: 95%;"></div>
+                <div class="metric-progress-fill bg-blue" [style.width.%]="profileCompleteness"></div>
               </div>
             </div>
           </div>
@@ -893,28 +903,24 @@ export class WorkspaceDashboardComponent implements OnInit {
   userName = localStorage.getItem('user_name') || 'Member';
   userEmail = localStorage.getItem('user_email') || '';
   userProfile: any = null;
-  grade = 'A';
-  overallScore = 88;
-  evaluationsCount = 3;
+  grade = 'N/A';
+  overallScore = 0;
+  evaluationsCount = 0;
   myGroups: any[] = [];
   recentDevices: any[] = [];
   isLoadingDevices = false;
   activeFeatureCodes: Set<string> = new Set<string>();
 
-  kpiMetrics = [
-    { name: 'Attendance & Engagement', score: 92, colorClass: 'bg-blue' },
-    { name: 'Project Milestones', score: 85, colorClass: 'bg-green' },
-    { name: 'Training & Knowledge', score: 88, colorClass: 'bg-purple' }
-  ];
+  kpiMetrics: { name: string; score: number; colorClass: string }[] = [];
 
-  weeklyActivity = [
-    { day: 'Mon', activityCount: 4, percentage: 60 },
-    { day: 'Tue', activityCount: 6, percentage: 85 },
-    { day: 'Wed', activityCount: 3, percentage: 45 },
-    { day: 'Thu', activityCount: 7, percentage: 100 },
-    { day: 'Fri', activityCount: 5, percentage: 70 },
-    { day: 'Sat', activityCount: 2, percentage: 30 },
-    { day: 'Sun', activityCount: 4, percentage: 55 }
+  weeklyActivity: { day: string; activityCount: number; percentage: number }[] = [
+    { day: 'Mon', activityCount: 0, percentage: 4 },
+    { day: 'Tue', activityCount: 0, percentage: 4 },
+    { day: 'Wed', activityCount: 0, percentage: 4 },
+    { day: 'Thu', activityCount: 0, percentage: 4 },
+    { day: 'Fri', activityCount: 0, percentage: 4 },
+    { day: 'Sat', activityCount: 0, percentage: 4 },
+    { day: 'Sun', activityCount: 0, percentage: 4 }
   ];
 
   constructor(private api: ApiService) {}
@@ -922,7 +928,109 @@ export class WorkspaceDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadActiveFeatures();
     this.loadProfile();
+    this.loadMyKpi();
+    this.loadWeeklyActivity();
     this.loadRecentDevices();
+  }
+
+  /**
+   * Dynamically computes profile completeness percentage from real profile fields.
+   */
+  get profileCompleteness(): number {
+    if (!this.userProfile) return 0;
+    const checks = [
+      !!this.userProfile.firstName,
+      !!this.userProfile.lastName,
+      !!this.userProfile.email,
+      !!this.userProfile.emailConfirmed,
+      !!this.userProfile.phoneNumber,
+      !!this.userProfile.designation,
+      !!this.userProfile.avatarUrl,
+      !!this.userProfile.dateOfBirth
+    ];
+    const completed = checks.filter(Boolean).length;
+    return Math.round((completed / checks.length) * 100);
+  }
+
+  /**
+   * Loads the member's real KPI evaluations from the database.
+   */
+  loadMyKpi(): void {
+    this.api.get<any>('PortalUsersApi/my-kpi').subscribe({
+      next: (res) => {
+        const d = res?.data;
+        if (d) {
+          const scores: any[] = Array.isArray(d.scores) ? d.scores : [];
+          this.evaluationsCount = scores.length;
+          this.overallScore = scores.length > 0 ? (d.overallScore || 0) : 0;
+          this.grade = scores.length > 0 ? (d.grade || 'A') : 'N/A';
+          const colors = ['bg-blue', 'bg-green', 'bg-purple', 'bg-amber'];
+          this.kpiMetrics = scores.slice(0, 4).map((s: any, idx: number) => {
+            const target = s.targetValue > 0 ? s.targetValue : 100;
+            const pct = Math.min(100, Math.round(((s.score || 0) / target) * 100));
+            return {
+              name: s.title || 'Metric',
+              score: pct,
+              colorClass: colors[idx % colors.length]
+            };
+          });
+        }
+      },
+      error: () => {
+        this.overallScore = 0;
+        this.grade = 'N/A';
+        this.evaluationsCount = 0;
+        this.kpiMetrics = [];
+      }
+    });
+  }
+
+  /**
+   * Computes the last 7 days of activity dynamically from real user activity logs.
+   */
+  loadWeeklyActivity(): void {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const daysMap: { dateKey: string; day: string; activityCount: number }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      daysMap.push({
+        dateKey: key,
+        day: dayNames[d.getDay()],
+        activityCount: 0
+      });
+    }
+
+    this.api.get<any>('PortalUsersApi/my-activity').subscribe({
+      next: (res) => {
+        const logs: any[] = Array.isArray(res?.data) ? res.data : [];
+        for (const log of logs) {
+          if (log?.date) {
+            const key = new Date(log.date).toISOString().slice(0, 10);
+            const bucket = daysMap.find(b => b.dateKey === key);
+            if (bucket) {
+              bucket.activityCount++;
+            }
+          }
+        }
+        const maxCount = Math.max(1, ...daysMap.map(b => b.activityCount));
+        this.weeklyActivity = daysMap.map(b => ({
+          day: b.day,
+          activityCount: b.activityCount,
+          percentage: b.activityCount > 0 ? Math.max(15, Math.round((b.activityCount / maxCount) * 100)) : 4
+        }));
+      },
+      error: () => {
+        this.weeklyActivity = daysMap.map(b => ({
+          day: b.day,
+          activityCount: 0,
+          percentage: 4
+        }));
+      }
+    });
   }
 
   /**

@@ -512,11 +512,11 @@ import { ApiService } from '../../core/services/api.service';
 export class WorkspaceKpiComponent implements OnInit {
   selectedPeriod = 'Q3 2026';
   periodsList: any[] = [];
-  overallScore = 88;
-  grade = 'A';
+  overallScore = 0;
+  grade = 'N/A';
   kpiScores: any[] = [];
   historicalTrend: any[] = [];
-  supervisorRemarks = 'Exceptional consistency across operational deliverables and high engagement.';
+  supervisorRemarks = '';
 
   constructor(private api: ApiService) {}
 
@@ -532,22 +532,14 @@ export class WorkspaceKpiComponent implements OnInit {
           const active = this.periodsList.find(p => p.isActive);
           this.selectedPeriod = active ? active.title : this.periodsList[0].title;
         } else {
-          this.periodsList = [
-            { title: 'Q3 2026', isActive: true },
-            { title: 'Q2 2026', isActive: false },
-            { title: 'Q1 2026', isActive: false }
-          ];
-          this.selectedPeriod = 'Q3 2026';
+          this.periodsList = [];
+          this.selectedPeriod = '';
         }
         this.loadScorecard(this.selectedPeriod);
       },
       error: () => {
-        this.periodsList = [
-          { title: 'Q3 2026', isActive: true },
-          { title: 'Q2 2026', isActive: false },
-          { title: 'Q1 2026', isActive: false }
-        ];
-        this.loadScorecard('Q3 2026');
+        this.periodsList = [];
+        this.loadScorecard('');
       }
     });
   }
@@ -561,27 +553,19 @@ export class WorkspaceKpiComponent implements OnInit {
     this.api.get<any>(`PortalUsersApi/my-kpi?period=${encodeURIComponent(period)}`).subscribe({
       next: (res) => {
         if (res?.data) {
-          this.overallScore = res.data.overallScore || 88;
-          this.grade = res.data.grade || 'A';
           this.kpiScores = res.data.scores || [];
+          this.overallScore = this.kpiScores.length > 0 ? (res.data.overallScore || 0) : 0;
+          this.grade = this.kpiScores.length > 0 ? (res.data.grade || 'A') : 'N/A';
           this.historicalTrend = res.data.historicalTrend || [];
-          this.supervisorRemarks = res.data.supervisorRemarks || 'Exceptional execution across designated milestones.';
+          this.supervisorRemarks = res.data.supervisorRemarks || '';
         }
       },
       error: () => {
-        // Fallback demo data
-        this.overallScore = 88;
-        this.grade = 'A';
-        this.kpiScores = [
-          { title: 'Project Deliverables & Milestones', category: 'Operational Execution', weight: 0.4, targetValue: 100, score: 92, remarks: 'Delivered all designated sprints on time.' },
-          { title: 'Attendance & Community Participation', category: 'Engagement', weight: 0.3, targetValue: 100, score: 85, remarks: 'Active engagement in committee meetings.' },
-          { title: 'Code Quality & Adherence to Standards', category: 'Technical Excellence', weight: 0.3, targetValue: 100, score: 87, remarks: 'High code review pass rate.' }
-        ];
-        this.historicalTrend = [
-          { period: 'Q1 2026', score: 82 },
-          { period: 'Q2 2026', score: 85 },
-          { period: 'Q3 2026', score: 88 }
-        ];
+        this.overallScore = 0;
+        this.grade = 'N/A';
+        this.kpiScores = [];
+        this.historicalTrend = [];
+        this.supervisorRemarks = '';
       }
     });
   }
