@@ -331,7 +331,7 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .bcp-page-container { display: flex; flex-direction: column; gap: 20px; padding: 0 4px 40px 4px; width: 100%; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); }
     .header-left { display: flex; flex-direction: column; gap: 6px; }
     .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
     .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }

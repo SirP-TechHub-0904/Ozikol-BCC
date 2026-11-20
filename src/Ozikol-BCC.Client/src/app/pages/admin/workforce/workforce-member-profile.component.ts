@@ -63,14 +63,38 @@ interface StaffMemberDetail {
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="profile-page">
-      <!-- Breadcrumb Header -->
-      <nav class="breadcrumb-nav">
-        <a routerLink="/admin/dashboard" class="crumb-link">Command Center</a>
-        <span class="crumb-sep">/</span>
-        <a routerLink="/workforce/console/staff" class="crumb-link">Staff Manager</a>
-        <span class="crumb-sep">/</span>
-        <span class="crumb-active">{{ member?.fullName || 'Staff Member Profile' }}</span>
-      </nav>
+      <!-- 1. Canonical Dashboard Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <a routerLink="/workforce/console/staff">Staff Manager</a>
+            <span class="sep">/</span>
+            <span class="current">{{ member?.fullName || 'Staff Member Profile' }}</span>
+          </div>
+          <div class="title-row">
+            <h1>{{ member?.fullName || 'Staff Member Profile' }}</h1>
+            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
+          </div>
+          <p class="subtitle">Manage personal identity, employment contract, availability schedule, compliance documents, onboarding responses, and shift history.</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadMemberDetail()">
+            <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+            <span>Refresh</span>
+          </button>
+          <a routerLink="/workforce/console/staff" class="btn btn-outline" title="Back to Staff Manager">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Staff Manager</span>
+          </a>
+          <button type="button" class="btn btn-primary" *ngIf="member" (click)="saveMemberDetail()" [disabled]="isSaving">
+            <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
+            <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
+            <span>{{ isSaving ? 'Saving...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Loading State -->
       <div class="loading-state" *ngIf="isLoading">
@@ -80,14 +104,6 @@ interface StaffMemberDetail {
 
       <!-- Main Container -->
       <div *ngIf="!isLoading && member" class="profile-container">
-        <!-- Top Navigation Bar -->
-        <div class="profile-top-nav">
-          <a routerLink="/workforce/console/staff" class="btn btn-outline" title="Back to Staff Manager">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Staff Manager</span>
-          </a>
-        </div>
-
         <!-- Profile Hero Header Card -->
         <div class="profile-hero-card">
           <div class="hero-left">
@@ -911,48 +927,116 @@ interface StaffMemberDetail {
   `,
   styles: [`
     .profile-page {
-      padding: 1.5rem 2rem;
-      background: #f8fafc;
+      padding: 0 4px 40px 4px;
       min-height: calc(100vh - 70px);
     }
 
-    .breadcrumb-nav {
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      margin-bottom: 1.25rem;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .breadcrumb {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 0.8125rem;
+      gap: 8px;
+      font-size: 13px;
       color: #64748b;
-      margin-bottom: 1rem;
+      margin-bottom: 2px;
     }
 
-    .crumb-link {
-      color: #64748b;
-      text-decoration: none;
-    }
-
-    .crumb-link:hover {
+    .breadcrumb a {
       color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
     }
 
-    .crumb-sep {
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .breadcrumb .sep {
       color: #cbd5e1;
     }
 
-    .crumb-active {
-      color: #0f172a;
+    .breadcrumb .current {
+      color: #334155;
       font-weight: 600;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title-row h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 13.5px;
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .header-actions .btn {
+      height: 34px;
+      padding: 0 12px;
+      font-size: 12px;
+      border-radius: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .header-actions .btn .material-symbols-outlined {
+      font-size: 16px;
     }
 
     .loading-state {
       padding: 4rem;
       text-align: center;
       color: #64748b;
-    }
-
-    .profile-top-nav {
-      margin-bottom: 1.25rem;
-      display: flex;
-      align-items: center;
     }
 
     /* Hero Card */
