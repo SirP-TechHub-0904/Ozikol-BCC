@@ -446,6 +446,13 @@ public class TenantProvider : ITenantProvider
                 tenantServer = tsrv?.ToString()?.Trim();
             }
 
+            // Normalize host for robust local vs remote detection (strip tcp: prefix and port numbers)
+            var cleanTenantHost = (tenantServer ?? string.Empty)
+                .Replace("tcp:", "", StringComparison.OrdinalIgnoreCase)
+                .Split(',')[0]
+                .Split(':')[0]
+                .Trim();
+
             // Check if Master connects to a remote server host
             var isMasterRemote = !string.IsNullOrWhiteSpace(masterServer) &&
                 !masterServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) &&
@@ -453,15 +460,15 @@ public class TenantProvider : ITenantProvider
                 !masterServer.Equals(".", StringComparison.OrdinalIgnoreCase) &&
                 !masterServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase);
 
-            var isTenantLocal = string.IsNullOrWhiteSpace(tenantServer) ||
-                tenantServer.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.Equals(".", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.StartsWith(".\\", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.StartsWith("(local)", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.StartsWith("(localdb)", StringComparison.OrdinalIgnoreCase) ||
-                tenantServer.IndexOf(Environment.MachineName, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                tenantServer.EndsWith("SQLEXPRESS", StringComparison.OrdinalIgnoreCase);
+            var isTenantLocal = string.IsNullOrWhiteSpace(cleanTenantHost) ||
+                cleanTenantHost.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                cleanTenantHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                cleanTenantHost.Equals(".", StringComparison.OrdinalIgnoreCase) ||
+                cleanTenantHost.StartsWith(".\\", StringComparison.OrdinalIgnoreCase) ||
+                cleanTenantHost.StartsWith("(local)", StringComparison.OrdinalIgnoreCase) ||
+                cleanTenantHost.StartsWith("(localdb)", StringComparison.OrdinalIgnoreCase) ||
+                cleanTenantHost.IndexOf(Environment.MachineName, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                cleanTenantHost.EndsWith("SQLEXPRESS", StringComparison.OrdinalIgnoreCase);
 
             if (isMasterRemote && isTenantLocal)
             {
