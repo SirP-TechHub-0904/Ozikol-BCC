@@ -16,6 +16,7 @@ import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/serv
 import { CommitteesService } from '../../core/services/committees.service';
 import { WorkforceService } from '../../core/services/workforce.service';
 import { MasterHelpService } from '../../core/services/master-help.service';
+import { OneSignalService } from '../../core/services/onesignal.service';
 import { HelpDrawerComponent } from '../../shared/components/help-drawer/help-drawer.component';
 import { 
   getStoredUserRoles, 
@@ -1683,6 +1684,36 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">manage_accounts</span>
                 <span>{{ 'nav.manage_account' | translate }}</span>
               </a>
+              <a routerLink="/users/workspace/security" (click)="closeDropdowns()" class="dropdown-item">
+                <span class="material-symbols-outlined">shield_person</span>
+                <span>Security &amp; Access</span>
+              </a>
+              <button 
+                type="button" 
+                (click)="triggerEnablePushNotifications(); closeDropdowns()" 
+                class="dropdown-item"
+                [disabled]="isEnablingPush || pushNotificationStatus === 'unsupported'"
+                style="display: flex; align-items: center; justify-content: space-between;"
+              >
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="material-symbols-outlined" [style.color]="pushNotificationStatus === 'granted' ? '#10b981' : '#0050e5'">
+                    {{ pushNotificationStatus === 'granted' ? 'notifications_active' : 'notifications' }}
+                  </span>
+                  <span>{{ pushNotificationStatus === 'granted' ? 'Notifications Active' : 'Enable Notifications' }}</span>
+                </div>
+                <span 
+                  *ngIf="pushNotificationStatus === 'granted'" 
+                  style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 1px 6px; border-radius: 9999px;"
+                >
+                  Active
+                </span>
+                <span 
+                  *ngIf="pushNotificationStatus !== 'granted'" 
+                  style="font-size: 10px; font-weight: 700; color: #0050e5; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 6px; border-radius: 9999px;"
+                >
+                  Turn On
+                </span>
+              </button>
               <a routerLink="/admin/settings" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">settings</span>
                 <span>{{ 'adm.workspace_settings' | translate:'Workspace Settings' }}</span>
@@ -2545,7 +2576,7 @@ export interface SuiteInfoDetail {
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
-      width: 220px;
+      width: 250px;
       background: var(--md-sys-color-surface);
       border: 1px solid var(--md-sys-color-outline);
       border-radius: 12px;
@@ -4260,8 +4291,60 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     private committeesService: CommitteesService,
     private workforceService: WorkforceService,
     private masterHelpService: MasterHelpService,
+    private oneSignal: OneSignalService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  /// <summary>
+  /// Resolves the current browser push notification permission status.
+  /// </summary>
+  public get pushNotificationStatus(): 'granted' | 'denied' | 'default' | 'unsupported' {
+    return this.oneSignal.getPermissionStatus();
+  }
+
+  /// <summary>
+  /// Tracks whether a browser push permission request is actively in progress.
+  /// </summary>
+  public isEnablingPush = false;
+
+  /// <summary>
+  /// Manually triggers browser push notification permission prompt and binds the device to the user account.
+  /// </summary>
+  public async triggerEnablePushNotifications(): Promise<void> {
+    if (this.isEnablingPush) return;
+    this.isEnablingPush = true;
+    try {
+      const res = await this.oneSignal.enableAndPromptPushNotifications();
+      if (res.status === 'granted') {
+        this.toast.success('Push notifications are now enabled on this device!');
+      } else if (res.status === 'denied') {
+        this.toast.warning('Notifications are blocked by your browser. Please allow notifications in site settings.');
+      } else if (res.status === 'unsupported') {
+        this.toast.error('This browser does not support web push notifications.');
+      }
+    } catch (err: any) {
+      this.toast.error(err?.message || 'Failed to enable push notifications');
+    } finally {
+      this.isEnablingPush = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  /// <summary>
+  /// Displays a soft, non-intrusive reminder toast after 12 seconds if web push notifications are not yet enabled.
+  /// </summary>
+  private schedulePushNotificationSoftPrompt(): void {
+    if (typeof window === 'undefined') return;
+    const dismissedSession = sessionStorage.getItem('push_prompt_dismissed');
+    if (dismissedSession) return;
+
+    setTimeout(() => {
+      if (this.pushNotificationStatus === 'default') {
+        sessionStorage.setItem('push_prompt_dismissed', 'true');
+        this.toast.info('Enable shift & duty push alerts in your Profile menu to receive real-time updates.');
+      }
+    }, 12000);
+  }
 
   public toggleHelpDrawer(): void {
     this.masterHelpService.toggle();
@@ -4332,6 +4415,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     });
     this.workforceService.refreshOpenShiftsCount();
+
+    // Schedule non-intrusive soft push prompt reminder
+    this.schedulePushNotificationSoftPrompt();
 
     // Subscribe to global AI assistant layout and open state
     this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);

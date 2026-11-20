@@ -451,6 +451,9 @@ export const routes: Routes = [
 
       // Suite 11: Workstation Supervisor & Application Gatekeeper (bcp-workspace)
       { path: 'workspace/stations', component: WorkstationsConsoleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin'], feature: 'bcp-workspace', featureName: 'Workspace (Desktop only)' } },
+      { path: 'workspace/security', redirectTo: 'users/workspace/security', pathMatch: 'full' },
+      { path: 'workspace/profile', redirectTo: 'users/workspace/profile', pathMatch: 'full' },
+      { path: 'workspace/account', redirectTo: 'identity/console/account', pathMatch: 'full' },
       { path: 'admin/workspace/stations', redirectTo: 'workspace/stations', pathMatch: 'full' },
       { path: 'admin/workspace', redirectTo: 'workspace/stations', pathMatch: 'full' },
 
