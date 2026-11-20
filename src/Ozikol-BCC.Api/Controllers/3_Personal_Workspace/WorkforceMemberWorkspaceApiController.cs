@@ -1,3 +1,8 @@
+using System.IO;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Application.Services.Cloudflare;
 using static Ozikol_BCC.Domain.Enum.Enum;
 using System;
 using System.Collections.Generic;
@@ -37,6 +42,9 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly MasterCatalogDbContext? _master;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly ICloudinaryService? _cloudinaryService;
+        private readonly ICloudflareR2StorageService? _r2Storage;
+        private readonly ILogger<WorkforceMemberWorkspaceApiController>? _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WorkforceMemberWorkspaceApiController"/> class.
@@ -45,12 +53,18 @@ namespace Ozikol_BCC.Api.Controllers
             DashboardDbContext db,
             MasterCatalogDbContext? master = null,
             ICentralNotificationDispatcher? notificationDispatcher = null,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            ICloudinaryService? cloudinaryService = null,
+            ICloudflareR2StorageService? r2Storage = null,
+            ILogger<WorkforceMemberWorkspaceApiController>? logger = null)
         {
             _db = db;
             _master = master;
             _notificationDispatcher = notificationDispatcher;
             _tenantProvider = tenantProvider;
+            _cloudinaryService = cloudinaryService;
+            _r2Storage = r2Storage;
+            _logger = logger;
         }
 
         private string CurrentTenantKey => ResolveCurrentTenantKey();
@@ -957,6 +971,157 @@ namespace Ozikol_BCC.Api.Controllers
             await _db.SaveChangesAsync(ct);
 
             return Ok(ApiResponse<Guid>.SuccessResponse(doc.Id, "Compliance document uploaded successfully."));
+        }
+
+        /// <summary>
+        /// Uploads a staff member compliance credential file (SIA license, passport, certificate, right-to-work scan)
+        /// with multi-tier storage resilience: Cloudinary primary -> Cloudflare R2 global edge -> local disk fallback.
+        /// </summary>
+        [HttpPost("documents/upload-media")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadComplianceMedia(
+            [FromForm] IFormFile file,
+            [FromForm] string? folder = "bcp-compliance-vault",
+            CancellationToken ct = default)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded.", errorCode: "ERR-2001"));
+            }
+
+            var folderTarget = string.IsNullOrWhiteSpace(folder) ? "bcp-compliance-vault" : folder.Trim();
+
+            // Validate file extension for safe compliance documents
+            var rawExt = Path.GetExtension(file.FileName);
+            var normalizedExt = rawExt?.TrimStart('.').ToUpperInvariant();
+            var permittedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC",
+                "PDF", "DOC", "DOCX", "ODT", "RTF", "TXT"
+            };
+
+            if (string.IsNullOrWhiteSpace(normalizedExt) || !permittedExts.Contains(normalizedExt))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"File format '{rawExt}' is not permitted for compliance credentials. Supported formats: images (JPG, PNG, WEBP, HEIC) and documents (PDF, DOC, DOCX).",
+                    errorCode: "ERR-2002"));
+            }
+
+            // Reject disguised executable/script payloads
+            var lowerFileName = file.FileName.ToLowerInvariant();
+            if (lowerFileName.Contains('\0') ||
+                lowerFileName.EndsWith(".exe") ||
+                lowerFileName.Contains(".php.") ||
+                lowerFileName.Contains(".asp.") ||
+                lowerFileName.Contains(".aspx.") ||
+                lowerFileName.Contains(".jsp.") ||
+                lowerFileName.Contains(".sh.") ||
+                lowerFileName.Contains(".bat."))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded.", errorCode: "ERR-2003"));
+            }
+
+            // 1. Primary storage: Cloudinary
+            if (_cloudinaryService != null)
+            {
+                try
+                {
+                    var isImage = new[] { "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC" }.Contains(normalizedExt);
+                    string secureUrl;
+                    string publicId;
+
+                    if (isImage)
+                    {
+                        var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget);
+                        secureUrl = uploadResult.Url;
+                        publicId = uploadResult.PublicId;
+                    }
+                    else
+                    {
+                        var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget);
+                        secureUrl = uploadResult.Url;
+                        publicId = uploadResult.PublicId;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(secureUrl))
+                    {
+                        return Ok(ApiResponse<object>.SuccessResponse(new
+                        {
+                            url = secureUrl,
+                            key = publicId,
+                            fileName = file.FileName,
+                            fileSize = file.Length,
+                            contentType = file.ContentType
+                        }, "Compliance document uploaded successfully."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "[Workforce] Cloudinary upload unavailable or failed ({Message}). Attempting Cloudflare R2 fallback.", ex.Message);
+                }
+            }
+
+            // 2. Secondary fallback: Cloudflare R2 Storage
+            if (_r2Storage != null && _r2Storage.IsConfigured())
+            {
+                try
+                {
+                    var tenantSlug = CurrentTenantKey;
+                    await using var stream = file.OpenReadStream();
+                    var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+                    var r2Result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folderTarget.TrimStart('/')}");
+
+                    if (r2Result.Success && !string.IsNullOrWhiteSpace(r2Result.Url))
+                    {
+                        return Ok(ApiResponse<object>.SuccessResponse(new
+                        {
+                            url = r2Result.Url,
+                            key = r2Result.SafeFileName ?? file.FileName,
+                            fileName = file.FileName,
+                            fileSize = file.Length,
+                            contentType = file.ContentType
+                        }, "Compliance document uploaded successfully."));
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[Workforce] Cloudflare R2 upload fallback failed: {Message}. Proceeding to local storage fallback.", r2Ex.Message);
+                }
+            }
+
+            // 3. Local disk fallback: wwwroot/uploads so uploads never fail
+            try
+            {
+                var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folderTarget.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(uploadsDir);
+
+                var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
+                var filePath = Path.Combine(uploadsDir, safeName);
+
+                await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream, ct);
+                }
+
+                var relativeUrl = $"/uploads/{folderTarget.Trim('/')}/{safeName}";
+                var scheme = Request?.Scheme ?? "https";
+                var host = Request?.Host.Value ?? "localhost";
+                var fullUrl = $"{scheme}://{host}{relativeUrl}";
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    url = fullUrl,
+                    key = safeName,
+                    fileName = file.FileName,
+                    fileSize = file.Length,
+                    contentType = file.ContentType
+                }, "Compliance document uploaded successfully."));
+            }
+            catch (Exception diskEx)
+            {
+                _logger?.LogError(diskEx, "[Workforce] Failed all storage providers for compliance document upload: {Message}", diskEx.Message);
+                return StatusCode(500, ApiResponse<object>.FailureResponse("Failed to store compliance document across all available storage tiers.", errorCode: "ERR-5000"));
+            }
         }
 
         // =========================================================================

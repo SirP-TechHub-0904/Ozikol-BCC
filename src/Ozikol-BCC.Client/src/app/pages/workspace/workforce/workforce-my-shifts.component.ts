@@ -1970,7 +1970,7 @@ interface YearMonthGrid {
                     </div>
                     <div class="dropzone-instructions">
                       <strong>Choose a file or click to browse</strong>
-                      <span>Supports PDF, PNG, JPG, or DOC up to 10MB (Cloudinary Secured)</span>
+                      <span>Supports PDF, PNG, JPG, or DOC up to 10MB (Encrypted Vault Storage)</span>
                     </div>
                   </div>
 
@@ -7769,7 +7769,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         const url = res?.data?.url || res?.url;
         if (url) {
           this.docForm.fileUrl = url;
-          this.toast.success(`"${file.name}" uploaded to Cloudinary successfully!`);
+          this.toast.success(`"${file.name}" uploaded successfully!`);
         } else {
           this.toast.error('File uploaded, but no URL was returned.');
         }
@@ -7777,7 +7777,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       error: (err: any) => {
         this.isUploadingDoc = false;
         this.uploadedDocFileName = '';
-        this.toast.error(err?.error?.message || 'Failed to upload document to Cloudinary.');
+        this.toast.error(err?.error?.message || 'Failed to upload compliance document.');
       }
     });
   }

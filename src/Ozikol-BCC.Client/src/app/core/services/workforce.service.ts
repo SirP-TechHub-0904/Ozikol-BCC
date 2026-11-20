@@ -420,7 +420,7 @@ export class WorkforceService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', 'bcp-compliance-vault');
-    return this.apiService.post<any>('ContentApi/upload-media', formData);
+    return this.apiService.post<any>('workforce/documents/upload-media', formData);
   }
 
   // --- CUSTOM SHIFT REMINDER PREFERENCES ---
