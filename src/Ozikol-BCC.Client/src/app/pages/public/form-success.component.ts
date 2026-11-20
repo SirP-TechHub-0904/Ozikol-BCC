@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, Title } from '@angular/platform-browser';
 import { Router, RouterModule } from '@angular/router';
 import { LandingComponent } from '../landing/landing.component';
 
@@ -154,6 +154,7 @@ import { LandingComponent } from '../landing/landing.component';
 export class FormSuccessComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly titleService = inject(Title);
 
   title = 'Thank You! Submission Received';
   note = '<p>We have received your submission and will get back to you shortly.</p>';
@@ -195,6 +196,11 @@ export class FormSuccessComponent implements OnInit {
     }
 
     this.safeNoteHtml = this.sanitizer.bypassSecurityTrustHtml(this.note);
+
+    const brandName = (typeof localStorage !== 'undefined' ? localStorage.getItem('tenant_name')?.trim() : '') || '';
+    if (this.title) {
+      this.titleService.setTitle(brandName ? `${this.title} | ${brandName}` : this.title);
+    }
   }
 
   /**

@@ -4917,6 +4917,12 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const pageTitle = this.embeddedPageTitle || 'Create Your Account';
     const pageDesc = this.embeddedPageSubtitle || '';
 
+    // Synchronize browser tab title and OpenGraph / Twitter meta tags for embedded public pages (e.g. /form-success, /register)
+    this.updatePageSeoMeta(
+      this.brandName ? `${pageTitle} | ${this.brandName}` : pageTitle,
+      pageDesc || this.brandInfo?.companyDescription
+    );
+
     // 1. Navigation Header Section Unit (exact same active menu template)
     const menuTemplate = this.findActiveTemplate('menu');
     const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {

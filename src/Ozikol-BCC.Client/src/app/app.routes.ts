@@ -484,7 +484,7 @@ export const routes: Routes = [
     ]
   },
   // Dynamic Public Website Content Routes
-  { path: 'form-success', loadComponent: () => import('./pages/public/form-success.component').then(m => m.FormSuccessComponent) },
+  { path: 'form-success', title: 'Thank You! Submission Received', loadComponent: () => import('./pages/public/form-success.component').then(m => m.FormSuccessComponent) },
   { path: 'page/:slug', component: LandingComponent },
   { path: 'blog', component: LandingComponent },
   { path: 'blog/:id', component: LandingComponent },
