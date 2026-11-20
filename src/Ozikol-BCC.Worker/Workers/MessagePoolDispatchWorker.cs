@@ -139,8 +139,7 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
 
         // 2. Fetch pending items
         var pendingItems = await db.BcpMessagePools
-            .Where(m =>
-                (m.Status == BcpQueueStatus.Queued || (m.Status == BcpQueueStatus.Failed && m.Retries < m.MaxRetries)) &&
+            .Where(m => m.Channel != BcpMessageChannel.Sms && (m.Status == BcpQueueStatus.Queued || (m.Status == BcpQueueStatus.Failed && m.Retries < m.MaxRetries)) &&
                 (m.ScheduledAt == null || m.ScheduledAt <= now))
             .OrderByDescending(m => m.Priority)
             .ThenBy(m => m.CreatedAt)
@@ -340,3 +339,4 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
         }
     }
 }
+

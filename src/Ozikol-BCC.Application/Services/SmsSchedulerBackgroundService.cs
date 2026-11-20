@@ -121,9 +121,9 @@ namespace Ozikol_BCC.Application.Services
                                                     rec.DeliveryStatus = DomainEnum.BcpSmsDeliveryStatus.Sent;
                                                 }
                                             }
-                                            else if (sendResult == SmsSendResult.InsufficientKudiBalance)
+                                            else if (sendResult == SmsSendResult.ProviderUnconfigured)
                                             {
-                                                // Keep it in Pending so it auto-retries when admin funds the Kudi account
+                                                // Keep it in Pending so it auto-retries when admin configures an SMS provider
                                                 // This is the one provider failure treated as retryable by design.
                                                 campaign.Status = DomainEnum.BcpSmsCampaignStatus.Pending;
                                                 // Delivery status remains Pending
@@ -159,5 +159,7 @@ namespace Ozikol_BCC.Application.Services
         }
     }
 }
+
+
 
 

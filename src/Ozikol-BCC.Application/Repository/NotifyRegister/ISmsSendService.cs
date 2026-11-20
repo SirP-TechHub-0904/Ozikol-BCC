@@ -9,13 +9,12 @@ namespace Ozikol_BCC.Application.Repository.NotifyRegister
     public enum SmsSendResult
     {
         Success,
-        InsufficientKudiBalance,
+        ProviderUnconfigured,
         Failed
     }
 
     /// <summary>
-    /// SMS delivery contract used by immediate sends and scheduled campaign workers.
-    /// Campaign sends return a status so balance issues can remain pending instead of failing permanently.
+    /// SMS delivery contract. SMS provider is unconfigured; SMS items remain in the pool.
     /// </summary>
     public interface ISmsSendService
     {
@@ -24,4 +23,3 @@ namespace Ozikol_BCC.Application.Repository.NotifyRegister
         Task<SmsSendResult> SendCampaignSmsAsync(string contact, string message, string senderId);
     }
 }
-
