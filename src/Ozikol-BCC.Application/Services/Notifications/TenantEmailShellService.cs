@@ -70,24 +70,25 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 }
             }
 
-            // Brand header logo or text
+            // Brand header logo or text (displayed against crisp white header)
             var headerBrandHtml = !string.IsNullOrWhiteSpace(tenantLogoUrl)
-                ? $"<img src='{tenantLogoUrl.Trim()}' alt='{System.Net.WebUtility.HtmlEncode(brand)}' style='max-height:36px; max-width:200px; object-fit:contain; vertical-align:middle;' />"
-                : $"<span style='font-size:18px; font-weight:800; color:#ffffff; letter-spacing:-0.3px;'>{System.Net.WebUtility.HtmlEncode(brand)}</span>";
+                ? $"<img src='{tenantLogoUrl.Trim()}' alt='{System.Net.WebUtility.HtmlEncode(brand)}' style='max-height:44px; max-width:220px; object-fit:contain; display:inline-block; vertical-align:middle;' />"
+                : $"<span style='font-size:20px; font-weight:800; color:#0f172a; letter-spacing:-0.4px;'>{System.Net.WebUtility.HtmlEncode(brand)}</span>";
 
             // Header badge (e.g. Security, Urgent, Invitation)
             var badgeHtml = !string.IsNullOrWhiteSpace(badgeLabel)
-                ? $"<span style='display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:4px 12px; border-radius:100px; background-color:rgba(255,255,255,0.2); color:#ffffff; border:1px solid rgba(255,255,255,0.3);'>{System.Net.WebUtility.HtmlEncode(badgeLabel.Trim())}</span>"
+                ? $"<div style='margin-top:8px;'><span style='display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:3px 10px; border-radius:100px; background-color:#f1f5f9; color:#475569; border:1px solid #cbd5e1;'>{System.Net.WebUtility.HtmlEncode(badgeLabel.Trim())}</span></div>"
                 : string.Empty;
 
-            // Primary action button
+            // Primary action button (Official Royal Blue #0050E5 per AGENTS.md Rule 7)
+            const string buttonColor = "#0050e5";
             var buttonHtml = string.Empty;
             if (!string.IsNullOrWhiteSpace(actionUrl))
             {
                 var btnText = !string.IsNullOrWhiteSpace(actionText) ? actionText.Trim() : "Open in Workspace";
                 buttonHtml = $@"
-                    <div style='margin-top:28px; text-align:center;'>
-                        <a href='{actionUrl.Trim()}' style='background-color:{primaryColor}; color:#ffffff; padding:12px 28px; border-radius:8px; text-decoration:none; font-weight:700; font-size:13.5px; display:inline-block; box-shadow:0 2px 4px rgba(0,0,0,0.1);'>
+                    <div style='margin-top:32px; text-align:center;'>
+                        <a href='{actionUrl.Trim()}' style='background-color:{buttonColor}; color:#ffffff; padding:13px 32px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px; display:inline-block; box-shadow:0 2px 6px rgba(0,80,229,0.25);'>
                             {System.Net.WebUtility.HtmlEncode(btnText)}
                         </a>
                     </div>";
@@ -105,19 +106,13 @@ namespace Ozikol_BCC.Application.Services.Notifications
         <tr>
             <td align='center'>
                 <table width='600' cellpadding='0' cellspacing='0' style='max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05);'>
-                    <!-- Header Banner -->
+                    <!-- Header Banner (Crisp White + Centered Logo) -->
                     <tr>
-                        <td style='background-color:{primaryColor}; padding:20px 28px;'>
-                            <table width='100%' cellpadding='0' cellspacing='0'>
-                                <tr>
-                                    <td align='left' style='vertical-align:middle;'>
-                                        {headerBrandHtml}
-                                    </td>
-                                    <td align='right' style='vertical-align:middle;'>
-                                        {badgeHtml}
-                                    </td>
-                                </tr>
-                            </table>
+                        <td align='center' style='background-color:#ffffff; padding:28px 24px; text-align:center; border-bottom:1px solid #e2e8f0;'>
+                            <div style='text-align:center; margin:0 auto;'>
+                                {headerBrandHtml}
+                            </div>
+                            {badgeHtml}
                         </td>
                     </tr>
                     <!-- Main Body Card -->
