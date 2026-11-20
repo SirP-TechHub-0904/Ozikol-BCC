@@ -989,6 +989,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<Guid>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
             }
 
+            if (string.Equals(shift.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<Guid>.FailureResponse("Completed shifts are locked and cannot be modified."));
+            }
+
             if (request.ClientSiteId == Guid.Empty || request.StartsAtUtc >= request.EndsAtUtc)
             {
                 return BadRequest(ApiResponse<Guid>.FailureResponse("Valid work location and end time greater than start time are required.", errorCode: "ERR-2001"));
@@ -2129,12 +2134,27 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync(ct);
 
-            // Send Credentials & Password Setup Link via Central Notification Dispatcher
+            // Send Credentials & Password Reset Setup Link via Central Notification Dispatcher
             if (_notificationDispatcher != null)
             {
                 try
                 {
                     var companyName = await ResolveTenantCompanyNameAsync(ct);
+                    var resetPath = $"/auth/forgot-password?email={Uri.EscapeDataString(email)}";
+
+                    var clientOrigin = Request.Headers.Origin.FirstOrDefault();
+                    if (string.IsNullOrWhiteSpace(clientOrigin))
+                    {
+                        var referer = Request.Headers.Referer.FirstOrDefault();
+                        if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refUri))
+                        {
+                            clientOrigin = $"{refUri.Scheme}://{refUri.Authority}";
+                        }
+                    }
+                    var fullResetUrl = !string.IsNullOrWhiteSpace(clientOrigin)
+                        ? $"{clientOrigin.TrimEnd('/')}{resetPath}"
+                        : resetPath;
+
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
@@ -2142,15 +2162,15 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientEmail = email,
                         RecipientName = fullName,
                         TenantKey = CurrentTenantKey,
-                        Title = $"Your {companyName} Account Has Been Created",
-                        Message = $"An administrator has pre-enrolled you at {companyName} as a **{staffProfile.JobTitle}**.\n\nPlease sign in with your email (`{email}`) to review your rota schedule, confirm shifts, and set your permanent password.",
+                        Title = $"Welcome to {companyName} — Set Your Account Password",
+                        Message = $"An administrator has registered your staff account at **{companyName}** as a **{staffProfile.JobTitle}**.\n\nBecause your account was created in-house, please click the button below to complete a quick password reset using your registered email address (`{email}`). Once you set your password, you can sign in immediately to view your rota schedule and shifts.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
                         SendEmailCopy = true,
                         Module = "Workforce",
                         Icon = "badge",
-                        ActionUrl = "/auth/login"
+                        ActionUrl = fullResetUrl
                     }, ct);
                 }
                 catch
@@ -2681,6 +2701,11 @@ namespace Ozikol_BCC.Api.Controllers
             if (shift == null)
             {
                 return NotFound(ApiResponse<Guid>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            if (string.Equals(shift.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<Guid>.FailureResponse("Completed shifts are locked and cannot be modified."));
             }
 
             var rating = new BcpShiftStaffRating

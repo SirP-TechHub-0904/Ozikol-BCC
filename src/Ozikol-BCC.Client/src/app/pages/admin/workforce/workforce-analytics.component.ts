@@ -40,13 +40,21 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
-          <a routerLink="/workforce/console/settings" class="btn btn-outline" title="Manage Staff Classifications, Baseline Hours & Rules">
-            <span class="material-symbols-outlined">settings</span>
-            <span>Rota Settings</span>
+          <a routerLink="/workforce/console/staff" class="btn btn-outline" title="Open Staff Manager">
+            <span class="material-symbols-outlined">badge</span>
+            <span>Staff Manager</span>
           </a>
-          <a routerLink="/workforce/console/enroll" class="btn btn-primary">
+          <a routerLink="/workforce/console/shifts" class="btn btn-outline" title="Open Shift Manager">
+            <span class="material-symbols-outlined">event_note</span>
+            <span>Shift Manager</span>
+          </a>
+          <a routerLink="/workforce/console/enroll" class="btn btn-outline" title="Send One-Time Registration Invitation">
+            <span class="material-symbols-outlined">mail</span>
+            <span>Invite to Register</span>
+          </a>
+          <a routerLink="/workforce/console/staff/create" class="btn btn-primary" title="Register Staff In-House">
             <span class="material-symbols-outlined">person_add</span>
-            <span>Enroll Member</span>
+            <span>Full Staff Registration</span>
           </a>
         </div>
       </div>

@@ -79,6 +79,10 @@ interface StaffMember {
           </p>
         </div>
         <div class="header-actions">
+          <a routerLink="/workforce/console/shifts" class="btn btn-outline" title="Return to Shift Manager List">
+            <span class="material-symbols-outlined">event_note</span>
+            <span>Shift Manager</span>
+          </a>
           <a routerLink="/workforce/console/schedule" class="btn btn-outline" title="Return to master rota grid">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Back to Rota</span>
@@ -2297,6 +2301,12 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.isLoading = false;
         const s = res?.data || res;
         if (!s) return;
+
+        if ((s.status || '').toLowerCase() === 'completed') {
+          this.toast.warning('Completed shifts are locked from editing.');
+          this.router.navigate(['/workforce/console/shifts', id, 'report']);
+          return;
+        }
 
         this.shiftCode = s.shiftCode;
         this.selectedSiteId = s.clientSiteId;
