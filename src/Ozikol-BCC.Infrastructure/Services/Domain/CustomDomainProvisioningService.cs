@@ -24,25 +24,9 @@ namespace Ozikol_BCC.Infrastructure.Services.Domain;
 /// </summary>
 public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningService
 {
-    private const string DefaultPlatformIp = "2.24.162.42";
-    private const string DefaultAdminEmail = "admin@ozikol.cloud";
-    private const string DefaultWebClientPort = "4200";
-    private const string DefaultApiPort = "5000";
-
     private static readonly Regex DomainRegex = new(
         @"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-    private static readonly HashSet<string> ReservedDomains = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ozikol.cloud",
-        "mail.ozikol.cloud",
-        "api.ozikol.cloud",
-        "central.ozikol.cloud",
-        "localhost",
-        "127.0.0.1",
-        "0.0.0.0"
-    };
 
     private readonly IConfiguration _configuration;
     private readonly ILogger<CustomDomainProvisioningService> _logger;
@@ -86,7 +70,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             return DomainValidationResult.Failure("Domain name is empty after removing protocol prefix.");
         }
 
-        if (ReservedDomains.Contains(clean))
+        if (GetReservedDomains().Contains(clean))
         {
             return DomainValidationResult.Failure($"'{clean}' is a reserved platform domain and cannot be bound as a tenant custom domain.");
         }
@@ -348,9 +332,9 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
         var fileName = $"ozikol-tenant-{domain}.conf";
         var fullPath = Path.Combine(targetDir, fileName);
 
-        var webPort = _configuration["CustomDomain:ClientProxyPort"] ?? DefaultWebClientPort;
-        var apiPort = _configuration["CustomDomain:ApiProxyPort"] ?? DefaultApiPort;
-        var clientStaticRoot = _configuration["CustomDomain:ClientStaticRoot"] ?? "/var/www/ozikol-client";
+        var webPort = GetWebClientPort();
+        var apiPort = GetApiPort();
+        var clientStaticRoot = GetClientStaticRoot();
 
         // Check if SSL certificate already exists on the server
         var certPath = $"/etc/letsencrypt/live/{domain}/fullchain.pem";
@@ -567,7 +551,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
         try
         {
-            var adminEmail = _configuration["CustomDomain:SslAdminEmail"] ?? DefaultAdminEmail;
+            var adminEmail = GetAdminEmail();
             var certbotArgs = $"certonly --webroot -w /var/www/certbot -d {domain} -d www.{domain} --non-interactive --agree-tos -m {adminEmail} --keep-until-expiring";
 
             // If dedicated provisioner script exists with sudoers rule, invoke it
@@ -803,13 +787,99 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
 
     /// <summary>
     /// Gets the platform server IPv4 address from configuration or defaults to canonical platform IP.
+    /// <summary>
+    /// Gets the platform server IPv4 address resolved strictly from environment variables or .env configuration.
+    /// Throws InvalidOperationException if missing per Rule 3.
     /// </summary>
     private string GetPlatformIp()
     {
-        return _configuration["CustomDomain:PlatformIp"]
+        var ip = _configuration["CustomDomain:PlatformIp"]
             ?? _configuration["PLATFORM_SERVER_IP"]
-            ?? Environment.GetEnvironmentVariable("PLATFORM_SERVER_IP")
-            ?? DefaultPlatformIp;
+            ?? Environment.GetEnvironmentVariable("PLATFORM_SERVER_IP");
+
+        if (string.IsNullOrWhiteSpace(ip))
+        {
+            throw new InvalidOperationException("Custom domain platform IP is not configured. Please set 'CustomDomain:PlatformIp' or 'PLATFORM_SERVER_IP' in your .env configuration.");
+        }
+
+        return ip.Trim();
+    }
+
+    /// <summary>
+    /// Gets the Let's Encrypt ACME administrative contact email resolved strictly from environment configuration.
+    /// </summary>
+    private string GetAdminEmail()
+    {
+        var email = _configuration["CustomDomain:SslAdminEmail"]
+            ?? _configuration["CUSTOM_DOMAIN_SSL_ADMIN_EMAIL"]
+            ?? Environment.GetEnvironmentVariable("CUSTOM_DOMAIN_SSL_ADMIN_EMAIL");
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new InvalidOperationException("Custom domain SSL admin email is not configured. Please set 'CustomDomain:SslAdminEmail' in your .env configuration.");
+        }
+
+        return email.Trim();
+    }
+
+    /// <summary>
+    /// Gets the local development Angular dev server fallback port.
+    /// </summary>
+    private string GetWebClientPort()
+    {
+        return _configuration["CustomDomain:ClientProxyPort"]
+            ?? Environment.GetEnvironmentVariable("CUSTOM_DOMAIN_CLIENT_PORT")
+            ?? "4200";
+    }
+
+    /// <summary>
+    /// Gets the internal ASP.NET Core API listening port.
+    /// </summary>
+    private string GetApiPort()
+    {
+        return _configuration["CustomDomain:ApiProxyPort"]
+            ?? Environment.GetEnvironmentVariable("CUSTOM_DOMAIN_API_PORT")
+            ?? "5000";
+    }
+
+    /// <summary>
+    /// Gets the production filesystem path hosting the static Angular web client.
+    /// </summary>
+    private string GetClientStaticRoot()
+    {
+        return _configuration["CustomDomain:ClientStaticRoot"]
+            ?? Environment.GetEnvironmentVariable("CUSTOM_DOMAIN_CLIENT_STATIC_ROOT")
+            ?? "/var/www/ozikol-client";
+    }
+
+    /// <summary>
+    /// Resolves the set of reserved platform domains dynamically from configuration.
+    /// </summary>
+    private HashSet<string> GetReservedDomains()
+    {
+        var configured = _configuration["CustomDomain:ReservedDomains"]
+            ?? Environment.GetEnvironmentVariable("CUSTOM_DOMAIN_RESERVED_DOMAINS");
+
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            foreach (var item in configured.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                set.Add(item);
+            }
+        }
+        else
+        {
+            set.Add("ozikol.cloud");
+            set.Add("mail.ozikol.cloud");
+            set.Add("api.ozikol.cloud");
+            set.Add("central.ozikol.cloud");
+            set.Add("localhost");
+            set.Add("127.0.0.1");
+            set.Add("0.0.0.0");
+        }
+
+        return set;
     }
 
     /// <summary>
@@ -1103,7 +1173,7 @@ public sealed class CustomDomainProvisioningService : ICustomDomainProvisioningS
             result.CertbotExecuted = true;
             try
             {
-                var adminEmail = _configuration["CustomDomain:SslAdminEmail"] ?? DefaultAdminEmail;
+                var adminEmail = GetAdminEmail();
                 var domainArgs = string.Join(" ", domainFlags);
                 var certbotArgs = $"certonly --webroot -w /var/www/certbot {domainArgs} --non-interactive --agree-tos -m {adminEmail} --expand --force-renewal";
 
