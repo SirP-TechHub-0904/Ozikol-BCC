@@ -109,6 +109,27 @@ public class TenantProvider : ITenantProvider
     {
         var opts = tenantConfigurationOptions?.Value;
         _defaultConnectionString = opts?.ConnectionString ?? string.Empty;
+
+        // Fallback: If options was not populated, read directly from environment variables or service provider
+        if (string.IsNullOrWhiteSpace(_defaultConnectionString))
+        {
+            var config = serviceProvider?.GetService<IConfiguration>();
+            if (config != null)
+            {
+                _defaultConnectionString = config["TenantConfiguration:ConnectionString"]
+                    ?? config["TenantConfiguration__ConnectionString"]
+                    ?? config.GetConnectionString("DefaultConnection")
+                    ?? string.Empty;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(_defaultConnectionString))
+        {
+            _defaultConnectionString = Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+                ?? Environment.GetEnvironmentVariable("TenantConfiguration:ConnectionString")
+                ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? string.Empty;
+        }
         _staticTenantConnections = opts?.Tenants != null
             ? opts.Tenants
                 .Where(t => !string.IsNullOrWhiteSpace(t.ConnectionString))
@@ -472,14 +493,12 @@ public class TenantProvider : ITenantProvider
 
             if (isMasterRemote && isTenantLocal)
             {
-                if (tenantBuilder.ContainsKey("Server"))
-                {
-                    tenantBuilder["Server"] = masterServer!;
-                }
-                else
-                {
-                    tenantBuilder["Data Source"] = masterServer!;
-                }
+                tenantBuilder.Remove("Server");
+                tenantBuilder.Remove("Data Source");
+                tenantBuilder.Remove("Addr");
+                tenantBuilder.Remove("Address");
+                tenantBuilder.Remove("Network Address");
+                tenantBuilder["Server"] = masterServer!;
 
                 // If master has credentials and tenant lacks them, inherit master credentials
                 if (masterBuilder.TryGetValue("User Id", out var masterUser) && !string.IsNullOrWhiteSpace(masterUser?.ToString()))

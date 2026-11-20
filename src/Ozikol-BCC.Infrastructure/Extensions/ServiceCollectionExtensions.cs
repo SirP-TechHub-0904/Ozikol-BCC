@@ -18,6 +18,18 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<ITenantProvider, TenantProvider>();
         services.Configure<TenantConfigurationOptions>(configuration.GetSection(TenantConfigurationOptions.ConfigKey));
+        services.PostConfigure<TenantConfigurationOptions>(options =>
+        {
+            if (string.IsNullOrWhiteSpace(options.ConnectionString))
+            {
+                options.ConnectionString = configuration["TenantConfiguration:ConnectionString"]
+                    ?? configuration["TenantConfiguration__ConnectionString"]
+                    ?? configuration.GetConnectionString("DefaultConnection")
+                    ?? Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+                    ?? Environment.GetEnvironmentVariable("TenantConfiguration:ConnectionString")
+                    ?? string.Empty;
+            }
+        });
 
         return services;
     }
